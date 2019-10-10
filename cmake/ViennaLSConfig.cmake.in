@@ -1,0 +1,44 @@
+@PACKAGE_INIT@
+
+###############################################
+#  compiler dependent settings for OpenMP
+###############################################
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+#    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Werror -ferror-limit=2")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -fopenmp=libomp")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+#    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Werror -fmax-errors=2")
+    FIND_PACKAGE(OpenMP REQUIRED)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall ${OpenMP_CXX_FLAGS}")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qopenmp")
+#    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -fmax-errors=2")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp")
+endif()
+
+
+if(ViennaLS_COMMON_TARGET)
+  SET(VIENNALS_INCLUDE_DIRS "${VIENNAHRLE_INCLUDE_DIRS}" "@VIENNALS_BUILD_INCLUDE_DIRS@")
+else(ViennaLS_COMMON_TARGET)
+  SET(VIENNALS_INCLUDE_DIRS "${VIENNAHRLE_INCLUDE_DIRS}" "@CMAKE_INSTALL_PREFIX@@CMAKE_INSTALL_INCLUDEDIR@")
+  #  include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake")
+endif()
+
+
+if(@VIENNALS_BUILD_SHARED_LIBS@)
+  option(VIENNALS_USE_HEADER_ONLY "Recompile all headers" OFF)
+  if(VIENNALS_USE_HEADER_ONLY)
+    ADD_DEFINITIONS(-DVIENNALS_USE_HEADER_ONLY)
+  endif(VIENNALS_USE_HEADER_ONLY)
+else(@VIENNALS_BUILD_SHARED_LIBS@)
+  ADD_DEFINITIONS(-DVIENNALS_USE_HEADER_ONLY)
+  set(VIENNALS_USE_HEADER_ONLY ON)
+endif()
+
+if(NOT VIENNALS_USE_HEADER_ONLY)
+  link_directories(@CMAKE_INSTALL_PREFIX@lib)
+  SET(VIENNALS_LIBRARIES @PROJECT_NAME@)
+endif()
+
+check_required_components("@PROJECT_NAME@")

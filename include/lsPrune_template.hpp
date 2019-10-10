@@ -1,0 +1,80 @@
+#ifndef LS_PRUNE_TEMPLATE_HPP
+#define LS_PRUNE_TEMPLATE_HPP
+
+#include <hrleCrossIterator.hpp>
+#include <hrleVectorType.hpp>
+#include <lsDomain_template.hpp>
+
+template <class T, int D> class lsPrune {
+  lsDomain<T, D> &levelSet;
+
+public:
+  lsPrune(lsDomain<T, D> &passedlsDomain) : levelSet(passedlsDomain){};
+
+  /// removes all grid points, which do not have at least one opposite signed
+  /// neighbour
+  /// returns the number of removed points
+  void apply() {
+    auto &grid = levelSet.getGrid();
+    lsDomain<T, D> newlsDomain(grid);
+    typename lsDomain<T, D>::DomainType &newDomain = newlsDomain.getDomain();
+    typename lsDomain<T, D>::DomainType &domain = levelSet.getDomain();
+
+    newDomain.initialize(domain.getNewSegmentation(), domain.getAllocation());
+
+#pragma omp parallel num_threads(newDomain.getNumberOfSegments())
+    {
+      int p = 0;
+#ifdef _OPENMP
+      p = omp_get_thread_num();
+#endif
+
+      auto &domainSegment = newDomain.getDomainSegment(p);
+
+      hrleVectorType<hrleIndexType, D> startVector =
+          (p == 0) ? grid.getMinGridPoint()
+                   : newDomain.getSegmentation()[p - 1];
+
+      hrleVectorType<hrleIndexType, D> endVector =
+          (p != static_cast<int>(newDomain.getNumberOfSegments() - 1))
+              ? newDomain.getSegmentation()[p]
+              : grid.incrementIndices(grid.getMaxGridPoint());
+
+      for (hrleCrossIterator<typename lsDomain<T, D>::DomainType> neighborIt(
+               domain, startVector);
+           neighborIt.getIndices() < endVector; neighborIt.next()) {
+        auto &centerIt = neighborIt.getCenter();
+        bool centerSign = centerIt.getValue() < 0;
+        if (centerIt.isDefined()) {
+          int i = 0;
+          for (; i < 2 * D; i++) {
+            if ((neighborIt.getNeighbor(i).getValue() < 0) != centerSign)
+              break;
+          }
+          if (i != 2 * D) {
+            domainSegment.insertNextDefinedPoint(neighborIt.getIndices(),
+                                                 centerIt.getValue());
+          } else {
+            // TODO: it is more efficient to insertNextUndefinedRunType, since
+            // we know it already exists
+            domainSegment.insertNextUndefinedPoint(
+                neighborIt.getIndices(), centerSign
+                                             ? lsDomain<T, D>::NEG_VALUE
+                                             : lsDomain<T, D>::POS_VALUE);
+          }
+        } else {
+          domainSegment.insertNextUndefinedPoint(
+              neighborIt.getIndices(), centerSign ? lsDomain<T, D>::NEG_VALUE
+                                                  : lsDomain<T, D>::POS_VALUE);
+        }
+      }
+    }
+    // distribute evenly across segments and copy
+    newDomain.finalize();
+    newDomain.segment();
+    levelSet.deepCopy(newlsDomain);
+    levelSet.finalize(2);
+  }
+};
+
+#endif // LS_PRUNE_TEMPLATE_HPP
