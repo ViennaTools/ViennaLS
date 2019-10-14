@@ -38,7 +38,7 @@ endif()
 
 if(NOT VIENNALS_USE_HEADER_ONLY)
   link_directories(@CMAKE_INSTALL_PREFIX@lib)
-  SET(VIENNALS_LIBRARIES @PROJECT_NAME@)
+  list(APPEND VIENNALS_LIBRARIES @PROJECT_NAME@)
 endif()
 
 check_required_components("@PROJECT_NAME@")

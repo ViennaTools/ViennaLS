@@ -7,6 +7,10 @@
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
 
+#ifdef VIENNALS_USE_VTK
+
+#endif // VIENNALS_USE_VTK
+
 class lsVTKReader {
   lsMesh &mesh;
 

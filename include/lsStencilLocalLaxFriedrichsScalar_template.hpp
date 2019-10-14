@@ -37,12 +37,11 @@ template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
     T modulus = 0.;
 
     for (unsigned i = 0; i < D; ++i) {
-      hrleVectorType<hrleIndexType, D> index(0);
+      hrleVectorType<hrleIndexType, D> index(offset);
       std::vector<T> values;
       for (unsigned j = 0; j < 3; ++j) {
-        index[i] = startIndex + j;
-        values.push_back(
-            neighborIterator.getNeighbor(offset + index).getValue());
+        index[i] += startIndex + j;
+        values.push_back(neighborIterator.getNeighbor(index).getValue());
       }
       normal[i] = lsFiniteDifferences<T>::calculateGradient(
           &(values[0]), levelSet.getGrid().getGridDelta());
@@ -64,12 +63,11 @@ template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
     const int startIndex = -std::floor(numValues / 2);
 
     for (unsigned i = 0; i < D; ++i) {
-      hrleVectorType<hrleIndexType, D> index(hrleIndexType(0));
+      hrleVectorType<hrleIndexType, D> index(offset);
       std::vector<T> values;
       for (unsigned j = 0; j < numValues; ++j) {
-        index[i] = startIndex + j;
-        values.push_back(
-            neighborIterator.getNeighbor(offset + index).getValue());
+        index[i] += startIndex + j;
+        values.push_back(neighborIterator.getNeighbor(index).getValue());
       }
 
       if (finiteDifferenceScheme == DifferentiationSchemeEnum::FIRST_ORDER) {

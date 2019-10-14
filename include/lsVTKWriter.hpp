@@ -5,12 +5,110 @@
 #include <string>
 
 #include <lsMesh.hpp>
+#include <lsMessage.hpp>
+
+#ifdef VIENNALS_USE_VTK
+#include <vtkCellArray.h>
+#include <vtkCellData.h>
+#include <vtkFloatArray.h>
+#include <vtkPoints.h>
+#include <vtkPolyData.h>
+#include <vtkSmartPointer.h>
+#include <vtkXMLPolyDataWriter.h>
+#endif // VIENNALS_USE_VTK
 
 class lsVTKWriter {
-  lsMesh &mesh;
+  const lsMesh &mesh;
 
 public:
   lsVTKWriter(lsMesh &passedMesh) : mesh(passedMesh) {}
+
+  void writeVTP(std::string filename) const {
+#ifndef VIENNALS_USE_VTK
+    lsMessage::getInstance()
+        .addWarning("ViennaLS was built without VTK support. VTK outputs not "
+                    "supported.")
+        .print();
+#else // VIENNALS_USE_VTK
+    vtkSmartPointer<vtkPoints> polyPoints = vtkSmartPointer<vtkPoints>::New();
+    vtkSmartPointer<vtkCellArray> polyCells =
+        vtkSmartPointer<vtkCellArray>::New();
+    vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
+
+    // Points
+    for (auto it = mesh.getNodes().begin(); it != mesh.getNodes().end(); ++it) {
+      polyPoints->InsertNextPoint((*it)[0], (*it)[1], (*it)[2]);
+    }
+    polyData->SetPoints(polyPoints);
+
+    // Lines
+    for (auto it = mesh.vertices.begin(); it != mesh.vertices.end(); ++it) {
+      polyCells->InsertNextCell(1);
+      polyCells->InsertCellPoint((*it)[0]);
+    }
+    if (polyCells->GetNumberOfCells() > 0) {
+      polyData->SetVerts(polyCells);
+      polyCells->Initialize();
+    }
+
+    // Lines
+    for (auto it = mesh.lines.begin(); it != mesh.lines.end(); ++it) {
+      polyCells->InsertNextCell(2);
+      for (unsigned i = 0; i < 2; ++i) {
+        polyCells->InsertCellPoint((*it)[i]);
+      }
+    }
+    if (polyCells->GetNumberOfCells() > 0) {
+      polyData->SetLines(polyCells);
+      polyCells->Initialize();
+    }
+
+    // Triangles
+    for (auto it = mesh.triangles.begin(); it != mesh.triangles.end(); ++it) {
+      polyCells->InsertNextCell(3);
+      for (unsigned i = 0; i < 3; ++i) {
+        polyCells->InsertCellPoint((*it)[i]);
+      }
+    }
+    if (polyCells->GetNumberOfCells() > 0) {
+      polyData->SetPolys(polyCells);
+      polyCells->Initialize();
+    }
+
+    // now add pointData
+    for (unsigned i = 0; i < mesh.scalarData.size(); ++i) {
+      vtkSmartPointer<vtkFloatArray> pointData =
+          vtkSmartPointer<vtkFloatArray>::New();
+      pointData->SetNumberOfComponents(1);
+      pointData->SetName(mesh.scalarDataLabels[i].c_str());
+      for (unsigned j = 0; j < mesh.scalarData[i].size(); ++j) {
+        pointData->InsertNextValue(mesh.scalarData[i][j]);
+      }
+      polyData->GetCellData()->AddArray(pointData);
+    }
+
+    // now add vector data
+    for (unsigned i = 0; i < mesh.vectorData.size(); ++i) {
+      vtkSmartPointer<vtkFloatArray> vectorData =
+          vtkSmartPointer<vtkFloatArray>::New();
+      vectorData->SetNumberOfComponents(3);
+      vectorData->SetName(mesh.vectorDataLabels[i].c_str());
+      for (unsigned j = 0; j < mesh.vectorData[i].size(); ++j) {
+        vectorData->InsertNextTuple3(mesh.vectorData[i][j][0],
+                                     mesh.vectorData[i][j][1],
+                                     mesh.vectorData[i][j][2]);
+      }
+      polyData->GetCellData()->AddArray(vectorData);
+    }
+
+    vtkSmartPointer<vtkXMLPolyDataWriter> pwriter =
+        vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+    pwriter->SetFileName(filename.c_str());
+    pwriter->SetInputData(polyData);
+    pwriter->Write();
+
+#endif // VIENNALS_USE_VTK
+  }
 
   void writeVTKLegacy(std::string filename) {
     std::ofstream f(filename.c_str());

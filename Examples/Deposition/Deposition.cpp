@@ -1,10 +1,10 @@
 #include <iostream>
 
 #include <lsAdvect.hpp>
+#include <lsBooleanOperation.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
-#include <lsBooleanOperation.hpp>
 #include <lsPrune.hpp>
 #include <lsToExplicitMesh.hpp>
 #include <lsVTKWriter.hpp>
@@ -14,10 +14,11 @@ class velocityField : public lsVelocityField<double> {
 public:
   double getScalarVelocity(
       hrleVectorType<double, 3> /*coordinate*/, int /*material*/,
-      hrleVectorType<double, 3> /*normalVector = hrleVectorType<double, 3>(0.)*/) {
+      hrleVectorType<double,
+                     3> /*normalVector = hrleVectorType<double, 3>(0.)*/) {
     // Some arbitrary velocity function of your liking
     // (try changing it and see what happens :)
-    double velocity = 1.;;
+    double velocity = 1.;
     return velocity;
   }
 
@@ -39,14 +40,13 @@ int main() {
 
   double bounds[2 * D] = {-extent, extent, -extent, extent, -extent, extent};
   lsDomain_double_3::BoundaryType boundaryCons[D];
-  for (unsigned i = 0; i < D-1; ++i)
+  for (unsigned i = 0; i < D - 1; ++i)
     boundaryCons[i] = lsDomain_double_3::BoundaryType::SYMMETRIC_BOUNDARY;
   boundaryCons[2] = lsDomain_double_3::BoundaryType::INFINITE_BOUNDARY;
 
   // including lsDomain.hpp provides typedefs for pre-built
   // template specialisations, such as lsDomain<double, 3>
   lsDomain_double_3 substrate(bounds, boundaryCons, gridDelta);
-
 
   double origin[3] = {0., 0., 0.};
   double planeNormal[3] = {0., 0., 1.};
@@ -61,8 +61,8 @@ int main() {
   }
 
   lsDomain_double_3 trench(bounds, boundaryCons, gridDelta);
-  double minCorner[D] = {-extent, -extent/4., -15.};
-  double maxCorner[D] = {extent, extent/4., 1.};
+  double minCorner[D] = {-extent, -extent / 4., -15.};
+  double maxCorner[D] = {extent, extent / 4., 1.};
   lsMakeGeometry<double, D>(trench).makeBox(minCorner, maxCorner);
 
   // Create trench geometry
@@ -98,10 +98,11 @@ int main() {
 
   {
     std::cout << "Extracting..." << std::endl;
-    for(unsigned i=0; i<lsDomains.size(); ++i){
+    for (unsigned i = 0; i < lsDomains.size(); ++i) {
       lsMesh mesh;
       lsToExplicitMesh<double, D>(*(lsDomains[i]), mesh).apply();
       lsVTKWriter(mesh).writeVTKLegacy("grown-" + std::to_string(i) + ".vtk");
+      lsVTKWriter(mesh).writeVTP("grown-" + std::to_string(i) + ".vtp");
     }
   }
 

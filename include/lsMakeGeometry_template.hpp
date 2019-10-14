@@ -169,8 +169,7 @@ public:
   }
 
   // This function creates a box starting in minCorner spanning to maxCorner
-  template<class V>
-  void makeBox(V minCorner, V maxCorner) {
+  template <class V> void makeBox(V minCorner, V maxCorner) {
     // draw all triangles for the surface and then import from the mesh
     std::vector<hrleVectorType<T, 3>> corners;
     corners.resize(std::pow(2, D), hrleVectorType<T, 3>(T(0)));

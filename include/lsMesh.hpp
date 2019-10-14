@@ -16,11 +16,16 @@ public:
   std::vector<hrleVectorType<unsigned, 2>> lines;
   std::vector<hrleVectorType<unsigned, 3>> triangles;
   std::vector<hrleVectorType<unsigned, 4>> tetras;
+  std::vector<hrleVectorType<unsigned, 8>> hexahedrons;
   std::vector<unsigned> materials;
   std::vector<std::vector<double>> scalarData;
   std::vector<std::string> scalarDataLabels;
   std::vector<std::vector<hrleVectorType<double, 3>>> vectorData;
   std::vector<std::string> vectorDataLabels;
+
+  const std::vector<hrleVectorType<double, 3>> &getNodes() const {
+    return nodes;
+  }
 
   std::vector<hrleVectorType<double, 3>> &getNodes() { return nodes; }
 
@@ -52,6 +57,11 @@ public:
     return tetras;
   }
 
+  template <int D, typename std::enable_if<D == 8, int>::type = 0>
+  std::vector<hrleVectorType<unsigned, D>> &getElements() {
+    return hexahedrons;
+  }
+
   unsigned insertNextNode(hrleVectorType<double, 3> &node) {
     nodes.push_back(node);
     return nodes.size() - 1;
@@ -77,6 +87,11 @@ public:
     return tetras.size() - 1;
   }
 
+  unsigned insertNextHexa(hrleVectorType<unsigned, 8> &hexa) {
+    hexahedrons.push_back(hexa);
+    return hexahedrons.size();
+  }
+
   unsigned insertNextElement(hrleVectorType<unsigned, 1> &vertex) {
     vertices.push_back(vertex);
     return vertices.size() - 1;
@@ -97,6 +112,11 @@ public:
     return tetras.size() - 1;
   }
 
+  unsigned insertNextElement(hrleVectorType<unsigned, 8> &hexa) {
+    hexahedrons.push_back(hexa);
+    return hexahedrons.size();
+  }
+
   void insertNextScalarData(std::vector<double> &scalars,
                             std::string label = "Scalars") {
     scalarData.push_back(scalars);
@@ -115,6 +135,7 @@ public:
     lines.clear();
     triangles.clear();
     tetras.clear();
+    hexahedrons.clear();
     materials.clear();
     scalarData.clear();
     scalarDataLabels.clear();
@@ -125,10 +146,16 @@ public:
   void print() {
     std::cout << "lsMesh:" << std::endl;
     std::cout << "Number of Nodes: " << nodes.size() << std::endl;
-    std::cout << "Number of Vertices: " << vertices.size() << std::endl;
-    std::cout << "Number of Lines: " << lines.size() << std::endl;
-    std::cout << "Number of Triangles: " << triangles.size() << std::endl;
-    std::cout << "Number of Tetrahedrons: " << tetras.size() << std::endl;
+    if (vertices.size() > 0)
+      std::cout << "Number of Vertices: " << vertices.size() << std::endl;
+    if (lines.size() > 0)
+      std::cout << "Number of Lines: " << lines.size() << std::endl;
+    if (triangles.size() > 0)
+      std::cout << "Number of Triangles: " << triangles.size() << std::endl;
+    if (tetras.size() > 0)
+      std::cout << "Number of Tetrahedrons: " << tetras.size() << std::endl;
+    if (hexahedrons.size() > 0)
+      std::cout << "Number of Hexahedrons: " << hexahedrons.size() << std::endl;
   }
 };
 
