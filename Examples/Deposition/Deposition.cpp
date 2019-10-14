@@ -1,0 +1,109 @@
+#include <iostream>
+
+#include <lsAdvect.hpp>
+#include <lsDomain.hpp>
+#include <lsExpand.hpp>
+#include <lsMakeGeometry.hpp>
+#include <lsBooleanOperation.hpp>
+#include <lsPrune.hpp>
+#include <lsToExplicitMesh.hpp>
+#include <lsVTKWriter.hpp>
+
+// implement own velocity field
+class velocityField : public lsVelocityField<double> {
+public:
+  double getScalarVelocity(
+      hrleVectorType<double, 3> /*coordinate*/, int /*material*/,
+      hrleVectorType<double, 3> /*normalVector = hrleVectorType<double, 3>(0.)*/) {
+    // Some arbitrary velocity function of your liking
+    // (try changing it and see what happens :)
+    double velocity = 1.;;
+    return velocity;
+  }
+
+  hrleVectorType<double, 3> getVectorVelocity(
+      hrleVectorType<double, 3> /*coordinate*/, int /*material*/,
+      hrleVectorType<double,
+                     3> /*normalVector = hrleVectorType<double, 3>(0.)*/) {
+    return hrleVectorType<double, 3>(0.);
+  }
+};
+
+int main() {
+
+  constexpr int D = 3;
+  omp_set_num_threads(4);
+
+  double extent = 30;
+  double gridDelta = 0.5;
+
+  double bounds[2 * D] = {-extent, extent, -extent, extent, -extent, extent};
+  lsDomain_double_3::BoundaryType boundaryCons[D];
+  for (unsigned i = 0; i < D-1; ++i)
+    boundaryCons[i] = lsDomain_double_3::BoundaryType::SYMMETRIC_BOUNDARY;
+  boundaryCons[2] = lsDomain_double_3::BoundaryType::INFINITE_BOUNDARY;
+
+  // including lsDomain.hpp provides typedefs for pre-built
+  // template specialisations, such as lsDomain<double, 3>
+  lsDomain_double_3 substrate(bounds, boundaryCons, gridDelta);
+
+
+  double origin[3] = {0., 0., 0.};
+  double planeNormal[3] = {0., 0., 1.};
+
+  lsMakeGeometry<double, D>(substrate).makePlane(origin, planeNormal);
+
+  {
+    std::cout << "Extracting..." << std::endl;
+    lsMesh mesh;
+    lsToExplicitMesh<double, D>(substrate, mesh).apply();
+    lsVTKWriter(mesh).writeVTKLegacy("plane.vtk");
+  }
+
+  lsDomain_double_3 trench(bounds, boundaryCons, gridDelta);
+  double minCorner[D] = {-extent, -extent/4., -15.};
+  double maxCorner[D] = {extent, extent/4., 1.};
+  lsMakeGeometry<double, D>(trench).makeBox(minCorner, maxCorner);
+
+  // Create trench geometry
+  lsBooleanOperation<double, D>(substrate).XOR(trench);
+
+  {
+    std::cout << "Extracting..." << std::endl;
+    lsMesh mesh;
+    lsToExplicitMesh<double, D>(substrate, mesh).apply();
+    lsVTKWriter(mesh).writeVTKLegacy("trench.vtk");
+  }
+
+  // Now grow new material isotropically
+
+  // fill vector with lsDomain pointers
+  std::vector<lsDomain_double_3 *> lsDomains;
+  lsDomains.push_back(&substrate);
+
+  // create new levelset for new material, which will be grown
+  // since it has to wrap around the substrate, just copy it
+  lsDomain<double, D> newLayer(substrate);
+  lsDomains.push_back(&newLayer);
+
+  velocityField velocities;
+
+  std::cout << "Advecting" << std::endl;
+  lsAdvect<double, D> advection(lsDomains, velocities);
+  // advection.setIntegrationScheme(1);
+  // advection.setCalculateNormalVectors(false);
+  double advectionSteps = advection.apply(4.);
+  std::cout << "Number of Advection steps taken: " << advectionSteps
+            << std::endl;
+
+  {
+    std::cout << "Extracting..." << std::endl;
+    for(unsigned i=0; i<lsDomains.size(); ++i){
+      lsMesh mesh;
+      lsToExplicitMesh<double, D>(*(lsDomains[i]), mesh).apply();
+      lsVTKWriter(mesh).writeVTKLegacy("grown-" + std::to_string(i) + ".vtk");
+    }
+  }
+
+  return 0;
+}
