@@ -12,16 +12,21 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   SET(CMAKE_CXX_STANDARD "17")
 endif()
 
-set(VTK_DIR $ENV{VTK_DIR})
-find_package(VTK)
-if(VTK_FOUND)
-  message(STATUS "Found VTK")
-  add_definitions(-DVIENNALS_USE_VTK)
-  include(${VTK_USE_FILE})
-  list(APPEND VIENNALS_LIBRARIES ${VTK_LIBRARIES})
-else(VTK_FOUND)
-  message(STATUS "No VTK install found: Building without VTK.")
-endif(VTK_FOUND)
+# VTK File type support
+option(VIENNALS_BUILD_VTK "Build with VTK file support." ON)
+if(VIENNALS_BUILD_VTK)
+  set(VTK_DIR $ENV{VTK_DIR})
+  find_package(VTK QUIET)
+  if(VTK_FOUND)
+    message(STATUS "Found VTK")
+    add_definitions(-DVIENNALS_USE_VTK)
+    include(${VTK_USE_FILE})
+    list(APPEND VIENNALS_LIBRARIES ${VTK_LIBRARIES})
+  else(VTK_FOUND)
+    message(STATUS "No VTK install found: Building without VTK.")
+  endif(VTK_FOUND)
+endif(VIENNALS_BUILD_VTK)
+
 
 #################################################
 # BUILD SHARED LIBRARIES

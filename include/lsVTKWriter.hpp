@@ -15,6 +15,9 @@
 #include <vtkPolyData.h>
 #include <vtkSmartPointer.h>
 #include <vtkXMLPolyDataWriter.h>
+
+#include <vtkUnstructuredGrid.h>
+#include <vtkXMLUnstructuredGridWriter.h>
 #endif // VIENNALS_USE_VTK
 
 class lsVTKWriter {
@@ -23,56 +26,63 @@ class lsVTKWriter {
 public:
   lsVTKWriter(lsMesh &passedMesh) : mesh(passedMesh) {}
 
-  void writeVTP(std::string filename) const {
 #ifndef VIENNALS_USE_VTK
+  void writeVTP(std::string) const {
     lsMessage::getInstance()
         .addWarning("ViennaLS was built without VTK support. VTK outputs not "
                     "supported.")
         .print();
-#else // VIENNALS_USE_VTK
-    vtkSmartPointer<vtkPoints> polyPoints = vtkSmartPointer<vtkPoints>::New();
-    vtkSmartPointer<vtkCellArray> polyCells =
-        vtkSmartPointer<vtkCellArray>::New();
+  }
+
+  void writeVTU(std::string) const { writeVTP(""); }
+#else  // VIENNALS_USE_VTK
+  void writeVTP(std::string filename) const {
+    if (filename.find(".vtp") != filename.size() - 4)
+      filename += ".vtp";
     vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
 
     // Points
+    vtkSmartPointer<vtkPoints> polyPoints = vtkSmartPointer<vtkPoints>::New();
     for (auto it = mesh.getNodes().begin(); it != mesh.getNodes().end(); ++it) {
       polyPoints->InsertNextPoint((*it)[0], (*it)[1], (*it)[2]);
     }
     polyData->SetPoints(polyPoints);
 
-    // Lines
-    for (auto it = mesh.vertices.begin(); it != mesh.vertices.end(); ++it) {
-      polyCells->InsertNextCell(1);
-      polyCells->InsertCellPoint((*it)[0]);
-    }
-    if (polyCells->GetNumberOfCells() > 0) {
+    // Vertices
+    if (mesh.vertices.size() > 0) {
+      vtkSmartPointer<vtkCellArray> polyCells =
+          vtkSmartPointer<vtkCellArray>::New();
+      for (auto it = mesh.vertices.begin(); it != mesh.vertices.end(); ++it) {
+        polyCells->InsertNextCell(1);
+        polyCells->InsertCellPoint((*it)[0]);
+      }
       polyData->SetVerts(polyCells);
-      polyCells->Initialize();
     }
 
     // Lines
-    for (auto it = mesh.lines.begin(); it != mesh.lines.end(); ++it) {
-      polyCells->InsertNextCell(2);
-      for (unsigned i = 0; i < 2; ++i) {
-        polyCells->InsertCellPoint((*it)[i]);
+    if (mesh.lines.size() > 0) {
+      vtkSmartPointer<vtkCellArray> polyCells =
+          vtkSmartPointer<vtkCellArray>::New();
+      for (auto it = mesh.lines.begin(); it != mesh.lines.end(); ++it) {
+        polyCells->InsertNextCell(2);
+        for (unsigned i = 0; i < 2; ++i) {
+          polyCells->InsertCellPoint((*it)[i]);
+        }
       }
-    }
-    if (polyCells->GetNumberOfCells() > 0) {
       polyData->SetLines(polyCells);
-      polyCells->Initialize();
     }
 
     // Triangles
-    for (auto it = mesh.triangles.begin(); it != mesh.triangles.end(); ++it) {
-      polyCells->InsertNextCell(3);
-      for (unsigned i = 0; i < 3; ++i) {
-        polyCells->InsertCellPoint((*it)[i]);
+    if (mesh.triangles.size() > 0) {
+      vtkSmartPointer<vtkCellArray> polyCells =
+          vtkSmartPointer<vtkCellArray>::New();
+      for (auto it = mesh.triangles.begin(); it != mesh.triangles.end(); ++it) {
+        polyCells->InsertNextCell(3);
+        for (unsigned i = 0; i < 3; ++i) {
+          polyCells->InsertCellPoint((*it)[i]);
+        }
       }
-    }
-    if (polyCells->GetNumberOfCells() > 0) {
       polyData->SetPolys(polyCells);
-      polyCells->Initialize();
     }
 
     // now add pointData
@@ -106,9 +116,118 @@ public:
     pwriter->SetFileName(filename.c_str());
     pwriter->SetInputData(polyData);
     pwriter->Write();
-
-#endif // VIENNALS_USE_VTK
   }
+
+  void writeVTU(std::string filename) const {
+    if (filename.find(".vtu") != filename.size() - 4)
+      filename += ".vtu";
+
+    vtkSmartPointer<vtkUnstructuredGrid> uGrid =
+        vtkSmartPointer<vtkUnstructuredGrid>::New();
+
+    // Points
+    vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+    for (auto it = mesh.getNodes().begin(); it != mesh.getNodes().end(); ++it) {
+      points->InsertNextPoint((*it)[0], (*it)[1], (*it)[2]);
+    }
+    uGrid->SetPoints(points);
+
+    // Now set all cells
+    vtkSmartPointer<vtkCellArray> cells = vtkSmartPointer<vtkCellArray>::New();
+    std::vector<int> cellTypes;
+    cellTypes.reserve(mesh.vertices.size() + mesh.lines.size() +
+                      mesh.triangles.size() + mesh.tetras.size() +
+                      mesh.hexas.size());
+
+    // Vertices
+    if (mesh.vertices.size() > 0) {
+      for (auto it = mesh.vertices.begin(); it != mesh.vertices.end(); ++it) {
+        cells->InsertNextCell(1);
+        cells->InsertCellPoint((*it)[0]);
+        cellTypes.push_back(1); // vtk Vertex
+      }
+    }
+
+    // Lines
+    if (mesh.lines.size() > 0) {
+      for (auto it = mesh.lines.begin(); it != mesh.lines.end(); ++it) {
+        cells->InsertNextCell(2);
+        for (unsigned i = 0; i < 2; ++i) {
+          cells->InsertCellPoint((*it)[i]);
+        }
+        cellTypes.push_back(3); // vtk Line
+      }
+    }
+
+    // Triangles
+    if (mesh.triangles.size() > 0) {
+      for (auto it = mesh.triangles.begin(); it != mesh.triangles.end(); ++it) {
+        cells->InsertNextCell(3);
+        for (unsigned i = 0; i < 3; ++i) {
+          cells->InsertCellPoint((*it)[i]);
+        }
+        cellTypes.push_back(5); // vtk Triangle
+      }
+    }
+
+    // Tetras
+    if (mesh.tetras.size() > 0) {
+      for (auto it = mesh.tetras.begin(); it != mesh.tetras.end(); ++it) {
+        cells->InsertNextCell(4);
+        for (unsigned i = 0; i < 3; ++i) {
+          cells->InsertCellPoint((*it)[i]);
+        }
+        cellTypes.push_back(10); // vtk Tetra
+      }
+    }
+
+    // Hexas
+    if (mesh.hexas.size() > 0) {
+      for (auto it = mesh.hexas.begin(); it != mesh.hexas.end(); ++it) {
+        cells->InsertNextCell(8);
+        for (unsigned i = 0; i < 3; ++i) {
+          cells->InsertCellPoint((*it)[i]);
+        }
+        cellTypes.push_back(12); // vtk Hexahedron
+      }
+    }
+
+    // set cells
+    uGrid->SetCells(&(cellTypes[0]), cells);
+
+    // now add pointData
+    for (unsigned i = 0; i < mesh.scalarData.size(); ++i) {
+      vtkSmartPointer<vtkFloatArray> pointData =
+          vtkSmartPointer<vtkFloatArray>::New();
+      pointData->SetNumberOfComponents(1);
+      pointData->SetName(mesh.scalarDataLabels[i].c_str());
+      for (unsigned j = 0; j < mesh.scalarData[i].size(); ++j) {
+        pointData->InsertNextValue(mesh.scalarData[i][j]);
+      }
+      uGrid->GetCellData()->AddArray(pointData);
+    }
+
+    // now add vector data
+    for (unsigned i = 0; i < mesh.vectorData.size(); ++i) {
+      vtkSmartPointer<vtkFloatArray> vectorData =
+          vtkSmartPointer<vtkFloatArray>::New();
+      vectorData->SetNumberOfComponents(3);
+      vectorData->SetName(mesh.vectorDataLabels[i].c_str());
+      for (unsigned j = 0; j < mesh.vectorData[i].size(); ++j) {
+        vectorData->InsertNextTuple3(mesh.vectorData[i][j][0],
+                                     mesh.vectorData[i][j][1],
+                                     mesh.vectorData[i][j][2]);
+      }
+      uGrid->GetCellData()->AddArray(vectorData);
+    }
+
+    vtkSmartPointer<vtkXMLUnstructuredGridWriter> owriter =
+        vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
+    owriter->SetFileName(filename.c_str());
+    owriter->SetInputData(uGrid);
+    owriter->Write();
+  }
+#endif // VIENNALS_USE_VTK
 
   void writeVTKLegacy(std::string filename) {
     std::ofstream f(filename.c_str());

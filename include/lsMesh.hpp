@@ -16,7 +16,7 @@ public:
   std::vector<hrleVectorType<unsigned, 2>> lines;
   std::vector<hrleVectorType<unsigned, 3>> triangles;
   std::vector<hrleVectorType<unsigned, 4>> tetras;
-  std::vector<hrleVectorType<unsigned, 8>> hexahedrons;
+  std::vector<hrleVectorType<unsigned, 8>> hexas;
   std::vector<unsigned> materials;
   std::vector<std::vector<double>> scalarData;
   std::vector<std::string> scalarDataLabels;
@@ -59,7 +59,7 @@ public:
 
   template <int D, typename std::enable_if<D == 8, int>::type = 0>
   std::vector<hrleVectorType<unsigned, D>> &getElements() {
-    return hexahedrons;
+    return hexas;
   }
 
   unsigned insertNextNode(hrleVectorType<double, 3> &node) {
@@ -88,8 +88,8 @@ public:
   }
 
   unsigned insertNextHexa(hrleVectorType<unsigned, 8> &hexa) {
-    hexahedrons.push_back(hexa);
-    return hexahedrons.size();
+    hexas.push_back(hexa);
+    return hexas.size();
   }
 
   unsigned insertNextElement(hrleVectorType<unsigned, 1> &vertex) {
@@ -113,8 +113,8 @@ public:
   }
 
   unsigned insertNextElement(hrleVectorType<unsigned, 8> &hexa) {
-    hexahedrons.push_back(hexa);
-    return hexahedrons.size();
+    hexas.push_back(hexa);
+    return hexas.size();
   }
 
   void insertNextScalarData(std::vector<double> &scalars,
@@ -135,7 +135,7 @@ public:
     lines.clear();
     triangles.clear();
     tetras.clear();
-    hexahedrons.clear();
+    hexas.clear();
     materials.clear();
     scalarData.clear();
     scalarDataLabels.clear();
@@ -154,8 +154,8 @@ public:
       std::cout << "Number of Triangles: " << triangles.size() << std::endl;
     if (tetras.size() > 0)
       std::cout << "Number of Tetrahedrons: " << tetras.size() << std::endl;
-    if (hexahedrons.size() > 0)
-      std::cout << "Number of Hexahedrons: " << hexahedrons.size() << std::endl;
+    if (hexas.size() > 0)
+      std::cout << "Number of hexas: " << hexas.size() << std::endl;
   }
 };
 
