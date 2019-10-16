@@ -30,6 +30,8 @@ public:
                     "supported.")
         .print();
   }
+
+  void readVTU(std::string) { readVTP(""); }
 #else
   void readVTP(std::string filename) {
     mesh.clear();
@@ -93,7 +95,7 @@ public:
       }
     }
 
-    // get materials
+    // get cell data
     vtkSmartPointer<vtkCellData> cellData = vtkSmartPointer<vtkCellData>::New();
     cellData = polyData->GetCellData();
 
@@ -101,13 +103,109 @@ public:
          i < static_cast<unsigned>(cellData->GetNumberOfArrays()); ++i) {
       vtkDataArray *dataArray;
       dataArray = cellData->GetArray(i);
-      mesh.scalarData.push_back(std::vector<double>());
-      mesh.scalarData[i].resize(cellData->GetNumberOfTuples());
       if (cellData->GetNumberOfComponents() == 1) {
+        mesh.scalarDataLabels.push_back(std::string(cellData->GetArrayName(i)));
+        mesh.scalarData.push_back(std::vector<double>());
+        mesh.scalarData[i].resize(cellData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
           mesh.scalarData[i][j] = dataArray->GetTuple1(j);
         }
       } else if (cellData->GetNumberOfComponents() == 3) {
+        mesh.vectorDataLabels.push_back(std::string(cellData->GetArrayName(i)));
+        mesh.vectorData.push_back(std::vector<hrleVectorType<double, 3>>());
+        mesh.vectorData[i].resize(cellData->GetNumberOfTuples());
+        for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
+          hrleVectorType<double, 3> vector;
+          dataArray->GetTuple(j, &(vector[0]));
+          mesh.vectorData[i][j] = vector;
+        }
+      }
+    }
+  }
+
+  void readVTU(std::string) {
+    mesh.clear();
+
+    vtkSmartPointer<vtkXMLUnstructuredGridReader> greader =
+        vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
+    greader->SetFileName(filename.c_str());
+    greader->Update();
+
+    vtkSmartPointer<vtkUnstructuredGrid> ugrid =
+        vtkSmartPointer<vtkUnstructuredGrid>::New();
+    ugrid = greader->GetOutput();
+
+    // get all points
+    mesh.nodes.resize(ugrid->GetNumberOfPoints());
+    for (unsigned i = 0; i < mesh.nodes.size(); ++i) {
+      hrleVectorType<double, 3> coords;
+      polyData->GetPoint(i, &(coords[0]));
+      mesh.nodes[i] = coords;
+    }
+
+    // get cells
+    for (unsigned i = 0; i < ugrid->GetNumberOfCells(); ++i) {
+      vtkIdList *pointList = vtkIdList::New();
+      ugrid->GetCellPoints(i, pointList);
+
+      switch (ugrid->GetCellType(i)) {
+      case 1: // vert
+        mesh.vertices.push_back(hrleVectorType<unsigned, 1>(pointList[0]));
+        break;
+      case 3: // line
+      {
+        hrleVectorType<unsigned, 2> elements;
+        for (unsigned j = 0; j < 2; ++j) {
+          elements[j] = pointList[j];
+        }
+        mesh.lines.push_back(elements);
+      } break;
+      case 5: // triangle
+      {
+        hrleVectorType<unsigned, 3> elements;
+        for (unsigned j = 0; j < 3; ++j) {
+          elements[j] = pointList[j];
+        }
+        mesh.triangles.push_back(elements);
+      } break;
+      case 10: // tetra
+      {
+        hrleVectorType<unsigned, 4> elements;
+        for (unsigned j = 0; j < 4; ++j) {
+          elements[j] = pointList[j];
+        }
+        mesh.tetras.push_back(elements);
+      } break;
+      case 12: // hexa
+      {
+        hrleVectorType<unsigned, 8> elements;
+        for (unsigned j = 0; j < 8; ++j) {
+          elements[j] = pointList[j];
+        }
+        mesh.hexas.push_back(elements);
+      } break;
+      }
+    }
+
+    // get cell data
+    vtkSmartPointer<vtkCellData> cellData = vtkSmartPointer<vtkCellData>::New();
+    cellData = ugrid->GetCellData();
+
+    for (unsigned i = 0;
+         i < static_cast<unsigned>(cellData->GetNumberOfArrays()); ++i) {
+      vtkDataArray *dataArray;
+      dataArray = cellData->GetArray(i);
+      if (cellData->GetNumberOfComponents() == 1) {
+        mesh.scalarDataLabels.push_back(std::string(cellData->GetArrayName(i)));
+        mesh.scalarData.push_back(std::vector<double>());
+        mesh.scalarData[i].resize(cellData->GetNumberOfTuples());
+        for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
+          mesh.scalarData[i][j] = dataArray->GetTuple1(j);
+        }
+      } else if (cellData->GetNumberOfComponents() == 3) {
+        mesh.vectorDataLabels.push_back(std::string(cellData->GetArrayName(i)));
+        mesh.vectorData.push_back(std::vector<hrleVectorType<double, 3>>());
+        mesh.vectorData[i].resize(cellData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
           hrleVectorType<double, 3> vector;
           dataArray->GetTuple(j, &(vector[0]));
