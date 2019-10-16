@@ -18,9 +18,6 @@
 #include <lsStencilLocalLaxFriedrichsScalar_template.hpp>
 
 // Velocity accessor
-// #include <lsMesh.hpp>
-// #include <lsToMesh_template.hpp>
-// #include <lsVTKWriter.hpp>
 #include <lsVelocityField_template.hpp>
 
 template <class T, int D> class lsAdvect {
@@ -337,7 +334,7 @@ private:
 
             // if the lower surface is actually outside, i.e. its LS value is
             // lower or equal
-            if (iterators[lowerLevelSetId].getValue() <= value) {
+            if (iterators[lowerLevelSetId].getValue() <= value + 1e-9) {
               velocity =
                   scheme(it.getStartIndices(), velocities, lowerLevelSetId);
               break;
@@ -347,9 +344,8 @@ private:
           T valueBelow;
           // get value of material below (before in levelSets list)
           if (currentLevelSetId > 0) {
-            // do not need to go to indices, since we should already be there
-            // iterators[currentLevelSetId - 1].goToIndicesSequential(
-            //     it.getStartIndices());
+            iterators[currentLevelSetId - 1].goToIndicesSequential(
+                it.getStartIndices());
             valueBelow = iterators[currentLevelSetId - 1].getValue();
           } else {
             valueBelow = std::numeric_limits<T>::max();
