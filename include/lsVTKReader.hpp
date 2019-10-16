@@ -24,7 +24,7 @@ public:
   lsVTKReader(lsMesh &passedMesh) : mesh(passedMesh) {}
 
 #ifndef VIENNALS_USE_VTK
-  void readVTP(std::string filename) {
+  void readVTP(std::string) {
     lsMessage::getInstance()
         .addWarning("ViennaLS was built without VTK support. VTK outputs not "
                     "supported.")
