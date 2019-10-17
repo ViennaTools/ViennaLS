@@ -8,6 +8,8 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -fopenmp=libomp")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 #    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Werror -fmax-errors=2")
+    # g++ needs c++17 standard for inline static constexpr variables
+    SET(CMAKE_CXX_STANDARD "17")
     FIND_PACKAGE(OpenMP REQUIRED)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall ${OpenMP_CXX_FLAGS}")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
