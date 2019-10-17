@@ -6,6 +6,7 @@
 #include <lsFromExplicitMesh.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsToExplicitMesh.hpp>
+#include <lsToVoxelMesh.hpp>
 #include <lsVTKWriter.hpp>
 
 int main() {
@@ -14,7 +15,7 @@ int main() {
 
   omp_set_num_threads(1);
 
-  double gridDelta = 0.25;
+  double gridDelta = 0.35;
 
   lsDomain_double_3 sphere1(gridDelta); //, boundaryCons);
 
@@ -28,7 +29,6 @@ int main() {
 
   std::cout << "Number of points: " << sphere1.getDomain().getNumberOfPoints()
             << std::endl;
-  std::cout << sphere1.getDomain().getMinRunBreak() << std::endl;
   lsMesh mesh;
 
   std::cout << "Expanding..." << std::endl;
@@ -44,6 +44,16 @@ int main() {
   mesh.print();
 
   lsVTKWriter(mesh).writeVTKLegacy("test-" + std::to_string(radius) + ".vtk");
+
+  // write voxelised volume mesh
+  {
+    lsMesh voxelMesh;
+    lsToVoxelMesh<double, D>(sphere1, voxelMesh).apply();
+    std::cout << "voxelMesh: " << std::endl;
+    voxelMesh.print();
+
+    lsVTKWriter(voxelMesh).writeVTU("voxelMesh.vtu");
+  }
 
   std::cout << "Reading mesh again: " << std::endl;
 

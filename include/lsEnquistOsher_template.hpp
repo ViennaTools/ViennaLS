@@ -1,7 +1,7 @@
 #ifndef LS_ENQUIST_OSHER_SV_TEMPLATE_HPP
 #define LS_ENQUIST_OSHER_SV_TEMPLATE_HPP
 
-#include <hrleCrossIterator.hpp>
+#include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
 
 #include <lsDomain_template.hpp>
@@ -12,7 +12,7 @@ namespace lsInternal {
 
 template <class T, int D, int order> class lsEnquistOsher {
   lsDomain<T, D> &levelSet;
-  hrleCrossIterator<hrleDomain<T, D>> neighborIterator;
+  hrleSparseStarIterator<hrleDomain<T, D>> neighborIterator;
   bool calculateNormalVectors = true;
 
   static T pow2(const T &value) { return value * value; }
@@ -25,8 +25,8 @@ public:
 
   lsEnquistOsher(lsDomain<T, D> &passedlsDomain, bool calcNormal = true)
       : levelSet(passedlsDomain),
-        neighborIterator(
-            hrleCrossIterator<hrleDomain<T, D>>(levelSet.getDomain(), order)),
+        neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>>(
+            levelSet.getDomain(), order)),
         calculateNormalVectors(calcNormal) {
     levelSet.calculateActivePointIds();
   }

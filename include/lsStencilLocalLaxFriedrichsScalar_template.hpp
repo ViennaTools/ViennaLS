@@ -1,7 +1,7 @@
 #ifndef LS_STENCIL_LOCAL_LACHS_FRIEDRICHS_SCALAR_TEMPLATE_HPP
 #define LS_STENCIL_LOCAL_LACHS_FRIEDRICHS_SCALAR_TEMPLATE_HPP
 
-#include <hrleSquareIterator.hpp>
+#include <hrleSparseBoxIterator.hpp>
 #include <hrleVectorType.hpp>
 
 #include <lsDomain_template.hpp>
@@ -20,7 +20,7 @@ template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
   const DifferentiationSchemeEnum finiteDifferenceScheme =
       DifferentiationSchemeEnum::FIRST_ORDER;
   // const int stencilOrder = 1;
-  hrleSquareIterator<hrleDomain<T, D>> neighborIterator;
+  hrleSparseBoxIterator<hrleDomain<T, D>> neighborIterator;
 
   // Final dissipation coefficients that are used by the time integrator. If
   // D==2 last entries are 0.
@@ -133,7 +133,7 @@ public:
       lsDomain<T, D> &passedlsDomain,
       DifferentiationSchemeEnum scheme = DifferentiationSchemeEnum::FIRST_ORDER)
       : levelSet(passedlsDomain), finiteDifferenceScheme(scheme),
-        neighborIterator(hrleSquareIterator<hrleDomain<T, D>>(
+        neighborIterator(hrleSparseBoxIterator<hrleDomain<T, D>>(
             levelSet.getDomain(), static_cast<unsigned>(scheme) + 1 + order)),
         numStencilPoints(std::pow(2 * order + 1, D)) {
     for (int i = 0; i < 3; ++i) {

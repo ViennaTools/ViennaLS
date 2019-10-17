@@ -3,7 +3,7 @@
 
 #include <algorithm>
 
-#include <hrleCrossIterator.hpp>
+#include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
 
 #include <lsDomain_template.hpp>
@@ -53,7 +53,7 @@ public:
               ? domain.getDomain().getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
-      for (hrleConstCrossIterator<typename lsDomain<T, D>::DomainType>
+      for (hrleConstSparseStarIterator<typename lsDomain<T, D>::DomainType>
                neighborIt(domain.getDomain(), startVector);
            neighborIt.getIndices() < endVector; neighborIt.next()) {
 

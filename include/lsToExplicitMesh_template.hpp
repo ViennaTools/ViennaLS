@@ -4,10 +4,11 @@
 #include <iostream>
 #include <map>
 
-#include <hrleCellIterator.hpp>
+#include <hrleSparseCellIterator.hpp>
 #include <lsDomain_template.hpp>
 #include <lsMarchingCubes.hpp>
 #include <lsMesh.hpp>
+#include <lsMessage.hpp>
 
 template <class T, int D> class lsToExplicitMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
@@ -33,9 +34,9 @@ public:
     // test if level set function consists of at least 2 layers of
     // defined grid points
     if (levelSet.getLevelSetWidth() < 2) {
-      std::cout
-          << "WARNING: Levelset is less than 2 layers wide. Export might fail!"
-          << std::endl;
+      lsMessage::getInstance()
+          .addWarning("Levelset is less than 2 layers wide. Export might fail!")
+          .print();
     }
 
     typedef typename std::map<hrleVectorType<hrleIndexType, D>, unsigned>
@@ -48,7 +49,8 @@ public:
     lsMarchingCubes marchingCubes;
 
     // iterate over all active points
-    for (hrleConstCellIterator<hrleDomainType> cellIt(levelSet.getDomain());
+    for (hrleConstSparseCellIterator<hrleDomainType> cellIt(
+             levelSet.getDomain());
          !cellIt.isFinished(); cellIt.next()) {
 
       for (int u = 0; u < D; u++) {

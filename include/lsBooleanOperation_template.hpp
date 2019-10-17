@@ -1,7 +1,7 @@
 #ifndef LS_BOOLEAN_OPERATION_TEMPLATE_HPP
 #define LS_BOOLEAN_OPERATION_TEMPLATE_HPP
 
-#include <hrleCrossIterator.hpp>
+#include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
 #include <lsDomain_template.hpp>
 
@@ -36,10 +36,10 @@ template <class T, int D> class lsBooleanOperation {
               ? newDomain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
-      hrleConstRunsIterator<hrleDomainType> itA(levelSetA.getDomain(),
-                                                currentVector);
-      hrleConstRunsIterator<hrleDomainType> itB(levelSetB.getDomain(),
-                                                currentVector);
+      hrleConstSparseIterator<hrleDomainType> itA(levelSetA.getDomain(),
+                                                  currentVector);
+      hrleConstSparseIterator<hrleDomainType> itB(levelSetB.getDomain(),
+                                                  currentVector);
 
       while (currentVector < endVector) {
 

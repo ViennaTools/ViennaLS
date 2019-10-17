@@ -1,7 +1,7 @@
 #ifndef LS_EXPAND_TEMPLATE_HPP
 #define LS_EXPAND_TEMPLATE_HPP
 
-#include <hrleCrossIterator.hpp>
+#include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
 #include <lsDomain_template.hpp>
 
@@ -56,8 +56,8 @@ public:
                 ? newDomain.getSegmentation()[p]
                 : grid.incrementIndices(grid.getMaxGridPoint());
 
-        for (hrleCrossIterator<typename lsDomain<T, D>::DomainType> neighborIt(
-                 domain, startVector);
+        for (hrleSparseStarIterator<typename lsDomain<T, D>::DomainType>
+                 neighborIt(domain, startVector);
              neighborIt.getIndices() < endVector; neighborIt.next()) {
 
           auto &centerIt = neighborIt.getCenter();

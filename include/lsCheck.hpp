@@ -4,7 +4,7 @@
 #include <ostream>
 #include <string>
 
-#include <hrleCrossIterator.hpp>
+#include <hrleSparseStarIterator.hpp>
 
 #include <lsDomain_template.hpp>
 
@@ -26,7 +26,7 @@ public:
   std::string apply() {
     std::ostringstream oss;
 
-    for (hrleCrossIterator<lsDomain<T, D>> it(levelSet); !it.isFinished();
+    for (hrleSparseStarIterator<lsDomain<T, D>> it(levelSet); !it.isFinished();
          it.next()) {
 
       if (it.getCenter().isDefined()) {

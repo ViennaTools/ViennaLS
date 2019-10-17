@@ -20,14 +20,17 @@ Releases are tagged on the maser branch and available in the [releases section](
 ### System Requirements
 
 * C++ Compiler with OpenMP support
-* ViennaHRLE
+* [ViennaHRLE](https://github.com/ViennaTools/viennahrle)
 
 ### Installing
 
-Since this is a header only project, it does not require any installation. However, we recommend the following procedure:
+Since this is a header only project, it does not require any installation.
+However, we recommend the following procedure.
+
+Make sure you have [ViennaHRLE](https://github.com/ViennaTools/viennahrle) installed on your system and run:
 
 ```
-git clone github.com/ViennaLS/ViennaLS.git
+git clone github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
 mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/

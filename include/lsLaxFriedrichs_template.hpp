@@ -1,7 +1,7 @@
 #ifndef LAX_FRIEDRICHS_SCALAR_TEMPLATE_HPP
 #define LAX_FRIEDRICHS_SCALAR_TEMPLATE_HPP
 
-#include <hrleCrossIterator.hpp>
+#include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
 
 #include <lsDomain_template.hpp>
@@ -10,7 +10,7 @@
 namespace lsInternal {
 template <class T, int D, int order> class lsLaxFriedrichs {
   lsDomain<T, D> &levelSet;
-  hrleCrossIterator<hrleDomain<T, D>> neighborIterator;
+  hrleSparseStarIterator<hrleDomain<T, D>> neighborIterator;
   bool calculateNormalVectors = true;
   // const double alpha;
 
@@ -25,8 +25,8 @@ public:
   lsLaxFriedrichs(lsDomain<T, D> &passedlsDomain,
                   bool calcNormal = true) //, double a = 0.1)
       : levelSet(passedlsDomain),
-        neighborIterator(
-            hrleCrossIterator<hrleDomain<T, D>>(levelSet.getDomain(), order)),
+        neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>>(
+            levelSet.getDomain(), order)),
         calculateNormalVectors(calcNormal) /*,
 alpha(a)*/
   {

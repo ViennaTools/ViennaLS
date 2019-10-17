@@ -8,7 +8,13 @@
 #include <lsMessage.hpp>
 
 #ifdef VIENNALS_USE_VTK
-
+#include <vtkCellData.h>
+#include <vtkIdList.h>
+#include <vtkPolyData.h>
+#include <vtkSmartPointer.h>
+#include <vtkUnstructuredGrid.h>
+#include <vtkXMLPolyDataReader.h>
+#include <vtkXMLUnstructuredGridReader.h>
 #endif // VIENNALS_USE_VTK
 
 class lsVTKReader {
@@ -20,7 +26,204 @@ class lsVTKReader {
 public:
   lsVTKReader(lsMesh &passedMesh) : mesh(passedMesh) {}
 
+#ifndef VIENNALS_USE_VTK
+  void readVTP(std::string) {
+    lsMessage::getInstance()
+        .addWarning("ViennaLS was built without VTK support. VTK outputs not "
+                    "supported.")
+        .print();
+  }
+
+  void readVTU(std::string) { readVTP(""); }
+#else
+  void readVTP(std::string filename) {
+    mesh.clear();
+    vtkSmartPointer<vtkXMLPolyDataReader> pReader =
+        vtkSmartPointer<vtkXMLPolyDataReader>::New();
+    pReader->SetFileName(filename.c_str());
+    pReader->Update();
+
+    vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
+    polyData = pReader->GetOutput();
+
+    mesh.nodes.resize(polyData->GetNumberOfPoints());
+    for (unsigned i = 0; i < mesh.nodes.size(); ++i) {
+      hrleVectorType<double, 3> coords;
+      polyData->GetPoint(i, &(coords[0]));
+      mesh.nodes[i] = coords;
+    }
+
+    vtkSmartPointer<vtkCellArray> cellArray =
+        vtkSmartPointer<vtkCellArray>::New();
+    // get vertices
+    {
+      mesh.vertices.reserve(polyData->GetNumberOfVerts());
+      cellArray = polyData->GetVerts();
+      cellArray->InitTraversal();
+      vtkIdList *pointList = vtkIdList::New();
+      while (cellArray->GetNextCell(pointList)) {
+        hrleVectorType<unsigned, 1> cell;
+        cell[0] = pointList->GetId(0);
+        mesh.vertices.push_back(cell);
+      }
+    }
+
+    // get lines
+    {
+      mesh.lines.reserve(polyData->GetNumberOfLines());
+      cellArray = polyData->GetLines();
+      cellArray->InitTraversal();
+      vtkIdList *pointList = vtkIdList::New();
+      while (cellArray->GetNextCell(pointList)) {
+        hrleVectorType<unsigned, 2> cell;
+        for (unsigned i = 0; i < 2; ++i) {
+          cell[i] = pointList->GetId(i);
+        }
+        mesh.lines.push_back(cell);
+      }
+    }
+
+    // get triangles
+    {
+      mesh.triangles.reserve(polyData->GetNumberOfPolys());
+      cellArray = polyData->GetPolys();
+      cellArray->InitTraversal();
+      vtkIdList *pointList = vtkIdList::New();
+      while (cellArray->GetNextCell(pointList)) {
+        hrleVectorType<unsigned, 3> cell;
+        for (unsigned i = 0; i < 3; ++i) {
+          cell[i] = pointList->GetId(i);
+        }
+        mesh.triangles.push_back(cell);
+      }
+    }
+
+    // get cell data
+    vtkSmartPointer<vtkCellData> cellData = vtkSmartPointer<vtkCellData>::New();
+    cellData = polyData->GetCellData();
+
+    for (unsigned i = 0;
+         i < static_cast<unsigned>(cellData->GetNumberOfArrays()); ++i) {
+      vtkDataArray *dataArray;
+      dataArray = cellData->GetArray(i);
+      if (cellData->GetNumberOfComponents() == 1) {
+        mesh.scalarDataLabels.push_back(std::string(cellData->GetArrayName(i)));
+        mesh.scalarData.push_back(std::vector<double>());
+        mesh.scalarData[i].resize(cellData->GetNumberOfTuples());
+        for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
+          mesh.scalarData[i][j] = dataArray->GetTuple1(j);
+        }
+      } else if (cellData->GetNumberOfComponents() == 3) {
+        mesh.vectorDataLabels.push_back(std::string(cellData->GetArrayName(i)));
+        mesh.vectorData.push_back(std::vector<hrleVectorType<double, 3>>());
+        mesh.vectorData[i].resize(cellData->GetNumberOfTuples());
+        for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
+          hrleVectorType<double, 3> vector;
+          dataArray->GetTuple(j, &(vector[0]));
+          mesh.vectorData[i][j] = vector;
+        }
+      }
+    }
+  }
+
+  void readVTU(std::string filename) {
+    mesh.clear();
+
+    vtkSmartPointer<vtkXMLUnstructuredGridReader> greader =
+        vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
+    greader->SetFileName(filename.c_str());
+    greader->Update();
+
+    vtkSmartPointer<vtkUnstructuredGrid> ugrid =
+        vtkSmartPointer<vtkUnstructuredGrid>::New();
+    ugrid = greader->GetOutput();
+
+    // get all points
+    mesh.nodes.resize(ugrid->GetNumberOfPoints());
+    for (unsigned i = 0; i < mesh.nodes.size(); ++i) {
+      hrleVectorType<double, 3> coords;
+      ugrid->GetPoint(i, &(coords[0]));
+      mesh.nodes[i] = coords;
+    }
+
+    // get cells
+    for (unsigned i = 0; i < ugrid->GetNumberOfCells(); ++i) {
+      vtkIdList *pointList = vtkIdList::New();
+      ugrid->GetCellPoints(i, pointList);
+
+      switch (ugrid->GetCellType(i)) {
+      case 1: // vert
+      {
+        hrleVectorType<unsigned, 1> vert;
+        vert[0] = pointList->GetId(0);
+        mesh.vertices.push_back(vert);
+      } break;
+      case 3: // line
+      {
+        hrleVectorType<unsigned, 2> elements;
+        for (unsigned j = 0; j < 2; ++j) {
+          elements[j] = pointList->GetId(j);
+        }
+        mesh.lines.push_back(elements);
+      } break;
+      case 5: // triangle
+      {
+        hrleVectorType<unsigned, 3> elements;
+        for (unsigned j = 0; j < 3; ++j) {
+          elements[j] = pointList->GetId(j);
+        }
+        mesh.triangles.push_back(elements);
+      } break;
+      case 10: // tetra
+      {
+        hrleVectorType<unsigned, 4> elements;
+        for (unsigned j = 0; j < 4; ++j) {
+          elements[j] = pointList->GetId(j);
+        }
+        mesh.tetras.push_back(elements);
+      } break;
+      case 12: // hexa
+      {
+        hrleVectorType<unsigned, 8> elements;
+        for (unsigned j = 0; j < 8; ++j) {
+          elements[j] = pointList->GetId(j);
+        }
+        mesh.hexas.push_back(elements);
+      } break;
+      }
+    }
+
+    // get cell data
+    vtkSmartPointer<vtkCellData> cellData = vtkSmartPointer<vtkCellData>::New();
+    cellData = ugrid->GetCellData();
+
+    for (unsigned i = 0;
+         i < static_cast<unsigned>(cellData->GetNumberOfArrays()); ++i) {
+      vtkDataArray *dataArray;
+      dataArray = cellData->GetArray(i);
+      if (cellData->GetNumberOfComponents() == 1) {
+        mesh.scalarDataLabels.push_back(std::string(cellData->GetArrayName(i)));
+        mesh.scalarData.push_back(std::vector<double>());
+        mesh.scalarData[i].resize(cellData->GetNumberOfTuples());
+        for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
+          mesh.scalarData[i][j] = dataArray->GetTuple1(j);
+        }
+      } else if (cellData->GetNumberOfComponents() == 3) {
+        mesh.vectorDataLabels.push_back(std::string(cellData->GetArrayName(i)));
+        mesh.vectorData.push_back(std::vector<hrleVectorType<double, 3>>());
+        mesh.vectorData[i].resize(cellData->GetNumberOfTuples());
+        for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
+          hrleVectorType<double, 3> vector;
+          dataArray->GetTuple(j, &(vector[0]));
+          mesh.vectorData[i][j] = vector;
+        }
+      }
+    }
+  }
+#endif
+
   void readVTKLegacy(std::string filename) {
+    mesh.clear();
     // open geometry file
     std::ifstream f(filename.c_str());
     if (!f)

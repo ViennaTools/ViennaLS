@@ -99,7 +99,7 @@ public:
   /// of a point at the index PointId
   void calculateActivePointIds() {
     activePointIds.clear();
-    hrleRunsIterator<hrleDomain<T, D>> it(domain);
+    hrleSparseIterator<hrleDomain<T, D>> it(domain);
     hrleSizeType currentActiveID = 0;
     for (; !it.isFinished(); ++it) {
       if (!it.isDefined())
