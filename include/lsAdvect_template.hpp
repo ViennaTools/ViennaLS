@@ -4,8 +4,8 @@
 #include <limits>
 #include <vector>
 
-#include <hrleCrossIterator.hpp>
-#include <hrleRunsIterator.hpp>
+#include <hrleSparseIterator.hpp>
+#include <hrleSparseStarIterator.hpp>
 
 #include <lsBooleanOperation_template.hpp>
 #include <lsDomain_template.hpp>
@@ -101,7 +101,7 @@ private:
               ? newDomain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
-      for (hrleCrossIterator<typename lsDomain<T, D>::DomainType> it(
+      for (hrleSparseStarIterator<typename lsDomain<T, D>::DomainType> it(
                domain, startVector);
            it.getIndices() < endVector; ++it) {
 
@@ -298,17 +298,17 @@ private:
                         double((levelSets.back())->getNumberOfSegments()));
 
       // an iterator for each level set
-      std::vector<hrleRunsIterator<typename lsDomain<T, D>::DomainType>>
+      std::vector<hrleSparseIterator<typename lsDomain<T, D>::DomainType>>
           iterators;
       for (auto it = levelSets.begin(); it != levelSets.end(); ++it) {
         iterators.push_back(
-            hrleRunsIterator<typename lsDomain<T, D>::DomainType>(
+            hrleSparseIterator<typename lsDomain<T, D>::DomainType>(
                 (*it)->getDomain()));
       }
 
       IntegrationSchemeType scheme(IntegrationScheme);
 
-      for (hrleRunsIterator<typename lsDomain<T, D>::DomainType> it(
+      for (hrleSparseIterator<typename lsDomain<T, D>::DomainType> it(
                topDomain, startVector);
            it.getStartIndices() < endVector; ++it) {
 

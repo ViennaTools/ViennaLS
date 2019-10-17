@@ -23,6 +23,20 @@ public:
   std::vector<std::vector<hrleVectorType<double, 3>>> vectorData;
   std::vector<std::string> vectorDataLabels;
 
+private:
+  // helper function for duplicate removal
+  template<class ElementType>
+  void replaceNode(ElementType &elements, std::pair<unsigned, unsigned> node){
+    for(unsigned i=0; i < elements.size(); ++i){
+      for(unsigned j=0; j < ElementType::value_type::dimension; ++j){
+        if(elements[i][j] == node.first){
+          elements[i][j] = node.second;
+        }
+      }
+    }
+  };
+
+public:
   const std::vector<hrleVectorType<double, 3>> &getNodes() const {
     return nodes;
   }
@@ -129,6 +143,39 @@ public:
     vectorDataLabels.push_back(label);
   }
 
+  void removeDuplicateNodes() {
+    std::vector<hrleVectorType<double, 3>> newNodes;
+    // can just push first point since it cannot be duplicate
+    newNodes.push_back(nodes[0]);
+    // now check for duplicates
+    // pair of oldId <-> newId
+    std::vector<std::pair<unsigned, unsigned>> duplicates;
+    bool adjusted=false;
+    for(unsigned i=1; i<nodes.size(); ++i){
+      auto it = std::find(newNodes.begin(), newNodes.end(), nodes[i]);
+      if(it != newNodes.end()){
+        adjusted = true;
+        // if duplicate point, save it to be replaced
+        unsigned nodeId = std::distance(newNodes.begin(), it);
+        duplicates.push_back(std::make_pair(i, nodeId));
+      } else {
+        if(adjusted) duplicates.push_back(std::make_pair(i, newNodes.size()));
+        newNodes.push_back(nodes[i]);
+      }
+    }
+    nodes = newNodes;
+
+    // now replace in vertices
+    // TODO also need to shift down all other nodes
+    for(unsigned i = 0; i < duplicates.size(); ++i){
+      replaceNode(vertices, duplicates[i]);
+      replaceNode(lines, duplicates[i]);
+      replaceNode(triangles, duplicates[i]);
+      replaceNode(tetras, duplicates[i]);
+      replaceNode(hexas, duplicates[i]);
+    }
+  }
+
   void clear() {
     nodes.clear();
     vertices.clear();
@@ -155,7 +202,7 @@ public:
     if (tetras.size() > 0)
       std::cout << "Number of Tetrahedrons: " << tetras.size() << std::endl;
     if (hexas.size() > 0)
-      std::cout << "Number of hexas: " << hexas.size() << std::endl;
+      std::cout << "Number of Hexas: " << hexas.size() << std::endl;
   }
 };
 

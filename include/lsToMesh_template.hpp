@@ -4,7 +4,7 @@
 #include <iostream>
 #include <map>
 
-#include <hrleRunsIterator.hpp>
+#include <hrleSparseIterator.hpp>
 #include <lsDomain_template.hpp>
 #include <lsMesh.hpp>
 
@@ -30,7 +30,7 @@ public:
     std::vector<double> scalarData;
     std::vector<double> subLS;
 
-    for (hrleConstRunsIterator<hrleDomainType> it(levelSet.getDomain());
+    for (hrleConstSparseIterator<hrleDomainType> it(levelSet.getDomain());
          !it.isFinished(); ++it) {
       if ((onlyDefined && !it.isDefined()) ||
           (onlyActive && std::abs(it.getValue()) > 0.5))

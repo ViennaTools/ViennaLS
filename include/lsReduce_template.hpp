@@ -1,4 +1,4 @@
-#include <hrleCrossIterator.hpp>
+#include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
 #include <lsDomain_template.hpp>
 
@@ -43,7 +43,7 @@ public:
               ? newDomain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
-      for (hrleRunsIterator<typename lsDomain<T, D>::DomainType> it(
+      for (hrleSparseIterator<typename lsDomain<T, D>::DomainType> it(
                domain, startVector);
            it.getStartIndices() < endVector; ++it) {
         T currentValue = it.getValue();

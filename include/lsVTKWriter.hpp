@@ -174,7 +174,7 @@ public:
     if (mesh.tetras.size() > 0) {
       for (auto it = mesh.tetras.begin(); it != mesh.tetras.end(); ++it) {
         cells->InsertNextCell(4);
-        for (unsigned i = 0; i < 3; ++i) {
+        for (unsigned i = 0; i < 4; ++i) {
           cells->InsertCellPoint((*it)[i]);
         }
         cellTypes.push_back(10); // vtk Tetra
@@ -185,7 +185,7 @@ public:
     if (mesh.hexas.size() > 0) {
       for (auto it = mesh.hexas.begin(); it != mesh.hexas.end(); ++it) {
         cells->InsertNextCell(8);
-        for (unsigned i = 0; i < 3; ++i) {
+        for (unsigned i = 0; i < 8; ++i) {
           cells->InsertCellPoint((*it)[i]);
         }
         cellTypes.push_back(12); // vtk Hexahedron
@@ -294,6 +294,18 @@ public:
       f << "CELL_TYPES " << mesh.tetras.size() << std::endl;
       for (unsigned i = 0; i < mesh.tetras.size(); ++i)
         f << 10 << std::endl;
+    } else if (!mesh.hexas.empty()) {
+      f << "CELLS " << mesh.hexas.size() << " " << 9 * mesh.hexas.size()
+        << std::endl;
+      for (unsigned int i = 0; i < mesh.hexas.size(); i++) {
+        f << 8 << " ";
+        for (int j = 0; j < 8; j++)
+          f << mesh.hexas[i][j] << " ";
+        f << std::endl;
+      }
+      f << "CELL_TYPES " << mesh.hexas.size() << std::endl;
+      for (unsigned i = 0; i < mesh.hexas.size(); ++i)
+        f << 12 << std::endl;
     }
 
     // WRITE SCALAR DATA

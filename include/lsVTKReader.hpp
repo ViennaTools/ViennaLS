@@ -9,9 +9,12 @@
 
 #ifdef VIENNALS_USE_VTK
 #include <vtkCellData.h>
+#include <vtkIdList.h>
 #include <vtkPolyData.h>
 #include <vtkSmartPointer.h>
+#include <vtkUnstructuredGrid.h>
 #include <vtkXMLPolyDataReader.h>
+#include <vtkXMLUnstructuredGridReader.h>
 #endif // VIENNALS_USE_VTK
 
 class lsVTKReader {
@@ -123,7 +126,7 @@ public:
     }
   }
 
-  void readVTU(std::string) {
+  void readVTU(std::string filename) {
     mesh.clear();
 
     vtkSmartPointer<vtkXMLUnstructuredGridReader> greader =
@@ -139,7 +142,7 @@ public:
     mesh.nodes.resize(ugrid->GetNumberOfPoints());
     for (unsigned i = 0; i < mesh.nodes.size(); ++i) {
       hrleVectorType<double, 3> coords;
-      polyData->GetPoint(i, &(coords[0]));
+      ugrid->GetPoint(i, &(coords[0]));
       mesh.nodes[i] = coords;
     }
 
@@ -150,13 +153,16 @@ public:
 
       switch (ugrid->GetCellType(i)) {
       case 1: // vert
-        mesh.vertices.push_back(hrleVectorType<unsigned, 1>(pointList[0]));
-        break;
+      {
+        hrleVectorType<unsigned, 1> vert;
+        vert[0] = pointList->GetId(0);
+        mesh.vertices.push_back(vert);
+      } break;
       case 3: // line
       {
         hrleVectorType<unsigned, 2> elements;
         for (unsigned j = 0; j < 2; ++j) {
-          elements[j] = pointList[j];
+          elements[j] = pointList->GetId(j);
         }
         mesh.lines.push_back(elements);
       } break;
@@ -164,7 +170,7 @@ public:
       {
         hrleVectorType<unsigned, 3> elements;
         for (unsigned j = 0; j < 3; ++j) {
-          elements[j] = pointList[j];
+          elements[j] = pointList->GetId(j);
         }
         mesh.triangles.push_back(elements);
       } break;
@@ -172,7 +178,7 @@ public:
       {
         hrleVectorType<unsigned, 4> elements;
         for (unsigned j = 0; j < 4; ++j) {
-          elements[j] = pointList[j];
+          elements[j] = pointList->GetId(j);
         }
         mesh.tetras.push_back(elements);
       } break;
@@ -180,7 +186,7 @@ public:
       {
         hrleVectorType<unsigned, 8> elements;
         for (unsigned j = 0; j < 8; ++j) {
-          elements[j] = pointList[j];
+          elements[j] = pointList->GetId(j);
         }
         mesh.hexas.push_back(elements);
       } break;

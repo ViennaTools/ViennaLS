@@ -51,7 +51,7 @@ int main() {
 
   // also output LS values as scalar data
   std::vector<double> scalars;
-  for (hrleConstRunsIterator<lsDomain_double_3::DomainType> it(
+  for (hrleConstSparseIterator<lsDomain_double_3::DomainType> it(
            sphere1.getDomain());
        !it.isFinished(); ++it) {
     if (!it.isDefined() || std::abs(it.getValue()) > 0.5)

@@ -1,7 +1,7 @@
 #include <iostream>
 
 // #include <lsBooleanOperation.hpp>
-#include <hrleRunsIterator.hpp>
+#include <hrleSparseIterator.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsPrune.hpp>
