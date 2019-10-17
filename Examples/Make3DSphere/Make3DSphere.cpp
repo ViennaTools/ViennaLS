@@ -6,8 +6,8 @@
 #include <lsFromExplicitMesh.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsToExplicitMesh.hpp>
-#include <lsVTKWriter.hpp>
 #include <lsToVoxelMesh.hpp>
+#include <lsVTKWriter.hpp>
 
 int main() {
 
@@ -54,7 +54,6 @@ int main() {
 
     lsVTKWriter(voxelMesh).writeVTU("voxelMesh.vtu");
   }
-
 
   std::cout << "Reading mesh again: " << std::endl;
 

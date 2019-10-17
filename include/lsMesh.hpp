@@ -25,11 +25,11 @@ public:
 
 private:
   // helper function for duplicate removal
-  template<class ElementType>
-  void replaceNode(ElementType &elements, std::pair<unsigned, unsigned> node){
-    for(unsigned i=0; i < elements.size(); ++i){
-      for(unsigned j=0; j < ElementType::value_type::dimension; ++j){
-        if(elements[i][j] == node.first){
+  template <class ElementType>
+  void replaceNode(ElementType &elements, std::pair<unsigned, unsigned> node) {
+    for (unsigned i = 0; i < elements.size(); ++i) {
+      for (unsigned j = 0; j < ElementType::value_type::dimension; ++j) {
+        if (elements[i][j] == node.first) {
           elements[i][j] = node.second;
         }
       }
@@ -150,16 +150,17 @@ public:
     // now check for duplicates
     // pair of oldId <-> newId
     std::vector<std::pair<unsigned, unsigned>> duplicates;
-    bool adjusted=false;
-    for(unsigned i=1; i<nodes.size(); ++i){
+    bool adjusted = false;
+    for (unsigned i = 1; i < nodes.size(); ++i) {
       auto it = std::find(newNodes.begin(), newNodes.end(), nodes[i]);
-      if(it != newNodes.end()){
+      if (it != newNodes.end()) {
         adjusted = true;
         // if duplicate point, save it to be replaced
         unsigned nodeId = std::distance(newNodes.begin(), it);
         duplicates.push_back(std::make_pair(i, nodeId));
       } else {
-        if(adjusted) duplicates.push_back(std::make_pair(i, newNodes.size()));
+        if (adjusted)
+          duplicates.push_back(std::make_pair(i, newNodes.size()));
         newNodes.push_back(nodes[i]);
       }
     }
@@ -167,7 +168,7 @@ public:
 
     // now replace in vertices
     // TODO also need to shift down all other nodes
-    for(unsigned i = 0; i < duplicates.size(); ++i){
+    for (unsigned i = 0; i < duplicates.size(); ++i) {
       replaceNode(vertices, duplicates[i]);
       replaceNode(lines, duplicates[i]);
       replaceNode(triangles, duplicates[i]);

@@ -40,18 +40,17 @@ public:
     allTriangles.resize(domain.getNumberOfSegments());
     allHexas.resize(domain.getNumberOfSegments());
 
-    // TODO: parallel section does not really help here, since
-    // we are memory bound --> might force single core for simplicity
-    #pragma omp parallel num_threads(domain.getNumberOfSegments())
+// TODO: parallel section does not really help here, since
+// we are memory bound --> might force single core for simplicity
+#pragma omp parallel num_threads(domain.getNumberOfSegments())
     {
       int p = 0;
-    #ifdef _OPENMP
+#ifdef _OPENMP
       p = omp_get_thread_num();
-    #endif
+#endif
 
       hrleVectorType<hrleIndexType, D> startVector =
-          (p == 0) ? minIndex
-                   : domain.getSegmentation()[p - 1];
+          (p == 0) ? minIndex : domain.getSegmentation()[p - 1];
 
       hrleVectorType<hrleIndexType, D> endVector =
           (p != static_cast<int>(domain.getNumberOfSegments() - 1))
@@ -83,8 +82,7 @@ public:
               coord[j] = levelSet.getGrid().getGridDelta() * index[j];
             }
             voxel[i] = std::distance(
-                nodes.begin(),
-                std::find(nodes.begin(), nodes.end(), coord));
+                nodes.begin(), std::find(nodes.begin(), nodes.end(), coord));
             if (voxel[i] == nodes.size()) {
               nodes.push_back(coord);
             }
@@ -108,31 +106,33 @@ public:
     unsigned offset = 0;
     unsigned numberOfTriangles = 0;
     unsigned numberOfHexas = 0;
-    for(unsigned i = 0; i < domain.getNumberOfSegments(); ++i){
+    for (unsigned i = 0; i < domain.getNumberOfSegments(); ++i) {
       numberOfTriangles += allTriangles[i].size();
       numberOfHexas += allHexas[i].size();
     }
     mesh.triangles.reserve(numberOfTriangles);
     mesh.hexas.reserve(numberOfHexas);
 
-    for(unsigned i=0; i<domain.getNumberOfSegments(); ++i){
-      mesh.nodes.insert(mesh.nodes.end(), allNodes[i].begin(), allNodes[i].end());
+    for (unsigned i = 0; i < domain.getNumberOfSegments(); ++i) {
+      mesh.nodes.insert(mesh.nodes.end(), allNodes[i].begin(),
+                        allNodes[i].end());
 
       hrleVectorType<unsigned, 3> tOffset(offset);
       hrleVectorType<unsigned, 8> hOffset(offset);
-      for(unsigned j = 0; j < allTriangles[i].size(); ++j){
+      for (unsigned j = 0; j < allTriangles[i].size(); ++j) {
         mesh.triangles.push_back(allTriangles[i][j] + tOffset);
       }
-      for(unsigned j = 0; j < allHexas[i].size(); ++j){
+      for (unsigned j = 0; j < allHexas[i].size(); ++j) {
         mesh.hexas.push_back(allHexas[i][j] + hOffset);
       }
-      // mesh.triangles.insert(mesh.triangles.end(), allTriangles[i].begin(), allTriangles[i].end());
-      // mesh.hexas.insert(mesh.hexas.end(), allHexas[i].begin(), allHexas[i].end());
+      // mesh.triangles.insert(mesh.triangles.end(), allTriangles[i].begin(),
+      // allTriangles[i].end()); mesh.hexas.insert(mesh.hexas.end(),
+      // allHexas[i].begin(), allHexas[i].end());
       offset += allNodes[i].size();
     }
 
     // now need to get rid of duplicate nodes
-    if(domain.getNumberOfSegments()>1)
+    if (domain.getNumberOfSegments() > 1)
       mesh.removeDuplicateNodes();
   }
 };
