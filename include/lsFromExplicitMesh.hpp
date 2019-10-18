@@ -1,9 +1,11 @@
-#ifndef LS_FROM_EXPLICIT_MESH_TEMPLATE_HPP
-#define LS_FROM_EXPLICIT_MESH_TEMPLATE_HPP
+#ifndef LS_FROM_EXPLICIT_MESH_HPP
+#define LS_FROM_EXPLICIT_MESH_HPP
+
+#include <lsPreCompileMacros.hpp>
 
 #include <hrleIndexType.hpp>
 
-#include <lsDomain_template.hpp>
+#include <lsDomain.hpp>
 #include <lsMesh.hpp>
 
 template <class T, int D> class lsFromExplicitMesh {
@@ -404,4 +406,7 @@ public:
   }
 };
 
-#endif // LS_FROM_EXPLICIT_MESH_TEMPLATE_HPP
+// add all template specialisations for this class
+PRECOMPILE_PRECISION_DIMENSION(lsFromExplicitMesh)
+
+#endif // LS_FROM_EXPLICIT_MESH_HPP

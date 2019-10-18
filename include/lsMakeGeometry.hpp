@@ -1,11 +1,13 @@
-#ifndef LS_MAKE_GEOMETRY_TEMPLATE_HPP
-#define LS_MAKE_GEOMETRY_TEMPLATE_HPP
+#ifndef LS_MAKE_GEOMETRY_HPP
+#define LS_MAKE_GEOMETRY_HPP
+
+#include <lsPreCompileMacros.hpp>
 
 #include <hrleIndexType.hpp>
 #include <hrleVectorType.hpp>
 
-#include <lsDomain_template.hpp>
-#include <lsFromExplicitMesh_template.hpp>
+#include <lsDomain.hpp>
+#include <lsFromExplicitMesh.hpp>
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
 
@@ -240,4 +242,7 @@ public:
   }
 };
 
-#endif // LS_MAKE_GEOMETRY_TEMPLATE_HPP
+// add all template specialisations for this class
+PRECOMPILE_PRECISION_DIMENSION(lsMakeGeometry)
+
+#endif // LS_MAKE_GEOMETRY_HPP

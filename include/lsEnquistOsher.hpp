@@ -1,18 +1,19 @@
-#ifndef LAX_FRIEDRICHS_SCALAR_TEMPLATE_HPP
-#define LAX_FRIEDRICHS_SCALAR_TEMPLATE_HPP
+#ifndef LS_ENQUIST_OSHER_SV_HPP
+#define LS_ENQUIST_OSHER_SV_HPP
 
 #include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
 
-#include <lsDomain_template.hpp>
-#include <lsExpand_template.hpp>
+#include <lsDomain.hpp>
+#include <lsExpand.hpp>
+#include <lsVelocityField.hpp>
 
 namespace lsInternal {
-template <class T, int D, int order> class lsLaxFriedrichs {
+
+template <class T, int D, int order> class lsEnquistOsher {
   lsDomain<T, D> &levelSet;
   hrleSparseStarIterator<hrleDomain<T, D>> neighborIterator;
   bool calculateNormalVectors = true;
-  // const double alpha;
 
   static T pow2(const T &value) { return value * value; }
 
@@ -22,20 +23,16 @@ public:
     lsExpand<T, D>(passedlsDomain).apply(2 * order + 1);
   }
 
-  lsLaxFriedrichs(lsDomain<T, D> &passedlsDomain,
-                  bool calcNormal = true) //, double a = 0.1)
+  lsEnquistOsher(lsDomain<T, D> &passedlsDomain, bool calcNormal = true)
       : levelSet(passedlsDomain),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>>(
             levelSet.getDomain(), order)),
-        calculateNormalVectors(calcNormal) /*,
-alpha(a)*/
-  {
+        calculateNormalVectors(calcNormal) {
     levelSet.calculateActivePointIds();
   }
 
   T operator()(const hrleVectorType<hrleIndexType, D> &indices,
                lsVelocityField<T> *velocities, int material) {
-
     auto &grid = levelSet.getGrid();
     double gridDelta = grid.getGridDelta();
 
@@ -50,14 +47,10 @@ alpha(a)*/
     T gradPos[D];
     T gradNeg[D];
 
-    T grad = 0.;
-    T dissipation = 0.;
+    T gradPosTotal = 0;
+    T gradNegTotal = 0;
 
-    hrleVectorType<T, D> normal;
-    T modulus = 0;
-
-    for (int i = 0; i < D; i++) { // iterate over dimensions
-
+    for (int i = 0; i < D; i++) {
       const T deltaPos = gridDelta;
       const T deltaNeg = -gridDelta;
 
@@ -72,15 +65,15 @@ alpha(a)*/
         const T deltaPosPos = 2 * gridDelta;
         const T deltaNegNeg = -2 * gridDelta;
 
-        const T diff00 =
-            (((deltaNeg * phiPos - deltaPos * phiNeg) / (deltaPos - deltaNeg) +
-              phi0)) /
-            (deltaPos * deltaNeg);
         const T phiPosPos =
             neighborIterator.getNeighbor((D * order) + i).getValue();
         const T phiNegNeg =
             neighborIterator.getNeighbor((D * order) + D + i).getValue();
 
+        const T diff00 =
+            (((deltaNeg * phiPos - deltaPos * phiNeg) / (deltaPos - deltaNeg) +
+              phi0)) /
+            (deltaPos * deltaNeg);
         const T diffNegNeg = (((deltaNeg * phiNegNeg - deltaNegNeg * phiNeg) /
                                    (deltaNegNeg - deltaNeg) +
                                phi0)) /
@@ -110,12 +103,13 @@ alpha(a)*/
       gradPos[i] = diffNeg;
       gradNeg[i] = diffPos;
 
-      normal[i] = (diffNeg + diffPos) * 0.5;
-      modulus += normal[i] * normal[i];
-
-      grad += pow2((diffNeg + diffPos) * 0.5);
-      dissipation += (diffPos - diffNeg) * 0.5;
+      gradPosTotal +=
+          pow2(std::max(diffNeg, T(0))) + pow2(std::min(diffPos, T(0)));
+      gradNegTotal +=
+          pow2(std::min(diffNeg, T(0))) + pow2(std::max(diffPos, T(0)));
     }
+
+    T vel_grad = 0.;
 
     // Calculate normal vector for velocity calculation
     hrleVectorType<T, 3> normalVector(T(0));
@@ -140,29 +134,24 @@ alpha(a)*/
     hrleVectorType<T, 3> vectorVelocity =
         velocities->getVectorVelocity(coordinate, material, normalVector);
 
-    T alpha = 0;
-    modulus = std::sqrt(modulus);
-    for (unsigned i = 0; i < D; ++i) {
-      alpha += std::abs(scalarVelocity * normal[i] / modulus);
-    }
-
-    T totalGrad = 0.;
-
-    if (scalarVelocity != 0.) {
-      totalGrad = scalarVelocity * std::sqrt(grad);
+    if (scalarVelocity > 0) {
+      vel_grad += std::sqrt(gradPosTotal) * scalarVelocity;
+    } else {
+      vel_grad += std::sqrt(gradNegTotal) * scalarVelocity;
     }
 
     for (int w = 0; w < D; w++) {
       if (vectorVelocity[w] > 0.) {
-        totalGrad += vectorVelocity[w] * gradPos[w];
+        vel_grad += vectorVelocity[w] * gradPos[w];
       } else {
-        totalGrad += vectorVelocity[w] * gradNeg[w];
+        vel_grad += vectorVelocity[w] * gradNeg[w];
       }
     }
 
-    return totalGrad - ((totalGrad != 0.) ? dissipation : 0);
+    return vel_grad;
   }
 };
+
 } // namespace lsInternal
 
-#endif // LAX_FRIEDRICHS_SCALAR_TEMPLATE_HPP
+#endif // LS_ENQUIST_OSHER_SV_HPP

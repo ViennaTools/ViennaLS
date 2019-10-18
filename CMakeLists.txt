@@ -36,7 +36,7 @@ if(VIENNALS_BUILD_SHARED_LIBS)
   # add all specialisation source files
   set(ViennaHRLE_DIR $ENV{VIENNAHRLE_DIR})
   find_package(ViennaHRLE REQUIRED)
-  file(GLOB SPECIALISATION_CPPS "specialisations/*.cpp")
+  file(GLOB SPECIALISATION_CPPS "lib/*.cpp")
   add_library(${PROJECT_NAME} SHARED ${SPECIALISATION_CPPS})
   target_link_libraries(${PROJECT_NAME} ViennaHRLE)
   target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/include/")
@@ -51,7 +51,7 @@ set(LOCAL_CONFIG_DIR "lib/cmake/${PROJECT_NAME}-${PROJECT_VERSION}")
 
 # Adding the install interface generator expression makes sure that the include
 # files are installed to the proper location (provided by GNUInstallDirs)
-set(VIENNALS_BUILD_INCLUDE_DIRS "${${PROJECT_NAME}_SOURCE_DIR}/include" "${${PROJECT_NAME}_SOURCE_DIR}/specialisations")
+set(VIENNALS_BUILD_INCLUDE_DIRS "${${PROJECT_NAME}_SOURCE_DIR}/include")
 target_include_directories(
   ${PROJECT_NAME}
   INTERFACE $<BUILD_INTERFACE:${VIENNALS_BUILD_INCLUDE_DIRS}>
@@ -106,6 +106,4 @@ install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
 
 # install include files
 file(GLOB_RECURSE HEADER_FILES "${PROJECT_SOURCE_DIR}/include/*.hpp")
-install(FILES ${HEADER_FILES} DESTINATION include)
-file(GLOB_RECURSE HEADER_FILES "${PROJECT_SOURCE_DIR}/specialisations/*.hpp")
 install(FILES ${HEADER_FILES} DESTINATION include)

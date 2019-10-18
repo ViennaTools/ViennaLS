@@ -1,9 +1,11 @@
-#ifndef LS_EXPAND_TEMPLATE_HPP
-#define LS_EXPAND_TEMPLATE_HPP
+#ifndef LS_EXPAND_HPP
+#define LS_EXPAND_HPP
+
+#include <lsPreCompileMacros.hpp>
 
 #include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
-#include <lsDomain_template.hpp>
+#include <lsDomain.hpp>
 
 template <class T, int D> class lsExpand {
   typedef typename lsDomain<T, D>::GridType GridType;
@@ -105,4 +107,7 @@ public:
   }
 };
 
-#endif // LS_EXPAND_TEMPLATE_HPP
+// add all template specialisations for this class
+PRECOMPILE_PRECISION_DIMENSION(lsExpand)
+
+#endif // LS_EXPAND_HPP

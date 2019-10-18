@@ -1,9 +1,11 @@
-#ifndef LS_BOOLEAN_OPERATION_TEMPLATE_HPP
-#define LS_BOOLEAN_OPERATION_TEMPLATE_HPP
+#ifndef LS_BOOLEAN_OPERATION_HPP
+#define LS_BOOLEAN_OPERATION_HPP
+
+#include <lsPreCompileMacros.hpp>
 
 #include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
-#include <lsDomain_template.hpp>
+#include <lsDomain.hpp>
 
 template <class T, int D> class lsBooleanOperation {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
@@ -164,4 +166,7 @@ public:
   void NOT() { invert(); }
 };
 
-#endif // LS_BOOLEAN_OPERATION_TEMPLATE_HPP
+// add all template specialisations for this class
+PRECOMPILE_PRECISION_DIMENSION(lsBooleanOperation)
+
+#endif // LS_BOOLEAN_OPERATION_HPP

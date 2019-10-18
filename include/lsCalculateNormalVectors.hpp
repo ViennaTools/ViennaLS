@@ -1,12 +1,14 @@
-#ifndef LS_CALCULATE_NORMAL_VECTORS_TEMPLATE_HPP
-#define LS_CALCULATE_NORMAL_VECTORS_TEMPLATE_HPP
+#ifndef LS_CALCULATE_NORMAL_VECTORS_HPP
+#define LS_CALCULATE_NORMAL_VECTORS_HPP
+
+#include <lsPreCompileMacros.hpp>
 
 #include <algorithm>
 
 #include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
 
-#include <lsDomain_template.hpp>
+#include <lsDomain.hpp>
 
 /// This algorithm is used to find the normal vectors for all points
 /// with an and LS value less than 0.5 and only thos points.
@@ -97,4 +99,7 @@ public:
   }
 };
 
-#endif // LS_CALCULATE_NORMAL_VECTORS_TEMPLATE_HPP
+// add all template specialisations for this class
+PRECOMPILE_PRECISION_DIMENSION(lsCalculateNormalVectors)
+
+#endif // LS_CALCULATE_NORMAL_VECTORS_HPP

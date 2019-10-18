@@ -1,11 +1,13 @@
-#ifndef LS_TO_MESH_TEMPLATE_HPP
-#define LS_TO_MESH_TEMPLATE_HPP
+#ifndef LS_TO_MESH_HPP
+#define LS_TO_MESH_HPP
+
+#include <lsPreCompileMacros.hpp>
 
 #include <iostream>
 #include <map>
 
 #include <hrleSparseIterator.hpp>
-#include <lsDomain_template.hpp>
+#include <lsDomain.hpp>
 #include <lsMesh.hpp>
 
 template <class T, int D> class lsToMesh {
@@ -60,4 +62,7 @@ public:
   }
 };
 
-#endif // LS_TO_MESH_TEMPLATE_HPP
+// add all template specialisations for this class
+PRECOMPILE_PRECISION_DIMENSION(lsToMesh)
+
+#endif // LS_TO_MESH_HPP
