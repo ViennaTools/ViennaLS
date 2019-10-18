@@ -1,0 +1,98 @@
+\hypertarget{classlsMakeGeometry}{}\doxysection{ls\+Make\+Geometry$<$ T, D $>$ Class Template Reference}
+\label{classlsMakeGeometry}\index{lsMakeGeometry$<$ T, D $>$@{lsMakeGeometry$<$ T, D $>$}}
+
+
+{\ttfamily \#include $<$ls\+Make\+Geometry\+\_\+template.\+hpp$>$}
+
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classlsMakeGeometry_a064523d1b8660487b81d3b698be005c9}{ls\+Make\+Geometry}} (\mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$ \&passed\+Level\+Set)
+\item 
+{\footnotesize template$<$class V $>$ }\\void \mbox{\hyperlink{classlsMakeGeometry_afea6c25a49fc885ba7fb6d8f7ef60fcf}{make\+Sphere}} (V origin, T radius, int width=2)
+\item 
+{\footnotesize template$<$class V $>$ }\\void \mbox{\hyperlink{classlsMakeGeometry_a600341fe66ef2fe7d7c72735802453e2}{make\+Plane}} (const V origin, const V passed\+Normal)
+\item 
+{\footnotesize template$<$class V $>$ }\\void \mbox{\hyperlink{classlsMakeGeometry_ab78ce4f47b96b4c33ba5ebe72d155e1c}{make\+Box}} (V min\+Corner, V max\+Corner)
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Types}
+\begin{DoxyCompactItemize}
+\item 
+typedef \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::Point\+Value\+Vector\+Type \mbox{\hyperlink{classlsMakeGeometry_a04724ebb89a2a7d1f96221cc1e63506e}{point\+Data\+Type}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$ \& \mbox{\hyperlink{classlsMakeGeometry_aed06c76d5600bc85182634ee76caa18a}{level\+Set}}
+\item 
+const double \mbox{\hyperlink{classlsMakeGeometry_ae5d971acfd70f74a38830bf7c1884598}{numeric\+Eps}} = 1e-\/9
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Member Typedef Documentation}
+\mbox{\Hypertarget{classlsMakeGeometry_a04724ebb89a2a7d1f96221cc1e63506e}\label{classlsMakeGeometry_a04724ebb89a2a7d1f96221cc1e63506e}} 
+\index{lsMakeGeometry$<$ T, D $>$@{lsMakeGeometry$<$ T, D $>$}!pointDataType@{pointDataType}}
+\index{pointDataType@{pointDataType}!lsMakeGeometry$<$ T, D $>$@{lsMakeGeometry$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{pointDataType}{pointDataType}}
+{\footnotesize\ttfamily template$<$class T , int D$>$ \\
+typedef \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$T, D$>$\+::Point\+Value\+Vector\+Type \mbox{\hyperlink{classlsMakeGeometry}{ls\+Make\+Geometry}}$<$ T, D $>$\+::\mbox{\hyperlink{classlsMakeGeometry_a04724ebb89a2a7d1f96221cc1e63506e}{point\+Data\+Type}}\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classlsMakeGeometry_a064523d1b8660487b81d3b698be005c9}\label{classlsMakeGeometry_a064523d1b8660487b81d3b698be005c9}} 
+\index{lsMakeGeometry$<$ T, D $>$@{lsMakeGeometry$<$ T, D $>$}!lsMakeGeometry@{lsMakeGeometry}}
+\index{lsMakeGeometry@{lsMakeGeometry}!lsMakeGeometry$<$ T, D $>$@{lsMakeGeometry$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{lsMakeGeometry()}{lsMakeGeometry()}}
+{\footnotesize\ttfamily template$<$class T , int D$>$ \\
+\mbox{\hyperlink{classlsMakeGeometry}{ls\+Make\+Geometry}}$<$ T, D $>$\+::\mbox{\hyperlink{classlsMakeGeometry}{ls\+Make\+Geometry}} (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$ \&}]{passed\+Level\+Set }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classlsMakeGeometry_ab78ce4f47b96b4c33ba5ebe72d155e1c}\label{classlsMakeGeometry_ab78ce4f47b96b4c33ba5ebe72d155e1c}} 
+\index{lsMakeGeometry$<$ T, D $>$@{lsMakeGeometry$<$ T, D $>$}!makeBox@{makeBox}}
+\index{makeBox@{makeBox}!lsMakeGeometry$<$ T, D $>$@{lsMakeGeometry$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{makeBox()}{makeBox()}}
+{\footnotesize\ttfamily template$<$class T , int D$>$ \\
+template$<$class V $>$ \\
+void \mbox{\hyperlink{classlsMakeGeometry}{ls\+Make\+Geometry}}$<$ T, D $>$\+::make\+Box (\begin{DoxyParamCaption}\item[{V}]{min\+Corner,  }\item[{V}]{max\+Corner }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMakeGeometry_a600341fe66ef2fe7d7c72735802453e2}\label{classlsMakeGeometry_a600341fe66ef2fe7d7c72735802453e2}} 
+\index{lsMakeGeometry$<$ T, D $>$@{lsMakeGeometry$<$ T, D $>$}!makePlane@{makePlane}}
+\index{makePlane@{makePlane}!lsMakeGeometry$<$ T, D $>$@{lsMakeGeometry$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{makePlane()}{makePlane()}}
+{\footnotesize\ttfamily template$<$class T , int D$>$ \\
+template$<$class V $>$ \\
+void \mbox{\hyperlink{classlsMakeGeometry}{ls\+Make\+Geometry}}$<$ T, D $>$\+::make\+Plane (\begin{DoxyParamCaption}\item[{const V}]{origin,  }\item[{const V}]{passed\+Normal }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+Creates a plane containing the point origin, with the plane normal given by normal \mbox{\Hypertarget{classlsMakeGeometry_afea6c25a49fc885ba7fb6d8f7ef60fcf}\label{classlsMakeGeometry_afea6c25a49fc885ba7fb6d8f7ef60fcf}} 
+\index{lsMakeGeometry$<$ T, D $>$@{lsMakeGeometry$<$ T, D $>$}!makeSphere@{makeSphere}}
+\index{makeSphere@{makeSphere}!lsMakeGeometry$<$ T, D $>$@{lsMakeGeometry$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{makeSphere()}{makeSphere()}}
+{\footnotesize\ttfamily template$<$class T , int D$>$ \\
+template$<$class V $>$ \\
+void \mbox{\hyperlink{classlsMakeGeometry}{ls\+Make\+Geometry}}$<$ T, D $>$\+::make\+Sphere (\begin{DoxyParamCaption}\item[{V}]{origin,  }\item[{T}]{radius,  }\item[{int}]{width = {\ttfamily 2} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classlsMakeGeometry_aed06c76d5600bc85182634ee76caa18a}\label{classlsMakeGeometry_aed06c76d5600bc85182634ee76caa18a}} 
+\index{lsMakeGeometry$<$ T, D $>$@{lsMakeGeometry$<$ T, D $>$}!levelSet@{levelSet}}
+\index{levelSet@{levelSet}!lsMakeGeometry$<$ T, D $>$@{lsMakeGeometry$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{levelSet}{levelSet}}
+{\footnotesize\ttfamily template$<$class T , int D$>$ \\
+\mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$T, D$>$\& \mbox{\hyperlink{classlsMakeGeometry}{ls\+Make\+Geometry}}$<$ T, D $>$\+::level\+Set\hspace{0.3cm}{\ttfamily [private]}}
+
+\mbox{\Hypertarget{classlsMakeGeometry_ae5d971acfd70f74a38830bf7c1884598}\label{classlsMakeGeometry_ae5d971acfd70f74a38830bf7c1884598}} 
+\index{lsMakeGeometry$<$ T, D $>$@{lsMakeGeometry$<$ T, D $>$}!numericEps@{numericEps}}
+\index{numericEps@{numericEps}!lsMakeGeometry$<$ T, D $>$@{lsMakeGeometry$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{numericEps}{numericEps}}
+{\footnotesize\ttfamily template$<$class T , int D$>$ \\
+const double \mbox{\hyperlink{classlsMakeGeometry}{ls\+Make\+Geometry}}$<$ T, D $>$\+::numeric\+Eps = 1e-\/9\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+/home/klemenschits/\+Code/\+Vienna\+L\+S/include/\mbox{\hyperlink{lsMakeGeometry__template_8hpp}{ls\+Make\+Geometry\+\_\+template.\+hpp}}\end{DoxyCompactItemize}

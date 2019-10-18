@@ -1,0 +1,182 @@
+\hypertarget{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar}{}\doxysection{ls\+Internal\+::ls\+Stencil\+Local\+Lax\+Friedrichs\+Scalar$<$ T, D, order $>$ Class Template Reference}
+\label{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar}\index{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}}
+
+
+{\ttfamily \#include $<$ls\+Stencil\+Local\+Lax\+Friedrichs\+Scalar\+\_\+template.\+hpp$>$}
+
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+const hrle\+Vector\+Type$<$ T, 3 $>$ \& \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a038135c7444d659518728c2b461fa653}{get\+Final\+Alphas}} () const
+\item 
+const hrle\+Vector\+Type$<$ T, 3 $>$ \& \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_aafcd14083177877a2f0083d5c2c956bb}{get\+Deltas}} () const
+\item 
+\mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_ab9c42199b6bc89d54a12011615ba06b4}{ls\+Stencil\+Local\+Lax\+Friedrichs\+Scalar}} (\mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$ \&passedls\+Domain, \mbox{\hyperlink{namespacelsInternal_a1197c9bc5d272ab73e76ebc2d4ab05a7}{Differentiation\+Scheme\+Enum}} scheme=\mbox{\hyperlink{namespacelsInternal_a1197c9bc5d272ab73e76ebc2d4ab05a7a381be4beabc209c2c0999eabbfcaa16b}{Differentiation\+Scheme\+Enum\+::\+F\+I\+R\+S\+T\+\_\+\+O\+R\+D\+ER}})
+\item 
+T \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a3cf6479ea196259d019a7531b7b7e8c9}{operator()}} (const hrle\+Vector\+Type$<$ hrle\+Index\+Type, D $>$ \&indices, \mbox{\hyperlink{classlsVelocityField}{ls\+Velocity\+Field}}$<$ T $>$ $\ast$velocities, int material)
+\end{DoxyCompactItemize}
+\doxysubsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+static void \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_ad44ce5b4e464f30374cba26195ab26e6}{prepare\+LS}} (\mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$ \&passedls\+Domain)
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+hrle\+Vector\+Type$<$ T, D $>$ \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a34c66b14595ef104124b99be9acbff8f}{calculate\+Normal}} (const hrle\+Vector\+Type$<$ hrle\+Index\+Type, D $>$ \&offset)
+\item 
+hrle\+Vector\+Type$<$ T, D $>$ \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a3779834d36da89b75993552e1b097087}{calculate\+Gradient}} (const hrle\+Vector\+Type$<$ hrle\+Index\+Type, D $>$ \&offset)
+\item 
+hrle\+Vector\+Type$<$ T, D $>$ \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a182e0f2084a4e91bac2f0ce402f0413a}{calculate\+Gradient\+Diff}} ()
+\end{DoxyCompactItemize}
+\doxysubsection*{Static Private Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+static T \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_ae7c2d2e6bb97bf4ec593d720122153a0}{pow2}} (const T \&value)
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$ \& \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_aa1d10d75d48555df4ff3069c98fcfe6e}{level\+Set}}
+\item 
+const \mbox{\hyperlink{namespacelsInternal_a1197c9bc5d272ab73e76ebc2d4ab05a7}{Differentiation\+Scheme\+Enum}} \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a8be26f0265d3e4ec1390a7ca1d704850}{finite\+Difference\+Scheme}}
+\item 
+hrle\+Sparse\+Box\+Iterator$<$ hrle\+Domain$<$ T, D $>$ $>$ \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a058c360aba0fba3757f04a7dd6629c9d}{neighbor\+Iterator}}
+\item 
+hrle\+Vector\+Type$<$ T, 3 $>$ \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a306609e2490ad8af626692cb6d46708b}{final\+Alphas}}
+\item 
+hrle\+Vector\+Type$<$ T, 3 $>$ \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a36451fffb83c46bd48eeb563f9ca7059}{grid\+Deltas}}
+\item 
+const unsigned \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a0b72b8344c245cc94b6a27b599c4884f}{num\+Stencil\+Points}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\subsubsection*{template$<$class T, int D, int order$>$\newline
+class ls\+Internal\+::ls\+Stencil\+Local\+Lax\+Friedrichs\+Scalar$<$ T, D, order $>$}
+
+Stencil Local Lax Friedrichs Integration Scheme. It uses a stencil of order around active points, in order to evaluate dissipation values for each point, taking into account the mathematical nature of the speed function. see Toifl et al., 2019. I\+S\+BN\+: 978-\/1-\/7281-\/0938-\/1 
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_ab9c42199b6bc89d54a12011615ba06b4}\label{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_ab9c42199b6bc89d54a12011615ba06b4}} 
+\index{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}!lsStencilLocalLaxFriedrichsScalar@{lsStencilLocalLaxFriedrichsScalar}}
+\index{lsStencilLocalLaxFriedrichsScalar@{lsStencilLocalLaxFriedrichsScalar}!lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}}
+\doxysubsubsection{\texorpdfstring{lsStencilLocalLaxFriedrichsScalar()}{lsStencilLocalLaxFriedrichsScalar()}}
+{\footnotesize\ttfamily template$<$class T , int D, int order$>$ \\
+\mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar}{ls\+Internal\+::ls\+Stencil\+Local\+Lax\+Friedrichs\+Scalar}}$<$ T, D, order $>$\+::\mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar}{ls\+Stencil\+Local\+Lax\+Friedrichs\+Scalar}} (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$ \&}]{passedls\+Domain,  }\item[{\mbox{\hyperlink{namespacelsInternal_a1197c9bc5d272ab73e76ebc2d4ab05a7}{Differentiation\+Scheme\+Enum}}}]{scheme = {\ttfamily \mbox{\hyperlink{namespacelsInternal_a1197c9bc5d272ab73e76ebc2d4ab05a7a381be4beabc209c2c0999eabbfcaa16b}{Differentiation\+Scheme\+Enum\+::\+F\+I\+R\+S\+T\+\_\+\+O\+R\+D\+ER}}} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a3779834d36da89b75993552e1b097087}\label{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a3779834d36da89b75993552e1b097087}} 
+\index{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}!calculateGradient@{calculateGradient}}
+\index{calculateGradient@{calculateGradient}!lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}}
+\doxysubsubsection{\texorpdfstring{calculateGradient()}{calculateGradient()}}
+{\footnotesize\ttfamily template$<$class T , int D, int order$>$ \\
+hrle\+Vector\+Type$<$T, D$>$ \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar}{ls\+Internal\+::ls\+Stencil\+Local\+Lax\+Friedrichs\+Scalar}}$<$ T, D, order $>$\+::calculate\+Gradient (\begin{DoxyParamCaption}\item[{const hrle\+Vector\+Type$<$ hrle\+Index\+Type, D $>$ \&}]{offset }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [private]}}
+
+\mbox{\Hypertarget{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a182e0f2084a4e91bac2f0ce402f0413a}\label{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a182e0f2084a4e91bac2f0ce402f0413a}} 
+\index{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}!calculateGradientDiff@{calculateGradientDiff}}
+\index{calculateGradientDiff@{calculateGradientDiff}!lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}}
+\doxysubsubsection{\texorpdfstring{calculateGradientDiff()}{calculateGradientDiff()}}
+{\footnotesize\ttfamily template$<$class T , int D, int order$>$ \\
+hrle\+Vector\+Type$<$T, D$>$ \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar}{ls\+Internal\+::ls\+Stencil\+Local\+Lax\+Friedrichs\+Scalar}}$<$ T, D, order $>$\+::calculate\+Gradient\+Diff (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [private]}}
+
+\mbox{\Hypertarget{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a34c66b14595ef104124b99be9acbff8f}\label{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a34c66b14595ef104124b99be9acbff8f}} 
+\index{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}!calculateNormal@{calculateNormal}}
+\index{calculateNormal@{calculateNormal}!lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}}
+\doxysubsubsection{\texorpdfstring{calculateNormal()}{calculateNormal()}}
+{\footnotesize\ttfamily template$<$class T , int D, int order$>$ \\
+hrle\+Vector\+Type$<$T, D$>$ \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar}{ls\+Internal\+::ls\+Stencil\+Local\+Lax\+Friedrichs\+Scalar}}$<$ T, D, order $>$\+::calculate\+Normal (\begin{DoxyParamCaption}\item[{const hrle\+Vector\+Type$<$ hrle\+Index\+Type, D $>$ \&}]{offset }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [private]}}
+
+\mbox{\Hypertarget{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_aafcd14083177877a2f0083d5c2c956bb}\label{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_aafcd14083177877a2f0083d5c2c956bb}} 
+\index{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}!getDeltas@{getDeltas}}
+\index{getDeltas@{getDeltas}!lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}}
+\doxysubsubsection{\texorpdfstring{getDeltas()}{getDeltas()}}
+{\footnotesize\ttfamily template$<$class T , int D, int order$>$ \\
+const hrle\+Vector\+Type$<$T, 3$>$\& \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar}{ls\+Internal\+::ls\+Stencil\+Local\+Lax\+Friedrichs\+Scalar}}$<$ T, D, order $>$\+::get\+Deltas (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a038135c7444d659518728c2b461fa653}\label{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a038135c7444d659518728c2b461fa653}} 
+\index{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}!getFinalAlphas@{getFinalAlphas}}
+\index{getFinalAlphas@{getFinalAlphas}!lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}}
+\doxysubsubsection{\texorpdfstring{getFinalAlphas()}{getFinalAlphas()}}
+{\footnotesize\ttfamily template$<$class T , int D, int order$>$ \\
+const hrle\+Vector\+Type$<$T, 3$>$\& \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar}{ls\+Internal\+::ls\+Stencil\+Local\+Lax\+Friedrichs\+Scalar}}$<$ T, D, order $>$\+::get\+Final\+Alphas (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a3cf6479ea196259d019a7531b7b7e8c9}\label{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a3cf6479ea196259d019a7531b7b7e8c9}} 
+\index{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}!operator()@{operator()}}
+\index{operator()@{operator()}!lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}}
+\doxysubsubsection{\texorpdfstring{operator()()}{operator()()}}
+{\footnotesize\ttfamily template$<$class T , int D, int order$>$ \\
+T \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar}{ls\+Internal\+::ls\+Stencil\+Local\+Lax\+Friedrichs\+Scalar}}$<$ T, D, order $>$\+::operator() (\begin{DoxyParamCaption}\item[{const hrle\+Vector\+Type$<$ hrle\+Index\+Type, D $>$ \&}]{indices,  }\item[{\mbox{\hyperlink{classlsVelocityField}{ls\+Velocity\+Field}}$<$ T $>$ $\ast$}]{velocities,  }\item[{int}]{material }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_ae7c2d2e6bb97bf4ec593d720122153a0}\label{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_ae7c2d2e6bb97bf4ec593d720122153a0}} 
+\index{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}!pow2@{pow2}}
+\index{pow2@{pow2}!lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}}
+\doxysubsubsection{\texorpdfstring{pow2()}{pow2()}}
+{\footnotesize\ttfamily template$<$class T , int D, int order$>$ \\
+static T \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar}{ls\+Internal\+::ls\+Stencil\+Local\+Lax\+Friedrichs\+Scalar}}$<$ T, D, order $>$\+::pow2 (\begin{DoxyParamCaption}\item[{const T \&}]{value }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}, {\ttfamily [private]}}
+
+\mbox{\Hypertarget{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_ad44ce5b4e464f30374cba26195ab26e6}\label{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_ad44ce5b4e464f30374cba26195ab26e6}} 
+\index{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}!prepareLS@{prepareLS}}
+\index{prepareLS@{prepareLS}!lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}}
+\doxysubsubsection{\texorpdfstring{prepareLS()}{prepareLS()}}
+{\footnotesize\ttfamily template$<$class T , int D, int order$>$ \\
+static void \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar}{ls\+Internal\+::ls\+Stencil\+Local\+Lax\+Friedrichs\+Scalar}}$<$ T, D, order $>$\+::prepare\+LS (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$ \&}]{passedls\+Domain }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a306609e2490ad8af626692cb6d46708b}\label{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a306609e2490ad8af626692cb6d46708b}} 
+\index{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}!finalAlphas@{finalAlphas}}
+\index{finalAlphas@{finalAlphas}!lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}}
+\doxysubsubsection{\texorpdfstring{finalAlphas}{finalAlphas}}
+{\footnotesize\ttfamily template$<$class T , int D, int order$>$ \\
+hrle\+Vector\+Type$<$T, 3$>$ \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar}{ls\+Internal\+::ls\+Stencil\+Local\+Lax\+Friedrichs\+Scalar}}$<$ T, D, order $>$\+::final\+Alphas\hspace{0.3cm}{\ttfamily [private]}}
+
+\mbox{\Hypertarget{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a8be26f0265d3e4ec1390a7ca1d704850}\label{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a8be26f0265d3e4ec1390a7ca1d704850}} 
+\index{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}!finiteDifferenceScheme@{finiteDifferenceScheme}}
+\index{finiteDifferenceScheme@{finiteDifferenceScheme}!lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}}
+\doxysubsubsection{\texorpdfstring{finiteDifferenceScheme}{finiteDifferenceScheme}}
+{\footnotesize\ttfamily template$<$class T , int D, int order$>$ \\
+const \mbox{\hyperlink{namespacelsInternal_a1197c9bc5d272ab73e76ebc2d4ab05a7}{Differentiation\+Scheme\+Enum}} \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar}{ls\+Internal\+::ls\+Stencil\+Local\+Lax\+Friedrichs\+Scalar}}$<$ T, D, order $>$\+::finite\+Difference\+Scheme\hspace{0.3cm}{\ttfamily [private]}}
+
+{\bfseries Initial value\+:}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{=}
+\DoxyCodeLine{      \mbox{\hyperlink{namespacelsInternal_a1197c9bc5d272ab73e76ebc2d4ab05a7a381be4beabc209c2c0999eabbfcaa16b}{DifferentiationSchemeEnum::FIRST\_ORDER}}}
+
+\end{DoxyCode}
+\mbox{\Hypertarget{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a36451fffb83c46bd48eeb563f9ca7059}\label{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a36451fffb83c46bd48eeb563f9ca7059}} 
+\index{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}!gridDeltas@{gridDeltas}}
+\index{gridDeltas@{gridDeltas}!lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}}
+\doxysubsubsection{\texorpdfstring{gridDeltas}{gridDeltas}}
+{\footnotesize\ttfamily template$<$class T , int D, int order$>$ \\
+hrle\+Vector\+Type$<$T, 3$>$ \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar}{ls\+Internal\+::ls\+Stencil\+Local\+Lax\+Friedrichs\+Scalar}}$<$ T, D, order $>$\+::grid\+Deltas\hspace{0.3cm}{\ttfamily [private]}}
+
+\mbox{\Hypertarget{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_aa1d10d75d48555df4ff3069c98fcfe6e}\label{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_aa1d10d75d48555df4ff3069c98fcfe6e}} 
+\index{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}!levelSet@{levelSet}}
+\index{levelSet@{levelSet}!lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}}
+\doxysubsubsection{\texorpdfstring{levelSet}{levelSet}}
+{\footnotesize\ttfamily template$<$class T , int D, int order$>$ \\
+\mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$T, D$>$\& \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar}{ls\+Internal\+::ls\+Stencil\+Local\+Lax\+Friedrichs\+Scalar}}$<$ T, D, order $>$\+::level\+Set\hspace{0.3cm}{\ttfamily [private]}}
+
+\mbox{\Hypertarget{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a058c360aba0fba3757f04a7dd6629c9d}\label{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a058c360aba0fba3757f04a7dd6629c9d}} 
+\index{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}!neighborIterator@{neighborIterator}}
+\index{neighborIterator@{neighborIterator}!lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}}
+\doxysubsubsection{\texorpdfstring{neighborIterator}{neighborIterator}}
+{\footnotesize\ttfamily template$<$class T , int D, int order$>$ \\
+hrle\+Sparse\+Box\+Iterator$<$hrle\+Domain$<$T, D$>$ $>$ \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar}{ls\+Internal\+::ls\+Stencil\+Local\+Lax\+Friedrichs\+Scalar}}$<$ T, D, order $>$\+::neighbor\+Iterator\hspace{0.3cm}{\ttfamily [private]}}
+
+\mbox{\Hypertarget{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a0b72b8344c245cc94b6a27b599c4884f}\label{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar_a0b72b8344c245cc94b6a27b599c4884f}} 
+\index{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}!numStencilPoints@{numStencilPoints}}
+\index{numStencilPoints@{numStencilPoints}!lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$@{lsInternal::lsStencilLocalLaxFriedrichsScalar$<$ T, D, order $>$}}
+\doxysubsubsection{\texorpdfstring{numStencilPoints}{numStencilPoints}}
+{\footnotesize\ttfamily template$<$class T , int D, int order$>$ \\
+const unsigned \mbox{\hyperlink{classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar}{ls\+Internal\+::ls\+Stencil\+Local\+Lax\+Friedrichs\+Scalar}}$<$ T, D, order $>$\+::num\+Stencil\+Points\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+/home/klemenschits/\+Code/\+Vienna\+L\+S/include/\mbox{\hyperlink{lsStencilLocalLaxFriedrichsScalar__template_8hpp}{ls\+Stencil\+Local\+Lax\+Friedrichs\+Scalar\+\_\+template.\+hpp}}\end{DoxyCompactItemize}

@@ -1,0 +1,68 @@
+\hypertarget{classlsReduce}{}\doxysection{ls\+Reduce$<$ T, D $>$ Class Template Reference}
+\label{classlsReduce}\index{lsReduce$<$ T, D $>$@{lsReduce$<$ T, D $>$}}
+
+
+{\ttfamily \#include $<$ls\+Reduce\+\_\+template.\+hpp$>$}
+
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classlsReduce_adc558866ffb526f539bf7b21b3d51d18}{ls\+Reduce}} (\mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$ \&passedls\+Domain)
+\item 
+void \mbox{\hyperlink{classlsReduce_ad954326ec2b63c5fcb61e11df41c98ce}{apply}} (int width, bool no\+New\+Segment=false)
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Types}
+\begin{DoxyCompactItemize}
+\item 
+typedef \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::\mbox{\hyperlink{classlsReduce_abf35d4f10b788680149788c9e21aafd9}{Grid\+Type}} \mbox{\hyperlink{classlsReduce_abf35d4f10b788680149788c9e21aafd9}{Grid\+Type}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$ \& \mbox{\hyperlink{classlsReduce_aec6a327a77a80f5a1551b46c4b546970}{level\+Set}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Member Typedef Documentation}
+\mbox{\Hypertarget{classlsReduce_abf35d4f10b788680149788c9e21aafd9}\label{classlsReduce_abf35d4f10b788680149788c9e21aafd9}} 
+\index{lsReduce$<$ T, D $>$@{lsReduce$<$ T, D $>$}!GridType@{GridType}}
+\index{GridType@{GridType}!lsReduce$<$ T, D $>$@{lsReduce$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{GridType}{GridType}}
+{\footnotesize\ttfamily template$<$class T , int D$>$ \\
+typedef \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$T, D$>$\+::\mbox{\hyperlink{classlsReduce_abf35d4f10b788680149788c9e21aafd9}{Grid\+Type}} \mbox{\hyperlink{classlsReduce}{ls\+Reduce}}$<$ T, D $>$\+::\mbox{\hyperlink{classlsReduce_abf35d4f10b788680149788c9e21aafd9}{Grid\+Type}}\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classlsReduce_adc558866ffb526f539bf7b21b3d51d18}\label{classlsReduce_adc558866ffb526f539bf7b21b3d51d18}} 
+\index{lsReduce$<$ T, D $>$@{lsReduce$<$ T, D $>$}!lsReduce@{lsReduce}}
+\index{lsReduce@{lsReduce}!lsReduce$<$ T, D $>$@{lsReduce$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{lsReduce()}{lsReduce()}}
+{\footnotesize\ttfamily template$<$class T , int D$>$ \\
+\mbox{\hyperlink{classlsReduce}{ls\+Reduce}}$<$ T, D $>$\+::\mbox{\hyperlink{classlsReduce}{ls\+Reduce}} (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$ \&}]{passedls\+Domain }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classlsReduce_ad954326ec2b63c5fcb61e11df41c98ce}\label{classlsReduce_ad954326ec2b63c5fcb61e11df41c98ce}} 
+\index{lsReduce$<$ T, D $>$@{lsReduce$<$ T, D $>$}!apply@{apply}}
+\index{apply@{apply}!lsReduce$<$ T, D $>$@{lsReduce$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{apply()}{apply()}}
+{\footnotesize\ttfamily template$<$class T , int D$>$ \\
+void \mbox{\hyperlink{classlsReduce}{ls\+Reduce}}$<$ T, D $>$\+::apply (\begin{DoxyParamCaption}\item[{int}]{width,  }\item[{bool}]{no\+New\+Segment = {\ttfamily false} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+Reduces the levele\+Set to the specified number of layers. The largest value in the levelset is thus width$\ast$0.5 Returns the number of added points 
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classlsReduce_aec6a327a77a80f5a1551b46c4b546970}\label{classlsReduce_aec6a327a77a80f5a1551b46c4b546970}} 
+\index{lsReduce$<$ T, D $>$@{lsReduce$<$ T, D $>$}!levelSet@{levelSet}}
+\index{levelSet@{levelSet}!lsReduce$<$ T, D $>$@{lsReduce$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{levelSet}{levelSet}}
+{\footnotesize\ttfamily template$<$class T , int D$>$ \\
+\mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$T, D$>$\& \mbox{\hyperlink{classlsReduce}{ls\+Reduce}}$<$ T, D $>$\+::level\+Set\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+/home/klemenschits/\+Code/\+Vienna\+L\+S/include/\mbox{\hyperlink{lsReduce__template_8hpp}{ls\+Reduce\+\_\+template.\+hpp}}\end{DoxyCompactItemize}

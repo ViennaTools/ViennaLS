@@ -1,0 +1,120 @@
+\hypertarget{classlsMessage}{}\doxysection{ls\+Message Class Reference}
+\label{classlsMessage}\index{lsMessage@{lsMessage}}
+
+
+{\ttfamily \#include $<$ls\+Message.\+hpp$>$}
+
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classlsMessage_a2603de3902261fab485de97fc69be1ea}{ls\+Message}} (const \mbox{\hyperlink{classlsMessage}{ls\+Message}} \&)=delete
+\item 
+void \mbox{\hyperlink{classlsMessage_a2eb16a1651607dd1ad012734ced81bcb}{operator=}} (const \mbox{\hyperlink{classlsMessage}{ls\+Message}} \&)=delete
+\item 
+\mbox{\hyperlink{classlsMessage}{ls\+Message}} \& \mbox{\hyperlink{classlsMessage_aa6ee03ee6143306f49a8f7aa81108546}{add}} (std\+::string s)
+\item 
+\mbox{\hyperlink{classlsMessage}{ls\+Message}} \& \mbox{\hyperlink{classlsMessage_add4053d7e98b51f1ad902d843b45d6fa}{add\+Warning}} (std\+::string s)
+\item 
+\mbox{\hyperlink{classlsMessage}{ls\+Message}} \& \mbox{\hyperlink{classlsMessage_a69ccefb413b6a130f104768ba52a061a}{add\+Error}} (std\+::string s, bool should\+Abort=true)
+\item 
+void \mbox{\hyperlink{classlsMessage_a180aade911695157f8efdd325e4aaf42}{print}} (std\+::ostream \&out=std\+::cout)
+\end{DoxyCompactItemize}
+\doxysubsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+static \mbox{\hyperlink{classlsMessage}{ls\+Message}} \& \mbox{\hyperlink{classlsMessage_a26184786db860c2f8ae7f4dc00efe9d5}{get\+Instance}} ()
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classlsMessage_a955019308a52f65a67075a78df7ee96d}{ls\+Message}} ()
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+std\+::string \mbox{\hyperlink{classlsMessage_a62517490c77444f82a4572f4618b9dfd}{message}}
+\item 
+bool \mbox{\hyperlink{classlsMessage_a3ee6c6c668f74d8e7ca99665978da8be}{error}} = false
+\item 
+const unsigned \mbox{\hyperlink{classlsMessage_a959f53e339bbc4626b51d5f032e1c671}{tab\+Width}} = 4
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classlsMessage_a955019308a52f65a67075a78df7ee96d}\label{classlsMessage_a955019308a52f65a67075a78df7ee96d}} 
+\index{lsMessage@{lsMessage}!lsMessage@{lsMessage}}
+\index{lsMessage@{lsMessage}!lsMessage@{lsMessage}}
+\doxysubsubsection{\texorpdfstring{lsMessage()}{lsMessage()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily ls\+Message\+::ls\+Message (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [private]}}
+
+\mbox{\Hypertarget{classlsMessage_a2603de3902261fab485de97fc69be1ea}\label{classlsMessage_a2603de3902261fab485de97fc69be1ea}} 
+\index{lsMessage@{lsMessage}!lsMessage@{lsMessage}}
+\index{lsMessage@{lsMessage}!lsMessage@{lsMessage}}
+\doxysubsubsection{\texorpdfstring{lsMessage()}{lsMessage()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily ls\+Message\+::ls\+Message (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classlsMessage}{ls\+Message}} \&}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [delete]}}
+
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classlsMessage_aa6ee03ee6143306f49a8f7aa81108546}\label{classlsMessage_aa6ee03ee6143306f49a8f7aa81108546}} 
+\index{lsMessage@{lsMessage}!add@{add}}
+\index{add@{add}!lsMessage@{lsMessage}}
+\doxysubsubsection{\texorpdfstring{add()}{add()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classlsMessage}{ls\+Message}}\& ls\+Message\+::add (\begin{DoxyParamCaption}\item[{std\+::string}]{s }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMessage_a69ccefb413b6a130f104768ba52a061a}\label{classlsMessage_a69ccefb413b6a130f104768ba52a061a}} 
+\index{lsMessage@{lsMessage}!addError@{addError}}
+\index{addError@{addError}!lsMessage@{lsMessage}}
+\doxysubsubsection{\texorpdfstring{addError()}{addError()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classlsMessage}{ls\+Message}}\& ls\+Message\+::add\+Error (\begin{DoxyParamCaption}\item[{std\+::string}]{s,  }\item[{bool}]{should\+Abort = {\ttfamily true} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMessage_add4053d7e98b51f1ad902d843b45d6fa}\label{classlsMessage_add4053d7e98b51f1ad902d843b45d6fa}} 
+\index{lsMessage@{lsMessage}!addWarning@{addWarning}}
+\index{addWarning@{addWarning}!lsMessage@{lsMessage}}
+\doxysubsubsection{\texorpdfstring{addWarning()}{addWarning()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classlsMessage}{ls\+Message}}\& ls\+Message\+::add\+Warning (\begin{DoxyParamCaption}\item[{std\+::string}]{s }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMessage_a26184786db860c2f8ae7f4dc00efe9d5}\label{classlsMessage_a26184786db860c2f8ae7f4dc00efe9d5}} 
+\index{lsMessage@{lsMessage}!getInstance@{getInstance}}
+\index{getInstance@{getInstance}!lsMessage@{lsMessage}}
+\doxysubsubsection{\texorpdfstring{getInstance()}{getInstance()}}
+{\footnotesize\ttfamily static \mbox{\hyperlink{classlsMessage}{ls\+Message}}\& ls\+Message\+::get\+Instance (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+\mbox{\Hypertarget{classlsMessage_a2eb16a1651607dd1ad012734ced81bcb}\label{classlsMessage_a2eb16a1651607dd1ad012734ced81bcb}} 
+\index{lsMessage@{lsMessage}!operator=@{operator=}}
+\index{operator=@{operator=}!lsMessage@{lsMessage}}
+\doxysubsubsection{\texorpdfstring{operator=()}{operator=()}}
+{\footnotesize\ttfamily void ls\+Message\+::operator= (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classlsMessage}{ls\+Message}} \&}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [delete]}}
+
+\mbox{\Hypertarget{classlsMessage_a180aade911695157f8efdd325e4aaf42}\label{classlsMessage_a180aade911695157f8efdd325e4aaf42}} 
+\index{lsMessage@{lsMessage}!print@{print}}
+\index{print@{print}!lsMessage@{lsMessage}}
+\doxysubsubsection{\texorpdfstring{print()}{print()}}
+{\footnotesize\ttfamily void ls\+Message\+::print (\begin{DoxyParamCaption}\item[{std\+::ostream \&}]{out = {\ttfamily std\+:\+:cout} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classlsMessage_a3ee6c6c668f74d8e7ca99665978da8be}\label{classlsMessage_a3ee6c6c668f74d8e7ca99665978da8be}} 
+\index{lsMessage@{lsMessage}!error@{error}}
+\index{error@{error}!lsMessage@{lsMessage}}
+\doxysubsubsection{\texorpdfstring{error}{error}}
+{\footnotesize\ttfamily bool ls\+Message\+::error = false\hspace{0.3cm}{\ttfamily [private]}}
+
+\mbox{\Hypertarget{classlsMessage_a62517490c77444f82a4572f4618b9dfd}\label{classlsMessage_a62517490c77444f82a4572f4618b9dfd}} 
+\index{lsMessage@{lsMessage}!message@{message}}
+\index{message@{message}!lsMessage@{lsMessage}}
+\doxysubsubsection{\texorpdfstring{message}{message}}
+{\footnotesize\ttfamily std\+::string ls\+Message\+::message\hspace{0.3cm}{\ttfamily [private]}}
+
+\mbox{\Hypertarget{classlsMessage_a959f53e339bbc4626b51d5f032e1c671}\label{classlsMessage_a959f53e339bbc4626b51d5f032e1c671}} 
+\index{lsMessage@{lsMessage}!tabWidth@{tabWidth}}
+\index{tabWidth@{tabWidth}!lsMessage@{lsMessage}}
+\doxysubsubsection{\texorpdfstring{tabWidth}{tabWidth}}
+{\footnotesize\ttfamily const unsigned ls\+Message\+::tab\+Width = 4\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+/home/klemenschits/\+Code/\+Vienna\+L\+S/include/\mbox{\hyperlink{lsMessage_8hpp}{ls\+Message.\+hpp}}\end{DoxyCompactItemize}

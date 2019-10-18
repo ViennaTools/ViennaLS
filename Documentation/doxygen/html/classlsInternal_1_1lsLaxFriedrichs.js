@@ -1,0 +1,6 @@
+var classlsInternal_1_1lsLaxFriedrichs =
+[
+    [ "lsLaxFriedrichs", "classlsInternal_1_1lsLaxFriedrichs.html#acba037f373ad8987f598baf490a49163", null ],
+    [ "operator()", "classlsInternal_1_1lsLaxFriedrichs.html#af779c42c5c7800c4a0dbe72449fa78cf", null ],
+    [ "prepareLS", "classlsInternal_1_1lsLaxFriedrichs.html#a55ba1796693171f9178d00094914259f", null ]
+];

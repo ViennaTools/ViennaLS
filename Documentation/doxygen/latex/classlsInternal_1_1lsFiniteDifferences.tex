@@ -1,0 +1,99 @@
+\hypertarget{classlsInternal_1_1lsFiniteDifferences}{}\doxysection{ls\+Internal\+::ls\+Finite\+Differences$<$ T, scheme $>$ Class Template Reference}
+\label{classlsInternal_1_1lsFiniteDifferences}\index{lsInternal::lsFiniteDifferences$<$ T, scheme $>$@{lsInternal::lsFiniteDifferences$<$ T, scheme $>$}}
+
+
+{\ttfamily \#include $<$ls\+Finite\+Differences\+\_\+template.\+hpp$>$}
+
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classlsInternal_1_1lsFiniteDifferences_a6fabd9feca85eed3d96379388139b6c9}{ls\+Finite\+Differences}} ()
+\end{DoxyCompactItemize}
+\doxysubsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+static T \mbox{\hyperlink{classlsInternal_1_1lsFiniteDifferences_a79d98864e22c1e1f124e334ba6c0387e}{weno3}} (const T $\ast$x, T delta, bool plus, T eps=1e-\/6)
+\item 
+static T \mbox{\hyperlink{classlsInternal_1_1lsFiniteDifferences_ab0b417ce562ed42a8b484dd7214e8a13}{weno5}} (const T $\ast$x, T dx, bool plus, T eps=1e-\/6)
+\item 
+static T \mbox{\hyperlink{classlsInternal_1_1lsFiniteDifferences_a7d255b73875af1f1345aec82db1df762}{difference\+Negative}} (const T $\ast$values, const double \&delta)
+\item 
+static T \mbox{\hyperlink{classlsInternal_1_1lsFiniteDifferences_aee7d45bd89a59a4b42f21748f6641cdd}{difference\+Positive}} (const T $\ast$values, const double \&delta)
+\item 
+static T \mbox{\hyperlink{classlsInternal_1_1lsFiniteDifferences_a4d0e845db587f2dd7d624d53b893f72f}{calculate\+Gradient}} (const T $\ast$values, const double \&delta)
+\item 
+static T \mbox{\hyperlink{classlsInternal_1_1lsFiniteDifferences_a602e63e25f54ece3466a5d3e391fc55f}{calculate\+Gradient\+Diff}} (const T $\ast$values, const double \&delta)
+\end{DoxyCompactItemize}
+\doxysubsection*{Static Private Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$class V $>$ }\\static V \mbox{\hyperlink{classlsInternal_1_1lsFiniteDifferences_ad30eaf3a45c3aef2d47ec80153bd407f}{square}} (V x)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classlsInternal_1_1lsFiniteDifferences_a6fabd9feca85eed3d96379388139b6c9}\label{classlsInternal_1_1lsFiniteDifferences_a6fabd9feca85eed3d96379388139b6c9}} 
+\index{lsInternal::lsFiniteDifferences$<$ T, scheme $>$@{lsInternal::lsFiniteDifferences$<$ T, scheme $>$}!lsFiniteDifferences@{lsFiniteDifferences}}
+\index{lsFiniteDifferences@{lsFiniteDifferences}!lsInternal::lsFiniteDifferences$<$ T, scheme $>$@{lsInternal::lsFiniteDifferences$<$ T, scheme $>$}}
+\doxysubsubsection{\texorpdfstring{lsFiniteDifferences()}{lsFiniteDifferences()}}
+{\footnotesize\ttfamily template$<$class T, Differentiation\+Scheme\+Enum scheme = Differentiation\+Scheme\+Enum\+::\+F\+I\+R\+S\+T\+\_\+\+O\+R\+D\+ER$>$ \\
+\mbox{\hyperlink{classlsInternal_1_1lsFiniteDifferences}{ls\+Internal\+::ls\+Finite\+Differences}}$<$ T, scheme $>$\+::\mbox{\hyperlink{classlsInternal_1_1lsFiniteDifferences}{ls\+Finite\+Differences}} (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classlsInternal_1_1lsFiniteDifferences_a4d0e845db587f2dd7d624d53b893f72f}\label{classlsInternal_1_1lsFiniteDifferences_a4d0e845db587f2dd7d624d53b893f72f}} 
+\index{lsInternal::lsFiniteDifferences$<$ T, scheme $>$@{lsInternal::lsFiniteDifferences$<$ T, scheme $>$}!calculateGradient@{calculateGradient}}
+\index{calculateGradient@{calculateGradient}!lsInternal::lsFiniteDifferences$<$ T, scheme $>$@{lsInternal::lsFiniteDifferences$<$ T, scheme $>$}}
+\doxysubsubsection{\texorpdfstring{calculateGradient()}{calculateGradient()}}
+{\footnotesize\ttfamily template$<$class T, Differentiation\+Scheme\+Enum scheme = Differentiation\+Scheme\+Enum\+::\+F\+I\+R\+S\+T\+\_\+\+O\+R\+D\+ER$>$ \\
+static T \mbox{\hyperlink{classlsInternal_1_1lsFiniteDifferences}{ls\+Internal\+::ls\+Finite\+Differences}}$<$ T, scheme $>$\+::calculate\+Gradient (\begin{DoxyParamCaption}\item[{const T $\ast$}]{values,  }\item[{const double \&}]{delta }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+\mbox{\Hypertarget{classlsInternal_1_1lsFiniteDifferences_a602e63e25f54ece3466a5d3e391fc55f}\label{classlsInternal_1_1lsFiniteDifferences_a602e63e25f54ece3466a5d3e391fc55f}} 
+\index{lsInternal::lsFiniteDifferences$<$ T, scheme $>$@{lsInternal::lsFiniteDifferences$<$ T, scheme $>$}!calculateGradientDiff@{calculateGradientDiff}}
+\index{calculateGradientDiff@{calculateGradientDiff}!lsInternal::lsFiniteDifferences$<$ T, scheme $>$@{lsInternal::lsFiniteDifferences$<$ T, scheme $>$}}
+\doxysubsubsection{\texorpdfstring{calculateGradientDiff()}{calculateGradientDiff()}}
+{\footnotesize\ttfamily template$<$class T, Differentiation\+Scheme\+Enum scheme = Differentiation\+Scheme\+Enum\+::\+F\+I\+R\+S\+T\+\_\+\+O\+R\+D\+ER$>$ \\
+static T \mbox{\hyperlink{classlsInternal_1_1lsFiniteDifferences}{ls\+Internal\+::ls\+Finite\+Differences}}$<$ T, scheme $>$\+::calculate\+Gradient\+Diff (\begin{DoxyParamCaption}\item[{const T $\ast$}]{values,  }\item[{const double \&}]{delta }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+\mbox{\Hypertarget{classlsInternal_1_1lsFiniteDifferences_a7d255b73875af1f1345aec82db1df762}\label{classlsInternal_1_1lsFiniteDifferences_a7d255b73875af1f1345aec82db1df762}} 
+\index{lsInternal::lsFiniteDifferences$<$ T, scheme $>$@{lsInternal::lsFiniteDifferences$<$ T, scheme $>$}!differenceNegative@{differenceNegative}}
+\index{differenceNegative@{differenceNegative}!lsInternal::lsFiniteDifferences$<$ T, scheme $>$@{lsInternal::lsFiniteDifferences$<$ T, scheme $>$}}
+\doxysubsubsection{\texorpdfstring{differenceNegative()}{differenceNegative()}}
+{\footnotesize\ttfamily template$<$class T, Differentiation\+Scheme\+Enum scheme = Differentiation\+Scheme\+Enum\+::\+F\+I\+R\+S\+T\+\_\+\+O\+R\+D\+ER$>$ \\
+static T \mbox{\hyperlink{classlsInternal_1_1lsFiniteDifferences}{ls\+Internal\+::ls\+Finite\+Differences}}$<$ T, scheme $>$\+::difference\+Negative (\begin{DoxyParamCaption}\item[{const T $\ast$}]{values,  }\item[{const double \&}]{delta }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+\mbox{\Hypertarget{classlsInternal_1_1lsFiniteDifferences_aee7d45bd89a59a4b42f21748f6641cdd}\label{classlsInternal_1_1lsFiniteDifferences_aee7d45bd89a59a4b42f21748f6641cdd}} 
+\index{lsInternal::lsFiniteDifferences$<$ T, scheme $>$@{lsInternal::lsFiniteDifferences$<$ T, scheme $>$}!differencePositive@{differencePositive}}
+\index{differencePositive@{differencePositive}!lsInternal::lsFiniteDifferences$<$ T, scheme $>$@{lsInternal::lsFiniteDifferences$<$ T, scheme $>$}}
+\doxysubsubsection{\texorpdfstring{differencePositive()}{differencePositive()}}
+{\footnotesize\ttfamily template$<$class T, Differentiation\+Scheme\+Enum scheme = Differentiation\+Scheme\+Enum\+::\+F\+I\+R\+S\+T\+\_\+\+O\+R\+D\+ER$>$ \\
+static T \mbox{\hyperlink{classlsInternal_1_1lsFiniteDifferences}{ls\+Internal\+::ls\+Finite\+Differences}}$<$ T, scheme $>$\+::difference\+Positive (\begin{DoxyParamCaption}\item[{const T $\ast$}]{values,  }\item[{const double \&}]{delta }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+\mbox{\Hypertarget{classlsInternal_1_1lsFiniteDifferences_ad30eaf3a45c3aef2d47ec80153bd407f}\label{classlsInternal_1_1lsFiniteDifferences_ad30eaf3a45c3aef2d47ec80153bd407f}} 
+\index{lsInternal::lsFiniteDifferences$<$ T, scheme $>$@{lsInternal::lsFiniteDifferences$<$ T, scheme $>$}!square@{square}}
+\index{square@{square}!lsInternal::lsFiniteDifferences$<$ T, scheme $>$@{lsInternal::lsFiniteDifferences$<$ T, scheme $>$}}
+\doxysubsubsection{\texorpdfstring{square()}{square()}}
+{\footnotesize\ttfamily template$<$class T, Differentiation\+Scheme\+Enum scheme = Differentiation\+Scheme\+Enum\+::\+F\+I\+R\+S\+T\+\_\+\+O\+R\+D\+ER$>$ \\
+template$<$class V $>$ \\
+static V \mbox{\hyperlink{classlsInternal_1_1lsFiniteDifferences}{ls\+Internal\+::ls\+Finite\+Differences}}$<$ T, scheme $>$\+::square (\begin{DoxyParamCaption}\item[{V}]{x }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}, {\ttfamily [private]}}
+
+\mbox{\Hypertarget{classlsInternal_1_1lsFiniteDifferences_a79d98864e22c1e1f124e334ba6c0387e}\label{classlsInternal_1_1lsFiniteDifferences_a79d98864e22c1e1f124e334ba6c0387e}} 
+\index{lsInternal::lsFiniteDifferences$<$ T, scheme $>$@{lsInternal::lsFiniteDifferences$<$ T, scheme $>$}!weno3@{weno3}}
+\index{weno3@{weno3}!lsInternal::lsFiniteDifferences$<$ T, scheme $>$@{lsInternal::lsFiniteDifferences$<$ T, scheme $>$}}
+\doxysubsubsection{\texorpdfstring{weno3()}{weno3()}}
+{\footnotesize\ttfamily template$<$class T, Differentiation\+Scheme\+Enum scheme = Differentiation\+Scheme\+Enum\+::\+F\+I\+R\+S\+T\+\_\+\+O\+R\+D\+ER$>$ \\
+static T \mbox{\hyperlink{classlsInternal_1_1lsFiniteDifferences}{ls\+Internal\+::ls\+Finite\+Differences}}$<$ T, scheme $>$\+::weno3 (\begin{DoxyParamCaption}\item[{const T $\ast$}]{x,  }\item[{T}]{delta,  }\item[{bool}]{plus,  }\item[{T}]{eps = {\ttfamily 1e-\/6} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+Weighted essentially non-\/oscillatory differentiation scheme 3rd order x1 ... x5 stencil points from left to right plus == true =$>$ right-\/sided \mbox{\Hypertarget{classlsInternal_1_1lsFiniteDifferences_ab0b417ce562ed42a8b484dd7214e8a13}\label{classlsInternal_1_1lsFiniteDifferences_ab0b417ce562ed42a8b484dd7214e8a13}} 
+\index{lsInternal::lsFiniteDifferences$<$ T, scheme $>$@{lsInternal::lsFiniteDifferences$<$ T, scheme $>$}!weno5@{weno5}}
+\index{weno5@{weno5}!lsInternal::lsFiniteDifferences$<$ T, scheme $>$@{lsInternal::lsFiniteDifferences$<$ T, scheme $>$}}
+\doxysubsubsection{\texorpdfstring{weno5()}{weno5()}}
+{\footnotesize\ttfamily template$<$class T, Differentiation\+Scheme\+Enum scheme = Differentiation\+Scheme\+Enum\+::\+F\+I\+R\+S\+T\+\_\+\+O\+R\+D\+ER$>$ \\
+static T \mbox{\hyperlink{classlsInternal_1_1lsFiniteDifferences}{ls\+Internal\+::ls\+Finite\+Differences}}$<$ T, scheme $>$\+::weno5 (\begin{DoxyParamCaption}\item[{const T $\ast$}]{x,  }\item[{T}]{dx,  }\item[{bool}]{plus,  }\item[{T}]{eps = {\ttfamily 1e-\/6} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+/home/klemenschits/\+Code/\+Vienna\+L\+S/include/\mbox{\hyperlink{lsFiniteDifferences__template_8hpp}{ls\+Finite\+Differences\+\_\+template.\+hpp}}\end{DoxyCompactItemize}
