@@ -10,6 +10,10 @@
 #include <lsDomain.hpp>
 #include <lsMesh.hpp>
 
+/// Extract the regular grid, on which the level set values are
+/// defined, to an explicit lsMesh. The Vertices will contain
+/// the level set value stored at its location. (This is very useful
+/// for debugging)
 template <class T, int D> class lsToMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
 

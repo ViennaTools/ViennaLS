@@ -13,6 +13,12 @@
 #include <lsVTKReader.hpp>
 #include <lsVTKWriter.hpp>
 
+/**
+  This example shows how to use lsAdvect to isotropically
+  grow a 2D circle with reflective/symmetric boundary conditions.
+  \example Advection2D.cpp
+*/
+
 // implement own velocity field
 class velocityField : public lsVelocityField<double> {
 public:
@@ -41,10 +47,10 @@ int main() {
   double gridDelta = 1;
 
   double bounds[2 * D] = {-extent, extent, -extent, extent};
-  lsDomain_double_2::BoundaryType boundaryCons[D];
+  lsDomain<double, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D; ++i)
-    boundaryCons[i] = lsDomain_double_2::BoundaryType::SYMMETRIC_BOUNDARY;
-  lsDomain_double_2 sphere1(bounds, boundaryCons, gridDelta);
+    boundaryCons[i] = lsDomain<double, D>::BoundaryType::SYMMETRIC_BOUNDARY;
+  lsDomain<double, D> sphere1(bounds, boundaryCons, gridDelta);
 
   double origin[D] = {5., 0.};
   double radius = 7.3;
@@ -60,7 +66,7 @@ int main() {
   }
 
   // fill vector with lsDomain pointers
-  std::vector<lsDomain_double_2 *> lsDomains;
+  std::vector<lsDomain<double, D> *> lsDomains;
   lsDomains.push_back(&sphere1);
 
   velocityField velocities;

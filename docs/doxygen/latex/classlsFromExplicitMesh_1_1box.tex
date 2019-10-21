@@ -1,0 +1,139 @@
+\hypertarget{classlsFromExplicitMesh_1_1box}{}\doxysection{ls\+From\+Explicit\+Mesh$<$ T, D $>$\+::box Class Reference}
+\label{classlsFromExplicitMesh_1_1box}\index{lsFromExplicitMesh$<$ T, D $>$::box@{lsFromExplicitMesh$<$ T, D $>$::box}}
+
+
+Class defining a box used in ray tracing optimisation.  
+
+
+\doxysubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \mbox{\hyperlink{classlsFromExplicitMesh_1_1box_1_1iterator}{iterator}}
+\begin{DoxyCompactList}\small\item\em Iterator over all grid points, contained by a box. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classlsFromExplicitMesh_1_1box_a92631d29f3ba01be672ca00fd5ead969}{box}} (const hrle\+Vector\+Type$<$ hrle\+Index\+Type, D -\/ 1 $>$ \&idx0, const hrle\+Vector\+Type$<$ hrle\+Index\+Type, D -\/ 1 $>$ \&idx1)
+\item 
+\mbox{\hyperlink{classlsFromExplicitMesh_1_1box_a4abce46e8ad2c0c4a08d3d7741374245}{box}} (const \mbox{\hyperlink{classlsFromExplicitMesh_1_1box}{box}} \&\mbox{\hyperlink{classlsFromExplicitMesh_1_1box}{box}})
+\begin{DoxyCompactList}\small\item\em Creates a copy of the passed box. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classlsFromExplicitMesh_1_1box_a7a34fc47b18c49463d13318078a4e9e4}{box}} (const hrle\+Vector\+Type$<$ hrle\+Index\+Type, D -\/ 1 $>$ \&idx)
+\begin{DoxyCompactList}\small\item\em Sets both x\+Min and Xmax to the passed vector. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classlsFromExplicitMesh_1_1box}{box}} \mbox{\hyperlink{classlsFromExplicitMesh_1_1box_a325f05645dd648b364f762bb8c755e98}{operator=}} (const \mbox{\hyperlink{classlsFromExplicitMesh_1_1box}{box}} \&b)
+\item 
+bool \mbox{\hyperlink{classlsFromExplicitMesh_1_1box_a6a08ac4b4951e89a1c959753256e8c56}{is\+\_\+empty}} () const
+\begin{DoxyCompactList}\small\item\em Checks whether there are points in the box and returns result. \end{DoxyCompactList}\item 
+const hrle\+Vector\+Type$<$ hrle\+Index\+Type, D -\/ 1 $>$ \& \mbox{\hyperlink{classlsFromExplicitMesh_1_1box_a32265d7c5e0d7f9371359e3d9c50e809}{min}} () const
+\begin{DoxyCompactList}\small\item\em Returns vector of lowest point of box in each dimension. \end{DoxyCompactList}\item 
+const hrle\+Vector\+Type$<$ hrle\+Index\+Type, D -\/ 1 $>$ \& \mbox{\hyperlink{classlsFromExplicitMesh_1_1box_ac62ecf496bbbca505b0f7a65edd479b5}{max}} () const
+\begin{DoxyCompactList}\small\item\em Returns vector of highest point of box in each dimension. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+hrle\+Vector\+Type$<$ hrle\+Index\+Type, D -\/ 1 $>$ \mbox{\hyperlink{classlsFromExplicitMesh_1_1box_af349197c6eb07741a09cdf503aca8be3}{x\+Min}}
+\item 
+hrle\+Vector\+Type$<$ hrle\+Index\+Type, D -\/ 1 $>$ \mbox{\hyperlink{classlsFromExplicitMesh_1_1box_a7f37b01ce9c3f427bc9cc0fc1389fabf}{x\+Max}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\subsubsection*{template$<$class T, int D$>$\newline
+class ls\+From\+Explicit\+Mesh$<$ T, D $>$\+::box}
+
+Class defining a box used in ray tracing optimisation. 
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classlsFromExplicitMesh_1_1box_a92631d29f3ba01be672ca00fd5ead969}\label{classlsFromExplicitMesh_1_1box_a92631d29f3ba01be672ca00fd5ead969}} 
+\index{lsFromExplicitMesh$<$ T, D $>$::box@{lsFromExplicitMesh$<$ T, D $>$::box}!box@{box}}
+\index{box@{box}!lsFromExplicitMesh$<$ T, D $>$::box@{lsFromExplicitMesh$<$ T, D $>$::box}}
+\doxysubsubsection{\texorpdfstring{box()}{box()}\hspace{0.1cm}{\footnotesize\ttfamily [1/3]}}
+{\footnotesize\ttfamily template$<$class T , int D$>$ \\
+\mbox{\hyperlink{classlsFromExplicitMesh}{ls\+From\+Explicit\+Mesh}}$<$ T, D $>$\+::box\+::box (\begin{DoxyParamCaption}\item[{const hrle\+Vector\+Type$<$ hrle\+Index\+Type, D -\/ 1 $>$ \&}]{idx0,  }\item[{const hrle\+Vector\+Type$<$ hrle\+Index\+Type, D -\/ 1 $>$ \&}]{idx1 }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+Sets x\+Min, x\+Max to the lowest and highest value of the two vectors for each dimension respectively. \mbox{\Hypertarget{classlsFromExplicitMesh_1_1box_a4abce46e8ad2c0c4a08d3d7741374245}\label{classlsFromExplicitMesh_1_1box_a4abce46e8ad2c0c4a08d3d7741374245}} 
+\index{lsFromExplicitMesh$<$ T, D $>$::box@{lsFromExplicitMesh$<$ T, D $>$::box}!box@{box}}
+\index{box@{box}!lsFromExplicitMesh$<$ T, D $>$::box@{lsFromExplicitMesh$<$ T, D $>$::box}}
+\doxysubsubsection{\texorpdfstring{box()}{box()}\hspace{0.1cm}{\footnotesize\ttfamily [2/3]}}
+{\footnotesize\ttfamily template$<$class T , int D$>$ \\
+\mbox{\hyperlink{classlsFromExplicitMesh}{ls\+From\+Explicit\+Mesh}}$<$ T, D $>$\+::box\+::box (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classlsFromExplicitMesh_1_1box}{box}} \&}]{box }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Creates a copy of the passed box. 
+
+\mbox{\Hypertarget{classlsFromExplicitMesh_1_1box_a7a34fc47b18c49463d13318078a4e9e4}\label{classlsFromExplicitMesh_1_1box_a7a34fc47b18c49463d13318078a4e9e4}} 
+\index{lsFromExplicitMesh$<$ T, D $>$::box@{lsFromExplicitMesh$<$ T, D $>$::box}!box@{box}}
+\index{box@{box}!lsFromExplicitMesh$<$ T, D $>$::box@{lsFromExplicitMesh$<$ T, D $>$::box}}
+\doxysubsubsection{\texorpdfstring{box()}{box()}\hspace{0.1cm}{\footnotesize\ttfamily [3/3]}}
+{\footnotesize\ttfamily template$<$class T , int D$>$ \\
+\mbox{\hyperlink{classlsFromExplicitMesh}{ls\+From\+Explicit\+Mesh}}$<$ T, D $>$\+::box\+::box (\begin{DoxyParamCaption}\item[{const hrle\+Vector\+Type$<$ hrle\+Index\+Type, D -\/ 1 $>$ \&}]{idx }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Sets both x\+Min and Xmax to the passed vector. 
+
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classlsFromExplicitMesh_1_1box_a6a08ac4b4951e89a1c959753256e8c56}\label{classlsFromExplicitMesh_1_1box_a6a08ac4b4951e89a1c959753256e8c56}} 
+\index{lsFromExplicitMesh$<$ T, D $>$::box@{lsFromExplicitMesh$<$ T, D $>$::box}!is\_empty@{is\_empty}}
+\index{is\_empty@{is\_empty}!lsFromExplicitMesh$<$ T, D $>$::box@{lsFromExplicitMesh$<$ T, D $>$::box}}
+\doxysubsubsection{\texorpdfstring{is\_empty()}{is\_empty()}}
+{\footnotesize\ttfamily template$<$class T , int D$>$ \\
+bool \mbox{\hyperlink{classlsFromExplicitMesh}{ls\+From\+Explicit\+Mesh}}$<$ T, D $>$\+::box\+::is\+\_\+empty (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Checks whether there are points in the box and returns result. 
+
+\mbox{\Hypertarget{classlsFromExplicitMesh_1_1box_ac62ecf496bbbca505b0f7a65edd479b5}\label{classlsFromExplicitMesh_1_1box_ac62ecf496bbbca505b0f7a65edd479b5}} 
+\index{lsFromExplicitMesh$<$ T, D $>$::box@{lsFromExplicitMesh$<$ T, D $>$::box}!max@{max}}
+\index{max@{max}!lsFromExplicitMesh$<$ T, D $>$::box@{lsFromExplicitMesh$<$ T, D $>$::box}}
+\doxysubsubsection{\texorpdfstring{max()}{max()}}
+{\footnotesize\ttfamily template$<$class T , int D$>$ \\
+const hrle\+Vector\+Type$<$hrle\+Index\+Type, D -\/ 1$>$\& \mbox{\hyperlink{classlsFromExplicitMesh}{ls\+From\+Explicit\+Mesh}}$<$ T, D $>$\+::box\+::max (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Returns vector of highest point of box in each dimension. 
+
+\mbox{\Hypertarget{classlsFromExplicitMesh_1_1box_a32265d7c5e0d7f9371359e3d9c50e809}\label{classlsFromExplicitMesh_1_1box_a32265d7c5e0d7f9371359e3d9c50e809}} 
+\index{lsFromExplicitMesh$<$ T, D $>$::box@{lsFromExplicitMesh$<$ T, D $>$::box}!min@{min}}
+\index{min@{min}!lsFromExplicitMesh$<$ T, D $>$::box@{lsFromExplicitMesh$<$ T, D $>$::box}}
+\doxysubsubsection{\texorpdfstring{min()}{min()}}
+{\footnotesize\ttfamily template$<$class T , int D$>$ \\
+const hrle\+Vector\+Type$<$hrle\+Index\+Type, D -\/ 1$>$\& \mbox{\hyperlink{classlsFromExplicitMesh}{ls\+From\+Explicit\+Mesh}}$<$ T, D $>$\+::box\+::min (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Returns vector of lowest point of box in each dimension. 
+
+\mbox{\Hypertarget{classlsFromExplicitMesh_1_1box_a325f05645dd648b364f762bb8c755e98}\label{classlsFromExplicitMesh_1_1box_a325f05645dd648b364f762bb8c755e98}} 
+\index{lsFromExplicitMesh$<$ T, D $>$::box@{lsFromExplicitMesh$<$ T, D $>$::box}!operator=@{operator=}}
+\index{operator=@{operator=}!lsFromExplicitMesh$<$ T, D $>$::box@{lsFromExplicitMesh$<$ T, D $>$::box}}
+\doxysubsubsection{\texorpdfstring{operator=()}{operator=()}}
+{\footnotesize\ttfamily template$<$class T , int D$>$ \\
+\mbox{\hyperlink{classlsFromExplicitMesh_1_1box}{box}} \mbox{\hyperlink{classlsFromExplicitMesh}{ls\+From\+Explicit\+Mesh}}$<$ T, D $>$\+::box\+::operator= (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classlsFromExplicitMesh_1_1box}{box}} \&}]{b }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classlsFromExplicitMesh_1_1box_a7f37b01ce9c3f427bc9cc0fc1389fabf}\label{classlsFromExplicitMesh_1_1box_a7f37b01ce9c3f427bc9cc0fc1389fabf}} 
+\index{lsFromExplicitMesh$<$ T, D $>$::box@{lsFromExplicitMesh$<$ T, D $>$::box}!xMax@{xMax}}
+\index{xMax@{xMax}!lsFromExplicitMesh$<$ T, D $>$::box@{lsFromExplicitMesh$<$ T, D $>$::box}}
+\doxysubsubsection{\texorpdfstring{xMax}{xMax}}
+{\footnotesize\ttfamily template$<$class T , int D$>$ \\
+hrle\+Vector\+Type$<$hrle\+Index\+Type, D -\/ 1$>$ \mbox{\hyperlink{classlsFromExplicitMesh}{ls\+From\+Explicit\+Mesh}}$<$ T, D $>$\+::box\+::x\+Max\hspace{0.3cm}{\ttfamily [private]}}
+
+\mbox{\Hypertarget{classlsFromExplicitMesh_1_1box_af349197c6eb07741a09cdf503aca8be3}\label{classlsFromExplicitMesh_1_1box_af349197c6eb07741a09cdf503aca8be3}} 
+\index{lsFromExplicitMesh$<$ T, D $>$::box@{lsFromExplicitMesh$<$ T, D $>$::box}!xMin@{xMin}}
+\index{xMin@{xMin}!lsFromExplicitMesh$<$ T, D $>$::box@{lsFromExplicitMesh$<$ T, D $>$::box}}
+\doxysubsubsection{\texorpdfstring{xMin}{xMin}}
+{\footnotesize\ttfamily template$<$class T , int D$>$ \\
+hrle\+Vector\+Type$<$hrle\+Index\+Type, D -\/ 1$>$ \mbox{\hyperlink{classlsFromExplicitMesh}{ls\+From\+Explicit\+Mesh}}$<$ T, D $>$\+::box\+::x\+Min\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+/home/klemenschits/\+Code/\+Vienna\+L\+S/include/\mbox{\hyperlink{lsFromExplicitMesh__template_8hpp}{ls\+From\+Explicit\+Mesh\+\_\+template.\+hpp}}\end{DoxyCompactItemize}

@@ -9,6 +9,9 @@
 #include <hrleFillDomainWithSignedDistance.hpp>
 #include <hrleVectorType.hpp>
 
+///  Class containing all information about the level set, including
+///  the dimensions of the domain, boundary conditions and all data.
+
 template <class T, int D> class lsDomain {
 public:
   // TYPEDEFS

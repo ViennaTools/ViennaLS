@@ -1,0 +1,381 @@
+\hypertarget{classlsDomain}{}\doxysection{ls\+Domain$<$ T, D $>$ Class Template Reference}
+\label{classlsDomain}\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+
+
+{\ttfamily \#include $<$ls\+Domain\+\_\+template.\+hpp$>$}
+
+\doxysubsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+typedef T \mbox{\hyperlink{classlsDomain_a0fd2ecbf57e7608ab81b6a38342f9e6f}{Value\+Type}}
+\item 
+typedef hrle\+Grid$<$ D $>$ \mbox{\hyperlink{classlsDomain_acd1ed71ed408b19ab82f4b33db28a20d}{Grid\+Type}}
+\item 
+typedef hrle\+Domain$<$ T, D $>$ \mbox{\hyperlink{classlsDomain_a7e989b2c137e03c4f8e09c181b6311af}{Domain\+Type}}
+\item 
+typedef Grid\+Type\+::boundary\+Type \mbox{\hyperlink{classlsDomain_a5f260245949e4b99d9402eb9716f0089}{Boundary\+Type}}
+\item 
+typedef std\+::vector$<$ std\+::pair$<$ hrle\+Vector\+Type$<$ hrle\+Index\+Type, D $>$, T $>$ $>$ \mbox{\hyperlink{classlsDomain_a81a5c708142e9a0b5bcf2a537934cf7f}{Point\+Value\+Vector\+Type}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classlsDomain_ae4d8f81852411480790eca52f704c101}{ls\+Domain}} (hrle\+Coord\+Type grid\+Delta=1.\+0)
+\begin{DoxyCompactList}\small\item\em initalise an empty infinite \mbox{\hyperlink{classlsDomain}{ls\+Domain}} \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classlsDomain_a1b93737819bb59987f11239a38d26d1c}{ls\+Domain}} (hrle\+Coord\+Type $\ast$bounds, \mbox{\hyperlink{classlsDomain_a5f260245949e4b99d9402eb9716f0089}{Boundary\+Type}} $\ast$boundary\+Conditions, hrle\+Coord\+Type grid\+Delta=1.\+0)
+\item 
+\mbox{\hyperlink{classlsDomain_aa1b62b9875d64df99915f943a802fdec}{ls\+Domain}} (\mbox{\hyperlink{classlsDomain_a81a5c708142e9a0b5bcf2a537934cf7f}{Point\+Value\+Vector\+Type}} point\+Data, hrle\+Coord\+Type $\ast$bounds, \mbox{\hyperlink{classlsDomain_a5f260245949e4b99d9402eb9716f0089}{Boundary\+Type}} $\ast$boundary\+Conditions, hrle\+Coord\+Type grid\+Delta=1.\+0)
+\item 
+\mbox{\hyperlink{classlsDomain_a58c7ef76498ba1a3d0979f64b32f4af6}{ls\+Domain}} (\mbox{\hyperlink{classlsDomain_acd1ed71ed408b19ab82f4b33db28a20d}{Grid\+Type}} passed\+Grid)
+\item 
+\mbox{\hyperlink{classlsDomain_aade669737d04e286582414e0e95db446}{ls\+Domain}} (\mbox{\hyperlink{classlsDomain}{ls\+Domain}} \&passedls\+Domain)
+\item 
+void \mbox{\hyperlink{classlsDomain_a413380ae4d497ab06c56e28aaea6c2ce}{finalize}} (int new\+Width)
+\item 
+void \mbox{\hyperlink{classlsDomain_ad3d4f7ece6737806c42f642aa42d8309}{finalize}} ()
+\item 
+void \mbox{\hyperlink{classlsDomain_a7044ff70c7b9db75954e096320a14481}{deep\+Copy}} (const \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$ \&passedls\+Domain)
+\begin{DoxyCompactList}\small\item\em copy all values of \char`\"{}passedls\+Domain\char`\"{} to this \mbox{\hyperlink{classlsDomain}{ls\+Domain}} \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classlsDomain_ac5f0a15b5375a11331db810afb4d42dd}{insert\+Points}} (\mbox{\hyperlink{classlsDomain_a81a5c708142e9a0b5bcf2a537934cf7f}{Point\+Value\+Vector\+Type}} point\+Data)
+\begin{DoxyCompactList}\small\item\em re-\/initalise \mbox{\hyperlink{classlsDomain}{ls\+Domain}} with the point/value pairs in point\+Data \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classlsDomain_a1beae2e9e8e09a26b14c5781055227c3}{calculate\+Active\+Point\+Ids}} ()
+\item 
+hrle\+Size\+Type \mbox{\hyperlink{classlsDomain_a59638ab46e55b5686c78329f0450dfaa}{get\+Active\+Point\+Id}} (hrle\+Size\+Type point\+Id) const
+\begin{DoxyCompactList}\small\item\em get the active\+Point\+Id of the point with point\+Id \end{DoxyCompactList}\item 
+hrle\+Size\+Type \mbox{\hyperlink{classlsDomain_a2d1509930b4a0ff6d4ccbb127c20fed6}{get\+Point\+Id}} (hrle\+Size\+Type active\+Point\+Id) const
+\begin{DoxyCompactList}\small\item\em get the point\+Id from the active point with active\+Point\+Id \end{DoxyCompactList}\item 
+const \mbox{\hyperlink{classlsDomain_acd1ed71ed408b19ab82f4b33db28a20d}{Grid\+Type}} \& \mbox{\hyperlink{classlsDomain_a1b8d18c724f766b6d89b421c130544a3}{get\+Grid}} () const
+\begin{DoxyCompactList}\small\item\em get reference to the grid on which the levelset is defined \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classlsDomain_a7e989b2c137e03c4f8e09c181b6311af}{Domain\+Type}} \& \mbox{\hyperlink{classlsDomain_abcc443a9e4a28b3f85d517b5c933da39}{get\+Domain}} ()
+\begin{DoxyCompactList}\small\item\em get const reference to the underlying hrle\+Domain data structure \end{DoxyCompactList}\item 
+const \mbox{\hyperlink{classlsDomain_a7e989b2c137e03c4f8e09c181b6311af}{Domain\+Type}} \& \mbox{\hyperlink{classlsDomain_a85a7820776151da133a63602909b2701}{get\+Domain}} () const
+\item 
+unsigned \mbox{\hyperlink{classlsDomain_a392c3fcfc0a5c09d19cc1c319c49e49d}{get\+Number\+Of\+Segments}} () const
+\item 
+unsigned \mbox{\hyperlink{classlsDomain_aeaedf9b83e01197f5e1ccf744364f25e}{get\+Number\+Of\+Points}} () const
+\begin{DoxyCompactList}\small\item\em returns the number of defined points \end{DoxyCompactList}\item 
+unsigned \mbox{\hyperlink{classlsDomain_a35a56c667b10f79010a28712ff497819}{get\+Number\+Of\+Active\+Points}} () const
+\begin{DoxyCompactList}\small\item\em returns the number of defined point with value $<$= 0.\+5 \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{classlsDomain_a7c41c369debd2f5eeddfc7d4586d7116}{get\+Level\+Set\+Width}} () const
+\item 
+void \mbox{\hyperlink{classlsDomain_a615d5361183773a25292ead3c3a6ef08}{set\+Level\+Set\+Width}} (int width)
+\item 
+void \mbox{\hyperlink{classlsDomain_aadf4b2701ea2e00e344872ef85389382}{print}} ()
+\begin{DoxyCompactList}\small\item\em prints basic information and all memebers of the levelset structure \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Static Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+static constexpr int \mbox{\hyperlink{classlsDomain_a05040bec206fc84f3102a4f4aee68950}{dimensions}} = D
+\item 
+static constexpr T \mbox{\hyperlink{classlsDomain_aac675698e5291e2a97a16937f556c3b2}{P\+O\+S\+\_\+\+V\+A\+L\+UE}} = std\+::numeric\+\_\+limits$<$T$>$\+::max()
+\item 
+static constexpr T \mbox{\hyperlink{classlsDomain_a0788661d06a9643ba83d2b5f8e7aa828}{N\+E\+G\+\_\+\+V\+A\+L\+UE}} = std\+::numeric\+\_\+limits$<$T$>$\+::lowest()
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classlsDomain_acd1ed71ed408b19ab82f4b33db28a20d}{Grid\+Type}} \mbox{\hyperlink{classlsDomain_a8e652dfb54346a0352e2239fdf5caed8}{grid}}
+\item 
+\mbox{\hyperlink{classlsDomain_a7e989b2c137e03c4f8e09c181b6311af}{Domain\+Type}} \mbox{\hyperlink{classlsDomain_a1c9d3112bfdfbf4aeb99f6459a4df953}{domain}}
+\item 
+int \mbox{\hyperlink{classlsDomain_a5149505c83019e57f18e2df1177411bc}{level\+Set\+Width}} = 1
+\item 
+unsigned \mbox{\hyperlink{classlsDomain_ac27d771ef6aa94b02c7b6f593fcdb647}{number\+Of\+Active\+Points}}
+\item 
+std\+::vector$<$ hrle\+Size\+Type $>$ \mbox{\hyperlink{classlsDomain_acd8934666745b8224fa60d2ca41b4cb7}{active\+Point\+Ids}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Member Typedef Documentation}
+\mbox{\Hypertarget{classlsDomain_a5f260245949e4b99d9402eb9716f0089}\label{classlsDomain_a5f260245949e4b99d9402eb9716f0089}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!BoundaryType@{BoundaryType}}
+\index{BoundaryType@{BoundaryType}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{BoundaryType}{BoundaryType}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+typedef Grid\+Type\+::boundary\+Type \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::\mbox{\hyperlink{classlsDomain_a5f260245949e4b99d9402eb9716f0089}{Boundary\+Type}}}
+
+\mbox{\Hypertarget{classlsDomain_a7e989b2c137e03c4f8e09c181b6311af}\label{classlsDomain_a7e989b2c137e03c4f8e09c181b6311af}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!DomainType@{DomainType}}
+\index{DomainType@{DomainType}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{DomainType}{DomainType}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+typedef hrle\+Domain$<$T, D$>$ \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::\mbox{\hyperlink{classlsDomain_a7e989b2c137e03c4f8e09c181b6311af}{Domain\+Type}}}
+
+\mbox{\Hypertarget{classlsDomain_acd1ed71ed408b19ab82f4b33db28a20d}\label{classlsDomain_acd1ed71ed408b19ab82f4b33db28a20d}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!GridType@{GridType}}
+\index{GridType@{GridType}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{GridType}{GridType}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+typedef hrle\+Grid$<$D$>$ \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::\mbox{\hyperlink{classlsDomain_acd1ed71ed408b19ab82f4b33db28a20d}{Grid\+Type}}}
+
+\mbox{\Hypertarget{classlsDomain_a81a5c708142e9a0b5bcf2a537934cf7f}\label{classlsDomain_a81a5c708142e9a0b5bcf2a537934cf7f}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!PointValueVectorType@{PointValueVectorType}}
+\index{PointValueVectorType@{PointValueVectorType}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{PointValueVectorType}{PointValueVectorType}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+typedef std\+::vector$<$std\+::pair$<$hrle\+Vector\+Type$<$hrle\+Index\+Type, D$>$, T$>$ $>$ \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::\mbox{\hyperlink{classlsDomain_a81a5c708142e9a0b5bcf2a537934cf7f}{Point\+Value\+Vector\+Type}}}
+
+\mbox{\Hypertarget{classlsDomain_a0fd2ecbf57e7608ab81b6a38342f9e6f}\label{classlsDomain_a0fd2ecbf57e7608ab81b6a38342f9e6f}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!ValueType@{ValueType}}
+\index{ValueType@{ValueType}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{ValueType}{ValueType}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+typedef T \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::\mbox{\hyperlink{classlsDomain_a0fd2ecbf57e7608ab81b6a38342f9e6f}{Value\+Type}}}
+
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classlsDomain_ae4d8f81852411480790eca52f704c101}\label{classlsDomain_ae4d8f81852411480790eca52f704c101}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!lsDomain@{lsDomain}}
+\index{lsDomain@{lsDomain}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{lsDomain()}{lsDomain()}\hspace{0.1cm}{\footnotesize\ttfamily [1/5]}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+\mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::\mbox{\hyperlink{classlsDomain}{ls\+Domain}} (\begin{DoxyParamCaption}\item[{hrle\+Coord\+Type}]{grid\+Delta = {\ttfamily 1.0} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+initalise an empty infinite \mbox{\hyperlink{classlsDomain}{ls\+Domain}} 
+
+\mbox{\Hypertarget{classlsDomain_a1b93737819bb59987f11239a38d26d1c}\label{classlsDomain_a1b93737819bb59987f11239a38d26d1c}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!lsDomain@{lsDomain}}
+\index{lsDomain@{lsDomain}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{lsDomain()}{lsDomain()}\hspace{0.1cm}{\footnotesize\ttfamily [2/5]}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+\mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::\mbox{\hyperlink{classlsDomain}{ls\+Domain}} (\begin{DoxyParamCaption}\item[{hrle\+Coord\+Type $\ast$}]{bounds,  }\item[{\mbox{\hyperlink{classlsDomain_a5f260245949e4b99d9402eb9716f0089}{Boundary\+Type}} $\ast$}]{boundary\+Conditions,  }\item[{hrle\+Coord\+Type}]{grid\+Delta = {\ttfamily 1.0} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsDomain_aa1b62b9875d64df99915f943a802fdec}\label{classlsDomain_aa1b62b9875d64df99915f943a802fdec}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!lsDomain@{lsDomain}}
+\index{lsDomain@{lsDomain}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{lsDomain()}{lsDomain()}\hspace{0.1cm}{\footnotesize\ttfamily [3/5]}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+\mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::\mbox{\hyperlink{classlsDomain}{ls\+Domain}} (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classlsDomain_a81a5c708142e9a0b5bcf2a537934cf7f}{Point\+Value\+Vector\+Type}}}]{point\+Data,  }\item[{hrle\+Coord\+Type $\ast$}]{bounds,  }\item[{\mbox{\hyperlink{classlsDomain_a5f260245949e4b99d9402eb9716f0089}{Boundary\+Type}} $\ast$}]{boundary\+Conditions,  }\item[{hrle\+Coord\+Type}]{grid\+Delta = {\ttfamily 1.0} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+initialise \mbox{\hyperlink{classlsDomain}{ls\+Domain}} with domain size \char`\"{}bounds\char`\"{}, filled with point/value pairs in point\+Data \mbox{\Hypertarget{classlsDomain_a58c7ef76498ba1a3d0979f64b32f4af6}\label{classlsDomain_a58c7ef76498ba1a3d0979f64b32f4af6}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!lsDomain@{lsDomain}}
+\index{lsDomain@{lsDomain}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{lsDomain()}{lsDomain()}\hspace{0.1cm}{\footnotesize\ttfamily [4/5]}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+\mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::\mbox{\hyperlink{classlsDomain}{ls\+Domain}} (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classlsDomain_acd1ed71ed408b19ab82f4b33db28a20d}{Grid\+Type}}}]{passed\+Grid }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsDomain_aade669737d04e286582414e0e95db446}\label{classlsDomain_aade669737d04e286582414e0e95db446}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!lsDomain@{lsDomain}}
+\index{lsDomain@{lsDomain}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{lsDomain()}{lsDomain()}\hspace{0.1cm}{\footnotesize\ttfamily [5/5]}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+\mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::\mbox{\hyperlink{classlsDomain}{ls\+Domain}} (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$ \&}]{passedls\+Domain }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classlsDomain_a1beae2e9e8e09a26b14c5781055227c3}\label{classlsDomain_a1beae2e9e8e09a26b14c5781055227c3}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!calculateActivePointIds@{calculateActivePointIds}}
+\index{calculateActivePointIds@{calculateActivePointIds}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{calculateActivePointIds()}{calculateActivePointIds()}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+void \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::calculate\+Active\+Point\+Ids (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+constructs the active\+Point\+Ids vector which holds the active point ID of a point at the index Point\+Id \mbox{\Hypertarget{classlsDomain_a7044ff70c7b9db75954e096320a14481}\label{classlsDomain_a7044ff70c7b9db75954e096320a14481}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!deepCopy@{deepCopy}}
+\index{deepCopy@{deepCopy}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{deepCopy()}{deepCopy()}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+void \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::deep\+Copy (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$ \&}]{passedls\+Domain }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+copy all values of \char`\"{}passedls\+Domain\char`\"{} to this \mbox{\hyperlink{classlsDomain}{ls\+Domain}} 
+
+\mbox{\Hypertarget{classlsDomain_ad3d4f7ece6737806c42f642aa42d8309}\label{classlsDomain_ad3d4f7ece6737806c42f642aa42d8309}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!finalize@{finalize}}
+\index{finalize@{finalize}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{finalize()}{finalize()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+void \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::finalize (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+this function finalizes the levelset, so it is ready for use by other algorithms \mbox{\Hypertarget{classlsDomain_a413380ae4d497ab06c56e28aaea6c2ce}\label{classlsDomain_a413380ae4d497ab06c56e28aaea6c2ce}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!finalize@{finalize}}
+\index{finalize@{finalize}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{finalize()}{finalize()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+void \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::finalize (\begin{DoxyParamCaption}\item[{int}]{new\+Width }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+this function sets a new levelset width and finalizes the levelset, so it is ready for use by other algorithms \mbox{\Hypertarget{classlsDomain_a59638ab46e55b5686c78329f0450dfaa}\label{classlsDomain_a59638ab46e55b5686c78329f0450dfaa}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!getActivePointId@{getActivePointId}}
+\index{getActivePointId@{getActivePointId}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{getActivePointId()}{getActivePointId()}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+hrle\+Size\+Type \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::get\+Active\+Point\+Id (\begin{DoxyParamCaption}\item[{hrle\+Size\+Type}]{point\+Id }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+get the active\+Point\+Id of the point with point\+Id 
+
+\mbox{\Hypertarget{classlsDomain_abcc443a9e4a28b3f85d517b5c933da39}\label{classlsDomain_abcc443a9e4a28b3f85d517b5c933da39}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!getDomain@{getDomain}}
+\index{getDomain@{getDomain}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{getDomain()}{getDomain()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+\mbox{\hyperlink{classlsDomain_a7e989b2c137e03c4f8e09c181b6311af}{Domain\+Type}}\& \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::get\+Domain (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+get const reference to the underlying hrle\+Domain data structure 
+
+\mbox{\Hypertarget{classlsDomain_a85a7820776151da133a63602909b2701}\label{classlsDomain_a85a7820776151da133a63602909b2701}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!getDomain@{getDomain}}
+\index{getDomain@{getDomain}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{getDomain()}{getDomain()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+const \mbox{\hyperlink{classlsDomain_a7e989b2c137e03c4f8e09c181b6311af}{Domain\+Type}}\& \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::get\+Domain (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsDomain_a1b8d18c724f766b6d89b421c130544a3}\label{classlsDomain_a1b8d18c724f766b6d89b421c130544a3}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!getGrid@{getGrid}}
+\index{getGrid@{getGrid}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{getGrid()}{getGrid()}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+const \mbox{\hyperlink{classlsDomain_acd1ed71ed408b19ab82f4b33db28a20d}{Grid\+Type}}\& \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::get\+Grid (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+get reference to the grid on which the levelset is defined 
+
+\mbox{\Hypertarget{classlsDomain_a7c41c369debd2f5eeddfc7d4586d7116}\label{classlsDomain_a7c41c369debd2f5eeddfc7d4586d7116}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!getLevelSetWidth@{getLevelSetWidth}}
+\index{getLevelSetWidth@{getLevelSetWidth}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{getLevelSetWidth()}{getLevelSetWidth()}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+int \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::get\+Level\+Set\+Width (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsDomain_a35a56c667b10f79010a28712ff497819}\label{classlsDomain_a35a56c667b10f79010a28712ff497819}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!getNumberOfActivePoints@{getNumberOfActivePoints}}
+\index{getNumberOfActivePoints@{getNumberOfActivePoints}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{getNumberOfActivePoints()}{getNumberOfActivePoints()}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+unsigned \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::get\+Number\+Of\+Active\+Points (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+returns the number of defined point with value $<$= 0.\+5 
+
+\mbox{\Hypertarget{classlsDomain_aeaedf9b83e01197f5e1ccf744364f25e}\label{classlsDomain_aeaedf9b83e01197f5e1ccf744364f25e}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!getNumberOfPoints@{getNumberOfPoints}}
+\index{getNumberOfPoints@{getNumberOfPoints}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{getNumberOfPoints()}{getNumberOfPoints()}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+unsigned \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::get\+Number\+Of\+Points (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+returns the number of defined points 
+
+\mbox{\Hypertarget{classlsDomain_a392c3fcfc0a5c09d19cc1c319c49e49d}\label{classlsDomain_a392c3fcfc0a5c09d19cc1c319c49e49d}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!getNumberOfSegments@{getNumberOfSegments}}
+\index{getNumberOfSegments@{getNumberOfSegments}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{getNumberOfSegments()}{getNumberOfSegments()}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+unsigned \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::get\+Number\+Of\+Segments (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+returns the number of segments, the levelset is split into. This is useful for algorithm parallelisation \mbox{\Hypertarget{classlsDomain_a2d1509930b4a0ff6d4ccbb127c20fed6}\label{classlsDomain_a2d1509930b4a0ff6d4ccbb127c20fed6}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!getPointId@{getPointId}}
+\index{getPointId@{getPointId}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{getPointId()}{getPointId()}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+hrle\+Size\+Type \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::get\+Point\+Id (\begin{DoxyParamCaption}\item[{hrle\+Size\+Type}]{active\+Point\+Id }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+get the point\+Id from the active point with active\+Point\+Id 
+
+\mbox{\Hypertarget{classlsDomain_ac5f0a15b5375a11331db810afb4d42dd}\label{classlsDomain_ac5f0a15b5375a11331db810afb4d42dd}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!insertPoints@{insertPoints}}
+\index{insertPoints@{insertPoints}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{insertPoints()}{insertPoints()}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+void \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::insert\+Points (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classlsDomain_a81a5c708142e9a0b5bcf2a537934cf7f}{Point\+Value\+Vector\+Type}}}]{point\+Data }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+re-\/initalise \mbox{\hyperlink{classlsDomain}{ls\+Domain}} with the point/value pairs in point\+Data 
+
+\mbox{\Hypertarget{classlsDomain_aadf4b2701ea2e00e344872ef85389382}\label{classlsDomain_aadf4b2701ea2e00e344872ef85389382}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!print@{print}}
+\index{print@{print}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{print()}{print()}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+void \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::print (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+prints basic information and all memebers of the levelset structure 
+
+\mbox{\Hypertarget{classlsDomain_a615d5361183773a25292ead3c3a6ef08}\label{classlsDomain_a615d5361183773a25292ead3c3a6ef08}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!setLevelSetWidth@{setLevelSetWidth}}
+\index{setLevelSetWidth@{setLevelSetWidth}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{setLevelSetWidth()}{setLevelSetWidth()}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+void \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::set\+Level\+Set\+Width (\begin{DoxyParamCaption}\item[{int}]{width }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classlsDomain_acd8934666745b8224fa60d2ca41b4cb7}\label{classlsDomain_acd8934666745b8224fa60d2ca41b4cb7}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!activePointIds@{activePointIds}}
+\index{activePointIds@{activePointIds}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{activePointIds}{activePointIds}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+std\+::vector$<$hrle\+Size\+Type$>$ \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::active\+Point\+Ids\hspace{0.3cm}{\ttfamily [private]}}
+
+\mbox{\Hypertarget{classlsDomain_a05040bec206fc84f3102a4f4aee68950}\label{classlsDomain_a05040bec206fc84f3102a4f4aee68950}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!dimensions@{dimensions}}
+\index{dimensions@{dimensions}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{dimensions}{dimensions}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+constexpr int \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::dimensions = D\hspace{0.3cm}{\ttfamily [static]}, {\ttfamily [constexpr]}}
+
+\mbox{\Hypertarget{classlsDomain_a1c9d3112bfdfbf4aeb99f6459a4df953}\label{classlsDomain_a1c9d3112bfdfbf4aeb99f6459a4df953}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!domain@{domain}}
+\index{domain@{domain}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{domain}{domain}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+\mbox{\hyperlink{classlsDomain_a7e989b2c137e03c4f8e09c181b6311af}{Domain\+Type}} \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::domain\hspace{0.3cm}{\ttfamily [private]}}
+
+\mbox{\Hypertarget{classlsDomain_a8e652dfb54346a0352e2239fdf5caed8}\label{classlsDomain_a8e652dfb54346a0352e2239fdf5caed8}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!grid@{grid}}
+\index{grid@{grid}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{grid}{grid}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+\mbox{\hyperlink{classlsDomain_acd1ed71ed408b19ab82f4b33db28a20d}{Grid\+Type}} \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::grid\hspace{0.3cm}{\ttfamily [private]}}
+
+\mbox{\Hypertarget{classlsDomain_a5149505c83019e57f18e2df1177411bc}\label{classlsDomain_a5149505c83019e57f18e2df1177411bc}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!levelSetWidth@{levelSetWidth}}
+\index{levelSetWidth@{levelSetWidth}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{levelSetWidth}{levelSetWidth}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+int \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::level\+Set\+Width = 1\hspace{0.3cm}{\ttfamily [private]}}
+
+\mbox{\Hypertarget{classlsDomain_a0788661d06a9643ba83d2b5f8e7aa828}\label{classlsDomain_a0788661d06a9643ba83d2b5f8e7aa828}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!NEG\_VALUE@{NEG\_VALUE}}
+\index{NEG\_VALUE@{NEG\_VALUE}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{NEG\_VALUE}{NEG\_VALUE}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+constexpr T \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::N\+E\+G\+\_\+\+V\+A\+L\+UE = std\+::numeric\+\_\+limits$<$T$>$\+::lowest()\hspace{0.3cm}{\ttfamily [static]}, {\ttfamily [constexpr]}}
+
+\mbox{\Hypertarget{classlsDomain_ac27d771ef6aa94b02c7b6f593fcdb647}\label{classlsDomain_ac27d771ef6aa94b02c7b6f593fcdb647}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!numberOfActivePoints@{numberOfActivePoints}}
+\index{numberOfActivePoints@{numberOfActivePoints}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{numberOfActivePoints}{numberOfActivePoints}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+unsigned \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::number\+Of\+Active\+Points\hspace{0.3cm}{\ttfamily [private]}}
+
+\mbox{\Hypertarget{classlsDomain_aac675698e5291e2a97a16937f556c3b2}\label{classlsDomain_aac675698e5291e2a97a16937f556c3b2}} 
+\index{lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}!POS\_VALUE@{POS\_VALUE}}
+\index{POS\_VALUE@{POS\_VALUE}!lsDomain$<$ T, D $>$@{lsDomain$<$ T, D $>$}}
+\doxysubsubsection{\texorpdfstring{POS\_VALUE}{POS\_VALUE}}
+{\footnotesize\ttfamily template$<$class T, int D$>$ \\
+constexpr T \mbox{\hyperlink{classlsDomain}{ls\+Domain}}$<$ T, D $>$\+::P\+O\+S\+\_\+\+V\+A\+L\+UE = std\+::numeric\+\_\+limits$<$T$>$\+::max()\hspace{0.3cm}{\ttfamily [static]}, {\ttfamily [constexpr]}}
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+/home/klemenschits/\+Code/\+Vienna\+L\+S/include/\mbox{\hyperlink{lsDomain__template_8hpp}{ls\+Domain\+\_\+template.\+hpp}}\end{DoxyCompactItemize}

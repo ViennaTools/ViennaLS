@@ -147,7 +147,7 @@ public:
     auto &grid = levelSet.getGrid();
     double gridDelta = grid.getGridDelta();
 
-    hrleVectorType<double, 3> coordinate(0., 0., 0.);
+    hrleVectorType<T, 3> coordinate(0., 0., 0.);
     for (unsigned i = 0; i < D; ++i) {
       coordinate[i] = indices[i] * gridDelta;
     }
@@ -155,7 +155,7 @@ public:
     // move neighborIterator to current position
     neighborIterator.goToIndicesSequential(indices);
 
-    hrleVectorType<double, 3> vectorVelocity =
+    hrleVectorType<T, 3> vectorVelocity =
         velocities->getVectorVelocity(coordinate, material);
     double scalarVelocity = velocities->getScalarVelocity(coordinate, material);
 
@@ -232,7 +232,7 @@ public:
         // Check for corrupted normal
         if ((std::abs(normal[0]) < 1e-6) && (std::abs(normal[1]) < 1e-6) &&
             (std::abs(normal[2]) < 1e-6)) {
-          alphas.push_back(hrleVectorType<T, D>(0.0));
+          alphas.push_back(hrleVectorType<T, D>(T(0)));
           continue;
         }
 

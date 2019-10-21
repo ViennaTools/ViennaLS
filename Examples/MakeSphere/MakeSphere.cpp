@@ -12,12 +12,18 @@
 #include <lsToVoxelMesh.hpp>
 #include <lsVTKWriter.hpp>
 
+/**
+  Minimal example showing how to write and read different
+  meshes created by the algorithms lsToVoxelMesh and lsToExplicitMesh.
+  \example MakeSphere.cpp
+*/
+
 int main() {
   constexpr int D = 2;
 
   omp_set_num_threads(4);
 
-  lsDomain_double_2 levelSet;
+  lsDomain<double, D> levelSet;
   lsMesh mesh;
 
   const double radius = 27.3;

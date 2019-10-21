@@ -9,7 +9,9 @@
 #include <lsMesh.hpp>
 
 /// Creates a mesh, which consists only of quads/hexas for completely
-/// filled grid cells in the level set
+/// filled grid cells in the level set. Interfaces will not be smooth
+/// but stepped. (This can be used to create meshes for finite difference
+/// algorithms)
 template <class T, int D> class lsToVoxelMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
 

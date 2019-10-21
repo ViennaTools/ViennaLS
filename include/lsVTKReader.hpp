@@ -17,6 +17,7 @@
 #include <vtkXMLUnstructuredGridReader.h>
 #endif // VIENNALS_USE_VTK
 
+/// Class handling the import of VTK file types.
 class lsVTKReader {
   lsMesh &mesh;
 

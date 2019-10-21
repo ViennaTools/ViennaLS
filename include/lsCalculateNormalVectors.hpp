@@ -9,10 +9,11 @@
 #include <hrleVectorType.hpp>
 
 #include <lsDomain.hpp>
+#include <lsMessage.hpp>
 
 /// This algorithm is used to find the normal vectors for all points
-/// with an and LS value less than 0.5 and only thos points.
-/// Since neighbors in each cartesion direction are necessary for
+/// with an and LS value less than 0.5 and only those points.
+/// Since neighbors in each cartesian direction are necessary for
 /// the calculation, the levelset width must be >=3.
 template <class T, int D> class lsCalculateNormalVectors {
   typedef std::vector<hrleVectorType<T, D>> NormalVectorsType;
@@ -26,6 +27,13 @@ public:
       : domain(passedDomain), normals(passedNormalVectors) {}
 
   void apply() {
+    if (domain.getLevelSetWidth() < 3) {
+      lsMessage::getInstance()
+          .addWarning("lsCalculateNormalVectors: Level set width must be "
+                      "greater than 2!")
+          .print();
+    }
+
     std::vector<std::vector<hrleVectorType<T, D>>> normalVectorsVector(
         domain.getNumberOfSegments());
     double pointsPerSegment =

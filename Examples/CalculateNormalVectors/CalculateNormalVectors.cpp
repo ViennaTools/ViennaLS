@@ -8,6 +8,14 @@
 #include <lsToMesh.hpp>
 #include <lsVTKWriter.hpp>
 
+/**
+  Example showing how to calculate the normal vectors for
+  every grid point stored in an lsDomain and outputting
+  them to an explicit mesh. This also outputs the level set values
+  stored in each grid point.
+  \example calculateNormalVectors.cpp
+*/
+
 int main() {
 
   constexpr int D = 3;
@@ -18,10 +26,10 @@ int main() {
   double gridDelta = 0.25;
 
   double bounds[2 * D] = {-extent, extent, -extent, extent, -extent, extent};
-  lsDomain_double_3::BoundaryType boundaryCons[3];
+  lsDomain<double, D>::BoundaryType boundaryCons[3];
   for (unsigned i = 0; i < D; ++i)
-    boundaryCons[i] = lsDomain_double_3::BoundaryType::SYMMETRIC_BOUNDARY;
-  lsDomain_double_3 sphere1(bounds, boundaryCons, gridDelta);
+    boundaryCons[i] = lsDomain<double, D>::BoundaryType::SYMMETRIC_BOUNDARY;
+  lsDomain<double, D> sphere1(bounds, boundaryCons, gridDelta);
 
   double origin[3] = {5., 0., 0.};
   double radius = 7.3;
@@ -29,7 +37,7 @@ int main() {
   lsMakeGeometry<double, D>(sphere1).makeSphere(origin, radius);
 
   {
-    lsDomain_double_3 sphere2(bounds, boundaryCons, gridDelta);
+    lsDomain<double, D> sphere2(bounds, boundaryCons, gridDelta);
     origin[0] = -5.;
     lsMakeGeometry<double, D>(sphere2).makeSphere(origin, radius);
   }
@@ -51,7 +59,7 @@ int main() {
 
   // also output LS values as scalar data
   std::vector<double> scalars;
-  for (hrleConstSparseIterator<lsDomain_double_3::DomainType> it(
+  for (hrleConstSparseIterator<lsDomain<double, D>::DomainType> it(
            sphere1.getDomain());
        !it.isFinished(); ++it) {
     if (!it.isDefined() || std::abs(it.getValue()) > 0.5)

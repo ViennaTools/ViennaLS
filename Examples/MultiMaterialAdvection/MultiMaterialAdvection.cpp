@@ -9,6 +9,12 @@
 #include <lsToExplicitMesh.hpp>
 #include <lsVTKWriter.hpp>
 
+/**
+  Example showing how to grow/shrink different neighbouring materials
+  at different speeds.
+  \example MultiMaterialAdvection.cpp
+*/
+
 // implement own velocity field for advection
 // in this case just grow one of the materials
 class velocityField : public lsVelocityField<double> {
@@ -43,8 +49,8 @@ int main() {
   // set up simulation domains and geometry
   double gridDelta = 0.25;
 
-  lsDomain_double_3 sphere1(gridDelta);
-  lsDomain_double_3 sphere2(gridDelta);
+  lsDomain<double, D> sphere1(gridDelta);
+  lsDomain<double, D> sphere2(gridDelta);
 
   double origin[3] = {5., 0., 0.};
   double radius = 9.5;
@@ -73,7 +79,7 @@ int main() {
 
   // ADVECTION
   // fill vector with lsDomain pointers
-  std::vector<lsDomain_double_3 *> lsDomains;
+  std::vector<lsDomain<double, D> *> lsDomains;
   lsDomains.push_back(&sphere1);
   lsDomains.push_back(&sphere2);
 

@@ -12,6 +12,12 @@
 #include <lsToMesh.hpp>
 #include <lsVTKWriter.hpp>
 
+/**
+  Minimal example of a plane surface being moved
+  using lsAdvect
+  \example AdvectionPlane.cpp
+*/
+
 // implement own velocity field
 class velocityField : public lsVelocityField<double> {
 public:
@@ -38,10 +44,10 @@ int main() {
   double gridDelta = 1;
 
   double bounds[2 * D] = {-extent, extent, -extent, extent};
-  lsDomain_double_2::BoundaryType boundaryCons[D];
+  lsDomain<double, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D; ++i)
-    boundaryCons[i] = lsDomain_double_2::BoundaryType::SYMMETRIC_BOUNDARY;
-  lsDomain_double_2 plane(bounds, boundaryCons, gridDelta);
+    boundaryCons[i] = lsDomain<double, D>::BoundaryType::SYMMETRIC_BOUNDARY;
+  lsDomain<double, D> plane(bounds, boundaryCons, gridDelta);
 
   double origin[D] = {0., 0.};
   double normal[D] = {1., 1.};
@@ -61,7 +67,7 @@ int main() {
   }
 
   // fill vector with lsDomain pointers
-  std::vector<lsDomain_double_2 *> lsDomains;
+  std::vector<lsDomain<double, D> *> lsDomains;
   lsDomains.push_back(&plane);
 
   velocityField velocities;

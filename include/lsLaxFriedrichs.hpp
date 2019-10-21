@@ -39,7 +39,7 @@ alpha(a)*/
     auto &grid = levelSet.getGrid();
     double gridDelta = grid.getGridDelta();
 
-    hrleVectorType<double, 3> coordinate(0., 0., 0.);
+    hrleVectorType<T, 3> coordinate(0., 0., 0.);
     for (unsigned i = 0; i < D; ++i) {
       coordinate[i] = indices[i] * gridDelta;
     }

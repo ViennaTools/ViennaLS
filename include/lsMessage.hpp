@@ -3,6 +3,7 @@
 
 #include <iostream>
 
+/// Singleton class for thread-safe logging.
 class lsMessage {
   std::string message;
 

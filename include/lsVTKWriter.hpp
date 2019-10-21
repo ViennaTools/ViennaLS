@@ -20,6 +20,7 @@
 #include <vtkXMLUnstructuredGridWriter.h>
 #endif // VIENNALS_USE_VTK
 
+/// Class handling the output of an lsMesh to VTK file types.
 class lsVTKWriter {
   const lsMesh &mesh;
 

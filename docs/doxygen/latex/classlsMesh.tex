@@ -1,0 +1,339 @@
+\hypertarget{classlsMesh}{}\doxysection{ls\+Mesh Class Reference}
+\label{classlsMesh}\index{lsMesh@{lsMesh}}
+
+
+{\ttfamily \#include $<$ls\+Mesh.\+hpp$>$}
+
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+const std\+::vector$<$ hrle\+Vector\+Type$<$ double, 3 $>$ $>$ \& \mbox{\hyperlink{classlsMesh_a45ee061759725d040134c84aaf965e47}{get\+Nodes}} () const
+\item 
+std\+::vector$<$ hrle\+Vector\+Type$<$ double, 3 $>$ $>$ \& \mbox{\hyperlink{classlsMesh_ac93901e2016f865a349888ab6ff31a5d}{get\+Nodes}} ()
+\item 
+std\+::vector$<$ double $>$ \& \mbox{\hyperlink{classlsMesh_a1a5cbae39fab7797df4a6f8fd740b18b}{get\+Scalar\+Data}} (int i)
+\item 
+std\+::vector$<$ hrle\+Vector\+Type$<$ double, 3 $>$ $>$ \& \mbox{\hyperlink{classlsMesh_ae944d759a056d38cc067f7e168cedde9}{get\+Vector\+Data}} (int i)
+\item 
+std\+::vector$<$ unsigned $>$ \& \mbox{\hyperlink{classlsMesh_ad8ca59ac2017b154295e7add303b7e8f}{get\+Materials}} ()
+\item 
+{\footnotesize template$<$int D, typename std\+::enable\+\_\+if$<$ D==1, int $>$\+::type  = 0$>$ }\\std\+::vector$<$ hrle\+Vector\+Type$<$ unsigned, D $>$ $>$ \& \mbox{\hyperlink{classlsMesh_a43e8f99b2a96a1212df0814db27c5ae4}{get\+Elements}} ()
+\item 
+{\footnotesize template$<$int D, typename std\+::enable\+\_\+if$<$ D==2, int $>$\+::type  = 0$>$ }\\std\+::vector$<$ hrle\+Vector\+Type$<$ unsigned, D $>$ $>$ \& \mbox{\hyperlink{classlsMesh_a43e8f99b2a96a1212df0814db27c5ae4}{get\+Elements}} ()
+\item 
+{\footnotesize template$<$int D, typename std\+::enable\+\_\+if$<$ D==3, int $>$\+::type  = 0$>$ }\\std\+::vector$<$ hrle\+Vector\+Type$<$ unsigned, D $>$ $>$ \& \mbox{\hyperlink{classlsMesh_a43e8f99b2a96a1212df0814db27c5ae4}{get\+Elements}} ()
+\item 
+{\footnotesize template$<$int D, typename std\+::enable\+\_\+if$<$ D==4, int $>$\+::type  = 0$>$ }\\std\+::vector$<$ hrle\+Vector\+Type$<$ unsigned, D $>$ $>$ \& \mbox{\hyperlink{classlsMesh_a43e8f99b2a96a1212df0814db27c5ae4}{get\+Elements}} ()
+\item 
+{\footnotesize template$<$int D, typename std\+::enable\+\_\+if$<$ D==8, int $>$\+::type  = 0$>$ }\\std\+::vector$<$ hrle\+Vector\+Type$<$ unsigned, D $>$ $>$ \& \mbox{\hyperlink{classlsMesh_a43e8f99b2a96a1212df0814db27c5ae4}{get\+Elements}} ()
+\item 
+unsigned \mbox{\hyperlink{classlsMesh_aaa55dbae0c86319c30e8385a4bde59aa}{insert\+Next\+Node}} (hrle\+Vector\+Type$<$ double, 3 $>$ \&node)
+\item 
+unsigned \mbox{\hyperlink{classlsMesh_a2179802d2a694a164601c0707727bc1a}{insert\+Next\+Vertex}} (hrle\+Vector\+Type$<$ unsigned, 1 $>$ \&vertex)
+\item 
+unsigned \mbox{\hyperlink{classlsMesh_af7408aa20f90a0c477b61ec81343b8e9}{insert\+Next\+Line}} (hrle\+Vector\+Type$<$ unsigned, 2 $>$ \&line)
+\item 
+unsigned \mbox{\hyperlink{classlsMesh_af49ffa8573e3034f1eaedac9f7c8282e}{insert\+Next\+Triangle}} (hrle\+Vector\+Type$<$ unsigned, 3 $>$ \&triangle)
+\item 
+unsigned \mbox{\hyperlink{classlsMesh_a1cc967a01540b67934f889d60b3297f3}{insert\+Next\+Tetra}} (hrle\+Vector\+Type$<$ unsigned, 4 $>$ \&tetra)
+\item 
+unsigned \mbox{\hyperlink{classlsMesh_a46ba4705f3d965f4edca21f4e229b249}{insert\+Next\+Hexa}} (hrle\+Vector\+Type$<$ unsigned, 8 $>$ \&hexa)
+\item 
+unsigned \mbox{\hyperlink{classlsMesh_ab44fe4c6c59862df87d931fe29cbc4d4}{insert\+Next\+Element}} (hrle\+Vector\+Type$<$ unsigned, 1 $>$ \&vertex)
+\item 
+unsigned \mbox{\hyperlink{classlsMesh_ab6585f7c8fb23573f2f775c1165658a5}{insert\+Next\+Element}} (hrle\+Vector\+Type$<$ unsigned, 2 $>$ \&line)
+\item 
+unsigned \mbox{\hyperlink{classlsMesh_ae917e5832c9a551260942b784e764354}{insert\+Next\+Element}} (hrle\+Vector\+Type$<$ unsigned, 3 $>$ \&triangle)
+\item 
+unsigned \mbox{\hyperlink{classlsMesh_a8ef89aa4fa55331f6c20b549df09182c}{insert\+Next\+Element}} (hrle\+Vector\+Type$<$ unsigned, 4 $>$ \&tetra)
+\item 
+unsigned \mbox{\hyperlink{classlsMesh_a4497aa2d6cde6b38426660407fc99f60}{insert\+Next\+Element}} (hrle\+Vector\+Type$<$ unsigned, 8 $>$ \&hexa)
+\item 
+void \mbox{\hyperlink{classlsMesh_a9d7254a79ef9af27c5bbf3ee3c19524b}{insert\+Next\+Scalar\+Data}} (std\+::vector$<$ double $>$ \&scalars, std\+::string label=\char`\"{}Scalars\char`\"{})
+\item 
+void \mbox{\hyperlink{classlsMesh_adde8e14a0dd596ffd72acc3c539d295f}{insert\+Next\+Vector\+Data}} (std\+::vector$<$ hrle\+Vector\+Type$<$ double, 3 $>$$>$ \&vectors, std\+::string label=\char`\"{}Vectors\char`\"{})
+\item 
+void \mbox{\hyperlink{classlsMesh_aa3cf46c9821b6484913e5d08764259b9}{remove\+Duplicate\+Nodes}} ()
+\item 
+void \mbox{\hyperlink{classlsMesh_a88e396f7712171b58a932463ecdd4843}{clear}} ()
+\item 
+void \mbox{\hyperlink{classlsMesh_a081721ececff229c5ae72d5c7450985a}{print}} ()
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+std\+::vector$<$ hrle\+Vector\+Type$<$ double, 3 $>$ $>$ \mbox{\hyperlink{classlsMesh_a363986b04a8e75a27ad7de58d789948d}{nodes}}
+\item 
+std\+::vector$<$ hrle\+Vector\+Type$<$ unsigned, 1 $>$ $>$ \mbox{\hyperlink{classlsMesh_a61fcf8a002d87bf65e304e4da737e4b6}{vertices}}
+\item 
+std\+::vector$<$ hrle\+Vector\+Type$<$ unsigned, 2 $>$ $>$ \mbox{\hyperlink{classlsMesh_a631c7022a2175a8230796375bc550b42}{lines}}
+\item 
+std\+::vector$<$ hrle\+Vector\+Type$<$ unsigned, 3 $>$ $>$ \mbox{\hyperlink{classlsMesh_a07b4ff12318bebe0b0a8c96cb246c58f}{triangles}}
+\item 
+std\+::vector$<$ hrle\+Vector\+Type$<$ unsigned, 4 $>$ $>$ \mbox{\hyperlink{classlsMesh_a4593e2fddc6a5bfc91d857e3d2515e28}{tetras}}
+\item 
+std\+::vector$<$ hrle\+Vector\+Type$<$ unsigned, 8 $>$ $>$ \mbox{\hyperlink{classlsMesh_af7b9794dea72c302eef7508a19f58bb5}{hexas}}
+\item 
+std\+::vector$<$ unsigned $>$ \mbox{\hyperlink{classlsMesh_a504fca8acd76774a806322158f3174f4}{materials}}
+\item 
+std\+::vector$<$ std\+::vector$<$ double $>$ $>$ \mbox{\hyperlink{classlsMesh_ae26ef28956a80e2783277c3ac5d6532e}{scalar\+Data}}
+\item 
+std\+::vector$<$ std\+::string $>$ \mbox{\hyperlink{classlsMesh_a8bc44422a7a561caf5f9e220034f4c63}{scalar\+Data\+Labels}}
+\item 
+std\+::vector$<$ std\+::vector$<$ hrle\+Vector\+Type$<$ double, 3 $>$ $>$ $>$ \mbox{\hyperlink{classlsMesh_a1b04aeb7e9d58bda39e35c7a5eaccc39}{vector\+Data}}
+\item 
+std\+::vector$<$ std\+::string $>$ \mbox{\hyperlink{classlsMesh_af897ce13e3bd9b6141d12645e7dc2dd7}{vector\+Data\+Labels}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$class Element\+Type $>$ }\\void \mbox{\hyperlink{classlsMesh_abd0fead3bd240d35de51670599d424ac}{replace\+Node}} (Element\+Type \&elements, std\+::pair$<$ unsigned, unsigned $>$ node)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+This class holds an explicit mesh, which is always given in 3 dimensions If it describes a 2D mesh, the third dimension is set to 0 Only two types of elements, Triangles and Tetras, are supported 
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classlsMesh_a88e396f7712171b58a932463ecdd4843}\label{classlsMesh_a88e396f7712171b58a932463ecdd4843}} 
+\index{lsMesh@{lsMesh}!clear@{clear}}
+\index{clear@{clear}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{clear()}{clear()}}
+{\footnotesize\ttfamily void ls\+Mesh\+::clear (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_a43e8f99b2a96a1212df0814db27c5ae4}\label{classlsMesh_a43e8f99b2a96a1212df0814db27c5ae4}} 
+\index{lsMesh@{lsMesh}!getElements@{getElements}}
+\index{getElements@{getElements}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{getElements()}{getElements()}\hspace{0.1cm}{\footnotesize\ttfamily [1/5]}}
+{\footnotesize\ttfamily template$<$int D, typename std\+::enable\+\_\+if$<$ D==1, int $>$\+::type  = 0$>$ \\
+std\+::vector$<$hrle\+Vector\+Type$<$unsigned, D$>$ $>$\& ls\+Mesh\+::get\+Elements (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_a43e8f99b2a96a1212df0814db27c5ae4}\label{classlsMesh_a43e8f99b2a96a1212df0814db27c5ae4}} 
+\index{lsMesh@{lsMesh}!getElements@{getElements}}
+\index{getElements@{getElements}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{getElements()}{getElements()}\hspace{0.1cm}{\footnotesize\ttfamily [2/5]}}
+{\footnotesize\ttfamily template$<$int D, typename std\+::enable\+\_\+if$<$ D==2, int $>$\+::type  = 0$>$ \\
+std\+::vector$<$hrle\+Vector\+Type$<$unsigned, D$>$ $>$\& ls\+Mesh\+::get\+Elements (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_a43e8f99b2a96a1212df0814db27c5ae4}\label{classlsMesh_a43e8f99b2a96a1212df0814db27c5ae4}} 
+\index{lsMesh@{lsMesh}!getElements@{getElements}}
+\index{getElements@{getElements}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{getElements()}{getElements()}\hspace{0.1cm}{\footnotesize\ttfamily [3/5]}}
+{\footnotesize\ttfamily template$<$int D, typename std\+::enable\+\_\+if$<$ D==3, int $>$\+::type  = 0$>$ \\
+std\+::vector$<$hrle\+Vector\+Type$<$unsigned, D$>$ $>$\& ls\+Mesh\+::get\+Elements (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_a43e8f99b2a96a1212df0814db27c5ae4}\label{classlsMesh_a43e8f99b2a96a1212df0814db27c5ae4}} 
+\index{lsMesh@{lsMesh}!getElements@{getElements}}
+\index{getElements@{getElements}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{getElements()}{getElements()}\hspace{0.1cm}{\footnotesize\ttfamily [4/5]}}
+{\footnotesize\ttfamily template$<$int D, typename std\+::enable\+\_\+if$<$ D==4, int $>$\+::type  = 0$>$ \\
+std\+::vector$<$hrle\+Vector\+Type$<$unsigned, D$>$ $>$\& ls\+Mesh\+::get\+Elements (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_a43e8f99b2a96a1212df0814db27c5ae4}\label{classlsMesh_a43e8f99b2a96a1212df0814db27c5ae4}} 
+\index{lsMesh@{lsMesh}!getElements@{getElements}}
+\index{getElements@{getElements}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{getElements()}{getElements()}\hspace{0.1cm}{\footnotesize\ttfamily [5/5]}}
+{\footnotesize\ttfamily template$<$int D, typename std\+::enable\+\_\+if$<$ D==8, int $>$\+::type  = 0$>$ \\
+std\+::vector$<$hrle\+Vector\+Type$<$unsigned, D$>$ $>$\& ls\+Mesh\+::get\+Elements (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_ad8ca59ac2017b154295e7add303b7e8f}\label{classlsMesh_ad8ca59ac2017b154295e7add303b7e8f}} 
+\index{lsMesh@{lsMesh}!getMaterials@{getMaterials}}
+\index{getMaterials@{getMaterials}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{getMaterials()}{getMaterials()}}
+{\footnotesize\ttfamily std\+::vector$<$unsigned$>$\& ls\+Mesh\+::get\+Materials (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_ac93901e2016f865a349888ab6ff31a5d}\label{classlsMesh_ac93901e2016f865a349888ab6ff31a5d}} 
+\index{lsMesh@{lsMesh}!getNodes@{getNodes}}
+\index{getNodes@{getNodes}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{getNodes()}{getNodes()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily std\+::vector$<$hrle\+Vector\+Type$<$double, 3$>$ $>$\& ls\+Mesh\+::get\+Nodes (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_a45ee061759725d040134c84aaf965e47}\label{classlsMesh_a45ee061759725d040134c84aaf965e47}} 
+\index{lsMesh@{lsMesh}!getNodes@{getNodes}}
+\index{getNodes@{getNodes}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{getNodes()}{getNodes()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily const std\+::vector$<$hrle\+Vector\+Type$<$double, 3$>$ $>$\& ls\+Mesh\+::get\+Nodes (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_a1a5cbae39fab7797df4a6f8fd740b18b}\label{classlsMesh_a1a5cbae39fab7797df4a6f8fd740b18b}} 
+\index{lsMesh@{lsMesh}!getScalarData@{getScalarData}}
+\index{getScalarData@{getScalarData}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{getScalarData()}{getScalarData()}}
+{\footnotesize\ttfamily std\+::vector$<$double$>$\& ls\+Mesh\+::get\+Scalar\+Data (\begin{DoxyParamCaption}\item[{int}]{i }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_ae944d759a056d38cc067f7e168cedde9}\label{classlsMesh_ae944d759a056d38cc067f7e168cedde9}} 
+\index{lsMesh@{lsMesh}!getVectorData@{getVectorData}}
+\index{getVectorData@{getVectorData}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{getVectorData()}{getVectorData()}}
+{\footnotesize\ttfamily std\+::vector$<$hrle\+Vector\+Type$<$double, 3$>$ $>$\& ls\+Mesh\+::get\+Vector\+Data (\begin{DoxyParamCaption}\item[{int}]{i }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_ab44fe4c6c59862df87d931fe29cbc4d4}\label{classlsMesh_ab44fe4c6c59862df87d931fe29cbc4d4}} 
+\index{lsMesh@{lsMesh}!insertNextElement@{insertNextElement}}
+\index{insertNextElement@{insertNextElement}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{insertNextElement()}{insertNextElement()}\hspace{0.1cm}{\footnotesize\ttfamily [1/5]}}
+{\footnotesize\ttfamily unsigned ls\+Mesh\+::insert\+Next\+Element (\begin{DoxyParamCaption}\item[{hrle\+Vector\+Type$<$ unsigned, 1 $>$ \&}]{vertex }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_ab6585f7c8fb23573f2f775c1165658a5}\label{classlsMesh_ab6585f7c8fb23573f2f775c1165658a5}} 
+\index{lsMesh@{lsMesh}!insertNextElement@{insertNextElement}}
+\index{insertNextElement@{insertNextElement}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{insertNextElement()}{insertNextElement()}\hspace{0.1cm}{\footnotesize\ttfamily [2/5]}}
+{\footnotesize\ttfamily unsigned ls\+Mesh\+::insert\+Next\+Element (\begin{DoxyParamCaption}\item[{hrle\+Vector\+Type$<$ unsigned, 2 $>$ \&}]{line }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_ae917e5832c9a551260942b784e764354}\label{classlsMesh_ae917e5832c9a551260942b784e764354}} 
+\index{lsMesh@{lsMesh}!insertNextElement@{insertNextElement}}
+\index{insertNextElement@{insertNextElement}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{insertNextElement()}{insertNextElement()}\hspace{0.1cm}{\footnotesize\ttfamily [3/5]}}
+{\footnotesize\ttfamily unsigned ls\+Mesh\+::insert\+Next\+Element (\begin{DoxyParamCaption}\item[{hrle\+Vector\+Type$<$ unsigned, 3 $>$ \&}]{triangle }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_a8ef89aa4fa55331f6c20b549df09182c}\label{classlsMesh_a8ef89aa4fa55331f6c20b549df09182c}} 
+\index{lsMesh@{lsMesh}!insertNextElement@{insertNextElement}}
+\index{insertNextElement@{insertNextElement}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{insertNextElement()}{insertNextElement()}\hspace{0.1cm}{\footnotesize\ttfamily [4/5]}}
+{\footnotesize\ttfamily unsigned ls\+Mesh\+::insert\+Next\+Element (\begin{DoxyParamCaption}\item[{hrle\+Vector\+Type$<$ unsigned, 4 $>$ \&}]{tetra }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_a4497aa2d6cde6b38426660407fc99f60}\label{classlsMesh_a4497aa2d6cde6b38426660407fc99f60}} 
+\index{lsMesh@{lsMesh}!insertNextElement@{insertNextElement}}
+\index{insertNextElement@{insertNextElement}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{insertNextElement()}{insertNextElement()}\hspace{0.1cm}{\footnotesize\ttfamily [5/5]}}
+{\footnotesize\ttfamily unsigned ls\+Mesh\+::insert\+Next\+Element (\begin{DoxyParamCaption}\item[{hrle\+Vector\+Type$<$ unsigned, 8 $>$ \&}]{hexa }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_a46ba4705f3d965f4edca21f4e229b249}\label{classlsMesh_a46ba4705f3d965f4edca21f4e229b249}} 
+\index{lsMesh@{lsMesh}!insertNextHexa@{insertNextHexa}}
+\index{insertNextHexa@{insertNextHexa}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{insertNextHexa()}{insertNextHexa()}}
+{\footnotesize\ttfamily unsigned ls\+Mesh\+::insert\+Next\+Hexa (\begin{DoxyParamCaption}\item[{hrle\+Vector\+Type$<$ unsigned, 8 $>$ \&}]{hexa }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_af7408aa20f90a0c477b61ec81343b8e9}\label{classlsMesh_af7408aa20f90a0c477b61ec81343b8e9}} 
+\index{lsMesh@{lsMesh}!insertNextLine@{insertNextLine}}
+\index{insertNextLine@{insertNextLine}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{insertNextLine()}{insertNextLine()}}
+{\footnotesize\ttfamily unsigned ls\+Mesh\+::insert\+Next\+Line (\begin{DoxyParamCaption}\item[{hrle\+Vector\+Type$<$ unsigned, 2 $>$ \&}]{line }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_aaa55dbae0c86319c30e8385a4bde59aa}\label{classlsMesh_aaa55dbae0c86319c30e8385a4bde59aa}} 
+\index{lsMesh@{lsMesh}!insertNextNode@{insertNextNode}}
+\index{insertNextNode@{insertNextNode}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{insertNextNode()}{insertNextNode()}}
+{\footnotesize\ttfamily unsigned ls\+Mesh\+::insert\+Next\+Node (\begin{DoxyParamCaption}\item[{hrle\+Vector\+Type$<$ double, 3 $>$ \&}]{node }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_a9d7254a79ef9af27c5bbf3ee3c19524b}\label{classlsMesh_a9d7254a79ef9af27c5bbf3ee3c19524b}} 
+\index{lsMesh@{lsMesh}!insertNextScalarData@{insertNextScalarData}}
+\index{insertNextScalarData@{insertNextScalarData}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{insertNextScalarData()}{insertNextScalarData()}}
+{\footnotesize\ttfamily void ls\+Mesh\+::insert\+Next\+Scalar\+Data (\begin{DoxyParamCaption}\item[{std\+::vector$<$ double $>$ \&}]{scalars,  }\item[{std\+::string}]{label = {\ttfamily \char`\"{}Scalars\char`\"{}} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_a1cc967a01540b67934f889d60b3297f3}\label{classlsMesh_a1cc967a01540b67934f889d60b3297f3}} 
+\index{lsMesh@{lsMesh}!insertNextTetra@{insertNextTetra}}
+\index{insertNextTetra@{insertNextTetra}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{insertNextTetra()}{insertNextTetra()}}
+{\footnotesize\ttfamily unsigned ls\+Mesh\+::insert\+Next\+Tetra (\begin{DoxyParamCaption}\item[{hrle\+Vector\+Type$<$ unsigned, 4 $>$ \&}]{tetra }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_af49ffa8573e3034f1eaedac9f7c8282e}\label{classlsMesh_af49ffa8573e3034f1eaedac9f7c8282e}} 
+\index{lsMesh@{lsMesh}!insertNextTriangle@{insertNextTriangle}}
+\index{insertNextTriangle@{insertNextTriangle}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{insertNextTriangle()}{insertNextTriangle()}}
+{\footnotesize\ttfamily unsigned ls\+Mesh\+::insert\+Next\+Triangle (\begin{DoxyParamCaption}\item[{hrle\+Vector\+Type$<$ unsigned, 3 $>$ \&}]{triangle }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_adde8e14a0dd596ffd72acc3c539d295f}\label{classlsMesh_adde8e14a0dd596ffd72acc3c539d295f}} 
+\index{lsMesh@{lsMesh}!insertNextVectorData@{insertNextVectorData}}
+\index{insertNextVectorData@{insertNextVectorData}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{insertNextVectorData()}{insertNextVectorData()}}
+{\footnotesize\ttfamily void ls\+Mesh\+::insert\+Next\+Vector\+Data (\begin{DoxyParamCaption}\item[{std\+::vector$<$ hrle\+Vector\+Type$<$ double, 3 $>$$>$ \&}]{vectors,  }\item[{std\+::string}]{label = {\ttfamily \char`\"{}Vectors\char`\"{}} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_a2179802d2a694a164601c0707727bc1a}\label{classlsMesh_a2179802d2a694a164601c0707727bc1a}} 
+\index{lsMesh@{lsMesh}!insertNextVertex@{insertNextVertex}}
+\index{insertNextVertex@{insertNextVertex}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{insertNextVertex()}{insertNextVertex()}}
+{\footnotesize\ttfamily unsigned ls\+Mesh\+::insert\+Next\+Vertex (\begin{DoxyParamCaption}\item[{hrle\+Vector\+Type$<$ unsigned, 1 $>$ \&}]{vertex }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_a081721ececff229c5ae72d5c7450985a}\label{classlsMesh_a081721ececff229c5ae72d5c7450985a}} 
+\index{lsMesh@{lsMesh}!print@{print}}
+\index{print@{print}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{print()}{print()}}
+{\footnotesize\ttfamily void ls\+Mesh\+::print (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_aa3cf46c9821b6484913e5d08764259b9}\label{classlsMesh_aa3cf46c9821b6484913e5d08764259b9}} 
+\index{lsMesh@{lsMesh}!removeDuplicateNodes@{removeDuplicateNodes}}
+\index{removeDuplicateNodes@{removeDuplicateNodes}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{removeDuplicateNodes()}{removeDuplicateNodes()}}
+{\footnotesize\ttfamily void ls\+Mesh\+::remove\+Duplicate\+Nodes (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classlsMesh_abd0fead3bd240d35de51670599d424ac}\label{classlsMesh_abd0fead3bd240d35de51670599d424ac}} 
+\index{lsMesh@{lsMesh}!replaceNode@{replaceNode}}
+\index{replaceNode@{replaceNode}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{replaceNode()}{replaceNode()}}
+{\footnotesize\ttfamily template$<$class Element\+Type $>$ \\
+void ls\+Mesh\+::replace\+Node (\begin{DoxyParamCaption}\item[{Element\+Type \&}]{elements,  }\item[{std\+::pair$<$ unsigned, unsigned $>$}]{node }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [private]}}
+
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classlsMesh_af7b9794dea72c302eef7508a19f58bb5}\label{classlsMesh_af7b9794dea72c302eef7508a19f58bb5}} 
+\index{lsMesh@{lsMesh}!hexas@{hexas}}
+\index{hexas@{hexas}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{hexas}{hexas}}
+{\footnotesize\ttfamily std\+::vector$<$hrle\+Vector\+Type$<$unsigned, 8$>$ $>$ ls\+Mesh\+::hexas}
+
+\mbox{\Hypertarget{classlsMesh_a631c7022a2175a8230796375bc550b42}\label{classlsMesh_a631c7022a2175a8230796375bc550b42}} 
+\index{lsMesh@{lsMesh}!lines@{lines}}
+\index{lines@{lines}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{lines}{lines}}
+{\footnotesize\ttfamily std\+::vector$<$hrle\+Vector\+Type$<$unsigned, 2$>$ $>$ ls\+Mesh\+::lines}
+
+\mbox{\Hypertarget{classlsMesh_a504fca8acd76774a806322158f3174f4}\label{classlsMesh_a504fca8acd76774a806322158f3174f4}} 
+\index{lsMesh@{lsMesh}!materials@{materials}}
+\index{materials@{materials}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{materials}{materials}}
+{\footnotesize\ttfamily std\+::vector$<$unsigned$>$ ls\+Mesh\+::materials}
+
+\mbox{\Hypertarget{classlsMesh_a363986b04a8e75a27ad7de58d789948d}\label{classlsMesh_a363986b04a8e75a27ad7de58d789948d}} 
+\index{lsMesh@{lsMesh}!nodes@{nodes}}
+\index{nodes@{nodes}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{nodes}{nodes}}
+{\footnotesize\ttfamily std\+::vector$<$hrle\+Vector\+Type$<$double, 3$>$ $>$ ls\+Mesh\+::nodes}
+
+\mbox{\Hypertarget{classlsMesh_ae26ef28956a80e2783277c3ac5d6532e}\label{classlsMesh_ae26ef28956a80e2783277c3ac5d6532e}} 
+\index{lsMesh@{lsMesh}!scalarData@{scalarData}}
+\index{scalarData@{scalarData}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{scalarData}{scalarData}}
+{\footnotesize\ttfamily std\+::vector$<$std\+::vector$<$double$>$ $>$ ls\+Mesh\+::scalar\+Data}
+
+\mbox{\Hypertarget{classlsMesh_a8bc44422a7a561caf5f9e220034f4c63}\label{classlsMesh_a8bc44422a7a561caf5f9e220034f4c63}} 
+\index{lsMesh@{lsMesh}!scalarDataLabels@{scalarDataLabels}}
+\index{scalarDataLabels@{scalarDataLabels}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{scalarDataLabels}{scalarDataLabels}}
+{\footnotesize\ttfamily std\+::vector$<$std\+::string$>$ ls\+Mesh\+::scalar\+Data\+Labels}
+
+\mbox{\Hypertarget{classlsMesh_a4593e2fddc6a5bfc91d857e3d2515e28}\label{classlsMesh_a4593e2fddc6a5bfc91d857e3d2515e28}} 
+\index{lsMesh@{lsMesh}!tetras@{tetras}}
+\index{tetras@{tetras}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{tetras}{tetras}}
+{\footnotesize\ttfamily std\+::vector$<$hrle\+Vector\+Type$<$unsigned, 4$>$ $>$ ls\+Mesh\+::tetras}
+
+\mbox{\Hypertarget{classlsMesh_a07b4ff12318bebe0b0a8c96cb246c58f}\label{classlsMesh_a07b4ff12318bebe0b0a8c96cb246c58f}} 
+\index{lsMesh@{lsMesh}!triangles@{triangles}}
+\index{triangles@{triangles}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{triangles}{triangles}}
+{\footnotesize\ttfamily std\+::vector$<$hrle\+Vector\+Type$<$unsigned, 3$>$ $>$ ls\+Mesh\+::triangles}
+
+\mbox{\Hypertarget{classlsMesh_a1b04aeb7e9d58bda39e35c7a5eaccc39}\label{classlsMesh_a1b04aeb7e9d58bda39e35c7a5eaccc39}} 
+\index{lsMesh@{lsMesh}!vectorData@{vectorData}}
+\index{vectorData@{vectorData}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{vectorData}{vectorData}}
+{\footnotesize\ttfamily std\+::vector$<$std\+::vector$<$hrle\+Vector\+Type$<$double, 3$>$ $>$ $>$ ls\+Mesh\+::vector\+Data}
+
+\mbox{\Hypertarget{classlsMesh_af897ce13e3bd9b6141d12645e7dc2dd7}\label{classlsMesh_af897ce13e3bd9b6141d12645e7dc2dd7}} 
+\index{lsMesh@{lsMesh}!vectorDataLabels@{vectorDataLabels}}
+\index{vectorDataLabels@{vectorDataLabels}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{vectorDataLabels}{vectorDataLabels}}
+{\footnotesize\ttfamily std\+::vector$<$std\+::string$>$ ls\+Mesh\+::vector\+Data\+Labels}
+
+\mbox{\Hypertarget{classlsMesh_a61fcf8a002d87bf65e304e4da737e4b6}\label{classlsMesh_a61fcf8a002d87bf65e304e4da737e4b6}} 
+\index{lsMesh@{lsMesh}!vertices@{vertices}}
+\index{vertices@{vertices}!lsMesh@{lsMesh}}
+\doxysubsubsection{\texorpdfstring{vertices}{vertices}}
+{\footnotesize\ttfamily std\+::vector$<$hrle\+Vector\+Type$<$unsigned, 1$>$ $>$ ls\+Mesh\+::vertices}
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+/home/klemenschits/\+Code/\+Vienna\+L\+S/include/\mbox{\hyperlink{lsMesh_8hpp}{ls\+Mesh.\+hpp}}\end{DoxyCompactItemize}

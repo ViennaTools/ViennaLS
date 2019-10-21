@@ -7,6 +7,9 @@
 #include <hrleVectorType.hpp>
 #include <lsDomain.hpp>
 
+///  This class is used to perform boolean operations on two
+///  level sets and write the resulting level set into the
+///  first passed level set.
 template <class T, int D> class lsBooleanOperation {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
   lsDomain<T, D> &levelSetA;

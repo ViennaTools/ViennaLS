@@ -22,6 +22,15 @@
 // Velocity accessor
 #include <lsVelocityField.hpp>
 
+/// This class is used to advance level sets over time.
+/// Level sets are passed to the constructor in an std::vector, with
+/// the last element being the level set to advect, or "top level set", while
+/// the others are then adjusted afterwards. In order to ensure that advection
+/// works correctly, the "top level set" has to include all lower level sets:
+/// LS_top = LS_top U LS_i for i = {0 ... n}, where n is the number of level
+/// sets. The velocities used to advect the level set are given in a concrete
+/// implementation of the lsVelocityField (check Advection examples for
+/// guidance)
 template <class T, int D> class lsAdvect {
 public:
   enum IntegrationSchemeEnum : unsigned {
@@ -188,7 +197,7 @@ private:
               T value = it.getNeighbor(i).getValue();
               if (std::abs(value) <= 1.0 && (value > 0)) {
                 if (distance < value - 1.0) {
-                  distance = std::max(distance, value - 1.0);
+                  distance = std::max(distance, value - T(1.0));
                 }
               }
             }
