@@ -1,8 +1,10 @@
-#ifndef LS_TO_VOXEL_MESH_TEMPLATE_HPP
-#define LS_TO_VOXEL_MESH_TEMPLATE_HPP
+#ifndef LS_TO_VOXEL_MESH_HPP
+#define LS_TO_VOXEL_MESH_HPP
+
+#include <lsPreCompileMacros.hpp>
 
 #include <hrleDenseCellIterator.hpp>
-#include <lsDomain_template.hpp>
+#include <lsDomain.hpp>
 // #include <hrleSparseCellIterator.hpp>
 #include <lsMesh.hpp>
 
@@ -137,4 +139,7 @@ public:
   }
 };
 
-#endif // LS_TO_VOXEL_MESH_TEMPLATE_HPP
+// add all template specialisations for this class
+PRECOMPILE_PRECISION_DIMENSION(lsToVoxelMesh)
+
+#endif // LS_TO_VOXEL_MESH_HPP

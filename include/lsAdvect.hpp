@@ -1,5 +1,7 @@
-#ifndef LS_ADVECT_TEMPLATE_HPP
-#define LS_ADVECT_TEMPLATE_HPP
+#ifndef LS_ADVECT_HPP
+#define LS_ADVECT_HPP
+
+#include <lsPreCompileMacros.hpp>
 
 #include <limits>
 #include <vector>
@@ -7,18 +9,18 @@
 #include <hrleSparseIterator.hpp>
 #include <hrleSparseStarIterator.hpp>
 
-#include <lsBooleanOperation_template.hpp>
-#include <lsDomain_template.hpp>
+#include <lsBooleanOperation.hpp>
+#include <lsDomain.hpp>
 #include <lsMessage.hpp>
-#include <lsReduce_template.hpp>
+#include <lsReduce.hpp>
 
 // Integration schemes
-#include <lsEnquistOsher_template.hpp>
-#include <lsLaxFriedrichs_template.hpp>
-#include <lsStencilLocalLaxFriedrichsScalar_template.hpp>
+#include <lsEnquistOsher.hpp>
+#include <lsLaxFriedrichs.hpp>
+#include <lsStencilLocalLaxFriedrichsScalar.hpp>
 
 // Velocity accessor
-#include <lsVelocityField_template.hpp>
+#include <lsVelocityField.hpp>
 
 template <class T, int D> class lsAdvect {
 public:
@@ -41,16 +43,20 @@ private:
   lsAdvect();
 
   // SFINAE functions needed for StencilLocalLaxFriedrichs
-  template <class IntegrationSchemeType,
-            typename std::enable_if<!std::is_same<
-                lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>,
-                IntegrationSchemeType>::value>::type * = nullptr>
+  template <
+      class IntegrationSchemeType,
+      typename std::enable_if<
+          !std::is_same<lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>,
+                        IntegrationSchemeType>::value,
+          std::nullptr_t>::type = nullptr>
   void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &, double &) {}
 
-  template <class IntegrationSchemeType,
-            typename std::enable_if<std::is_same<
-                lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>,
-                IntegrationSchemeType>::value>::type * = nullptr>
+  template <
+      class IntegrationSchemeType,
+      typename std::enable_if<
+          std::is_same<lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>,
+                       IntegrationSchemeType>::value,
+          std::nullptr_t>::type = nullptr>
   void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &scheme,
                                     double &MaxTimeStep) {
     // TODO Can be potentially smaller than 1 (user input???)
@@ -483,4 +489,7 @@ public:
   }
 };
 
-#endif // LS_ADVECT_TEMPLATE_HPP
+// add all template specialisations for this class
+PRECOMPILE_PRECISION_DIMENSION(lsAdvect)
+
+#endif // LS_ADVECT_HPP

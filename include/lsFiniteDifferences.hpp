@@ -1,5 +1,5 @@
-#ifndef LS_FINITE_DIFFERENCES_TEMPLATE_HPP
-#define LS_FINITE_DIFFERENCES_TEMPLATE_HPP
+#ifndef LS_FINITE_DIFFERENCES_HPP
+#define LS_FINITE_DIFFERENCES_HPP
 
 #include <hrleVectorType.hpp>
 
@@ -175,4 +175,4 @@ public:
 
 } // namespace lsInternal
 
-#endif // LS_FINITE_DIFFERENCES_TEMPLATE_HPP
+#endif // LS_FINITE_DIFFERENCES_HPP

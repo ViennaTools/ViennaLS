@@ -1,6 +1,11 @@
+#ifndef LS_REDUCE_HPP
+#define LS_REDUCE_HPP
+
+#include <lsPreCompileMacros.hpp>
+
 #include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
-#include <lsDomain_template.hpp>
+#include <lsDomain.hpp>
 
 template <class T, int D> class lsReduce {
   typedef typename lsDomain<T, D>::GridType GridType;
@@ -68,3 +73,8 @@ public:
     levelSet.finalize(width);
   }
 };
+
+// add all template specialisations for this class
+PRECOMPILE_PRECISION_DIMENSION(lsReduce)
+
+#endif // LS_REDUCE_HPP

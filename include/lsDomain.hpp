@@ -1,5 +1,7 @@
-#ifndef LS_DOMAIN_TEMPLATE_HPP
-#define LS_DOMAIN_TEMPLATE_HPP
+#ifndef LS_DOMAIN_HPP
+#define LS_DOMAIN_HPP
+
+#include <lsPreCompileMacros.hpp>
 
 #include <limits>
 
@@ -157,4 +159,7 @@ public:
   }
 };
 
-#endif // LS_DOMAIN_TEMPLATE_HPP
+// add all template specialisations for this class
+PRECOMPILE_PRECISION_DIMENSION(lsDomain)
+
+#endif // LS_DOMAIN_HPP

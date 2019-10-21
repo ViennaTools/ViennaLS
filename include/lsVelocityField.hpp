@@ -1,5 +1,5 @@
-#ifndef LS_VELOCITY_FIELD_TEMPLATE_HPP
-#define LS_VELOCITY_FIELD_TEMPLATE_HPP
+#ifndef LS_VELOCITY_FIELD_HPP
+#define LS_VELOCITY_FIELD_HPP
 
 #include <hrleVectorType.hpp>
 #include <limits>
@@ -15,4 +15,4 @@ public:
       hrleVectorType<T, 3> normalVector = hrleVectorType<T, 3>(0.)) = 0;
 };
 
-#endif // LS_VELOCITY_FIELD_TEMPLATE_HPP
+#endif // LS_VELOCITY_FIELD_HPP

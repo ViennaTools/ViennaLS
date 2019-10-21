@@ -1,9 +1,11 @@
-#ifndef LS_PRUNE_TEMPLATE_HPP
-#define LS_PRUNE_TEMPLATE_HPP
+#ifndef LS_PRUNE_HPP
+#define LS_PRUNE_HPP
+
+#include <lsPreCompileMacros.hpp>
 
 #include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
-#include <lsDomain_template.hpp>
+#include <lsDomain.hpp>
 
 template <class T, int D> class lsPrune {
   lsDomain<T, D> &levelSet;
@@ -77,4 +79,7 @@ public:
   }
 };
 
-#endif // LS_PRUNE_TEMPLATE_HPP
+// add all template specialisations for this class
+PRECOMPILE_PRECISION_DIMENSION(lsPrune)
+
+#endif // LS_PRUNE_HPP

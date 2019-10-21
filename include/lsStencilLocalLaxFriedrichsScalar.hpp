@@ -1,12 +1,12 @@
-#ifndef LS_STENCIL_LOCAL_LACHS_FRIEDRICHS_SCALAR_TEMPLATE_HPP
-#define LS_STENCIL_LOCAL_LACHS_FRIEDRICHS_SCALAR_TEMPLATE_HPP
+#ifndef LS_STENCIL_LOCAL_LACHS_FRIEDRICHS_SCALAR_HPP
+#define LS_STENCIL_LOCAL_LACHS_FRIEDRICHS_SCALAR_HPP
 
 #include <hrleSparseBoxIterator.hpp>
 #include <hrleVectorType.hpp>
 
-#include <lsDomain_template.hpp>
-#include <lsExpand_template.hpp>
-#include <lsFiniteDifferences_template.hpp>
+#include <lsDomain.hpp>
+#include <lsExpand.hpp>
+#include <lsFiniteDifferences.hpp>
 
 namespace lsInternal {
 
@@ -332,4 +332,4 @@ public:
 
 } // namespace lsInternal
 
-#endif // LS_STENCIL_LOCAL_LACHS_FRIEDRICHS_SCALAR_TEMPLATE_HPP
+#endif // LS_STENCIL_LOCAL_LACHS_FRIEDRICHS_SCALAR_HPP

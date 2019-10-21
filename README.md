@@ -69,7 +69,7 @@ target_link_libraries(${PROJECT_NAME} ${VIENNALS_LIBRARIES})
 
 In order to save build time during developement, dynamically linked shared libraries are used
 if ViennaLS was built with them. In order to build releases with better runtime performance, but
-longer build times, the CMake option VIENNALS_USE_HEADER_ONLY=ON should be used.
+longer build times, the CMake option VIENNALS_USE_SHARED_LIBS=OFF should be used.
 
 ## Authors
 
