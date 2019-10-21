@@ -13,8 +13,8 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 endif()
 
 # VTK File type support
-option(VIENNALS_BUILD_VTK "Build with VTK file support." ON)
-if(VIENNALS_BUILD_VTK)
+option(VIENNALS_USE_VTK "Build with VTK file support." ON)
+if(VIENNALS_USE_VTK)
   set(VTK_DIR $ENV{VTK_DIR})
   find_package(VTK QUIET)
   if(VTK_FOUND)
@@ -25,7 +25,7 @@ if(VIENNALS_BUILD_VTK)
   else(VTK_FOUND)
     message(STATUS "No VTK install found: Building without VTK.")
   endif(VTK_FOUND)
-endif(VIENNALS_BUILD_VTK)
+endif(VIENNALS_USE_VTK)
 
 
 #################################################

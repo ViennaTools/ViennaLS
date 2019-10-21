@@ -17,7 +17,6 @@
 #include <lsToMesh.hpp>
 #include <lsToVoxelMesh.hpp>
 
-
 // now call the specialize macro to precompile them
 PRECOMPILE_SPECIALIZE(lsAdvect)
 PRECOMPILE_SPECIALIZE(lsBooleanOperation)

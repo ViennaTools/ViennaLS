@@ -43,16 +43,20 @@ private:
   lsAdvect();
 
   // SFINAE functions needed for StencilLocalLaxFriedrichs
-  template <class IntegrationSchemeType,
-            typename std::enable_if<!std::is_same<
-                lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>,
-                IntegrationSchemeType>::value, std::nullptr_t>::type = nullptr>
+  template <
+      class IntegrationSchemeType,
+      typename std::enable_if<
+          !std::is_same<lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>,
+                        IntegrationSchemeType>::value,
+          std::nullptr_t>::type = nullptr>
   void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &, double &) {}
 
-  template <class IntegrationSchemeType,
-            typename std::enable_if<std::is_same<
-                lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>,
-                IntegrationSchemeType>::value, std::nullptr_t>::type = nullptr>
+  template <
+      class IntegrationSchemeType,
+      typename std::enable_if<
+          std::is_same<lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>,
+                       IntegrationSchemeType>::value,
+          std::nullptr_t>::type = nullptr>
   void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &scheme,
                                     double &MaxTimeStep) {
     // TODO Can be potentially smaller than 1 (user input???)
