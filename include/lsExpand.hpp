@@ -7,6 +7,9 @@
 #include <hrleVectorType.hpp>
 #include <lsDomain.hpp>
 
+/// Expands the leveleSet to the specified number of layers.
+/// The largest value in the levelset is thus width*0.5
+/// Returns the number of added points
 template <class T, int D> class lsExpand {
   typedef typename lsDomain<T, D>::GridType GridType;
   lsDomain<T, D> &levelSet;
@@ -14,9 +17,7 @@ template <class T, int D> class lsExpand {
 public:
   lsExpand(lsDomain<T, D> &passedlsDomain) : levelSet(passedlsDomain){};
 
-  /// Expands the leveleSet to the specified number of layers.
-  /// The largest value in the levelset is thus width*0.5
-  /// Returns the number of added points
+  /// Apply the expansion to the specified width
   void apply(int width) {
     if (width <= levelSet.getLevelSetWidth())
       return;

@@ -8,6 +8,8 @@
 
 #include <lsDomain_template.hpp>
 
+///  This class is used to find errors in the underlying level set
+///  structure, like invalid neighbours of different signs.
 template <class T, int D> class lsCheck {
   const lsDomain<T, D> &levelSet;
 

@@ -12,6 +12,9 @@
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
 
+/// Extract an explicit lsMesh instance from an lsDomain.
+/// The interface is then described by explciit surface elements:
+/// Lines in 2D, Triangles in 3D.
 template <class T, int D> class lsToExplicitMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
 
@@ -48,7 +51,7 @@ public:
 
     typename nodeContainerType::iterator nodeIt;
 
-    lsMarchingCubes marchingCubes;
+    lsInternal::lsMarchingCubes marchingCubes;
 
     // iterate over all active points
     for (hrleConstSparseCellIterator<hrleDomainType> cellIt(

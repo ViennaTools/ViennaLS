@@ -4,15 +4,17 @@
 #include <hrleVectorType.hpp>
 #include <limits>
 
+/// Abstract class defining the interface for
+/// the velocity field used during advection using lsAdvect.
 template <class T> class lsVelocityField {
 public:
   virtual T getScalarVelocity(
       hrleVectorType<T, 3> coordinate, int material,
-      hrleVectorType<T, 3> normalVector = hrleVectorType<T, 3>(0.)) = 0;
+      hrleVectorType<T, 3> normalVector = hrleVectorType<T, 3>(T(0))) = 0;
 
   virtual hrleVectorType<T, 3> getVectorVelocity(
       hrleVectorType<T, 3> coordinate, int material,
-      hrleVectorType<T, 3> normalVector = hrleVectorType<T, 3>(0.)) = 0;
+      hrleVectorType<T, 3> normalVector = hrleVectorType<T, 3>(T(0))) = 0;
 };
 
 #endif // LS_VELOCITY_FIELD_HPP

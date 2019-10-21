@@ -8,6 +8,13 @@
 #include <lsToMesh.hpp>
 #include <lsVTKWriter.hpp>
 
+/**
+  Simple 2D example showing how to use lsExpand in order
+  to increase the number of stored grid points around
+  a level set interface.
+  \example Expand.cpp
+*/
+
 int main() {
   constexpr int D = 2;
 
@@ -17,11 +24,11 @@ int main() {
   double gridDelta = 0.5;
 
   double bounds[2 * D] = {-extent, extent, -extent, extent};
-  lsDomain_double_2::BoundaryType boundaryCons[D];
+  lsDomain<double, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D; ++i)
-    boundaryCons[i] = lsDomain_double_2::BoundaryType::SYMMETRIC_BOUNDARY;
-  lsDomain_double_2 sphere1(bounds, boundaryCons, gridDelta);
-  // lsDomain_double_3 sphere2(bounds, gridDelta, boundaryCons);
+    boundaryCons[i] = lsDomain<double, D>::BoundaryType::SYMMETRIC_BOUNDARY;
+  lsDomain<double, D> sphere1(bounds, boundaryCons, gridDelta);
+  // lsDomain<double, D> sphere2(bounds, gridDelta, boundaryCons);
 
   double origin[D] = {5., 0.};
   double radius = 7.3;

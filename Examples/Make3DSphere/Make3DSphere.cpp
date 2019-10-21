@@ -9,6 +9,12 @@
 #include <lsToVoxelMesh.hpp>
 #include <lsVTKWriter.hpp>
 
+/**
+  Minimal example showing how to write and read different
+  meshes created by the algorithms lsToVoxelMesh and lsToExplicitMesh.
+  \example Make3DSphere.cpp
+*/
+
 int main() {
 
   constexpr int D = 3;
@@ -17,9 +23,9 @@ int main() {
 
   double gridDelta = 0.35;
 
-  lsDomain_double_3 sphere1(gridDelta); //, boundaryCons);
+  lsDomain<double, D> sphere1(gridDelta); //, boundaryCons);
 
-  lsDomain_double_3 sphere2(gridDelta); //, boundaryCons);
+  lsDomain<double, D> sphere2(gridDelta); //, boundaryCons);
   double origin[3] = {5., 0., 0.};
   double radius = 7.3;
 

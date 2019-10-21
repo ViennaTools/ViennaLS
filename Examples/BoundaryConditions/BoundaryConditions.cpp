@@ -7,6 +7,12 @@
 #include <lsToExplicitMesh.hpp>
 #include <lsVTKWriter.hpp>
 
+/**
+  Minimal example showing how to set boundary conditions
+  for an lsDomain.
+  \example BoundaryConditions.cpp
+*/
+
 int main() {
 
   constexpr int D = 3;
@@ -15,13 +21,13 @@ int main() {
   double extent = 15;
 
   double bounds[2 * D] = {-extent, extent, -extent, extent, -extent, extent};
-  lsDomain_double_3::BoundaryType boundaryCons[3];
+  lsDomain<double, D>::BoundaryType boundaryCons[3];
   for (unsigned i = 0; i < D - 1; ++i)
-    boundaryCons[i] = lsDomain_double_3::BoundaryType::SYMMETRIC_BOUNDARY;
+    boundaryCons[i] = lsDomain<double, D>::BoundaryType::SYMMETRIC_BOUNDARY;
 
-  boundaryCons[2] = lsDomain_double_3::BoundaryType::INFINITE_BOUNDARY;
+  boundaryCons[2] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  lsDomain_double_3 levelSet(bounds, boundaryCons, 0.1);
+  lsDomain<double, D> levelSet(bounds, boundaryCons, 0.1);
 
   hrleVectorType<double, D> origin(0., 0., 0.);
   hrleVectorType<double, D> normalVector(0., 1., 1.);

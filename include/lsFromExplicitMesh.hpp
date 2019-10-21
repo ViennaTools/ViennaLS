@@ -8,6 +8,7 @@
 #include <lsDomain.hpp>
 #include <lsMesh.hpp>
 
+/// Construct a level set from an explicit mesh.
 template <class T, int D> class lsFromExplicitMesh {
 
   /// Class defining a box used in ray tracing optimisation

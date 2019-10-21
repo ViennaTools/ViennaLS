@@ -9,6 +9,13 @@
 #include <lsToExplicitMesh.hpp>
 #include <lsVTKWriter.hpp>
 
+/**
+  3D Example showing how to use the library for topography
+  simulation, by creating a trench geometry. A uniform
+  layer of a different material is then grown on top.
+  \example Deposition.cpp
+*/
+
 // implement own velocity field
 class velocityField : public lsVelocityField<double> {
 public:
@@ -39,14 +46,12 @@ int main() {
   double gridDelta = 0.5;
 
   double bounds[2 * D] = {-extent, extent, -extent, extent, -extent, extent};
-  lsDomain_double_3::BoundaryType boundaryCons[D];
+  lsDomain<double, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D - 1; ++i)
-    boundaryCons[i] = lsDomain_double_3::BoundaryType::SYMMETRIC_BOUNDARY;
-  boundaryCons[2] = lsDomain_double_3::BoundaryType::INFINITE_BOUNDARY;
+    boundaryCons[i] = lsDomain<double, D>::BoundaryType::SYMMETRIC_BOUNDARY;
+  boundaryCons[2] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  // including lsDomain.hpp provides typedefs for pre-built
-  // template specialisations, such as lsDomain<double, 3>
-  lsDomain_double_3 substrate(bounds, boundaryCons, gridDelta);
+  lsDomain<double, D> substrate(bounds, boundaryCons, gridDelta);
 
   double origin[3] = {0., 0., 0.};
   double planeNormal[3] = {0., 0., 1.};
@@ -60,7 +65,7 @@ int main() {
     lsVTKWriter(mesh).writeVTKLegacy("plane.vtk");
   }
 
-  lsDomain_double_3 trench(bounds, boundaryCons, gridDelta);
+  lsDomain<double, D> trench(bounds, boundaryCons, gridDelta);
   double minCorner[D] = {-extent, -extent / 4., -15.};
   double maxCorner[D] = {extent, extent / 4., 1.};
   lsMakeGeometry<double, D>(trench).makeBox(minCorner, maxCorner);
@@ -78,7 +83,7 @@ int main() {
   // Now grow new material isotropically
 
   // fill vector with lsDomain pointers
-  std::vector<lsDomain_double_3 *> lsDomains;
+  std::vector<lsDomain<double, D> *> lsDomains;
   lsDomains.push_back(&substrate);
 
   // create new levelset for new material, which will be grown

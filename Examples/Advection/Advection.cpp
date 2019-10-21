@@ -8,6 +8,12 @@
 #include <lsToExplicitMesh.hpp>
 #include <lsVTKWriter.hpp>
 
+/**
+  This example shows how to use lsAdvect to create an egg
+  shape from a spherical level set using directional growth rates.
+  \example Advection.cpp
+*/
+
 // implement own velocity field
 class velocityField : public lsVelocityField<double> {
 public:
@@ -36,9 +42,7 @@ int main() {
 
   double gridDelta = 0.25;
 
-  // including lsDomain.hpp provides typedefs for pre-built
-  // template specialisations, such as lsDomain<double, 3>
-  lsDomain_double_3 sphere1(gridDelta);
+  lsDomain<double, D> sphere1(gridDelta);
 
   double origin[3] = {5., 0., 0.};
   double radius = 7.3;
@@ -53,7 +57,7 @@ int main() {
   }
 
   // fill vector with lsDomain pointers
-  std::vector<lsDomain_double_3 *> lsDomains;
+  std::vector<lsDomain<double, D> *> lsDomains;
   lsDomains.push_back(&sphere1);
 
   velocityField velocities;

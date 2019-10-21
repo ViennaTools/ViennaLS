@@ -6,9 +6,10 @@
 
 #include <hrleVectorType.hpp>
 
-/// This class holds an explicit mesh, which is always given in 3 dimensions
-/// If it describes a 2D mesh, the third dimension is set to 0
-/// Only two types of elements, Triangles and Tetras, are supported
+/// This class holds an explicit mesh, which is always given in 3 dimensions.
+/// If it describes a 2D mesh, the third dimension is set to 0.
+/// Vertices, Lines, Triangles, Tetras & Hexas are supported as geometric
+/// elements.
 class lsMesh {
 public:
   std::vector<hrleVectorType<double, 3>> nodes;

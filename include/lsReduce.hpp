@@ -7,6 +7,9 @@
 #include <hrleVectorType.hpp>
 #include <lsDomain.hpp>
 
+/// Reduce the level set size to the specified width.
+/// This means all level set points with value <= 0.5*width
+/// are removed, reducing the memory footprint of the lsDomain.
 template <class T, int D> class lsReduce {
   typedef typename lsDomain<T, D>::GridType GridType;
   lsDomain<T, D> &levelSet;

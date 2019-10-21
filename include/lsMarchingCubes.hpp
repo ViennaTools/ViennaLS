@@ -1,6 +1,9 @@
 #ifndef LS_MARCHING_CUBES_HPP
 #define LS_MARCHING_CUBES_HPP
 
+namespace lsInternal {
+
+/// Helper class for lsToExplicitMesh. Should not be used directly.
 class lsMarchingCubes {
 
   // const unsigned int edgeTable2[16] = {0x0, 0x9, 0x3, 0xa, 0x6, 0xf,
@@ -329,5 +332,7 @@ public:
     return triTable3[cubeindex];
   }
 };
+
+} // namespace lsInternal
 
 #endif // LS_MARCHING_CUBES_HPP

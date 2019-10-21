@@ -7,6 +7,11 @@
 #include <hrleVectorType.hpp>
 #include <lsDomain.hpp>
 
+/// Removes all level set points, which do not have
+/// at least one oppositely signed neighbour (Meaning
+/// they do not lie directly at the interface).
+/// Afterwards the level set will occupy the least memory
+/// possible.
 template <class T, int D> class lsPrune {
   lsDomain<T, D> &levelSet;
 

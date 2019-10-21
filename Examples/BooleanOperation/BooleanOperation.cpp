@@ -8,6 +8,12 @@
 #include <lsToExplicitMesh.hpp>
 #include <lsVTKWriter.hpp>
 
+/**
+  Example of boolean operations on level sets
+  using two spheres.
+  \example BooleanOperation.cpp
+*/
+
 int main() {
 
   constexpr int D = 3;
@@ -15,8 +21,8 @@ int main() {
 
   double gridDelta = 0.25;
 
-  lsDomain_double_3 sphere1(gridDelta);
-  lsDomain_double_3 sphere2(gridDelta);
+  lsDomain<double, D> sphere1(gridDelta);
+  lsDomain<double, D> sphere2(gridDelta);
 
   double origin[3] = {5., 0., 0.};
   double radius = 7.3;
