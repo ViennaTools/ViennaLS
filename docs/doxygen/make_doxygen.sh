@@ -41,7 +41,7 @@ if [ -e $docmainfile ]
 then
 	echo "$docmainfile already exists: Not creating."
 else
-echo '<!DOCTYPE HTML>
+echo '<!DOCTYPE html>
 <html lang="en-US">
     <head>
         <meta charset="UTF-8">
