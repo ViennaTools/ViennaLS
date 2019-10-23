@@ -5,12 +5,10 @@ ViennaLS is a header-only C++ level set library developed for high performance t
 IMPORTANT NOTE: ViennaLS is under heavy development and improved daily. If you do have suggestions or find bugs, please let us know!
 
 ## Support
-For help with getting started, have a look at the [Examples](https://github.com/ViennaTools/ViennaLS/tree/master/Examples).
+
+[Documentation](https://viennatools.github.io/ViennaLS/doxygen/html/index.html) and [Examples](https://viennatools.github.io/ViennaLS/doxygen/html/examples.html) can be found online.
 
 Bug reports and suggestions should be filed on GitHub.
-
-## Contributing
-If you want to contribute to ViennaLS, make sure to follow the [LLVM Coding guidelines](https://llvm.org/docs/CodingStandards.html). Before creating a pull request, make sure ALL files have been formatted by clang-format, which can be done using the format-project.sh script in the root directory.
 
 ## Releases
 Releases are tagged on the maser branch and available in the [releases section](https://github.com/ViennaTools/ViennaLS/releases).
@@ -20,9 +18,15 @@ Releases are tagged on the maser branch and available in the [releases section](
 ### System Requirements
 
 * C++ Compiler with OpenMP support
+
 * [ViennaHRLE](https://github.com/ViennaTools/viennahrle)
 
-### Installing
+### Installing ViennaLS and dependencies
+
+Have a look at the example repo for creating a project with [ViennaLS as a dependency](https://github.com/ViennaTools/viennals-example).
+
+
+### Installing (with dependencies already installed)
 
 Since this is a header only project, it does not require any installation.
 However, we recommend the following procedure.
@@ -38,8 +42,6 @@ make install
 ```
 
 This will install the necessary headers and CMake files to the specified path. If DCMAKE_INSTALL_PREFIX is not specified, it will be installed to the standard path for your system, usually /usr/local/ .
-
-In order to save build time during developement, shared libraries are built by default. This can be disabled by setting the CMake option VIENNALS_BUILD_SHARED_LIBS=OFF .
 
 
 ### Building examples
@@ -67,9 +69,15 @@ target_link_libraries(${PROJECT_NAME} ${VIENNALS_LIBRARIES})
 
 ### Shared libraries
 
-In order to save build time during developement, dynamically linked shared libraries are used
-if ViennaLS was built with them. In order to build releases with better runtime performance, but
+In order to save build time during developement, dynamically linked shared libraries can be used
+if ViennaLS was built with them. This is done by precompiling the most common template specialisations.
+In order to use this, set VIENNALS_BUILD_SHARED_LIBS=ON when building ViennaLS. If ViennaLS was build with shared libraries, CMake will automatically link them to your project. In order to build a release of your own project with better runtime performance, but
 longer build times, the CMake option VIENNALS_USE_SHARED_LIBS=OFF should be used.
+
+## Contributing
+If you want to contribute to ViennaLS, make sure to follow the [LLVM Coding guidelines](https://llvm.org/docs/CodingStandards.html). Before creating a pull request, make sure ALL files have been formatted by clang-format, which can be done using the format-project.sh script in the root directory.
+
+Before being able to merge your PR, make sure you have met all points on the checklist in [CONTRIBUTING.md](https://github.com/ViennaTools/viennals/blob/master/CONTRIBUTING.md).
 
 ## Authors
 

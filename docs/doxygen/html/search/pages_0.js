@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['viennals_374',['ViennaLS',['../index.html',1,'']]]
+  ['contributing_377',['Contributing',['../md_CONTRIBUTING.html',1,'']]]
 ];

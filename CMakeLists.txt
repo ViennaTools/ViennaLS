@@ -31,10 +31,12 @@ endif(VIENNALS_USE_VTK)
 #################################################
 # BUILD SHARED LIBRARIES
 #################################################
-option(VIENNALS_BUILD_SHARED_LIBS "Build template specialisations for shorter compile times." ON)
+option(VIENNALS_BUILD_SHARED_LIBS "Build template specialisations for shorter compile times." OFF)
 if(VIENNALS_BUILD_SHARED_LIBS)
   # add all specialisation source files
-  set(ViennaHRLE_DIR $ENV{VIENNAHRLE_DIR})
+  if(NOT ViennaHRLE_DIR)
+    set(ViennaHRLE_DIR $ENV{VIENNAHRLE_DIR})
+  endif(NOT ViennaHRLE_DIR)
   find_package(ViennaHRLE REQUIRED)
   file(GLOB SPECIALISATION_CPPS "lib/*.cpp")
   add_library(${PROJECT_NAME} SHARED ${SPECIALISATION_CPPS})
@@ -46,8 +48,8 @@ else(VIENNALS_BUILD_SHARED_LIBS)
 endif(VIENNALS_BUILD_SHARED_LIBS)
 
 # set the correct paths for installation
-set(CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME}-${PROJECT_VERSION}/")
-set(LOCAL_CONFIG_DIR "lib/cmake/${PROJECT_NAME}-${PROJECT_VERSION}")
+set(CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME}/")
+set(LOCAL_CONFIG_DIR "lib/cmake/${PROJECT_NAME}")
 
 # Adding the install interface generator expression makes sure that the include
 # files are installed to the proper location (provided by GNUInstallDirs)
