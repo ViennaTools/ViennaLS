@@ -23,18 +23,20 @@ for the JavaScript code in this file
 var NAVTREE =
 [
   [ "ViennaLS", "index.html", [
-    [ "Support", "index.html#autotoc_md1", null ],
-    [ "Contributing", "index.html#autotoc_md2", null ],
-    [ "Releases", "index.html#autotoc_md3", null ],
-    [ "Building", "index.html#autotoc_md4", [
-      [ "System Requirements", "index.html#autotoc_md5", null ],
-      [ "Installing", "index.html#autotoc_md6", null ],
-      [ "Building examples", "index.html#autotoc_md7", null ],
-      [ "Integration in CMake projects", "index.html#autotoc_md8", null ],
-      [ "Shared libraries", "index.html#autotoc_md9", null ]
+    [ "Support", "index.html#autotoc_md3", null ],
+    [ "Releases", "index.html#autotoc_md4", null ],
+    [ "Building", "index.html#autotoc_md5", [
+      [ "System Requirements", "index.html#autotoc_md6", null ],
+      [ "Installing ViennaLS and dependencies", "index.html#autotoc_md7", null ],
+      [ "Installing (with dependencies already installed)", "index.html#autotoc_md8", null ],
+      [ "Building examples", "index.html#autotoc_md9", null ],
+      [ "Integration in CMake projects", "index.html#autotoc_md10", null ],
+      [ "Shared libraries", "index.html#autotoc_md11", null ]
     ] ],
-    [ "Authors", "index.html#autotoc_md10", null ],
-    [ "License", "index.html#autotoc_md11", null ],
+    [ "Contributing", "index.html#autotoc_md12", null ],
+    [ "Authors", "index.html#autotoc_md13", null ],
+    [ "License", "index.html#autotoc_md14", null ],
+    [ "Contributing", "md_CONTRIBUTING.html", null ],
     [ "Namespaces", "namespaces.html", [
       [ "Namespace List", "namespaces.html", "namespaces_dup" ],
       [ "Namespace Members", "namespacemembers.html", [
