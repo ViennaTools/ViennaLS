@@ -21,10 +21,6 @@ Releases are tagged on the maser branch and available in the [releases section](
 
 * [ViennaHRLE](https://github.com/ViennaTools/viennahrle)
 
-### Installing ViennaLS and dependencies
-
-Have a look at the example repo for creating a project with [ViennaLS as a dependency](https://github.com/ViennaTools/viennals-example).
-
 
 ### Installing (with dependencies already installed)
 
@@ -44,15 +40,10 @@ make install
 This will install the necessary headers and CMake files to the specified path. If DCMAKE_INSTALL_PREFIX is not specified, it will be installed to the standard path for your system, usually /usr/local/ .
 
 
-### Building examples
+## Using ViennaLS in your project
 
-The examples can be built using CMake:
+Have a look at the [example repo](https://github.com/ViennaTools/viennals-example) for creating a project with ViennaLS as a dependency.
 
-```
-mkdir build && cd build
-cmake .. -DVIENNALS_BUILD_EXAMPLES=ON
-make
-```
 
 ### Integration in CMake projects
 
@@ -66,6 +57,17 @@ add_executable(...)
 target_include_directories(${PROJECT_NAME} PUBLIC ${VIENNALS_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} ${VIENNALS_LIBRARIES})
 ```
+
+### Building examples
+
+The examples can be built using CMake:
+
+```
+mkdir build && cd build
+cmake .. -DVIENNALS_BUILD_EXAMPLES=ON
+make
+```
+
 
 ### Shared libraries
 

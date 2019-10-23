@@ -15,7 +15,7 @@ template <class T, int D> class lsBooleanOperation {
   lsDomain<T, D> &levelSetA;
 
   void booleanOpInternal(const lsDomain<T, D> &levelSetB,
-                         const T &(*comp)(const T &, const T &)) {
+                         const T (*comp)(const T &, const T &)) {
     auto &grid = levelSetA.getGrid();
     lsDomain<T, D> newlsDomain(grid);
     typename lsDomain<T, D>::DomainType &newDomain = newlsDomain.getDomain();
@@ -48,7 +48,7 @@ template <class T, int D> class lsBooleanOperation {
 
       while (currentVector < endVector) {
 
-        T currentValue = comp(itA.getValue(), itB.getValue());
+        const T &currentValue = comp(itA.getValue(), itB.getValue());
 
         if (currentValue != lsDomain<T, D>::NEG_VALUE &&
             currentValue != lsDomain<T, D>::POS_VALUE) {
@@ -78,11 +78,11 @@ template <class T, int D> class lsBooleanOperation {
         std::min(levelSetA.getLevelSetWidth(), levelSetB.getLevelSetWidth()));
   }
 
-  static const T &minComp(const T &A, const T &B) { return std::min(A, B); }
+  static const T minComp(const T &A, const T &B) { return std::min(A, B); }
 
-  static const T &maxComp(const T &A, const T &B) { return std::max(A, B); }
+  static const T maxComp(const T &A, const T &B) { return std::max(A, B); }
 
-  static const T &relativeComplementComp(const T &A, const T &B) {
+  static const T relativeComplementComp(const T &A, const T &B) {
     return std::max(A, -B);
   }
 
