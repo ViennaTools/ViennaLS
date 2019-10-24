@@ -30,8 +30,9 @@ public:
 #ifndef VIENNALS_USE_VTK
   void writeVTP(std::string) const {
     lsMessage::getInstance()
-        .addWarning("ViennaLS was built without VTK support. VTK outputs not "
-                    "supported.")
+        .addWarning("ViennaLS was built without VTK support. Only VTKLegacy "
+                    "can be used. VTK outputs not "
+                    "created.")
         .print();
   }
 

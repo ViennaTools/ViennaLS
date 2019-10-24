@@ -1,4 +1,5 @@
 #include <iostream>
+#include <chrono>
 
 #include <lsBooleanOperation.hpp>
 #include <lsDomain.hpp>
@@ -21,7 +22,7 @@ int main() {
 
   omp_set_num_threads(1);
 
-  double gridDelta = 0.35;
+  double gridDelta = 0.4;
 
   lsDomain<double, D> sphere1(gridDelta); //, boundaryCons);
 
@@ -42,7 +43,7 @@ int main() {
   lsExpand<double, D>(sphere2).apply(2);
 
   std::cout << "Booling..." << std::endl;
-  lsBooleanOperation<double, D>(sphere1).XOR(sphere2);
+  lsBooleanOperation<double, D>(sphere1).OR(sphere2);
 
   std::cout << "Extracting..." << std::endl;
   lsToExplicitMesh<double, D>(sphere1, mesh).apply();
@@ -54,26 +55,25 @@ int main() {
   // write voxelised volume mesh
   {
     lsMesh voxelMesh;
-    lsToVoxelMesh<double, D>(sphere1, voxelMesh).apply();
+    auto voxelMesher = lsToVoxelMesh<double, D>(voxelMesh);
+
+    voxelMesher.insertNextLevelSet(sphere2);
+    voxelMesher.insertNextLevelSet(sphere1);
+
+    std::cout << "voxelising" << std::endl;
+    auto start = std::chrono::high_resolution_clock::now();
+    voxelMesher.apply();
+    auto stop = std::chrono::high_resolution_clock::now();
+    std::cout << "Converting to voxel mesh took "
+              << std::chrono::duration_cast<std::chrono::seconds>(stop - start)
+                     .count()
+              << "s" << std::endl;
+
     std::cout << "voxelMesh: " << std::endl;
     voxelMesh.print();
 
     lsVTKWriter(voxelMesh).writeVTU("voxelMesh.vtu");
   }
-
-  std::cout << "Reading mesh again: " << std::endl;
-
-  lsDomain<double, D> levelSet(gridDelta);
-
-  lsFromExplicitMesh<double, D>(levelSet).apply(mesh);
-
-  std::cout << "Create second mesh: " << std::endl;
-  lsMesh mesh2;
-  lsToExplicitMesh<double, D>(levelSet, mesh2).apply();
-
-  mesh.print();
-
-  lsVTKWriter(mesh).writeVTKLegacy("test2-" + std::to_string(radius) + ".vtk");
 
   return 0;
 }
