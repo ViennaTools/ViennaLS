@@ -56,22 +56,25 @@ int main() {
     lsVTKWriter(mesh).writeVTKLegacy("before.vtk");
   }
 
-  // fill vector with lsDomain pointers
-  std::vector<lsDomain<double, D> *> lsDomains;
-  lsDomains.push_back(&sphere1);
-
+  // instantiate velocities
   velocityField velocities;
 
   std::cout << "Advecting" << std::endl;
-  lsAdvect<double, D> advection(lsDomains, velocities);
-  // advection.setIntegrationScheme(1);
-  // advection.setCalculateNormalVectors(false);
-  double advectionSteps = advection.apply(2.);
+
+  lsAdvect<double, D> advectionKernel;
+  advectionKernel.insertNextLevelSet(sphere1);
+  advectionKernel.setVelocityField(velocities);
+  advectionKernel.setAdvectionTime(2.);
+  advectionKernel.setIntegrationScheme(
+      lsIntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
+
+  advectionKernel.apply();
+  double advectionSteps = advectionKernel.getNumberOfTimeSteps();
   std::cout << "Number of Advection steps taken: " << advectionSteps
             << std::endl;
 
   lsPrune<double, D>(sphere1).apply();
-  lsExpand<double, D>(sphere1).apply(2);
+  lsExpand<double, D>(sphere1, 2).apply();
 
   {
     std::cout << "Extracting..." << std::endl;

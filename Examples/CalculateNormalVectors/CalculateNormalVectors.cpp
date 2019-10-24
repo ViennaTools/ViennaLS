@@ -43,7 +43,7 @@ int main() {
   }
 
   std::cout << "Expanding..." << std::endl;
-  lsExpand<double, D>(sphere1).apply(3);
+  lsExpand<double, D>(sphere1, 3).apply();
 
   std::cout << "Number of points: " << sphere1.getDomain().getNumberOfPoints()
             << std::endl;

@@ -44,7 +44,7 @@ int main() {
   }
 
   // Perform a boolean operation
-  lsBooleanOperation<double, D>(sphere1).XOR(sphere2);
+  lsBooleanOperation<double, D>(sphere1, sphere2, lsBooleanOperationEnum::RELATIVE_COMPLEMENT).apply();
 
   std::cout << "Extracting..." << std::endl;
   lsMesh mesh;

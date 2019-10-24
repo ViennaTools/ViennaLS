@@ -7,7 +7,6 @@
 
 #include <hrleDenseCellIterator.hpp>
 #include <lsDomain.hpp>
-// #include <hrleSparseCellIterator.hpp>
 #include <lsMesh.hpp>
 
 // std::hash specialisation in order to use unordered_map
@@ -51,7 +50,7 @@ template <class T, int D> class lsToVoxelMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
 
   std::vector<const lsDomain<T, D> *> levelSets;
-  lsMesh &mesh;
+  lsMesh *mesh = nullptr;
   hrleVectorType<hrleIndexType, D> minIndex, maxIndex;
 
   lsToVoxelMesh();
@@ -78,21 +77,25 @@ template <class T, int D> class lsToVoxelMesh {
   }
 
 public:
-  lsToVoxelMesh(lsMesh &passedMesh) : mesh(passedMesh) {}
+  lsToVoxelMesh(lsMesh &passedMesh) : mesh(&passedMesh) {}
 
   lsToVoxelMesh(const lsDomain<T, D> &passedLevelSet, lsMesh &passedMesh)
-      : mesh(passedMesh) {
+      : mesh(&passedMesh) {
     levelSets.push_back(&passedLevelSet);
   }
 
   lsToVoxelMesh(const std::vector<const lsDomain<T, D> *> &passedLevelSets,
                 lsMesh &passedMesh)
-      : mesh(passedMesh) {
+      : mesh(&passedMesh) {
     levelSets = passedLevelSets;
   }
 
   void insertNextLevelSet(const lsDomain<T, D> &passedLevelSet) {
     levelSets.push_back(&passedLevelSet);
+  }
+
+  void setMesh(lsMesh &passedMesh) {
+    mesh = &passedMesh;
   }
 
   void apply() {
@@ -102,8 +105,12 @@ public:
               "No Level Sets supplied to lsToVoxelMesh! Not converting.")
           .print();
     }
+    if(mesh == nullptr) {
+      lsMessage::getInstance().addWarning("No mesh was passed to lsToVoxelMesh.").print();
+      return;
+    }
 
-    mesh.clear();
+    mesh->clear();
     auto &levelSet = *(levelSets.back());
     auto &grid = levelSet.getGrid();
 
@@ -113,8 +120,8 @@ public:
     size_t currentPointId = 0;
 
     // prepare mesh for material ids
-    mesh.scalarDataLabels.push_back("Material ID");
-    mesh.scalarData.push_back(std::vector<double>());
+    mesh->scalarDataLabels.push_back("Material ID");
+    mesh->scalarData.push_back(std::vector<double>());
 
     // set up iterators for all materials
     std::vector<hrleConstDenseCellIterator<typename lsDomain<T, D>::DomainType>>
@@ -166,15 +173,15 @@ public:
             hrleVectorType<unsigned, 8> hexa(voxel);
             std::swap(hexa[2], hexa[3]);
             std::swap(hexa[6], hexa[7]);
-            mesh.hexas.push_back(hexa);
-            mesh.scalarData[0].push_back(materialId);
+            mesh->hexas.push_back(hexa);
+            mesh->scalarData[0].push_back(materialId);
           } else {
             hrleVectorType<unsigned, 3> triangle(voxel[0], voxel[1], voxel[2]);
-            mesh.triangles.push_back(triangle);
-            mesh.scalarData[0].push_back(materialId);
+            mesh->triangles.push_back(triangle);
+            mesh->scalarData[0].push_back(materialId);
             triangle[0] = voxel[3];
-            mesh.triangles.push_back(triangle);
-            mesh.scalarData[0].push_back(materialId);
+            mesh->triangles.push_back(triangle);
+            mesh->scalarData[0].push_back(materialId);
           }
           // jump out of material for loop
           break;
@@ -184,13 +191,13 @@ public:
 
     // now insert points
     double gridDelta = grid.getGridDelta();
-    mesh.nodes.resize(pointIdMapping.size());
+    mesh->nodes.resize(pointIdMapping.size());
     for (auto it = pointIdMapping.begin(); it != pointIdMapping.end(); ++it) {
       hrleVectorType<double, D> coords;
       for (unsigned i = 0; i < D; ++i) {
         coords[i] = gridDelta * it->first[i];
       }
-      mesh.nodes[it->second] = coords;
+      mesh->nodes[it->second] = coords;
     }
   }
 };

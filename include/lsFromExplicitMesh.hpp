@@ -7,8 +7,9 @@
 
 #include <lsDomain.hpp>
 #include <lsMesh.hpp>
+#include <lsMessage.hpp>
 
-/// Construct a level set from an explicit mesh.
+/// Construct a level set from an explicit mesh->
 template <class T, int D> class lsFromExplicitMesh {
 
   /// Class defining a box used in ray tracing optimisation
@@ -92,7 +93,8 @@ template <class T, int D> class lsFromExplicitMesh {
     };
   };
 
-  lsDomain<T, D> &levelSet;
+  lsDomain<T, D> *levelSet = nullptr;
+  lsMesh *mesh = nullptr;
   T boundaryEps = 1e-5;
   T distanceEps = 1e-4;
   T signEps = 1e-6;
@@ -206,10 +208,26 @@ template <class T, int D> class lsFromExplicitMesh {
   }
 
 public:
-  lsFromExplicitMesh(lsDomain<T, D> &passedLevelSet)
-      : levelSet(passedLevelSet) {}
+  lsFromExplicitMesh(lsDomain<T, D> &passedLevelSet, lsMesh &passedMesh)
+      : levelSet(&passedLevelSet), mesh(&passedMesh) {}
 
-  void apply(lsMesh &mesh) {
+  void setLevelSet(lsDomain<T, D> &passedLevelSet) {
+    levelSet = &passedLevelSet;
+  }
+
+  void setMesh(lsMesh &passedMesh) {
+    mesh = &passedMesh;
+  }
+
+  void apply() {
+    if(levelSet == nullptr) {
+      lsMessage::getInstance().addWarning("No level set was passed to lsFromExplicitMesh.").print();
+      return;
+    }
+    if(mesh == nullptr) {
+      lsMessage::getInstance().addWarning("No mesh was passed to lsFromExplicitMesh.").print();
+      return;
+    }
 
     std::vector<std::pair<hrleVectorType<hrleIndexType, D>, T>> points2;
 
@@ -220,17 +238,17 @@ public:
           std::pair<hrleVectorType<hrleIndexType, D>, std::pair<T, T>>>
           point_vector;
       point_vector points;
-      T gridDelta = levelSet.getGrid().getGridDelta();
+      T gridDelta = levelSet->getGrid().getGridDelta();
 
       hrleVectorType<T, D> gridMin, gridMax;
       for (unsigned i = 0; i < D; ++i) {
-        gridMin[i] = levelSet.getGrid().getMinIndex(i) * gridDelta;
-        gridMax[i] = levelSet.getGrid().getMaxIndex(i) * gridDelta;
+        gridMin[i] = levelSet->getGrid().getMinIndex(i) * gridDelta;
+        gridMax[i] = levelSet->getGrid().getMaxIndex(i) * gridDelta;
       }
 
       // for each surface element do
       std::vector<hrleVectorType<unsigned, D>> &elements =
-          mesh.getElements<D>();
+          mesh->getElements<D>();
 
       for (unsigned currentElement = 0; currentElement < elements.size();
            currentElement++) {
@@ -242,7 +260,7 @@ public:
 
         for (int dim = 0; dim < D; dim++) {
           for (int q = 0; q < D; q++) {
-            nodes[q][dim] = mesh.nodes[elements[currentElement][q]][dim];
+            nodes[q][dim] = mesh->nodes[elements[currentElement][q]][dim];
             if (std::abs(nodes[q][dim] - gridMin[dim]) <
                 boundaryEps * gridDelta)
               nodes[q][dim] = gridMin[dim];
@@ -311,7 +329,7 @@ public:
 
             hrleVectorType<T, D> p;
             for (int k = 1; k < D; k++)
-              p[(k + z) % D] = levelSet.getGrid().gridPositionOfGlobalIndex(
+              p[(k + z) % D] = levelSet->getGrid().gridPositionOfGlobalIndex(
                   (k + z) % D, it_b[(k + z) % D]);
 
             T intersection;
@@ -328,12 +346,12 @@ public:
               intersection = std::max(intersection, minNode[z]);
               intersection = std::min(intersection, maxNode[z]);
 
-              if (intersection > levelSet.getGrid().getMaxLocalCoordinate(z))
+              if (intersection > levelSet->getGrid().getMaxLocalCoordinate(z))
                 continue;
-              if (intersection < levelSet.getGrid().getMinLocalCoordinate(z))
+              if (intersection < levelSet->getGrid().getMinLocalCoordinate(z))
                 continue;
 
-              T intersection2 = levelSet.getGrid().localCoordinate2LocalIndex(
+              T intersection2 = levelSet->getGrid().localCoordinate2LocalIndex(
                   z, intersection);
 
               hrleIndexType floor = static_cast<hrleIndexType>(
@@ -343,8 +361,8 @@ public:
 
               floor = std::max(floor, minIndex[z] - 1);
               ceil = std::min(ceil, maxIndex[z] + 1);
-              floor = std::max(floor, levelSet.getGrid().getMinIndex(z));
-              ceil = std::min(ceil, levelSet.getGrid().getMaxIndex(z));
+              floor = std::max(floor, levelSet->getGrid().getMinIndex(z));
+              ceil = std::min(ceil, levelSet->getGrid().getMaxIndex(z));
 
               hrleVectorType<T, D> t = center;
               t[z] -= intersection;
@@ -378,7 +396,7 @@ public:
                   RealDistance = 0.; // to avoid zeros with negative sign
 
                 points.push_back(std::make_pair(
-                    levelSet.getGrid().globalIndices2LocalIndices(it_b),
+                    levelSet->getGrid().globalIndices2LocalIndices(it_b),
                     std::make_pair(SignDistance, RealDistance)));
               }
             }
@@ -401,9 +419,9 @@ public:
       }
     }
 
-    levelSet.insertPoints(points2); // initialize level set function
-    levelSet.getDomain().segment(); // distribute points evenly across threads
-    levelSet.finalize(2);
+    levelSet->insertPoints(points2); // initialize level set function
+    levelSet->getDomain().segment(); // distribute points evenly across threads
+    levelSet->finalize(2);
   }
 };
 

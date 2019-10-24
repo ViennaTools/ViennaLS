@@ -17,8 +17,8 @@
 template <class T, int D> class lsToMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
 
-  const lsDomain<T, D> &levelSet;
-  lsMesh &mesh;
+  const lsDomain<T, D> *levelSet = nullptr;
+  lsMesh *mesh = nullptr;
   const bool onlyDefined;
   const bool onlyActive;
 
@@ -27,16 +27,33 @@ template <class T, int D> class lsToMesh {
 public:
   lsToMesh(const lsDomain<T, D> &passedLevelSet, lsMesh &passedMesh,
            bool passedOnlyDefined = true, bool passedOnlyActive = false)
-      : levelSet(passedLevelSet), mesh(passedMesh),
+      : levelSet(&passedLevelSet), mesh(&passedMesh),
         onlyDefined(passedOnlyDefined), onlyActive(passedOnlyActive) {}
 
+  void setLevelSet(lsDomain<T, D> &passedlsDomain) {
+    levelSet = &passedlsDomain;
+  }
+
+  void setMesh(lsMesh &passedMesh) {
+    mesh = &passedMesh;
+  }
+
   void apply() {
-    mesh.clear();
+    if(levelSet == nullptr) {
+      lsMessage::getInstance().addWarning("No level set was passed to lsToMesh.").print();
+      return;
+    }
+    if(mesh == nullptr) {
+      lsMessage::getInstance().addWarning("No mesh was passed to lsToMesh.").print();
+      return;
+    }
+
+    mesh->clear();
 
     std::vector<double> scalarData;
     std::vector<double> subLS;
 
-    for (hrleConstSparseIterator<hrleDomainType> it(levelSet.getDomain());
+    for (hrleConstSparseIterator<hrleDomainType> it(levelSet->getDomain());
          !it.isFinished(); ++it) {
       if ((onlyDefined && !it.isDefined()) ||
           (onlyActive && std::abs(it.getValue()) > 0.5))
@@ -44,25 +61,25 @@ public:
 
       // insert vertex
       hrleVectorType<unsigned, 1> vertex;
-      vertex[0] = mesh.nodes.size();
-      mesh.insertNextVertex(vertex);
+      vertex[0] = mesh->nodes.size();
+      mesh->insertNextVertex(vertex);
 
       // insert corresponding node
       hrleVectorType<double, 3> node;
       node[2] = 0.;
-      T gridDelta = levelSet.getGrid().getGridDelta();
+      T gridDelta = levelSet->getGrid().getGridDelta();
       for (unsigned i = 0; i < D; ++i) {
         node[i] = double(it.getStartIndices(i)) * gridDelta;
       }
-      mesh.insertNextNode(node);
+      mesh->insertNextNode(node);
 
       // insert LS value
       scalarData.push_back(it.getValue());
       subLS.push_back(it.getSegmentId());
     }
 
-    mesh.insertNextScalarData(scalarData, "LSValues");
-    mesh.insertNextScalarData(subLS, "SegmentID");
+    mesh->insertNextScalarData(scalarData, "LSValues");
+    mesh->insertNextScalarData(subLS, "SegmentID");
   }
 };
 

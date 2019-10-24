@@ -65,24 +65,29 @@ int main() {
     lsVTKWriter(mesh).writeVTKLegacy("before2D.vtk");
   }
 
-  // fill vector with lsDomain pointers
-  std::vector<lsDomain<double, D> *> lsDomains;
-  lsDomains.push_back(&sphere1);
-
+  // Advect the sphere
   velocityField velocities;
   std::cout << "Number of points: " << sphere1.getDomain().getNumberOfPoints()
             << std::endl;
 
   std::cout << "Advecting" << std::endl;
-  auto advection = lsAdvect<double, D>(lsDomains, velocities);
-  advection.setIntegrationScheme(4);
-  double advectionTime = advection.apply(20);
+
+  lsAdvect<double, D> advectionKernel;
+  advectionKernel.insertNextLevelSet(sphere1);
+  advectionKernel.setVelocityField(velocities);
+  advectionKernel.setIntegrationScheme(lsIntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER);
+  advectionKernel.setAdvectionTime(20.);
+  advectionKernel.apply();
+
+  double advectionTime = advectionKernel.getAdvectionTime();
+  unsigned advectionSteps = advectionKernel.getNumberOfTimeSteps();
   std::cout << "Time difference: " << advectionTime << std::endl;
+  std::cout << "Number of advection steps: " << advectionSteps << std::endl;
 
   std::cout << "Pruning" << std::endl;
   lsPrune<double, D>(sphere1).apply();
   std::cout << "Expanding" << std::endl;
-  lsExpand<double, D>(sphere1).apply(2);
+  lsExpand<double, D>(sphere1, 2).apply();
 
   {
     lsMesh mesh;

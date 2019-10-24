@@ -6,12 +6,12 @@
 
 #include <hrleSparseStarIterator.hpp>
 
-#include <lsDomain_template.hpp>
+#include <lsDomain.hpp>
 
 ///  This class is used to find errors in the underlying level set
 ///  structure, like invalid neighbours of different signs.
 template <class T, int D> class lsCheck {
-  const lsDomain<T, D> &levelSet;
+  const lsDomain<T, D> *levelSet = nullptr;
 
   int GetStatusFromDistance(T value) {
     int x = static_cast<int>(value);
@@ -23,12 +23,22 @@ template <class T, int D> class lsCheck {
   }
 
 public:
-  lsCheck(const lsDomain<T, D> &passedLevelSet) : levelSet(passedLevelSet) {}
+  lsCheck(const lsDomain<T, D> &passedLevelSet) : levelSet(&passedLevelSet) {}
 
-  std::string apply() {
+  void setLevelSet(const lsDomain<T, D> &passedLevelSet) {
+    levelSet = &passedLevelSet;
+  }
+
+  void apply() {
+    if(levelSet == nullptr) {
+      lsMessage::getInstance().addWarning("No level set was passed to lsCheck.").print();
+      return;
+    }
+
     std::ostringstream oss;
+    oss << "Report from lsCheck: " << std::endl;
 
-    for (hrleSparseStarIterator<lsDomain<T, D>> it(levelSet); !it.isFinished();
+    for (hrleConstSparseStarIterator<hrleDomain<T, D>> it(levelSet->getDomain()); !it.isFinished();
          it.next()) {
 
       if (it.getCenter().isDefined()) {
@@ -70,7 +80,7 @@ public:
                 (it.getNeighbor(i).getValue() < 0.)) {
               oss << "The undefined run from "
                   << it.getCenter().getStartIndices() << " to "
-                  << it.getCenter().end_indices()
+                  << it.getCenter().getEndIndices()
                   << " has undefined neighbor grid points of opposite sign in "
                      "direction "
                   << i << "!" << std::endl;
@@ -80,8 +90,9 @@ public:
       }
     }
 
-    return oss.str();
+    // output any faults as error
+    lsMessage::getInstance().addError(oss.str());
   }
-}
+};
 
 #endif // LS_CHECK_HPP

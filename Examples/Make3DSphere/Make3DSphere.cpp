@@ -1,5 +1,5 @@
-#include <iostream>
 #include <chrono>
+#include <iostream>
 
 #include <lsBooleanOperation.hpp>
 #include <lsDomain.hpp>
@@ -11,7 +11,7 @@
 #include <lsVTKWriter.hpp>
 
 /**
-  Minimal example showing how to write and read different
+  Minimal example showing how to write different
   meshes created by the algorithms lsToVoxelMesh and lsToExplicitMesh.
   \example Make3DSphere.cpp
 */
@@ -39,11 +39,11 @@ int main() {
   lsMesh mesh;
 
   std::cout << "Expanding..." << std::endl;
-  lsExpand<double, D>(sphere1).apply(2);
-  lsExpand<double, D>(sphere2).apply(2);
+  lsExpand<double, D>(sphere1, 2).apply();
+  lsExpand<double, D>(sphere2, 2).apply();
 
   std::cout << "Booling..." << std::endl;
-  lsBooleanOperation<double, D>(sphere1).OR(sphere2);
+  lsBooleanOperation<double, D>(sphere1, sphere2, lsBooleanOperationEnum::UNION).apply();
 
   std::cout << "Extracting..." << std::endl;
   lsToExplicitMesh<double, D>(sphere1, mesh).apply();

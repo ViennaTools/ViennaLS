@@ -22,6 +22,16 @@
 // Velocity accessor
 #include <lsVelocityField.hpp>
 
+/// Enumeration for the different Integration schemes
+/// used by the advection kernel
+enum struct lsIntegrationSchemeEnum : unsigned {
+  ENGQUIST_OSHER_1ST_ORDER = 0,
+  ENGQUIST_OSHER_2ND_ORDER = 1,
+  LAX_FRIEDRICHS_1ST_ORDER = 2,
+  LAX_FRIEDRICHS_2ND_ORDER = 3,
+  STENCIL_LOCAL_LAX_FRIEDRICHS = 4
+};
+
 /// This class is used to advance level sets over time.
 /// Level sets are passed to the constructor in an std::vector, with
 /// the last element being the level set to advect, or "top level set", while
@@ -32,24 +42,15 @@
 /// implementation of the lsVelocityField (check Advection examples for
 /// guidance)
 template <class T, int D> class lsAdvect {
-public:
-  enum IntegrationSchemeEnum : unsigned {
-    ENGQUIST_OSHER_1ST_ORDER = 0,
-    ENGQUIST_OSHER_2ND_ORDER = 1,
-    LAX_FRIEDRICHS_1ST_ORDER = 2,
-    LAX_FRIEDRICHS_2ND_ORDER = 3,
-    STENCIL_LOCAL_LAX_FRIEDRICHS = 4
-  };
-
-private:
-  std::vector<lsDomain<T, D> *> &levelSets;
-  lsVelocityField<T> *velocities;
-  IntegrationSchemeEnum integrationScheme = ENGQUIST_OSHER_1ST_ORDER;
+  std::vector<lsDomain<T, D> *> levelSets;
+  lsVelocityField<T> *velocities = nullptr;
+  lsIntegrationSchemeEnum integrationScheme =
+      lsIntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER;
   double timeStepRatio = 0.4999;
   double dissipationAlpha = 0.;
   bool calculateNormalVectors = true;
-
-  lsAdvect();
+  double advectionTime = 0.;
+  unsigned numberOfTimeSteps = 0;
 
   // SFINAE functions needed for StencilLocalLaxFriedrichs
   template <
@@ -222,28 +223,47 @@ private:
   /// internal function used as a wrapper to call specialized integrateTime
   /// with the chosen integrationScheme
   double advect(double maxTimeStep = std::numeric_limits<double>::max()) {
+    // check whether a level set and velocites have been given
+    if (levelSets.size() < 1) {
+      lsMessage::getInstance()
+          .addWarning("No level sets passed to lsAdvect. Not advecting.")
+          .print();
+      return std::numeric_limits<double>::max();
+    }
+    if (velocities == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No velocity field passed to lsAdvect. Not advecting.")
+          .print();
+      return std::numeric_limits<double>::max();
+    }
+
     double currentTime = 0.;
-    if (integrationScheme == ENGQUIST_OSHER_1ST_ORDER) {
+    if (integrationScheme ==
+        lsIntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER) {
       lsInternal::lsEnquistOsher<T, D, 1>::prepareLS(*(levelSets.back()));
       auto is = lsInternal::lsEnquistOsher<T, D, 1>(*(levelSets.back()),
                                                     calculateNormalVectors);
       currentTime = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme == ENGQUIST_OSHER_2ND_ORDER) {
+    } else if (integrationScheme ==
+               lsIntegrationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER) {
       lsInternal::lsEnquistOsher<T, D, 2>::prepareLS(*(levelSets.back()));
       auto is = lsInternal::lsEnquistOsher<T, D, 2>(*(levelSets.back()),
                                                     calculateNormalVectors);
       currentTime = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme == LAX_FRIEDRICHS_1ST_ORDER) {
+    } else if (integrationScheme ==
+               lsIntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
       lsInternal::lsLaxFriedrichs<T, D, 1>::prepareLS(*(levelSets.back()));
       auto is = lsInternal::lsLaxFriedrichs<T, D, 1>(*(levelSets.back()),
                                                      calculateNormalVectors);
       currentTime = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme == LAX_FRIEDRICHS_2ND_ORDER) {
+    } else if (integrationScheme ==
+               lsIntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER) {
       lsInternal::lsLaxFriedrichs<T, D, 2>::prepareLS(*(levelSets.back()));
       auto is = lsInternal::lsLaxFriedrichs<T, D, 2>(*(levelSets.back()),
                                                      calculateNormalVectors);
       currentTime = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme == STENCIL_LOCAL_LAX_FRIEDRICHS) {
+    } else if (integrationScheme ==
+               lsIntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS) {
       lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>::prepareLS(
           *(levelSets.back()));
       auto is = lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>(
@@ -261,9 +281,10 @@ private:
     // are etched, the lower one is moved with the top levelset
     // TODO: Adjust lower layers also when they have grown,
     // to allow for two different growth rates of materials
-    if (integrationScheme != STENCIL_LOCAL_LAX_FRIEDRICHS) {
+    if (integrationScheme !=
+        lsIntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS) {
       for (unsigned i = 0; i < levelSets.size() - 1; ++i) {
-        lsBooleanOperation<T, D>(*levelSets[i]).max(*(levelSets.back()));
+        lsBooleanOperation<T, D>(*levelSets[i], *(levelSets.back()), lsBooleanOperationEnum::INTERSECT).apply();
       }
     }
 
@@ -418,7 +439,7 @@ private:
 
     // reduce to one layer thickness and apply new values directly to the
     // domain segments --> DO NOT CHANGE SEGMENTATION HERE (true parameter)
-    lsReduce<T, D>(*levelSets.back()).apply(1, true);
+    lsReduce<T, D>(*levelSets.back(), 1, true).apply();
 
 #pragma omp parallel num_threads((levelSets.back())->getNumberOfSegments())
     {
@@ -463,38 +484,55 @@ private:
   }
 
 public:
+  lsAdvect() {}
+
+  lsAdvect(lsVelocityField<T> &passedVelocities)
+      : velocities(&passedVelocities) {}
+
   lsAdvect(std::vector<lsDomain<T, D> *> &passedlsDomains,
            lsVelocityField<T> &passedVelocities)
       : levelSets(passedlsDomains), velocities(&passedVelocities) {}
+
+  void insertNextLevelSet(lsDomain<T, D> &passedlsDomain) {
+    levelSets.push_back(&passedlsDomain);
+  }
+
+  void setVelocityField(lsVelocityField<T> &passedVelocities) {
+    velocities = &passedVelocities;
+  }
+
+  void setAdvectionTime(double time) { advectionTime = time; }
 
   void setTimeStepRatio(const double &cfl) { timeStepRatio = cfl; }
 
   void setCalculateNormalVectors(bool cnv) { calculateNormalVectors = cnv; }
 
+  double getAdvectionTime() { return advectionTime; }
+
+  unsigned getNumberOfTimeSteps() { return numberOfTimeSteps; }
+
   double getTimeStepRatio() { return timeStepRatio; }
 
   bool getCalculateNormalVectors() { return calculateNormalVectors; }
 
-  void setIntegrationScheme(unsigned scheme) {
-    integrationScheme = static_cast<IntegrationSchemeEnum>(scheme);
-  }
-
-  void setIntegrationScheme(IntegrationSchemeEnum scheme) {
+  void setIntegrationScheme(lsIntegrationSchemeEnum scheme) {
     integrationScheme = scheme;
   }
 
   void setDissipationAlpha(const double &a) { dissipationAlpha = a; }
 
-  double apply() { return advect(); }
-
-  unsigned apply(const double timeDelta) {
-    double currentTime = 0.;
-    unsigned counter = 0;
-    while (currentTime < timeDelta) {
-      currentTime += advect(timeDelta - currentTime);
-      ++counter;
+  void apply() {
+    if (advectionTime == 0.) {
+      advectionTime = advect();
+      numberOfTimeSteps = 1;
+    } else {
+      double currentTime = 0.0;
+      numberOfTimeSteps = 0;
+      while (currentTime < advectionTime) {
+        currentTime += advect(advectionTime - currentTime);
+        ++numberOfTimeSteps;
+      }
     }
-    return counter;
   }
 };
 

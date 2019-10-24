@@ -47,7 +47,7 @@ int main() {
   lsToMesh<double, D>(levelSet, mesh).apply();
   lsVTKWriter(mesh).writeVTKLegacy("after_prune.vtk");
 
-  lsExpand<double, D>(levelSet).apply(4);
+  lsExpand<double, D>(levelSet, 4).apply();
   std::cout << "After Expand: " << std::endl;
   std::cout << "Number of points: " << levelSet.getDomain().getNumberOfPoints()
             << std::endl;
@@ -56,7 +56,7 @@ int main() {
   lsToMesh<double, D>(levelSet, mesh).apply();
   lsVTKWriter(mesh).writeVTKLegacy("after_expand.vtk");
 
-  lsReduce<double, D>(levelSet).apply(2);
+  lsReduce<double, D>(levelSet, 2).apply();
   std::cout << "After Reduce: " << std::endl;
   std::cout << "Number of points: " << levelSet.getDomain().getNumberOfPoints()
             << std::endl;

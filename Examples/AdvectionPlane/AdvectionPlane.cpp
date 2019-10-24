@@ -79,11 +79,13 @@ int main() {
             << std::endl;
 
   std::cout << "Advecting" << std::endl;
-  double advectionTime = lsAdvect<double, D>(lsDomains, velocities).apply();
+  lsAdvect<double, D> advectionKernel(lsDomains, velocities);
+  advectionKernel.apply();
+  double advectionTime = advectionKernel.getAdvectionTime();
   std::cout << "Time difference: " << advectionTime << std::endl;
 
   lsPrune<double, D>(plane).apply();
-  lsExpand<double, D>(plane).apply(2);
+  lsExpand<double, D>(plane, 2).apply();
 
   std::cout << "Extracting..." << std::endl;
   lsMesh mesh;

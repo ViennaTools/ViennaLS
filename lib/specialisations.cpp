@@ -7,6 +7,7 @@
 #include <lsAdvect.hpp>
 #include <lsBooleanOperation.hpp>
 #include <lsCalculateNormalVectors.hpp>
+#include <lsCheck.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsFromExplicitMesh.hpp>
@@ -21,6 +22,7 @@
 PRECOMPILE_SPECIALIZE(lsAdvect)
 PRECOMPILE_SPECIALIZE(lsBooleanOperation)
 PRECOMPILE_SPECIALIZE(lsCalculateNormalVectors)
+PRECOMPILE_SPECIALIZE(lsCheck)
 PRECOMPILE_SPECIALIZE(lsDomain)
 PRECOMPILE_SPECIALIZE(lsExpand)
 PRECOMPILE_SPECIALIZE(lsFromExplicitMesh)

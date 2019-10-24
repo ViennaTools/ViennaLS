@@ -12,24 +12,46 @@
 /// are removed, reducing the memory footprint of the lsDomain.
 template <class T, int D> class lsReduce {
   typedef typename lsDomain<T, D>::GridType GridType;
-  lsDomain<T, D> &levelSet;
+  lsDomain<T, D> *levelSet = nullptr;
+  int width = 0;
+  bool noNewSegment = false;
 
 public:
-  lsReduce(lsDomain<T, D> &passedlsDomain) : levelSet(passedlsDomain){};
+  lsReduce(lsDomain<T, D> &passedlsDomain) : levelSet(&passedlsDomain){};
+
+  lsReduce(lsDomain<T, D> &passedlsDomain, int passedWidth,
+           bool passedNoNewSegment = false)
+      : levelSet(&passedlsDomain), width(passedWidth),
+        noNewSegment(passedNoNewSegment){};
+
+  void setLevelSet(lsDomain<T, D> &passedlsDomain) {
+    levelSet = &passedlsDomain;
+  }
+
+  void setWidth(int passedWidth) { width = passedWidth; }
+
+  void setNoNewSegment(bool passedNoNewSegment) {
+    noNewSegment = passedNoNewSegment;
+  }
 
   /// Reduces the leveleSet to the specified number of layers.
   /// The largest value in the levelset is thus width*0.5
   /// Returns the number of added points
-  void apply(int width, bool noNewSegment = false) {
-    if (width >= levelSet.getLevelSetWidth())
+  void apply() {
+    if(levelSet == nullptr) {
+      lsMessage::getInstance().addWarning("No level set was passed to lsReduce.").print();
+      return;
+    }
+
+    if (width >= levelSet->getLevelSetWidth())
       return;
 
     const T valueLimit = width * 0.5;
 
-    auto &grid = levelSet.getGrid();
-    lsDomain<T, D> newlsDomain(levelSet.getGrid());
+    auto &grid = levelSet->getGrid();
+    lsDomain<T, D> newlsDomain(levelSet->getGrid());
     typename lsDomain<T, D>::DomainType &newDomain = newlsDomain.getDomain();
-    typename lsDomain<T, D>::DomainType &domain = levelSet.getDomain();
+    typename lsDomain<T, D>::DomainType &domain = levelSet->getDomain();
 
     newDomain.initialize(domain.getNewSegmentation(), domain.getAllocation());
 
@@ -72,8 +94,8 @@ public:
     newDomain.finalize();
     if (!noNewSegment)
       newDomain.segment();
-    levelSet.deepCopy(newlsDomain);
-    levelSet.finalize(width);
+    levelSet->deepCopy(newlsDomain);
+    levelSet->finalize(width);
   }
 };
 

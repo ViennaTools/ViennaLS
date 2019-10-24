@@ -13,19 +13,28 @@
 /// Afterwards the level set will occupy the least memory
 /// possible.
 template <class T, int D> class lsPrune {
-  lsDomain<T, D> &levelSet;
+  lsDomain<T, D> *levelSet = nullptr;
 
 public:
-  lsPrune(lsDomain<T, D> &passedlsDomain) : levelSet(passedlsDomain){};
+  lsPrune(lsDomain<T, D> &passedlsDomain) : levelSet(&passedlsDomain){};
+
+  void setLevelSet(lsDomain<T, D> &passedlsDomain) {
+    levelSet = &passedlsDomain;
+  }
 
   /// removes all grid points, which do not have at least one opposite signed
   /// neighbour
   /// returns the number of removed points
   void apply() {
-    auto &grid = levelSet.getGrid();
+    if(levelSet == nullptr) {
+      lsMessage::getInstance().addWarning("No level set was passed to lsPrune.").print();
+      return;
+    }
+
+    auto &grid = levelSet->getGrid();
     lsDomain<T, D> newlsDomain(grid);
     typename lsDomain<T, D>::DomainType &newDomain = newlsDomain.getDomain();
-    typename lsDomain<T, D>::DomainType &domain = levelSet.getDomain();
+    typename lsDomain<T, D>::DomainType &domain = levelSet->getDomain();
 
     newDomain.initialize(domain.getNewSegmentation(), domain.getAllocation());
 
@@ -79,8 +88,8 @@ public:
     // distribute evenly across segments and copy
     newDomain.finalize();
     newDomain.segment();
-    levelSet.deepCopy(newlsDomain);
-    levelSet.finalize(2);
+    levelSet->deepCopy(newlsDomain);
+    levelSet->finalize(2);
   }
 };
 

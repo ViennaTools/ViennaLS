@@ -20,7 +20,7 @@ template <class T, int D, int order> class lsEnquistOsher {
 public:
   static void prepareLS(lsDomain<T, D> &passedlsDomain) {
     assert(order == 1 || order == 2);
-    lsExpand<T, D>(passedlsDomain).apply(2 * order + 1);
+    lsExpand<T, D>(passedlsDomain, 2 * order + 1).apply();
   }
 
   lsEnquistOsher(lsDomain<T, D> &passedlsDomain, bool calcNormal = true)

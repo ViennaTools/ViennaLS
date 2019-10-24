@@ -65,7 +65,7 @@ int main() {
   // This is required for the advection kernel to correctly
   // consider both materials.
   // Higher materials must always "wrap" ALL lower materials
-  lsBooleanOperation<double, D>(sphere2).unite(sphere1);
+  lsBooleanOperation<double, D>(sphere2, sphere1, lsBooleanOperationEnum::UNION).apply();
 
   {
     std::cout << "Extracting..." << std::endl;
@@ -90,7 +90,9 @@ int main() {
   // We do not need normal vectors since our velocityField does not use them
   // This could be left on, but would decrease efficiency
   advection.setCalculateNormalVectors(false);
-  double advectionSteps = advection.apply(5.);
+  advection.setAdvectionTime(5.);
+  advection.apply();
+  double advectionSteps = advection.getNumberOfTimeSteps();
   std::cout << "Number of Advection steps taken: " << advectionSteps
             << std::endl;
 

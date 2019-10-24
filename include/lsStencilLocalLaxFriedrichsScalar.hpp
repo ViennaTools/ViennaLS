@@ -126,7 +126,7 @@ public:
   static void prepareLS(lsDomain<T, D> &passedlsDomain) {
     // Expansion of sparse field must depend on spatial derivative order
     // AND  slf stencil order! --> currently assume scheme = 3rd order always
-    lsExpand<T, D>(passedlsDomain).apply(2 * order + 4);
+    lsExpand<T, D>(passedlsDomain, 2 * order + 4).apply();
   }
 
   lsStencilLocalLaxFriedrichsScalar(
