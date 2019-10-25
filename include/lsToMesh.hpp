@@ -34,17 +34,19 @@ public:
     levelSet = &passedlsDomain;
   }
 
-  void setMesh(lsMesh &passedMesh) {
-    mesh = &passedMesh;
-  }
+  void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
 
   void apply() {
-    if(levelSet == nullptr) {
-      lsMessage::getInstance().addWarning("No level set was passed to lsToMesh.").print();
+    if (levelSet == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No level set was passed to lsToMesh.")
+          .print();
       return;
     }
-    if(mesh == nullptr) {
-      lsMessage::getInstance().addWarning("No mesh was passed to lsToMesh.").print();
+    if (mesh == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No mesh was passed to lsToMesh.")
+          .print();
       return;
     }
 

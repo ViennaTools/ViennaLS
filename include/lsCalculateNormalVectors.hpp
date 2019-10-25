@@ -11,35 +11,31 @@
 #include <lsDomain.hpp>
 #include <lsMessage.hpp>
 
-/// This algorithm is used to find the normal vectors for all points
-/// with an and LS value less than 0.5 and only those points.
+/// This algorithm is used to compute the normal vectors for all points
+/// defined in the level set. The result is saved in the lsDomain and
+/// can be retrieved with lsDomain.getNormalVectors().
 /// Since neighbors in each cartesian direction are necessary for
 /// the calculation, the levelset width must be >=3.
 template <class T, int D> class lsCalculateNormalVectors {
-  typedef std::vector<hrleVectorType<T, D>> NormalVectorsType;
-
-  const lsDomain<T, D> *domain = nullptr;
-  NormalVectorsType *normals = nullptr;
+  lsDomain<T, D> *domain = nullptr;
+  bool onlyActivePoints = false;
 
 public:
-  lsCalculateNormalVectors(const lsDomain<T, D> &passedDomain,
-                           NormalVectorsType &passedNormalVectors)
-      : domain(&passedDomain), normals(&passedNormalVectors) {}
+  lsCalculateNormalVectors(lsDomain<T, D> &passedDomain,
+                           bool passedOnlyActivePoints = false)
+      : domain(&passedDomain), onlyActivePoints(passedOnlyActivePoints) {}
 
-  void setLevelSet(const lsDomain<T, D> &passedDomain) {
-    domain = &passedDomain;
-  }
+  void setLevelSet(lsDomain<T, D> &passedDomain) { domain = &passedDomain; }
 
-  void setNormalVectors(NormalVectorsType &passedNormalVectors) {
-    normals = &passedNormalVectors;
+  void setOnlyActivePoints(bool passedOnlyActivePoints) {
+    onlyActivePoints = passedOnlyActivePoints;
   }
 
   void apply() {
-    if(domain == nullptr) {
-      lsMessage::getInstance().addWarning("No level set was passed to lsCalculateNormalVectors.").print();
-    }
-    if(normals == nullptr) {
-      lsMessage::getInstance().addWarning("No normals type was passed to lsCalculateNormalVectors.").print();
+    if (domain == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No level set was passed to lsCalculateNormalVectors.")
+          .print();
     }
 
     if (domain->getLevelSetWidth() < 3) {
@@ -83,7 +79,8 @@ public:
            neighborIt.getIndices() < endVector; neighborIt.next()) {
 
         if (!neighborIt.getCenter().isDefined() ||
-            std::abs(neighborIt.getCenter().getValue()) > 0.5)
+            (onlyActivePoints &&
+             std::abs(neighborIt.getCenter().getValue()) > 0.5))
           continue;
 
         hrleVectorType<T, D> n;
@@ -108,15 +105,16 @@ public:
     }
 
     // copy all normals
-    normals->clear();
+    auto &normals = domain->getNormalVectors();
+    normals.clear();
     unsigned numberOfNormals = 0;
     for (unsigned i = 0; i < domain->getNumberOfSegments(); ++i) {
       numberOfNormals += normalVectorsVector[i].size();
     }
-    normals->reserve(numberOfNormals);
+    normals.reserve(numberOfNormals);
 
     for (unsigned i = 0; i < domain->getNumberOfSegments(); ++i) {
-      normals->insert(normals->end(), normalVectorsVector[i].begin(),
+      normals.insert(normals.end(), normalVectorsVector[i].begin(),
                      normalVectorsVector[i].end());
     }
   }

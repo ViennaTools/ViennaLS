@@ -27,9 +27,7 @@ class lsVTKReader {
 public:
   lsVTKReader(lsMesh &passedMesh) : mesh(&passedMesh) {}
 
-  void setMesh(lsMesh &passedMesh) {
-    mesh = &passedMesh;
-  }
+  void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
 
 #ifndef VIENNALS_USE_VTK
   void readVTP(std::string) {
@@ -42,8 +40,10 @@ public:
   void readVTU(std::string) { readVTP(""); }
 #else
   void readVTP(std::string filename) {
-    if(mesh == nullptr) {
-      lsMessage::getInstance().addWarning("No mesh was passed to lsVTKReader.").print();
+    if (mesh == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No mesh was passed to lsVTKReader.")
+          .print();
       return;
     }
 
@@ -117,14 +117,16 @@ public:
       vtkDataArray *dataArray;
       dataArray = cellData->GetArray(i);
       if (cellData->GetNumberOfComponents() == 1) {
-        mesh->scalarDataLabels.push_back(std::string(cellData->GetArrayName(i)));
+        mesh->scalarDataLabels.push_back(
+            std::string(cellData->GetArrayName(i)));
         mesh->scalarData.push_back(std::vector<double>());
         mesh->scalarData[i].resize(cellData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
           mesh->scalarData[i][j] = dataArray->GetTuple1(j);
         }
       } else if (cellData->GetNumberOfComponents() == 3) {
-        mesh->vectorDataLabels.push_back(std::string(cellData->GetArrayName(i)));
+        mesh->vectorDataLabels.push_back(
+            std::string(cellData->GetArrayName(i)));
         mesh->vectorData.push_back(std::vector<hrleVectorType<double, 3>>());
         mesh->vectorData[i].resize(cellData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
@@ -137,8 +139,10 @@ public:
   }
 
   void readVTU(std::string filename) {
-    if(mesh == nullptr) {
-      lsMessage::getInstance().addWarning("No mesh was passed to lsVTKReader.").print();
+    if (mesh == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No mesh was passed to lsVTKReader.")
+          .print();
       return;
     }
 
@@ -217,14 +221,16 @@ public:
       vtkDataArray *dataArray;
       dataArray = cellData->GetArray(i);
       if (cellData->GetNumberOfComponents() == 1) {
-        mesh->scalarDataLabels.push_back(std::string(cellData->GetArrayName(i)));
+        mesh->scalarDataLabels.push_back(
+            std::string(cellData->GetArrayName(i)));
         mesh->scalarData.push_back(std::vector<double>());
         mesh->scalarData[i].resize(cellData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
           mesh->scalarData[i][j] = dataArray->GetTuple1(j);
         }
       } else if (cellData->GetNumberOfComponents() == 3) {
-        mesh->vectorDataLabels.push_back(std::string(cellData->GetArrayName(i)));
+        mesh->vectorDataLabels.push_back(
+            std::string(cellData->GetArrayName(i)));
         mesh->vectorData.push_back(std::vector<hrleVectorType<double, 3>>());
         mesh->vectorData[i].resize(cellData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
@@ -238,8 +244,10 @@ public:
 #endif
 
   void readVTKLegacy(std::string filename) {
-    if(mesh == nullptr) {
-      lsMessage::getInstance().addWarning("No mesh was passed to lsVTKReader.").print();
+    if (mesh == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No mesh was passed to lsVTKReader.")
+          .print();
       return;
     }
 

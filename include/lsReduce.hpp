@@ -38,8 +38,10 @@ public:
   /// The largest value in the levelset is thus width*0.5
   /// Returns the number of added points
   void apply() {
-    if(levelSet == nullptr) {
-      lsMessage::getInstance().addWarning("No level set was passed to lsReduce.").print();
+    if (levelSet == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No level set was passed to lsReduce.")
+          .print();
       return;
     }
 

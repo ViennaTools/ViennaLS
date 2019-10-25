@@ -65,7 +65,8 @@ int main() {
   // This is required for the advection kernel to correctly
   // consider both materials.
   // Higher materials must always "wrap" ALL lower materials
-  lsBooleanOperation<double, D>(sphere2, sphere1, lsBooleanOperationEnum::UNION).apply();
+  lsBooleanOperation<double, D>(sphere2, sphere1, lsBooleanOperationEnum::UNION)
+      .apply();
 
   {
     std::cout << "Extracting..." << std::endl;

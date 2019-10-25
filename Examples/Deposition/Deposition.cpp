@@ -71,7 +71,9 @@ int main() {
   lsMakeGeometry<double, D>(trench).makeBox(minCorner, maxCorner);
 
   // Create trench geometry
-  lsBooleanOperation<double, D>(substrate, trench, lsBooleanOperationEnum::RELATIVE_COMPLEMENT).apply();
+  lsBooleanOperation<double, D>(substrate, trench,
+                                lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
+      .apply();
 
   {
     std::cout << "Extracting..." << std::endl;

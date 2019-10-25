@@ -57,7 +57,9 @@ int main() {
   }
 
   // Perform a boolean operation
-  lsBooleanOperation_float_3(sphere1, sphere2, lsBooleanOperationEnum::RELATIVE_COMPLEMENT).apply();
+  lsBooleanOperation_float_3(sphere1, sphere2,
+                             lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
+      .apply();
 
   std::cout << "Extracting..." << std::endl;
   lsMesh mesh;

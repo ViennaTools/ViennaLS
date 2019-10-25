@@ -19,6 +19,9 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp")
 endif()
 
+# disable-new-dtags sets RPATH which searches for libs recursively, instead of RUNPATH which does not
+# needed for g++ to link correctly
+SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--disable-new-dtags")
 
 if(ViennaLS_COMMON_TARGET)
   SET(VIENNALS_INCLUDE_DIRS "${VIENNAHRLE_INCLUDE_DIRS}" "@VIENNALS_BUILD_INCLUDE_DIRS@")

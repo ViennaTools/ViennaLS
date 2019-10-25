@@ -94,9 +94,7 @@ public:
     levelSets.push_back(&passedLevelSet);
   }
 
-  void setMesh(lsMesh &passedMesh) {
-    mesh = &passedMesh;
-  }
+  void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
 
   void apply() {
     if (levelSets.size() < 1) {
@@ -105,8 +103,10 @@ public:
               "No Level Sets supplied to lsToVoxelMesh! Not converting.")
           .print();
     }
-    if(mesh == nullptr) {
-      lsMessage::getInstance().addWarning("No mesh was passed to lsToVoxelMesh.").print();
+    if (mesh == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No mesh was passed to lsToVoxelMesh.")
+          .print();
       return;
     }
 

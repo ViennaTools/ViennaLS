@@ -28,7 +28,7 @@ public:
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>>(
             levelSet.getDomain(), order)),
         calculateNormalVectors(calcNormal) {
-    levelSet.calculateActivePointIds();
+    // levelSet.calculateActivePointIds();
   }
 
   T operator()(const hrleVectorType<hrleIndexType, D> &indices,

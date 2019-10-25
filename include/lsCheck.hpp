@@ -30,16 +30,19 @@ public:
   }
 
   void apply() {
-    if(levelSet == nullptr) {
-      lsMessage::getInstance().addWarning("No level set was passed to lsCheck.").print();
+    if (levelSet == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No level set was passed to lsCheck.")
+          .print();
       return;
     }
 
     std::ostringstream oss;
     oss << "Report from lsCheck: " << std::endl;
 
-    for (hrleConstSparseStarIterator<hrleDomain<T, D>> it(levelSet->getDomain()); !it.isFinished();
-         it.next()) {
+    for (hrleConstSparseStarIterator<hrleDomain<T, D>> it(
+             levelSet->getDomain());
+         !it.isFinished(); it.next()) {
 
       if (it.getCenter().isDefined()) {
         for (int i = 0; i < 2 * D; ++i) {

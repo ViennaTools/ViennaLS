@@ -27,9 +27,7 @@ class lsVTKWriter {
 public:
   lsVTKWriter(lsMesh &passedMesh) : mesh(&passedMesh) {}
 
-  void setMesh(lsMesh &passedMesh) {
-    mesh = &passedMesh;
-  }
+  void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
 
 #ifndef VIENNALS_USE_VTK
   void writeVTP(std::string) const {
@@ -43,8 +41,10 @@ public:
   void writeVTU(std::string) const { writeVTP(""); }
 #else  // VIENNALS_USE_VTK
   void writeVTP(std::string filename) const {
-    if(mesh == nullptr) {
-      lsMessage::getInstance().addWarning("No mesh was passed to lsVTKWriter.").print();
+    if (mesh == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No mesh was passed to lsVTKWriter.")
+          .print();
       return;
     }
 
@@ -54,7 +54,8 @@ public:
 
     // Points
     vtkSmartPointer<vtkPoints> polyPoints = vtkSmartPointer<vtkPoints>::New();
-    for (auto it = mesh->getNodes().begin(); it != mesh->getNodes().end(); ++it) {
+    for (auto it = mesh->getNodes().begin(); it != mesh->getNodes().end();
+         ++it) {
       polyPoints->InsertNextPoint((*it)[0], (*it)[1], (*it)[2]);
     }
     polyData->SetPoints(polyPoints);
@@ -87,7 +88,8 @@ public:
     if (mesh->triangles.size() > 0) {
       vtkSmartPointer<vtkCellArray> polyCells =
           vtkSmartPointer<vtkCellArray>::New();
-      for (auto it = mesh->triangles.begin(); it != mesh->triangles.end(); ++it) {
+      for (auto it = mesh->triangles.begin(); it != mesh->triangles.end();
+           ++it) {
         polyCells->InsertNextCell(3);
         for (unsigned i = 0; i < 3; ++i) {
           polyCells->InsertCellPoint((*it)[i]);
@@ -130,8 +132,10 @@ public:
   }
 
   void writeVTU(std::string filename) const {
-    if(mesh == nullptr) {
-      lsMessage::getInstance().addWarning("No mesh was passed to lsVTKWriter.").print();
+    if (mesh == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No mesh was passed to lsVTKWriter.")
+          .print();
       return;
     }
 
@@ -143,7 +147,8 @@ public:
 
     // Points
     vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
-    for (auto it = mesh->getNodes().begin(); it != mesh->getNodes().end(); ++it) {
+    for (auto it = mesh->getNodes().begin(); it != mesh->getNodes().end();
+         ++it) {
       points->InsertNextPoint((*it)[0], (*it)[1], (*it)[2]);
     }
     uGrid->SetPoints(points);
@@ -177,7 +182,8 @@ public:
 
     // Triangles
     if (mesh->triangles.size() > 0) {
-      for (auto it = mesh->triangles.begin(); it != mesh->triangles.end(); ++it) {
+      for (auto it = mesh->triangles.begin(); it != mesh->triangles.end();
+           ++it) {
         cells->InsertNextCell(3);
         for (unsigned i = 0; i < 3; ++i) {
           cells->InsertCellPoint((*it)[i]);
@@ -246,8 +252,10 @@ public:
 #endif // VIENNALS_USE_VTK
 
   void writeVTKLegacy(std::string filename) {
-    if(mesh == nullptr) {
-      lsMessage::getInstance().addWarning("No mesh was passed to lsVTKWriter.").print();
+    if (mesh == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No mesh was passed to lsVTKWriter.")
+          .print();
       return;
     }
 
@@ -291,8 +299,8 @@ public:
         f << 3 << std::endl;
 
     } else if (!mesh->triangles.empty()) {
-      f << "CELLS " << mesh->triangles.size() << " " << 4 * mesh->triangles.size()
-        << std::endl;
+      f << "CELLS " << mesh->triangles.size() << " "
+        << 4 * mesh->triangles.size() << std::endl;
       for (unsigned int i = 0; i < mesh->triangles.size(); i++) {
         f << 3 << " ";
         for (int j = 0; j < 3; j++)

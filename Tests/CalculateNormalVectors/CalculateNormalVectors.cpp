@@ -48,8 +48,10 @@ int main() {
   std::cout << "Number of points: " << sphere1.getDomain().getNumberOfPoints()
             << std::endl;
 
-  std::vector<hrleVectorType<double, 3>> normalVectors;
-  lsCalculateNormalVectors<double, 3>(sphere1, normalVectors).apply();
+  // normal vectors are only valid as long as the underlying
+  // level set does not change
+  lsCalculateNormalVectors<double, 3>(sphere1).apply();
+  auto &normalVectors = sphere1.getNormalVectors();
 
   std::cout << "Number of Normal vectors: " << normalVectors.size()
             << std::endl;

@@ -284,9 +284,14 @@ template <class T, int D> class lsAdvect {
     if (integrationScheme !=
         lsIntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS) {
       for (unsigned i = 0; i < levelSets.size() - 1; ++i) {
-        lsBooleanOperation<T, D>(*levelSets[i], *(levelSets.back()), lsBooleanOperationEnum::INTERSECT).apply();
+        lsBooleanOperation<T, D>(*levelSets[i], *(levelSets.back()),
+                                 lsBooleanOperationEnum::INTERSECT)
+            .apply();
       }
     }
+
+    // clear all metadata since it is invalid now
+    levelSets.back()->clearMetaData();
 
     return currentTime;
   }
@@ -522,7 +527,7 @@ public:
   void setDissipationAlpha(const double &a) { dissipationAlpha = a; }
 
   void apply() {
-    if (advectionTime == 0.) {
+    if (advectionTime == 0. || numberOfTimeSteps == 1) {
       advectionTime = advect();
       numberOfTimeSteps = 1;
     } else {

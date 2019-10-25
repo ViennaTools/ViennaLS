@@ -26,8 +26,10 @@ public:
   /// neighbour
   /// returns the number of removed points
   void apply() {
-    if(levelSet == nullptr) {
-      lsMessage::getInstance().addWarning("No level set was passed to lsPrune.").print();
+    if (levelSet == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No level set was passed to lsPrune.")
+          .print();
       return;
     }
 

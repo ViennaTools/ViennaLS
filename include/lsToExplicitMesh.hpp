@@ -34,17 +34,19 @@ public:
     levelSet = &passedlsDomain;
   }
 
-  void setMesh(lsMesh &passedMesh) {
-    mesh = &passedMesh;
-  }
+  void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
 
   void apply() {
-    if(levelSet == nullptr) {
-      lsMessage::getInstance().addWarning("No level set was passed to lsToExplicitMesh.").print();
+    if (levelSet == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No level set was passed to lsToExplicitMesh.")
+          .print();
       return;
     }
-    if(mesh == nullptr) {
-      lsMessage::getInstance().addWarning("No mesh was passed to lsToExplicitMesh.").print();
+    if (mesh == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No mesh was passed to lsToExplicitMesh.")
+          .print();
       return;
     }
 
@@ -160,7 +162,8 @@ public:
             }
 
             // insert new node
-            nod_numbers[n] = mesh->insertNextNode(cc); // insert new surface node
+            nod_numbers[n] =
+                mesh->insertNextNode(cc); // insert new surface node
             nodes[dir][d] = nod_numbers[n];
           }
         }

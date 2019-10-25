@@ -74,9 +74,6 @@ int main() {
 
   std::cout << "number of Points: " << plane.getDomain().getNumberOfPoints()
             << std::endl;
-  plane.calculateActivePointIds();
-  std::cout << "number of active Points: " << plane.getNumberOfActivePoints()
-            << std::endl;
 
   std::cout << "Advecting" << std::endl;
   lsAdvect<double, D> advectionKernel(lsDomains, velocities);

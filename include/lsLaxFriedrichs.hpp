@@ -30,7 +30,7 @@ public:
         calculateNormalVectors(calcNormal) /*,
 alpha(a)*/
   {
-    levelSet.calculateActivePointIds();
+    // levelSet.calculateActivePointIds();
   }
 
   T operator()(const hrleVectorType<hrleIndexType, D> &indices,

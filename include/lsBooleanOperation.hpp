@@ -129,41 +129,51 @@ public:
     operation = passedOperation;
   }
 
-  void setBooleanOperationComparator(const T (*passedOperationComp)(const T &, const T &)) {
+  void setBooleanOperationComparator(
+      const T (*passedOperationComp)(const T &, const T &)) {
     operationComp = passedOperationComp;
   }
 
   void apply() {
-    if(levelSetA == nullptr) {
-      lsMessage::getInstance().addWarning("No level set was passed to lsBooleanOperation. Not performing operation.").print();
+    if (levelSetA == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No level set was passed to lsBooleanOperation. Not "
+                      "performing operation.")
+          .print();
       return;
     }
 
-    if(static_cast<unsigned>(operation) < 3) {
-      if(levelSetB == nullptr) {
-        lsMessage::getInstance().addWarning("Only one level set was passed to lsBooleanOperation, although two were required. Not performing operation.").print();
+    if (static_cast<unsigned>(operation) < 3) {
+      if (levelSetB == nullptr) {
+        lsMessage::getInstance()
+            .addWarning("Only one level set was passed to lsBooleanOperation, "
+                        "although two were required. Not performing operation.")
+            .print();
         return;
       }
     }
 
-    switch(operation){
-      case lsBooleanOperationEnum::INTERSECT:
-        booleanOpInternal(&lsBooleanOperation::maxComp);
-        break;
-      case lsBooleanOperationEnum::UNION:
-        booleanOpInternal(&lsBooleanOperation::minComp);
-        break;
-      case lsBooleanOperationEnum::RELATIVE_COMPLEMENT:
-        booleanOpInternal(&lsBooleanOperation::relativeComplementComp);
-        break;
-      case lsBooleanOperationEnum::INVERT:
-        invert();
-        break;
-      case lsBooleanOperationEnum::CUSTOM:
-        if(operationComp == nullptr) {
-          lsMessage::getInstance().addWarning("No comparator supplied to custom lsBooleanOperation. Not performing operation.").print();
-        }
-        booleanOpInternal(operationComp);
+    switch (operation) {
+    case lsBooleanOperationEnum::INTERSECT:
+      booleanOpInternal(&lsBooleanOperation::maxComp);
+      break;
+    case lsBooleanOperationEnum::UNION:
+      booleanOpInternal(&lsBooleanOperation::minComp);
+      break;
+    case lsBooleanOperationEnum::RELATIVE_COMPLEMENT:
+      booleanOpInternal(&lsBooleanOperation::relativeComplementComp);
+      break;
+    case lsBooleanOperationEnum::INVERT:
+      invert();
+      break;
+    case lsBooleanOperationEnum::CUSTOM:
+      if (operationComp == nullptr) {
+        lsMessage::getInstance()
+            .addWarning("No comparator supplied to custom lsBooleanOperation. "
+                        "Not performing operation.")
+            .print();
+      }
+      booleanOpInternal(operationComp);
     }
   }
 

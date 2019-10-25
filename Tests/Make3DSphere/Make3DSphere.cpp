@@ -43,7 +43,8 @@ int main() {
   lsExpand<double, D>(sphere2, 2).apply();
 
   std::cout << "Booling..." << std::endl;
-  lsBooleanOperation<double, D>(sphere1, sphere2, lsBooleanOperationEnum::UNION).apply();
+  lsBooleanOperation<double, D>(sphere1, sphere2, lsBooleanOperationEnum::UNION)
+      .apply();
 
   std::cout << "Extracting..." << std::endl;
   lsToExplicitMesh<double, D>(sphere1, mesh).apply();

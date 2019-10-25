@@ -75,7 +75,8 @@ int main() {
   lsAdvect<double, D> advectionKernel;
   advectionKernel.insertNextLevelSet(sphere1);
   advectionKernel.setVelocityField(velocities);
-  advectionKernel.setIntegrationScheme(lsIntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER);
+  advectionKernel.setIntegrationScheme(
+      lsIntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER);
   advectionKernel.setAdvectionTime(20.);
   advectionKernel.apply();
 
