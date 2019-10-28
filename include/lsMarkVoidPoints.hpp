@@ -1,68 +1,79 @@
 #ifndef LS_MARK_VOID_POINTS_HPP
 #define LS_MARK_VOID_POINTS_HPP
 
+#include <hrleSparseStarIterator.hpp>
+
 #include <lsPreCompileMacros.hpp>
 
+#include <lsDomain.hpp>
 #include <lsGraph.hpp>
 
 /// This class is used to mark points of the level set
 /// which are enclosed in a void.
 template <class T, int D> class lsMarkVoidPoints {
-  const lsDomain<T, D> *domain = nullptr;
+  lsDomain<T, D> *domain = nullptr;
+  bool reverseVoidDetection = false;
 
-  apply() {
-    boost::adjacency_list<boost::setS, boost::vecS, boost::undirectedS> Graph;
+  // two points are connected if they have the same sign
+  bool areConnected(const T &value1, const T &value2) {
+    return (value1 >= 0) == (value2 >= 0);
+  }
 
-    unsigned int num_components = 0;
-    // unsigned int total_number_of_runs=0;
+public:
+  lsMarkVoidPoints(lsDomain<T, D> &passedlsDomain,
+                   bool passedReverseVoidDetection = false)
+      : domain(&passedlsDomain),
+        reverseVoidDetection(passedReverseVoidDetection) {}
 
-    // allocate memory for component list
-    //        std::vector<int> comp_lst[l.number_of_segments()][D+1];
-    //        std::vector<int> *comp_lst = new std::vector<int>
-    //        [l.number_of_segments()][D+1];
+  void setLevelSet(lsDomain<T, D> &passedlsDomain) { domain = &passedlsDomain; }
 
+  void setReverseVoidDetection(bool passedReverseVoidDetection) {
+    reverseVoidDetection = passedReverseVoidDetection;
+  }
 
-    // std::vector<std::vector<int>> comp_lst(domain->getNumberOfSegments());
-    // for(auto it = comp_lst.begin(); it != comp_lst.end(); ++it){
-    //   it->resize();
-    // }
+  void apply() {
+    lsInternal::lsGraph graph;
 
-    std::vector<int> **comp_lst =
-        new std::vector<int> *[l.number_of_segments()];
-    for (unsigned int i = 0; i < l.number_of_segments(); ++i) {
-      comp_lst[i] = new std::vector<int>[D + 1];
-    }
-
-    for (unsigned int sub = 0; sub < l.number_of_segments(); ++sub) {
-      for (int i = -1; i < D; ++i) {
-        comp_lst[sub][i + 1].resize(l.number_of_runs(i, sub), -1);
-        // total_number_of_runs+=l.number_of_runs(i,sub);
+    // vector<int> with [segmentId][dimension+1][runtype] to save connectiviies
+    std::vector<std::vector<std::vector<int>>> componentList(
+        domain->getNumberOfSegments());
+    for (unsigned segmentId = 0; segmentId < domain->getNumberOfSegments();
+         ++segmentId) {
+      componentList[segmentId].resize(D + 1);
+      for (int dim = -1; dim < D; ++dim) {
+        componentList[segmentId][dim + 1].resize(
+            domain->getDomain().getNumberOfRuns(segmentId, dim), -1);
       }
     }
 
-    bool is_first_run = true;
-    int node_of_first_run = 0;
-    int node_of_last_run = 0;
+    std::size_t numberOfComponents = 0;
 
-    // cycle through
-    for (typename LStype::template const_iterator_neighbor_filtered<
-             typename LStype::filter_all, 1>
-             it(l);
-         !it.is_finished(); it.next()) {
+    // cycle through and set up the graph to get connectivity information
+    for (hrleConstSparseStarIterator<typename lsDomain<T, D>::DomainType>
+             neighborIt(domain->getDomain());
+         !neighborIt.isFinished(); neighborIt.next()) {
+      auto &center = neighborIt.getCenter();
 
-      int &tc = comp_lst[it.center().get_segment_num()][it.center().get_level()]
-                        [it.center().run_type_position()];
+      // component id of the current run
+      // std::cout << center.getSegmentId() << ", " << center.getLevel() << ", "
+      // << center.getRunTypePosition() << std::endl;
+      int &currentComponentId =
+          componentList[center.getSegmentId()][center.getLevel()]
+                       [center.getRunTypePosition()];
 
       // -1 means it is not set yet
-      if (tc == -1) {
+      if (currentComponentId == -1) {
         for (int k = 0; k < 2 * D; ++k) {
-          const int &tn = comp_lst[it.neighbor(k).get_segment_num()]
-                                  [it.neighbor(k).get_level()]
-                                  [it.neighbor(k).run_type_position()];
-          if (tn != -1) {
-            // connected() { return it.sign() == it2.sign() }
-            if (connected(it.center(), it.neighbor(k))) {
-              tc = tn;
+          auto &neighbor = neighborIt.getNeighbor(k);
+          const int &neighborComponentId =
+              componentList[neighbor.getSegmentId()][neighbor.getLevel()]
+                           [neighbor.getRunTypePosition()];
+          // if neighbor is already defined
+          // set current component to neighbor component
+          // if they are connected
+          if (neighborComponentId != -1) {
+            if (areConnected(center.getValue(), neighbor.getValue())) {
+              currentComponentId = neighborComponentId;
               break;
             }
           }
@@ -70,73 +81,79 @@ template <class T, int D> class lsMarkVoidPoints {
       }
 
       // it is still not set, so add new vertex
-      if (tc == -1) {
-        tc = num_components;
-        boost::add_vertex(Graph);
-        ++num_components;
+      if (currentComponentId == -1) {
+        currentComponentId = numberOfComponents;
+        // std::cout << "Inserting vertex: " << currentComponentId << std::endl;
+        graph.insertNextVertex();
+        ++numberOfComponents;
       }
 
       // check if edge can be set
       for (int k = 0; k < 2 * D; ++k) {
-        int &tn = comp_lst[it.neighbor(k).get_segment_num()]
-                          [it.neighbor(k).get_level()]
-                          [it.neighbor(k).run_type_position()];
-        if (connected(it.center(), it.neighbor(k))) {
-          if (tn != -1) {
-            if (tc != tn)
-              boost::add_edge(tc, tn, Graph);
+        auto &neighbor = neighborIt.getNeighbor(k);
+        int &neighborComponentId =
+            componentList[neighbor.getSegmentId()][neighbor.getLevel()]
+                         [neighbor.getRunTypePosition()];
+        if (areConnected(center.getValue(), neighbor.getValue())) {
+          // if neighbor is already set
+          if (neighborComponentId != -1) {
+            // if neighbor is part of different component
+            if (currentComponentId != neighborComponentId) {
+              // std::cout << "Inserting: " << currentComponentId << ", " <<
+              // neighborComponentId << std::endl; std::cout << k << ", " <<
+              // neighbor.getSegmentId() << ", " << neighbor.getLevel() << ", "
+              // << neighbor.getRunTypePosition() << std::endl;
+              graph.insertNextEdge(currentComponentId, neighborComponentId);
+            }
           } else {
-            tn = tc;
+            // std::cout << "Setting neighbor to: " << currentComponentId <<
+            // std::endl;
+            neighborComponentId = currentComponentId;
           }
         }
       }
-
-      // set special nodes
-      if (is_first_run) {
-        is_first_run = false;
-        node_of_first_run = tc;
-      }
-      node_of_last_run = tc;
     }
 
-    assert(boost::num_vertices(Graph) == num_components);
-    std::vector<int> component(boost::num_vertices(Graph));
+    auto components = graph.getConnectedComponents();
 
-    unsigned int num_components_after =
-        connected_components(Graph, &component[0]);
+    // now need to decide which component to mark as valid
+    // always take the component in the most positive direction
+    // unless reverse is specified, then take the most negative
+    int topComponent =
+        (reverseVoidDetection) ? components[0] : components.back();
 
-    // determine component number of source region
+    std::vector<bool> &voidPointMarkers = domain->getVoidPointMarkers();
+    voidPointMarkers.reserve(domain->getNumberOfPoints());
 
-    int source_node = (is_open_boundary_negative) ? component[node_of_first_run]
-                                                  : component[node_of_last_run];
+    // cycle through again to set correct voidPointMarkers
+    for (hrleConstSparseStarIterator<typename lsDomain<T, D>::DomainType>
+             neighborIt(domain->getDomain());
+         !neighborIt.isFinished(); neighborIt.next()) {
+      auto center = neighborIt.getCenter();
 
-    Connectivities.clear();
-    for (typename LStype::template const_iterator_neighbor_filtered<
-             typename LStype::filter_active, 1>
-             it(l);
-         !it.is_finished(); it.next()) {
+      if (!center.isDefined())
+        continue;
 
-
-      if (it.center().sign() == lvlset::POS_SIGN) {
-        assert(it.center().get_segment_num() < l.number_of_segments());
-        Connectivities.push_back(
-            component[comp_lst[it.center().get_segment_num()][0]
-                              [it.center().run_type_position()]] ==
-            source_node); // TODO
+      // TODO: currently this will break if the iterator hits a negative
+      // run first
+      if (center.getValue() >= 0) {
+        const int &oldComponentId = componentList[center.getSegmentId()][0]
+                                                 [center.getRunTypePosition()];
+        voidPointMarkers.push_back(components[oldComponentId] == topComponent);
       } else {
-        int k;
+        unsigned k;
         for (k = 0; k < 2 * D; ++k) {
-          if (component[comp_lst[it.neighbor(k).get_segment_num()]
-                                [it.neighbor(k).get_level()]
-                                [it.neighbor(k).run_type_position()]] ==
-              source_node)
+          auto &neighbor = neighborIt.getNeighbor(k);
+          const int &oldneighborComponentId =
+              componentList[neighbor.getSegmentId()][neighbor.getLevel()]
+                           [neighbor.getRunTypePosition()];
+          if (components[oldneighborComponentId] == topComponent) {
             break;
+          }
         }
-        Connectivities.push_back(k != 2 * D);
+        voidPointMarkers.push_back(k != 2 * D);
       }
     }
-
-    return std::make_pair(num_components, num_components_after);
   }
 };
 

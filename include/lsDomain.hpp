@@ -135,7 +135,9 @@ public:
   /// get reference to the voidPoints markers for all points
   voidPointMarkersType &getVoidPointMarkers() { return voidPointMarkers; }
 
-  const voidPointMarkersType &getVoidPointMarkers() const { return voidPointMarkers; }
+  const voidPointMarkersType &getVoidPointMarkers() const {
+    return voidPointMarkers;
+  }
 
   /// prints basic information and all memebers of the levelset structure
   void print() {
