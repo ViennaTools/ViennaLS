@@ -13,6 +13,7 @@
 #include <lsDomain.hpp>
 #include <lsMessage.hpp>
 #include <lsReduce.hpp>
+#include <lsMarkVoidPoints.hpp>
 
 // Integration schemes
 #include <lsEnquistOsher.hpp>
@@ -49,6 +50,7 @@ template <class T, int D> class lsAdvect {
   double timeStepRatio = 0.4999;
   double dissipationAlpha = 0.;
   bool calculateNormalVectors = true;
+  bool ignoreVoids = false;
   double advectionTime = 0.;
   unsigned numberOfTimeSteps = 0;
 
@@ -317,6 +319,10 @@ template <class T, int D> class lsAdvect {
     std::vector<std::vector<std::pair<T, T>>> totalTempRates;
     totalTempRates.resize((levelSets.back())->getNumberOfSegments());
 
+    if(ignoreVoids){
+      lsMarkVoidPoints<T, D>(*levelSets.back()).apply();
+    }
+
 #pragma omp parallel num_threads((levelSets.back())->getNumberOfSegments())
     {
       int p = 0;
@@ -348,6 +354,7 @@ template <class T, int D> class lsAdvect {
       }
 
       IntegrationSchemeType scheme(IntegrationScheme);
+      auto &voidPoints = levelSets.back()->getVoidPointMarkers();
 
       for (hrleSparseIterator<typename lsDomain<T, D>::DomainType> it(
                topDomain, startVector);
@@ -365,20 +372,22 @@ template <class T, int D> class lsAdvect {
 
           T velocity = 0;
 
-          // check if there is any other levelset at the same point:
-          // if yes, take the velocity of the lowest levelset
-          for (unsigned lowerLevelSetId = 0; lowerLevelSetId < levelSets.size();
-               ++lowerLevelSetId) {
-            // put iterator to same position as the top levelset
-            iterators[lowerLevelSetId].goToIndicesSequential(
-                it.getStartIndices());
+          if(!(ignoreVoids && voidPoints[it.getPointId()])){
+            // check if there is any other levelset at the same point:
+            // if yes, take the velocity of the lowest levelset
+            for (unsigned lowerLevelSetId = 0; lowerLevelSetId < levelSets.size();
+                 ++lowerLevelSetId) {
+              // put iterator to same position as the top levelset
+              iterators[lowerLevelSetId].goToIndicesSequential(
+                  it.getStartIndices());
 
-            // if the lower surface is actually outside, i.e. its LS value is
-            // lower or equal
-            if (iterators[lowerLevelSetId].getValue() <= value + 1e-9) {
-              velocity =
-                  scheme(it.getStartIndices(), velocities, lowerLevelSetId);
-              break;
+              // if the lower surface is actually outside, i.e. its LS value is
+              // lower or equal
+              if (iterators[lowerLevelSetId].getValue() <= value + 1e-9) {
+                velocity =
+                    scheme(it.getStartIndices(), velocities, lowerLevelSetId);
+                break;
+              }
             }
           }
 
@@ -491,6 +500,14 @@ template <class T, int D> class lsAdvect {
 public:
   lsAdvect() {}
 
+  lsAdvect(lsDomain<T, D> &passedlsDomain) {
+    levelSets.push_back(&passedlsDomain);
+  }
+
+  lsAdvect(lsDomain<T, D> &passedlsDomain, lsVelocityField<T> &passedVelocities) : velocities(&passedVelocities) {
+    levelSets.push_back(&passedlsDomain);
+  }
+
   lsAdvect(lsVelocityField<T> &passedVelocities)
       : velocities(&passedVelocities) {}
 
@@ -511,6 +528,8 @@ public:
   void setTimeStepRatio(const double &cfl) { timeStepRatio = cfl; }
 
   void setCalculateNormalVectors(bool cnv) { calculateNormalVectors = cnv; }
+
+  void setIgnoreVoids(bool iV) { ignoreVoids = iV; }
 
   double getAdvectionTime() { return advectionTime; }
 

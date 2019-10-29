@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <iostream>
 
+#include <lsAdvect.hpp>
 #include <lsBooleanOperation.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsMarkVoidPoints.hpp>
@@ -10,8 +11,28 @@
 
 /**
   Example showing how to use void detection.
-  \example AdvectionPlane.cpp
+  \example VoidDetection.cpp
 */
+
+// implement own velocity field
+class velocityField : public lsVelocityField<double> {
+public:
+  double getScalarVelocity(
+      hrleVectorType<double, 3> /*coordinate*/, int /*material*/,
+      hrleVectorType<double, 3> /*normalVector = hrleVectorType<double, 3>(0.)*/) {
+    // Some arbitrary velocity function of your liking
+    // (try changing it and see what happens :)
+    double velocity = 1.;
+    return velocity;
+  }
+
+  hrleVectorType<double, 3> getVectorVelocity(
+      hrleVectorType<double, 3> /*coordinate*/, int /*material*/,
+      hrleVectorType<double,
+                     3> /*normalVector = hrleVectorType<double, 3>(0.)*/) {
+    return hrleVectorType<double, 3>(0.);
+  }
+};
 
 int main() {
   constexpr int D = 2;
@@ -53,22 +74,38 @@ int main() {
 
   lsMarkVoidPoints<double, D>(substrate).apply();
 
-  std::cout << "Extracting..." << std::endl;
-  lsMesh mesh;
-  lsToMesh<double, D>(substrate, mesh).apply();
+  {
+    std::cout << "Extracting..." << std::endl;
+    lsMesh mesh;
+    lsToMesh<double, D>(substrate, mesh).apply();
 
-  auto voidPointMarkers = substrate.getVoidPointMarkers();
-  std::vector<double> isVoid(voidPointMarkers.size()); // 0 = not void, 1 = void
-  for (unsigned i = 0; i < isVoid.size(); ++i) {
-    isVoid[i] = (voidPointMarkers[i]) ? 1. : 0.;
+    auto voidPointMarkers = substrate.getVoidPointMarkers();
+    std::vector<double> isVoid(voidPointMarkers.size()); // 0 = not void, 1 = void
+    for (unsigned i = 0; i < isVoid.size(); ++i) {
+      isVoid[i] = (voidPointMarkers[i]) ? 1. : 0.;
+    }
+
+    std::cout << "Points: " << substrate.getNumberOfPoints() << std::endl;
+    std::cout << "Markers: " << isVoid.size() << std::endl;
+
+    mesh.insertNextScalarData(isVoid, "voidMarkers");
+
+    lsVTKWriter(mesh).writeVTKLegacy("after.vtk");
   }
 
-  std::cout << "Points: " << substrate.getNumberOfPoints() << std::endl;
-  std::cout << "Markers: " << isVoid.size() << std::endl;
 
-  mesh.insertNextScalarData(isVoid);
-
-  lsVTKWriter(mesh).writeVTKLegacy("after.vtk");
+  // Advection
+  velocityField velocities;
+  lsAdvect<double, D> advectionKernel(substrate, velocities);
+  advectionKernel.setIgnoreVoids(true);
+  for(unsigned i=0; i< 30; ++i) {
+    {
+      lsMesh mesh;
+      lsToExplicitMesh<double, D>(substrate, mesh).apply();
+      lsVTKWriter(mesh).writeVTKLegacy("out-" + std::to_string(i) + ".vtk");
+    }
+    advectionKernel.apply();
+  }
 
   return 0;
 }

@@ -34,7 +34,6 @@ public:
   void apply() {
     lsInternal::lsGraph graph;
 
-    // vector<int> with [segmentId][dimension+1][runtype] to save connectiviies
     std::vector<std::vector<std::vector<int>>> componentList(
         domain->getNumberOfSegments());
     for (unsigned segmentId = 0; segmentId < domain->getNumberOfSegments();
@@ -55,8 +54,6 @@ public:
       auto &center = neighborIt.getCenter();
 
       // component id of the current run
-      // std::cout << center.getSegmentId() << ", " << center.getLevel() << ", "
-      // << center.getRunTypePosition() << std::endl;
       int &currentComponentId =
           componentList[center.getSegmentId()][center.getLevel()]
                        [center.getRunTypePosition()];
@@ -83,7 +80,6 @@ public:
       // it is still not set, so add new vertex
       if (currentComponentId == -1) {
         currentComponentId = numberOfComponents;
-        // std::cout << "Inserting vertex: " << currentComponentId << std::endl;
         graph.insertNextVertex();
         ++numberOfComponents;
       }
@@ -99,15 +95,9 @@ public:
           if (neighborComponentId != -1) {
             // if neighbor is part of different component
             if (currentComponentId != neighborComponentId) {
-              // std::cout << "Inserting: " << currentComponentId << ", " <<
-              // neighborComponentId << std::endl; std::cout << k << ", " <<
-              // neighbor.getSegmentId() << ", " << neighbor.getLevel() << ", "
-              // << neighbor.getRunTypePosition() << std::endl;
               graph.insertNextEdge(currentComponentId, neighborComponentId);
             }
           } else {
-            // std::cout << "Setting neighbor to: " << currentComponentId <<
-            // std::endl;
             neighborComponentId = currentComponentId;
           }
         }
@@ -123,7 +113,7 @@ public:
         (reverseVoidDetection) ? components[0] : components.back();
 
     std::vector<bool> &voidPointMarkers = domain->getVoidPointMarkers();
-    voidPointMarkers.reserve(domain->getNumberOfPoints());
+    voidPointMarkers.resize(domain->getNumberOfPoints());
 
     // cycle through again to set correct voidPointMarkers
     for (hrleConstSparseStarIterator<typename lsDomain<T, D>::DomainType>
@@ -139,7 +129,7 @@ public:
       if (center.getValue() >= 0) {
         const int &oldComponentId = componentList[center.getSegmentId()][0]
                                                  [center.getRunTypePosition()];
-        voidPointMarkers.push_back(components[oldComponentId] == topComponent);
+        voidPointMarkers[center.getPointId()] = (components[oldComponentId] != topComponent);
       } else {
         unsigned k;
         for (k = 0; k < 2 * D; ++k) {
@@ -151,7 +141,7 @@ public:
             break;
           }
         }
-        voidPointMarkers.push_back(k != 2 * D);
+        voidPointMarkers[center.getPointId()] = (k == 2 * D);
       }
     }
   }
