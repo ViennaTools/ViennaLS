@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['lax_5ffriedrichs_5f1st_5forder_369',['LAX_FRIEDRICHS_1ST_ORDER',['../classlsAdvect.html#a6720d61b891f9c96f3ead9d54aea98e8a5915a9915efcbd61924cbe5aa5bfe25f',1,'lsAdvect']]],
-  ['lax_5ffriedrichs_5f2nd_5forder_370',['LAX_FRIEDRICHS_2ND_ORDER',['../classlsAdvect.html#a6720d61b891f9c96f3ead9d54aea98e8aae0dc90fe4cd6a5320eea8d1ebfdff6b',1,'lsAdvect']]]
+  ['engquist_5fosher_5f1st_5forder_398',['ENGQUIST_OSHER_1ST_ORDER',['../lsAdvect_8hpp.html#afe9778bbf7b5f9aeb52d14c4f133cc9bad0a7e3dc2008232b277a258bb57d2049',1,'lsAdvect.hpp']]],
+  ['engquist_5fosher_5f2nd_5forder_399',['ENGQUIST_OSHER_2ND_ORDER',['../lsAdvect_8hpp.html#afe9778bbf7b5f9aeb52d14c4f133cc9baa04ccfbc276e404065c286a5ff2f249d',1,'lsAdvect.hpp']]]
 ];

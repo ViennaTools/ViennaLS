@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['weno3_373',['WENO3',['../namespacelsInternal.html#a1197c9bc5d272ab73e76ebc2d4ab05a7a48827877b1f4c91171ef2d17aaeeb9ca',1,'lsInternal']]],
-  ['weno5_374',['WENO5',['../namespacelsInternal.html#a1197c9bc5d272ab73e76ebc2d4ab05a7adf9e08f10584e71c9abf514864a47f99',1,'lsInternal']]]
+  ['intersect_401',['INTERSECT',['../lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8a24bdbe2bcaf533b7b3f0bd58bfa7f291',1,'lsBooleanOperation.hpp']]],
+  ['invert_402',['INVERT',['../lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8aa2727ae72447eea06d4cc0ef67187280',1,'lsBooleanOperation.hpp']]]
 ];

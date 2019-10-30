@@ -46,7 +46,7 @@ int main() {
   double bounds[2 * D] = {-extent, extent, -extent, extent};
   lsDomain<double, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D; ++i)
-    boundaryCons[i] = lsDomain<double, D>::BoundaryType::SYMMETRIC_BOUNDARY;
+    boundaryCons[i] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   lsDomain<double, D> plane(bounds, boundaryCons, gridDelta);
 
   double origin[D] = {0., 0.};

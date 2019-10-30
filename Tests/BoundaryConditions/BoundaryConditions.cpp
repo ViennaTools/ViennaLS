@@ -23,7 +23,7 @@ int main() {
   double bounds[2 * D] = {-extent, extent, -extent, extent, -extent, extent};
   lsDomain<double, D>::BoundaryType boundaryCons[3];
   for (unsigned i = 0; i < D - 1; ++i)
-    boundaryCons[i] = lsDomain<double, D>::BoundaryType::SYMMETRIC_BOUNDARY;
+    boundaryCons[i] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
 
   boundaryCons[2] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 

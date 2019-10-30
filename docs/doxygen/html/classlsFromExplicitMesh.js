@@ -1,5 +1,7 @@
 var classlsFromExplicitMesh =
 [
-    [ "lsFromExplicitMesh", "classlsFromExplicitMesh.html#a14c395911540703da6b2abd1d4ade111", null ],
-    [ "apply", "classlsFromExplicitMesh.html#a2f868ceaadf3b2e45d33cdddee112c92", null ]
+    [ "lsFromExplicitMesh", "classlsFromExplicitMesh.html#a414e361369a1697bb778c3a8f2a97317", null ],
+    [ "apply", "classlsFromExplicitMesh.html#a10eeb3d57100fa2baad013c4e2e8eba9", null ],
+    [ "setLevelSet", "classlsFromExplicitMesh.html#a41b2a4c669944c6cddde19c8bf8e2419", null ],
+    [ "setMesh", "classlsFromExplicitMesh.html#af53ad9133f5fe8c37681c99232dfd894", null ]
 ];

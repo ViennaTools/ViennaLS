@@ -1,5 +1,6 @@
 var hierarchy =
 [
+    [ "std::hash< hrleVectorType< hrleIndexType, D > >", "structstd_1_1hash_3_01hrleVectorType_3_01hrleIndexType_00_01D_01_4_01_4.html", null ],
     [ "lsFromExplicitMesh< T, D >::box::iterator", "classlsFromExplicitMesh_1_1box_1_1iterator.html", null ],
     [ "lsAdvect< T, D >", "classlsAdvect.html", null ],
     [ "lsBooleanOperation< T, D >", "classlsBooleanOperation.html", null ],
@@ -10,9 +11,11 @@ var hierarchy =
     [ "lsExpand< T, D >", "classlsExpand.html", null ],
     [ "lsInternal::lsFiniteDifferences< T, scheme >", "classlsInternal_1_1lsFiniteDifferences.html", null ],
     [ "lsFromExplicitMesh< T, D >", "classlsFromExplicitMesh.html", null ],
+    [ "lsInternal::lsGraph", "classlsInternal_1_1lsGraph.html", null ],
     [ "lsInternal::lsLaxFriedrichs< T, D, order >", "classlsInternal_1_1lsLaxFriedrichs.html", null ],
     [ "lsMakeGeometry< T, D >", "classlsMakeGeometry.html", null ],
     [ "lsInternal::lsMarchingCubes", "classlsInternal_1_1lsMarchingCubes.html", null ],
+    [ "lsMarkVoidPoints< T, D >", "classlsMarkVoidPoints.html", null ],
     [ "lsMesh", "classlsMesh.html", null ],
     [ "lsMessage", "classlsMessage.html", null ],
     [ "lsPrune< T, D >", "classlsPrune.html", null ],
@@ -23,7 +26,6 @@ var hierarchy =
     [ "lsToVoxelMesh< T, D >", "classlsToVoxelMesh.html", null ],
     [ "lsVelocityField< T >", "classlsVelocityField.html", null ],
     [ "lsVelocityField< double >", "classlsVelocityField.html", [
-      [ "velocityField", "classvelocityField.html", null ],
       [ "velocityField", "classvelocityField.html", null ],
       [ "velocityField", "classvelocityField.html", null ],
       [ "velocityField", "classvelocityField.html", null ],

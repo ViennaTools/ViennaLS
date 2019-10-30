@@ -7,6 +7,7 @@
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
 #include <lsToExplicitMesh.hpp>
+#include <lsToMesh.hpp>
 #include <lsVTKWriter.hpp>
 
 /**
@@ -37,14 +38,14 @@ public:
 int main() {
 
   constexpr int D = 2;
-  omp_set_num_threads(4);
+  omp_set_num_threads(2);
 
   double extent = 30;
   double gridDelta = 0.5;
 
   double bounds[2 * D] = {-extent, extent, -extent, extent};
   lsDomain<double, D>::BoundaryType boundaryCons[D];
-  boundaryCons[0] = lsDomain<double, D>::BoundaryType::SYMMETRIC_BOUNDARY;
+  boundaryCons[0] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   boundaryCons[1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
   lsDomain<double, D> substrate(bounds, boundaryCons, gridDelta);
@@ -58,17 +59,26 @@ int main() {
     std::cout << "Extracting..." << std::endl;
     lsMesh mesh;
     lsToExplicitMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh).writeVTKLegacy("plane.vtk");
+    lsVTKWriter(mesh).writeVTP("plane.vtp");
   }
 
   {
     // create layer used for booling
+    std::cout << "Creating box..." << std::endl;
     lsDomain<double, D> trench(bounds, boundaryCons, gridDelta);
     double minCorner[D] = {-extent / 6., -25.};
     double maxCorner[D] = {extent / 6., 1.};
     lsMakeGeometry<double, D>(trench).makeBox(minCorner, maxCorner);
 
+    {
+      std::cout << "Extracting..." << std::endl;
+      lsMesh mesh;
+      lsToMesh<double, D>(trench, mesh).apply();
+      lsVTKWriter(mesh).writeVTP("box.vtp");
+    }
+
     // Create trench geometry
+    std::cout << "Booling trench..." << std::endl;
     lsBooleanOperation<double, D>(substrate, trench,
                                   lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
         .apply();
@@ -78,6 +88,7 @@ int main() {
 
   // create new levelset for new material, which will be grown
   // since it has to wrap around the substrate, just copy it
+  std::cout << "Creating new layer..." << std::endl;
   lsDomain<double, D> newLayer(substrate);
 
   velocityField velocities;
@@ -91,21 +102,22 @@ int main() {
   advectionKernel.insertNextLevelSet(newLayer);
 
   advectionKernel.setVelocityField(velocities);
+  advectionKernel.setIgnoreVoids(true);
 
   // Now advect the level set 50 times, outputting every
   // 10th advection step. Save the physical time that
   // passed during the advection.
   double passedTime = 0.;
-  for (unsigned i = 0; i < 50; ++i) {
+  unsigned numberOfSteps = 60;
+  for (unsigned i = 0; i < numberOfSteps; ++i) {
     advectionKernel.apply();
     passedTime += advectionKernel.getAdvectionTime();
 
-    if (true) { // i%10 == 0) {
-      std::cout << "Extracting step " + std::to_string(i) << std::endl;
-      lsMesh mesh;
-      lsToExplicitMesh<double, D>(newLayer, mesh).apply();
-      lsVTKWriter(mesh).writeVTKLegacy("trench" + std::to_string(i) + ".vtk");
-    }
+    std::cout << "\rAdvection step " + std::to_string(i) + " / "
+              << numberOfSteps << std::flush;
+    lsMesh mesh;
+    lsToExplicitMesh<double, D>(newLayer, mesh).apply();
+    lsVTKWriter(mesh).writeVTKLegacy("trench" + std::to_string(i) + ".vtk");
   }
   std::cout << "Time passed during advection: " << passedTime << std::endl;
 

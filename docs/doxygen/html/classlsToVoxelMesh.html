@@ -101,8 +101,16 @@ $(document).ready(function(){initNavTree('classlsToVoxelMesh.html','');});
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a73540cac946a3808e0d1c15261d6a1de"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToVoxelMesh.html#a73540cac946a3808e0d1c15261d6a1de">lsToVoxelMesh</a> (<a class="el" href="classlsMesh.html">lsMesh</a> &amp;passedMesh)</td></tr>
+<tr class="separator:a73540cac946a3808e0d1c15261d6a1de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a831273d6b3115cecfe82fada95d0ffa1"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToVoxelMesh.html#a831273d6b3115cecfe82fada95d0ffa1">lsToVoxelMesh</a> (const <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedLevelSet, <a class="el" href="classlsMesh.html">lsMesh</a> &amp;passedMesh)</td></tr>
 <tr class="separator:a831273d6b3115cecfe82fada95d0ffa1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aed075e9471a03e86c8f9f46473dd4a39"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToVoxelMesh.html#aed075e9471a03e86c8f9f46473dd4a39">lsToVoxelMesh</a> (const std::vector&lt; const <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; * &gt; &amp;passedLevelSets, <a class="el" href="classlsMesh.html">lsMesh</a> &amp;passedMesh)</td></tr>
+<tr class="separator:aed075e9471a03e86c8f9f46473dd4a39"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4f0098495d728ba332331eb043c57cea"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToVoxelMesh.html#a4f0098495d728ba332331eb043c57cea">insertNextLevelSet</a> (const <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedLevelSet)</td></tr>
+<tr class="separator:a4f0098495d728ba332331eb043c57cea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb42f50f6070711172dee97b12b8913d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToVoxelMesh.html#afb42f50f6070711172dee97b12b8913d">setMesh</a> (<a class="el" href="classlsMesh.html">lsMesh</a> &amp;passedMesh)</td></tr>
+<tr class="separator:afb42f50f6070711172dee97b12b8913d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a95c11589b8c4928c11ce4feb44995499"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToVoxelMesh.html#a95c11589b8c4928c11ce4feb44995499">apply</a> ()</td></tr>
 <tr class="separator:a95c11589b8c4928c11ce4feb44995499"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -111,11 +119,37 @@ Public Member Functions</h2></td></tr>
 class lsToVoxelMesh&lt; T, D &gt;</h3>
 
 <p>Creates a mesh, which consists only of quads/hexas for completely filled grid cells in the level set. Interfaces will not be smooth but stepped. (This can be used to create meshes for finite difference algorithms) </p>
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="Make3DSphere_8cpp-example.html#_a15">Make3DSphere.cpp</a>, and <a class="el" href="MakeSphere_8cpp-example.html#_a19">MakeSphere.cpp</a>.</dd>
-</dl>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a73540cac946a3808e0d1c15261d6a1de"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a73540cac946a3808e0d1c15261d6a1de">&#9670;&nbsp;</a></span>lsToVoxelMesh() <span class="overload">[1/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsToVoxelMesh.html">lsToVoxelMesh</a>&lt; T, D &gt;::<a class="el" href="classlsToVoxelMesh.html">lsToVoxelMesh</a> </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsMesh.html">lsMesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>passedMesh</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a831273d6b3115cecfe82fada95d0ffa1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a831273d6b3115cecfe82fada95d0ffa1">&#9670;&nbsp;</a></span>lsToVoxelMesh()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a831273d6b3115cecfe82fada95d0ffa1">&#9670;&nbsp;</a></span>lsToVoxelMesh() <span class="overload">[2/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -130,6 +164,44 @@ template&lt;class T , int D&gt; </div>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
           <td class="paramname"><em>passedLevelSet</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classlsMesh.html">lsMesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>passedMesh</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aed075e9471a03e86c8f9f46473dd4a39"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aed075e9471a03e86c8f9f46473dd4a39">&#9670;&nbsp;</a></span>lsToVoxelMesh() <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsToVoxelMesh.html">lsToVoxelMesh</a>&lt; T, D &gt;::<a class="el" href="classlsToVoxelMesh.html">lsToVoxelMesh</a> </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; const <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; * &gt; &amp;&#160;</td>
+          <td class="paramname"><em>passedLevelSets</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -177,8 +249,62 @@ template&lt;class T , int D&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="Make3DSphere_8cpp-example.html#a16">Make3DSphere.cpp</a>, and <a class="el" href="MakeSphere_8cpp-example.html#a20">MakeSphere.cpp</a>.</dd>
-</dl>
+
+</div>
+</div>
+<a id="a4f0098495d728ba332331eb043c57cea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4f0098495d728ba332331eb043c57cea">&#9670;&nbsp;</a></span>insertNextLevelSet()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsToVoxelMesh.html">lsToVoxelMesh</a>&lt; T, D &gt;::insertNextLevelSet </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
+          <td class="paramname"><em>passedLevelSet</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="afb42f50f6070711172dee97b12b8913d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afb42f50f6070711172dee97b12b8913d">&#9670;&nbsp;</a></span>setMesh()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsToVoxelMesh.html">lsToVoxelMesh</a>&lt; T, D &gt;::setMesh </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsMesh.html">lsMesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>passedMesh</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>

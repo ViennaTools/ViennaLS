@@ -129,7 +129,8 @@ public:
       if (center.getValue() >= 0) {
         const int &oldComponentId = componentList[center.getSegmentId()][0]
                                                  [center.getRunTypePosition()];
-        voidPointMarkers[center.getPointId()] = (components[oldComponentId] != topComponent);
+        voidPointMarkers[center.getPointId()] =
+            (components[oldComponentId] != topComponent);
       } else {
         unsigned k;
         for (k = 0; k < 2 * D; ++k) {

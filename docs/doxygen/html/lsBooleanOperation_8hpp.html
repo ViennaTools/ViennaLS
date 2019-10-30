@@ -87,7 +87,8 @@ $(document).ready(function(){initNavTree('lsBooleanOperation_8hpp.html','');});
 
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Classes</a>  </div>
+<a href="#nested-classes">Classes</a> &#124;
+<a href="#enum-members">Enumerations</a>  </div>
   <div class="headertitle">
 <div class="title">lsBooleanOperation.hpp File Reference</div>  </div>
 </div><!--header-->
@@ -96,13 +97,60 @@ $(document).ready(function(){initNavTree('lsBooleanOperation_8hpp.html','');});
 <code>#include &lt;hrleSparseStarIterator.hpp&gt;</code><br />
 <code>#include &lt;hrleVectorType.hpp&gt;</code><br />
 <code>#include &lt;<a class="el" href="lsDomain_8hpp.html">lsDomain.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="lsMessage_8hpp.html">lsMessage.hpp</a>&gt;</code><br />
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsBooleanOperation.html">lsBooleanOperation&lt; T, D &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This class is used to perform boolean operations on two level sets and write the resulting level set into the first passed level set.  <a href="classlsBooleanOperation.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
+Enumerations</h2></td></tr>
+<tr class="memitem:a8b5747a2da7e017486ffceefca67d6d8"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8">lsBooleanOperationEnum</a> : unsigned { <br />
+&#160;&#160;<a class="el" href="lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8a24bdbe2bcaf533b7b3f0bd58bfa7f291">lsBooleanOperationEnum::INTERSECT</a>, 
+<a class="el" href="lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8aea931da33de8ba05c3635a51c2b25d75">lsBooleanOperationEnum::UNION</a>, 
+<a class="el" href="lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8ac50397eae12f3694f170c9aaaa57c042">lsBooleanOperationEnum::RELATIVE_COMPLEMENT</a>, 
+<a class="el" href="lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8aa2727ae72447eea06d4cc0ef67187280">lsBooleanOperationEnum::INVERT</a>, 
+<br />
+&#160;&#160;<a class="el" href="lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8a72baef04098f035e8a320b03ad197818">lsBooleanOperationEnum::CUSTOM</a>
+<br />
+ }</td></tr>
+<tr class="memdesc:a8b5747a2da7e017486ffceefca67d6d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enumeration for the different types of boolean operations which are supported. WHEN INVERT, only first level set is inverted When CUSTOM, the user has to supply a valid function pointer of the form const T (*comp)(const T &amp;, const T &amp;). For CUSTOM only the first level set pointer is checked for validity.  <a href="lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8">More...</a><br /></td></tr>
+<tr class="separator:a8b5747a2da7e017486ffceefca67d6d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Enumeration Type Documentation</h2>
+<a id="a8b5747a2da7e017486ffceefca67d6d8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8b5747a2da7e017486ffceefca67d6d8">&#9670;&nbsp;</a></span>lsBooleanOperationEnum</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8">lsBooleanOperationEnum</a> : unsigned</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">strong</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Enumeration for the different types of boolean operations which are supported. WHEN INVERT, only first level set is inverted When CUSTOM, the user has to supply a valid function pointer of the form const T (*comp)(const T &amp;, const T &amp;). For CUSTOM only the first level set pointer is checked for validity. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a8b5747a2da7e017486ffceefca67d6d8a24bdbe2bcaf533b7b3f0bd58bfa7f291"></a>INTERSECT&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a8b5747a2da7e017486ffceefca67d6d8aea931da33de8ba05c3635a51c2b25d75"></a>UNION&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a8b5747a2da7e017486ffceefca67d6d8ac50397eae12f3694f170c9aaaa57c042"></a>RELATIVE_COMPLEMENT&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a8b5747a2da7e017486ffceefca67d6d8aa2727ae72447eea06d4cc0ef67187280"></a>INVERT&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a8b5747a2da7e017486ffceefca67d6d8a72baef04098f035e8a320b03ad197818"></a>CUSTOM&#160;</td><td class="fielddoc"></td></tr>
+</table>
+
+</div>
+</div>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->

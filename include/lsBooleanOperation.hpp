@@ -91,6 +91,7 @@ template <class T, int D> class lsBooleanOperation {
     }
     newDomain.finalize();
     newDomain.segment();
+    newlsDomain.setLevelSetWidth(levelSetA->getLevelSetWidth());
     levelSetA->deepCopy(newlsDomain);
     levelSetA->finalize(
         std::min(levelSetA->getLevelSetWidth(), levelSetB->getLevelSetWidth()));
@@ -172,6 +173,7 @@ public:
             .addWarning("No comparator supplied to custom lsBooleanOperation. "
                         "Not performing operation.")
             .print();
+        return;
       }
       booleanOpInternal(operationComp);
     }

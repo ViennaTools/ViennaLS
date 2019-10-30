@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['unite_165',['unite',['../classlsBooleanOperation.html#ac9f09fbc06650eb5658032fdefb097d4',1,'lsBooleanOperation']]]
+  ['union_182',['UNION',['../lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8aea931da33de8ba05c3635a51c2b25d75',1,'lsBooleanOperation.hpp']]]
 ];

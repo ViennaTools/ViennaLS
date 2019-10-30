@@ -11,9 +11,9 @@
 
 #include <lsBooleanOperation.hpp>
 #include <lsDomain.hpp>
+#include <lsMarkVoidPoints.hpp>
 #include <lsMessage.hpp>
 #include <lsReduce.hpp>
-#include <lsMarkVoidPoints.hpp>
 
 // Integration schemes
 #include <lsEnquistOsher.hpp>
@@ -319,7 +319,7 @@ template <class T, int D> class lsAdvect {
     std::vector<std::vector<std::pair<T, T>>> totalTempRates;
     totalTempRates.resize((levelSets.back())->getNumberOfSegments());
 
-    if(ignoreVoids){
+    if (ignoreVoids) {
       lsMarkVoidPoints<T, D>(*levelSets.back()).apply();
     }
 
@@ -372,11 +372,11 @@ template <class T, int D> class lsAdvect {
 
           T velocity = 0;
 
-          if(!(ignoreVoids && voidPoints[it.getPointId()])){
+          if (!(ignoreVoids && voidPoints[it.getPointId()])) {
             // check if there is any other levelset at the same point:
             // if yes, take the velocity of the lowest levelset
-            for (unsigned lowerLevelSetId = 0; lowerLevelSetId < levelSets.size();
-                 ++lowerLevelSetId) {
+            for (unsigned lowerLevelSetId = 0;
+                 lowerLevelSetId < levelSets.size(); ++lowerLevelSetId) {
               // put iterator to same position as the top levelset
               iterators[lowerLevelSetId].goToIndicesSequential(
                   it.getStartIndices());
@@ -504,7 +504,8 @@ public:
     levelSets.push_back(&passedlsDomain);
   }
 
-  lsAdvect(lsDomain<T, D> &passedlsDomain, lsVelocityField<T> &passedVelocities) : velocities(&passedVelocities) {
+  lsAdvect(lsDomain<T, D> &passedlsDomain, lsVelocityField<T> &passedVelocities)
+      : velocities(&passedVelocities) {
     levelSets.push_back(&passedlsDomain);
   }
 

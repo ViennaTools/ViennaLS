@@ -28,7 +28,7 @@ int main() {
   double bounds[2 * D] = {-extent, extent, -extent, extent, -extent, extent};
   lsDomain<double, D>::BoundaryType boundaryCons[3];
   for (unsigned i = 0; i < D; ++i)
-    boundaryCons[i] = lsDomain<double, D>::BoundaryType::SYMMETRIC_BOUNDARY;
+    boundaryCons[i] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   lsDomain<double, D> sphere1(bounds, boundaryCons, gridDelta);
 
   double origin[3] = {5., 0., 0.};

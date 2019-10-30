@@ -19,7 +19,8 @@ class velocityField : public lsVelocityField<double> {
 public:
   double getScalarVelocity(
       hrleVectorType<double, 3> /*coordinate*/, int /*material*/,
-      hrleVectorType<double, 3> /*normalVector = hrleVectorType<double, 3>(0.)*/) {
+      hrleVectorType<double,
+                     3> /*normalVector = hrleVectorType<double, 3>(0.)*/) {
     // Some arbitrary velocity function of your liking
     // (try changing it and see what happens :)
     double velocity = 1.;
@@ -44,7 +45,7 @@ int main() {
   double bounds[2 * D] = {-extent, extent, -extent, extent};
   lsDomain<double, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D; ++i)
-    boundaryCons[i] = lsDomain<double, D>::BoundaryType::SYMMETRIC_BOUNDARY;
+    boundaryCons[i] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
 
   boundaryCons[1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
   lsDomain<double, D> substrate(bounds, boundaryCons, gridDelta);
@@ -80,7 +81,8 @@ int main() {
     lsToMesh<double, D>(substrate, mesh).apply();
 
     auto voidPointMarkers = substrate.getVoidPointMarkers();
-    std::vector<double> isVoid(voidPointMarkers.size()); // 0 = not void, 1 = void
+    std::vector<double> isVoid(
+        voidPointMarkers.size()); // 0 = not void, 1 = void
     for (unsigned i = 0; i < isVoid.size(); ++i) {
       isVoid[i] = (voidPointMarkers[i]) ? 1. : 0.;
     }
@@ -93,16 +95,27 @@ int main() {
     lsVTKWriter(mesh).writeVTKLegacy("after.vtk");
   }
 
-
   // Advection
   velocityField velocities;
   lsAdvect<double, D> advectionKernel(substrate, velocities);
   advectionKernel.setIgnoreVoids(true);
-  for(unsigned i=0; i< 30; ++i) {
+  for (unsigned i = 0; i < 30; ++i) {
     {
       lsMesh mesh;
       lsToExplicitMesh<double, D>(substrate, mesh).apply();
       lsVTKWriter(mesh).writeVTKLegacy("out-" + std::to_string(i) + ".vtk");
+
+      lsMarkVoidPoints<double, D>(substrate).apply();
+      auto voidPointMarkers = substrate.getVoidPointMarkers();
+      std::vector<double> isVoid(
+          voidPointMarkers.size()); // 0 = not void, 1 = void
+      for (unsigned i = 0; i < isVoid.size(); ++i) {
+        isVoid[i] = (voidPointMarkers[i]) ? 1. : 0.;
+      }
+      lsToMesh<double, D>(substrate, mesh).apply();
+      mesh.insertNextScalarData(isVoid, "voidMarkers");
+
+      lsVTKWriter(mesh).writeVTKLegacy("ls-out-" + std::to_string(i) + ".vtk");
     }
     advectionKernel.apply();
   }
