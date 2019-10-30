@@ -103,20 +103,25 @@ $(document).ready(function(){initNavTree('classlsExpand.html','');});
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a7eec934144e4a9a8c11d8425490a9d68"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsExpand.html#a7eec934144e4a9a8c11d8425490a9d68">lsExpand</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedlsDomain)</td></tr>
 <tr class="separator:a7eec934144e4a9a8c11d8425490a9d68"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad252cd3db0564f6d8979319a2d24250d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsExpand.html#ad252cd3db0564f6d8979319a2d24250d">apply</a> (int width)</td></tr>
-<tr class="memdesc:ad252cd3db0564f6d8979319a2d24250d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Apply the expansion to the specified width.  <a href="classlsExpand.html#ad252cd3db0564f6d8979319a2d24250d">More...</a><br /></td></tr>
-<tr class="separator:ad252cd3db0564f6d8979319a2d24250d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a96ceda0668d5095990ca8f152f303e47"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsExpand.html#a96ceda0668d5095990ca8f152f303e47">lsExpand</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedlsDomain, int passedWidth)</td></tr>
+<tr class="separator:a96ceda0668d5095990ca8f152f303e47"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4967be602532e7b1ebcb9c76e623dba0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsExpand.html#a4967be602532e7b1ebcb9c76e623dba0">setLevelSet</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedlsDomain)</td></tr>
+<tr class="separator:a4967be602532e7b1ebcb9c76e623dba0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af347c11def96375fec96c6bbd192491c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsExpand.html#af347c11def96375fec96c6bbd192491c">setWidth</a> (int passedWidth)</td></tr>
+<tr class="memdesc:af347c11def96375fec96c6bbd192491c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set how far the level set should be extended. Points with value width*0.5 will be added by this algorithm.  <a href="classlsExpand.html#af347c11def96375fec96c6bbd192491c">More...</a><br /></td></tr>
+<tr class="separator:af347c11def96375fec96c6bbd192491c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af252c81a9cc628c837afb285a8834353"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsExpand.html#af252c81a9cc628c837afb285a8834353">apply</a> ()</td></tr>
+<tr class="memdesc:af252c81a9cc628c837afb285a8834353"><td class="mdescLeft">&#160;</td><td class="mdescRight">Apply the expansion to the specified width.  <a href="classlsExpand.html#af252c81a9cc628c837afb285a8834353">More...</a><br /></td></tr>
+<tr class="separator:af252c81a9cc628c837afb285a8834353"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;class T, int D&gt;<br />
 class lsExpand&lt; T, D &gt;</h3>
 
 <p>Expands the leveleSet to the specified number of layers. The largest value in the levelset is thus width*0.5 Returns the number of added points. </p>
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="Advection_8cpp-example.html#_a16">Advection.cpp</a>, <a class="el" href="Advection2D_8cpp-example.html#_a18">Advection2D.cpp</a>, <a class="el" href="AdvectionPlane_8cpp-example.html#_a20">AdvectionPlane.cpp</a>, <a class="el" href="Expand_8cpp-example.html#_a9">Expand.cpp</a>, <a class="el" href="Make3DSphere_8cpp-example.html#_a6">Make3DSphere.cpp</a>, and <a class="el" href="MakeSphere_8cpp-example.html#_a13">MakeSphere.cpp</a>.</dd>
-</dl>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a7eec934144e4a9a8c11d8425490a9d68"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7eec934144e4a9a8c11d8425490a9d68">&#9670;&nbsp;</a></span>lsExpand()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a7eec934144e4a9a8c11d8425490a9d68">&#9670;&nbsp;</a></span>lsExpand() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -143,9 +148,47 @@ template&lt;class T , int D&gt; </div>
 
 </div>
 </div>
+<a id="a96ceda0668d5095990ca8f152f303e47"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a96ceda0668d5095990ca8f152f303e47">&#9670;&nbsp;</a></span>lsExpand() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsExpand.html">lsExpand</a>&lt; T, D &gt;::<a class="el" href="classlsExpand.html">lsExpand</a> </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
+          <td class="paramname"><em>passedlsDomain</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>passedWidth</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ad252cd3db0564f6d8979319a2d24250d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad252cd3db0564f6d8979319a2d24250d">&#9670;&nbsp;</a></span>apply()</h2>
+<a id="af252c81a9cc628c837afb285a8834353"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af252c81a9cc628c837afb285a8834353">&#9670;&nbsp;</a></span>apply()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -158,8 +201,7 @@ template&lt;class T , int D&gt; </div>
         <tr>
           <td class="memname">void <a class="el" href="classlsExpand.html">lsExpand</a>&lt; T, D &gt;::apply </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>width</em></td><td>)</td>
+          <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -171,8 +213,64 @@ template&lt;class T , int D&gt; </div>
 </div><div class="memdoc">
 
 <p>Apply the expansion to the specified width. </p>
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="Advection_8cpp-example.html#a17">Advection.cpp</a>, <a class="el" href="Advection2D_8cpp-example.html#a19">Advection2D.cpp</a>, <a class="el" href="AdvectionPlane_8cpp-example.html#a21">AdvectionPlane.cpp</a>, <a class="el" href="Expand_8cpp-example.html#a10">Expand.cpp</a>, <a class="el" href="Make3DSphere_8cpp-example.html#a7">Make3DSphere.cpp</a>, and <a class="el" href="MakeSphere_8cpp-example.html#a14">MakeSphere.cpp</a>.</dd>
-</dl>
+
+</div>
+</div>
+<a id="a4967be602532e7b1ebcb9c76e623dba0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4967be602532e7b1ebcb9c76e623dba0">&#9670;&nbsp;</a></span>setLevelSet()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsExpand.html">lsExpand</a>&lt; T, D &gt;::setLevelSet </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
+          <td class="paramname"><em>passedlsDomain</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="af347c11def96375fec96c6bbd192491c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af347c11def96375fec96c6bbd192491c">&#9670;&nbsp;</a></span>setWidth()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsExpand.html">lsExpand</a>&lt; T, D &gt;::setWidth </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>passedWidth</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set how far the level set should be extended. Points with value width*0.5 will be added by this algorithm. </p>
 
 </div>
 </div>

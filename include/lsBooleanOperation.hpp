@@ -6,20 +6,43 @@
 #include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
 #include <lsDomain.hpp>
+#include <lsMessage.hpp>
+
+/// Enumeration for the different types
+/// of boolean operations which are
+/// supported.
+/// When INVERT, only first level set is inverted.
+/// When CUSTOM, the user has to supply a valid
+/// function pointer of the form const T (*comp)(const T &, const T &).
+/// For CUSTOM only the first level set pointer is checked for validity.
+enum struct lsBooleanOperationEnum : unsigned {
+  INTERSECT = 0,
+  UNION = 1,
+  RELATIVE_COMPLEMENT = 2,
+  INVERT = 3,
+  CUSTOM = 4
+};
 
 ///  This class is used to perform boolean operations on two
 ///  level sets and write the resulting level set into the
 ///  first passed level set.
+///  When the boolean operation is set to CUSTOM, a
+///  comparator must be set using setBooleanOperationComparator.
+///  This comparator returns one value generated from the level set value
+///  supplied by each level set. E.g.: for a union, the comparator will
+///  always return the smaller of the two values.
 template <class T, int D> class lsBooleanOperation {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
-  lsDomain<T, D> &levelSetA;
+  lsDomain<T, D> *levelSetA = nullptr;
+  lsDomain<T, D> *levelSetB = nullptr;
+  lsBooleanOperationEnum operation = lsBooleanOperationEnum::INTERSECT;
+  const T (*operationComp)(const T &, const T &) = nullptr;
 
-  void booleanOpInternal(const lsDomain<T, D> &levelSetB,
-                         const T (*comp)(const T &, const T &)) {
-    auto &grid = levelSetA.getGrid();
+  void booleanOpInternal(const T (*comp)(const T &, const T &)) {
+    auto &grid = levelSetA->getGrid();
     lsDomain<T, D> newlsDomain(grid);
     typename lsDomain<T, D>::DomainType &newDomain = newlsDomain.getDomain();
-    typename lsDomain<T, D>::DomainType &domain = levelSetA.getDomain();
+    typename lsDomain<T, D>::DomainType &domain = levelSetA->getDomain();
 
     newDomain.initialize(domain.getNewSegmentation(), domain.getAllocation());
 
@@ -41,9 +64,9 @@ template <class T, int D> class lsBooleanOperation {
               ? newDomain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
-      hrleConstSparseIterator<hrleDomainType> itA(levelSetA.getDomain(),
+      hrleConstSparseIterator<hrleDomainType> itA(levelSetA->getDomain(),
                                                   currentVector);
-      hrleConstSparseIterator<hrleDomainType> itB(levelSetB.getDomain(),
+      hrleConstSparseIterator<hrleDomainType> itB(levelSetB->getDomain(),
                                                   currentVector);
 
       while (currentVector < endVector) {
@@ -73,57 +96,14 @@ template <class T, int D> class lsBooleanOperation {
     }
     newDomain.finalize();
     newDomain.segment();
-    levelSetA.deepCopy(newlsDomain);
-    levelSetA.finalize(
-        std::min(levelSetA.getLevelSetWidth(), levelSetB.getLevelSetWidth()));
-  }
-
-  static const T minComp(const T &A, const T &B) { return std::min(A, B); }
-
-  static const T maxComp(const T &A, const T &B) { return std::max(A, B); }
-
-  static const T relativeComplementComp(const T &A, const T &B) {
-    return std::max(A, -B);
-  }
-
-public:
-  lsBooleanOperation(lsDomain<T, D> &passedlsDomain)
-      : levelSetA(passedlsDomain){};
-
-  void intersect(const lsDomain<T, D> &levelSetB) {
-    booleanOpInternal(levelSetB, &lsBooleanOperation::maxComp);
-  }
-
-  void AND(const lsDomain<T, D> &levelSetB) {
-    booleanOpInternal(levelSetB, &lsBooleanOperation::maxComp);
-  }
-
-  void max(const lsDomain<T, D> &levelSetB) {
-    booleanOpInternal(levelSetB, &lsBooleanOperation::maxComp);
-  }
-
-  void unite(const lsDomain<T, D> &levelSetB) {
-    booleanOpInternal(levelSetB, &lsBooleanOperation::minComp);
-  }
-
-  void OR(const lsDomain<T, D> &levelSetB) {
-    booleanOpInternal(levelSetB, &lsBooleanOperation::minComp);
-  }
-
-  void min(const lsDomain<T, D> &levelSetB) {
-    booleanOpInternal(levelSetB, &lsBooleanOperation::minComp);
-  }
-
-  void relativeComplement(const lsDomain<T, D> &levelSetB) {
-    booleanOpInternal(levelSetB, &lsBooleanOperation::relativeComplementComp);
-  }
-
-  void XOR(const lsDomain<T, D> &levelSetB) {
-    booleanOpInternal(levelSetB, &lsBooleanOperation::relativeComplementComp);
+    newlsDomain.setLevelSetWidth(levelSetA->getLevelSetWidth());
+    levelSetA->deepCopy(newlsDomain);
+    levelSetA->finalize(
+        std::min(levelSetA->getLevelSetWidth(), levelSetB->getLevelSetWidth()));
   }
 
   void invert() {
-    auto &hrleDomain = levelSetA.getDomain();
+    auto &hrleDomain = levelSetA->getDomain();
 #pragma omp parallel num_threads(hrleDomain.getNumberOfSegments())
     {
       int p = 0;
@@ -153,7 +133,7 @@ public:
       // there are only two undefined runs: negative undefined (UNDEF_PT)
       // and positive undefined (UNDEF_PT+1)
       for (unsigned dim = 0; dim < D; ++dim) {
-        for (unsigned c = 0; c < domainSegment.runTypes[dim].size(); c++) {
+        for (unsigned c = 0; c < domainSegment.runTypes[dim].size(); ++c) {
           if (domainSegment.runTypes[dim][c] == hrleRunTypeValues::UNDEF_PT) {
             domainSegment.runTypes[dim][c] = hrleRunTypeValues::UNDEF_PT + 1;
           } else if (domainSegment.runTypes[dim][c] ==
@@ -163,10 +143,97 @@ public:
         }
       }
     }
-    levelSetA.finalize();
+    levelSetA->finalize();
   }
 
-  void NOT() { invert(); }
+  static const T minComp(const T &A, const T &B) { return std::min(A, B); }
+
+  static const T maxComp(const T &A, const T &B) { return std::max(A, B); }
+
+  static const T relativeComplementComp(const T &A, const T &B) {
+    return std::max(A, -B);
+  }
+
+public:
+  lsBooleanOperation(lsDomain<T, D> &passedlsDomain,
+                     lsBooleanOperationEnum passedOperation =
+                         lsBooleanOperationEnum::INTERSECT)
+      : levelSetA(&passedlsDomain), operation(passedOperation){};
+
+  lsBooleanOperation(lsDomain<T, D> &passedlsDomainA,
+                     lsDomain<T, D> &passedlsDomainB,
+                     lsBooleanOperationEnum passedOperation =
+                         lsBooleanOperationEnum::INTERSECT)
+      : levelSetA(&passedlsDomainA), levelSetB(&passedlsDomainB),
+        operation(passedOperation){};
+
+  /// set which level set to perform the boolean operation on
+  void setLevelSet(lsDomain<T, D> &passedlsDomain) {
+    levelSetA = &passedlsDomain;
+  }
+
+  /// set the level set which will be used to modify the
+  /// second level set
+  void setSecondLevelSet(lsDomain<T, D> &passedlsDomain) {
+    levelSetB = &passedlsDomain;
+  }
+
+  /// set which of the operations of lsBooleanOperationEnum to perform
+  void setBooleanOperation(lsBooleanOperationEnum passedOperation) {
+    operation = passedOperation;
+  }
+
+  /// set the comparator to be used when the BooleanOperation
+  /// is set to CUSTOM
+  void setBooleanOperationComparator(
+      const T (*passedOperationComp)(const T &, const T &)) {
+    operationComp = passedOperationComp;
+  }
+
+  /// perform operation
+  void apply() {
+    if (levelSetA == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No level set was passed to lsBooleanOperation. Not "
+                      "performing operation.")
+          .print();
+      return;
+    }
+
+    if (static_cast<unsigned>(operation) < 3) {
+      if (levelSetB == nullptr) {
+        lsMessage::getInstance()
+            .addWarning("Only one level set was passed to lsBooleanOperation, "
+                        "although two were required. Not performing operation.")
+            .print();
+        return;
+      }
+    }
+
+    switch (operation) {
+    case lsBooleanOperationEnum::INTERSECT:
+      booleanOpInternal(&lsBooleanOperation::maxComp);
+      break;
+    case lsBooleanOperationEnum::UNION:
+      booleanOpInternal(&lsBooleanOperation::minComp);
+      break;
+    case lsBooleanOperationEnum::RELATIVE_COMPLEMENT:
+      booleanOpInternal(&lsBooleanOperation::relativeComplementComp);
+      break;
+    case lsBooleanOperationEnum::INVERT:
+      invert();
+      break;
+    case lsBooleanOperationEnum::CUSTOM:
+      if (operationComp == nullptr) {
+        lsMessage::getInstance()
+            .addWarning("No comparator supplied to custom lsBooleanOperation. "
+                        "Not performing operation.")
+            .print();
+        return;
+      }
+      booleanOpInternal(operationComp);
+    }
+  }
 };
 
 // add all template specialisations for this class

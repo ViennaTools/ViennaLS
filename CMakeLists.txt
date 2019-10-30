@@ -87,6 +87,15 @@ endif(VIENNALS_BUILD_EXAMPLES)
 
 
 #################################################
+# BUILD TESTS (Smaller examples for testing)
+#################################################
+option(VIENNALS_BUILD_TESTS "Build tests." OFF)
+if(VIENNALS_BUILD_TESTS)
+  add_subdirectory(Tests)
+endif(VIENNALS_BUILD_TESTS)
+
+
+#################################################
 # INSTALL
 #################################################
 # install config files

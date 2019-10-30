@@ -11,23 +11,36 @@
 #include <lsDomain.hpp>
 #include <lsMessage.hpp>
 
-/// This algorithm is used to find the normal vectors for all points
-/// with an and LS value less than 0.5 and only those points.
+/// This algorithm is used to compute the normal vectors for all points
+/// defined in the level set. The result is saved in the lsDomain and
+/// can be retrieved with lsDomain.getNormalVectors().
 /// Since neighbors in each cartesian direction are necessary for
 /// the calculation, the levelset width must be >=3.
 template <class T, int D> class lsCalculateNormalVectors {
-  typedef std::vector<hrleVectorType<T, D>> NormalVectorsType;
-
-  const lsDomain<T, D> &domain;
-  NormalVectorsType &normals;
+  lsDomain<T, D> *domain = nullptr;
+  bool onlyActivePoints = false;
 
 public:
-  lsCalculateNormalVectors(const lsDomain<T, D> &passedDomain,
-                           NormalVectorsType &passedNormalVectors)
-      : domain(passedDomain), normals(passedNormalVectors) {}
+  lsCalculateNormalVectors(lsDomain<T, D> &passedDomain,
+                           bool passedOnlyActivePoints = false)
+      : domain(&passedDomain), onlyActivePoints(passedOnlyActivePoints) {}
+
+  void setLevelSet(lsDomain<T, D> &passedDomain) { domain = &passedDomain; }
+
+  /// Set whether normal vectors should only be calculated for level set
+  /// points <=0.5. Defaults to false.
+  void setOnlyActivePoints(bool passedOnlyActivePoints) {
+    onlyActivePoints = passedOnlyActivePoints;
+  }
 
   void apply() {
-    if (domain.getLevelSetWidth() < 3) {
+    if (domain == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No level set was passed to lsCalculateNormalVectors.")
+          .print();
+    }
+
+    if (domain->getLevelSetWidth() < 3) {
       lsMessage::getInstance()
           .addWarning("lsCalculateNormalVectors: Level set width must be "
                       "greater than 2!")
@@ -35,16 +48,16 @@ public:
     }
 
     std::vector<std::vector<hrleVectorType<T, D>>> normalVectorsVector(
-        domain.getNumberOfSegments());
+        domain->getNumberOfSegments());
     double pointsPerSegment =
-        double(2 * domain.getDomain().getNumberOfPoints()) /
-        double(domain.getLevelSetWidth() *
-               domain.getDomain().getNumberOfSegments());
+        double(2 * domain->getDomain().getNumberOfPoints()) /
+        double(domain->getLevelSetWidth() *
+               domain->getDomain().getNumberOfSegments());
 
-    auto grid = domain.getGrid();
+    auto grid = domain->getGrid();
 
     //! Calculate Normalvectors
-#pragma omp parallel num_threads(domain.getNumberOfSegments())
+#pragma omp parallel num_threads(domain->getNumberOfSegments())
     {
       int p = 0;
 #ifdef _OPENMP
@@ -56,19 +69,20 @@ public:
 
       hrleVectorType<hrleIndexType, D> startVector =
           (p == 0) ? grid.getMinGridPoint()
-                   : domain.getDomain().getSegmentation()[p - 1];
+                   : domain->getDomain().getSegmentation()[p - 1];
 
       hrleVectorType<hrleIndexType, D> endVector =
-          (p != static_cast<int>(domain.getNumberOfSegments() - 1))
-              ? domain.getDomain().getSegmentation()[p]
+          (p != static_cast<int>(domain->getNumberOfSegments() - 1))
+              ? domain->getDomain().getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
       for (hrleConstSparseStarIterator<typename lsDomain<T, D>::DomainType>
-               neighborIt(domain.getDomain(), startVector);
+               neighborIt(domain->getDomain(), startVector);
            neighborIt.getIndices() < endVector; neighborIt.next()) {
 
         if (!neighborIt.getCenter().isDefined() ||
-            std::abs(neighborIt.getCenter().getValue()) > 0.5)
+            (onlyActivePoints &&
+             std::abs(neighborIt.getCenter().getValue()) > 0.5))
           continue;
 
         hrleVectorType<T, D> n;
@@ -93,14 +107,15 @@ public:
     }
 
     // copy all normals
+    auto &normals = domain->getNormalVectors();
     normals.clear();
     unsigned numberOfNormals = 0;
-    for (unsigned i = 0; i < domain.getNumberOfSegments(); ++i) {
+    for (unsigned i = 0; i < domain->getNumberOfSegments(); ++i) {
       numberOfNormals += normalVectorsVector[i].size();
     }
     normals.reserve(numberOfNormals);
 
-    for (unsigned i = 0; i < domain.getNumberOfSegments(); ++i) {
+    for (unsigned i = 0; i < domain->getNumberOfSegments(); ++i) {
       normals.insert(normals.end(), normalVectorsVector[i].begin(),
                      normalVectorsVector[i].end());
     }

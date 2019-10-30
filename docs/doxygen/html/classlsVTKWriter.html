@@ -103,6 +103,8 @@ $(document).ready(function(){initNavTree('classlsVTKWriter.html','');});
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a0fd4acc5c727ae09ede4b9a77446deaa"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVTKWriter.html#a0fd4acc5c727ae09ede4b9a77446deaa">lsVTKWriter</a> (<a class="el" href="classlsMesh.html">lsMesh</a> &amp;passedMesh)</td></tr>
 <tr class="separator:a0fd4acc5c727ae09ede4b9a77446deaa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a99017d684e9938d37da2a8d3263ab919"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVTKWriter.html#a99017d684e9938d37da2a8d3263ab919">setMesh</a> (<a class="el" href="classlsMesh.html">lsMesh</a> &amp;passedMesh)</td></tr>
+<tr class="separator:a99017d684e9938d37da2a8d3263ab919"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a922952d5bbeb9adf86d4e6264c0cbddc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVTKWriter.html#a922952d5bbeb9adf86d4e6264c0cbddc">writeVTP</a> (std::string) const</td></tr>
 <tr class="separator:a922952d5bbeb9adf86d4e6264c0cbddc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a02b96842db2378ad0d47fdbf97d43bbf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVTKWriter.html#a02b96842db2378ad0d47fdbf97d43bbf">writeVTU</a> (std::string) const</td></tr>
@@ -112,7 +114,7 @@ Public Member Functions</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Class handling the output of an <a class="el" href="classlsMesh.html" title="This class holds an explicit mesh, which is always given in 3 dimensions. If it describes a 2D mesh,...">lsMesh</a> to VTK file types. </p>
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="Advection_8cpp-example.html#_a11">Advection.cpp</a>, <a class="el" href="Advection2D_8cpp-example.html#_a11">Advection2D.cpp</a>, <a class="el" href="AdvectionPlane_8cpp-example.html#_a14">AdvectionPlane.cpp</a>, <a class="el" href="BooleanOperation_8cpp-example.html#_a7">BooleanOperation.cpp</a>, <a class="el" href="BoundaryConditions_8cpp-example.html#_a7">BoundaryConditions.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#_a11">Deposition.cpp</a>, <a class="el" href="Expand_8cpp-example.html#_a7">Expand.cpp</a>, <a class="el" href="Make3DSphere_8cpp-example.html#_a13">Make3DSphere.cpp</a>, <a class="el" href="MakeSphere_8cpp-example.html#_a8">MakeSphere.cpp</a>, <a class="el" href="MultiMaterialAdvection_8cpp-example.html#_a13">MultiMaterialAdvection.cpp</a>, <a class="el" href="ReadFromFile_8cpp-example.html#_a4">ReadFromFile.cpp</a>, and <a class="el" href="SharedLib_8cpp-example.html#_a2">SharedLib.cpp</a>.</dd>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#_a11">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#_a11">Deposition.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#_a12">PeriodicBoundary.cpp</a>, <a class="el" href="SharedLib_8cpp-example.html#_a2">SharedLib.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#_a18">VoidEtching.cpp</a>.</dd>
 </dl>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a0fd4acc5c727ae09ede4b9a77446deaa"></a>
@@ -142,6 +144,32 @@ Public Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a99017d684e9938d37da2a8d3263ab919"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a99017d684e9938d37da2a8d3263ab919">&#9670;&nbsp;</a></span>setMesh()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void lsVTKWriter::setMesh </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsMesh.html">lsMesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>passedMesh</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="ab9d057a239ebb77d36173e2dfcbf4e1d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab9d057a239ebb77d36173e2dfcbf4e1d">&#9670;&nbsp;</a></span>writeVTKLegacy()</h2>
 
@@ -165,7 +193,7 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="Advection_8cpp-example.html#a12">Advection.cpp</a>, <a class="el" href="Advection2D_8cpp-example.html#a12">Advection2D.cpp</a>, <a class="el" href="AdvectionPlane_8cpp-example.html#a15">AdvectionPlane.cpp</a>, <a class="el" href="BooleanOperation_8cpp-example.html#a8">BooleanOperation.cpp</a>, <a class="el" href="BoundaryConditions_8cpp-example.html#a8">BoundaryConditions.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#a12">Deposition.cpp</a>, <a class="el" href="Expand_8cpp-example.html#a8">Expand.cpp</a>, <a class="el" href="Make3DSphere_8cpp-example.html#a14">Make3DSphere.cpp</a>, <a class="el" href="MakeSphere_8cpp-example.html#a9">MakeSphere.cpp</a>, <a class="el" href="MultiMaterialAdvection_8cpp-example.html#a14">MultiMaterialAdvection.cpp</a>, <a class="el" href="ReadFromFile_8cpp-example.html#a5">ReadFromFile.cpp</a>, and <a class="el" href="SharedLib_8cpp-example.html#a3">SharedLib.cpp</a>.</dd>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#a25">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#a12">Deposition.cpp</a>, and <a class="el" href="SharedLib_8cpp-example.html#a3">SharedLib.cpp</a>.</dd>
 </dl>
 
 </div>
@@ -193,7 +221,7 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="Deposition_8cpp-example.html#a17">Deposition.cpp</a>.</dd>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#a12">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#a23">Deposition.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#a13">PeriodicBoundary.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#a19">VoidEtching.cpp</a>.</dd>
 </dl>
 
 </div>
@@ -221,8 +249,6 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="Make3DSphere_8cpp-example.html#a17">Make3DSphere.cpp</a>, and <a class="el" href="MakeSphere_8cpp-example.html#a22">MakeSphere.cpp</a>.</dd>
-</dl>
 
 </div>
 </div>

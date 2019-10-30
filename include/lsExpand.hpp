@@ -6,24 +6,43 @@
 #include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
 #include <lsDomain.hpp>
+#include <lsMessage.hpp>
 
 /// Expands the leveleSet to the specified number of layers.
 /// The largest value in the levelset is thus width*0.5
 /// Returns the number of added points
 template <class T, int D> class lsExpand {
   typedef typename lsDomain<T, D>::GridType GridType;
-  lsDomain<T, D> &levelSet;
+  lsDomain<T, D> *levelSet = nullptr;
+  int width = 0;
 
 public:
-  lsExpand(lsDomain<T, D> &passedlsDomain) : levelSet(passedlsDomain){};
+  lsExpand(lsDomain<T, D> &passedlsDomain) : levelSet(&passedlsDomain){};
+
+  lsExpand(lsDomain<T, D> &passedlsDomain, int passedWidth)
+      : levelSet(&passedlsDomain), width(passedWidth){};
+
+  void setLevelSet(lsDomain<T, D> &passedlsDomain) {
+    levelSet = &passedlsDomain;
+  }
+
+  /// Set how far the level set should be extended. Points
+  /// with value width*0.5 will be added by this algorithm.
+  void setWidth(int passedWidth) { width = passedWidth; }
 
   /// Apply the expansion to the specified width
-  void apply(int width) {
-    if (width <= levelSet.getLevelSetWidth())
+  void apply() {
+    if (width <= levelSet->getLevelSetWidth())
       return;
 
+    if (levelSet == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No level set passed to lsExpand. Not expanding.")
+          .print();
+    }
+
     const T totalLimit = width * 0.5;
-    const int startWidth = levelSet.getLevelSetWidth();
+    const int startWidth = levelSet->getLevelSetWidth();
     const int numberOfRequiredCycles = width - startWidth;
 
     for (int currentCycle = 0; currentCycle < numberOfRequiredCycles;
@@ -33,10 +52,10 @@ public:
           1 + 1.0 / static_cast<double>(startWidth + currentCycle);
       const T limit = (startWidth + currentCycle + 1) * T(0.5);
 
-      auto &grid = levelSet.getGrid();
+      auto &grid = levelSet->getGrid();
       lsDomain<T, D> newlsDomain(grid);
       typename lsDomain<T, D>::DomainType &newDomain = newlsDomain.getDomain();
-      typename lsDomain<T, D>::DomainType &domain = levelSet.getDomain();
+      typename lsDomain<T, D>::DomainType &domain = levelSet->getDomain();
 
       newDomain.initialize(domain.getNewSegmentation(),
                            domain.getAllocation() * allocationFactor);
@@ -101,10 +120,10 @@ public:
         }
       }
       newDomain.finalize();
-      levelSet.deepCopy(newlsDomain);
+      levelSet->deepCopy(newlsDomain);
     }
-    levelSet.getDomain().segment();
-    levelSet.finalize(width);
+    levelSet->getDomain().segment();
+    levelSet->finalize(width);
   }
 };
 

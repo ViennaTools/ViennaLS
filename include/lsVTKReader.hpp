@@ -19,13 +19,15 @@
 
 /// Class handling the import of VTK file types.
 class lsVTKReader {
-  lsMesh &mesh;
+  lsMesh *mesh = nullptr;
 
   unsigned vtk_nodes_for_cell_type[15] = {0, 1, 0, 2, 0, 3, 0, 0,
                                           4, 4, 4, 8, 8, 6, 5};
 
 public:
-  lsVTKReader(lsMesh &passedMesh) : mesh(passedMesh) {}
+  lsVTKReader(lsMesh &passedMesh) : mesh(&passedMesh) {}
+
+  void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
 
 #ifndef VIENNALS_USE_VTK
   void readVTP(std::string) {
@@ -38,7 +40,14 @@ public:
   void readVTU(std::string) { readVTP(""); }
 #else
   void readVTP(std::string filename) {
-    mesh.clear();
+    if (mesh == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No mesh was passed to lsVTKReader.")
+          .print();
+      return;
+    }
+
+    mesh->clear();
     vtkSmartPointer<vtkXMLPolyDataReader> pReader =
         vtkSmartPointer<vtkXMLPolyDataReader>::New();
     pReader->SetFileName(filename.c_str());
@@ -47,31 +56,31 @@ public:
     vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
     polyData = pReader->GetOutput();
 
-    mesh.nodes.resize(polyData->GetNumberOfPoints());
-    for (unsigned i = 0; i < mesh.nodes.size(); ++i) {
+    mesh->nodes.resize(polyData->GetNumberOfPoints());
+    for (unsigned i = 0; i < mesh->nodes.size(); ++i) {
       hrleVectorType<double, 3> coords;
       polyData->GetPoint(i, &(coords[0]));
-      mesh.nodes[i] = coords;
+      mesh->nodes[i] = coords;
     }
 
     vtkSmartPointer<vtkCellArray> cellArray =
         vtkSmartPointer<vtkCellArray>::New();
     // get vertices
     {
-      mesh.vertices.reserve(polyData->GetNumberOfVerts());
+      mesh->vertices.reserve(polyData->GetNumberOfVerts());
       cellArray = polyData->GetVerts();
       cellArray->InitTraversal();
       vtkIdList *pointList = vtkIdList::New();
       while (cellArray->GetNextCell(pointList)) {
         hrleVectorType<unsigned, 1> cell;
         cell[0] = pointList->GetId(0);
-        mesh.vertices.push_back(cell);
+        mesh->vertices.push_back(cell);
       }
     }
 
     // get lines
     {
-      mesh.lines.reserve(polyData->GetNumberOfLines());
+      mesh->lines.reserve(polyData->GetNumberOfLines());
       cellArray = polyData->GetLines();
       cellArray->InitTraversal();
       vtkIdList *pointList = vtkIdList::New();
@@ -80,13 +89,13 @@ public:
         for (unsigned i = 0; i < 2; ++i) {
           cell[i] = pointList->GetId(i);
         }
-        mesh.lines.push_back(cell);
+        mesh->lines.push_back(cell);
       }
     }
 
     // get triangles
     {
-      mesh.triangles.reserve(polyData->GetNumberOfPolys());
+      mesh->triangles.reserve(polyData->GetNumberOfPolys());
       cellArray = polyData->GetPolys();
       cellArray->InitTraversal();
       vtkIdList *pointList = vtkIdList::New();
@@ -95,7 +104,7 @@ public:
         for (unsigned i = 0; i < 3; ++i) {
           cell[i] = pointList->GetId(i);
         }
-        mesh.triangles.push_back(cell);
+        mesh->triangles.push_back(cell);
       }
     }
 
@@ -108,27 +117,36 @@ public:
       vtkDataArray *dataArray;
       dataArray = cellData->GetArray(i);
       if (cellData->GetNumberOfComponents() == 1) {
-        mesh.scalarDataLabels.push_back(std::string(cellData->GetArrayName(i)));
-        mesh.scalarData.push_back(std::vector<double>());
-        mesh.scalarData[i].resize(cellData->GetNumberOfTuples());
+        mesh->scalarDataLabels.push_back(
+            std::string(cellData->GetArrayName(i)));
+        mesh->scalarData.push_back(std::vector<double>());
+        mesh->scalarData[i].resize(cellData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
-          mesh.scalarData[i][j] = dataArray->GetTuple1(j);
+          mesh->scalarData[i][j] = dataArray->GetTuple1(j);
         }
       } else if (cellData->GetNumberOfComponents() == 3) {
-        mesh.vectorDataLabels.push_back(std::string(cellData->GetArrayName(i)));
-        mesh.vectorData.push_back(std::vector<hrleVectorType<double, 3>>());
-        mesh.vectorData[i].resize(cellData->GetNumberOfTuples());
+        mesh->vectorDataLabels.push_back(
+            std::string(cellData->GetArrayName(i)));
+        mesh->vectorData.push_back(std::vector<hrleVectorType<double, 3>>());
+        mesh->vectorData[i].resize(cellData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
           hrleVectorType<double, 3> vector;
           dataArray->GetTuple(j, &(vector[0]));
-          mesh.vectorData[i][j] = vector;
+          mesh->vectorData[i][j] = vector;
         }
       }
     }
   }
 
   void readVTU(std::string filename) {
-    mesh.clear();
+    if (mesh == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No mesh was passed to lsVTKReader.")
+          .print();
+      return;
+    }
+
+    mesh->clear();
 
     vtkSmartPointer<vtkXMLUnstructuredGridReader> greader =
         vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
@@ -140,11 +158,11 @@ public:
     ugrid = greader->GetOutput();
 
     // get all points
-    mesh.nodes.resize(ugrid->GetNumberOfPoints());
-    for (unsigned i = 0; i < mesh.nodes.size(); ++i) {
+    mesh->nodes.resize(ugrid->GetNumberOfPoints());
+    for (unsigned i = 0; i < mesh->nodes.size(); ++i) {
       hrleVectorType<double, 3> coords;
       ugrid->GetPoint(i, &(coords[0]));
-      mesh.nodes[i] = coords;
+      mesh->nodes[i] = coords;
     }
 
     // get cells
@@ -157,7 +175,7 @@ public:
       {
         hrleVectorType<unsigned, 1> vert;
         vert[0] = pointList->GetId(0);
-        mesh.vertices.push_back(vert);
+        mesh->vertices.push_back(vert);
       } break;
       case 3: // line
       {
@@ -165,7 +183,7 @@ public:
         for (unsigned j = 0; j < 2; ++j) {
           elements[j] = pointList->GetId(j);
         }
-        mesh.lines.push_back(elements);
+        mesh->lines.push_back(elements);
       } break;
       case 5: // triangle
       {
@@ -173,7 +191,7 @@ public:
         for (unsigned j = 0; j < 3; ++j) {
           elements[j] = pointList->GetId(j);
         }
-        mesh.triangles.push_back(elements);
+        mesh->triangles.push_back(elements);
       } break;
       case 10: // tetra
       {
@@ -181,7 +199,7 @@ public:
         for (unsigned j = 0; j < 4; ++j) {
           elements[j] = pointList->GetId(j);
         }
-        mesh.tetras.push_back(elements);
+        mesh->tetras.push_back(elements);
       } break;
       case 12: // hexa
       {
@@ -189,7 +207,7 @@ public:
         for (unsigned j = 0; j < 8; ++j) {
           elements[j] = pointList->GetId(j);
         }
-        mesh.hexas.push_back(elements);
+        mesh->hexas.push_back(elements);
       } break;
       }
     }
@@ -203,20 +221,22 @@ public:
       vtkDataArray *dataArray;
       dataArray = cellData->GetArray(i);
       if (cellData->GetNumberOfComponents() == 1) {
-        mesh.scalarDataLabels.push_back(std::string(cellData->GetArrayName(i)));
-        mesh.scalarData.push_back(std::vector<double>());
-        mesh.scalarData[i].resize(cellData->GetNumberOfTuples());
+        mesh->scalarDataLabels.push_back(
+            std::string(cellData->GetArrayName(i)));
+        mesh->scalarData.push_back(std::vector<double>());
+        mesh->scalarData[i].resize(cellData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
-          mesh.scalarData[i][j] = dataArray->GetTuple1(j);
+          mesh->scalarData[i][j] = dataArray->GetTuple1(j);
         }
       } else if (cellData->GetNumberOfComponents() == 3) {
-        mesh.vectorDataLabels.push_back(std::string(cellData->GetArrayName(i)));
-        mesh.vectorData.push_back(std::vector<hrleVectorType<double, 3>>());
-        mesh.vectorData[i].resize(cellData->GetNumberOfTuples());
+        mesh->vectorDataLabels.push_back(
+            std::string(cellData->GetArrayName(i)));
+        mesh->vectorData.push_back(std::vector<hrleVectorType<double, 3>>());
+        mesh->vectorData[i].resize(cellData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
           hrleVectorType<double, 3> vector;
           dataArray->GetTuple(j, &(vector[0]));
-          mesh.vectorData[i][j] = vector;
+          mesh->vectorData[i][j] = vector;
         }
       }
     }
@@ -224,7 +244,14 @@ public:
 #endif
 
   void readVTKLegacy(std::string filename) {
-    mesh.clear();
+    if (mesh == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No mesh was passed to lsVTKReader.")
+          .print();
+      return;
+    }
+
+    mesh->clear();
     // open geometry file
     std::ifstream f(filename.c_str());
     if (!f)
@@ -247,7 +274,7 @@ public:
     }
     int num_nodes = atoi(&temp[temp.find(" ") + 1]);
 
-    mesh.nodes.resize(num_nodes);
+    mesh->nodes.resize(num_nodes);
 
     for (int i = 0; i < num_nodes; i++) {
       double coords[3];
@@ -255,14 +282,14 @@ public:
       for (int j = 0; j < 3; j++)
         f >> coords[j];
       for (int j = 0; j < 3; j++) {
-        mesh.nodes[i][j] = coords[j];
+        mesh->nodes[i][j] = coords[j];
         // int shift_size = shift.size();
         // if (shift_size > j)
-        //   mesh.nodes[i][j] += shift[j]; // Assign desired shift
+        //   mesh->nodes[i][j] += shift[j]; // Assign desired shift
         // if (InputTransformationSigns[j])
-        //   mesh.nodes[i][j] = -mesh.nodes[i][j]; // Assign sign
+        //   mesh->nodes[i][j] = -mesh->nodes[i][j]; // Assign sign
         //   transformation, if needed
-        // mesh.nodes[i][j] *= scale; // Scale the geometry according to
+        // mesh->nodes[i][j] *= scale; // Scale the geometry according to
         // parameters file
       }
     }
@@ -311,7 +338,7 @@ public:
     std::vector<hrleVectorType<unsigned int, 4>> elements;
     elements.reserve(num_elems);
 
-    auto materials = mesh.getMaterials();
+    auto materials = mesh->getMaterials();
     materials.clear();
 
     unsigned elems_fake;
@@ -336,7 +363,7 @@ public:
           for (unsigned j = 0; j < number_nodes; ++j) {
             f >> elem[j];
           }
-          mesh.getElements<2>().push_back(elem);
+          mesh->getElements<2>().push_back(elem);
           materials.push_back(cell_material);
           break;
         }
@@ -346,7 +373,7 @@ public:
           for (unsigned j = 0; j < number_nodes; ++j) {
             f >> elem[j];
           }
-          mesh.getElements<3>().push_back(elem);
+          mesh->getElements<3>().push_back(elem);
           materials.push_back(cell_material);
           break;
         }
@@ -357,7 +384,7 @@ public:
           for (unsigned j = 0; j < number_nodes; ++j) {
             f >> elem[j];
           }
-          mesh.getElements<4>().push_back(elem);
+          mesh->getElements<4>().push_back(elem);
           materials.push_back(cell_material);
           break;
         }
@@ -368,12 +395,12 @@ public:
           for (unsigned j = 0; j < 3; ++j) {
             f >> elem[j];
           }
-          mesh.getElements<3>().push_back(
+          mesh->getElements<3>().push_back(
               elem); // push the first three nodes as a triangle
           materials.push_back(cell_material);
 
           f >> elem[1]; // replace middle element to create other triangle
-          mesh.getElements<3>().push_back(elem);
+          mesh->getElements<3>().push_back(elem);
           materials.push_back(cell_material);
           break;
         }

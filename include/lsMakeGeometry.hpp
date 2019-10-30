@@ -11,19 +11,41 @@
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
 
+/// Enumeration for the different types of
+/// geometries supported by lsMakeGeometry
+enum struct lsMakeGeometryEnum : unsigned { SPHERE = 0, PLANE = 1, BOX = 2 };
+
 /// Create level sets describing basic geometric forms.
 template <class T, int D> class lsMakeGeometry {
   typedef typename lsDomain<T, D>::PointValueVectorType pointDataType;
 
-  lsDomain<T, D> &levelSet;
+  lsDomain<T, D> *levelSet;
+  lsMakeGeometryEnum geometry = lsMakeGeometryEnum::SPHERE;
   const double numericEps = 1e-9;
 
 public:
-  lsMakeGeometry(lsDomain<T, D> &passedLevelSet) : levelSet(passedLevelSet) {}
+  lsMakeGeometry(lsDomain<T, D> &passedLevelSet,
+                 lsMakeGeometryEnum passedGeometry = lsMakeGeometryEnum::SPHERE)
+      : levelSet(&passedLevelSet), geometry(passedGeometry) {}
+
+  void setLevelSet(lsDomain<T, D> &passedlsDomain) {
+    levelSet = &passedlsDomain;
+  }
+
+  void setGeometry(lsMakeGeometryEnum passedGeometry) {
+    geometry = passedGeometry;
+  }
 
   template <class V> void makeSphere(V origin, T radius, int width = 2) {
+    if (levelSet == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No level set was passed to lsMakeGeometry.")
+          .print();
+      return;
+    }
+
     // TODO, this is a stupid algorithm and scales with volume, which is madness
-    auto &grid = levelSet.getGrid();
+    auto &grid = levelSet->getGrid();
     hrleCoordType gridDelta = grid.getGridDelta();
 
     hrleVectorType<hrleIndexType, D> index(grid.getMinBounds());
@@ -72,15 +94,21 @@ public:
       ++index[dim];
     }
 
-    levelSet.insertPoints(pointData);
-    levelSet.getDomain().segment();
-    levelSet.finalize(width);
+    levelSet->insertPoints(pointData);
+    levelSet->getDomain().segment();
+    levelSet->finalize(width);
   }
 
   /// Creates a plane containing the point origin, with
   /// the plane normal given by normal
   template <class V> void makePlane(const V origin, const V passedNormal) {
-    auto &grid = levelSet.getGrid();
+    if (levelSet == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No level set was passed to lsMakeGeometry.")
+          .print();
+      return;
+    }
+    auto &grid = levelSet->getGrid();
     hrleCoordType gridDelta = grid.getGridDelta();
 
     // normalise passedNormal
@@ -168,11 +196,17 @@ public:
       mesh.insertNextTriangle(triangle);
     }
     // now convert mesh to levelset
-    lsFromExplicitMesh<T, D>(levelSet).apply(mesh);
+    lsFromExplicitMesh<T, D>(*levelSet, mesh).apply();
   }
 
   // This function creates a box starting in minCorner spanning to maxCorner
   template <class V> void makeBox(V minCorner, V maxCorner) {
+    if (levelSet == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No level set was passed to lsMakeGeometry.")
+          .print();
+      return;
+    }
     // draw all triangles for the surface and then import from the mesh
     std::vector<hrleVectorType<T, 3>> corners;
     corners.resize(std::pow(2, D), hrleVectorType<T, 3>(T(0)));
@@ -214,10 +248,10 @@ public:
 
     if (D == 2) {
       hrleVectorType<unsigned, 2> lines[4];
-      lines[0] = hrleVectorType<unsigned, 2>(0, 1);
-      lines[1] = hrleVectorType<unsigned, 2>(1, 3);
-      lines[2] = hrleVectorType<unsigned, 2>(3, 2);
-      lines[3] = hrleVectorType<unsigned, 2>(2, 0);
+      lines[0] = hrleVectorType<unsigned, 2>(0, 2);
+      lines[1] = hrleVectorType<unsigned, 2>(2, 3);
+      lines[2] = hrleVectorType<unsigned, 2>(3, 1);
+      lines[3] = hrleVectorType<unsigned, 2>(1, 0);
       for (unsigned i = 0; i < 4; ++i)
         mesh.insertNextLine(lines[i]);
     } else {
@@ -239,7 +273,7 @@ public:
     }
 
     // now convert mesh to levelset
-    lsFromExplicitMesh<T, D>(levelSet).apply(mesh);
+    lsFromExplicitMesh<T, D>(*levelSet, mesh).apply();
   }
 };
 

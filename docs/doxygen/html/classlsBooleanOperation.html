@@ -94,57 +94,228 @@ $(document).ready(function(){initNavTree('classlsBooleanOperation.html','');});
 </div><!--header-->
 <div class="contents">
 
-<p>This class is used to perform boolean operations on two level sets and write the resulting level set into the first passed level set.  
+<p>This class is used to perform boolean operations on two level sets and write the resulting level set into the first passed level set. When the boolean operation is set to CUSTOM, a comparator must be set using setBooleanOperationComparator. This comparator returns one value generated from the level set value supplied by each level set. E.g.: for a union, the comparator will always return the smaller of the two values.  
  <a href="classlsBooleanOperation.html#details">More...</a></p>
 
 <p><code>#include &lt;lsBooleanOperation.hpp&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ad29c71832fb6021ce94523a1da28c2ef"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsBooleanOperation.html#ad29c71832fb6021ce94523a1da28c2ef">lsBooleanOperation</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedlsDomain)</td></tr>
-<tr class="separator:ad29c71832fb6021ce94523a1da28c2ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a686c93c493648fa5187f050287f0b8b7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsBooleanOperation.html#a686c93c493648fa5187f050287f0b8b7">intersect</a> (const <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;levelSetB)</td></tr>
-<tr class="separator:a686c93c493648fa5187f050287f0b8b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abe9279654a7df57fd521e320c25c35fa"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsBooleanOperation.html#abe9279654a7df57fd521e320c25c35fa">AND</a> (const <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;levelSetB)</td></tr>
-<tr class="separator:abe9279654a7df57fd521e320c25c35fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad696cd3f1624d2234dcf4a428a0967c0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsBooleanOperation.html#ad696cd3f1624d2234dcf4a428a0967c0">max</a> (const <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;levelSetB)</td></tr>
-<tr class="separator:ad696cd3f1624d2234dcf4a428a0967c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac9f09fbc06650eb5658032fdefb097d4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsBooleanOperation.html#ac9f09fbc06650eb5658032fdefb097d4">unite</a> (const <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;levelSetB)</td></tr>
-<tr class="separator:ac9f09fbc06650eb5658032fdefb097d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5177abcb9339219089750956e58f4608"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsBooleanOperation.html#a5177abcb9339219089750956e58f4608">OR</a> (const <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;levelSetB)</td></tr>
-<tr class="separator:a5177abcb9339219089750956e58f4608"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af25beeebe996d724a9a856ab08197a1d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsBooleanOperation.html#af25beeebe996d724a9a856ab08197a1d">min</a> (const <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;levelSetB)</td></tr>
-<tr class="separator:af25beeebe996d724a9a856ab08197a1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa4c55813b07c007587b71739bad48e65"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsBooleanOperation.html#aa4c55813b07c007587b71739bad48e65">relativeComplement</a> (const <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;levelSetB)</td></tr>
-<tr class="separator:aa4c55813b07c007587b71739bad48e65"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a87573a8fb31e6816a5f12c1a9dc4ffbe"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsBooleanOperation.html#a87573a8fb31e6816a5f12c1a9dc4ffbe">XOR</a> (const <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;levelSetB)</td></tr>
-<tr class="separator:a87573a8fb31e6816a5f12c1a9dc4ffbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a29c51c24fbddf2c2837e8c2c3ef97822"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsBooleanOperation.html#a29c51c24fbddf2c2837e8c2c3ef97822">invert</a> ()</td></tr>
-<tr class="separator:a29c51c24fbddf2c2837e8c2c3ef97822"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab590ff82f5df618ff81ba8327d633e8f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsBooleanOperation.html#ab590ff82f5df618ff81ba8327d633e8f">NOT</a> ()</td></tr>
-<tr class="separator:ab590ff82f5df618ff81ba8327d633e8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4ed7d9726ac6388ea56cfd7ed84bc3df"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsBooleanOperation.html#a4ed7d9726ac6388ea56cfd7ed84bc3df">lsBooleanOperation</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedlsDomain, <a class="el" href="lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8">lsBooleanOperationEnum</a> passedOperation=<a class="el" href="lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8a24bdbe2bcaf533b7b3f0bd58bfa7f291">lsBooleanOperationEnum::INTERSECT</a>)</td></tr>
+<tr class="separator:a4ed7d9726ac6388ea56cfd7ed84bc3df"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acb27526f2056437045bee490b5893ff9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsBooleanOperation.html#acb27526f2056437045bee490b5893ff9">lsBooleanOperation</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedlsDomainA, <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedlsDomainB, <a class="el" href="lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8">lsBooleanOperationEnum</a> passedOperation=<a class="el" href="lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8a24bdbe2bcaf533b7b3f0bd58bfa7f291">lsBooleanOperationEnum::INTERSECT</a>)</td></tr>
+<tr class="separator:acb27526f2056437045bee490b5893ff9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2c9dd6bfd05b8db5245015396636c646"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsBooleanOperation.html#a2c9dd6bfd05b8db5245015396636c646">setLevelSet</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedlsDomain)</td></tr>
+<tr class="memdesc:a2c9dd6bfd05b8db5245015396636c646"><td class="mdescLeft">&#160;</td><td class="mdescRight">set which level set to perform the boolean operation on  <a href="classlsBooleanOperation.html#a2c9dd6bfd05b8db5245015396636c646">More...</a><br /></td></tr>
+<tr class="separator:a2c9dd6bfd05b8db5245015396636c646"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab19bc5ca95d7ceb9c1e946bb8149d818"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsBooleanOperation.html#ab19bc5ca95d7ceb9c1e946bb8149d818">setSecondLevelSet</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedlsDomain)</td></tr>
+<tr class="memdesc:ab19bc5ca95d7ceb9c1e946bb8149d818"><td class="mdescLeft">&#160;</td><td class="mdescRight">set the level set which will be used to modify the second level set  <a href="classlsBooleanOperation.html#ab19bc5ca95d7ceb9c1e946bb8149d818">More...</a><br /></td></tr>
+<tr class="separator:ab19bc5ca95d7ceb9c1e946bb8149d818"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac904f34f63ebc791b392e04f0bb98a0f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsBooleanOperation.html#ac904f34f63ebc791b392e04f0bb98a0f">setBooleanOperation</a> (<a class="el" href="lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8">lsBooleanOperationEnum</a> passedOperation)</td></tr>
+<tr class="memdesc:ac904f34f63ebc791b392e04f0bb98a0f"><td class="mdescLeft">&#160;</td><td class="mdescRight">set which of the operations of lsBooleanOperationEnum to perform  <a href="classlsBooleanOperation.html#ac904f34f63ebc791b392e04f0bb98a0f">More...</a><br /></td></tr>
+<tr class="separator:ac904f34f63ebc791b392e04f0bb98a0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a02eb6973414d3a2b5e1c28ed0c947130"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsBooleanOperation.html#a02eb6973414d3a2b5e1c28ed0c947130">setBooleanOperationComparator</a> (const T(*passedOperationComp)(const T &amp;, const T &amp;))</td></tr>
+<tr class="memdesc:a02eb6973414d3a2b5e1c28ed0c947130"><td class="mdescLeft">&#160;</td><td class="mdescRight">set the comparator to be used when the BooleanOperation is set to CUSTOM  <a href="classlsBooleanOperation.html#a02eb6973414d3a2b5e1c28ed0c947130">More...</a><br /></td></tr>
+<tr class="separator:a02eb6973414d3a2b5e1c28ed0c947130"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5b2168e5f32f6893b832074ff32f6526"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsBooleanOperation.html#a5b2168e5f32f6893b832074ff32f6526">apply</a> ()</td></tr>
+<tr class="memdesc:a5b2168e5f32f6893b832074ff32f6526"><td class="mdescLeft">&#160;</td><td class="mdescRight">perform operation  <a href="classlsBooleanOperation.html#a5b2168e5f32f6893b832074ff32f6526">More...</a><br /></td></tr>
+<tr class="separator:a5b2168e5f32f6893b832074ff32f6526"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;class T, int D&gt;<br />
 class lsBooleanOperation&lt; T, D &gt;</h3>
 
-<p>This class is used to perform boolean operations on two level sets and write the resulting level set into the first passed level set. </p>
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="BooleanOperation_8cpp-example.html#_a9">BooleanOperation.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#_a14">Deposition.cpp</a>, <a class="el" href="Make3DSphere_8cpp-example.html#_a8">Make3DSphere.cpp</a>, and <a class="el" href="MultiMaterialAdvection_8cpp-example.html#_a8">MultiMaterialAdvection.cpp</a>.</dd>
+<p>This class is used to perform boolean operations on two level sets and write the resulting level set into the first passed level set. When the boolean operation is set to CUSTOM, a comparator must be set using setBooleanOperationComparator. This comparator returns one value generated from the level set value supplied by each level set. E.g.: for a union, the comparator will always return the smaller of the two values. </p>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#_a16">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#_a14">Deposition.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#_a14">PeriodicBoundary.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#_a9">VoidEtching.cpp</a>.</dd>
 </dl>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="ad29c71832fb6021ce94523a1da28c2ef"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad29c71832fb6021ce94523a1da28c2ef">&#9670;&nbsp;</a></span>lsBooleanOperation()</h2>
+<a id="a4ed7d9726ac6388ea56cfd7ed84bc3df"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4ed7d9726ac6388ea56cfd7ed84bc3df">&#9670;&nbsp;</a></span>lsBooleanOperation() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T , int D&gt; </div>
+template&lt;class T, int D&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname"><a class="el" href="classlsBooleanOperation.html">lsBooleanOperation</a>&lt; T, D &gt;::<a class="el" href="classlsBooleanOperation.html">lsBooleanOperation</a> </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
+          <td class="paramname"><em>passedlsDomain</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8">lsBooleanOperationEnum</a>&#160;</td>
+          <td class="paramname"><em>passedOperation</em> = <code><a class="el" href="lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8a24bdbe2bcaf533b7b3f0bd58bfa7f291">lsBooleanOperationEnum::INTERSECT</a></code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="acb27526f2056437045bee490b5893ff9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acb27526f2056437045bee490b5893ff9">&#9670;&nbsp;</a></span>lsBooleanOperation() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T, int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsBooleanOperation.html">lsBooleanOperation</a>&lt; T, D &gt;::<a class="el" href="classlsBooleanOperation.html">lsBooleanOperation</a> </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
+          <td class="paramname"><em>passedlsDomainA</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
+          <td class="paramname"><em>passedlsDomainB</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8">lsBooleanOperationEnum</a>&#160;</td>
+          <td class="paramname"><em>passedOperation</em> = <code><a class="el" href="lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8a24bdbe2bcaf533b7b3f0bd58bfa7f291">lsBooleanOperationEnum::INTERSECT</a></code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a5b2168e5f32f6893b832074ff32f6526"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5b2168e5f32f6893b832074ff32f6526">&#9670;&nbsp;</a></span>apply()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T, int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsBooleanOperation.html">lsBooleanOperation</a>&lt; T, D &gt;::apply </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>perform operation </p>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#a18">AirGapDeposition.cpp</a>, and <a class="el" href="Deposition_8cpp-example.html#a16">Deposition.cpp</a>.</dd>
+</dl>
+
+</div>
+</div>
+<a id="ac904f34f63ebc791b392e04f0bb98a0f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac904f34f63ebc791b392e04f0bb98a0f">&#9670;&nbsp;</a></span>setBooleanOperation()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T, int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsBooleanOperation.html">lsBooleanOperation</a>&lt; T, D &gt;::setBooleanOperation </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8">lsBooleanOperationEnum</a>&#160;</td>
+          <td class="paramname"><em>passedOperation</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>set which of the operations of lsBooleanOperationEnum to perform </p>
+
+</div>
+</div>
+<a id="a02eb6973414d3a2b5e1c28ed0c947130"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a02eb6973414d3a2b5e1c28ed0c947130">&#9670;&nbsp;</a></span>setBooleanOperationComparator()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T, int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsBooleanOperation.html">lsBooleanOperation</a>&lt; T, D &gt;::setBooleanOperationComparator </td>
+          <td>(</td>
+          <td class="paramtype">const T(*)(const T &amp;, const T &amp;)&#160;</td>
+          <td class="paramname"><em>passedOperationComp</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>set the comparator to be used when the BooleanOperation is set to CUSTOM </p>
+
+</div>
+</div>
+<a id="a2c9dd6bfd05b8db5245015396636c646"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2c9dd6bfd05b8db5245015396636c646">&#9670;&nbsp;</a></span>setLevelSet()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T, int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsBooleanOperation.html">lsBooleanOperation</a>&lt; T, D &gt;::setLevelSet </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
           <td class="paramname"><em>passedlsDomain</em></td><td>)</td>
@@ -158,25 +329,26 @@ template&lt;class T , int D&gt; </div>
 </table>
 </div><div class="memdoc">
 
+<p>set which level set to perform the boolean operation on </p>
+
 </div>
 </div>
-<h2 class="groupheader">Member Function Documentation</h2>
-<a id="abe9279654a7df57fd521e320c25c35fa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abe9279654a7df57fd521e320c25c35fa">&#9670;&nbsp;</a></span>AND()</h2>
+<a id="ab19bc5ca95d7ceb9c1e946bb8149d818"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab19bc5ca95d7ceb9c1e946bb8149d818">&#9670;&nbsp;</a></span>setSecondLevelSet()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T , int D&gt; </div>
+template&lt;class T, int D&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classlsBooleanOperation.html">lsBooleanOperation</a>&lt; T, D &gt;::AND </td>
+          <td class="memname">void <a class="el" href="classlsBooleanOperation.html">lsBooleanOperation</a>&lt; T, D &gt;::setSecondLevelSet </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
-          <td class="paramname"><em>levelSetB</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
+          <td class="paramname"><em>passedlsDomain</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -187,259 +359,7 @@ template&lt;class T , int D&gt; </div>
 </table>
 </div><div class="memdoc">
 
-</div>
-</div>
-<a id="a686c93c493648fa5187f050287f0b8b7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a686c93c493648fa5187f050287f0b8b7">&#9670;&nbsp;</a></span>intersect()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class T , int D&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void <a class="el" href="classlsBooleanOperation.html">lsBooleanOperation</a>&lt; T, D &gt;::intersect </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
-          <td class="paramname"><em>levelSetB</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a29c51c24fbddf2c2837e8c2c3ef97822"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a29c51c24fbddf2c2837e8c2c3ef97822">&#9670;&nbsp;</a></span>invert()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class T , int D&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void <a class="el" href="classlsBooleanOperation.html">lsBooleanOperation</a>&lt; T, D &gt;::invert </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ad696cd3f1624d2234dcf4a428a0967c0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad696cd3f1624d2234dcf4a428a0967c0">&#9670;&nbsp;</a></span>max()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class T , int D&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void <a class="el" href="classlsBooleanOperation.html">lsBooleanOperation</a>&lt; T, D &gt;::max </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
-          <td class="paramname"><em>levelSetB</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="af25beeebe996d724a9a856ab08197a1d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af25beeebe996d724a9a856ab08197a1d">&#9670;&nbsp;</a></span>min()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class T , int D&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void <a class="el" href="classlsBooleanOperation.html">lsBooleanOperation</a>&lt; T, D &gt;::min </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
-          <td class="paramname"><em>levelSetB</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ab590ff82f5df618ff81ba8327d633e8f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab590ff82f5df618ff81ba8327d633e8f">&#9670;&nbsp;</a></span>NOT()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class T , int D&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void <a class="el" href="classlsBooleanOperation.html">lsBooleanOperation</a>&lt; T, D &gt;::NOT </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a5177abcb9339219089750956e58f4608"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5177abcb9339219089750956e58f4608">&#9670;&nbsp;</a></span>OR()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class T , int D&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void <a class="el" href="classlsBooleanOperation.html">lsBooleanOperation</a>&lt; T, D &gt;::OR </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
-          <td class="paramname"><em>levelSetB</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="aa4c55813b07c007587b71739bad48e65"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa4c55813b07c007587b71739bad48e65">&#9670;&nbsp;</a></span>relativeComplement()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class T , int D&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void <a class="el" href="classlsBooleanOperation.html">lsBooleanOperation</a>&lt; T, D &gt;::relativeComplement </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
-          <td class="paramname"><em>levelSetB</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ac9f09fbc06650eb5658032fdefb097d4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac9f09fbc06650eb5658032fdefb097d4">&#9670;&nbsp;</a></span>unite()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class T , int D&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void <a class="el" href="classlsBooleanOperation.html">lsBooleanOperation</a>&lt; T, D &gt;::unite </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
-          <td class="paramname"><em>levelSetB</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="MultiMaterialAdvection_8cpp-example.html#a9">MultiMaterialAdvection.cpp</a>.</dd>
-</dl>
-
-</div>
-</div>
-<a id="a87573a8fb31e6816a5f12c1a9dc4ffbe"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a87573a8fb31e6816a5f12c1a9dc4ffbe">&#9670;&nbsp;</a></span>XOR()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class T , int D&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void <a class="el" href="classlsBooleanOperation.html">lsBooleanOperation</a>&lt; T, D &gt;::XOR </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
-          <td class="paramname"><em>levelSetB</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="BooleanOperation_8cpp-example.html#a10">BooleanOperation.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#a15">Deposition.cpp</a>, and <a class="el" href="Make3DSphere_8cpp-example.html#a9">Make3DSphere.cpp</a>.</dd>
-</dl>
+<p>set the level set which will be used to modify the second level set </p>
 
 </div>
 </div>

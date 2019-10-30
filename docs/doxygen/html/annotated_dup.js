@@ -1,6 +1,7 @@
 var annotated_dup =
 [
     [ "lsInternal", "namespacelsInternal.html", "namespacelsInternal" ],
+    [ "std", "namespacestd.html", "namespacestd" ],
     [ "lsAdvect", "classlsAdvect.html", "classlsAdvect" ],
     [ "lsBooleanOperation", "classlsBooleanOperation.html", "classlsBooleanOperation" ],
     [ "lsCalculateNormalVectors", "classlsCalculateNormalVectors.html", "classlsCalculateNormalVectors" ],
@@ -9,6 +10,7 @@ var annotated_dup =
     [ "lsExpand", "classlsExpand.html", "classlsExpand" ],
     [ "lsFromExplicitMesh", "classlsFromExplicitMesh.html", "classlsFromExplicitMesh" ],
     [ "lsMakeGeometry", "classlsMakeGeometry.html", "classlsMakeGeometry" ],
+    [ "lsMarkVoidPoints", "classlsMarkVoidPoints.html", "classlsMarkVoidPoints" ],
     [ "lsMesh", "classlsMesh.html", "classlsMesh" ],
     [ "lsMessage", "classlsMessage.html", "classlsMessage" ],
     [ "lsPrune", "classlsPrune.html", "classlsPrune" ],

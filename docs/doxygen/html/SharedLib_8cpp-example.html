@@ -110,8 +110,8 @@ $(document).ready(function(){initNavTree('SharedLib_8cpp-example.html','');});
 <div class="line"> </div>
 <div class="line">  <span class="keywordtype">double</span> gridDelta = 0.25;</div>
 <div class="line"> </div>
-<div class="line">  <span class="comment">// usually we would use lsDomain&lt;float, D&gt;</span></div>
-<div class="line">  <span class="comment">// since we want to make sure we get an error</span></div>
+<div class="line">  <span class="comment">// Usually we would use lsDomain&lt;float, D&gt;.</span></div>
+<div class="line">  <span class="comment">// Since we want to make sure we get an error</span></div>
 <div class="line">  <span class="comment">// if we do not use a pre-built type, we use</span></div>
 <div class="line">  <span class="comment">// the specialization typedef</span></div>
 <div class="line">  lsDomain_float_3 sphere1(gridDelta);</div>
@@ -138,13 +138,15 @@ $(document).ready(function(){initNavTree('SharedLib_8cpp-example.html','');});
 <div class="line">  }</div>
 <div class="line"> </div>
 <div class="line">  <span class="comment">// Perform a boolean operation</span></div>
-<div class="line">  lsBooleanOperation_float_3(sphere1).XOR(sphere2);</div>
+<div class="line">  lsBooleanOperation_float_3(sphere1, sphere2,</div>
+<div class="line">                             <a name="a4"></a><a class="code" href="lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8ac50397eae12f3694f170c9aaaa57c042">lsBooleanOperationEnum::RELATIVE_COMPLEMENT</a>)</div>
+<div class="line">      .apply();</div>
 <div class="line"> </div>
 <div class="line">  std::cout &lt;&lt; <span class="stringliteral">&quot;Extracting...&quot;</span> &lt;&lt; std::endl;</div>
 <div class="line">  <a class="code" href="classlsMesh.html">lsMesh</a> mesh;</div>
 <div class="line">  lsToExplicitMesh_float_3(sphere1, mesh).apply();</div>
 <div class="line"> </div>
-<div class="line">  mesh.<a name="a4"></a><a class="code" href="classlsMesh.html#a081721ececff229c5ae72d5c7450985a">print</a>();</div>
+<div class="line">  mesh.<a name="a5"></a><a class="code" href="classlsMesh.html#a081721ececff229c5ae72d5c7450985a">print</a>();</div>
 <div class="line"> </div>
 <div class="line">  <a class="code" href="classlsVTKWriter.html">lsVTKWriter</a>(mesh).<a class="code" href="classlsVTKWriter.html#ab9d057a239ebb77d36173e2dfcbf4e1d">writeVTKLegacy</a>(<span class="stringliteral">&quot;after.vtk&quot;</span>);</div>
 <div class="line"> </div>
@@ -161,8 +163,9 @@ $(document).ready(function(){initNavTree('SharedLib_8cpp-example.html','');});
 <div class="ttc" id="alsExpand_8hpp_html"><div class="ttname"><a href="lsExpand_8hpp.html">lsExpand.hpp</a></div></div>
 <div class="ttc" id="alsVTKWriter_8hpp_html"><div class="ttname"><a href="lsVTKWriter_8hpp.html">lsVTKWriter.hpp</a></div></div>
 <div class="ttc" id="alsMakeGeometry_8hpp_html"><div class="ttname"><a href="lsMakeGeometry_8hpp.html">lsMakeGeometry.hpp</a></div></div>
+<div class="ttc" id="alsBooleanOperation_8hpp_html_a8b5747a2da7e017486ffceefca67d6d8ac50397eae12f3694f170c9aaaa57c042"><div class="ttname"><a href="lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8ac50397eae12f3694f170c9aaaa57c042">lsBooleanOperationEnum::RELATIVE_COMPLEMENT</a></div></div>
 <div class="ttc" id="aSharedLib_8cpp_html_ae66f6b31b5ad750f1fe042a706a4e3d4"><div class="ttname"><a href="SharedLib_8cpp.html#ae66f6b31b5ad750f1fe042a706a4e3d4">main</a></div><div class="ttdeci">int main()</div><div class="ttdef"><b>Definition:</b> SharedLib.cpp:23</div></div>
-<div class="ttc" id="aclasslsVTKWriter_html_ab9d057a239ebb77d36173e2dfcbf4e1d"><div class="ttname"><a href="classlsVTKWriter.html#ab9d057a239ebb77d36173e2dfcbf4e1d">lsVTKWriter::writeVTKLegacy</a></div><div class="ttdeci">void writeVTKLegacy(std::string filename)</div><div class="ttdef"><b>Definition:</b> lsVTKWriter.hpp:233</div></div>
+<div class="ttc" id="aclasslsVTKWriter_html_ab9d057a239ebb77d36173e2dfcbf4e1d"><div class="ttname"><a href="classlsVTKWriter.html#ab9d057a239ebb77d36173e2dfcbf4e1d">lsVTKWriter::writeVTKLegacy</a></div><div class="ttdeci">void writeVTKLegacy(std::string filename)</div><div class="ttdef"><b>Definition:</b> lsVTKWriter.hpp:254</div></div>
 <div class="ttc" id="alsDomain_8hpp_html"><div class="ttname"><a href="lsDomain_8hpp.html">lsDomain.hpp</a></div></div>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

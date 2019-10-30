@@ -87,7 +87,8 @@ $(document).ready(function(){initNavTree('lsAdvect_8hpp.html','');});
 
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Classes</a>  </div>
+<a href="#nested-classes">Classes</a> &#124;
+<a href="#enum-members">Enumerations</a>  </div>
   <div class="headertitle">
 <div class="title">lsAdvect.hpp File Reference</div>  </div>
 </div><!--header-->
@@ -99,6 +100,7 @@ $(document).ready(function(){initNavTree('lsAdvect_8hpp.html','');});
 <code>#include &lt;hrleSparseStarIterator.hpp&gt;</code><br />
 <code>#include &lt;<a class="el" href="lsBooleanOperation_8hpp.html">lsBooleanOperation.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="lsDomain_8hpp.html">lsDomain.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="lsMarkVoidPoints_8hpp.html">lsMarkVoidPoints.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="lsMessage_8hpp.html">lsMessage.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="lsReduce_8hpp.html">lsReduce.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="lsEnquistOsher_8hpp.html">lsEnquistOsher.hpp</a>&gt;</code><br />
@@ -111,7 +113,53 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsAdvect.html">lsAdvect&lt; T, D &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This class is used to advance level sets over time. Level sets are passed to the constructor in an std::vector, with the last element being the level set to advect, or "top level set", while the others are then adjusted afterwards. In order to ensure that advection works correctly, the "top level set" has to include all lower level sets: LS_top = LS_top U LS_i for i = {0 ... n}, where n is the number of level sets. The velocities used to advect the level set are given in a concrete implementation of the <a class="el" href="classlsVelocityField.html" title="Abstract class defining the interface for the velocity field used during advection using lsAdvect.">lsVelocityField</a> (check Advection examples for guidance)  <a href="classlsAdvect.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
+Enumerations</h2></td></tr>
+<tr class="memitem:afe9778bbf7b5f9aeb52d14c4f133cc9b"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="lsAdvect_8hpp.html#afe9778bbf7b5f9aeb52d14c4f133cc9b">lsIntegrationSchemeEnum</a> : unsigned { <br />
+&#160;&#160;<a class="el" href="lsAdvect_8hpp.html#afe9778bbf7b5f9aeb52d14c4f133cc9bad0a7e3dc2008232b277a258bb57d2049">lsIntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER</a>, 
+<a class="el" href="lsAdvect_8hpp.html#afe9778bbf7b5f9aeb52d14c4f133cc9baa04ccfbc276e404065c286a5ff2f249d">lsIntegrationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER</a>, 
+<a class="el" href="lsAdvect_8hpp.html#afe9778bbf7b5f9aeb52d14c4f133cc9baa6e8c70e1bb7ba1a32b675aa9affdb3e">lsIntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER</a>, 
+<a class="el" href="lsAdvect_8hpp.html#afe9778bbf7b5f9aeb52d14c4f133cc9ba9274ae9f4d9eeff513420c676c30e202">lsIntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER</a>, 
+<br />
+&#160;&#160;<a class="el" href="lsAdvect_8hpp.html#afe9778bbf7b5f9aeb52d14c4f133cc9babbabd6a5cf8760c651402b208daa4b33">lsIntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS</a>
+<br />
+ }</td></tr>
+<tr class="memdesc:afe9778bbf7b5f9aeb52d14c4f133cc9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enumeration for the different Integration schemes used by the advection kernel.  <a href="lsAdvect_8hpp.html#afe9778bbf7b5f9aeb52d14c4f133cc9b">More...</a><br /></td></tr>
+<tr class="separator:afe9778bbf7b5f9aeb52d14c4f133cc9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Enumeration Type Documentation</h2>
+<a id="afe9778bbf7b5f9aeb52d14c4f133cc9b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afe9778bbf7b5f9aeb52d14c4f133cc9b">&#9670;&nbsp;</a></span>lsIntegrationSchemeEnum</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="lsAdvect_8hpp.html#afe9778bbf7b5f9aeb52d14c4f133cc9b">lsIntegrationSchemeEnum</a> : unsigned</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">strong</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Enumeration for the different Integration schemes used by the advection kernel. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="afe9778bbf7b5f9aeb52d14c4f133cc9bad0a7e3dc2008232b277a258bb57d2049"></a>ENGQUIST_OSHER_1ST_ORDER&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="afe9778bbf7b5f9aeb52d14c4f133cc9baa04ccfbc276e404065c286a5ff2f249d"></a>ENGQUIST_OSHER_2ND_ORDER&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="afe9778bbf7b5f9aeb52d14c4f133cc9baa6e8c70e1bb7ba1a32b675aa9affdb3e"></a>LAX_FRIEDRICHS_1ST_ORDER&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="afe9778bbf7b5f9aeb52d14c4f133cc9ba9274ae9f4d9eeff513420c676c30e202"></a>LAX_FRIEDRICHS_2ND_ORDER&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="afe9778bbf7b5f9aeb52d14c4f133cc9babbabd6a5cf8760c651402b208daa4b33"></a>STENCIL_LOCAL_LAX_FRIEDRICHS&#160;</td><td class="fielddoc"></td></tr>
+</table>
+
+</div>
+</div>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->

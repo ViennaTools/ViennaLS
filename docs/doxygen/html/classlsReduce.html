@@ -103,20 +103,28 @@ $(document).ready(function(){initNavTree('classlsReduce.html','');});
 Public Member Functions</h2></td></tr>
 <tr class="memitem:adc558866ffb526f539bf7b21b3d51d18"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsReduce.html#adc558866ffb526f539bf7b21b3d51d18">lsReduce</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedlsDomain)</td></tr>
 <tr class="separator:adc558866ffb526f539bf7b21b3d51d18"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad954326ec2b63c5fcb61e11df41c98ce"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsReduce.html#ad954326ec2b63c5fcb61e11df41c98ce">apply</a> (int width, bool noNewSegment=false)</td></tr>
-<tr class="memdesc:ad954326ec2b63c5fcb61e11df41c98ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reduces the leveleSet to the specified number of layers. The largest value in the levelset is thus width*0.5 Returns the number of added points.  <a href="classlsReduce.html#ad954326ec2b63c5fcb61e11df41c98ce">More...</a><br /></td></tr>
-<tr class="separator:ad954326ec2b63c5fcb61e11df41c98ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abd2b04b19718f34f8719953185e01df9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsReduce.html#abd2b04b19718f34f8719953185e01df9">lsReduce</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedlsDomain, int passedWidth, bool passedNoNewSegment=false)</td></tr>
+<tr class="separator:abd2b04b19718f34f8719953185e01df9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8d332423eba8a41c154981f2e06cb9b4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsReduce.html#a8d332423eba8a41c154981f2e06cb9b4">setLevelSet</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedlsDomain)</td></tr>
+<tr class="separator:a8d332423eba8a41c154981f2e06cb9b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7065af6add1b12483b135a1044e041af"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsReduce.html#a7065af6add1b12483b135a1044e041af">setWidth</a> (int passedWidth)</td></tr>
+<tr class="memdesc:a7065af6add1b12483b135a1044e041af"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set which level set points should be kept. All points with a level set value &gt;0.5*width will be removed by this algorithm.  <a href="classlsReduce.html#a7065af6add1b12483b135a1044e041af">More...</a><br /></td></tr>
+<tr class="separator:a7065af6add1b12483b135a1044e041af"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a79b094f1253082aa9d7a0818b3bc9e17"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsReduce.html#a79b094f1253082aa9d7a0818b3bc9e17">setNoNewSegment</a> (bool passedNoNewSegment)</td></tr>
+<tr class="memdesc:a79b094f1253082aa9d7a0818b3bc9e17"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set whether to segment the level set after algorithm is finished. This means points will be evenly distributed across points. Defaults to true.  <a href="classlsReduce.html#a79b094f1253082aa9d7a0818b3bc9e17">More...</a><br /></td></tr>
+<tr class="separator:a79b094f1253082aa9d7a0818b3bc9e17"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a637a2597465ce102c290b5e7d1f7c547"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsReduce.html#a637a2597465ce102c290b5e7d1f7c547">apply</a> ()</td></tr>
+<tr class="memdesc:a637a2597465ce102c290b5e7d1f7c547"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reduces the leveleSet to the specified number of layers. The largest value in the levelset is thus width*0.5 Returns the number of added points.  <a href="classlsReduce.html#a637a2597465ce102c290b5e7d1f7c547">More...</a><br /></td></tr>
+<tr class="separator:a637a2597465ce102c290b5e7d1f7c547"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;class T, int D&gt;<br />
 class lsReduce&lt; T, D &gt;</h3>
 
 <p>Reduce the level set size to the specified width. This means all level set points with value &lt;= 0.5*width are removed, reducing the memory footprint of the <a class="el" href="classlsDomain.html" title="Class containing all information about the level set, including the dimensions of the domain,...">lsDomain</a>. </p>
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="Expand_8cpp-example.html#_a11">Expand.cpp</a>, and <a class="el" href="MakeSphere_8cpp-example.html#_a15">MakeSphere.cpp</a>.</dd>
-</dl>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="adc558866ffb526f539bf7b21b3d51d18"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adc558866ffb526f539bf7b21b3d51d18">&#9670;&nbsp;</a></span>lsReduce()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#adc558866ffb526f539bf7b21b3d51d18">&#9670;&nbsp;</a></span>lsReduce() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -143,9 +151,8 @@ template&lt;class T , int D&gt; </div>
 
 </div>
 </div>
-<h2 class="groupheader">Member Function Documentation</h2>
-<a id="ad954326ec2b63c5fcb61e11df41c98ce"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad954326ec2b63c5fcb61e11df41c98ce">&#9670;&nbsp;</a></span>apply()</h2>
+<a id="abd2b04b19718f34f8719953185e01df9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abd2b04b19718f34f8719953185e01df9">&#9670;&nbsp;</a></span>lsReduce() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -156,16 +163,22 @@ template&lt;class T , int D&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classlsReduce.html">lsReduce</a>&lt; T, D &gt;::apply </td>
+          <td class="memname"><a class="el" href="classlsReduce.html">lsReduce</a>&lt; T, D &gt;::<a class="el" href="classlsReduce.html">lsReduce</a> </td>
           <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
+          <td class="paramname"><em>passedlsDomain</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>width</em>, </td>
+          <td class="paramname"><em>passedWidth</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>noNewSegment</em> = <code>false</code>&#160;</td>
+          <td class="paramname"><em>passedNoNewSegment</em> = <code>false</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -180,9 +193,123 @@ template&lt;class T , int D&gt; </div>
 </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a637a2597465ce102c290b5e7d1f7c547"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a637a2597465ce102c290b5e7d1f7c547">&#9670;&nbsp;</a></span>apply()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsReduce.html">lsReduce</a>&lt; T, D &gt;::apply </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
 <p>Reduces the leveleSet to the specified number of layers. The largest value in the levelset is thus width*0.5 Returns the number of added points. </p>
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="Expand_8cpp-example.html#a12">Expand.cpp</a>, and <a class="el" href="MakeSphere_8cpp-example.html#a16">MakeSphere.cpp</a>.</dd>
-</dl>
+
+</div>
+</div>
+<a id="a8d332423eba8a41c154981f2e06cb9b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8d332423eba8a41c154981f2e06cb9b4">&#9670;&nbsp;</a></span>setLevelSet()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsReduce.html">lsReduce</a>&lt; T, D &gt;::setLevelSet </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
+          <td class="paramname"><em>passedlsDomain</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a79b094f1253082aa9d7a0818b3bc9e17"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a79b094f1253082aa9d7a0818b3bc9e17">&#9670;&nbsp;</a></span>setNoNewSegment()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsReduce.html">lsReduce</a>&lt; T, D &gt;::setNoNewSegment </td>
+          <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>passedNoNewSegment</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set whether to segment the level set after algorithm is finished. This means points will be evenly distributed across points. Defaults to true. </p>
+
+</div>
+</div>
+<a id="a7065af6add1b12483b135a1044e041af"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7065af6add1b12483b135a1044e041af">&#9670;&nbsp;</a></span>setWidth()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsReduce.html">lsReduce</a>&lt; T, D &gt;::setWidth </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>passedWidth</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set which level set points should be kept. All points with a level set value &gt;0.5*width will be removed by this algorithm. </p>
 
 </div>
 </div>

@@ -113,6 +113,10 @@ Public Types</h2></td></tr>
 <tr class="separator:a5f260245949e4b99d9402eb9716f0089"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a81a5c708142e9a0b5bcf2a537934cf7f"><td class="memItemLeft" align="right" valign="top">typedef std::vector&lt; std::pair&lt; hrleVectorType&lt; hrleIndexType, D &gt;, T &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a81a5c708142e9a0b5bcf2a537934cf7f">PointValueVectorType</a></td></tr>
 <tr class="separator:a81a5c708142e9a0b5bcf2a537934cf7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac3efb47c6848a93e796b0c13a8e41973"><td class="memItemLeft" align="right" valign="top">typedef std::vector&lt; hrleVectorType&lt; T, D &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#ac3efb47c6848a93e796b0c13a8e41973">NormalVectorType</a></td></tr>
+<tr class="separator:ac3efb47c6848a93e796b0c13a8e41973"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a39e1bd8e14e1930b35d6808bce0a272d"><td class="memItemLeft" align="right" valign="top">typedef std::vector&lt; bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a39e1bd8e14e1930b35d6808bce0a272d">voidPointMarkersType</a></td></tr>
+<tr class="separator:a39e1bd8e14e1930b35d6808bce0a272d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -140,15 +144,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac5f0a15b5375a11331db810afb4d42dd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#ac5f0a15b5375a11331db810afb4d42dd">insertPoints</a> (<a class="el" href="classlsDomain.html#a81a5c708142e9a0b5bcf2a537934cf7f">PointValueVectorType</a> pointData)</td></tr>
 <tr class="memdesc:ac5f0a15b5375a11331db810afb4d42dd"><td class="mdescLeft">&#160;</td><td class="mdescRight">re-initalise <a class="el" href="classlsDomain.html" title="Class containing all information about the level set, including the dimensions of the domain,...">lsDomain</a> with the point/value pairs in pointData  <a href="classlsDomain.html#ac5f0a15b5375a11331db810afb4d42dd">More...</a><br /></td></tr>
 <tr class="separator:ac5f0a15b5375a11331db810afb4d42dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1beae2e9e8e09a26b14c5781055227c3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a1beae2e9e8e09a26b14c5781055227c3">calculateActivePointIds</a> ()</td></tr>
-<tr class="memdesc:a1beae2e9e8e09a26b14c5781055227c3"><td class="mdescLeft">&#160;</td><td class="mdescRight">constructs the activePointIds vector which holds the active point ID of a point at the index PointId  <a href="classlsDomain.html#a1beae2e9e8e09a26b14c5781055227c3">More...</a><br /></td></tr>
-<tr class="separator:a1beae2e9e8e09a26b14c5781055227c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a59638ab46e55b5686c78329f0450dfaa"><td class="memItemLeft" align="right" valign="top">hrleSizeType&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a59638ab46e55b5686c78329f0450dfaa">getActivePointId</a> (hrleSizeType pointId) const</td></tr>
-<tr class="memdesc:a59638ab46e55b5686c78329f0450dfaa"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the activePointId of the point with pointId  <a href="classlsDomain.html#a59638ab46e55b5686c78329f0450dfaa">More...</a><br /></td></tr>
-<tr class="separator:a59638ab46e55b5686c78329f0450dfaa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2d1509930b4a0ff6d4ccbb127c20fed6"><td class="memItemLeft" align="right" valign="top">hrleSizeType&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a2d1509930b4a0ff6d4ccbb127c20fed6">getPointId</a> (hrleSizeType activePointId) const</td></tr>
-<tr class="memdesc:a2d1509930b4a0ff6d4ccbb127c20fed6"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the pointId from the active point with activePointId  <a href="classlsDomain.html#a2d1509930b4a0ff6d4ccbb127c20fed6">More...</a><br /></td></tr>
-<tr class="separator:a2d1509930b4a0ff6d4ccbb127c20fed6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1b8d18c724f766b6d89b421c130544a3"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classlsDomain.html#acd1ed71ed408b19ab82f4b33db28a20d">GridType</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a1b8d18c724f766b6d89b421c130544a3">getGrid</a> () const</td></tr>
 <tr class="memdesc:a1b8d18c724f766b6d89b421c130544a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">get reference to the grid on which the levelset is defined  <a href="classlsDomain.html#a1b8d18c724f766b6d89b421c130544a3">More...</a><br /></td></tr>
 <tr class="separator:a1b8d18c724f766b6d89b421c130544a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -163,13 +158,22 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aeaedf9b83e01197f5e1ccf744364f25e"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#aeaedf9b83e01197f5e1ccf744364f25e">getNumberOfPoints</a> () const</td></tr>
 <tr class="memdesc:aeaedf9b83e01197f5e1ccf744364f25e"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns the number of defined points  <a href="classlsDomain.html#aeaedf9b83e01197f5e1ccf744364f25e">More...</a><br /></td></tr>
 <tr class="separator:aeaedf9b83e01197f5e1ccf744364f25e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a35a56c667b10f79010a28712ff497819"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a35a56c667b10f79010a28712ff497819">getNumberOfActivePoints</a> () const</td></tr>
-<tr class="memdesc:a35a56c667b10f79010a28712ff497819"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns the number of defined point with value &lt;= 0.5  <a href="classlsDomain.html#a35a56c667b10f79010a28712ff497819">More...</a><br /></td></tr>
-<tr class="separator:a35a56c667b10f79010a28712ff497819"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7c41c369debd2f5eeddfc7d4586d7116"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a7c41c369debd2f5eeddfc7d4586d7116">getLevelSetWidth</a> () const</td></tr>
 <tr class="separator:a7c41c369debd2f5eeddfc7d4586d7116"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a615d5361183773a25292ead3c3a6ef08"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a615d5361183773a25292ead3c3a6ef08">setLevelSetWidth</a> (int width)</td></tr>
 <tr class="separator:a615d5361183773a25292ead3c3a6ef08"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a335f146054c0610326fc51436ae620bc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a335f146054c0610326fc51436ae620bc">clearMetaData</a> ()</td></tr>
+<tr class="separator:a335f146054c0610326fc51436ae620bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a50df1038d697f24ae4d4dba6540ce802"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classlsDomain.html#ac3efb47c6848a93e796b0c13a8e41973">NormalVectorType</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a50df1038d697f24ae4d4dba6540ce802">getNormalVectors</a> ()</td></tr>
+<tr class="memdesc:a50df1038d697f24ae4d4dba6540ce802"><td class="mdescLeft">&#160;</td><td class="mdescRight">get reference to the normalVectors of all points  <a href="classlsDomain.html#a50df1038d697f24ae4d4dba6540ce802">More...</a><br /></td></tr>
+<tr class="separator:a50df1038d697f24ae4d4dba6540ce802"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adac4b93758441a5a79fced6afa82bd84"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classlsDomain.html#ac3efb47c6848a93e796b0c13a8e41973">NormalVectorType</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#adac4b93758441a5a79fced6afa82bd84">getNormalVectors</a> () const</td></tr>
+<tr class="separator:adac4b93758441a5a79fced6afa82bd84"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a21b15e202ed4fcfa51a3043ba37db9fb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classlsDomain.html#a39e1bd8e14e1930b35d6808bce0a272d">voidPointMarkersType</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a21b15e202ed4fcfa51a3043ba37db9fb">getVoidPointMarkers</a> ()</td></tr>
+<tr class="memdesc:a21b15e202ed4fcfa51a3043ba37db9fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">get reference to the voidPoints markers for all points  <a href="classlsDomain.html#a21b15e202ed4fcfa51a3043ba37db9fb">More...</a><br /></td></tr>
+<tr class="separator:a21b15e202ed4fcfa51a3043ba37db9fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3f6730174b85e65d74c257c65b4df79"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classlsDomain.html#a39e1bd8e14e1930b35d6808bce0a272d">voidPointMarkersType</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#ae3f6730174b85e65d74c257c65b4df79">getVoidPointMarkers</a> () const</td></tr>
+<tr class="separator:ae3f6730174b85e65d74c257c65b4df79"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aadf4b2701ea2e00e344872ef85389382"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#aadf4b2701ea2e00e344872ef85389382">print</a> ()</td></tr>
 <tr class="memdesc:aadf4b2701ea2e00e344872ef85389382"><td class="mdescLeft">&#160;</td><td class="mdescRight">prints basic information and all memebers of the levelset structure  <a href="classlsDomain.html#aadf4b2701ea2e00e344872ef85389382">More...</a><br /></td></tr>
 <tr class="separator:aadf4b2701ea2e00e344872ef85389382"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -188,7 +192,7 @@ Static Public Attributes</h2></td></tr>
 class lsDomain&lt; T, D &gt;</h3>
 
 <p>Class containing all information about the level set, including the dimensions of the domain, boundary conditions and all data. </p>
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="Advection_8cpp-example.html#_a5">Advection.cpp</a>, <a class="el" href="Advection2D_8cpp-example.html#_a5">Advection2D.cpp</a>, <a class="el" href="AdvectionPlane_8cpp-example.html#_a5">AdvectionPlane.cpp</a>, <a class="el" href="BooleanOperation_8cpp-example.html#_a1">BooleanOperation.cpp</a>, <a class="el" href="BoundaryConditions_8cpp-example.html#_a1">BoundaryConditions.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#_a5">Deposition.cpp</a>, <a class="el" href="Expand_8cpp-example.html#_a1">Expand.cpp</a>, <a class="el" href="Make3DSphere_8cpp-example.html#_a1">Make3DSphere.cpp</a>, <a class="el" href="MakeSphere_8cpp-example.html#_a1">MakeSphere.cpp</a>, and <a class="el" href="MultiMaterialAdvection_8cpp-example.html#_a5">MultiMaterialAdvection.cpp</a>.</dd>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#_a5">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#_a5">Deposition.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#_a5">PeriodicBoundary.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#_a5">VoidEtching.cpp</a>.</dd>
 </dl>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a5f260245949e4b99d9402eb9716f0089"></a>
@@ -239,6 +243,22 @@ template&lt;class T, int D&gt; </div>
 
 </div>
 </div>
+<a id="ac3efb47c6848a93e796b0c13a8e41973"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac3efb47c6848a93e796b0c13a8e41973">&#9670;&nbsp;</a></span>NormalVectorType</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T, int D&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef std::vector&lt;hrleVectorType&lt;T, D&gt; &gt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;::<a class="el" href="classlsDomain.html#ac3efb47c6848a93e796b0c13a8e41973">NormalVectorType</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a81a5c708142e9a0b5bcf2a537934cf7f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a81a5c708142e9a0b5bcf2a537934cf7f">&#9670;&nbsp;</a></span>PointValueVectorType</h2>
 
@@ -265,6 +285,22 @@ template&lt;class T, int D&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">typedef T <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;::<a class="el" href="classlsDomain.html#a0fd2ecbf57e7608ab81b6a38342f9e6f">ValueType</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a39e1bd8e14e1930b35d6808bce0a272d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a39e1bd8e14e1930b35d6808bce0a272d">&#9670;&nbsp;</a></span>voidPointMarkersType</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T, int D&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef std::vector&lt;bool&gt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;::<a class="el" href="classlsDomain.html#a39e1bd8e14e1930b35d6808bce0a272d">voidPointMarkersType</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -455,8 +491,8 @@ template&lt;class T, int D&gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a1beae2e9e8e09a26b14c5781055227c3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1beae2e9e8e09a26b14c5781055227c3">&#9670;&nbsp;</a></span>calculateActivePointIds()</h2>
+<a id="a335f146054c0610326fc51436ae620bc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a335f146054c0610326fc51436ae620bc">&#9670;&nbsp;</a></span>clearMetaData()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -467,7 +503,7 @@ template&lt;class T, int D&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;::calculateActivePointIds </td>
+          <td class="memname">void <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;::clearMetaData </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -479,8 +515,6 @@ template&lt;class T, int D&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>constructs the activePointIds vector which holds the active point ID of a point at the index PointId </p>
 
 </div>
 </div>
@@ -570,36 +604,6 @@ template&lt;class T, int D&gt; </div>
 </div><div class="memdoc">
 
 <p>this function sets a new levelset width and finalizes the levelset, so it is ready for use by other algorithms </p>
-
-</div>
-</div>
-<a id="a59638ab46e55b5686c78329f0450dfaa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a59638ab46e55b5686c78329f0450dfaa">&#9670;&nbsp;</a></span>getActivePointId()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class T, int D&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">hrleSizeType <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;::getActivePointId </td>
-          <td>(</td>
-          <td class="paramtype">hrleSizeType&#160;</td>
-          <td class="paramname"><em>pointId</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>get the activePointId of the point with pointId </p>
 
 </div>
 </div>
@@ -715,8 +719,8 @@ template&lt;class T, int D&gt; </div>
 
 </div>
 </div>
-<a id="a35a56c667b10f79010a28712ff497819"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a35a56c667b10f79010a28712ff497819">&#9670;&nbsp;</a></span>getNumberOfActivePoints()</h2>
+<a id="a50df1038d697f24ae4d4dba6540ce802"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a50df1038d697f24ae4d4dba6540ce802">&#9670;&nbsp;</a></span>getNormalVectors() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -727,7 +731,36 @@ template&lt;class T, int D&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">unsigned <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;::getNumberOfActivePoints </td>
+          <td class="memname"><a class="el" href="classlsDomain.html#ac3efb47c6848a93e796b0c13a8e41973">NormalVectorType</a>&amp; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;::getNormalVectors </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>get reference to the normalVectors of all points </p>
+
+</div>
+</div>
+<a id="adac4b93758441a5a79fced6afa82bd84"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adac4b93758441a5a79fced6afa82bd84">&#9670;&nbsp;</a></span>getNormalVectors() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T, int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="classlsDomain.html#ac3efb47c6848a93e796b0c13a8e41973">NormalVectorType</a>&amp; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;::getNormalVectors </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -739,8 +772,6 @@ template&lt;class T, int D&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>returns the number of defined point with value &lt;= 0.5 </p>
 
 </div>
 </div>
@@ -802,8 +833,8 @@ template&lt;class T, int D&gt; </div>
 
 </div>
 </div>
-<a id="a2d1509930b4a0ff6d4ccbb127c20fed6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2d1509930b4a0ff6d4ccbb127c20fed6">&#9670;&nbsp;</a></span>getPointId()</h2>
+<a id="a21b15e202ed4fcfa51a3043ba37db9fb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a21b15e202ed4fcfa51a3043ba37db9fb">&#9670;&nbsp;</a></span>getVoidPointMarkers() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -814,11 +845,10 @@ template&lt;class T, int D&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">hrleSizeType <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;::getPointId </td>
+          <td class="memname"><a class="el" href="classlsDomain.html#a39e1bd8e14e1930b35d6808bce0a272d">voidPointMarkersType</a>&amp; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;::getVoidPointMarkers </td>
           <td>(</td>
-          <td class="paramtype">hrleSizeType&#160;</td>
-          <td class="paramname"><em>activePointId</em></td><td>)</td>
-          <td> const</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
         </tr>
       </table>
   </td>
@@ -828,7 +858,34 @@ template&lt;class T, int D&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>get the pointId from the active point with activePointId </p>
+<p>get reference to the voidPoints markers for all points </p>
+
+</div>
+</div>
+<a id="ae3f6730174b85e65d74c257c65b4df79"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae3f6730174b85e65d74c257c65b4df79">&#9670;&nbsp;</a></span>getVoidPointMarkers() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T, int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="classlsDomain.html#a39e1bd8e14e1930b35d6808bce0a272d">voidPointMarkersType</a>&amp; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;::getVoidPointMarkers </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>

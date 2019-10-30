@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['first_5forder_368',['FIRST_ORDER',['../namespacelsInternal.html#a1197c9bc5d272ab73e76ebc2d4ab05a7a381be4beabc209c2c0999eabbfcaa16b',1,'lsInternal']]]
+  ['custom_394',['CUSTOM',['../lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8a72baef04098f035e8a320b03ad197818',1,'lsBooleanOperation.hpp']]]
 ];

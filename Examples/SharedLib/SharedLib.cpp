@@ -29,8 +29,8 @@ int main() {
 
   double gridDelta = 0.25;
 
-  // usually we would use lsDomain<float, D>
-  // since we want to make sure we get an error
+  // Usually we would use lsDomain<float, D>.
+  // Since we want to make sure we get an error
   // if we do not use a pre-built type, we use
   // the specialization typedef
   lsDomain_float_3 sphere1(gridDelta);
@@ -57,7 +57,9 @@ int main() {
   }
 
   // Perform a boolean operation
-  lsBooleanOperation_float_3(sphere1).XOR(sphere2);
+  lsBooleanOperation_float_3(sphere1, sphere2,
+                             lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
+      .apply();
 
   std::cout << "Extracting..." << std::endl;
   lsMesh mesh;

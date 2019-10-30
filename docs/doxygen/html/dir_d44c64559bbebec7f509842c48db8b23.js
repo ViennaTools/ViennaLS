@@ -1,11 +1,7 @@
 var dir_d44c64559bbebec7f509842c48db8b23 =
 [
-    [ "lsAdvect.hpp", "lsAdvect_8hpp.html", [
-      [ "lsAdvect", "classlsAdvect.html", "classlsAdvect" ]
-    ] ],
-    [ "lsBooleanOperation.hpp", "lsBooleanOperation_8hpp.html", [
-      [ "lsBooleanOperation", "classlsBooleanOperation.html", "classlsBooleanOperation" ]
-    ] ],
+    [ "lsAdvect.hpp", "lsAdvect_8hpp.html", "lsAdvect_8hpp" ],
+    [ "lsBooleanOperation.hpp", "lsBooleanOperation_8hpp.html", "lsBooleanOperation_8hpp" ],
     [ "lsCalculateNormalVectors.hpp", "lsCalculateNormalVectors_8hpp.html", [
       [ "lsCalculateNormalVectors", "classlsCalculateNormalVectors.html", "classlsCalculateNormalVectors" ]
     ] ],
@@ -26,14 +22,18 @@ var dir_d44c64559bbebec7f509842c48db8b23 =
       [ "lsFromExplicitMesh", "classlsFromExplicitMesh.html", "classlsFromExplicitMesh" ],
       [ "iterator", "classlsFromExplicitMesh_1_1box_1_1iterator.html", "classlsFromExplicitMesh_1_1box_1_1iterator" ]
     ] ],
+    [ "lsGraph.hpp", "lsGraph_8hpp.html", [
+      [ "lsGraph", "classlsInternal_1_1lsGraph.html", "classlsInternal_1_1lsGraph" ]
+    ] ],
     [ "lsLaxFriedrichs.hpp", "lsLaxFriedrichs_8hpp.html", [
       [ "lsLaxFriedrichs", "classlsInternal_1_1lsLaxFriedrichs.html", "classlsInternal_1_1lsLaxFriedrichs" ]
     ] ],
-    [ "lsMakeGeometry.hpp", "lsMakeGeometry_8hpp.html", [
-      [ "lsMakeGeometry", "classlsMakeGeometry.html", "classlsMakeGeometry" ]
-    ] ],
+    [ "lsMakeGeometry.hpp", "lsMakeGeometry_8hpp.html", "lsMakeGeometry_8hpp" ],
     [ "lsMarchingCubes.hpp", "lsMarchingCubes_8hpp.html", [
       [ "lsMarchingCubes", "classlsInternal_1_1lsMarchingCubes.html", "classlsInternal_1_1lsMarchingCubes" ]
+    ] ],
+    [ "lsMarkVoidPoints.hpp", "lsMarkVoidPoints_8hpp.html", [
+      [ "lsMarkVoidPoints", "classlsMarkVoidPoints.html", "classlsMarkVoidPoints" ]
     ] ],
     [ "lsMesh.hpp", "lsMesh_8hpp.html", [
       [ "lsMesh", "classlsMesh.html", "classlsMesh" ]
@@ -58,6 +58,7 @@ var dir_d44c64559bbebec7f509842c48db8b23 =
       [ "lsToMesh", "classlsToMesh.html", "classlsToMesh" ]
     ] ],
     [ "lsToVoxelMesh.hpp", "lsToVoxelMesh_8hpp.html", [
+      [ "hash< hrleVectorType< hrleIndexType, D > >", "structstd_1_1hash_3_01hrleVectorType_3_01hrleIndexType_00_01D_01_4_01_4.html", "structstd_1_1hash_3_01hrleVectorType_3_01hrleIndexType_00_01D_01_4_01_4" ],
       [ "lsToVoxelMesh", "classlsToVoxelMesh.html", "classlsToVoxelMesh" ]
     ] ],
     [ "lsVelocityField.hpp", "lsVelocityField_8hpp.html", [

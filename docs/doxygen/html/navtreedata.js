@@ -27,10 +27,11 @@ var NAVTREE =
     [ "Releases", "index.html#autotoc_md4", null ],
     [ "Building", "index.html#autotoc_md5", [
       [ "System Requirements", "index.html#autotoc_md6", null ],
-      [ "Installing ViennaLS and dependencies", "index.html#autotoc_md7", null ],
-      [ "Installing (with dependencies already installed)", "index.html#autotoc_md8", null ],
-      [ "Building examples", "index.html#autotoc_md9", null ],
-      [ "Integration in CMake projects", "index.html#autotoc_md10", null ],
+      [ "Installing (with dependencies already installed)", "index.html#autotoc_md7", null ]
+    ] ],
+    [ "Using ViennaLS in your project", "index.html#autotoc_md8", [
+      [ "Integration in CMake projects", "index.html#autotoc_md9", null ],
+      [ "Building examples", "index.html#autotoc_md10", null ],
       [ "Shared libraries", "index.html#autotoc_md11", null ]
     ] ],
     [ "Contributing", "index.html#autotoc_md12", null ],
@@ -52,9 +53,7 @@ var NAVTREE =
         [ "All", "functions.html", null ],
         [ "Functions", "functions_func.html", null ],
         [ "Variables", "functions_vars.html", null ],
-        [ "Typedefs", "functions_type.html", null ],
-        [ "Enumerations", "functions_enum.html", null ],
-        [ "Enumerator", "functions_eval.html", null ]
+        [ "Typedefs", "functions_type.html", null ]
       ] ]
     ] ],
     [ "Files", "files.html", [
@@ -62,6 +61,7 @@ var NAVTREE =
       [ "File Members", "globals.html", [
         [ "All", "globals.html", null ],
         [ "Functions", "globals_func.html", null ],
+        [ "Enumerations", "globals_enum.html", null ],
         [ "Macros", "globals_defs.html", null ]
       ] ]
     ] ],
@@ -71,7 +71,7 @@ var NAVTREE =
 
 var NAVTREEINDEX =
 [
-"Advection2D_8cpp-example.html",
+"AirGapDeposition_8cpp-example.html",
 "functions_vars.html"
 ];
 

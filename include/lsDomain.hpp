@@ -21,14 +21,16 @@ public:
   typedef typename GridType::boundaryType BoundaryType;
   typedef typename std::vector<std::pair<hrleVectorType<hrleIndexType, D>, T>>
       PointValueVectorType;
+  typedef typename std::vector<hrleVectorType<T, D>> NormalVectorType;
+  typedef typename std::vector<bool> voidPointMarkersType;
 
 private:
   // PRIVATE MEMBER VARIABLES
   GridType grid;
   DomainType domain;
   int levelSetWidth = 1;
-  unsigned numberOfActivePoints;
-  std::vector<hrleSizeType> activePointIds;
+  NormalVectorType normalVectors;
+  voidPointMarkersType voidPointMarkers;
 
 public:
   // STATIC CONSTANTS
@@ -100,34 +102,6 @@ public:
                                      T(POS_VALUE));
   }
 
-  /// constructs the activePointIds vector which holds the active point ID
-  /// of a point at the index PointId
-  void calculateActivePointIds() {
-    activePointIds.clear();
-    hrleSparseIterator<hrleDomain<T, D>> it(domain);
-    hrleSizeType currentActiveID = 0;
-    for (; !it.isFinished(); ++it) {
-      if (!it.isDefined())
-        continue;
-      activePointIds.push_back((std::abs(it.getValue()) > 0.5)
-                                   ? std::numeric_limits<hrleSizeType>::max()
-                                   : currentActiveID++);
-    }
-    numberOfActivePoints = currentActiveID - 1;
-  }
-
-  /// get the activePointId of the point with pointId
-  hrleSizeType getActivePointId(hrleSizeType pointId) const {
-    return activePointIds[pointId];
-  }
-
-  /// get the pointId from the active point with activePointId
-  hrleSizeType getPointId(hrleSizeType activePointId) const {
-    return std::distance(
-        activePointIds.begin(),
-        std::find(activePointIds.begin(), activePointIds.end(), activePointId));
-  }
-
   /// get reference to the grid on which the levelset is defined
   const GridType &getGrid() const { return grid; }
 
@@ -143,12 +117,27 @@ public:
   /// returns the number of defined points
   unsigned getNumberOfPoints() const { return domain.getNumberOfPoints(); }
 
-  /// returns the number of defined point with value <= 0.5
-  unsigned getNumberOfActivePoints() const { return numberOfActivePoints; }
-
   int getLevelSetWidth() const { return levelSetWidth; }
 
   void setLevelSetWidth(int width) { levelSetWidth = width; }
+
+  // clear all additional data
+  void clearMetaData() {
+    normalVectors.clear();
+    voidPointMarkers.clear();
+  }
+
+  /// get reference to the normalVectors of all points
+  NormalVectorType &getNormalVectors() { return normalVectors; }
+
+  const NormalVectorType &getNormalVectors() const { return normalVectors; }
+
+  /// get reference to the voidPoints markers for all points
+  voidPointMarkersType &getVoidPointMarkers() { return voidPointMarkers; }
+
+  const voidPointMarkersType &getVoidPointMarkers() const {
+    return voidPointMarkers;
+  }
 
   /// prints basic information and all memebers of the levelset structure
   void print() {

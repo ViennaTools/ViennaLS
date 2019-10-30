@@ -103,6 +103,10 @@ $(document).ready(function(){initNavTree('classlsToExplicitMesh.html','');});
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a2b6efe954cc69b4afce1514bf24a17e9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToExplicitMesh.html#a2b6efe954cc69b4afce1514bf24a17e9">lsToExplicitMesh</a> (const <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedLevelSet, <a class="el" href="classlsMesh.html">lsMesh</a> &amp;passedMesh, double eps=1e-12)</td></tr>
 <tr class="separator:a2b6efe954cc69b4afce1514bf24a17e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9e6ad20d15f53a51f65c9d3301a4660d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToExplicitMesh.html#a9e6ad20d15f53a51f65c9d3301a4660d">setLevelSet</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedlsDomain)</td></tr>
+<tr class="separator:a9e6ad20d15f53a51f65c9d3301a4660d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac788e1a22a131fab67e618e9e24b9ea5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToExplicitMesh.html#ac788e1a22a131fab67e618e9e24b9ea5">setMesh</a> (<a class="el" href="classlsMesh.html">lsMesh</a> &amp;passedMesh)</td></tr>
+<tr class="separator:ac788e1a22a131fab67e618e9e24b9ea5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac2d50c81516e94415f3f4de8e55f6f0f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToExplicitMesh.html#ac2d50c81516e94415f3f4de8e55f6f0f">apply</a> ()</td></tr>
 <tr class="separator:ac2d50c81516e94415f3f4de8e55f6f0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -111,7 +115,7 @@ Public Member Functions</h2></td></tr>
 class lsToExplicitMesh&lt; T, D &gt;</h3>
 
 <p>Extract an explicit <a class="el" href="classlsMesh.html" title="This class holds an explicit mesh, which is always given in 3 dimensions. If it describes a 2D mesh,...">lsMesh</a> instance from an <a class="el" href="classlsDomain.html" title="Class containing all information about the level set, including the dimensions of the domain,...">lsDomain</a>. The interface is then described by explciit surface elements: Lines in 2D, Triangles in 3D. </p>
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="Advection_8cpp-example.html#_a9">Advection.cpp</a>, <a class="el" href="Advection2D_8cpp-example.html#_a13">Advection2D.cpp</a>, <a class="el" href="AdvectionPlane_8cpp-example.html#_a9">AdvectionPlane.cpp</a>, <a class="el" href="BooleanOperation_8cpp-example.html#_a5">BooleanOperation.cpp</a>, <a class="el" href="BoundaryConditions_8cpp-example.html#_a5">BoundaryConditions.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#_a9">Deposition.cpp</a>, <a class="el" href="Make3DSphere_8cpp-example.html#_a10">Make3DSphere.cpp</a>, <a class="el" href="MakeSphere_8cpp-example.html#_a17">MakeSphere.cpp</a>, and <a class="el" href="MultiMaterialAdvection_8cpp-example.html#_a11">MultiMaterialAdvection.cpp</a>.</dd>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#_a9">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#_a9">Deposition.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#_a10">PeriodicBoundary.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#_a16">VoidEtching.cpp</a>.</dd>
 </dl>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a2b6efe954cc69b4afce1514bf24a17e9"></a>
@@ -183,8 +187,64 @@ template&lt;class T , int D&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="Advection_8cpp-example.html#a10">Advection.cpp</a>, <a class="el" href="Advection2D_8cpp-example.html#a14">Advection2D.cpp</a>, <a class="el" href="AdvectionPlane_8cpp-example.html#a10">AdvectionPlane.cpp</a>, <a class="el" href="BooleanOperation_8cpp-example.html#a6">BooleanOperation.cpp</a>, <a class="el" href="BoundaryConditions_8cpp-example.html#a6">BoundaryConditions.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#a10">Deposition.cpp</a>, <a class="el" href="Make3DSphere_8cpp-example.html#a11">Make3DSphere.cpp</a>, <a class="el" href="MakeSphere_8cpp-example.html#a18">MakeSphere.cpp</a>, and <a class="el" href="MultiMaterialAdvection_8cpp-example.html#a12">MultiMaterialAdvection.cpp</a>.</dd>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#a10">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#a10">Deposition.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#a11">PeriodicBoundary.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#a17">VoidEtching.cpp</a>.</dd>
 </dl>
+
+</div>
+</div>
+<a id="a9e6ad20d15f53a51f65c9d3301a4660d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9e6ad20d15f53a51f65c9d3301a4660d">&#9670;&nbsp;</a></span>setLevelSet()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsToExplicitMesh.html">lsToExplicitMesh</a>&lt; T, D &gt;::setLevelSet </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
+          <td class="paramname"><em>passedlsDomain</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac788e1a22a131fab67e618e9e24b9ea5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac788e1a22a131fab67e618e9e24b9ea5">&#9670;&nbsp;</a></span>setMesh()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsToExplicitMesh.html">lsToExplicitMesh</a>&lt; T, D &gt;::setMesh </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsMesh.html">lsMesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>passedMesh</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>

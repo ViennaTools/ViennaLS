@@ -102,21 +102,23 @@ $(document).ready(function(){initNavTree('classlsFromExplicitMesh.html','');});
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a14c395911540703da6b2abd1d4ade111"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsFromExplicitMesh.html#a14c395911540703da6b2abd1d4ade111">lsFromExplicitMesh</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedLevelSet)</td></tr>
-<tr class="separator:a14c395911540703da6b2abd1d4ade111"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2f868ceaadf3b2e45d33cdddee112c92"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsFromExplicitMesh.html#a2f868ceaadf3b2e45d33cdddee112c92">apply</a> (<a class="el" href="classlsMesh.html">lsMesh</a> &amp;mesh)</td></tr>
-<tr class="separator:a2f868ceaadf3b2e45d33cdddee112c92"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a414e361369a1697bb778c3a8f2a97317"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsFromExplicitMesh.html#a414e361369a1697bb778c3a8f2a97317">lsFromExplicitMesh</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedLevelSet, <a class="el" href="classlsMesh.html">lsMesh</a> &amp;passedMesh)</td></tr>
+<tr class="separator:a414e361369a1697bb778c3a8f2a97317"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a41b2a4c669944c6cddde19c8bf8e2419"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsFromExplicitMesh.html#a41b2a4c669944c6cddde19c8bf8e2419">setLevelSet</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedLevelSet)</td></tr>
+<tr class="separator:a41b2a4c669944c6cddde19c8bf8e2419"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af53ad9133f5fe8c37681c99232dfd894"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsFromExplicitMesh.html#af53ad9133f5fe8c37681c99232dfd894">setMesh</a> (<a class="el" href="classlsMesh.html">lsMesh</a> &amp;passedMesh)</td></tr>
+<tr class="separator:af53ad9133f5fe8c37681c99232dfd894"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a10eeb3d57100fa2baad013c4e2e8eba9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsFromExplicitMesh.html#a10eeb3d57100fa2baad013c4e2e8eba9">apply</a> ()</td></tr>
+<tr class="separator:a10eeb3d57100fa2baad013c4e2e8eba9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;class T, int D&gt;<br />
 class lsFromExplicitMesh&lt; T, D &gt;</h3>
 
 <p>Construct a level set from an explicit mesh. </p>
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="Make3DSphere_8cpp-example.html#_a18">Make3DSphere.cpp</a>.</dd>
-</dl>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a14c395911540703da6b2abd1d4ade111"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a14c395911540703da6b2abd1d4ade111">&#9670;&nbsp;</a></span>lsFromExplicitMesh()</h2>
+<a id="a414e361369a1697bb778c3a8f2a97317"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a414e361369a1697bb778c3a8f2a97317">&#9670;&nbsp;</a></span>lsFromExplicitMesh()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -128,6 +130,72 @@ template&lt;class T , int D&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname"><a class="el" href="classlsFromExplicitMesh.html">lsFromExplicitMesh</a>&lt; T, D &gt;::<a class="el" href="classlsFromExplicitMesh.html">lsFromExplicitMesh</a> </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
+          <td class="paramname"><em>passedLevelSet</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classlsMesh.html">lsMesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>passedMesh</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a10eeb3d57100fa2baad013c4e2e8eba9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a10eeb3d57100fa2baad013c4e2e8eba9">&#9670;&nbsp;</a></span>apply()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsFromExplicitMesh.html">lsFromExplicitMesh</a>&lt; T, D &gt;::apply </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a41b2a4c669944c6cddde19c8bf8e2419"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a41b2a4c669944c6cddde19c8bf8e2419">&#9670;&nbsp;</a></span>setLevelSet()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsFromExplicitMesh.html">lsFromExplicitMesh</a>&lt; T, D &gt;::setLevelSet </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
           <td class="paramname"><em>passedLevelSet</em></td><td>)</td>
@@ -143,9 +211,8 @@ template&lt;class T , int D&gt; </div>
 
 </div>
 </div>
-<h2 class="groupheader">Member Function Documentation</h2>
-<a id="a2f868ceaadf3b2e45d33cdddee112c92"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2f868ceaadf3b2e45d33cdddee112c92">&#9670;&nbsp;</a></span>apply()</h2>
+<a id="af53ad9133f5fe8c37681c99232dfd894"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af53ad9133f5fe8c37681c99232dfd894">&#9670;&nbsp;</a></span>setMesh()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -156,10 +223,10 @@ template&lt;class T , int D&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classlsFromExplicitMesh.html">lsFromExplicitMesh</a>&lt; T, D &gt;::apply </td>
+          <td class="memname">void <a class="el" href="classlsFromExplicitMesh.html">lsFromExplicitMesh</a>&lt; T, D &gt;::setMesh </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classlsMesh.html">lsMesh</a> &amp;&#160;</td>
-          <td class="paramname"><em>mesh</em></td><td>)</td>
+          <td class="paramname"><em>passedMesh</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -169,8 +236,6 @@ template&lt;class T , int D&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="Make3DSphere_8cpp-example.html#a19">Make3DSphere.cpp</a>.</dd>
-</dl>
 
 </div>
 </div>
