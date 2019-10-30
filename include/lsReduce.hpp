@@ -28,8 +28,14 @@ public:
     levelSet = &passedlsDomain;
   }
 
+  /// Set which level set points should be kept.
+  /// All points with a level set value >0.5*width will be
+  /// removed by this algorithm.
   void setWidth(int passedWidth) { width = passedWidth; }
 
+  /// Set whether to segment the level set after algorithm
+  /// is finished. This means points will be evenly distributed
+  /// across points. Defaults to true.
   void setNoNewSegment(bool passedNoNewSegment) {
     noNewSegment = passedNoNewSegment;
   }

@@ -13,7 +13,7 @@ var searchData=
   ['insertnextvertex_60',['insertNextVertex',['../classlsInternal_1_1lsGraph.html#a9dce145ce183b327cce81633ed5b0e19',1,'lsInternal::lsGraph::insertNextVertex()'],['../classlsMesh.html#a2179802d2a694a164601c0707727bc1a',1,'lsMesh::insertNextVertex()']]],
   ['insertpoints_61',['insertPoints',['../classlsDomain.html#ac5f0a15b5375a11331db810afb4d42dd',1,'lsDomain']]],
   ['intersect_62',['INTERSECT',['../lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8a24bdbe2bcaf533b7b3f0bd58bfa7f291',1,'lsBooleanOperation.hpp']]],
-  ['invert_63',['invert',['../classlsBooleanOperation.html#a29c51c24fbddf2c2837e8c2c3ef97822',1,'lsBooleanOperation::invert()'],['../lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8aa2727ae72447eea06d4cc0ef67187280',1,'INVERT():&#160;lsBooleanOperation.hpp']]],
+  ['invert_63',['INVERT',['../lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8aa2727ae72447eea06d4cc0ef67187280',1,'lsBooleanOperation.hpp']]],
   ['is_5ffinished_64',['is_finished',['../classlsFromExplicitMesh_1_1box_1_1iterator.html#a0b44726efcb69a65eeda25622e9e304f',1,'lsFromExplicitMesh::box::iterator']]],
   ['iterator_65',['iterator',['../classlsFromExplicitMesh_1_1box_1_1iterator.html',1,'lsFromExplicitMesh&lt; T, D &gt;::box::iterator'],['../classlsFromExplicitMesh_1_1box_1_1iterator.html#a43d0f925c81f18394e018fb205ea369c',1,'lsFromExplicitMesh::box::iterator::iterator()']]]
 ];

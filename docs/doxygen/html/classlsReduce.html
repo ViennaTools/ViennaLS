@@ -108,8 +108,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a8d332423eba8a41c154981f2e06cb9b4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsReduce.html#a8d332423eba8a41c154981f2e06cb9b4">setLevelSet</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedlsDomain)</td></tr>
 <tr class="separator:a8d332423eba8a41c154981f2e06cb9b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7065af6add1b12483b135a1044e041af"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsReduce.html#a7065af6add1b12483b135a1044e041af">setWidth</a> (int passedWidth)</td></tr>
+<tr class="memdesc:a7065af6add1b12483b135a1044e041af"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set which level set points should be kept. All points with a level set value &gt;0.5*width will be removed by this algorithm.  <a href="classlsReduce.html#a7065af6add1b12483b135a1044e041af">More...</a><br /></td></tr>
 <tr class="separator:a7065af6add1b12483b135a1044e041af"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a79b094f1253082aa9d7a0818b3bc9e17"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsReduce.html#a79b094f1253082aa9d7a0818b3bc9e17">setNoNewSegment</a> (bool passedNoNewSegment)</td></tr>
+<tr class="memdesc:a79b094f1253082aa9d7a0818b3bc9e17"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set whether to segment the level set after algorithm is finished. This means points will be evenly distributed across points. Defaults to true.  <a href="classlsReduce.html#a79b094f1253082aa9d7a0818b3bc9e17">More...</a><br /></td></tr>
 <tr class="separator:a79b094f1253082aa9d7a0818b3bc9e17"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a637a2597465ce102c290b5e7d1f7c547"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsReduce.html#a637a2597465ce102c290b5e7d1f7c547">apply</a> ()</td></tr>
 <tr class="memdesc:a637a2597465ce102c290b5e7d1f7c547"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reduces the leveleSet to the specified number of layers. The largest value in the levelset is thus width*0.5 Returns the number of added points.  <a href="classlsReduce.html#a637a2597465ce102c290b5e7d1f7c547">More...</a><br /></td></tr>
@@ -277,6 +279,8 @@ template&lt;class T , int D&gt; </div>
 </table>
 </div><div class="memdoc">
 
+<p>Set whether to segment the level set after algorithm is finished. This means points will be evenly distributed across points. Defaults to true. </p>
+
 </div>
 </div>
 <a id="a7065af6add1b12483b135a1044e041af"></a>
@@ -304,6 +308,8 @@ template&lt;class T , int D&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Set which level set points should be kept. All points with a level set value &gt;0.5*width will be removed by this algorithm. </p>
 
 </div>
 </div>

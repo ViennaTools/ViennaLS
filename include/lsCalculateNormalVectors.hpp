@@ -27,6 +27,8 @@ public:
 
   void setLevelSet(lsDomain<T, D> &passedDomain) { domain = &passedDomain; }
 
+  /// Set whether normal vectors should only be calculated for level set
+  /// points <=0.5. Defaults to false.
   void setOnlyActivePoints(bool passedOnlyActivePoints) {
     onlyActivePoints = passedOnlyActivePoints;
   }

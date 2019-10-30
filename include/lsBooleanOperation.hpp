@@ -11,7 +11,7 @@
 /// Enumeration for the different types
 /// of boolean operations which are
 /// supported.
-/// WHEN INVERT, only first level set is inverted
+/// When INVERT, only first level set is inverted.
 /// When CUSTOM, the user has to supply a valid
 /// function pointer of the form const T (*comp)(const T &, const T &).
 /// For CUSTOM only the first level set pointer is checked for validity.
@@ -26,6 +26,11 @@ enum struct lsBooleanOperationEnum : unsigned {
 ///  This class is used to perform boolean operations on two
 ///  level sets and write the resulting level set into the
 ///  first passed level set.
+///  When the boolean operation is set to CUSTOM, a
+///  comparator must be set using setBooleanOperationComparator.
+///  This comparator returns one value generated from the level set value
+///  supplied by each level set. E.g.: for a union, the comparator will
+///  always return the smaller of the two values.
 template <class T, int D> class lsBooleanOperation {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
   lsDomain<T, D> *levelSetA = nullptr;
@@ -97,6 +102,50 @@ template <class T, int D> class lsBooleanOperation {
         std::min(levelSetA->getLevelSetWidth(), levelSetB->getLevelSetWidth()));
   }
 
+  void invert() {
+    auto &hrleDomain = levelSetA->getDomain();
+#pragma omp parallel num_threads(hrleDomain.getNumberOfSegments())
+    {
+      int p = 0;
+#ifdef _OPENMP
+      p = omp_get_thread_num();
+#endif
+      auto &domainSegment = hrleDomain.getDomainSegment(p);
+
+      // change all defined values
+      for (unsigned i = 0; i < domainSegment.definedValues.size(); ++i) {
+        domainSegment.definedValues[i] = -domainSegment.definedValues[i];
+      }
+
+      // add undefined values if missing
+      if (domainSegment.undefinedValues.size() < 1) {
+        domainSegment.undefinedValues.push_back(T(lsDomain<T, D>::NEG_VALUE));
+      }
+      if (domainSegment.undefinedValues.size() < 2) {
+        if (domainSegment.undefinedValues[0] == lsDomain<T, D>::NEG_VALUE) {
+          domainSegment.undefinedValues.push_back(T(lsDomain<T, D>::POS_VALUE));
+        } else {
+          domainSegment.undefinedValues.push_back(T(lsDomain<T, D>::NEG_VALUE));
+        }
+      }
+
+      // change all runTypes
+      // there are only two undefined runs: negative undefined (UNDEF_PT)
+      // and positive undefined (UNDEF_PT+1)
+      for (unsigned dim = 0; dim < D; ++dim) {
+        for (unsigned c = 0; c < domainSegment.runTypes[dim].size(); ++c) {
+          if (domainSegment.runTypes[dim][c] == hrleRunTypeValues::UNDEF_PT) {
+            domainSegment.runTypes[dim][c] = hrleRunTypeValues::UNDEF_PT + 1;
+          } else if (domainSegment.runTypes[dim][c] ==
+                     hrleRunTypeValues::UNDEF_PT + 1) {
+            domainSegment.runTypes[dim][c] = hrleRunTypeValues::UNDEF_PT;
+          }
+        }
+      }
+    }
+    levelSetA->finalize();
+  }
+
   static const T minComp(const T &A, const T &B) { return std::min(A, B); }
 
   static const T maxComp(const T &A, const T &B) { return std::max(A, B); }
@@ -118,23 +167,30 @@ public:
       : levelSetA(&passedlsDomainA), levelSetB(&passedlsDomainB),
         operation(passedOperation){};
 
+  /// set which level set to perform the boolean operation on
   void setLevelSet(lsDomain<T, D> &passedlsDomain) {
     levelSetA = &passedlsDomain;
   }
 
+  /// set the level set which will be used to modify the
+  /// second level set
   void setSecondLevelSet(lsDomain<T, D> &passedlsDomain) {
     levelSetB = &passedlsDomain;
   }
 
+  /// set which of the operations of lsBooleanOperationEnum to perform
   void setBooleanOperation(lsBooleanOperationEnum passedOperation) {
     operation = passedOperation;
   }
 
+  /// set the comparator to be used when the BooleanOperation
+  /// is set to CUSTOM
   void setBooleanOperationComparator(
       const T (*passedOperationComp)(const T &, const T &)) {
     operationComp = passedOperationComp;
   }
 
+  /// perform operation
   void apply() {
     if (levelSetA == nullptr) {
       lsMessage::getInstance()
@@ -178,52 +234,6 @@ public:
       booleanOpInternal(operationComp);
     }
   }
-
-  void invert() {
-    auto &hrleDomain = levelSetA->getDomain();
-#pragma omp parallel num_threads(hrleDomain.getNumberOfSegments())
-    {
-      int p = 0;
-#ifdef _OPENMP
-      p = omp_get_thread_num();
-#endif
-      auto &domainSegment = hrleDomain.getDomainSegment(p);
-
-      // change all defined values
-      for (unsigned i = 0; i < domainSegment.definedValues.size(); ++i) {
-        domainSegment.definedValues[i] = -domainSegment.definedValues[i];
-      }
-
-      // add undefined values if missing
-      if (domainSegment.undefinedValues.size() < 1) {
-        domainSegment.undefinedValues.push_back(T(lsDomain<T, D>::NEG_VALUE));
-      }
-      if (domainSegment.undefinedValues.size() < 2) {
-        if (domainSegment.undefinedValues[0] == lsDomain<T, D>::NEG_VALUE) {
-          domainSegment.undefinedValues.push_back(T(lsDomain<T, D>::POS_VALUE));
-        } else {
-          domainSegment.undefinedValues.push_back(T(lsDomain<T, D>::NEG_VALUE));
-        }
-      }
-
-      // change all runTypes
-      // there are only two undefined runs: negative undefined (UNDEF_PT)
-      // and positive undefined (UNDEF_PT+1)
-      for (unsigned dim = 0; dim < D; ++dim) {
-        for (unsigned c = 0; c < domainSegment.runTypes[dim].size(); c++) {
-          if (domainSegment.runTypes[dim][c] == hrleRunTypeValues::UNDEF_PT) {
-            domainSegment.runTypes[dim][c] = hrleRunTypeValues::UNDEF_PT + 1;
-          } else if (domainSegment.runTypes[dim][c] ==
-                     hrleRunTypeValues::UNDEF_PT + 1) {
-            domainSegment.runTypes[dim][c] = hrleRunTypeValues::UNDEF_PT;
-          }
-        }
-      }
-    }
-    levelSetA->finalize();
-  }
-
-  void NOT() { invert(); }
 };
 
 // add all template specialisations for this class

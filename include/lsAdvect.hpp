@@ -516,38 +516,71 @@ public:
            lsVelocityField<T> &passedVelocities)
       : levelSets(passedlsDomains), velocities(&passedVelocities) {}
 
+  /// Pushes the passed level set to the back of the list of level sets
+  /// used for advection.
   void insertNextLevelSet(lsDomain<T, D> &passedlsDomain) {
     levelSets.push_back(&passedlsDomain);
   }
 
+  /// Set the velocity field used for advection. This should be a concrete
+  /// implementation of lsVelocityField
   void setVelocityField(lsVelocityField<T> &passedVelocities) {
     velocities = &passedVelocities;
   }
 
+  /// Set the time until when the level set should be advected.
+  /// If this takes more than one advection step, multiple will
+  /// be performed. Defaults to 0, which means one advection
+  /// step with the maximum time step possible according to the
+  /// CFL condition(see setTimeStepRatio) will be performed.
   void setAdvectionTime(double time) { advectionTime = time; }
 
+  /// Set the CFL condition to use during advection.
+  /// The CFL condition sets the maximum distance a surface can
+  /// be moved during one advection step. It MUST be below 0.5
+  /// to guarantee numerical stability. Defaults to 0.4999.
   void setTimeStepRatio(const double &cfl) { timeStepRatio = cfl; }
 
+  /// Set whether normal vectors should be calculated at each level
+  /// set point. Defaults to true. If normal vectors are not required
+  /// for velocity calculation, this can be set to false, in order
+  /// to increase computational efficiency.
   void setCalculateNormalVectors(bool cnv) { calculateNormalVectors = cnv; }
 
+  /// Set whether level set values, which are not part of the "top"
+  /// geometrically connected part of values, should be advected.
+  /// The "top" part is identified by the most positive part in the
+  /// lowest dimension with INFINITE boundary conditions.
+  /// Defaults to false. If set to true, only the "top" values will
+  /// be advected. All others values are not changed.
   void setIgnoreVoids(bool iV) { ignoreVoids = iV; }
 
+  /// Get by how much the physical time was advanced during the last apply()
+  /// call.
   double getAdvectionTime() { return advectionTime; }
 
+  /// Get how many advection steps were performed during the last apply() call.
   unsigned getNumberOfTimeSteps() { return numberOfTimeSteps; }
 
+  /// Get the value of the CFL number.
   double getTimeStepRatio() { return timeStepRatio; }
 
+  /// Get whether normal vectors were caluclated.
   bool getCalculateNormalVectors() { return calculateNormalVectors; }
 
+  /// Set which integration scheme should be used out of the ones specified
+  /// in lsIntegrationSchemeEnum.
   void setIntegrationScheme(lsIntegrationSchemeEnum scheme) {
     integrationScheme = scheme;
   }
 
+  /// Set the alpha dissipation coefficient for the Lax Friedrichs integration
+  /// schemes. This value is ignored for all other integration schemes.
   void setDissipationAlpha(const double &a) { dissipationAlpha = a; }
 
+  /// Perform the advection.
   void apply() {
-    if (advectionTime == 0. || numberOfTimeSteps == 1) {
+    if (advectionTime == 0.) {
       advectionTime = advect();
       numberOfTimeSteps = 1;
     } else {

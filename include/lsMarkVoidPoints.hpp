@@ -27,6 +27,10 @@ public:
 
   void setLevelSet(lsDomain<T, D> &passedlsDomain) { domain = &passedlsDomain; }
 
+  /// Set whether the "top" level set should be the most positive(default)
+  /// connected chain of level set values, or the most negative.
+  /// Most positive/negative refers to the location in the lowest dimension
+  /// with INFINITE boundary conditions.
   void setReverseVoidDetection(bool passedReverseVoidDetection) {
     reverseVoidDetection = passedReverseVoidDetection;
   }

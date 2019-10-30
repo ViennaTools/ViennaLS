@@ -26,6 +26,8 @@ public:
     levelSet = &passedlsDomain;
   }
 
+  /// Set how far the level set should be extended. Points
+  /// with value width*0.5 will be added by this algorithm.
   void setWidth(int passedWidth) { width = passedWidth; }
 
   /// Apply the expansion to the specified width

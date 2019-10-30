@@ -90,6 +90,10 @@ public:
     levelSets = passedLevelSets;
   }
 
+  /// Push level set to the list of level sets used for output.
+  /// If more than one are specified, the voxels will be marked
+  /// using a material number for each level set and output into
+  /// a single mesh.
   void insertNextLevelSet(const lsDomain<T, D> &passedLevelSet) {
     levelSets.push_back(&passedLevelSet);
   }
