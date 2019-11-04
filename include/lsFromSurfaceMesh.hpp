@@ -1,5 +1,5 @@
-#ifndef LS_FROM_EXPLICIT_MESH_HPP
-#define LS_FROM_EXPLICIT_MESH_HPP
+#ifndef LS_FROM_SURFACE_MESH_HPP
+#define LS_FROM_SURFACE_MESH_HPP
 
 #include <lsPreCompileMacros.hpp>
 
@@ -10,7 +10,7 @@
 #include <lsMessage.hpp>
 
 /// Construct a level set from an explicit mesh.
-template <class T, int D> class lsFromExplicitMesh {
+template <class T, int D> class lsFromSurfaceMesh {
 
   /// Class defining a box used in ray tracing optimisation
   class box {
@@ -95,6 +95,7 @@ template <class T, int D> class lsFromExplicitMesh {
 
   lsDomain<T, D> *levelSet = nullptr;
   lsMesh *mesh = nullptr;
+  bool removeBoundaryTriangles = true;
   T boundaryEps = 1e-5;
   T distanceEps = 1e-4;
   T signEps = 1e-6;
@@ -208,8 +209,8 @@ template <class T, int D> class lsFromExplicitMesh {
   }
 
 public:
-  lsFromExplicitMesh(lsDomain<T, D> &passedLevelSet, lsMesh &passedMesh)
-      : levelSet(&passedLevelSet), mesh(&passedMesh) {}
+  lsFromSurfaceMesh(lsDomain<T, D> &passedLevelSet, lsMesh &passedMesh, bool passedRemoveBoundaryTriangles = true)
+      : levelSet(&passedLevelSet), mesh(&passedMesh), removeBoundaryTriangles(passedRemoveBoundaryTriangles) {}
 
   void setLevelSet(lsDomain<T, D> &passedLevelSet) {
     levelSet = &passedLevelSet;
@@ -217,16 +218,20 @@ public:
 
   void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
 
+  void setRemoveBoundaryTriangles(bool passedRemoveBoundaryTriangles) {
+    removeBoundaryTriangles = passedRemoveBoundaryTriangles;
+  }
+
   void apply() {
     if (levelSet == nullptr) {
       lsMessage::getInstance()
-          .addWarning("No level set was passed to lsFromExplicitMesh.")
+          .addWarning("No level set was passed to lsFromSurfaceMesh.")
           .print();
       return;
     }
     if (mesh == nullptr) {
       lsMessage::getInstance()
-          .addWarning("No mesh was passed to lsFromExplicitMesh.")
+          .addWarning("No mesh was passed to lsFromSurfaceMesh.")
           .print();
       return;
     }
@@ -280,7 +285,7 @@ public:
         }
 
         // triangle is outside of domain
-        if (flags.any()) {
+        if (removeBoundaryTriangles && flags.any()) {
           continue;
         }
 
@@ -428,6 +433,6 @@ public:
 };
 
 // add all template specialisations for this class
-PRECOMPILE_PRECISION_DIMENSION(lsFromExplicitMesh)
+PRECOMPILE_PRECISION_DIMENSION(lsFromSurfaceMesh)
 
-#endif // LS_FROM_EXPLICIT_MESH_HPP
+#endif // LS_FROM_SURFACE_MESH_HPP

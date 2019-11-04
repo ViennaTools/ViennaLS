@@ -7,7 +7,7 @@
 #include <hrleVectorType.hpp>
 
 #include <lsDomain.hpp>
-#include <lsFromExplicitMesh.hpp>
+#include <lsFromSurfaceMesh.hpp>
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
 
@@ -196,7 +196,7 @@ public:
       mesh.insertNextTriangle(triangle);
     }
     // now convert mesh to levelset
-    lsFromExplicitMesh<T, D>(*levelSet, mesh).apply();
+    lsFromSurfaceMesh<T, D>(*levelSet, mesh).apply();
   }
 
   // This function creates a box starting in minCorner spanning to maxCorner
@@ -273,7 +273,7 @@ public:
     }
 
     // now convert mesh to levelset
-    lsFromExplicitMesh<T, D>(*levelSet, mesh).apply();
+    lsFromSurfaceMesh<T, D>(*levelSet, mesh).apply();
   }
 };
 

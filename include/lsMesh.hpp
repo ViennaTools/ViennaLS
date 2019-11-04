@@ -18,7 +18,6 @@ public:
   std::vector<hrleVectorType<unsigned, 3>> triangles;
   std::vector<hrleVectorType<unsigned, 4>> tetras;
   std::vector<hrleVectorType<unsigned, 8>> hexas;
-  std::vector<unsigned> materials;
   std::vector<std::vector<double>> scalarData;
   std::vector<std::string> scalarDataLabels;
   std::vector<std::vector<hrleVectorType<double, 3>>> vectorData;
@@ -49,8 +48,6 @@ public:
   std::vector<hrleVectorType<double, 3>> &getVectorData(int i) {
     return vectorData[i];
   }
-
-  std::vector<unsigned> &getMaterials() { return materials; }
 
   template <int D, typename std::enable_if<D == 1, int>::type = 0>
   std::vector<hrleVectorType<unsigned, D>> &getElements() {
@@ -185,7 +182,6 @@ public:
     triangles.clear();
     tetras.clear();
     hexas.clear();
-    materials.clear();
     scalarData.clear();
     scalarDataLabels.clear();
     vectorData.clear();

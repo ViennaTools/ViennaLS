@@ -6,7 +6,7 @@
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
-#include <lsToExplicitMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
 /**
@@ -61,7 +61,7 @@ int main() {
   {
     std::cout << "Extracting..." << std::endl;
     lsMesh mesh;
-    lsToExplicitMesh<double, D>(substrate, mesh).apply();
+    lsToSurfaceMesh<double, D>(substrate, mesh).apply();
     lsVTKWriter(mesh).writeVTKLegacy("plane.vtk");
   }
 
@@ -78,7 +78,7 @@ int main() {
   {
     std::cout << "Extracting..." << std::endl;
     lsMesh mesh;
-    lsToExplicitMesh<double, D>(substrate, mesh).apply();
+    lsToSurfaceMesh<double, D>(substrate, mesh).apply();
     lsVTKWriter(mesh).writeVTKLegacy("trench.vtk");
   }
 
@@ -108,7 +108,7 @@ int main() {
   {
     std::cout << "Extracting..." << std::endl;
     lsMesh mesh;
-    lsToExplicitMesh<double, D>(newLayer, mesh).apply();
+    lsToSurfaceMesh<double, D>(newLayer, mesh).apply();
 
     lsVTKWriter(mesh).writeVTKLegacy("grown.vtk");
     lsVTKWriter(mesh).writeVTP("grown.vtp");

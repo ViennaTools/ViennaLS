@@ -3,7 +3,7 @@
 
 namespace lsInternal {
 
-/// Helper class for lsToExplicitMesh. Should not be used directly.
+/// Helper class for lsToSurfaceMesh. Should not be used directly.
 class lsMarchingCubes {
 
   // const unsigned int edgeTable2[16] = {0x0, 0x9, 0x3, 0xa, 0x6, 0xf,

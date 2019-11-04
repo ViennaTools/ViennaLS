@@ -5,11 +5,11 @@
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsPrune.hpp>
-// #include <lsFromExplicitMesh.hpp>
+// #include <lsFromSurfaceMesh.hpp>
 #include <lsAdvect.hpp>
 #include <lsMakeGeometry.hpp>
-#include <lsToExplicitMesh.hpp>
 #include <lsToMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
 /**
@@ -58,7 +58,7 @@ int main() {
     lsMesh explMesh;
 
     std::cout << "Extracting..." << std::endl;
-    lsToExplicitMesh<double, D>(plane, explMesh).apply();
+    lsToSurfaceMesh<double, D>(plane, explMesh).apply();
     lsToMesh<double, D>(plane, mesh).apply();
 
     mesh.print();
@@ -86,7 +86,7 @@ int main() {
 
   std::cout << "Extracting..." << std::endl;
   lsMesh mesh;
-  lsToExplicitMesh<double, D>(plane, mesh).apply();
+  lsToSurfaceMesh<double, D>(plane, mesh).apply();
 
   // mesh.print();
 

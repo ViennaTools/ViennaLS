@@ -4,15 +4,15 @@
 #include <lsBooleanOperation.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
-#include <lsFromExplicitMesh.hpp>
+#include <lsFromSurfaceMesh.hpp>
 #include <lsMakeGeometry.hpp>
-#include <lsToExplicitMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
 #include <lsToVoxelMesh.hpp>
 #include <lsVTKWriter.hpp>
 
 /**
   Minimal example showing how to write different
-  meshes created by the algorithms lsToVoxelMesh and lsToExplicitMesh.
+  meshes created by the algorithms lsToVoxelMesh and lsToSurfaceMesh.
   \example Make3DSphere.cpp
 */
 
@@ -47,7 +47,7 @@ int main() {
       .apply();
 
   std::cout << "Extracting..." << std::endl;
-  lsToExplicitMesh<double, D>(sphere1, mesh).apply();
+  lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
 
   mesh.print();
 

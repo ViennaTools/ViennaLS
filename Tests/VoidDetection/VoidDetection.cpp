@@ -5,8 +5,8 @@
 #include <lsBooleanOperation.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsMarkVoidPoints.hpp>
-#include <lsToExplicitMesh.hpp>
 #include <lsToMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
 /**
@@ -68,7 +68,7 @@ int main() {
     lsMesh explMesh;
 
     std::cout << "Extracting..." << std::endl;
-    lsToExplicitMesh<double, D>(substrate, explMesh).apply();
+    lsToSurfaceMesh<double, D>(substrate, explMesh).apply();
 
     lsVTKWriter(explMesh).writeVTKLegacy("before.vtk");
   }
@@ -102,7 +102,7 @@ int main() {
   for (unsigned i = 0; i < 30; ++i) {
     {
       lsMesh mesh;
-      lsToExplicitMesh<double, D>(substrate, mesh).apply();
+      lsToSurfaceMesh<double, D>(substrate, mesh).apply();
       lsVTKWriter(mesh).writeVTKLegacy("out-" + std::to_string(i) + ".vtk");
 
       lsMarkVoidPoints<double, D>(substrate).apply();

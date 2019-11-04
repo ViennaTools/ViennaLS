@@ -6,7 +6,7 @@
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
-#include <lsToExplicitMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
 #include <lsToVoxelMesh.hpp>
 #include <lsVTKWriter.hpp>
 
@@ -112,7 +112,7 @@ int main() {
     std::cout << "\rAdvection step " + std::to_string(i) + " / "
               << numberOfSteps << std::flush;
     lsMesh mesh;
-    lsToExplicitMesh<double, D>(substrate, mesh).apply();
+    lsToSurfaceMesh<double, D>(substrate, mesh).apply();
     lsVTKWriter(mesh).writeVTP("void-" + std::to_string(i) + ".vtp");
 
     advectionKernel.apply();

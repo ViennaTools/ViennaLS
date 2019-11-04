@@ -338,8 +338,7 @@ public:
     std::vector<hrleVectorType<unsigned int, 4>> elements;
     elements.reserve(num_elems);
 
-    auto materials = mesh->getMaterials();
-    materials.clear();
+    std::vector<double> materials;
 
     unsigned elems_fake;
     unsigned cell_type;
@@ -421,6 +420,9 @@ public:
         f.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
       }
     }
+
+    mesh->scalarData.push_back(materials);
+    mesh->scalarDataLabels.push_back("Material");
 
     f_ct.close();
     f_m.close();

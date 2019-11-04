@@ -5,7 +5,7 @@
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
-#include <lsToExplicitMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
 /**
@@ -52,7 +52,7 @@ int main() {
   {
     std::cout << "Extracting..." << std::endl;
     lsMesh mesh;
-    lsToExplicitMesh<double, D>(sphere1, mesh).apply();
+    lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
     lsVTKWriter(mesh).writeVTKLegacy("before.vtk");
   }
 
@@ -79,7 +79,7 @@ int main() {
   {
     std::cout << "Extracting..." << std::endl;
     lsMesh mesh;
-    lsToExplicitMesh<double, D>(sphere1, mesh).apply();
+    lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
     mesh.print();
     lsVTKWriter(mesh).writeVTKLegacy("after.vtk");
   }

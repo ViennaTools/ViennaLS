@@ -7,14 +7,14 @@
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
 #include <lsReduce.hpp>
-#include <lsToExplicitMesh.hpp>
 #include <lsToMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
 #include <lsToVoxelMesh.hpp>
 #include <lsVTKWriter.hpp>
 
 /**
   Minimal example showing how to write and read different
-  meshes created by the algorithms lsToVoxelMesh and lsToExplicitMesh.
+  meshes created by the algorithms lsToVoxelMesh and lsToSurfaceMesh.
   \example MakeSphere.cpp
 */
 
@@ -62,7 +62,7 @@ int main() {
             << std::endl;
   std::cout << "Width: " << levelSet.getLevelSetWidth() << std::endl;
 
-  lsToExplicitMesh<double, D>(levelSet, mesh).apply();
+  lsToSurfaceMesh<double, D>(levelSet, mesh).apply();
   lsVTKWriter(mesh).writeVTKLegacy("Sphere2D.vtk");
 
   lsToMesh<double, D>(levelSet, mesh).apply();

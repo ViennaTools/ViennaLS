@@ -6,8 +6,8 @@
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
-#include <lsToExplicitMesh.hpp>
 #include <lsToMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
 #include <lsToVoxelMesh.hpp>
 #include <lsVTKWriter.hpp>
 
@@ -97,7 +97,7 @@ int main() {
     double upperCorner[D] = {15, 10};
     lsMakeGeometry<double, D>(pillar).makeBox(lowerCorner, upperCorner);
     lsMesh mesh;
-    lsToExplicitMesh<double, D>(pillar, mesh).apply();
+    lsToSurfaceMesh<double, D>(pillar, mesh).apply();
     lsVTKWriter(mesh).writeVTP("pillar.vtp");
     lsBooleanOperation<double, D> boolOp(substrate, pillar,
                                          lsBooleanOperationEnum::UNION);
@@ -123,7 +123,7 @@ int main() {
       std::cout << "\rAdvection step " + std::to_string(i) + " / "
                 << numberOfSteps << std::flush;
       lsMesh mesh;
-      lsToExplicitMesh<double, D>(substrate, mesh).apply();
+      lsToSurfaceMesh<double, D>(substrate, mesh).apply();
       lsVTKWriter(mesh).writeVTP("pillar-" + std::to_string(i) + ".vtp");
 
       lsToMesh<double, D>(substrate, mesh).apply();

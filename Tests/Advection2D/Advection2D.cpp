@@ -5,11 +5,11 @@
 #include <lsAdvect.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
-#include <lsFromExplicitMesh.hpp>
+#include <lsFromSurfaceMesh.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
-#include <lsToExplicitMesh.hpp>
 #include <lsToMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
 #include <lsVTKReader.hpp>
 #include <lsVTKWriter.hpp>
 
@@ -61,7 +61,7 @@ int main() {
     lsToMesh<double, D>(sphere1, mesh).apply();
     lsVTKWriter(mesh).writeVTKLegacy("sphere.vtk");
 
-    lsToExplicitMesh<double, D>(sphere1, mesh).apply();
+    lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
     lsVTKWriter(mesh).writeVTKLegacy("before2D.vtk");
   }
 
@@ -93,7 +93,7 @@ int main() {
   {
     lsMesh mesh;
     std::cout << "Extracting..." << std::endl;
-    lsToExplicitMesh<double, D>(sphere1, mesh).apply();
+    lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
     mesh.print();
     lsVTKWriter(mesh).writeVTKLegacy("after2D.vtk");
   }

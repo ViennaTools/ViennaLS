@@ -79,7 +79,7 @@ public:
     domain.deepCopy(grid, DomainType(grid, T(NEG_VALUE)));
   }
 
-  lsDomain(lsDomain &passedlsDomain) { deepCopy(passedlsDomain); }
+  lsDomain(const lsDomain &passedlsDomain) { deepCopy(passedlsDomain); }
 
   /// this function sets a new levelset width and finalizes the levelset, so it
   /// is ready for use by other algorithms

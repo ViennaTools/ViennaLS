@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include <lsFromExplicitMesh.hpp>
+#include <lsFromSurfaceMesh.hpp>
 #include <lsVTKReader.hpp>
 #include <lsVTKWriter.hpp>
 
