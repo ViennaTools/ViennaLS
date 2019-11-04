@@ -21,6 +21,8 @@ Releases are tagged on the maser branch and available in the [releases section](
 
 * [ViennaHRLE](https://github.com/ViennaTools/viennahrle)
 
+* [VTK](https://vtk.org/) (optional)
+
 
 ### Installing (with dependencies already installed)
 

@@ -6,6 +6,7 @@
 #include <hrleIndexType.hpp>
 #include <hrleVectorType.hpp>
 
+#include <lsConvexHull.hpp>
 #include <lsDomain.hpp>
 #include <lsFromSurfaceMesh.hpp>
 #include <lsGeometries.hpp>
@@ -30,6 +31,7 @@ template <class T, int D> class lsMakeGeometry {
   const lsSphere<T, D> *sphere = nullptr;
   const lsPlane<T, D> *plane = nullptr;
   const lsBox<T, D> *box = nullptr;
+  const lsPointCloud<T, D> *pointCloud = nullptr;
   const double numericEps = 1e-9;
 
 public:
@@ -74,6 +76,13 @@ public:
     geometry = lsGeometryEnum::BOX;
   }
 
+  /// Set a point cloud, which is used to create
+  /// a geometry from its convex hull.
+  void setGeometry(lsPointCloud<T, D> &passedPointCloud) {
+    pointCloud = &passedPointCloud;
+    geometry = lsGeometryEnum::CUSTOM;
+  }
+
   void apply() {
     switch (geometry) {
     case lsGeometryEnum::SPHERE:
@@ -86,7 +95,13 @@ public:
       makeBox(box->minCorner, box->maxCorner);
       break;
     case lsGeometryEnum::CUSTOM:
+      makeCustom();
       break;
+    default:
+      lsMessage::getInstance()
+          .addWarning("Invalid geometry type was specified for lsMakeGeometry. "
+                      "Not creating geometry.")
+          .print();
     }
   }
 
@@ -95,6 +110,12 @@ private:
     if (levelSet == nullptr) {
       lsMessage::getInstance()
           .addWarning("No level set was passed to lsMakeGeometry.")
+          .print();
+      return;
+    }
+    if (sphere == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No sphere was passed to lsMakeGeometry.")
           .print();
       return;
     }
@@ -164,6 +185,13 @@ private:
           .print();
       return;
     }
+    if (plane == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No plane was passed to lsMakeGeometry.")
+          .print();
+      return;
+    }
+
     auto &grid = levelSet->getGrid();
     hrleCoordType gridDelta = grid.getGridDelta();
 
@@ -263,6 +291,13 @@ private:
           .print();
       return;
     }
+    if (box == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No box was passed to lsMakeGeometry.")
+          .print();
+      return;
+    }
+
     // draw all triangles for the surface and then import from the mesh
     std::vector<hrleVectorType<double, 3>> corners;
     corners.resize(std::pow(2, D), hrleVectorType<double, 3>(0.));
@@ -331,6 +366,8 @@ private:
     // now convert mesh to levelset
     lsFromSurfaceMesh<T, D>(*levelSet, mesh).apply();
   }
+
+  void makeCustom() {}
 };
 
 // add all template specialisations for this class

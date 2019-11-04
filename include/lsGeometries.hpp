@@ -1,7 +1,7 @@
 #ifndef LS_GEOMETRIES_HPP
 #define LS_GEOMETRIES_HPP
 
-/// Struct describing a sphere via origin and radius.
+/// Class describing a sphere via origin and radius.
 template <class T, int D> class lsSphere {
 public:
   hrleVectorType<T, D> origin = hrleVectorType<T, D>(T(0));
@@ -17,7 +17,7 @@ public:
   }
 };
 
-/// Struct describing a plane via a point in it and the plane normal.
+/// Class describing a plane via a point in it and the plane normal.
 template <class T, int D> class lsPlane {
 public:
   hrleVectorType<T, D> origin = hrleVectorType<T, D>(T(0));
@@ -34,7 +34,7 @@ public:
   }
 };
 
-/// Struct describing a square box from one coordinate to another.
+/// Class describing a square box from one coordinate to another.
 template <class T, int D> class lsBox {
 public:
   hrleVectorType<T, D> minCorner = hrleVectorType<T, D>(T(0));
@@ -52,9 +52,31 @@ public:
   }
 };
 
+/// Class describing a point cloud, which can be used to
+/// create geometries from its convex hull mesh.
+template <class T, int D> class lsPointCloud {
+public:
+  std::vector<hrleVectorType<T, D>> points;
+
+  lsPointCloud() {}
+
+  lsPointCloud(std::vector<hrleVectorType<T, D>> passedPoints)
+      : points(passedPoints) {}
+
+  void insertNextPoint(hrleVectorType<T, D> newPoint) {
+    points.push_back(newPoint);
+  }
+
+  void insertNextPoint(T *newPoint) {
+    hrleVectorType<T, D> point(newPoint);
+    points.push_back(point);
+  }
+};
+
 // add all template specialisations for this class
 PRECOMPILE_PRECISION_DIMENSION(lsSphere)
 PRECOMPILE_PRECISION_DIMENSION(lsPlane)
 PRECOMPILE_PRECISION_DIMENSION(lsBox)
+PRECOMPILE_PRECISION_DIMENSION(lsPointCloud)
 
 #endif // LS_GEOMETRIES_HPP
