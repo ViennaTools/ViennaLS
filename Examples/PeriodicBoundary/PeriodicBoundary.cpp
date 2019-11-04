@@ -55,7 +55,8 @@ int main() {
   double origin[D] = {0., 0., 0.};
   double planeNormal[D] = {0., 0., 1.};
 
-  lsMakeGeometry<double, D>(substrate).makePlane(origin, planeNormal);
+  lsMakeGeometry<double, D>(substrate, lsPlane<double, D>(origin, planeNormal))
+      .apply();
 
   {
     // create spheres used for booling
@@ -63,7 +64,9 @@ int main() {
     lsDomain<double, D> pillar(bounds, boundaryCons, gridDelta);
     double lowerCorner[D] = {8, 8, -1};
     double upperCorner[D] = {18, 18, 10};
-    lsMakeGeometry<double, D>(pillar).makeBox(lowerCorner, upperCorner);
+    lsMakeGeometry<double, D>(pillar,
+                              lsBox<double, D>(lowerCorner, upperCorner))
+        .apply();
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(pillar, mesh).apply();
     lsVTKWriter(mesh).writeVTP("pillar.vtp");

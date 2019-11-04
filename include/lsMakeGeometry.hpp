@@ -8,35 +8,90 @@
 
 #include <lsDomain.hpp>
 #include <lsFromSurfaceMesh.hpp>
+#include <lsGeometries.hpp>
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
-
-/// Enumeration for the different types of
-/// geometries supported by lsMakeGeometry
-enum struct lsMakeGeometryEnum : unsigned { SPHERE = 0, PLANE = 1, BOX = 2 };
 
 /// Create level sets describing basic geometric forms.
 template <class T, int D> class lsMakeGeometry {
   typedef typename lsDomain<T, D>::PointValueVectorType pointDataType;
 
+  /// Enumeration for the different types of
+  /// geometries supported by lsMakeGeometry
+  enum struct lsGeometryEnum : unsigned {
+    SPHERE = 0,
+    PLANE = 1,
+    BOX = 2,
+    CUSTOM = 3
+  };
+
   lsDomain<T, D> *levelSet;
-  lsMakeGeometryEnum geometry = lsMakeGeometryEnum::SPHERE;
+  lsGeometryEnum geometry = lsGeometryEnum::SPHERE;
+  const lsSphere<T, D> *sphere = nullptr;
+  const lsPlane<T, D> *plane = nullptr;
+  const lsBox<T, D> *box = nullptr;
   const double numericEps = 1e-9;
 
 public:
+  lsMakeGeometry(lsDomain<T, D> &passedLevelSet) : levelSet(&passedLevelSet) {}
+
   lsMakeGeometry(lsDomain<T, D> &passedLevelSet,
-                 lsMakeGeometryEnum passedGeometry = lsMakeGeometryEnum::SPHERE)
-      : levelSet(&passedLevelSet), geometry(passedGeometry) {}
+                 const lsSphere<T, D> &passedSphere)
+      : levelSet(&passedLevelSet), sphere(&passedSphere) {
+    geometry = lsGeometryEnum::SPHERE;
+  }
+
+  lsMakeGeometry(lsDomain<T, D> &passedLevelSet,
+                 const lsPlane<T, D> &passedPlane)
+      : levelSet(&passedLevelSet), plane(&passedPlane) {
+    geometry = lsGeometryEnum::PLANE;
+  }
+
+  lsMakeGeometry(lsDomain<T, D> &passedLevelSet, const lsBox<T, D> &passedBox)
+      : levelSet(&passedLevelSet), box(&passedBox) {
+    geometry = lsGeometryEnum::BOX;
+  }
 
   void setLevelSet(lsDomain<T, D> &passedlsDomain) {
     levelSet = &passedlsDomain;
   }
 
-  void setGeometry(lsMakeGeometryEnum passedGeometry) {
-    geometry = passedGeometry;
+  /// Set sphere as geometry to be created in the level set.
+  void setGeometry(lsSphere<T, D> &passedSphere) {
+    sphere = &passedSphere;
+    geometry = lsGeometryEnum::SPHERE;
   }
 
-  template <class V> void makeSphere(V origin, T radius, int width = 2) {
+  /// Set a plane to be created in the level set.
+  void setGeometry(lsPlane<T, D> &passedPlane) {
+    plane = &passedPlane;
+    geometry = lsGeometryEnum::PLANE;
+  }
+
+  /// Set a box to be created in the level set.
+  void setGeometry(lsBox<T, D> &passedBox) {
+    box = &passedBox;
+    geometry = lsGeometryEnum::BOX;
+  }
+
+  void apply() {
+    switch (geometry) {
+    case lsGeometryEnum::SPHERE:
+      makeSphere(sphere->origin, sphere->radius);
+      break;
+    case lsGeometryEnum::PLANE:
+      makePlane(plane->origin, plane->normal);
+      break;
+    case lsGeometryEnum::BOX:
+      makeBox(box->minCorner, box->maxCorner);
+      break;
+    case lsGeometryEnum::CUSTOM:
+      break;
+    }
+  }
+
+private:
+  void makeSphere(hrleVectorType<T, D> origin, T radius, int width = 2) {
     if (levelSet == nullptr) {
       lsMessage::getInstance()
           .addWarning("No level set was passed to lsMakeGeometry.")
@@ -101,7 +156,8 @@ public:
 
   /// Creates a plane containing the point origin, with
   /// the plane normal given by normal
-  template <class V> void makePlane(const V origin, const V passedNormal) {
+  void makePlane(hrleVectorType<T, D> origin,
+                 hrleVectorType<T, D> passedNormal) {
     if (levelSet == nullptr) {
       lsMessage::getInstance()
           .addWarning("No level set was passed to lsMakeGeometry.")
@@ -145,7 +201,7 @@ public:
 
     // find minimum and maximum points in infinite direction
     // there are 2*(D-1) points in the corners of the simulation domain
-    std::vector<hrleVectorType<T, 3>> cornerPoints;
+    std::vector<hrleVectorType<double, 3>> cornerPoints;
     cornerPoints.resize(2 * (D - 1));
 
     // cyclic permutations
@@ -200,7 +256,7 @@ public:
   }
 
   // This function creates a box starting in minCorner spanning to maxCorner
-  template <class V> void makeBox(V minCorner, V maxCorner) {
+  void makeBox(hrleVectorType<T, D> minCorner, hrleVectorType<T, D> maxCorner) {
     if (levelSet == nullptr) {
       lsMessage::getInstance()
           .addWarning("No level set was passed to lsMakeGeometry.")
@@ -208,8 +264,8 @@ public:
       return;
     }
     // draw all triangles for the surface and then import from the mesh
-    std::vector<hrleVectorType<T, 3>> corners;
-    corners.resize(std::pow(2, D), hrleVectorType<T, 3>(T(0)));
+    std::vector<hrleVectorType<double, 3>> corners;
+    corners.resize(std::pow(2, D), hrleVectorType<double, 3>(0.));
 
     // first corner is the minCorner
     for (unsigned i = 0; i < D; ++i)

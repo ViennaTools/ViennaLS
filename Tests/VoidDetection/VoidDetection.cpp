@@ -53,11 +53,12 @@ int main() {
   double origin[D] = {0., 0.};
   double normal[D] = {0., 1.};
 
-  lsMakeGeometry<double, D>(substrate).makePlane(origin, normal);
+  lsMakeGeometry<double, D>(substrate, lsPlane<double, D>(origin, normal))
+      .apply();
   {
     lsDomain<double, D> hole(bounds, boundaryCons, gridDelta);
     origin[1] = -5.;
-    lsMakeGeometry<double, D>(hole).makeSphere(origin, 3.);
+    lsMakeGeometry<double, D>(hole, lsSphere<double, D>(origin, 3.)).apply();
 
     lsBooleanOperation<double, D>(substrate, hole,
                                   lsBooleanOperationEnum::RELATIVE_COMPLEMENT)

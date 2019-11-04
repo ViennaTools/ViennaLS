@@ -52,7 +52,7 @@ int main() {
   double origin[D] = {0., 0.};
   double normal[D] = {1., 1.};
 
-  lsMakeGeometry<double, D>(plane).makePlane(origin, normal);
+  lsMakeGeometry<double, D>(plane, lsPlane<double, D>(origin, normal)).apply();
   {
     lsMesh mesh;
     lsMesh explMesh;

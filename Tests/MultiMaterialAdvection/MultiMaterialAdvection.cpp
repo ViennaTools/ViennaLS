@@ -55,10 +55,12 @@ int main() {
   double origin[3] = {5., 0., 0.};
   double radius = 9.5;
 
-  lsMakeGeometry<double, D>(sphere1).makeSphere(origin, radius);
+  lsMakeGeometry<double, D>(sphere1, lsSphere<double, D>(origin, radius))
+      .apply();
   origin[0] = -5.0;
   radius = 7.3;
-  lsMakeGeometry<double, D>(sphere2).makeSphere(origin, radius);
+  lsMakeGeometry<double, D>(sphere2, lsSphere<double, D>(origin, radius))
+      .apply();
 
   // Perform a boolean operation
   // Sphere2 is now the union of both original spheres.

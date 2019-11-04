@@ -6,9 +6,9 @@
 #include <map>
 
 #include <lsDomain.hpp>
+#include <lsFromSurfaceMesh.hpp>
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
-#include <lsFromSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp> // TODO remove
 
 /**
@@ -24,9 +24,10 @@ template <class T, int D> class lsFromVolumeMesh {
 
 public:
   lsFromVolumeMesh(std::vector<lsDomain<T, D>> &passedLevelSets,
-                   lsMesh &passedMesh, bool passedRemoveBoundaryTriangles = true)
+                   lsMesh &passedMesh,
+                   bool passedRemoveBoundaryTriangles = true)
       : levelSets(&passedLevelSets), mesh(&passedMesh),
-      removeBoundaryTriangles(passedRemoveBoundaryTriangles) {}
+        removeBoundaryTriangles(passedRemoveBoundaryTriangles) {}
 
   void setLevelSets(std::vector<lsDomain<T, D>> &passedLevelSets) {
     levelSets = &passedLevelSets;
@@ -60,8 +61,7 @@ public:
       auto it = std::find(mesh->scalarDataLabels.begin(),
                           mesh->scalarDataLabels.end(), "Material");
       if (it != mesh->scalarDataLabels.end()) {
-        scalarDataIndex =
-            std::distance(mesh->scalarDataLabels.begin(), it);
+        scalarDataIndex = std::distance(mesh->scalarDataLabels.begin(), it);
 
         for (auto materialIt = mesh->scalarData[scalarDataIndex].begin();
              materialIt != mesh->scalarData[scalarDataIndex].end();
@@ -78,8 +78,7 @@ public:
     }
 
     // Map for all surfaceElements and their corresponding material
-    typedef std::map<hrleVectorType<unsigned int, D>,
-                     std::pair<int, int>>
+    typedef std::map<hrleVectorType<unsigned int, D>, std::pair<int, int>>
         triangleMapType;
     triangleMapType surfaceElements;
 
@@ -142,7 +141,9 @@ public:
                       std::to_string(i))
                   .print();
             }
-            it->second.second = (scalarDataIndex == -1)?0:mesh->scalarData[scalarDataIndex][i];
+            it->second.second = (scalarDataIndex == -1)
+                                    ? 0
+                                    : mesh->scalarData[scalarDataIndex][i];
           } else {
             if (it->second.first != materialInts.back() + 1) {
               lsMessage::getInstance()
@@ -152,7 +153,9 @@ public:
                       std::to_string(i))
                   .print();
             }
-            it->second.first = (scalarDataIndex == -1)?0:mesh->scalarData[scalarDataIndex][i];
+            it->second.first = (scalarDataIndex == -1)
+                                   ? 0
+                                   : mesh->scalarData[scalarDataIndex][i];
           }
 
           if (it->second.first == it->second.second)
@@ -163,12 +166,20 @@ public:
             surfaceElements.insert(
                 it, std::make_pair(
                         currentSurfaceElement,
-                        std::make_pair(materialInts.back() + 1, (scalarDataIndex == -1)?0:mesh->scalarData[scalarDataIndex][i])));
+                        std::make_pair(
+                            materialInts.back() + 1,
+                            (scalarDataIndex == -1)
+                                ? 0
+                                : mesh->scalarData[scalarDataIndex][i])));
           } else {
             surfaceElements.insert(
-                it, std::make_pair(
-                        currentSurfaceElement,
-                        std::make_pair((scalarDataIndex == -1)?0:mesh->scalarData[scalarDataIndex][i], materialInts.back() + 1)));
+                it,
+                std::make_pair(
+                    currentSurfaceElement,
+                    std::make_pair((scalarDataIndex == -1)
+                                       ? 0
+                                       : mesh->scalarData[scalarDataIndex][i],
+                                   materialInts.back() + 1)));
           }
         }
       }
@@ -181,7 +192,8 @@ public:
          ++matIt) {
       lsMesh currentSurface;
       auto &meshElements = currentSurface.getElements<D>();
-      for (auto it = surfaceElements.begin(); it != surfaceElements.end(); ++it) {
+      for (auto it = surfaceElements.begin(); it != surfaceElements.end();
+           ++it) {
         if (((*matIt) >= it->second.first) && ((*matIt) < it->second.second)) {
           meshElements.push_back(it->first);
         } else if (((*matIt) >= it->second.second) &&
@@ -210,7 +222,9 @@ public:
       }
 
       // create level set from surface
-      lsFromSurfaceMesh<T, D>(*levelSetIterator, currentSurface, removeBoundaryTriangles).apply();
+      lsFromSurfaceMesh<T, D>(*levelSetIterator, currentSurface,
+                              removeBoundaryTriangles)
+          .apply();
 
       ++levelSetIterator;
     }

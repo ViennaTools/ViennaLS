@@ -55,7 +55,8 @@ int main() {
   double origin[D] = {5., 0.};
   double radius = 7.3;
 
-  lsMakeGeometry<double, D>(sphere1).makeSphere(origin, radius);
+  lsMakeGeometry<double, D>(sphere1, lsSphere<double, D>(origin, radius))
+      .apply();
   {
     lsMesh mesh;
     lsToMesh<double, D>(sphere1, mesh).apply();

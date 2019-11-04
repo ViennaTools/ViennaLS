@@ -53,7 +53,8 @@ int main() {
   double origin[2] = {0., 0.};
   double planeNormal[2] = {0., 1.};
 
-  lsMakeGeometry<double, D>(substrate).makePlane(origin, planeNormal);
+  lsMakeGeometry<double, D>(substrate, lsPlane<double, D>(origin, planeNormal))
+      .apply();
 
   {
     std::cout << "Extracting..." << std::endl;
@@ -68,7 +69,8 @@ int main() {
     lsDomain<double, D> trench(bounds, boundaryCons, gridDelta);
     double minCorner[D] = {-extent / 6., -25.};
     double maxCorner[D] = {extent / 6., 1.};
-    lsMakeGeometry<double, D>(trench).makeBox(minCorner, maxCorner);
+    lsMakeGeometry<double, D>(trench, lsBox<double, D>(minCorner, maxCorner))
+        .apply();
 
     {
       std::cout << "Extracting..." << std::endl;

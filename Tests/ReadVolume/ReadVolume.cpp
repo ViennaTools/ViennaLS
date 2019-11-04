@@ -19,7 +19,8 @@ int main() {
 
   boundaryCons[1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  std::vector<lsDomain<double, D>> levelSets(5, lsDomain<double, D>(bounds, boundaryCons, gridDelta));
+  std::vector<lsDomain<double, D>> levelSets(
+      5, lsDomain<double, D>(bounds, boundaryCons, gridDelta));
 
   // Read mesh
   lsMesh initialMesh;
@@ -28,7 +29,7 @@ int main() {
 
   lsFromVolumeMesh<double, D>(levelSets, initialMesh).apply();
 
-  for(unsigned i=0; i < levelSets.size(); ++i) {
+  for (unsigned i = 0; i < levelSets.size(); ++i) {
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(levelSets[i], mesh).apply();
     lsVTKWriter(mesh).writeVTKLegacy("LSsurface-" + std::to_string(i) + ".vtk");

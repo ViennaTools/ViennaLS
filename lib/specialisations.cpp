@@ -12,6 +12,7 @@
 #include <lsExpand.hpp>
 #include <lsFromSurfaceMesh.hpp>
 #include <lsFromVolumeMesh.hpp>
+#include <lsGeometries.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
 #include <lsReduce.hpp>
@@ -28,6 +29,9 @@ PRECOMPILE_SPECIALIZE(lsDomain)
 PRECOMPILE_SPECIALIZE(lsExpand)
 PRECOMPILE_SPECIALIZE(lsFromSurfaceMesh)
 PRECOMPILE_SPECIALIZE(lsFromVolumeMesh)
+PRECOMPILE_SPECIALIZE(lsSphere)
+PRECOMPILE_SPECIALIZE(lsPlane)
+PRECOMPILE_SPECIALIZE(lsBox)
 PRECOMPILE_SPECIALIZE(lsMakeGeometry)
 PRECOMPILE_SPECIALIZE(lsPrune)
 PRECOMPILE_SPECIALIZE(lsReduce)
