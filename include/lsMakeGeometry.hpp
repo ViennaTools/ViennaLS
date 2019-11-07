@@ -31,10 +31,12 @@ template <class T, int D> class lsMakeGeometry {
   const lsSphere<T, D> *sphere = nullptr;
   const lsPlane<T, D> *plane = nullptr;
   const lsBox<T, D> *box = nullptr;
-  const lsPointCloud<T, D> *pointCloud = nullptr;
+  lsPointCloud<T, D> *pointCloud = nullptr;
   const double numericEps = 1e-9;
 
 public:
+  lsMakeGeometry() {}
+
   lsMakeGeometry(lsDomain<T, D> &passedLevelSet) : levelSet(&passedLevelSet) {}
 
   lsMakeGeometry(lsDomain<T, D> &passedLevelSet,
@@ -86,16 +88,40 @@ public:
   void apply() {
     switch (geometry) {
     case lsGeometryEnum::SPHERE:
+      if (sphere == nullptr) {
+        lsMessage::getInstance()
+            .addWarning("No lsSphere supplied to lsMakeGeometry. Not creating "
+                        "geometry.")
+            .print();
+      }
       makeSphere(sphere->origin, sphere->radius);
       break;
     case lsGeometryEnum::PLANE:
+      if (plane == nullptr) {
+        lsMessage::getInstance()
+            .addWarning(
+                "No lsPlane supplied to lsMakeGeometry. Not creating geometry.")
+            .print();
+      }
       makePlane(plane->origin, plane->normal);
       break;
     case lsGeometryEnum::BOX:
+      if (box == nullptr) {
+        lsMessage::getInstance()
+            .addWarning(
+                "No lsBox supplied to lsMakeGeometry. Not creating geometry.")
+            .print();
+      }
       makeBox(box->minCorner, box->maxCorner);
       break;
     case lsGeometryEnum::CUSTOM:
-      makeCustom();
+      if (pointCloud == nullptr) {
+        lsMessage::getInstance()
+            .addWarning("No lsPointCloud supplied to lsMakeGeometry. Not "
+                        "creating geometry.")
+            .print();
+      }
+      makeCustom(pointCloud);
       break;
     default:
       lsMessage::getInstance()
@@ -367,7 +393,14 @@ private:
     lsFromSurfaceMesh<T, D>(*levelSet, mesh).apply();
   }
 
-  void makeCustom() {}
+  void makeCustom(lsPointCloud<T, D> *pointCloud) {
+    // create mesh from point cloud
+    lsMesh mesh;
+    lsConvexHull<double, D>(mesh, *pointCloud).apply();
+
+    // read mesh from surface
+    lsFromSurfaceMesh<double, D>(*levelSet, mesh).apply();
+  }
 };
 
 // add all template specialisations for this class
