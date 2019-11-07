@@ -35,35 +35,31 @@ int main() {
   lsPointCloud<double, D> cloud;
 
   // generate a circle of points ----------------------------------------------
-  // Will be used to obtain a seed for the random number engine
-  std::random_device rd;
-  // Standard mersenne_twister_engine seeded with rd()
-  std::mt19937 gen(rd());
-  std::uniform_real_distribution<> dis(0., 1.);
-  int numberOfPoints = 10000;
-  double radius = 2.;
-  for (int i = 0; i < numberOfPoints; ++i) {
-    // double theta = std::rand() * PI;
-    // double phi = std::rand() * 2 * PI;
-    // double r = radius * sqrt(std::rand());
-
-    double theta = dis(gen) * PI;
-    double phi = dis(gen) * 2 * PI;
-    double r = radius * sqrt(dis(gen));
-
-    double x = r * sin(theta) * cos(phi);
-    double y = r * sin(theta) * sin(phi);
-    double z = r * cos(theta);
-    cloud.insertNextPoint(hrleVectorType<double, D>(x, y, z));
-  }
+  // std::random_device rd;
+  // std::mt19937 gen(rd());
+  // std::uniform_real_distribution<> dis(0., 1.);
+  // int numberOfPoints = 10000;
+  // double radius = 4.;
+  // for (int i = 0; i < numberOfPoints; ++i) {
+  //   // double theta = std::rand() * PI;
+  //   // double phi = std::rand() * 2 * PI;
+  //   // double r = radius * sqrt(std::rand());
+  //
+  //   double theta = dis(gen) * PI;
+  //   double phi = dis(gen) * 2 * PI;
+  //   double r = radius * sqrt(dis(gen));
+  //
+  //   double x = r * sin(theta) * cos(phi);
+  //   double y = r * sin(theta) * sin(phi);
+  //   double z = r * cos(theta);
+  //   cloud.insertNextPoint(hrleVectorType<double, D>(x, y, z));
+  // }
 
   // random points in cube ----------------------------------------------------
-  // Will be used to obtain a seed for the random number engine
   // std::random_device rd;
-  // // Standard mersenne_twister_engine seeded with rd()
   // std::mt19937 gen(rd());
   // std::uniform_real_distribution<> dis(-5., 5.);
-  // int numberOfPoints = 100;
+  // int numberOfPoints = 1000;
   // for(int i = 0; i < numberOfPoints; ++i) {
   //   double x = dis(gen);
   //   double y = dis(gen);
@@ -71,7 +67,7 @@ int main() {
   //   cloud.insertNextPoint(hrleVectorType<double, D>(x, y, z));
   // }
 
-  // diamond
+  // diamond -------------------------------------------------------------------
   // cloud.insertNextPoint(hrleVectorType<double, D>(-1, 0, 0));
   // cloud.insertNextPoint(hrleVectorType<double, D>(1, 0, 0));
   // cloud.insertNextPoint(hrleVectorType<double, D>(0, -1, 0));
@@ -79,7 +75,7 @@ int main() {
   // cloud.insertNextPoint(hrleVectorType<double, D>(0, 0, -1));
   // cloud.insertNextPoint(hrleVectorType<double, D>(0, 0, 1));
 
-  // cube
+  // cube ----------------------------------------------------------------------
   // cloud.insertNextPoint(hrleVectorType<double, D>(-1, -1, -2));
   // cloud.insertNextPoint(hrleVectorType<double, D>(-1, -1, 2));
   // cloud.insertNextPoint(hrleVectorType<double, D>(-1, 1, -2));
@@ -89,18 +85,18 @@ int main() {
   // cloud.insertNextPoint(hrleVectorType<double, D>(1, 1, -1));
   // cloud.insertNextPoint(hrleVectorType<double, D>(1, 1, 1));
 
-  // cylinder
-  // unsigned numberOfBasePoints = 100;
-  // double radius = 5.;
-  // double height = 5.;
-  // for (unsigned i = 0; i < numberOfBasePoints; ++i) {
-  //   double angle = 2 * PI * (double(i) / double(numberOfBasePoints));
-  //
-  //   double x = radius * cos(angle);
-  //   double y = radius * sin(angle);
-  //   cloud.insertNextPoint(hrleVectorType<double, D>(x, y, -height));
-  //   cloud.insertNextPoint(hrleVectorType<double, D>(x, y, height));
-  // }
+  // cylinder ----------------------------------------------------------------
+  unsigned numberOfBasePoints = 100;
+  double radius = 5.;
+  double height = 5.;
+  for (unsigned i = 0; i < numberOfBasePoints; ++i) {
+    double angle = 2 * PI * (double(i) / double(numberOfBasePoints));
+
+    double x = radius * cos(angle);
+    double y = radius * sin(angle);
+    cloud.insertNextPoint(hrleVectorType<double, D>(x, y, -height));
+    cloud.insertNextPoint(hrleVectorType<double, D>(x, y, height));
+  }
 
   lsMesh mesh;
   lsConvexHull<double, D>(mesh, cloud).apply();
@@ -114,14 +110,20 @@ int main() {
   std::cout << "Output point cloud" << std::endl;
   lsVTKWriter(pointMesh).writeVTP("points.vtp");
 
-  std::cout << "Output surface mesh" << std::endl;
-  mesh.print();
-  lsVTKWriter(mesh).writeVTP("hull.vtp");
+  // std::cout << "Output surface mesh" << std::endl;
+  // mesh.print();
+  // lsVTKWriter(mesh).writeVTP("hull.vtp");
 
   std::cout << "create level set" << std::endl;
+  lsDomain<double, D> levelSet(0.18);
+  lsMakeGeometry<double, D> geom;
+  geom.setLevelSet(levelSet);
+  geom.setGeometry(cloud);
+  geom.apply();
+
   // now make into level set
-  lsDomain<double, D> levelSet(0.3);
-  lsFromSurfaceMesh<double, D>(levelSet, mesh).apply();
+  // lsDomain<double, D> levelSet(0.3);
+  // lsFromSurfaceMesh<double, D>(levelSet, mesh).apply();
 
   lsMesh LSMesh;
   std::cout << "Output level set grid" << std::endl;

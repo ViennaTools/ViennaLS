@@ -88,7 +88,7 @@ template <class T, int D> class lsConvexHull {
         }
       }
       // check if point is to the right of current element
-      else if (product < 0) {
+      else if (product > 0) {
         nextIndex = i;
       }
     }
@@ -329,7 +329,7 @@ public:
 
       // set new hull element and save
       hrleVectorType<unsigned, D> element;
-      for (int i = D - 1; i >= 0; --i) {
+      for (unsigned i = 0; i < D - 1; ++i) {
         element[i] = currentEdge[i];
       }
       element[D - 1] = nextIndex;
