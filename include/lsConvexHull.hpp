@@ -57,9 +57,7 @@ template <class T, int D> class lsConvexHull {
       } else if (D == 3) {
         auto v1 = points[currentEdge[1]] - points[currentEdge[0]];
         auto v2 = points[nextIndex] - points[currentEdge[0]];
-        normal[0] = v1[1] * v2[2] - v1[2] * v2[1];
-        normal[1] = v1[2] * v2[0] - v1[0] * v2[2];
-        normal[2] = v1[0] * v2[1] - v1[1] * v2[0];
+        normal = calculateNormal(v1, v2);
         edgeVector = v1;
       }
 
@@ -202,7 +200,13 @@ template <class T, int D> class lsConvexHull {
 
   // check if triangle defined by two edges clips any other triangle
   bool doesTriangleClip(const hrleVectorType<unsigned, D> &triangle) const {
+    auto &points = pointCloud->points;
+
     bool nodeExists[3] = {false, false, false};
+    auto triangleNormal =
+        Normalize(calculateNormal(points[triangle[1]] - points[triangle[0]],
+                                  points[triangle[2]] - points[triangle[0]]));
+
     // unsigned shareEdges = 0;
     for (unsigned i = 0; i < hullElements.size(); ++i) {
       unsigned inOneTriangle = 0;
@@ -218,7 +222,25 @@ template <class T, int D> class lsConvexHull {
 
       // if they share at least one node, they might clip, so check
       if (inOneTriangle > 0) {
+        // check if they are in the same plane
+        auto normal2 = Normalize(calculateNormal(
+            points[hullElements[i][1]] - points[hullElements[i][0]],
+            points[hullElements[i][2]] - points[hullElements[i][0]]));
+
+        bool skip = false;
+        for (unsigned d = 0; d < D; ++d) {
+          double diff =
+              std::abs(std::abs(triangleNormal[d]) - std::abs(normal2[d]));
+          if (diff > 1e-6)
+            skip = true;
+        }
+
+        if (skip)
+          continue;
+
         if (intersectSharedNode(triangle, hullElements[i]))
+          return true;
+        if (intersectSharedNode(hullElements[i], triangle))
           return true;
       }
     }
@@ -243,6 +265,8 @@ template <class T, int D> class lsConvexHull {
   }
 
 public:
+  lsConvexHull() {}
+
   lsConvexHull(lsMesh &passedMesh, lsPointCloud<T, D> &passedPointCloud)
       : mesh(&passedMesh), pointCloud(&passedPointCloud) {}
 

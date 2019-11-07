@@ -220,6 +220,9 @@ public:
 
   void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
 
+  /// Set whether all triangles outside of the domain should be ignored (=true)
+  /// or whether boundary conditions should be applied correctly to such
+  /// triangles(=false) Defaults to true.
   void setRemoveBoundaryTriangles(bool passedRemoveBoundaryTriangles) {
     removeBoundaryTriangles = passedRemoveBoundaryTriangles;
   }
@@ -241,7 +244,6 @@ public:
     std::vector<std::pair<hrleVectorType<hrleIndexType, D>, T>> points2;
 
     // setup list of grid points with distances to surface elements
-
     {
       typedef typename std::vector<
           std::pair<hrleVectorType<hrleIndexType, D>, std::pair<T, T>>>
@@ -355,13 +357,21 @@ public:
               intersection = std::max(intersection, minNode[z]);
               intersection = std::min(intersection, maxNode[z]);
 
-              if (intersection > levelSet->getGrid().getMaxLocalCoordinate(z))
+              if (removeBoundaryTriangles &&
+                  intersection > levelSet->getGrid().getMaxLocalCoordinate(z))
                 continue;
-              if (intersection < levelSet->getGrid().getMinLocalCoordinate(z))
+              if (removeBoundaryTriangles &&
+                  intersection < levelSet->getGrid().getMinLocalCoordinate(z))
                 continue;
 
-              T intersection2 = levelSet->getGrid().localCoordinate2LocalIndex(
-                  z, intersection);
+              T localIntersection =
+                  levelSet->getGrid().globalCoordinate2GlobalIndex(
+                      intersection);
+              T intersection2 = levelSet->getGrid().globalIndex2LocalIndex(
+                  z, localIntersection);
+              // T intersection2 =
+              // levelSet->getGrid().localCoordinate2LocalIndex(
+              //     z, intersection);
 
               hrleIndexType floor = static_cast<hrleIndexType>(
                   std::floor(intersection2 - distanceEps));
@@ -372,6 +382,11 @@ public:
               ceil = std::min(ceil, maxIndex[z] + 1);
               floor = std::max(floor, levelSet->getGrid().getMinIndex(z));
               ceil = std::min(ceil, levelSet->getGrid().getMaxIndex(z));
+
+              if (!removeBoundaryTriangles) {
+                floor = levelSet->getGrid().globalIndex2LocalIndex(z, floor);
+                ceil = levelSet->getGrid().globalIndex2LocalIndex(z, ceil);
+              }
 
               hrleVectorType<T, D> t = center;
               t[z] -= intersection;

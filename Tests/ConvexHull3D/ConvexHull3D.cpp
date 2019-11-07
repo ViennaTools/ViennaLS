@@ -86,7 +86,7 @@ int main() {
   // cloud.insertNextPoint(hrleVectorType<double, D>(1, 1, 1));
 
   // cylinder ----------------------------------------------------------------
-  unsigned numberOfBasePoints = 100;
+  unsigned numberOfBasePoints = 50;
   double radius = 5.;
   double height = 5.;
   for (unsigned i = 0; i < numberOfBasePoints; ++i) {

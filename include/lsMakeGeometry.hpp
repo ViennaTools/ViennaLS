@@ -13,6 +13,9 @@
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
 
+// TODO remove
+#include <lsVTKWriter.hpp>
+
 /// Create level sets describing basic geometric forms.
 template <class T, int D> class lsMakeGeometry {
   typedef typename lsDomain<T, D>::PointValueVectorType pointDataType;
@@ -33,6 +36,7 @@ template <class T, int D> class lsMakeGeometry {
   const lsBox<T, D> *box = nullptr;
   lsPointCloud<T, D> *pointCloud = nullptr;
   const double numericEps = 1e-9;
+  bool ignoreBoundaryConditions = false;
 
 public:
   lsMakeGeometry() {}
@@ -83,6 +87,10 @@ public:
   void setGeometry(lsPointCloud<T, D> &passedPointCloud) {
     pointCloud = &passedPointCloud;
     geometry = lsGeometryEnum::CUSTOM;
+  }
+
+  void setIgnoreBoundaryConditions(bool &passedIgnoreBoundaryConditions) {
+    ignoreBoundaryConditions = passedIgnoreBoundaryConditions;
   }
 
   void apply() {
@@ -150,15 +158,13 @@ private:
     auto &grid = levelSet->getGrid();
     hrleCoordType gridDelta = grid.getGridDelta();
 
-    hrleVectorType<hrleIndexType, D> index(grid.getMinBounds());
-    hrleVectorType<hrleIndexType, D> endIndex(grid.getMaxBounds());
+    // calculate indices from sphere size
+    hrleVectorType<hrleIndexType, D> index;
+    hrleVectorType<hrleIndexType, D> endIndex;
 
     for (unsigned i = 0; i < D; ++i) {
-      if (grid.getBoundaryConditions(i) ==
-          hrleGrid<D>::boundaryType::INFINITE_BOUNDARY) {
-        index[i] = (origin[i] - radius) / gridDelta - 1;
-        endIndex[i] = (origin[i] + radius) / gridDelta + 1;
-      }
+      index[i] = (origin[i] - radius) / gridDelta - 1;
+      endIndex[i] = (origin[i] + radius) / gridDelta + 1;
     }
 
     const T valueLimit = width * 0.5 * gridDelta;
@@ -194,6 +200,15 @@ private:
         index[dim] = minIndex[dim];
       }
       ++index[dim];
+    }
+
+    // Mirror indices correctly into domain, unless boundary conditions
+    // are ignored
+    if (!ignoreBoundaryConditions) {
+      for (unsigned i = 0; i < pointData.size(); ++i) {
+        pointData[i].first =
+            grid.globalIndices2LocalIndices(pointData[i].first);
+      }
     }
 
     levelSet->insertPoints(pointData);
@@ -390,7 +405,7 @@ private:
     }
 
     // now convert mesh to levelset
-    lsFromSurfaceMesh<T, D>(*levelSet, mesh).apply();
+    lsFromSurfaceMesh<T, D>(*levelSet, mesh, ignoreBoundaryConditions).apply();
   }
 
   void makeCustom(lsPointCloud<T, D> *pointCloud) {
@@ -399,7 +414,8 @@ private:
     lsConvexHull<double, D>(mesh, *pointCloud).apply();
 
     // read mesh from surface
-    lsFromSurfaceMesh<double, D>(*levelSet, mesh).apply();
+    lsFromSurfaceMesh<double, D>(*levelSet, mesh, ignoreBoundaryConditions)
+        .apply();
   }
 };
 
