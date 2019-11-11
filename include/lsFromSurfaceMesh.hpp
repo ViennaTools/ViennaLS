@@ -222,7 +222,7 @@ public:
 
   /// Set whether all triangles outside of the domain should be ignored (=true)
   /// or whether boundary conditions should be applied correctly to such
-  /// triangles(=false) Defaults to true.
+  /// triangles(=false). Defaults to true.
   void setRemoveBoundaryTriangles(bool passedRemoveBoundaryTriangles) {
     removeBoundaryTriangles = passedRemoveBoundaryTriangles;
   }
@@ -364,14 +364,13 @@ public:
                   intersection < levelSet->getGrid().getMinLocalCoordinate(z))
                 continue;
 
-              T localIntersection =
-                  levelSet->getGrid().globalCoordinate2GlobalIndex(
-                      intersection);
-              T intersection2 = levelSet->getGrid().globalIndex2LocalIndex(
-                  z, localIntersection);
-              // T intersection2 =
-              // levelSet->getGrid().localCoordinate2LocalIndex(
-              //     z, intersection);
+              // T localIntersection =
+              //     levelSet->getGrid().globalCoordinate2GlobalIndex(
+              //         intersection);
+              // T intersection2 = levelSet->getGrid().globalIndex2LocalIndex(
+              //     z, localIntersection);
+              T intersection2 = levelSet->getGrid().globalCoordinate2LocalIndex(
+                  z, intersection);
 
               hrleIndexType floor = static_cast<hrleIndexType>(
                   std::floor(intersection2 - distanceEps));

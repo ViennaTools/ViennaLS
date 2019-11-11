@@ -62,8 +62,8 @@ int main() {
     // create spheres used for booling
     std::cout << "Creating pillar..." << std::endl;
     lsDomain<double, D> pillar(bounds, boundaryCons, gridDelta);
-    double lowerCorner[D] = {8, 8, -1};
-    double upperCorner[D] = {18, 18, 10};
+    double lowerCorner[D] = {15, 15, -1};
+    double upperCorner[D] = {25, 25, 10};
     lsMakeGeometry<double, D>(pillar,
                               lsBox<double, D>(lowerCorner, upperCorner))
         .apply();

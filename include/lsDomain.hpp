@@ -51,7 +51,7 @@ public:
     }
 
     grid = GridType(gridMin, gridMax, gridDelta, boundaryCons);
-    domain.deepCopy(grid, DomainType(grid, T(NEG_VALUE)));
+    domain.deepCopy(grid, DomainType(grid, T(POS_VALUE)));
   }
 
   lsDomain(hrleCoordType *bounds, BoundaryType *boundaryConditions,
@@ -63,7 +63,7 @@ public:
     }
 
     grid = GridType(gridMin, gridMax, gridDelta, boundaryConditions);
-    domain.deepCopy(grid, DomainType(grid, T(NEG_VALUE)));
+    domain.deepCopy(grid, DomainType(grid, T(POS_VALUE)));
   }
 
   /// initialise lsDomain with domain size "bounds", filled with point/value
@@ -76,7 +76,7 @@ public:
   }
 
   lsDomain(GridType passedGrid) : grid(passedGrid) {
-    domain.deepCopy(grid, DomainType(grid, T(NEG_VALUE)));
+    domain.deepCopy(grid, DomainType(grid, T(POS_VALUE)));
   }
 
   lsDomain(const lsDomain &passedlsDomain) { deepCopy(passedlsDomain); }

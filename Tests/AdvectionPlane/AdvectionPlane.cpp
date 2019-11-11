@@ -45,12 +45,12 @@ int main() {
 
   double bounds[2 * D] = {-extent, extent, -extent, extent};
   lsDomain<double, D>::BoundaryType boundaryCons[D];
-  for (unsigned i = 0; i < D; ++i)
-    boundaryCons[i] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+  boundaryCons[0] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+  boundaryCons[1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
   lsDomain<double, D> plane(bounds, boundaryCons, gridDelta);
 
   double origin[D] = {0., 0.};
-  double normal[D] = {1., 1.};
+  double normal[D] = {2., 1.};
 
   lsMakeGeometry<double, D>(plane, lsPlane<double, D>(origin, normal)).apply();
   {

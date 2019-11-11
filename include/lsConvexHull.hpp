@@ -323,7 +323,7 @@ public:
         edge[0] = currentIndex;
         // if there was no point at same z, find through pivot
         if (currentPointIndex == -1) {
-          hrleVectorType<double, D> newPoint;
+          hrleVectorType<T, D> newPoint;
           newPoint = points[currentIndex];
           newPoint[0] += 1.0;
           // take newPoint for fake edge to find correct first point

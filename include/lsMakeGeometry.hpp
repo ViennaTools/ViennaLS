@@ -206,8 +206,12 @@ private:
     // are ignored
     if (!ignoreBoundaryConditions) {
       for (unsigned i = 0; i < pointData.size(); ++i) {
-        pointData[i].first =
-            grid.globalIndices2LocalIndices(pointData[i].first);
+        for(unsigned j = 0; j < D; ++j) {
+          if(grid.isBoundaryPeriodic(j)) {
+            pointData[i].first[j] =
+                grid.globalIndex2LocalIndex(j, pointData[i].first[j]);
+          }
+        }
       }
     }
 
@@ -280,8 +284,8 @@ private:
     double minCoord[2];
     double maxCoord[2];
     for (unsigned n = 0; n < D - 1; ++n) {
-      minCoord[n] = gridDelta * grid.getMinBounds((i + n + 1) % D);
-      maxCoord[n] = gridDelta * grid.getMaxBounds((i + n + 1) % D);
+      minCoord[n] = gridDelta * (grid.getMinIndex((i + n + 1) % D) - 1);
+      maxCoord[n] = gridDelta * (grid.getMaxIndex((i + n + 1) % D) + 1);
     }
 
     // set corner points
@@ -411,10 +415,10 @@ private:
   void makeCustom(lsPointCloud<T, D> *pointCloud) {
     // create mesh from point cloud
     lsMesh mesh;
-    lsConvexHull<double, D>(mesh, *pointCloud).apply();
+    lsConvexHull<T, D>(mesh, *pointCloud).apply();
 
     // read mesh from surface
-    lsFromSurfaceMesh<double, D>(*levelSet, mesh, ignoreBoundaryConditions)
+    lsFromSurfaceMesh<T, D>(*levelSet, mesh, ignoreBoundaryConditions)
         .apply();
   }
 };
