@@ -5,8 +5,8 @@
 #include <lsBooleanOperation.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsMarkVoidPoints.hpp>
-#include <lsToExplicitMesh.hpp>
 #include <lsToMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
 /**
@@ -53,11 +53,12 @@ int main() {
   double origin[D] = {0., 0.};
   double normal[D] = {0., 1.};
 
-  lsMakeGeometry<double, D>(substrate).makePlane(origin, normal);
+  lsMakeGeometry<double, D>(substrate, lsPlane<double, D>(origin, normal))
+      .apply();
   {
     lsDomain<double, D> hole(bounds, boundaryCons, gridDelta);
     origin[1] = -5.;
-    lsMakeGeometry<double, D>(hole).makeSphere(origin, 3.);
+    lsMakeGeometry<double, D>(hole, lsSphere<double, D>(origin, 3.)).apply();
 
     lsBooleanOperation<double, D>(substrate, hole,
                                   lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
@@ -68,7 +69,7 @@ int main() {
     lsMesh explMesh;
 
     std::cout << "Extracting..." << std::endl;
-    lsToExplicitMesh<double, D>(substrate, explMesh).apply();
+    lsToSurfaceMesh<double, D>(substrate, explMesh).apply();
 
     lsVTKWriter(explMesh).writeVTKLegacy("before.vtk");
   }
@@ -102,7 +103,7 @@ int main() {
   for (unsigned i = 0; i < 30; ++i) {
     {
       lsMesh mesh;
-      lsToExplicitMesh<double, D>(substrate, mesh).apply();
+      lsToSurfaceMesh<double, D>(substrate, mesh).apply();
       lsVTKWriter(mesh).writeVTKLegacy("out-" + std::to_string(i) + ".vtk");
 
       lsMarkVoidPoints<double, D>(substrate).apply();

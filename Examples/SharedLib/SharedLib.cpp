@@ -5,7 +5,7 @@
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
-#include <lsToExplicitMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
 /**
@@ -36,21 +36,21 @@ int main() {
   lsDomain_float_3 sphere1(gridDelta);
   lsDomain_float_3 sphere2(gridDelta);
 
-  double origin[3] = {5., 0., 0.};
-  double radius = 7.3;
+  float origin[3] = {5., 0., 0.};
+  float radius = 7.3;
 
   // these typedefs are available for all templated classes
-  lsMakeGeometry_float_3(sphere1).makeSphere(origin, radius);
+  lsMakeGeometry_float_3(sphere1, lsSphere_float_3(origin, radius)).apply();
   origin[0] = -5.0;
   radius = 9.5;
-  lsMakeGeometry_float_3(sphere2).makeSphere(origin, radius);
+  lsMakeGeometry_float_3(sphere2, lsSphere_float_3(origin, radius)).apply();
 
   {
     lsMesh mesh1, mesh2;
 
     std::cout << "Extracting..." << std::endl;
-    lsToExplicitMesh_float_3(sphere1, mesh1).apply();
-    lsToExplicitMesh_float_3(sphere2, mesh2).apply();
+    lsToSurfaceMesh_float_3(sphere1, mesh1).apply();
+    lsToSurfaceMesh_float_3(sphere2, mesh2).apply();
 
     lsVTKWriter(mesh1).writeVTKLegacy("sphere1.vtk");
     lsVTKWriter(mesh2).writeVTKLegacy("sphere2.vtk");
@@ -63,7 +63,7 @@ int main() {
 
   std::cout << "Extracting..." << std::endl;
   lsMesh mesh;
-  lsToExplicitMesh_float_3(sphere1, mesh).apply();
+  lsToSurfaceMesh_float_3(sphere1, mesh).apply();
 
   mesh.print();
 

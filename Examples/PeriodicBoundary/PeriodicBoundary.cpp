@@ -6,7 +6,7 @@
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
-#include <lsToExplicitMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
 #include <lsToVoxelMesh.hpp>
 #include <lsVTKWriter.hpp>
 
@@ -55,17 +55,20 @@ int main() {
   double origin[D] = {0., 0., 0.};
   double planeNormal[D] = {0., 0., 1.};
 
-  lsMakeGeometry<double, D>(substrate).makePlane(origin, planeNormal);
+  lsMakeGeometry<double, D>(substrate, lsPlane<double, D>(origin, planeNormal))
+      .apply();
 
   {
     // create spheres used for booling
     std::cout << "Creating pillar..." << std::endl;
     lsDomain<double, D> pillar(bounds, boundaryCons, gridDelta);
-    double lowerCorner[D] = {8, 8, -1};
-    double upperCorner[D] = {18, 18, 10};
-    lsMakeGeometry<double, D>(pillar).makeBox(lowerCorner, upperCorner);
+    double lowerCorner[D] = {15, 15, -1};
+    double upperCorner[D] = {25, 25, 10};
+    lsMakeGeometry<double, D>(pillar,
+                              lsBox<double, D>(lowerCorner, upperCorner))
+        .apply();
     lsMesh mesh;
-    lsToExplicitMesh<double, D>(pillar, mesh).apply();
+    lsToSurfaceMesh<double, D>(pillar, mesh).apply();
     lsVTKWriter(mesh).writeVTP("pillar.vtp");
     lsBooleanOperation<double, D> boolOp(substrate, pillar,
                                          lsBooleanOperationEnum::UNION);
@@ -92,7 +95,7 @@ int main() {
     std::cout << "\rAdvection step " + std::to_string(i) + " / "
               << numberOfSteps << std::flush;
     lsMesh mesh;
-    lsToExplicitMesh<double, D>(substrate, mesh).apply();
+    lsToSurfaceMesh<double, D>(substrate, mesh).apply();
     lsVTKWriter(mesh).writeVTP("pillar-" + std::to_string(i) + ".vtp");
 
     advectionKernel.apply();

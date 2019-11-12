@@ -6,7 +6,8 @@
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
-#include <lsToExplicitMesh.hpp>
+#include <lsToMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
 /**
@@ -56,19 +57,15 @@ int main() {
   double origin[3] = {0., 0., 0.};
   double planeNormal[3] = {0., 0., 1.};
 
-  lsMakeGeometry<double, D>(substrate).makePlane(origin, planeNormal);
-
-  {
-    std::cout << "Extracting..." << std::endl;
-    lsMesh mesh;
-    lsToExplicitMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh).writeVTKLegacy("plane.vtk");
-  }
+  lsMakeGeometry<double, D>(substrate, lsPlane<double, D>(origin, planeNormal))
+      .apply();
 
   lsDomain<double, D> trench(bounds, boundaryCons, gridDelta);
-  double minCorner[D] = {-extent, -extent / 4., -15.};
-  double maxCorner[D] = {extent, extent / 4., 1.};
-  lsMakeGeometry<double, D>(trench).makeBox(minCorner, maxCorner);
+  // make -x and +x greater than domain for numerical stability
+  double minCorner[D] = {-extent - 1, -extent / 4., -15.};
+  double maxCorner[D] = {extent + 1, extent / 4., 1.};
+  lsMakeGeometry<double, D>(trench, lsBox<double, D>(minCorner, maxCorner))
+      .apply();
 
   // Create trench geometry
   lsBooleanOperation<double, D>(substrate, trench,
@@ -78,8 +75,8 @@ int main() {
   {
     std::cout << "Extracting..." << std::endl;
     lsMesh mesh;
-    lsToExplicitMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh).writeVTKLegacy("trench.vtk");
+    lsToSurfaceMesh<double, D>(substrate, mesh).apply();
+    lsVTKWriter(mesh).writeVTP("trench-0.vtp");
   }
 
   // Now grow new material isotropically
@@ -99,20 +96,32 @@ int main() {
   advectionKernel.insertNextLevelSet(newLayer);
 
   advectionKernel.setVelocityField(velocities);
-  advectionKernel.setAdvectionTime(4.);
-  advectionKernel.apply();
-  double advectionSteps = advectionKernel.getNumberOfTimeSteps();
-  std::cout << "Number of Advection steps taken: " << advectionSteps
-            << std::endl;
+  // advectionKernel.setAdvectionTime(4.);
+  unsigned counter = 1;
+  for (double time = 0; time < 4.; time += advectionKernel.getAdvectionTime()) {
+    advectionKernel.apply();
 
-  {
-    std::cout << "Extracting..." << std::endl;
     lsMesh mesh;
-    lsToExplicitMesh<double, D>(newLayer, mesh).apply();
+    lsToSurfaceMesh<double, D>(newLayer, mesh).apply();
+    lsVTKWriter(mesh).writeVTP("trench-" + std::to_string(counter) + ".vtp");
 
-    lsVTKWriter(mesh).writeVTKLegacy("grown.vtk");
-    lsVTKWriter(mesh).writeVTP("grown.vtp");
+    lsToMesh<double, D>(newLayer, mesh).apply();
+    lsVTKWriter(mesh).writeVTP("LS-" + std::to_string(counter) + ".vtp");
+
+    ++counter;
   }
+
+  // double advectionSteps = advectionKernel.getNumberOfTimeSteps();
+  // std::cout << "Number of Advection steps taken: " << advectionSteps
+  // << std::endl;
+
+  // {
+  //   std::cout << "Extracting..." << std::endl;
+  //   lsMesh mesh;
+  //   lsToSurfaceMesh<double, D>(newLayer, mesh).apply();
+  //
+  //   lsVTKWriter(mesh).writeVTP("grown.vtp");
+  // }
 
   return 0;
 }

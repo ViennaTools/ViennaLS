@@ -34,12 +34,14 @@ int main() {
   double origin[3] = {5., 0., 0.};
   double radius = 7.3;
 
-  lsMakeGeometry<double, D>(sphere1).makeSphere(origin, radius);
+  lsMakeGeometry<double, D>(sphere1, lsSphere<double, D>(origin, radius))
+      .apply();
 
   {
     lsDomain<double, D> sphere2(bounds, boundaryCons, gridDelta);
     origin[0] = -5.;
-    lsMakeGeometry<double, D>(sphere2).makeSphere(origin, radius);
+    lsMakeGeometry<double, D>(sphere2, lsSphere<double, D>(origin, radius))
+        .apply();
   }
 
   std::cout << "Expanding..." << std::endl;

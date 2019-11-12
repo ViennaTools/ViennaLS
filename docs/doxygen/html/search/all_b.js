@@ -1,6 +1,7 @@
 var searchData=
 [
-  ['neg_5fvalue_130',['NEG_VALUE',['../classlsDomain.html#a0788661d06a9643ba83d2b5f8e7aa828',1,'lsDomain']]],
-  ['nodes_131',['nodes',['../classlsMesh.html#a363986b04a8e75a27ad7de58d789948d',1,'lsMesh']]],
-  ['normalvectortype_132',['NormalVectorType',['../classlsDomain.html#ac3efb47c6848a93e796b0c13a8e41973',1,'lsDomain']]]
+  ['neg_5fvalue_138',['NEG_VALUE',['../classlsDomain.html#a0788661d06a9643ba83d2b5f8e7aa828',1,'lsDomain']]],
+  ['nodes_139',['nodes',['../classlsMesh.html#a363986b04a8e75a27ad7de58d789948d',1,'lsMesh']]],
+  ['normal_140',['normal',['../classlsPlane.html#a7aad4d0e5e2d3721ac5f0abded344a0c',1,'lsPlane']]],
+  ['normalvectortype_141',['NormalVectorType',['../classlsDomain.html#ac3efb47c6848a93e796b0c13a8e41973',1,'lsDomain']]]
 ];

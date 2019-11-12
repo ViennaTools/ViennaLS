@@ -5,11 +5,11 @@
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsPrune.hpp>
-// #include <lsFromExplicitMesh.hpp>
+// #include <lsFromSurfaceMesh.hpp>
 #include <lsAdvect.hpp>
 #include <lsMakeGeometry.hpp>
-#include <lsToExplicitMesh.hpp>
 #include <lsToMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
 /**
@@ -45,20 +45,20 @@ int main() {
 
   double bounds[2 * D] = {-extent, extent, -extent, extent};
   lsDomain<double, D>::BoundaryType boundaryCons[D];
-  for (unsigned i = 0; i < D; ++i)
-    boundaryCons[i] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+  boundaryCons[0] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+  boundaryCons[1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
   lsDomain<double, D> plane(bounds, boundaryCons, gridDelta);
 
   double origin[D] = {0., 0.};
-  double normal[D] = {1., 1.};
+  double normal[D] = {2., 1.};
 
-  lsMakeGeometry<double, D>(plane).makePlane(origin, normal);
+  lsMakeGeometry<double, D>(plane, lsPlane<double, D>(origin, normal)).apply();
   {
     lsMesh mesh;
     lsMesh explMesh;
 
     std::cout << "Extracting..." << std::endl;
-    lsToExplicitMesh<double, D>(plane, explMesh).apply();
+    lsToSurfaceMesh<double, D>(plane, explMesh).apply();
     lsToMesh<double, D>(plane, mesh).apply();
 
     mesh.print();
@@ -86,7 +86,7 @@ int main() {
 
   std::cout << "Extracting..." << std::endl;
   lsMesh mesh;
-  lsToExplicitMesh<double, D>(plane, mesh).apply();
+  lsToSurfaceMesh<double, D>(plane, mesh).apply();
 
   // mesh.print();
 

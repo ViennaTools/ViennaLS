@@ -4,15 +4,15 @@
 #include <lsBooleanOperation.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
-#include <lsFromExplicitMesh.hpp>
+#include <lsFromSurfaceMesh.hpp>
 #include <lsMakeGeometry.hpp>
-#include <lsToExplicitMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
 #include <lsToVoxelMesh.hpp>
 #include <lsVTKWriter.hpp>
 
 /**
   Minimal example showing how to write different
-  meshes created by the algorithms lsToVoxelMesh and lsToExplicitMesh.
+  meshes created by the algorithms lsToVoxelMesh and lsToSurfaceMesh.
   \example Make3DSphere.cpp
 */
 
@@ -30,9 +30,11 @@ int main() {
   double origin[3] = {5., 0., 0.};
   double radius = 7.3;
 
-  lsMakeGeometry<double, D>(sphere1).makeSphere(origin, radius);
+  lsMakeGeometry<double, D>(sphere1, lsSphere<double, D>(origin, radius))
+      .apply();
   origin[0] = -5.;
-  lsMakeGeometry<double, D>(sphere2).makeSphere(origin, radius);
+  lsMakeGeometry<double, D>(sphere2, lsSphere<double, D>(origin, radius))
+      .apply();
 
   std::cout << "Number of points: " << sphere1.getDomain().getNumberOfPoints()
             << std::endl;
@@ -47,7 +49,7 @@ int main() {
       .apply();
 
   std::cout << "Extracting..." << std::endl;
-  lsToExplicitMesh<double, D>(sphere1, mesh).apply();
+  lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
 
   mesh.print();
 

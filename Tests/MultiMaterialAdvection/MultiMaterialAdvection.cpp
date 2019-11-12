@@ -6,7 +6,7 @@
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
-#include <lsToExplicitMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
 /**
@@ -55,10 +55,12 @@ int main() {
   double origin[3] = {5., 0., 0.};
   double radius = 9.5;
 
-  lsMakeGeometry<double, D>(sphere1).makeSphere(origin, radius);
+  lsMakeGeometry<double, D>(sphere1, lsSphere<double, D>(origin, radius))
+      .apply();
   origin[0] = -5.0;
   radius = 7.3;
-  lsMakeGeometry<double, D>(sphere2).makeSphere(origin, radius);
+  lsMakeGeometry<double, D>(sphere2, lsSphere<double, D>(origin, radius))
+      .apply();
 
   // Perform a boolean operation
   // Sphere2 is now the union of both original spheres.
@@ -71,10 +73,10 @@ int main() {
   {
     std::cout << "Extracting..." << std::endl;
     lsMesh mesh;
-    lsToExplicitMesh<double, D>(sphere1, mesh).apply();
+    lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
     lsVTKWriter(mesh).writeVTKLegacy("lower_0.vtk");
 
-    lsToExplicitMesh<double, D>(sphere2, mesh).apply();
+    lsToSurfaceMesh<double, D>(sphere2, mesh).apply();
     lsVTKWriter(mesh).writeVTKLegacy("union_0.vtk");
   }
 
@@ -101,10 +103,10 @@ int main() {
   {
     std::cout << "Extracting..." << std::endl;
     lsMesh mesh;
-    lsToExplicitMesh<double, D>(sphere1, mesh).apply();
+    lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
     lsVTKWriter(mesh).writeVTKLegacy("lower_1.vtk");
 
-    lsToExplicitMesh<double, D>(sphere2, mesh).apply();
+    lsToSurfaceMesh<double, D>(sphere2, mesh).apply();
     mesh.print();
     lsVTKWriter(mesh).writeVTKLegacy("union_1.vtk");
   }

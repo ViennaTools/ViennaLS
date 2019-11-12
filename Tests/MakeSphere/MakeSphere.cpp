@@ -7,14 +7,14 @@
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
 #include <lsReduce.hpp>
-#include <lsToExplicitMesh.hpp>
 #include <lsToMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
 #include <lsToVoxelMesh.hpp>
 #include <lsVTKWriter.hpp>
 
 /**
   Minimal example showing how to write and read different
-  meshes created by the algorithms lsToVoxelMesh and lsToExplicitMesh.
+  meshes created by the algorithms lsToVoxelMesh and lsToSurfaceMesh.
   \example MakeSphere.cpp
 */
 
@@ -27,9 +27,10 @@ int main() {
   lsMesh mesh;
 
   const double radius = 27.3;
-  const hrleVectorType<int, D> centre(5., 0.); // all zeros
+  const hrleVectorType<double, D> centre(5., 0.);
 
-  lsMakeGeometry<double, 2>(levelSet).makeSphere(centre, radius);
+  lsMakeGeometry<double, 2>(levelSet, lsSphere<double, D>(centre, radius))
+      .apply();
 
   std::cout << "Initial: " << std::endl;
   std::cout << "Number of points: " << levelSet.getDomain().getNumberOfPoints()
@@ -62,7 +63,7 @@ int main() {
             << std::endl;
   std::cout << "Width: " << levelSet.getLevelSetWidth() << std::endl;
 
-  lsToExplicitMesh<double, D>(levelSet, mesh).apply();
+  lsToSurfaceMesh<double, D>(levelSet, mesh).apply();
   lsVTKWriter(mesh).writeVTKLegacy("Sphere2D.vtk");
 
   lsToMesh<double, D>(levelSet, mesh).apply();

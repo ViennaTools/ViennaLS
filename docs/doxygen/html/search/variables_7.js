@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['tetras_377',['tetras',['../classlsMesh.html#a4593e2fddc6a5bfc91d857e3d2515e28',1,'lsMesh']]],
-  ['triangles_378',['triangles',['../classlsMesh.html#a07b4ff12318bebe0b0a8c96cb246c58f',1,'lsMesh']]]
+  ['radius_414',['radius',['../classlsSphere.html#a9d3efa11ce374c9fd4e864d9b73a12ab',1,'lsSphere']]]
 ];

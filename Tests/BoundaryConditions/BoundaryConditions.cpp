@@ -4,7 +4,7 @@
 #include <lsDomain.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
-#include <lsToExplicitMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
 /**
@@ -32,12 +32,13 @@ int main() {
   hrleVectorType<double, D> origin(0., 0., 0.);
   hrleVectorType<double, D> normalVector(0., 1., 1.);
 
-  lsMakeGeometry<double, D>(levelSet).makePlane(origin, normalVector);
+  lsMakeGeometry<double, D>(levelSet, lsPlane<double, D>(origin, normalVector))
+      .apply();
 
   {
     std::cout << "Extracting..." << std::endl;
     lsMesh mesh;
-    lsToExplicitMesh<double, D>(levelSet, mesh).apply();
+    lsToSurfaceMesh<double, D>(levelSet, mesh).apply();
     lsVTKWriter(mesh).writeVTKLegacy("plane.vtk");
   }
 

@@ -1,5 +1,5 @@
-#ifndef LS_TO_EXPLICIT_MESH_HPP
-#define LS_TO_EXPLICIT_MESH_HPP
+#ifndef LS_TO_SURFACE_MESH_HPP
+#define LS_TO_SURFACE_MESH_HPP
 
 #include <lsPreCompileMacros.hpp>
 
@@ -15,7 +15,7 @@
 /// Extract an explicit lsMesh instance from an lsDomain.
 /// The interface is then described by explciit surface elements:
 /// Lines in 2D, Triangles in 3D.
-template <class T, int D> class lsToExplicitMesh {
+template <class T, int D> class lsToSurfaceMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
 
   const lsDomain<T, D> *levelSet = nullptr;
@@ -23,11 +23,11 @@ template <class T, int D> class lsToExplicitMesh {
   std::vector<hrleIndexType> meshNodeToPointIdMapping;
   const double epsilon;
 
-  lsToExplicitMesh();
+  lsToSurfaceMesh();
 
 public:
-  lsToExplicitMesh(const lsDomain<T, D> &passedLevelSet, lsMesh &passedMesh,
-                   double eps = 1e-12)
+  lsToSurfaceMesh(const lsDomain<T, D> &passedLevelSet, lsMesh &passedMesh,
+                  double eps = 1e-12)
       : levelSet(&passedLevelSet), mesh(&passedMesh), epsilon(eps) {}
 
   void setLevelSet(lsDomain<T, D> &passedlsDomain) {
@@ -39,13 +39,13 @@ public:
   void apply() {
     if (levelSet == nullptr) {
       lsMessage::getInstance()
-          .addWarning("No level set was passed to lsToExplicitMesh.")
+          .addWarning("No level set was passed to lsToSurfaceMesh.")
           .print();
       return;
     }
     if (mesh == nullptr) {
       lsMessage::getInstance()
-          .addWarning("No mesh was passed to lsToExplicitMesh.")
+          .addWarning("No mesh was passed to lsToSurfaceMesh.")
           .print();
       return;
     }
@@ -175,6 +175,6 @@ public:
 };
 
 // add all template specialisations for this class
-PRECOMPILE_PRECISION_DIMENSION(lsToExplicitMesh)
+PRECOMPILE_PRECISION_DIMENSION(lsToSurfaceMesh)
 
-#endif // LS_TO_EXPLICIT_MESH_HPP
+#endif // LS_TO_SURFACE_MESH_HPP

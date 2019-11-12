@@ -6,40 +6,154 @@
 #include <hrleIndexType.hpp>
 #include <hrleVectorType.hpp>
 
+#include <lsConvexHull.hpp>
 #include <lsDomain.hpp>
-#include <lsFromExplicitMesh.hpp>
+#include <lsFromSurfaceMesh.hpp>
+#include <lsGeometries.hpp>
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
 
-/// Enumeration for the different types of
-/// geometries supported by lsMakeGeometry
-enum struct lsMakeGeometryEnum : unsigned { SPHERE = 0, PLANE = 1, BOX = 2 };
+// TODO remove
+#include <lsVTKWriter.hpp>
 
 /// Create level sets describing basic geometric forms.
 template <class T, int D> class lsMakeGeometry {
   typedef typename lsDomain<T, D>::PointValueVectorType pointDataType;
 
+  /// Enumeration for the different types of
+  /// geometries supported by lsMakeGeometry
+  enum struct lsGeometryEnum : unsigned {
+    SPHERE = 0,
+    PLANE = 1,
+    BOX = 2,
+    CUSTOM = 3
+  };
+
   lsDomain<T, D> *levelSet;
-  lsMakeGeometryEnum geometry = lsMakeGeometryEnum::SPHERE;
+  lsGeometryEnum geometry = lsGeometryEnum::SPHERE;
+  const lsSphere<T, D> *sphere = nullptr;
+  const lsPlane<T, D> *plane = nullptr;
+  const lsBox<T, D> *box = nullptr;
+  lsPointCloud<T, D> *pointCloud = nullptr;
   const double numericEps = 1e-9;
+  bool ignoreBoundaryConditions = false;
 
 public:
+  lsMakeGeometry() {}
+
+  lsMakeGeometry(lsDomain<T, D> &passedLevelSet) : levelSet(&passedLevelSet) {}
+
   lsMakeGeometry(lsDomain<T, D> &passedLevelSet,
-                 lsMakeGeometryEnum passedGeometry = lsMakeGeometryEnum::SPHERE)
-      : levelSet(&passedLevelSet), geometry(passedGeometry) {}
+                 const lsSphere<T, D> &passedSphere)
+      : levelSet(&passedLevelSet), sphere(&passedSphere) {
+    geometry = lsGeometryEnum::SPHERE;
+  }
+
+  lsMakeGeometry(lsDomain<T, D> &passedLevelSet,
+                 const lsPlane<T, D> &passedPlane)
+      : levelSet(&passedLevelSet), plane(&passedPlane) {
+    geometry = lsGeometryEnum::PLANE;
+  }
+
+  lsMakeGeometry(lsDomain<T, D> &passedLevelSet, const lsBox<T, D> &passedBox)
+      : levelSet(&passedLevelSet), box(&passedBox) {
+    geometry = lsGeometryEnum::BOX;
+  }
+
+  lsMakeGeometry(lsDomain<T, D> &passedLevelSet, lsPointCloud<T, D> &passedPointCloud) : levelSet(&passedLevelSet), pointCloud(&passedPointCloud) {
+    geometry = lsGeometryEnum::CUSTOM;
+  }
 
   void setLevelSet(lsDomain<T, D> &passedlsDomain) {
     levelSet = &passedlsDomain;
   }
 
-  void setGeometry(lsMakeGeometryEnum passedGeometry) {
-    geometry = passedGeometry;
+  /// Set sphere as geometry to be created in the level set.
+  void setGeometry(lsSphere<T, D> &passedSphere) {
+    sphere = &passedSphere;
+    geometry = lsGeometryEnum::SPHERE;
   }
 
-  template <class V> void makeSphere(V origin, T radius, int width = 2) {
+  /// Set a plane to be created in the level set.
+  void setGeometry(lsPlane<T, D> &passedPlane) {
+    plane = &passedPlane;
+    geometry = lsGeometryEnum::PLANE;
+  }
+
+  /// Set a box to be created in the level set.
+  void setGeometry(lsBox<T, D> &passedBox) {
+    box = &passedBox;
+    geometry = lsGeometryEnum::BOX;
+  }
+
+  /// Set a point cloud, which is used to create
+  /// a geometry from its convex hull.
+  void setGeometry(lsPointCloud<T, D> &passedPointCloud) {
+    pointCloud = &passedPointCloud;
+    geometry = lsGeometryEnum::CUSTOM;
+  }
+
+  void setIgnoreBoundaryConditions(bool &passedIgnoreBoundaryConditions) {
+    ignoreBoundaryConditions = passedIgnoreBoundaryConditions;
+  }
+
+  void apply() {
+    switch (geometry) {
+    case lsGeometryEnum::SPHERE:
+      if (sphere == nullptr) {
+        lsMessage::getInstance()
+            .addWarning("No lsSphere supplied to lsMakeGeometry. Not creating "
+                        "geometry.")
+            .print();
+      }
+      makeSphere(sphere->origin, sphere->radius);
+      break;
+    case lsGeometryEnum::PLANE:
+      if (plane == nullptr) {
+        lsMessage::getInstance()
+            .addWarning(
+                "No lsPlane supplied to lsMakeGeometry. Not creating geometry.")
+            .print();
+      }
+      makePlane(plane->origin, plane->normal);
+      break;
+    case lsGeometryEnum::BOX:
+      if (box == nullptr) {
+        lsMessage::getInstance()
+            .addWarning(
+                "No lsBox supplied to lsMakeGeometry. Not creating geometry.")
+            .print();
+      }
+      makeBox(box->minCorner, box->maxCorner);
+      break;
+    case lsGeometryEnum::CUSTOM:
+      if (pointCloud == nullptr) {
+        lsMessage::getInstance()
+            .addWarning("No lsPointCloud supplied to lsMakeGeometry. Not "
+                        "creating geometry.")
+            .print();
+      }
+      makeCustom(pointCloud);
+      break;
+    default:
+      lsMessage::getInstance()
+          .addWarning("Invalid geometry type was specified for lsMakeGeometry. "
+                      "Not creating geometry.")
+          .print();
+    }
+  }
+
+private:
+  void makeSphere(hrleVectorType<T, D> origin, T radius, int width = 2) {
     if (levelSet == nullptr) {
       lsMessage::getInstance()
           .addWarning("No level set was passed to lsMakeGeometry.")
+          .print();
+      return;
+    }
+    if (sphere == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No sphere was passed to lsMakeGeometry.")
           .print();
       return;
     }
@@ -48,15 +162,13 @@ public:
     auto &grid = levelSet->getGrid();
     hrleCoordType gridDelta = grid.getGridDelta();
 
-    hrleVectorType<hrleIndexType, D> index(grid.getMinBounds());
-    hrleVectorType<hrleIndexType, D> endIndex(grid.getMaxBounds());
+    // calculate indices from sphere size
+    hrleVectorType<hrleIndexType, D> index;
+    hrleVectorType<hrleIndexType, D> endIndex;
 
     for (unsigned i = 0; i < D; ++i) {
-      if (grid.getBoundaryConditions(i) ==
-          hrleGrid<D>::boundaryType::INFINITE_BOUNDARY) {
-        index[i] = (origin[i] - radius) / gridDelta - 1;
-        endIndex[i] = (origin[i] + radius) / gridDelta + 1;
-      }
+      index[i] = (origin[i] - radius) / gridDelta - 1;
+      endIndex[i] = (origin[i] + radius) / gridDelta + 1;
     }
 
     const T valueLimit = width * 0.5 * gridDelta;
@@ -94,6 +206,19 @@ public:
       ++index[dim];
     }
 
+    // Mirror indices correctly into domain, unless boundary conditions
+    // are ignored
+    if (!ignoreBoundaryConditions) {
+      for (unsigned i = 0; i < pointData.size(); ++i) {
+        for (unsigned j = 0; j < D; ++j) {
+          if (grid.isBoundaryPeriodic(j)) {
+            pointData[i].first[j] =
+                grid.globalIndex2LocalIndex(j, pointData[i].first[j]);
+          }
+        }
+      }
+    }
+
     levelSet->insertPoints(pointData);
     levelSet->getDomain().segment();
     levelSet->finalize(width);
@@ -101,13 +226,21 @@ public:
 
   /// Creates a plane containing the point origin, with
   /// the plane normal given by normal
-  template <class V> void makePlane(const V origin, const V passedNormal) {
+  void makePlane(hrleVectorType<T, D> origin,
+                 hrleVectorType<T, D> passedNormal) {
     if (levelSet == nullptr) {
       lsMessage::getInstance()
           .addWarning("No level set was passed to lsMakeGeometry.")
           .print();
       return;
     }
+    if (plane == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No plane was passed to lsMakeGeometry.")
+          .print();
+      return;
+    }
+
     auto &grid = levelSet->getGrid();
     hrleCoordType gridDelta = grid.getGridDelta();
 
@@ -145,7 +278,7 @@ public:
 
     // find minimum and maximum points in infinite direction
     // there are 2*(D-1) points in the corners of the simulation domain
-    std::vector<hrleVectorType<T, 3>> cornerPoints;
+    std::vector<hrleVectorType<double, 3>> cornerPoints;
     cornerPoints.resize(2 * (D - 1));
 
     // cyclic permutations
@@ -155,8 +288,8 @@ public:
     double minCoord[2];
     double maxCoord[2];
     for (unsigned n = 0; n < D - 1; ++n) {
-      minCoord[n] = gridDelta * grid.getMinBounds((i + n + 1) % D);
-      maxCoord[n] = gridDelta * grid.getMaxBounds((i + n + 1) % D);
+      minCoord[n] = gridDelta * (grid.getMinIndex((i + n + 1) % D) - 1);
+      maxCoord[n] = gridDelta * (grid.getMaxIndex((i + n + 1) % D) + 1);
     }
 
     // set corner points
@@ -196,20 +329,27 @@ public:
       mesh.insertNextTriangle(triangle);
     }
     // now convert mesh to levelset
-    lsFromExplicitMesh<T, D>(*levelSet, mesh).apply();
+    lsFromSurfaceMesh<T, D>(*levelSet, mesh).apply();
   }
 
   // This function creates a box starting in minCorner spanning to maxCorner
-  template <class V> void makeBox(V minCorner, V maxCorner) {
+  void makeBox(hrleVectorType<T, D> minCorner, hrleVectorType<T, D> maxCorner) {
     if (levelSet == nullptr) {
       lsMessage::getInstance()
           .addWarning("No level set was passed to lsMakeGeometry.")
           .print();
       return;
     }
+    if (box == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No box was passed to lsMakeGeometry.")
+          .print();
+      return;
+    }
+
     // draw all triangles for the surface and then import from the mesh
-    std::vector<hrleVectorType<T, 3>> corners;
-    corners.resize(std::pow(2, D), hrleVectorType<T, 3>(T(0)));
+    std::vector<hrleVectorType<double, 3>> corners;
+    corners.resize(std::pow(2, D), hrleVectorType<double, 3>(0.));
 
     // first corner is the minCorner
     for (unsigned i = 0; i < D; ++i)
@@ -273,7 +413,16 @@ public:
     }
 
     // now convert mesh to levelset
-    lsFromExplicitMesh<T, D>(*levelSet, mesh).apply();
+    lsFromSurfaceMesh<T, D>(*levelSet, mesh, ignoreBoundaryConditions).apply();
+  }
+
+  void makeCustom(lsPointCloud<T, D> *pointCloud) {
+    // create mesh from point cloud
+    lsMesh mesh;
+    lsConvexHull<T, D>(mesh, *pointCloud).apply();
+
+    // read mesh from surface
+    lsFromSurfaceMesh<T, D>(*levelSet, mesh, ignoreBoundaryConditions).apply();
   }
 };
 

@@ -6,8 +6,8 @@
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
-#include <lsToExplicitMesh.hpp>
 #include <lsToMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
 /**
@@ -53,12 +53,13 @@ int main() {
   double origin[2] = {0., 0.};
   double planeNormal[2] = {0., 1.};
 
-  lsMakeGeometry<double, D>(substrate).makePlane(origin, planeNormal);
+  lsMakeGeometry<double, D>(substrate, lsPlane<double, D>(origin, planeNormal))
+      .apply();
 
   {
     std::cout << "Extracting..." << std::endl;
     lsMesh mesh;
-    lsToExplicitMesh<double, D>(substrate, mesh).apply();
+    lsToSurfaceMesh<double, D>(substrate, mesh).apply();
     lsVTKWriter(mesh).writeVTP("plane.vtp");
   }
 
@@ -68,7 +69,8 @@ int main() {
     lsDomain<double, D> trench(bounds, boundaryCons, gridDelta);
     double minCorner[D] = {-extent / 6., -25.};
     double maxCorner[D] = {extent / 6., 1.};
-    lsMakeGeometry<double, D>(trench).makeBox(minCorner, maxCorner);
+    lsMakeGeometry<double, D>(trench, lsBox<double, D>(minCorner, maxCorner))
+        .apply();
 
     {
       std::cout << "Extracting..." << std::endl;
@@ -116,9 +118,10 @@ int main() {
     std::cout << "\rAdvection step " + std::to_string(i) + " / "
               << numberOfSteps << std::flush;
     lsMesh mesh;
-    lsToExplicitMesh<double, D>(newLayer, mesh).apply();
+    lsToSurfaceMesh<double, D>(newLayer, mesh).apply();
     lsVTKWriter(mesh).writeVTKLegacy("trench" + std::to_string(i) + ".vtk");
   }
+  std::cout << std::endl;
   std::cout << "Time passed during advection: " << passedTime << std::endl;
 
   return 0;

@@ -8,6 +8,9 @@ var dir_d44c64559bbebec7f509842c48db8b23 =
     [ "lsCheck.hpp", "lsCheck_8hpp.html", [
       [ "lsCheck", "classlsCheck.html", "classlsCheck" ]
     ] ],
+    [ "lsConvexHull.hpp", "lsConvexHull_8hpp.html", [
+      [ "lsConvexHull", "classlsConvexHull.html", "classlsConvexHull" ]
+    ] ],
     [ "lsDomain.hpp", "lsDomain_8hpp.html", [
       [ "lsDomain", "classlsDomain.html", "classlsDomain" ]
     ] ],
@@ -18,9 +21,18 @@ var dir_d44c64559bbebec7f509842c48db8b23 =
       [ "lsExpand", "classlsExpand.html", "classlsExpand" ]
     ] ],
     [ "lsFiniteDifferences.hpp", "lsFiniteDifferences_8hpp.html", "lsFiniteDifferences_8hpp" ],
-    [ "lsFromExplicitMesh.hpp", "lsFromExplicitMesh_8hpp.html", [
-      [ "lsFromExplicitMesh", "classlsFromExplicitMesh.html", "classlsFromExplicitMesh" ],
-      [ "iterator", "classlsFromExplicitMesh_1_1box_1_1iterator.html", "classlsFromExplicitMesh_1_1box_1_1iterator" ]
+    [ "lsFromSurfaceMesh.hpp", "lsFromSurfaceMesh_8hpp.html", [
+      [ "lsFromSurfaceMesh", "classlsFromSurfaceMesh.html", "classlsFromSurfaceMesh" ],
+      [ "iterator", "classlsFromSurfaceMesh_1_1box_1_1iterator.html", "classlsFromSurfaceMesh_1_1box_1_1iterator" ]
+    ] ],
+    [ "lsFromVolumeMesh.hpp", "lsFromVolumeMesh_8hpp.html", [
+      [ "lsFromVolumeMesh", "classlsFromVolumeMesh.html", "classlsFromVolumeMesh" ]
+    ] ],
+    [ "lsGeometries.hpp", "lsGeometries_8hpp.html", [
+      [ "lsSphere", "classlsSphere.html", "classlsSphere" ],
+      [ "lsPlane", "classlsPlane.html", "classlsPlane" ],
+      [ "lsBox", "classlsBox.html", "classlsBox" ],
+      [ "lsPointCloud", "classlsPointCloud.html", "classlsPointCloud" ]
     ] ],
     [ "lsGraph.hpp", "lsGraph_8hpp.html", [
       [ "lsGraph", "classlsInternal_1_1lsGraph.html", "classlsInternal_1_1lsGraph" ]
@@ -28,7 +40,9 @@ var dir_d44c64559bbebec7f509842c48db8b23 =
     [ "lsLaxFriedrichs.hpp", "lsLaxFriedrichs_8hpp.html", [
       [ "lsLaxFriedrichs", "classlsInternal_1_1lsLaxFriedrichs.html", "classlsInternal_1_1lsLaxFriedrichs" ]
     ] ],
-    [ "lsMakeGeometry.hpp", "lsMakeGeometry_8hpp.html", "lsMakeGeometry_8hpp" ],
+    [ "lsMakeGeometry.hpp", "lsMakeGeometry_8hpp.html", [
+      [ "lsMakeGeometry", "classlsMakeGeometry.html", "classlsMakeGeometry" ]
+    ] ],
     [ "lsMarchingCubes.hpp", "lsMarchingCubes_8hpp.html", [
       [ "lsMarchingCubes", "classlsInternal_1_1lsMarchingCubes.html", "classlsInternal_1_1lsMarchingCubes" ]
     ] ],
@@ -51,11 +65,11 @@ var dir_d44c64559bbebec7f509842c48db8b23 =
     [ "lsStencilLocalLaxFriedrichsScalar.hpp", "lsStencilLocalLaxFriedrichsScalar_8hpp.html", [
       [ "lsStencilLocalLaxFriedrichsScalar", "classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar.html", "classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar" ]
     ] ],
-    [ "lsToExplicitMesh.hpp", "lsToExplicitMesh_8hpp.html", [
-      [ "lsToExplicitMesh", "classlsToExplicitMesh.html", "classlsToExplicitMesh" ]
-    ] ],
     [ "lsToMesh.hpp", "lsToMesh_8hpp.html", [
       [ "lsToMesh", "classlsToMesh.html", "classlsToMesh" ]
+    ] ],
+    [ "lsToSurfaceMesh.hpp", "lsToSurfaceMesh_8hpp.html", [
+      [ "lsToSurfaceMesh", "classlsToSurfaceMesh.html", "classlsToSurfaceMesh" ]
     ] ],
     [ "lsToVoxelMesh.hpp", "lsToVoxelMesh_8hpp.html", [
       [ "hash< hrleVectorType< hrleIndexType, D > >", "structstd_1_1hash_3_01hrleVectorType_3_01hrleIndexType_00_01D_01_4_01_4.html", "structstd_1_1hash_3_01hrleVectorType_3_01hrleIndexType_00_01D_01_4_01_4" ],

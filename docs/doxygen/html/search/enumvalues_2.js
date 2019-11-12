@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['engquist_5fosher_5f1st_5forder_395',['ENGQUIST_OSHER_1ST_ORDER',['../lsAdvect_8hpp.html#afe9778bbf7b5f9aeb52d14c4f133cc9bad0a7e3dc2008232b277a258bb57d2049',1,'lsAdvect.hpp']]],
-  ['engquist_5fosher_5f2nd_5forder_396',['ENGQUIST_OSHER_2ND_ORDER',['../lsAdvect_8hpp.html#afe9778bbf7b5f9aeb52d14c4f133cc9baa04ccfbc276e404065c286a5ff2f249d',1,'lsAdvect.hpp']]]
+  ['first_5forder_435',['FIRST_ORDER',['../namespacelsInternal.html#a1197c9bc5d272ab73e76ebc2d4ab05a7a381be4beabc209c2c0999eabbfcaa16b',1,'lsInternal']]]
 ];
