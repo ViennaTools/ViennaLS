@@ -18,7 +18,7 @@
   simulation. A hexagonal pattern of rounded cones is formed.
   These cones are then used as masks for etching. A uniform
   layer is then deposited on top creating voids in the structure.
-  \example PeriodicBoundary.cpp
+  \example PatternedSubstrate.cpp
 */
 
 // implement velocity field describing a directional etch
@@ -192,8 +192,8 @@ int main() {
     // passed during the advection.
     double passedTime = 0.;
     for (unsigned i = 0; i < numberOfEtchSteps; ++i) {
-      std::cout << "\rEtch step " + std::to_string(i) + " / " << numberOfEtchSteps
-                << std::flush;
+      std::cout << "\rEtch step " + std::to_string(i) + " / "
+                << numberOfEtchSteps << std::flush;
       lsMesh mesh;
       lsToSurfaceMesh<double, D>(substrate, mesh).apply();
       lsVTKWriter(mesh).writeVTP("substrate-" + std::to_string(i) + ".vtp");
@@ -227,8 +227,8 @@ int main() {
     double passedTime = 0.;
     unsigned numberOfDepoSteps = 30;
     for (unsigned i = 0; i < numberOfDepoSteps; ++i) {
-      std::cout << "\rDepo step " + std::to_string(i) + " / " << numberOfDepoSteps
-                << std::flush;
+      std::cout << "\rDepo step " + std::to_string(i) + " / "
+                << numberOfDepoSteps << std::flush;
       lsMesh mesh;
       lsToSurfaceMesh<double, D>(fillLayer, mesh).apply();
       lsVTKWriter(mesh).writeVTP(
@@ -240,7 +240,7 @@ int main() {
     std::cout << std::endl;
 
     lsMesh mesh;
-    lsToSurfaceMesh<double, D>(substrate, mesh).apply();
+    lsToSurfaceMesh<double, D>(fillLayer, mesh).apply();
     lsVTKWriter(mesh).writeVTP(
         "fillLayer-" + std::to_string(numberOfEtchSteps + numberOfDepoSteps) +
         ".vtp");

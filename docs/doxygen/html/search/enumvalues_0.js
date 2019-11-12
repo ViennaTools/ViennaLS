@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['box_393',['BOX',['../lsMakeGeometry_8hpp.html#a9b096db9fe485af3846f9a7e2a773d6aae657cce1913c857166b0475f18668ef5',1,'lsMakeGeometry.hpp']]]
+  ['custom_432',['CUSTOM',['../lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8a72baef04098f035e8a320b03ad197818',1,'lsBooleanOperation.hpp']]]
 ];

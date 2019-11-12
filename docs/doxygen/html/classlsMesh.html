@@ -110,8 +110,6 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a1a5cbae39fab7797df4a6f8fd740b18b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae944d759a056d38cc067f7e168cedde9"><td class="memItemLeft" align="right" valign="top">std::vector&lt; hrleVectorType&lt; double, 3 &gt; &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#ae944d759a056d38cc067f7e168cedde9">getVectorData</a> (int i)</td></tr>
 <tr class="separator:ae944d759a056d38cc067f7e168cedde9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad8ca59ac2017b154295e7add303b7e8f"><td class="memItemLeft" align="right" valign="top">std::vector&lt; unsigned &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#ad8ca59ac2017b154295e7add303b7e8f">getMaterials</a> ()</td></tr>
-<tr class="separator:ad8ca59ac2017b154295e7add303b7e8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a43e8f99b2a96a1212df0814db27c5ae4"><td class="memTemplParams" colspan="2">template&lt;int D, typename std::enable_if&lt; D==1, int &gt;::type  = 0&gt; </td></tr>
 <tr class="memitem:a43e8f99b2a96a1212df0814db27c5ae4"><td class="memTemplItemLeft" align="right" valign="top">std::vector&lt; hrleVectorType&lt; unsigned, D &gt; &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a43e8f99b2a96a1212df0814db27c5ae4">getElements</a> ()</td></tr>
 <tr class="separator:a43e8f99b2a96a1212df0814db27c5ae4"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -174,8 +172,6 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a4593e2fddc6a5bfc91d857e3d2515e28"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af7b9794dea72c302eef7508a19f58bb5"><td class="memItemLeft" align="right" valign="top">std::vector&lt; hrleVectorType&lt; unsigned, 8 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#af7b9794dea72c302eef7508a19f58bb5">hexas</a></td></tr>
 <tr class="separator:af7b9794dea72c302eef7508a19f58bb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a504fca8acd76774a806322158f3174f4"><td class="memItemLeft" align="right" valign="top">std::vector&lt; unsigned &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a504fca8acd76774a806322158f3174f4">materials</a></td></tr>
-<tr class="separator:a504fca8acd76774a806322158f3174f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae26ef28956a80e2783277c3ac5d6532e"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::vector&lt; double &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#ae26ef28956a80e2783277c3ac5d6532e">scalarData</a></td></tr>
 <tr class="separator:ae26ef28956a80e2783277c3ac5d6532e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8bc44422a7a561caf5f9e220034f4c63"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a8bc44422a7a561caf5f9e220034f4c63">scalarDataLabels</a></td></tr>
@@ -187,7 +183,7 @@ Public Attributes</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>This class holds an explicit mesh, which is always given in 3 dimensions. If it describes a 2D mesh, the third dimension is set to 0. Vertices, Lines, Triangles, Tetras &amp; Hexas are supported as geometric elements. </p>
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#_a8">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#_a8">Deposition.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#_a9">PeriodicBoundary.cpp</a>, <a class="el" href="SharedLib_8cpp-example.html#_a1">SharedLib.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#_a15">VoidEtching.cpp</a>.</dd>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#_a9">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#_a13">Deposition.cpp</a>, <a class="el" href="PatternedSubstrate_8cpp-example.html#_a8">PatternedSubstrate.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#_a10">PeriodicBoundary.cpp</a>, <a class="el" href="SharedLib_8cpp-example.html#_a1">SharedLib.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#_a16">VoidEtching.cpp</a>.</dd>
 </dl>
 </div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="a88e396f7712171b58a932463ecdd4843"></a>
@@ -336,31 +332,6 @@ template&lt;int D, typename std::enable_if&lt; D==8, int &gt;::type  = 0&gt; </d
       <table class="memname">
         <tr>
           <td class="memname">std::vector&lt;hrleVectorType&lt;unsigned, D&gt; &gt;&amp; lsMesh::getElements </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ad8ca59ac2017b154295e7add303b7e8f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad8ca59ac2017b154295e7add303b7e8f">&#9670;&nbsp;</a></span>getMaterials()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::vector&lt;unsigned&gt;&amp; lsMesh::getMaterials </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -910,20 +881,6 @@ template&lt;int D, typename std::enable_if&lt; D==8, int &gt;::type  = 0&gt; </d
       <table class="memname">
         <tr>
           <td class="memname">std::vector&lt;hrleVectorType&lt;unsigned, 2&gt; &gt; lsMesh::lines</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a504fca8acd76774a806322158f3174f4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a504fca8acd76774a806322158f3174f4">&#9670;&nbsp;</a></span>materials</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::vector&lt;unsigned&gt; lsMesh::materials</td>
         </tr>
       </table>
 </div><div class="memdoc">

@@ -60,6 +60,10 @@ public:
     geometry = lsGeometryEnum::BOX;
   }
 
+  lsMakeGeometry(lsDomain<T, D> &passedLevelSet, lsPointCloud<T, D> &passedPointCloud) : levelSet(&passedLevelSet), pointCloud(&passedPointCloud) {
+    geometry = lsGeometryEnum::CUSTOM;
+  }
+
   void setLevelSet(lsDomain<T, D> &passedlsDomain) {
     levelSet = &passedlsDomain;
   }
@@ -206,8 +210,8 @@ private:
     // are ignored
     if (!ignoreBoundaryConditions) {
       for (unsigned i = 0; i < pointData.size(); ++i) {
-        for(unsigned j = 0; j < D; ++j) {
-          if(grid.isBoundaryPeriodic(j)) {
+        for (unsigned j = 0; j < D; ++j) {
+          if (grid.isBoundaryPeriodic(j)) {
             pointData[i].first[j] =
                 grid.globalIndex2LocalIndex(j, pointData[i].first[j]);
           }
@@ -418,8 +422,7 @@ private:
     lsConvexHull<T, D>(mesh, *pointCloud).apply();
 
     // read mesh from surface
-    lsFromSurfaceMesh<T, D>(*levelSet, mesh, ignoreBoundaryConditions)
-        .apply();
+    lsFromSurfaceMesh<T, D>(*levelSet, mesh, ignoreBoundaryConditions).apply();
   }
 };
 

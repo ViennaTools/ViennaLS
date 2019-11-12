@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['first_5forder_397',['FIRST_ORDER',['../namespacelsInternal.html#a1197c9bc5d272ab73e76ebc2d4ab05a7a381be4beabc209c2c0999eabbfcaa16b',1,'lsInternal']]]
+  ['intersect_436',['INTERSECT',['../lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8a24bdbe2bcaf533b7b3f0bd58bfa7f291',1,'lsBooleanOperation.hpp']]],
+  ['invert_437',['INVERT',['../lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8aa2727ae72447eea06d4cc0ef67187280',1,'lsBooleanOperation.hpp']]]
 ];

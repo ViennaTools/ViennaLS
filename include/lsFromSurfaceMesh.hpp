@@ -241,6 +241,17 @@ public:
       return;
     }
 
+    // caluclate which directions should apply removeBoundaryTriangles
+    bool removeBoundaries[D];
+    for (unsigned i = 0; i < D; ++i) {
+      if (!removeBoundaryTriangles &&
+          levelSet->getGrid().isBoundaryPeriodic(i)) {
+        removeBoundaries[i] = false;
+      } else {
+        removeBoundaries[i] = true;
+      }
+    }
+
     std::vector<std::pair<hrleVectorType<hrleIndexType, D>, T>> points2;
 
     // setup list of grid points with distances to surface elements
@@ -268,6 +279,7 @@ public:
 
         std::bitset<2 * D> flags;
         flags.set();
+        bool removeElement = false;
 
         for (int dim = 0; dim < D; dim++) {
           for (int q = 0; q < D; q++) {
@@ -286,12 +298,13 @@ public:
 
             center[dim] += nodes[q][dim]; // center point calculation
           }
+          if (removeBoundaries[dim] && (flags[dim] || flags[dim + D])) {
+            removeElement = true;
+          }
         }
 
-        // triangle is outside of domain
-        if (removeBoundaryTriangles && flags.any()) {
+        if (removeElement)
           continue;
-        }
 
         // center point calculation
         center /= static_cast<T>(D);
@@ -357,10 +370,10 @@ public:
               intersection = std::max(intersection, minNode[z]);
               intersection = std::min(intersection, maxNode[z]);
 
-              if (removeBoundaryTriangles &&
+              if (removeBoundaries[z] &&
                   intersection > levelSet->getGrid().getMaxLocalCoordinate(z))
                 continue;
-              if (removeBoundaryTriangles &&
+              if (removeBoundaries[z] &&
                   intersection < levelSet->getGrid().getMinLocalCoordinate(z))
                 continue;
 
@@ -382,7 +395,7 @@ public:
               floor = std::max(floor, levelSet->getGrid().getMinIndex(z));
               ceil = std::min(ceil, levelSet->getGrid().getMaxIndex(z));
 
-              if (!removeBoundaryTriangles) {
+              if (!removeBoundaries[z]) {
                 floor = levelSet->getGrid().globalIndex2LocalIndex(z, floor);
                 ceil = levelSet->getGrid().globalIndex2LocalIndex(z, ceil);
               }
