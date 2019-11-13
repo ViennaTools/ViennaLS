@@ -9,11 +9,10 @@
 #include <lsVTKWriter.hpp>
 
 /**
-  This example is based on the boolean operation example.
-  It shows how to make sure the pre-built shared library is used.
+  This example shows how to make sure the pre-built shared library is used.
   ViennaLS is a header only project. However, certain commonly used
   template specializations can be built with the library and used during
-  developement to decrese compile times. In order to make sure these
+  developement to decrease compile times. In order to make sure these
   pre-compiled types are used, typedefs for those types are included with each
   header. These typedefs will also be available when building as header-only in
   order to avoid code changes. The available specialisations are listed in

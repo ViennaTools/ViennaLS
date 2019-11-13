@@ -281,7 +281,7 @@ $(document).ready(function(){initNavTree('PatternedSubstrate_8cpp-example.html',
 <div class="line">                &lt;&lt; numberOfEtchSteps &lt;&lt; std::flush;</div>
 <div class="line">      <a class="code" href="classlsMesh.html">lsMesh</a> mesh;</div>
 <div class="line">      <a name="_a26"></a><a class="code" href="classlsToSurfaceMesh.html">lsToSurfaceMesh&lt;double, D&gt;</a>(substrate, mesh).<a name="a27"></a><a class="code" href="classlsToSurfaceMesh.html#a4e035b7d07ce2ef93442ba8e45856ee4">apply</a>();</div>
-<div class="line">      <a name="_a28"></a><a class="code" href="classlsVTKWriter.html">lsVTKWriter</a>(mesh).<a name="a29"></a><a class="code" href="classlsVTKWriter.html#a922952d5bbeb9adf86d4e6264c0cbddc">writeVTP</a>(<span class="stringliteral">&quot;substrate-&quot;</span> + std::to_string(i) + <span class="stringliteral">&quot;.vtp&quot;</span>);</div>
+<div class="line">      <a name="_a28"></a><a class="code" href="classlsVTKWriter.html">lsVTKWriter</a>(mesh).<a name="a29"></a><a class="code" href="classlsVTKWriter.html#ab9d057a239ebb77d36173e2dfcbf4e1d">writeVTKLegacy</a>(<span class="stringliteral">&quot;substrate-&quot;</span> + std::to_string(i) + <span class="stringliteral">&quot;.vtp&quot;</span>);</div>
 <div class="line"> </div>
 <div class="line">      advectionKernel.<a name="a30"></a><a class="code" href="classlsAdvect.html#a7b6f35f0b35133d40ceeb866b5c733f3">apply</a>();</div>
 <div class="line">      passedTime += advectionKernel.<a name="a31"></a><a class="code" href="classlsAdvect.html#a9e5084dc4fa80a52c2aa81d5a331a027">getAdvectionTime</a>();</div>
@@ -290,7 +290,7 @@ $(document).ready(function(){initNavTree('PatternedSubstrate_8cpp-example.html',
 <div class="line"> </div>
 <div class="line">    <a class="code" href="classlsMesh.html">lsMesh</a> mesh;</div>
 <div class="line">    <a class="code" href="classlsToSurfaceMesh.html">lsToSurfaceMesh&lt;double, D&gt;</a>(substrate, mesh).<a class="code" href="classlsToSurfaceMesh.html#a4e035b7d07ce2ef93442ba8e45856ee4">apply</a>();</div>
-<div class="line">    <a class="code" href="classlsVTKWriter.html">lsVTKWriter</a>(mesh).<a class="code" href="classlsVTKWriter.html#a922952d5bbeb9adf86d4e6264c0cbddc">writeVTP</a>(<span class="stringliteral">&quot;substrate-&quot;</span> +</div>
+<div class="line">    <a class="code" href="classlsVTKWriter.html">lsVTKWriter</a>(mesh).<a class="code" href="classlsVTKWriter.html#ab9d057a239ebb77d36173e2dfcbf4e1d">writeVTKLegacy</a>(<span class="stringliteral">&quot;substrate-&quot;</span> +</div>
 <div class="line">                               std::to_string(numberOfEtchSteps) + <span class="stringliteral">&quot;.vtp&quot;</span>);</div>
 <div class="line"> </div>
 <div class="line">    std::cout &lt;&lt; <span class="stringliteral">&quot;Time passed during directional etch: &quot;</span> &lt;&lt; passedTime</div>
@@ -316,7 +316,7 @@ $(document).ready(function(){initNavTree('PatternedSubstrate_8cpp-example.html',
 <div class="line">                &lt;&lt; numberOfDepoSteps &lt;&lt; std::flush;</div>
 <div class="line">      <a class="code" href="classlsMesh.html">lsMesh</a> mesh;</div>
 <div class="line">      <a class="code" href="classlsToSurfaceMesh.html">lsToSurfaceMesh&lt;double, D&gt;</a>(fillLayer, mesh).<a class="code" href="classlsToSurfaceMesh.html#a4e035b7d07ce2ef93442ba8e45856ee4">apply</a>();</div>
-<div class="line">      <a class="code" href="classlsVTKWriter.html">lsVTKWriter</a>(mesh).<a class="code" href="classlsVTKWriter.html#a922952d5bbeb9adf86d4e6264c0cbddc">writeVTP</a>(</div>
+<div class="line">      <a class="code" href="classlsVTKWriter.html">lsVTKWriter</a>(mesh).<a class="code" href="classlsVTKWriter.html#ab9d057a239ebb77d36173e2dfcbf4e1d">writeVTKLegacy</a>(</div>
 <div class="line">          <span class="stringliteral">&quot;fillLayer-&quot;</span> + std::to_string(numberOfEtchSteps + 1 + i) + <span class="stringliteral">&quot;.vtp&quot;</span>);</div>
 <div class="line"> </div>
 <div class="line">      advectionKernel.<a class="code" href="classlsAdvect.html#a7b6f35f0b35133d40ceeb866b5c733f3">apply</a>();</div>
@@ -326,7 +326,7 @@ $(document).ready(function(){initNavTree('PatternedSubstrate_8cpp-example.html',
 <div class="line"> </div>
 <div class="line">    <a class="code" href="classlsMesh.html">lsMesh</a> mesh;</div>
 <div class="line">    <a class="code" href="classlsToSurfaceMesh.html">lsToSurfaceMesh&lt;double, D&gt;</a>(fillLayer, mesh).<a class="code" href="classlsToSurfaceMesh.html#a4e035b7d07ce2ef93442ba8e45856ee4">apply</a>();</div>
-<div class="line">    <a class="code" href="classlsVTKWriter.html">lsVTKWriter</a>(mesh).<a class="code" href="classlsVTKWriter.html#a922952d5bbeb9adf86d4e6264c0cbddc">writeVTP</a>(</div>
+<div class="line">    <a class="code" href="classlsVTKWriter.html">lsVTKWriter</a>(mesh).<a class="code" href="classlsVTKWriter.html#ab9d057a239ebb77d36173e2dfcbf4e1d">writeVTKLegacy</a>(</div>
 <div class="line">        <span class="stringliteral">&quot;fillLayer-&quot;</span> + std::to_string(numberOfEtchSteps + numberOfDepoSteps) +</div>
 <div class="line">        <span class="stringliteral">&quot;.vtp&quot;</span>);</div>
 <div class="line"> </div>
@@ -338,10 +338,10 @@ $(document).ready(function(){initNavTree('PatternedSubstrate_8cpp-example.html',
 <div class="line">  {</div>
 <div class="line">    <a class="code" href="classlsMesh.html">lsMesh</a> mesh;</div>
 <div class="line">    <a class="code" href="classlsToSurfaceMesh.html">lsToSurfaceMesh&lt;double, D&gt;</a>(substrate, mesh).<a class="code" href="classlsToSurfaceMesh.html#a4e035b7d07ce2ef93442ba8e45856ee4">apply</a>();</div>
-<div class="line">    <a class="code" href="classlsVTKWriter.html">lsVTKWriter</a>(mesh).<a class="code" href="classlsVTKWriter.html#a922952d5bbeb9adf86d4e6264c0cbddc">writeVTP</a>(<span class="stringliteral">&quot;final-substrate.vtp&quot;</span>);</div>
+<div class="line">    <a class="code" href="classlsVTKWriter.html">lsVTKWriter</a>(mesh).<a class="code" href="classlsVTKWriter.html#ab9d057a239ebb77d36173e2dfcbf4e1d">writeVTKLegacy</a>(<span class="stringliteral">&quot;final-substrate.vtp&quot;</span>);</div>
 <div class="line"> </div>
 <div class="line">    <a class="code" href="classlsToSurfaceMesh.html">lsToSurfaceMesh&lt;double, D&gt;</a>(fillLayer, mesh).<a class="code" href="classlsToSurfaceMesh.html#a4e035b7d07ce2ef93442ba8e45856ee4">apply</a>();</div>
-<div class="line">    <a class="code" href="classlsVTKWriter.html">lsVTKWriter</a>(mesh).<a class="code" href="classlsVTKWriter.html#a922952d5bbeb9adf86d4e6264c0cbddc">writeVTP</a>(<span class="stringliteral">&quot;final-fillLayer.vtp&quot;</span>);</div>
+<div class="line">    <a class="code" href="classlsVTKWriter.html">lsVTKWriter</a>(mesh).<a class="code" href="classlsVTKWriter.html#ab9d057a239ebb77d36173e2dfcbf4e1d">writeVTKLegacy</a>(<span class="stringliteral">&quot;final-fillLayer.vtp&quot;</span>);</div>
 <div class="line">  }</div>
 <div class="line"> </div>
 <div class="line">  <span class="keywordflow">return</span> 0;</div>
@@ -369,7 +369,6 @@ $(document).ready(function(){initNavTree('PatternedSubstrate_8cpp-example.html',
 <div class="ttc" id="alsToVoxelMesh_8hpp_html"><div class="ttname"><a href="lsToVoxelMesh_8hpp.html">lsToVoxelMesh.hpp</a></div></div>
 <div class="ttc" id="aclasslsVelocityField_html"><div class="ttname"><a href="classlsVelocityField.html">lsVelocityField</a></div><div class="ttdoc">Abstract class defining the interface for the velocity field used during advection using lsAdvect.</div><div class="ttdef"><b>Definition:</b> lsVelocityField.hpp:9</div></div>
 <div class="ttc" id="aPatternedSubstrate_8cpp_html_a874ebbb732890989b10e2a2fb28eaf82"><div class="ttname"><a href="PatternedSubstrate_8cpp.html#a874ebbb732890989b10e2a2fb28eaf82">makeRoundCone</a></div><div class="ttdeci">void makeRoundCone(lsMesh &amp;mesh, hrleVectorType&lt; double, 3 &gt; center, double radius, double height)</div><div class="ttdef"><b>Definition:</b> PatternedSubstrate.cpp:67</div></div>
-<div class="ttc" id="aclasslsVTKWriter_html_a922952d5bbeb9adf86d4e6264c0cbddc"><div class="ttname"><a href="classlsVTKWriter.html#a922952d5bbeb9adf86d4e6264c0cbddc">lsVTKWriter::writeVTP</a></div><div class="ttdeci">void writeVTP(std::string) const</div><div class="ttdef"><b>Definition:</b> lsVTKWriter.hpp:33</div></div>
 <div class="ttc" id="aclasslsAdvect_html_a520e28feacd2655a4eff2a33e1d7f92d"><div class="ttname"><a href="classlsAdvect.html#a520e28feacd2655a4eff2a33e1d7f92d">lsAdvect::setIgnoreVoids</a></div><div class="ttdeci">void setIgnoreVoids(bool iV)</div><div class="ttdoc">Set whether level set values, which are not part of the &quot;top&quot; geometrically connected part of values,...</div><div class="ttdef"><b>Definition:</b> lsAdvect.hpp:556</div></div>
 <div class="ttc" id="aclasslsAdvect_html_a9e5084dc4fa80a52c2aa81d5a331a027"><div class="ttname"><a href="classlsAdvect.html#a9e5084dc4fa80a52c2aa81d5a331a027">lsAdvect::getAdvectionTime</a></div><div class="ttdeci">double getAdvectionTime()</div><div class="ttdoc">Get by how much the physical time was advanced during the last apply() call.</div><div class="ttdef"><b>Definition:</b> lsAdvect.hpp:560</div></div>
 <div class="ttc" id="aclasslsToSurfaceMesh_html"><div class="ttname"><a href="classlsToSurfaceMesh.html">lsToSurfaceMesh</a></div><div class="ttdoc">Extract an explicit lsMesh instance from an lsDomain. The interface is then described by explciit sur...</div><div class="ttdef"><b>Definition:</b> lsToSurfaceMesh.hpp:18</div></div>
@@ -388,9 +387,10 @@ $(document).ready(function(){initNavTree('PatternedSubstrate_8cpp-example.html',
 <div class="ttc" id="aclassdirectionalEtch_html_af74383b5edc26776355ea982fa971dd0"><div class="ttname"><a href="classdirectionalEtch.html#af74383b5edc26776355ea982fa971dd0">directionalEtch::getScalarVelocity</a></div><div class="ttdeci">double getScalarVelocity(hrleVectorType&lt; double, 3 &gt;, int material, hrleVectorType&lt; double, 3 &gt; normalVector=hrleVectorType&lt; double, 3 &gt;(0.))</div><div class="ttdef"><b>Definition:</b> PatternedSubstrate.cpp:27</div></div>
 <div class="ttc" id="alsBooleanOperation_8hpp_html_a8b5747a2da7e017486ffceefca67d6d8aea931da33de8ba05c3635a51c2b25d75"><div class="ttname"><a href="lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8aea931da33de8ba05c3635a51c2b25d75">lsBooleanOperationEnum::UNION</a></div></div>
 <div class="ttc" id="aPatternedSubstrate_8cpp_html_ae66f6b31b5ad750f1fe042a706a4e3d4"><div class="ttname"><a href="PatternedSubstrate_8cpp.html#ae66f6b31b5ad750f1fe042a706a4e3d4">main</a></div><div class="ttdeci">int main()</div><div class="ttdef"><b>Definition:</b> PatternedSubstrate.cpp:98</div></div>
+<div class="ttc" id="aclasslsVTKWriter_html_ab9d057a239ebb77d36173e2dfcbf4e1d"><div class="ttname"><a href="classlsVTKWriter.html#ab9d057a239ebb77d36173e2dfcbf4e1d">lsVTKWriter::writeVTKLegacy</a></div><div class="ttdeci">void writeVTKLegacy(std::string filename)</div><div class="ttdef"><b>Definition:</b> lsVTKWriter.hpp:254</div></div>
 <div class="ttc" id="aclasslsPlane_html"><div class="ttname"><a href="classlsPlane.html">lsPlane</a></div><div class="ttdoc">Class describing a plane via a point in it and the plane normal.</div><div class="ttdef"><b>Definition:</b> lsGeometries.hpp:21</div></div>
 <div class="ttc" id="aclassisotropicDepo_html"><div class="ttname"><a href="classisotropicDepo.html">isotropicDepo</a></div><div class="ttdef"><b>Definition:</b> PatternedSubstrate.cpp:47</div></div>
-<div class="ttc" id="aclasslsConvexHull_html_a241c5e598fa84f5a393ad28a42d67fb8"><div class="ttname"><a href="classlsConvexHull.html#a241c5e598fa84f5a393ad28a42d67fb8">lsConvexHull::apply</a></div><div class="ttdeci">void apply()</div><div class="ttdef"><b>Definition:</b> lsConvexHull.hpp:279</div></div>
+<div class="ttc" id="aclasslsConvexHull_html_a241c5e598fa84f5a393ad28a42d67fb8"><div class="ttname"><a href="classlsConvexHull.html#a241c5e598fa84f5a393ad28a42d67fb8">lsConvexHull::apply</a></div><div class="ttdeci">void apply()</div><div class="ttdef"><b>Definition:</b> lsConvexHull.hpp:277</div></div>
 <div class="ttc" id="alsDomain_8hpp_html"><div class="ttname"><a href="lsDomain_8hpp.html">lsDomain.hpp</a></div></div>
 <div class="ttc" id="alsToSurfaceMesh_8hpp_html"><div class="ttname"><a href="lsToSurfaceMesh_8hpp.html">lsToSurfaceMesh.hpp</a></div></div>
 <!-- start footer part -->

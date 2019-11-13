@@ -3,3 +3,5 @@ build*
 *.vtk
 *.vtu
 *.vtp
+.vs
+CMakeSettings.json

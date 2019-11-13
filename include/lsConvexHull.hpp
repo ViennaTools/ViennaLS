@@ -202,7 +202,6 @@ template <class T, int D> class lsConvexHull {
   bool doesTriangleClip(const hrleVectorType<unsigned, D> &triangle) const {
     auto &points = pointCloud->points;
 
-    bool nodeExists[3] = {false, false, false};
     auto triangleNormal =
         Normalize(calculateNormal(points[triangle[1]] - points[triangle[0]],
                                   points[triangle[2]] - points[triangle[0]]));
@@ -214,7 +213,6 @@ template <class T, int D> class lsConvexHull {
         // check all possible permutations of elements
         for (unsigned k = 0; k < D; ++k) {
           if (hullElements[i][j] == triangle[k]) {
-            nodeExists[k] = true;
             ++inOneTriangle;
           }
         }

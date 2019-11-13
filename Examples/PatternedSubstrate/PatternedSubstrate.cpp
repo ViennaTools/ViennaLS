@@ -196,7 +196,8 @@ int main() {
                 << numberOfEtchSteps << std::flush;
       lsMesh mesh;
       lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-      lsVTKWriter(mesh).writeVTP("substrate-" + std::to_string(i) + ".vtp");
+      lsVTKWriter(mesh).writeVTKLegacy("substrate-" + std::to_string(i) +
+                                       ".vtp");
 
       advectionKernel.apply();
       passedTime += advectionKernel.getAdvectionTime();
@@ -205,8 +206,8 @@ int main() {
 
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh).writeVTP("substrate-" +
-                               std::to_string(numberOfEtchSteps) + ".vtp");
+    lsVTKWriter(mesh).writeVTKLegacy(
+        "substrate-" + std::to_string(numberOfEtchSteps) + ".vtp");
 
     std::cout << "Time passed during directional etch: " << passedTime
               << std::endl;
@@ -231,7 +232,7 @@ int main() {
                 << numberOfDepoSteps << std::flush;
       lsMesh mesh;
       lsToSurfaceMesh<double, D>(fillLayer, mesh).apply();
-      lsVTKWriter(mesh).writeVTP(
+      lsVTKWriter(mesh).writeVTKLegacy(
           "fillLayer-" + std::to_string(numberOfEtchSteps + 1 + i) + ".vtp");
 
       advectionKernel.apply();
@@ -241,7 +242,7 @@ int main() {
 
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(fillLayer, mesh).apply();
-    lsVTKWriter(mesh).writeVTP(
+    lsVTKWriter(mesh).writeVTKLegacy(
         "fillLayer-" + std::to_string(numberOfEtchSteps + numberOfDepoSteps) +
         ".vtp");
 
@@ -253,10 +254,10 @@ int main() {
   {
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh).writeVTP("final-substrate.vtp");
+    lsVTKWriter(mesh).writeVTKLegacy("final-substrate.vtp");
 
     lsToSurfaceMesh<double, D>(fillLayer, mesh).apply();
-    lsVTKWriter(mesh).writeVTP("final-fillLayer.vtp");
+    lsVTKWriter(mesh).writeVTKLegacy("final-fillLayer.vtp");
   }
 
   return 0;

@@ -40,6 +40,12 @@ if(VIENNALS_BUILD_SHARED_LIBS)
   find_package(ViennaHRLE REQUIRED)
   file(GLOB SPECIALISATION_CPPS "lib/*.cpp")
   add_library(${PROJECT_NAME} SHARED ${SPECIALISATION_CPPS})
+
+  # tell VS to export all symbols to the dll file
+  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    SET(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE CACHE BOOL "Export all symbols")
+  endif()
+
   target_link_libraries(${PROJECT_NAME} ViennaHRLE)
   target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/include/")
   set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})

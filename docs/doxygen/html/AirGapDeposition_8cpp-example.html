@@ -147,7 +147,7 @@ $(document).ready(function(){initNavTree('AirGapDeposition_8cpp-example.html',''
 <div class="line">    std::cout &lt;&lt; <span class="stringliteral">&quot;Extracting...&quot;</span> &lt;&lt; std::endl;</div>
 <div class="line">    <a name="_a9"></a><a class="code" href="classlsMesh.html">lsMesh</a> mesh;</div>
 <div class="line">    <a name="_a10"></a><a class="code" href="classlsToSurfaceMesh.html">lsToSurfaceMesh&lt;double, D&gt;</a>(substrate, mesh).<a name="a11"></a><a class="code" href="classlsToSurfaceMesh.html#a4e035b7d07ce2ef93442ba8e45856ee4">apply</a>();</div>
-<div class="line">    <a name="_a12"></a><a class="code" href="classlsVTKWriter.html">lsVTKWriter</a>(mesh).<a name="a13"></a><a class="code" href="classlsVTKWriter.html#a922952d5bbeb9adf86d4e6264c0cbddc">writeVTP</a>(<span class="stringliteral">&quot;plane.vtp&quot;</span>);</div>
+<div class="line">    <a name="_a12"></a><a class="code" href="classlsVTKWriter.html">lsVTKWriter</a>(mesh).<a name="a13"></a><a class="code" href="classlsVTKWriter.html#ab9d057a239ebb77d36173e2dfcbf4e1d">writeVTKLegacy</a>(<span class="stringliteral">&quot;plane.vtp&quot;</span>);</div>
 <div class="line">  }</div>
 <div class="line"> </div>
 <div class="line">  {</div>
@@ -163,7 +163,7 @@ $(document).ready(function(){initNavTree('AirGapDeposition_8cpp-example.html',''
 <div class="line">      std::cout &lt;&lt; <span class="stringliteral">&quot;Extracting...&quot;</span> &lt;&lt; std::endl;</div>
 <div class="line">      <a class="code" href="classlsMesh.html">lsMesh</a> mesh;</div>
 <div class="line">      <a name="_a15"></a><a class="code" href="classlsToMesh.html">lsToMesh&lt;double, D&gt;</a>(trench, mesh).<a name="a16"></a><a class="code" href="classlsToMesh.html#a7c671e886e5336f66a688a2066fd0ea1">apply</a>();</div>
-<div class="line">      <a class="code" href="classlsVTKWriter.html">lsVTKWriter</a>(mesh).<a class="code" href="classlsVTKWriter.html#a922952d5bbeb9adf86d4e6264c0cbddc">writeVTP</a>(<span class="stringliteral">&quot;box.vtp&quot;</span>);</div>
+<div class="line">      <a class="code" href="classlsVTKWriter.html">lsVTKWriter</a>(mesh).<a class="code" href="classlsVTKWriter.html#ab9d057a239ebb77d36173e2dfcbf4e1d">writeVTKLegacy</a>(<span class="stringliteral">&quot;box.vtp&quot;</span>);</div>
 <div class="line">    }</div>
 <div class="line"> </div>
 <div class="line">    <span class="comment">// Create trench geometry</span></div>
@@ -206,7 +206,7 @@ $(document).ready(function(){initNavTree('AirGapDeposition_8cpp-example.html',''
 <div class="line">              &lt;&lt; numberOfSteps &lt;&lt; std::flush;</div>
 <div class="line">    <a class="code" href="classlsMesh.html">lsMesh</a> mesh;</div>
 <div class="line">    <a class="code" href="classlsToSurfaceMesh.html">lsToSurfaceMesh&lt;double, D&gt;</a>(newLayer, mesh).<a class="code" href="classlsToSurfaceMesh.html#a4e035b7d07ce2ef93442ba8e45856ee4">apply</a>();</div>
-<div class="line">    <a class="code" href="classlsVTKWriter.html">lsVTKWriter</a>(mesh).<a name="a26"></a><a class="code" href="classlsVTKWriter.html#ab9d057a239ebb77d36173e2dfcbf4e1d">writeVTKLegacy</a>(<span class="stringliteral">&quot;trench&quot;</span> + std::to_string(i) + <span class="stringliteral">&quot;.vtk&quot;</span>);</div>
+<div class="line">    <a class="code" href="classlsVTKWriter.html">lsVTKWriter</a>(mesh).<a class="code" href="classlsVTKWriter.html#ab9d057a239ebb77d36173e2dfcbf4e1d">writeVTKLegacy</a>(<span class="stringliteral">&quot;trench&quot;</span> + std::to_string(i) + <span class="stringliteral">&quot;.vtk&quot;</span>);</div>
 <div class="line">  }</div>
 <div class="line">  std::cout &lt;&lt; std::endl;</div>
 <div class="line">  std::cout &lt;&lt; <span class="stringliteral">&quot;Time passed during advection: &quot;</span> &lt;&lt; passedTime &lt;&lt; std::endl;</div>
@@ -232,7 +232,6 @@ $(document).ready(function(){initNavTree('AirGapDeposition_8cpp-example.html',''
 <div class="ttc" id="aclasslsMakeGeometry_html"><div class="ttname"><a href="classlsMakeGeometry.html">lsMakeGeometry</a></div><div class="ttdoc">Create level sets describing basic geometric forms.</div><div class="ttdef"><b>Definition:</b> lsMakeGeometry.hpp:20</div></div>
 <div class="ttc" id="aAirGapDeposition_8cpp_html_ae66f6b31b5ad750f1fe042a706a4e3d4"><div class="ttname"><a href="AirGapDeposition_8cpp.html#ae66f6b31b5ad750f1fe042a706a4e3d4">main</a></div><div class="ttdeci">int main()</div><div class="ttdef"><b>Definition:</b> AirGapDeposition.cpp:38</div></div>
 <div class="ttc" id="aclasslsVelocityField_html"><div class="ttname"><a href="classlsVelocityField.html">lsVelocityField</a></div><div class="ttdoc">Abstract class defining the interface for the velocity field used during advection using lsAdvect.</div><div class="ttdef"><b>Definition:</b> lsVelocityField.hpp:9</div></div>
-<div class="ttc" id="aclasslsVTKWriter_html_a922952d5bbeb9adf86d4e6264c0cbddc"><div class="ttname"><a href="classlsVTKWriter.html#a922952d5bbeb9adf86d4e6264c0cbddc">lsVTKWriter::writeVTP</a></div><div class="ttdeci">void writeVTP(std::string) const</div><div class="ttdef"><b>Definition:</b> lsVTKWriter.hpp:33</div></div>
 <div class="ttc" id="aclasslsAdvect_html_a520e28feacd2655a4eff2a33e1d7f92d"><div class="ttname"><a href="classlsAdvect.html#a520e28feacd2655a4eff2a33e1d7f92d">lsAdvect::setIgnoreVoids</a></div><div class="ttdeci">void setIgnoreVoids(bool iV)</div><div class="ttdoc">Set whether level set values, which are not part of the &quot;top&quot; geometrically connected part of values,...</div><div class="ttdef"><b>Definition:</b> lsAdvect.hpp:556</div></div>
 <div class="ttc" id="aclasslsAdvect_html_a9e5084dc4fa80a52c2aa81d5a331a027"><div class="ttname"><a href="classlsAdvect.html#a9e5084dc4fa80a52c2aa81d5a331a027">lsAdvect::getAdvectionTime</a></div><div class="ttdeci">double getAdvectionTime()</div><div class="ttdoc">Get by how much the physical time was advanced during the last apply() call.</div><div class="ttdef"><b>Definition:</b> lsAdvect.hpp:560</div></div>
 <div class="ttc" id="aclasslsToMesh_html_a7c671e886e5336f66a688a2066fd0ea1"><div class="ttname"><a href="classlsToMesh.html#a7c671e886e5336f66a688a2066fd0ea1">lsToMesh::apply</a></div><div class="ttdeci">void apply()</div><div class="ttdef"><b>Definition:</b> lsToMesh.hpp:39</div></div>

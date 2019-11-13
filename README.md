@@ -15,6 +15,15 @@ Releases are tagged on the maser branch and available in the [releases section](
 
 ## Building
 
+### Supported Operating Systems
+
+* Windows (Visual Studio)
+
+* Linux (g++ / clang)
+
+* macOS (XCode)
+
+
 ### System Requirements
 
 * C++ Compiler with OpenMP support

@@ -60,7 +60,9 @@ public:
     geometry = lsGeometryEnum::BOX;
   }
 
-  lsMakeGeometry(lsDomain<T, D> &passedLevelSet, lsPointCloud<T, D> &passedPointCloud) : levelSet(&passedLevelSet), pointCloud(&passedPointCloud) {
+  lsMakeGeometry(lsDomain<T, D> &passedLevelSet,
+                 lsPointCloud<T, D> &passedPointCloud)
+      : levelSet(&passedLevelSet), pointCloud(&passedPointCloud) {
     geometry = lsGeometryEnum::CUSTOM;
   }
 
