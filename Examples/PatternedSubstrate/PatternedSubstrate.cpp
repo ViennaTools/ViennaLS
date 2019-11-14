@@ -196,8 +196,8 @@ int main() {
                 << numberOfEtchSteps << std::flush;
       lsMesh mesh;
       lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-      lsVTKWriter(mesh).writeVTKLegacy("substrate-" + std::to_string(i) +
-                                       ".vtp");
+      lsVTKWriter(mesh, "substrate-" + std::to_string(i) +
+                                       ".vtp").apply();
 
       advectionKernel.apply();
       passedTime += advectionKernel.getAdvectionTime();
@@ -206,8 +206,8 @@ int main() {
 
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh).writeVTKLegacy(
-        "substrate-" + std::to_string(numberOfEtchSteps) + ".vtp");
+    lsVTKWriter(mesh, "substrate-" + std::to_string(numberOfEtchSteps) + ".vtp").apply(
+        );
 
     std::cout << "Time passed during directional etch: " << passedTime
               << std::endl;
@@ -232,8 +232,8 @@ int main() {
                 << numberOfDepoSteps << std::flush;
       lsMesh mesh;
       lsToSurfaceMesh<double, D>(fillLayer, mesh).apply();
-      lsVTKWriter(mesh).writeVTKLegacy(
-          "fillLayer-" + std::to_string(numberOfEtchSteps + 1 + i) + ".vtp");
+      lsVTKWriter(mesh, "fillLayer-" + std::to_string(numberOfEtchSteps + 1 + i) + ".vtp").apply(
+          );
 
       advectionKernel.apply();
       passedTime += advectionKernel.getAdvectionTime();
@@ -242,9 +242,9 @@ int main() {
 
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(fillLayer, mesh).apply();
-    lsVTKWriter(mesh).writeVTKLegacy(
-        "fillLayer-" + std::to_string(numberOfEtchSteps + numberOfDepoSteps) +
-        ".vtp");
+    lsVTKWriter(mesh, "fillLayer-" + std::to_string(numberOfEtchSteps + numberOfDepoSteps) +
+    ".vtp").apply(
+        );
 
     std::cout << "Time passed during isotropic deposition: " << passedTime
               << std::endl;
@@ -254,10 +254,10 @@ int main() {
   {
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh).writeVTKLegacy("final-substrate.vtp");
+    lsVTKWriter(mesh, "final-substrate.vtp").apply();
 
     lsToSurfaceMesh<double, D>(fillLayer, mesh).apply();
-    lsVTKWriter(mesh).writeVTKLegacy("final-fillLayer.vtp");
+    lsVTKWriter(mesh, "final-fillLayer.vtp").apply();
   }
 
   return 0;

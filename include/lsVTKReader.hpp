@@ -6,6 +6,7 @@
 
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
+#include <lsFileFormats.hpp>
 
 #ifdef VIENNALS_USE_VTK
 #include <vtkCellData.h>
@@ -20,25 +21,79 @@
 /// Class handling the import of VTK file types.
 class lsVTKReader {
   lsMesh *mesh = nullptr;
+  lsFileFormatEnum fileFormat = lsFileFormatEnum::VTK_LEGACY;
+  std::string fileName;
 
   unsigned vtk_nodes_for_cell_type[15] = {0, 1, 0, 2, 0, 3, 0, 0,
                                           4, 4, 4, 8, 8, 6, 5};
 
 public:
+  lsVTKReader() {}
+  
   lsVTKReader(lsMesh &passedMesh) : mesh(&passedMesh) {}
 
+  lsVTKReader(lsMesh &passedMesh, std::string passedFileName) : mesh(&passedMesh), fileName(passedFileName) {}
+
+  lsVTKReader(lsMesh &passedMesh, lsFileFormatEnum passedFormat, std::string passedFileName) : mesh(&passedMesh), fileFormat(passedFormat), fileName(passedFileName) {}
+
+  /// set the mesh the file should be read into
   void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
 
-#ifndef VIENNALS_USE_VTK
-  void readVTP(std::string) {
-    lsMessage::getInstance()
-        .addWarning("ViennaLS was built without VTK support. VTK outputs not "
-                    "supported.")
-        .print();
+  /// set file format for file to read. Defaults to VTK_LEGACY.
+  void setFileFormat(lsFileFormatEnum passedFormat) {
+    fileFormat = passedFormat;
   }
 
-  void readVTU(std::string) { readVTP(""); }
+  /// set file name for file to read
+  void setFileName(std::string passedFileName) {
+    fileName = passedFileName;
+  }
+
+  void apply() {
+    // check mesh
+    if (mesh == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No mesh was passed to lsVTKReader. Not reading.")
+          .print();
+      return;
+    }
+    // check filename
+    if(fileName.empty()) {
+      lsMessage::getInstance()
+          .addWarning("No file name specified for lsVTKReader. Not reading.")
+          .print();
+      return;
+    }
+
+    // check file format
+    switch(fileFormat) {
+      case lsFileFormatEnum::VTK_LEGACY:
+        readVTKLegacy(fileName);
+        break;
+#ifdef VIENNALS_USE_VTK
+      case lsFileFormatEnum::VTP:
+        readVTP(fileName);
+        break;
+      case lsFileFormatEnum::VTU:
+        readVTU(fileName);
+        break;
 #else
+      case lsFileFormatEnum::VTP:
+      case lsFileFormatEnum::VTU:
+        lsMessage::getInstance()
+          .addWarning("lsVTKReader was built without VTK support. Only VTK_LEGACY "
+                      "can be used. File not read.")
+          .print();
+#endif
+      default:
+        lsMessage::getInstance()
+          .addWarning("No valid file format set for lsVTKReader. Not reading.")
+          .print();
+    }
+  }
+
+
+private:
   void readVTP(std::string filename) {
     if (mesh == nullptr) {
       lsMessage::getInstance()
@@ -241,7 +296,6 @@ public:
       }
     }
   }
-#endif
 
   void readVTKLegacy(std::string filename) {
     if (mesh == nullptr) {

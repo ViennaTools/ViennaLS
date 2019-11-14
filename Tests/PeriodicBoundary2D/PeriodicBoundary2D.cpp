@@ -79,15 +79,15 @@ int main() {
 
   lsMesh mesh;
   lsToMesh<double, D>(substrate, mesh).apply();
-  lsVTKWriter(mesh).writeVTP("normal.vtp");
+  lsVTKWriter(mesh, lsFileFormatEnum::VTP, "normal.vtp").apply();
 
   // lsExpand<double, D>(substrate, 4).apply();
   // lsToMesh<double, D>(substrate, mesh).apply();
-  // lsVTKWriter(mesh).writeVTP("expanded.vtp");
+  // lsVTKWriter(mesh, lsFileFormatEnum::VTP, "expanded.vtp").apply();
 
   // lsPrune<double, D>(substrate).apply();
   // lsToMesh<double, D>(substrate, mesh).apply();
-  // lsVTKWriter(mesh).writeVTP("pruned.vtp");
+  // lsVTKWriter(mesh, lsFileFormatEnum::VTP, "pruned.vtp").apply();
   // -----------------------------------------------------
 
   {
@@ -101,7 +101,7 @@ int main() {
         .apply();
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(pillar, mesh).apply();
-    lsVTKWriter(mesh).writeVTP("pillar.vtp");
+    lsVTKWriter(mesh, lsFileFormatEnum::VTP, "pillar.vtp").apply();
     lsBooleanOperation<double, D> boolOp(substrate, pillar,
                                          lsBooleanOperationEnum::UNION);
     boolOp.apply();
@@ -127,10 +127,10 @@ int main() {
                 << numberOfSteps << std::flush;
       lsMesh mesh;
       lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-      lsVTKWriter(mesh).writeVTP("pillar-" + std::to_string(i) + ".vtp");
+      lsVTKWriter(mesh, lsFileFormatEnum::VTP, "pillar-" + std::to_string(i) + ".vtp").apply();
 
       lsToMesh<double, D>(substrate, mesh).apply();
-      lsVTKWriter(mesh).writeVTP("LS-" + std::to_string(i) + ".vtp");
+      lsVTKWriter(mesh, lsFileFormatEnum::VTP, "LS-" + std::to_string(i) + ".vtp").apply();
     }
 
     advectionKernel.apply();

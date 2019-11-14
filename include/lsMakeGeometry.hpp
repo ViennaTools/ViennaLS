@@ -13,9 +13,6 @@
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
 
-// TODO remove
-#include <lsVTKWriter.hpp>
-
 /// Create level sets describing basic geometric forms.
 template <class T, int D> class lsMakeGeometry {
   typedef typename lsDomain<T, D>::PointValueVectorType pointDataType;

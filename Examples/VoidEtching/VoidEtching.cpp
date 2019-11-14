@@ -118,7 +118,7 @@ int main() {
               << numberOfSteps << std::flush;
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh).writeVTKLegacy("void-" + std::to_string(i) + ".vtp");
+    lsVTKWriter(mesh, "void-" + std::to_string(i) + ".vtp").apply();
 
     advectionKernel.apply();
     passedTime += advectionKernel.getAdvectionTime();

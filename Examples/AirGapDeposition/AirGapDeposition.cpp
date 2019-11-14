@@ -60,7 +60,7 @@ int main() {
     std::cout << "Extracting..." << std::endl;
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh).writeVTKLegacy("plane.vtp");
+    lsVTKWriter(mesh, "plane.vtp").apply();
   }
 
   {
@@ -76,7 +76,7 @@ int main() {
       std::cout << "Extracting..." << std::endl;
       lsMesh mesh;
       lsToMesh<double, D>(trench, mesh).apply();
-      lsVTKWriter(mesh).writeVTKLegacy("box.vtp");
+      lsVTKWriter(mesh, "box.vtp").apply();
     }
 
     // Create trench geometry
@@ -119,7 +119,7 @@ int main() {
               << numberOfSteps << std::flush;
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(newLayer, mesh).apply();
-    lsVTKWriter(mesh).writeVTKLegacy("trench" + std::to_string(i) + ".vtk");
+    lsVTKWriter(mesh, "trench" + std::to_string(i) + ".vtk").apply();
   }
   std::cout << std::endl;
   std::cout << "Time passed during advection: " << passedTime << std::endl;

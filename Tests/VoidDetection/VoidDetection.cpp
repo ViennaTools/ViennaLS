@@ -71,7 +71,7 @@ int main() {
     std::cout << "Extracting..." << std::endl;
     lsToSurfaceMesh<double, D>(substrate, explMesh).apply();
 
-    lsVTKWriter(explMesh).writeVTKLegacy("before.vtk");
+    lsVTKWriter(explMesh, "before.vtk").apply();
   }
 
   lsMarkVoidPoints<double, D>(substrate).apply();
@@ -93,7 +93,7 @@ int main() {
 
     mesh.insertNextScalarData(isVoid, "voidMarkers");
 
-    lsVTKWriter(mesh).writeVTKLegacy("after.vtk");
+    lsVTKWriter(mesh, "after.vtk").apply();
   }
 
   // Advection
@@ -104,7 +104,7 @@ int main() {
     {
       lsMesh mesh;
       lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-      lsVTKWriter(mesh).writeVTKLegacy("out-" + std::to_string(i) + ".vtk");
+      lsVTKWriter(mesh, "out-" + std::to_string(i) + ".vtk").apply();
 
       lsMarkVoidPoints<double, D>(substrate).apply();
       auto voidPointMarkers = substrate.getVoidPointMarkers();
@@ -116,7 +116,7 @@ int main() {
       lsToMesh<double, D>(substrate, mesh).apply();
       mesh.insertNextScalarData(isVoid, "voidMarkers");
 
-      lsVTKWriter(mesh).writeVTKLegacy("ls-out-" + std::to_string(i) + ".vtk");
+      lsVTKWriter(mesh, "ls-out-" + std::to_string(i) + ".vtk").apply();
     }
     advectionKernel.apply();
   }

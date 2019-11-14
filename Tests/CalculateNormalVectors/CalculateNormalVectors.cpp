@@ -76,8 +76,10 @@ int main() {
   // set normal vectors as vectordata to mesh
   mesh.insertNextVectorData(normalVectors, "Normals");
 
-  auto writer = lsVTKWriter(mesh);
-  writer.writeVTKLegacy("explicit.vtk");
+  auto writer = lsVTKWriter();
+  writer.setMesh(mesh);
+  writer.setFileName("explicit.vtk");
+  writer.apply();
 
   return 0;
 }

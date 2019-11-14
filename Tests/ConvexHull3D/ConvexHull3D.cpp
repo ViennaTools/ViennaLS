@@ -108,11 +108,11 @@ int main() {
     pointMesh.vertices.push_back(hrleVectorType<unsigned, 1>(i));
   }
   std::cout << "Output point cloud" << std::endl;
-  lsVTKWriter(pointMesh).writeVTP("points.vtp");
+  lsVTKWriter(pointMesh, lsFileFormatEnum::VTP, "points.vtp").apply();
 
   // std::cout << "Output surface mesh" << std::endl;
   // mesh.print();
-  // lsVTKWriter(mesh).writeVTP("hull.vtp");
+  // lsVTKWriter(mesh, lsFileFormatEnum::VTP, "hull.vtp").apply();
 
   std::cout << "create level set" << std::endl;
   lsDomain<double, D> levelSet(0.18);
@@ -128,18 +128,18 @@ int main() {
   lsMesh LSMesh;
   std::cout << "Output level set grid" << std::endl;
   lsToMesh<double, D>(levelSet, LSMesh).apply();
-  lsVTKWriter(LSMesh).writeVTP("LS.vtp");
+  lsVTKWriter(LSMesh, lsFileFormatEnum::VTP, "LS.vtp").apply();
 
   std::cout << "Output level set surface" << std::endl;
   lsToSurfaceMesh<double, D>(levelSet, LSMesh).apply();
-  lsVTKWriter(LSMesh).writeVTP("LSmesh.vtp");
+  lsVTKWriter(LSMesh, lsFileFormatEnum::VTP, "LSmesh.vtp").apply();
 
   // {
   //   lsMesh mesh;
   //   std::cout << "Extracting..." << std::endl;
   //   lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
   //   mesh.print();
-  //   lsVTKWriter(mesh).writeVTKLegacy("after2D.vtk");
+  //   lsVTKWriter(mesh, "after2D.vtk").apply();
   // }
 
   return 0;

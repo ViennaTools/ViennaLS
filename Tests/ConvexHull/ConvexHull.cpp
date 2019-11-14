@@ -57,7 +57,7 @@ int main() {
         hrleVectorType<double, 3>(cloud.points[i][0], cloud.points[i][1], 0.));
     pointMesh.vertices.push_back(hrleVectorType<unsigned, 1>(i));
   }
-  lsVTKWriter(pointMesh).writeVTP("points.vtp");
+  lsVTKWriter(pointMesh, lsFileFormatEnum::VTP, "points.vtp").apply();
 
   lsMakeGeometry<double, D> geom;
   lsDomain<double, D> levelSet;
@@ -70,7 +70,7 @@ int main() {
     std::cout << "Extracting..." << std::endl;
     lsToSurfaceMesh<double, D>(levelSet, mesh).apply();
     mesh.print();
-    lsVTKWriter(mesh).writeVTKLegacy("LSMesh.vtk");
+    lsVTKWriter(mesh, "LSMesh.vtk").apply();
   }
 
   return 0;

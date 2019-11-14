@@ -53,7 +53,7 @@ int main() {
 
   mesh.print();
 
-  lsVTKWriter(mesh).writeVTKLegacy("test-" + std::to_string(radius) + ".vtk");
+  lsVTKWriter(mesh, "test-" + std::to_string(radius) + ".vtk").apply();
 
   // write voxelised volume mesh
   {
@@ -75,7 +75,7 @@ int main() {
     std::cout << "voxelMesh: " << std::endl;
     voxelMesh.print();
 
-    lsVTKWriter(voxelMesh).writeVTU("voxelMesh.vtu");
+    lsVTKWriter(voxelMesh, lsFileFormatEnum::VTU, "voxelMesh.vtu").apply();
   }
 
   return 0;

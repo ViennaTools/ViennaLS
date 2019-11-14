@@ -37,7 +37,7 @@ int main() {
             << std::endl;
 
   lsToMesh<double, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh).writeVTKLegacy("initial.vtk");
+  lsVTKWriter(mesh, "initial.vtk").apply();
 
   lsPrune<double, D>(levelSet).apply();
   std::cout << "After prune: " << std::endl;
@@ -46,7 +46,7 @@ int main() {
   std::cout << "Width: " << levelSet.getLevelSetWidth() << std::endl;
 
   lsToMesh<double, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh).writeVTKLegacy("after_prune.vtk");
+  lsVTKWriter(mesh, "after_prune.vtk").apply();
 
   lsExpand<double, D>(levelSet, 4).apply();
   std::cout << "After Expand: " << std::endl;
@@ -55,7 +55,7 @@ int main() {
   std::cout << "Width: " << levelSet.getLevelSetWidth() << std::endl;
 
   lsToMesh<double, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh).writeVTKLegacy("after_expand.vtk");
+  lsVTKWriter(mesh, "after_expand.vtk").apply();
 
   lsReduce<double, D>(levelSet, 2).apply();
   std::cout << "After Reduce: " << std::endl;
@@ -64,14 +64,14 @@ int main() {
   std::cout << "Width: " << levelSet.getLevelSetWidth() << std::endl;
 
   lsToSurfaceMesh<double, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh).writeVTKLegacy("Sphere2D.vtk");
+  lsVTKWriter(mesh, "Sphere2D.vtk").apply();
 
   lsToMesh<double, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh).writeVTKLegacy("after_reduce.vtk");
+  lsVTKWriter(mesh, "after_reduce.vtk").apply();
 
   lsToVoxelMesh<double, D>(levelSet, mesh).apply();
   mesh.print();
-  lsVTKWriter(mesh).writeVTU("Sphere.vtu");
+  lsVTKWriter(mesh, lsFileFormatEnum::VTU, "Sphere.vtu").apply();
 
   return 0;
 }

@@ -41,8 +41,8 @@ int main() {
     lsToSurfaceMesh<double, D>(sphere1, mesh1).apply();
     lsToSurfaceMesh<double, D>(sphere2, mesh2).apply();
 
-    lsVTKWriter(mesh1).writeVTKLegacy("sphere1.vtk");
-    lsVTKWriter(mesh2).writeVTKLegacy("sphere2.vtk");
+    lsVTKWriter(mesh1, "sphere1.vtk").apply();
+    lsVTKWriter(mesh2, "sphere2.vtk").apply();
   }
 
   // Perform a boolean operation
@@ -56,7 +56,7 @@ int main() {
 
   mesh.print();
 
-  lsVTKWriter(mesh).writeVTKLegacy("after.vtk");
+  lsVTKWriter(mesh, "after.vtk").apply();
 
   return 0;
 }

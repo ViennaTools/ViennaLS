@@ -9,7 +9,6 @@
 #include <lsFromSurfaceMesh.hpp>
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
-#include <lsVTKWriter.hpp> // TODO remove
 
 /**
   This class creates a level set from a tetrahedral mesh.

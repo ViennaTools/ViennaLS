@@ -62,8 +62,8 @@ int main() {
     lsToMesh<double, D>(plane, mesh).apply();
 
     mesh.print();
-    lsVTKWriter(explMesh).writeVTKLegacy("before.vtk");
-    lsVTKWriter(mesh).writeVTKLegacy("beforeLS.vtk");
+    lsVTKWriter(explMesh, "before.vtk").apply();
+    lsVTKWriter(mesh, "beforeLS.vtk").apply();
   }
 
   // fill vector with lsDomain pointers
@@ -90,7 +90,7 @@ int main() {
 
   // mesh.print();
 
-  lsVTKWriter(mesh).writeVTKLegacy("after.vtk");
+  lsVTKWriter(mesh, "after.vtk").apply();
 
   return 0;
 }
