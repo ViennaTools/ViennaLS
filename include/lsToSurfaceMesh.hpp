@@ -20,7 +20,7 @@ template <class T, int D> class lsToSurfaceMesh {
 
   const lsDomain<T, D> *levelSet = nullptr;
   lsMesh *mesh = nullptr;
-  std::vector<hrleIndexType> meshNodeToPointIdMapping;
+  // std::vector<hrleIndexType> meshNodeToPointIdMapping;
   const double epsilon;
 
   lsToSurfaceMesh();
@@ -139,18 +139,18 @@ public:
 
                 // calculate the surface-grid intersection point
                 if (d0 == -d1) { // includes case where d0=d1=0
-                  meshNodeToPointIdMapping.push_back(
-                      cellIt.getCorner(p0).getPointId());
+                  // meshNodeToPointIdMapping.push_back(
+                  //     cellIt.getCorner(p0).getPointId());
                   cc[z] = static_cast<T>(cellIt.getIndices(z)) + 0.5;
                 } else {
                   if (std::abs(d0) <= std::abs(d1)) {
-                    meshNodeToPointIdMapping.push_back(
-                        cellIt.getCorner(p0).getPointId());
+                    // meshNodeToPointIdMapping.push_back(
+                    //     cellIt.getCorner(p0).getPointId());
                     cc[z] =
                         static_cast<T>(cellIt.getIndices(z)) + (d0 / (d0 - d1));
                   } else {
-                    meshNodeToPointIdMapping.push_back(
-                        cellIt.getCorner(p1).getPointId());
+                    // meshNodeToPointIdMapping.push_back(
+                    //     cellIt.getCorner(p1).getPointId());
                     cc[z] = static_cast<T>(cellIt.getIndices(z) + 1) -
                             (d1 / (d1 - d0));
                   }

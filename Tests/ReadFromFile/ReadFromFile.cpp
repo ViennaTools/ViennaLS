@@ -17,9 +17,9 @@ int main(int argc, char **argv) {
 
   lsMesh mesh;
 
-  lsVTKReader(mesh).readVTKLegacy(std::string(argv[1]));
+  lsVTKReader(mesh, std::string(argv[1])).apply();
 
-  lsVTKWriter(mesh).writeVTKLegacy("test.vtk");
+  lsVTKWriter(mesh, "test.vtk").apply();
 
   return 0;
 }

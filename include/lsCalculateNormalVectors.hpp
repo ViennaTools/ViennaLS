@@ -21,6 +21,8 @@ template <class T, int D> class lsCalculateNormalVectors {
   bool onlyActivePoints = false;
 
 public:
+  lsCalculateNormalVectors() {}
+
   lsCalculateNormalVectors(lsDomain<T, D> &passedDomain,
                            bool passedOnlyActivePoints = false)
       : domain(&passedDomain), onlyActivePoints(passedOnlyActivePoints) {}
@@ -80,20 +82,18 @@ public:
                neighborIt(domain->getDomain(), startVector);
            neighborIt.getIndices() < endVector; neighborIt.next()) {
 
-        if (!neighborIt.getCenter().isDefined() ||
-            (onlyActivePoints &&
-             std::abs(neighborIt.getCenter().getValue()) > 0.5))
+        auto &center = neighborIt.getCenter();
+        if (!center.isDefined() ||
+            (onlyActivePoints && std::abs(center.getValue()) > 0.5))
           continue;
 
         hrleVectorType<T, D> n;
 
         T denominator = 0;
         for (int i = 0; i < D; i++) {
-          T pos = neighborIt.getNeighbor(i).getValue() -
-                  neighborIt.getCenter().getValue();
-          T neg = neighborIt.getCenter().getValue() -
-                  neighborIt.getNeighbor(i + D).getValue();
-          n[i] = (pos + neg) * 0.5; // = 0;
+          T pos = neighborIt.getNeighbor(i).getValue() - center.getValue();
+          T neg = center.getValue() - neighborIt.getNeighbor(i + D).getValue();
+          n[i] = (pos + neg) * 0.5;
           denominator += n[i] * n[i];
         }
 

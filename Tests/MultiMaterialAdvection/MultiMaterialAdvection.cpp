@@ -74,10 +74,10 @@ int main() {
     std::cout << "Extracting..." << std::endl;
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter(mesh).writeVTKLegacy("lower_0.vtk");
+    lsVTKWriter(mesh, "lower_0.vtk").apply();
 
     lsToSurfaceMesh<double, D>(sphere2, mesh).apply();
-    lsVTKWriter(mesh).writeVTKLegacy("union_0.vtk");
+    lsVTKWriter(mesh, "union_0.vtk").apply();
   }
 
   // ADVECTION
@@ -104,11 +104,11 @@ int main() {
     std::cout << "Extracting..." << std::endl;
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter(mesh).writeVTKLegacy("lower_1.vtk");
+    lsVTKWriter(mesh, "lower_1.vtk").apply();
 
     lsToSurfaceMesh<double, D>(sphere2, mesh).apply();
     mesh.print();
-    lsVTKWriter(mesh).writeVTKLegacy("union_1.vtk");
+    lsVTKWriter(mesh, "union_1.vtk").apply();
   }
 
   return 0;

@@ -4,6 +4,7 @@
 #include <fstream>
 #include <string>
 
+#include <lsFileFormats.hpp>
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
 
@@ -23,23 +24,76 @@
 /// Class handling the output of an lsMesh to VTK file types.
 class lsVTKWriter {
   const lsMesh *mesh = nullptr;
+  lsFileFormatEnum fileFormat = lsFileFormatEnum::VTK_LEGACY;
+  std::string fileName;
 
 public:
+  lsVTKWriter() {}
+
   lsVTKWriter(lsMesh &passedMesh) : mesh(&passedMesh) {}
+
+  lsVTKWriter(lsMesh &passedMesh, std::string passedFileName)
+      : mesh(&passedMesh), fileName(passedFileName) {}
+
+  lsVTKWriter(lsMesh &passedMesh, lsFileFormatEnum passedFormat,
+              std::string passedFileName)
+      : mesh(&passedMesh), fileFormat(passedFormat), fileName(passedFileName) {}
 
   void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
 
-#ifndef VIENNALS_USE_VTK
-  void writeVTP(std::string) const {
-    lsMessage::getInstance()
-        .addWarning("ViennaLS was built without VTK support. Only VTKLegacy "
-                    "can be used. VTK outputs not "
-                    "created.")
-        .print();
+  /// set file format for file to write. Defaults to VTK_LEGACY.
+  void setFileFormat(lsFileFormatEnum passedFormat) {
+    fileFormat = passedFormat;
   }
 
-  void writeVTU(std::string) const { writeVTP(""); }
-#else  // VIENNALS_USE_VTK
+  /// set file name for file to write
+  void setFileName(std::string passedFileName) { fileName = passedFileName; }
+
+  void apply() {
+    // check mesh
+    if (mesh == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No mesh was passed to lsVTKWriter. Not reading.")
+          .print();
+      return;
+    }
+    // check filename
+    if (fileName.empty()) {
+      lsMessage::getInstance()
+          .addWarning("No file name specified for lsVTKWriter. Not reading.")
+          .print();
+      return;
+    }
+
+    // check file format
+    switch (fileFormat) {
+    case lsFileFormatEnum::VTK_LEGACY:
+      writeVTKLegacy(fileName);
+      break;
+#ifdef VIENNALS_USE_VTK
+    case lsFileFormatEnum::VTP:
+      writeVTP(fileName);
+      break;
+    case lsFileFormatEnum::VTU:
+      writeVTU(fileName);
+      break;
+#else
+    case lsFileFormatEnum::VTP:
+    case lsFileFormatEnum::VTU:
+      lsMessage::getInstance()
+          .addWarning(
+              "lsVTKWriter was built without VTK support. Only VTK_LEGACY "
+              "can be used. File not read.")
+          .print();
+#endif
+    default:
+      lsMessage::getInstance()
+          .addWarning("No valid file format set for lsVTKWriter. Not reading.")
+          .print();
+    }
+  }
+
+private:
   void writeVTP(std::string filename) const {
     if (mesh == nullptr) {
       lsMessage::getInstance()
@@ -249,7 +303,6 @@ public:
     owriter->SetInputData(uGrid);
     owriter->Write();
   }
-#endif // VIENNALS_USE_VTK
 
   void writeVTKLegacy(std::string filename) {
     if (mesh == nullptr) {

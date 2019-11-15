@@ -24,7 +24,7 @@ int main() {
 
   // Read mesh
   lsMesh initialMesh;
-  lsVTKReader(initialMesh).readVTKLegacy("initial.vtk");
+  lsVTKReader(initialMesh, "initial.vtk").apply();
   initialMesh.print();
 
   lsFromVolumeMesh<double, D>(levelSets, initialMesh).apply();
@@ -32,7 +32,7 @@ int main() {
   for (unsigned i = 0; i < levelSets.size(); ++i) {
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(levelSets[i], mesh).apply();
-    lsVTKWriter(mesh).writeVTKLegacy("LSsurface-" + std::to_string(i) + ".vtk");
+    lsVTKWriter(mesh, "LSsurface-" + std::to_string(i) + ".vtk").apply();
   }
 
   return 0;

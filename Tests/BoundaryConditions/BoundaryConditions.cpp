@@ -39,7 +39,7 @@ int main() {
     std::cout << "Extracting..." << std::endl;
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(levelSet, mesh).apply();
-    lsVTKWriter(mesh).writeVTKLegacy("plane.vtk");
+    lsVTKWriter(mesh, "plane.vtk").apply();
   }
 
   return 0;

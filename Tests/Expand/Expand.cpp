@@ -39,18 +39,18 @@ int main() {
   {
     lsMesh mesh;
     lsToMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter(mesh).writeVTKLegacy("sphere.vtk");
+    lsVTKWriter(mesh, "sphere.vtk").apply();
   }
 
   {
     lsMesh mesh;
     lsExpand<double, D>(sphere1, 5).apply();
     lsToMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter(mesh).writeVTKLegacy("sphereExpanded.vtk");
+    lsVTKWriter(mesh, "sphereExpanded.vtk").apply();
 
     lsReduce<double, D>(sphere1, 1).apply();
     lsToMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter(mesh).writeVTKLegacy("sphereReduced.vtk");
+    lsVTKWriter(mesh, "sphereReduced.vtk").apply();
   }
 
   return 0;

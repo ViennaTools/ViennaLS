@@ -54,7 +54,7 @@ int main() {
     std::cout << "Extracting..." << std::endl;
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter(mesh).writeVTKLegacy("before.vtk");
+    lsVTKWriter(mesh, "before.vtk").apply();
   }
 
   // instantiate velocities
@@ -82,7 +82,7 @@ int main() {
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
     mesh.print();
-    lsVTKWriter(mesh).writeVTKLegacy("after.vtk");
+    lsVTKWriter(mesh, "after.vtk").apply();
   }
 
   return 0;

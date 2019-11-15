@@ -60,10 +60,10 @@ int main() {
   {
     lsMesh mesh;
     lsToMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter(mesh).writeVTKLegacy("sphere.vtk");
+    lsVTKWriter(mesh, "sphere.vtk").apply();
 
     lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter(mesh).writeVTKLegacy("before2D.vtk");
+    lsVTKWriter(mesh, "before2D.vtk").apply();
   }
 
   // Advect the sphere
@@ -96,7 +96,7 @@ int main() {
     std::cout << "Extracting..." << std::endl;
     lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
     mesh.print();
-    lsVTKWriter(mesh).writeVTKLegacy("after2D.vtk");
+    lsVTKWriter(mesh, "after2D.vtk").apply();
   }
 
   return 0;

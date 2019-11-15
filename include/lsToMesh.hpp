@@ -4,7 +4,6 @@
 #include <lsPreCompileMacros.hpp>
 
 #include <iostream>
-#include <map>
 
 #include <hrleSparseIterator.hpp>
 #include <lsDomain.hpp>
@@ -55,6 +54,8 @@ public:
     std::vector<double> scalarData;
     std::vector<double> subLS;
 
+    const T gridDelta = levelSet->getGrid().getGridDelta();
+
     for (hrleConstSparseIterator<hrleDomainType> it(levelSet->getDomain());
          !it.isFinished(); ++it) {
       if ((onlyDefined && !it.isDefined()) ||
@@ -68,8 +69,8 @@ public:
 
       // insert corresponding node
       hrleVectorType<double, 3> node;
-      node[2] = 0.;
-      T gridDelta = levelSet->getGrid().getGridDelta();
+      if (D == 2)
+        node[2] = 0.;
       for (unsigned i = 0; i < D; ++i) {
         node[i] = double(it.getStartIndices(i)) * gridDelta;
       }
