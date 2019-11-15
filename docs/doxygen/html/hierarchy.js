@@ -27,6 +27,7 @@ var hierarchy =
     [ "lsReduce< T, D >", "classlsReduce.html", null ],
     [ "lsSphere< T, D >", "classlsSphere.html", null ],
     [ "lsInternal::lsStencilLocalLaxFriedrichsScalar< T, D, order >", "classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar.html", null ],
+    [ "lsToDiskMesh< T, D >", "classlsToDiskMesh.html", null ],
     [ "lsToMesh< T, D >", "classlsToMesh.html", null ],
     [ "lsToSurfaceMesh< T, D >", "classlsToSurfaceMesh.html", null ],
     [ "lsToVoxelMesh< T, D >", "classlsToVoxelMesh.html", null ],

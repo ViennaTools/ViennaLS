@@ -23,6 +23,7 @@ var annotated_dup =
     [ "lsPrune", "classlsPrune.html", "classlsPrune" ],
     [ "lsReduce", "classlsReduce.html", "classlsReduce" ],
     [ "lsSphere", "classlsSphere.html", "classlsSphere" ],
+    [ "lsToDiskMesh", "classlsToDiskMesh.html", "classlsToDiskMesh" ],
     [ "lsToMesh", "classlsToMesh.html", "classlsToMesh" ],
     [ "lsToSurfaceMesh", "classlsToSurfaceMesh.html", "classlsToSurfaceMesh" ],
     [ "lsToVoxelMesh", "classlsToVoxelMesh.html", "classlsToVoxelMesh" ],

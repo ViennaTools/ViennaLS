@@ -102,11 +102,16 @@ Releases</h1>
 <h1><a class="anchor" id="autotoc_md5"></a>
 Building</h1>
 <h2><a class="anchor" id="autotoc_md6"></a>
+Supported Operating Systems</h2>
+<p>* Windows (Visual Studio)</p>
+<p>* Linux (g++ / clang)</p>
+<p>* macOS (XCode)</p>
+<h2><a class="anchor" id="autotoc_md7"></a>
 System Requirements</h2>
 <p>* C++ Compiler with OpenMP support</p>
 <p>* <a href="https://github.com/ViennaTools/viennahrle">ViennaHRLE</a></p>
 <p>* <a href="https://vtk.org/">VTK</a> (optional)</p>
-<h2><a class="anchor" id="autotoc_md7"></a>
+<h2><a class="anchor" id="autotoc_md8"></a>
 Installing (with dependencies already installed)</h2>
 <p>Since this is a header only project, it does not require any installation. However, we recommend the following procedure.</p>
 <p>Make sure you have <a href="https://github.com/ViennaTools/viennahrle">ViennaHRLE</a> installed on your system and run:</p>
@@ -116,10 +121,10 @@ Installing (with dependencies already installed)</h2>
 <div class="line">cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/</div>
 <div class="line">make install</div>
 </div><!-- fragment --><p>This will install the necessary headers and CMake files to the specified path. If DCMAKE_INSTALL_PREFIX is not specified, it will be installed to the standard path for your system, usually /usr/local/ .</p>
-<h1><a class="anchor" id="autotoc_md8"></a>
+<h1><a class="anchor" id="autotoc_md9"></a>
 Using ViennaLS in your project</h1>
 <p>Have a look at the <a href="https://github.com/ViennaTools/viennals-example">example repo</a> for creating a project with ViennaLS as a dependency.</p>
-<h2><a class="anchor" id="autotoc_md9"></a>
+<h2><a class="anchor" id="autotoc_md10"></a>
 Integration in CMake projects</h2>
 <p>In order to use this library in your CMake project, add the following lines to the CMakeLists.txt of your project:\ (also do not forget to include ViennaHRLE)</p>
 <div class="fragment"><div class="line">set(ViennaLS_DIR &quot;/path/to/your/custom/install/&quot;)</div>
@@ -127,26 +132,26 @@ Integration in CMake projects</h2>
 <div class="line">add_executable(...)</div>
 <div class="line">target_include_directories(${PROJECT_NAME} PUBLIC ${VIENNALS_INCLUDE_DIRS})</div>
 <div class="line">target_link_libraries(${PROJECT_NAME} ${VIENNALS_LIBRARIES})</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md10"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md11"></a>
 Building examples</h2>
 <p>The examples can be built using CMake:</p>
 <div class="fragment"><div class="line">mkdir build &amp;&amp; cd build</div>
 <div class="line">cmake .. -DVIENNALS_BUILD_EXAMPLES=ON</div>
 <div class="line">make</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md11"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md12"></a>
 Shared libraries</h2>
 <p>In order to save build time during developement, dynamically linked shared libraries can be used if ViennaLS was built with them. This is done by precompiling the most common template specialisations. In order to use this, set VIENNALS_BUILD_SHARED_LIBS=ON when building ViennaLS. If ViennaLS was build with shared libraries, CMake will automatically link them to your project. In order to build a release of your own project with better runtime performance, but longer build times, the CMake option VIENNALS_USE_SHARED_LIBS=OFF should be used.</p>
-<h1><a class="anchor" id="autotoc_md12"></a>
+<h1><a class="anchor" id="autotoc_md13"></a>
 Contributing</h1>
 <p>If you want to contribute to ViennaLS, make sure to follow the <a href="https://llvm.org/docs/CodingStandards.html">LLVM Coding guidelines</a>. Before creating a pull request, make sure ALL files have been formatted by clang-format, which can be done using the format-project.sh script in the root directory.</p>
 <p>Before being able to merge your PR, make sure you have met all points on the checklist in <a href="https://github.com/ViennaTools/viennals/blob/master/CONTRIBUTING.md">CONTRIBUTING.md</a>.</p>
-<h1><a class="anchor" id="autotoc_md13"></a>
+<h1><a class="anchor" id="autotoc_md14"></a>
 Authors</h1>
 <p>Current contributors: Lado Filipovic, Paul Manstetten, Xaver Klemenschits and Josef Weinbub</p>
 <p>Founder and initial developer: Otmar Ertl</p>
 <p>Contact us via: <a href="#" onclick="location.href='mai'+'lto:'+'vie'+'nn'+'ats'+'@i'+'ue.'+'tu'+'wie'+'n.'+'ac.'+'at'; return false;">vienn<span style="display: none;">.nosp@m.</span>ats@<span style="display: none;">.nosp@m.</span>iue.t<span style="display: none;">.nosp@m.</span>uwie<span style="display: none;">.nosp@m.</span>n.ac.<span style="display: none;">.nosp@m.</span>at</a></p>
 <p>ViennaLS was developed under the aegis of the 'Institute for Microelectronics' at the 'TU Wien'. <a href="http://www.iue.tuwien.ac.at/">http://www.iue.tuwien.ac.at/</a></p>
-<h1><a class="anchor" id="autotoc_md14"></a>
+<h1><a class="anchor" id="autotoc_md15"></a>
 License</h1>
 <p>See file LICENSE in the base directory. </p>
 </div></div><!-- PageDoc -->
