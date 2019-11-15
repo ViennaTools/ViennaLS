@@ -60,7 +60,7 @@ int main() {
     std::cout << "Extracting..." << std::endl;
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "plane.vtp").apply();
+    lsVTKWriter(mesh, "plane.vtk").apply();
   }
 
   {
@@ -76,7 +76,7 @@ int main() {
       std::cout << "Extracting..." << std::endl;
       lsMesh mesh;
       lsToMesh<double, D>(trench, mesh).apply();
-      lsVTKWriter(mesh, "box.vtp").apply();
+      lsVTKWriter(mesh, "box.vtk").apply();
     }
 
     // Create trench geometry

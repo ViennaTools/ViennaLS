@@ -76,7 +76,7 @@ int main() {
     std::cout << "Extracting..." << std::endl;
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "trench-0.vtp").apply();
+    lsVTKWriter(mesh, "trench-0.vtk").apply();
   }
 
   // Now grow new material isotropically
@@ -103,10 +103,10 @@ int main() {
 
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(newLayer, mesh).apply();
-    lsVTKWriter(mesh, "trench-" + std::to_string(counter) + ".vtp").apply();
+    lsVTKWriter(mesh, "trench-" + std::to_string(counter) + ".vtk").apply();
 
     lsToMesh<double, D>(newLayer, mesh).apply();
-    lsVTKWriter(mesh, "LS-" + std::to_string(counter) + ".vtp").apply();
+    lsVTKWriter(mesh, "LS-" + std::to_string(counter) + ".vtk").apply();
 
     ++counter;
   }
@@ -120,7 +120,7 @@ int main() {
   //   lsMesh mesh;
   //   lsToSurfaceMesh<double, D>(newLayer, mesh).apply();
   //
-  //   lsVTKWriter(mesh, "grown.vtp").apply();
+  //   lsVTKWriter(mesh, "grown.vtk").apply();
   // }
 
   return 0;

@@ -69,7 +69,7 @@ int main() {
         .apply();
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(pillar, mesh).apply();
-    lsVTKWriter(mesh, "pillar.vtp").apply();
+    lsVTKWriter(mesh, "pillar.vtk").apply();
     lsBooleanOperation<double, D> boolOp(substrate, pillar,
                                          lsBooleanOperationEnum::UNION);
     boolOp.apply();
@@ -96,7 +96,7 @@ int main() {
               << numberOfSteps << std::flush;
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "pillar-" + std::to_string(i) + ".vtp").apply();
+    lsVTKWriter(mesh, "pillar-" + std::to_string(i) + ".vtk").apply();
 
     advectionKernel.apply();
     passedTime += advectionKernel.getAdvectionTime();

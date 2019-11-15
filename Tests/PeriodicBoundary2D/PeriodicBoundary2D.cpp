@@ -127,10 +127,14 @@ int main() {
                 << numberOfSteps << std::flush;
       lsMesh mesh;
       lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-      lsVTKWriter(mesh, lsFileFormatEnum::VTP, "pillar-" + std::to_string(i) + ".vtp").apply();
+      lsVTKWriter(mesh, lsFileFormatEnum::VTP,
+                  "pillar-" + std::to_string(i) + ".vtp")
+          .apply();
 
       lsToMesh<double, D>(substrate, mesh).apply();
-      lsVTKWriter(mesh, lsFileFormatEnum::VTP, "LS-" + std::to_string(i) + ".vtp").apply();
+      lsVTKWriter(mesh, lsFileFormatEnum::VTP,
+                  "LS-" + std::to_string(i) + ".vtp")
+          .apply();
     }
 
     advectionKernel.apply();

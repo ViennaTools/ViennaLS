@@ -4,9 +4,9 @@
 #include <fstream>
 #include <string>
 
+#include <lsFileFormats.hpp>
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
-#include <lsFileFormats.hpp>
 
 #ifdef VIENNALS_USE_VTK
 #include <vtkCellData.h>
@@ -29,12 +29,15 @@ class lsVTKReader {
 
 public:
   lsVTKReader() {}
-  
+
   lsVTKReader(lsMesh &passedMesh) : mesh(&passedMesh) {}
 
-  lsVTKReader(lsMesh &passedMesh, std::string passedFileName) : mesh(&passedMesh), fileName(passedFileName) {}
+  lsVTKReader(lsMesh &passedMesh, std::string passedFileName)
+      : mesh(&passedMesh), fileName(passedFileName) {}
 
-  lsVTKReader(lsMesh &passedMesh, lsFileFormatEnum passedFormat, std::string passedFileName) : mesh(&passedMesh), fileFormat(passedFormat), fileName(passedFileName) {}
+  lsVTKReader(lsMesh &passedMesh, lsFileFormatEnum passedFormat,
+              std::string passedFileName)
+      : mesh(&passedMesh), fileFormat(passedFormat), fileName(passedFileName) {}
 
   /// set the mesh the file should be read into
   void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
@@ -45,9 +48,7 @@ public:
   }
 
   /// set file name for file to read
-  void setFileName(std::string passedFileName) {
-    fileName = passedFileName;
-  }
+  void setFileName(std::string passedFileName) { fileName = passedFileName; }
 
   void apply() {
     // check mesh
@@ -58,7 +59,7 @@ public:
       return;
     }
     // check filename
-    if(fileName.empty()) {
+    if (fileName.empty()) {
       lsMessage::getInstance()
           .addWarning("No file name specified for lsVTKReader. Not reading.")
           .print();
@@ -66,32 +67,32 @@ public:
     }
 
     // check file format
-    switch(fileFormat) {
-      case lsFileFormatEnum::VTK_LEGACY:
-        readVTKLegacy(fileName);
-        break;
+    switch (fileFormat) {
+    case lsFileFormatEnum::VTK_LEGACY:
+      readVTKLegacy(fileName);
+      break;
 #ifdef VIENNALS_USE_VTK
-      case lsFileFormatEnum::VTP:
-        readVTP(fileName);
-        break;
-      case lsFileFormatEnum::VTU:
-        readVTU(fileName);
-        break;
+    case lsFileFormatEnum::VTP:
+      readVTP(fileName);
+      break;
+    case lsFileFormatEnum::VTU:
+      readVTU(fileName);
+      break;
 #else
-      case lsFileFormatEnum::VTP:
-      case lsFileFormatEnum::VTU:
-        lsMessage::getInstance()
-          .addWarning("lsVTKReader was built without VTK support. Only VTK_LEGACY "
-                      "can be used. File not read.")
+    case lsFileFormatEnum::VTP:
+    case lsFileFormatEnum::VTU:
+      lsMessage::getInstance()
+          .addWarning(
+              "lsVTKReader was built without VTK support. Only VTK_LEGACY "
+              "can be used. File not read.")
           .print();
 #endif
-      default:
-        lsMessage::getInstance()
+    default:
+      lsMessage::getInstance()
           .addWarning("No valid file format set for lsVTKReader. Not reading.")
           .print();
     }
   }
-
 
 private:
   void readVTP(std::string filename) {

@@ -8,6 +8,7 @@
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
+#include <lsToDiskMesh.hpp>
 #include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsToVoxelMesh.hpp>
@@ -196,8 +197,7 @@ int main() {
                 << numberOfEtchSteps << std::flush;
       lsMesh mesh;
       lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-      lsVTKWriter(mesh, "substrate-" + std::to_string(i) +
-                                       ".vtp").apply();
+      lsVTKWriter(mesh, "substrate-" + std::to_string(i) + ".vtk").apply();
 
       advectionKernel.apply();
       passedTime += advectionKernel.getAdvectionTime();
@@ -206,11 +206,18 @@ int main() {
 
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "substrate-" + std::to_string(numberOfEtchSteps) + ".vtp").apply(
-        );
+    lsVTKWriter(mesh, "substrate-" + std::to_string(numberOfEtchSteps) + ".vtk")
+        .apply();
 
     std::cout << "Time passed during directional etch: " << passedTime
               << std::endl;
+  }
+
+  // make disk mesh and output
+  {
+    lsMesh mesh;
+    lsToDiskMesh<double, 3>(substrate, mesh).apply();
+    lsVTKWriter(mesh, "diskMesh.vtk").apply();
   }
 
   // Deposit new layer ----------------------------------------------
@@ -232,8 +239,9 @@ int main() {
                 << numberOfDepoSteps << std::flush;
       lsMesh mesh;
       lsToSurfaceMesh<double, D>(fillLayer, mesh).apply();
-      lsVTKWriter(mesh, "fillLayer-" + std::to_string(numberOfEtchSteps + 1 + i) + ".vtp").apply(
-          );
+      lsVTKWriter(mesh, "fillLayer-" +
+                            std::to_string(numberOfEtchSteps + 1 + i) + ".vtk")
+          .apply();
 
       advectionKernel.apply();
       passedTime += advectionKernel.getAdvectionTime();
@@ -242,9 +250,11 @@ int main() {
 
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(fillLayer, mesh).apply();
-    lsVTKWriter(mesh, "fillLayer-" + std::to_string(numberOfEtchSteps + numberOfDepoSteps) +
-    ".vtp").apply(
-        );
+    lsVTKWriter(mesh,
+                "fillLayer-" +
+                    std::to_string(numberOfEtchSteps + numberOfDepoSteps) +
+                    ".vtk")
+        .apply();
 
     std::cout << "Time passed during isotropic deposition: " << passedTime
               << std::endl;
@@ -254,10 +264,10 @@ int main() {
   {
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "final-substrate.vtp").apply();
+    lsVTKWriter(mesh, "final-substrate.vtk").apply();
 
     lsToSurfaceMesh<double, D>(fillLayer, mesh).apply();
-    lsVTKWriter(mesh, "final-fillLayer.vtp").apply();
+    lsVTKWriter(mesh, "final-fillLayer.vtk").apply();
   }
 
   return 0;
