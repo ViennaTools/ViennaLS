@@ -15,6 +15,12 @@ public:
       origin[i] = passedOrigin[i];
     }
   }
+
+  lsSphere(T x, T y, T z, T passedRadius) : origin(hrleVectorType<T, D>(x, y)), radius(passedRadius) {
+    if(D==3) origin[2] = z;
+  }
+
+  lsSphere(T x, T y, T passedRadius) : origin(hrleVectorType<T, D>(x, y)), radius(passedRadius) {}
 };
 
 /// Class describing a plane via a point in it and the plane normal.

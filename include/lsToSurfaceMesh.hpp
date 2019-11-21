@@ -22,10 +22,9 @@ template <class T, int D> class lsToSurfaceMesh {
   lsMesh *mesh = nullptr;
   // std::vector<hrleIndexType> meshNodeToPointIdMapping;
   const double epsilon;
-
-  lsToSurfaceMesh();
-
 public:
+  lsToSurfaceMesh(double eps = 1e-12) : epsilon(eps) {}
+
   lsToSurfaceMesh(const lsDomain<T, D> &passedLevelSet, lsMesh &passedMesh,
                   double eps = 1e-12)
       : levelSet(&passedLevelSet), mesh(&passedMesh), epsilon(eps) {}
