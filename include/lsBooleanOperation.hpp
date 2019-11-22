@@ -155,10 +155,12 @@ template <class T, int D> class lsBooleanOperation {
   }
 
 public:
+  lsBooleanOperation() {}
+
   lsBooleanOperation(lsDomain<T, D> &passedlsDomain,
                      lsBooleanOperationEnum passedOperation =
                          lsBooleanOperationEnum::INTERSECT)
-      : levelSetA(&passedlsDomain), operation(passedOperation){};
+      : levelSetA(&passedlsDomain), operation(passedOperation){}
 
   lsBooleanOperation(lsDomain<T, D> &passedlsDomainA,
                      lsDomain<T, D> &passedlsDomainB,
@@ -173,7 +175,7 @@ public:
   }
 
   /// set the level set which will be used to modify the
-  /// second level set
+  /// first level set
   void setSecondLevelSet(lsDomain<T, D> &passedlsDomain) {
     levelSetB = &passedlsDomain;
   }

@@ -23,6 +23,8 @@ template <class T, int D> class lsCheck {
   }
 
 public:
+  lsCheck() {}
+
   lsCheck(const lsDomain<T, D> &passedLevelSet) : levelSet(&passedLevelSet) {}
 
   void setLevelSet(const lsDomain<T, D> &passedLevelSet) {

@@ -16,6 +16,8 @@ template <class T, int D> class lsPrune {
   lsDomain<T, D> *levelSet = nullptr;
 
 public:
+  lsPrune() {}
+
   lsPrune(lsDomain<T, D> &passedlsDomain) : levelSet(&passedlsDomain){};
 
   void setLevelSet(lsDomain<T, D> &passedlsDomain) {

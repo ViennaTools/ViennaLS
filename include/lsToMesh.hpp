@@ -18,12 +18,12 @@ template <class T, int D> class lsToMesh {
 
   const lsDomain<T, D> *levelSet = nullptr;
   lsMesh *mesh = nullptr;
-  const bool onlyDefined;
-  const bool onlyActive;
-
-  lsToMesh();
+  bool onlyDefined;
+  bool onlyActive;
 
 public:
+  lsToMesh();
+
   lsToMesh(const lsDomain<T, D> &passedLevelSet, lsMesh &passedMesh,
            bool passedOnlyDefined = true, bool passedOnlyActive = false)
       : levelSet(&passedLevelSet), mesh(&passedMesh),
@@ -34,6 +34,14 @@ public:
   }
 
   void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
+
+  void setOnlyDefined(bool passedOnlyDefined) {
+    onlyDefined = passedOnlyDefined;
+  }
+
+  void setOnlyActive(bool passedOnlyActive) {
+    onlyActive = passedOnlyActive;
+  }
 
   void apply() {
     if (levelSet == nullptr) {

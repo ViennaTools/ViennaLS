@@ -17,6 +17,8 @@ template <class T, int D> class lsReduce {
   bool noNewSegment = false;
 
 public:
+  lsReduce() {}
+
   lsReduce(lsDomain<T, D> &passedlsDomain) : levelSet(&passedlsDomain){};
 
   lsReduce(lsDomain<T, D> &passedlsDomain, int passedWidth,
