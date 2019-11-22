@@ -6,6 +6,10 @@
   of the classes which should be exposed defined
 */
 
+// correct module name macro
+#define TOKENPASTE_INTERNAL(x, y, z) x ## y ## z
+#define TOKENPASTE(x, y, z) TOKENPASTE_INTERNAL(x, y, z)
+#define VIENNALS_MODULE_NAME TOKENPASTE(viennaLS, VIENNALS_PYTHON_DIMENSION, d)
 
 #include <pybind11/pybind11.h>
 
@@ -31,11 +35,13 @@
 #include <lsVTKReader.hpp>
 #include <lsVTKWriter.hpp>
 
+// always use double for python export
 typedef double T;
-constexpr int D = 2;
+// get dimension from cmake define
+constexpr int D = VIENNALS_PYTHON_DIMENSION;
 
 // module specification
-PYBIND11_MODULE(viennaLS, module) {
+PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
   module.doc() = "ViennaLS python module.";
 
   // // lsAdvect
