@@ -42,9 +42,57 @@ typedef double T;
 // get dimension from cmake define
 constexpr int D = VIENNALS_PYTHON_DIMENSION;
 
+// define trampoline classes for interface functions
+// ALSO NEED TO ADD TRAMPOLINE CLASSES FOR CLASSES
+// WHICH HOLD REFERENCES TO INTERFACE(ABSTRACT) CLASSES
+
+// BASE CLASS WRAPPERS
+// lsVelocityField only defines interface and has no functionality
+class PylsVelocityField : public lsVelocityField<T> {
+  typedef hrleVectorType<T, 3> vectorType;
+  using lsVelocityField<T>::lsVelocityField;
+public:
+  T getScalarVelocity(
+      vectorType coordinate, int material,
+      vectorType normalVector = vectorType(T(0))) override {
+        PYBIND11_OVERLOAD_PURE(T, lsVelocityField<T>, getScalarVelocity, coordinate, material, normalVector);
+      }
+
+  vectorType getVectorVelocity(
+      hrleVectorType<T, 3> coordinate, int material,
+      hrleVectorType<T, 3> normalVector = hrleVectorType<T, 3>(T(0))) override {
+        PYBIND11_OVERLOAD_PURE(vectorType, lsVelocityField<T>, getVectorVelocity, coordinate, material, normalVector);
+      }
+};
+
+//REFERNCE HOLDING CLASS WRAPPERS
+
+// maybe needed wrapper code once we move to smart pointers
+// https://github.com/pybind/pybind11/issues/1389
+// // lsAdvect wrapping since it holds lsVelocityField references
+// class PylsAdvect : public lsAdvect<T, D> {
+//   pybind11::object pyObj;
+// public:
+//   PylsAdvect(lsDomain<T, D> &passedDomain, lsVelocityField<T> &passedVelocities) : lsAdvect<T,D>(passedDomain, passedVelocities), pyObj(pybind11::cast(passedVelocities)) {}
+//
+//   PylsAdvect(lsVelocityField<T> &passedVelocities) : lsAdvect<T,D>(passedVelocities), pyObj(pybind11::cast(passedVelocities)) {}
+// };
+
 // module specification
 PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
   module.doc() = "ViennaLS python module.";
+
+  // maximum number of threads to use
+  // must be set to one for now because lsAdvect
+  // hangs a the end of parallel section
+  // most likely to do with some omp issue
+  omp_set_num_threads(1);
+
+  // hrleVectorType
+  pybind11::class_< hrleVectorType<T, 3> >(module, "lsVectorType")
+      // constructors
+      .def(pybind11::init<double, double, double>())
+      ;
 
   // lsAdvect
   pybind11::class_< lsAdvect<T, D> >(module, "lsAdvect")
@@ -322,7 +370,13 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       ;
 
   // lsVelocityField
-
+  pybind11::class_< lsVelocityField<T>, PylsVelocityField >(module, "lsVelocityField")
+      // constructors
+      .def(pybind11::init<>())
+      // methods
+      .def("getScalarVelocity", &lsVelocityField<T>::getScalarVelocity, "Return the scalar velocity for a point of material at coordinate with normal vector normal.")
+      .def("getVectorVelocity", &lsVelocityField<T>::getVectorVelocity, "Return the vector velocity for a point of material at coordinate with normal vector normal.")
+      ;
 
   // lsVTKReader
   pybind11::class_< lsVTKReader >(module, "lsVTKReader")
