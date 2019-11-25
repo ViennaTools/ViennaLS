@@ -1,5 +1,6 @@
 var classlsFromVolumeMesh =
 [
+    [ "lsFromVolumeMesh", "classlsFromVolumeMesh.html#a20b46d7c3a16302892bbda1403045d23", null ],
     [ "lsFromVolumeMesh", "classlsFromVolumeMesh.html#ae224c4510ba522ad9a217bff06057e49", null ],
     [ "apply", "classlsFromVolumeMesh.html#a08f3315b80ae24108b2ad794d6e0d3a4", null ],
     [ "setLevelSets", "classlsFromVolumeMesh.html#a0ca92d22e126b5b27392a2137e7fb9db", null ],

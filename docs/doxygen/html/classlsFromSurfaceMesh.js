@@ -1,5 +1,6 @@
 var classlsFromSurfaceMesh =
 [
+    [ "lsFromSurfaceMesh", "classlsFromSurfaceMesh.html#a63380e5acb9d12c82ae9df19ab83d989", null ],
     [ "lsFromSurfaceMesh", "classlsFromSurfaceMesh.html#aa40ed1e7463db836daf1a5cdbf9f86ef", null ],
     [ "apply", "classlsFromSurfaceMesh.html#a76fce6385cab0be5293718be04979086", null ],
     [ "setLevelSet", "classlsFromSurfaceMesh.html#af9dbd3eca41983608f58e42d6492f3f6", null ],

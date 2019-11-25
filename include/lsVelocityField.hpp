@@ -18,7 +18,7 @@ public:
       hrleVectorType<T, 3> coordinate, int material,
       hrleVectorType<T, 3> normalVector = hrleVectorType<T, 3>(T(0))) = 0;
 
-  virtual ~lsVelocityField() {};
+  virtual ~lsVelocityField(){};
 };
 
 #endif // LS_VELOCITY_FIELD_HPP

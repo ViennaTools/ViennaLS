@@ -19,10 +19,10 @@ template <class T, int D> class lsExpand {
 public:
   lsExpand() {}
 
-  lsExpand(lsDomain<T, D> &passedlsDomain) : levelSet(&passedlsDomain){}
+  lsExpand(lsDomain<T, D> &passedlsDomain) : levelSet(&passedlsDomain) {}
 
   lsExpand(lsDomain<T, D> &passedlsDomain, int passedWidth)
-      : levelSet(&passedlsDomain), width(passedWidth){}
+      : levelSet(&passedlsDomain), width(passedWidth) {}
 
   void setLevelSet(lsDomain<T, D> &passedlsDomain) {
     levelSet = &passedlsDomain;

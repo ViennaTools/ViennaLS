@@ -8,4 +8,6 @@
 
 * Run make_doxygen.sh in docs/doxygen to update the website
 
+* Wrap all implemented interface functions for Python in Wrapping/pyWrap.cpp
+
 * IMPORTANT: Check the ReadMe file in / to make sure nothing changed

@@ -106,10 +106,14 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a76f5f725653b5fe6f21a671c61ecda09"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3220c7e4e58c4990b7d8512b36ae8e4e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointCloud.html#a3220c7e4e58c4990b7d8512b36ae8e4e">lsPointCloud</a> (std::vector&lt; hrleVectorType&lt; T, D &gt;&gt; passedPoints)</td></tr>
 <tr class="separator:a3220c7e4e58c4990b7d8512b36ae8e4e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a28cf2f47ab13b6786f42e0b538b64d14"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointCloud.html#a28cf2f47ab13b6786f42e0b538b64d14">lsPointCloud</a> (const std::vector&lt; std::vector&lt; T &gt;&gt; &amp;passedPoints)</td></tr>
+<tr class="separator:a28cf2f47ab13b6786f42e0b538b64d14"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa4a02b2fc568419e193e9cc28b356386"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointCloud.html#aa4a02b2fc568419e193e9cc28b356386">insertNextPoint</a> (hrleVectorType&lt; T, D &gt; newPoint)</td></tr>
 <tr class="separator:aa4a02b2fc568419e193e9cc28b356386"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae04ce0224a95b6e243094775d3e59f7c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointCloud.html#ae04ce0224a95b6e243094775d3e59f7c">insertNextPoint</a> (T *newPoint)</td></tr>
 <tr class="separator:ae04ce0224a95b6e243094775d3e59f7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a98602a8018f9325b574a0b0220fb9d1f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointCloud.html#a98602a8018f9325b574a0b0220fb9d1f">insertNextPoint</a> (const std::vector&lt; T &gt; &amp;newPoint)</td></tr>
+<tr class="separator:a98602a8018f9325b574a0b0220fb9d1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -125,7 +129,7 @@ class lsPointCloud&lt; T, D &gt;</h3>
 </dl>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a76f5f725653b5fe6f21a671c61ecda09"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a76f5f725653b5fe6f21a671c61ecda09">&#9670;&nbsp;</a></span>lsPointCloud() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a76f5f725653b5fe6f21a671c61ecda09">&#9670;&nbsp;</a></span>lsPointCloud() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -152,7 +156,7 @@ template&lt;class T, int D&gt; </div>
 </div>
 </div>
 <a id="a3220c7e4e58c4990b7d8512b36ae8e4e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3220c7e4e58c4990b7d8512b36ae8e4e">&#9670;&nbsp;</a></span>lsPointCloud() <span class="overload">[2/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a3220c7e4e58c4990b7d8512b36ae8e4e">&#9670;&nbsp;</a></span>lsPointCloud() <span class="overload">[2/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -179,9 +183,65 @@ template&lt;class T, int D&gt; </div>
 
 </div>
 </div>
+<a id="a28cf2f47ab13b6786f42e0b538b64d14"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a28cf2f47ab13b6786f42e0b538b64d14">&#9670;&nbsp;</a></span>lsPointCloud() <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T, int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsPointCloud.html">lsPointCloud</a>&lt; T, D &gt;::<a class="el" href="classlsPointCloud.html">lsPointCloud</a> </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; std::vector&lt; T &gt;&gt; &amp;&#160;</td>
+          <td class="paramname"><em>passedPoints</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a98602a8018f9325b574a0b0220fb9d1f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a98602a8018f9325b574a0b0220fb9d1f">&#9670;&nbsp;</a></span>insertNextPoint() <span class="overload">[1/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T, int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsPointCloud.html">lsPointCloud</a>&lt; T, D &gt;::insertNextPoint </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; T &gt; &amp;&#160;</td>
+          <td class="paramname"><em>newPoint</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="aa4a02b2fc568419e193e9cc28b356386"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa4a02b2fc568419e193e9cc28b356386">&#9670;&nbsp;</a></span>insertNextPoint() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa4a02b2fc568419e193e9cc28b356386">&#9670;&nbsp;</a></span>insertNextPoint() <span class="overload">[2/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -209,7 +269,7 @@ template&lt;class T, int D&gt; </div>
 </div>
 </div>
 <a id="ae04ce0224a95b6e243094775d3e59f7c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae04ce0224a95b6e243094775d3e59f7c">&#9670;&nbsp;</a></span>insertNextPoint() <span class="overload">[2/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae04ce0224a95b6e243094775d3e59f7c">&#9670;&nbsp;</a></span>insertNextPoint() <span class="overload">[3/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">

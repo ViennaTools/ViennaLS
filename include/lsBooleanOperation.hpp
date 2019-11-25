@@ -160,7 +160,7 @@ public:
   lsBooleanOperation(lsDomain<T, D> &passedlsDomain,
                      lsBooleanOperationEnum passedOperation =
                          lsBooleanOperationEnum::INTERSECT)
-      : levelSetA(&passedlsDomain), operation(passedOperation){}
+      : levelSetA(&passedlsDomain), operation(passedOperation) {}
 
   lsBooleanOperation(lsDomain<T, D> &passedlsDomainA,
                      lsDomain<T, D> &passedlsDomainB,

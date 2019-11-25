@@ -16,7 +16,8 @@ public:
     }
   }
 
-  lsSphere(const std::vector<T> &passedOrigin, T passedRadius) : origin(passedOrigin), radius(passedRadius) {}
+  lsSphere(const std::vector<T> &passedOrigin, T passedRadius)
+      : origin(passedOrigin), radius(passedRadius) {}
 };
 
 /// Class describing a plane via a point in it and the plane normal.
@@ -35,7 +36,9 @@ public:
     }
   }
 
-  lsPlane(const std::vector<T> &passedOrigin, const std::vector<T> &passedNormal) : origin(passedOrigin), normal(passedNormal) {}
+  lsPlane(const std::vector<T> &passedOrigin,
+          const std::vector<T> &passedNormal)
+      : origin(passedOrigin), normal(passedNormal) {}
 };
 
 /// Class describing a square box from one coordinate to another.
@@ -55,7 +58,9 @@ public:
     }
   }
 
-  lsBox(const std::vector<T> &passedMinCorner, const std::vector<T> &passedMaxCorner) : minCorner(passedMinCorner), maxCorner(passedMaxCorner) {}
+  lsBox(const std::vector<T> &passedMinCorner,
+        const std::vector<T> &passedMaxCorner)
+      : minCorner(passedMinCorner), maxCorner(passedMaxCorner) {}
 };
 
 /// Class describing a point cloud, which can be used to
@@ -70,7 +75,7 @@ public:
       : points(passedPoints) {}
 
   lsPointCloud(const std::vector<std::vector<T>> &passedPoints) {
-    for(auto point : passedPoints){
+    for (auto point : passedPoints) {
       hrleVectorType<T, D> p(point);
       points.push_back(p);
     }

@@ -6,7 +6,7 @@ var searchData=
   ['insertnextlevelset_52',['insertNextLevelSet',['../classlsAdvect.html#a2bdf4c19d5cf1787326bfaf128a61099',1,'lsAdvect::insertNextLevelSet()'],['../classlsToVoxelMesh.html#a4f0098495d728ba332331eb043c57cea',1,'lsToVoxelMesh::insertNextLevelSet()']]],
   ['insertnextline_53',['insertNextLine',['../classlsMesh.html#af7408aa20f90a0c477b61ec81343b8e9',1,'lsMesh']]],
   ['insertnextnode_54',['insertNextNode',['../classlsMesh.html#aaa55dbae0c86319c30e8385a4bde59aa',1,'lsMesh']]],
-  ['insertnextpoint_55',['insertNextPoint',['../classlsPointCloud.html#aa4a02b2fc568419e193e9cc28b356386',1,'lsPointCloud::insertNextPoint(hrleVectorType&lt; T, D &gt; newPoint)'],['../classlsPointCloud.html#ae04ce0224a95b6e243094775d3e59f7c',1,'lsPointCloud::insertNextPoint(T *newPoint)']]],
+  ['insertnextpoint_55',['insertNextPoint',['../classlsPointCloud.html#aa4a02b2fc568419e193e9cc28b356386',1,'lsPointCloud::insertNextPoint(hrleVectorType&lt; T, D &gt; newPoint)'],['../classlsPointCloud.html#ae04ce0224a95b6e243094775d3e59f7c',1,'lsPointCloud::insertNextPoint(T *newPoint)'],['../classlsPointCloud.html#a98602a8018f9325b574a0b0220fb9d1f',1,'lsPointCloud::insertNextPoint(const std::vector&lt; T &gt; &amp;newPoint)']]],
   ['insertnextscalardata_56',['insertNextScalarData',['../classlsMesh.html#a9d7254a79ef9af27c5bbf3ee3c19524b',1,'lsMesh']]],
   ['insertnexttetra_57',['insertNextTetra',['../classlsMesh.html#a1cc967a01540b67934f889d60b3297f3',1,'lsMesh']]],
   ['insertnexttriangle_58',['insertNextTriangle',['../classlsMesh.html#af49ffa8573e3034f1eaedac9f7c8282e',1,'lsMesh']]],

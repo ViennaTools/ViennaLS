@@ -101,10 +101,14 @@ $(document).ready(function(){initNavTree('classlsVelocityField.html','');});
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a0e78edc56bdb3f2ed2d27827a4388ff3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVelocityField.html#a0e78edc56bdb3f2ed2d27827a4388ff3">lsVelocityField</a> ()</td></tr>
+<tr class="separator:a0e78edc56bdb3f2ed2d27827a4388ff3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aea17948729dec556bd0451f2e3c342f0"><td class="memItemLeft" align="right" valign="top">virtual T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVelocityField.html#aea17948729dec556bd0451f2e3c342f0">getScalarVelocity</a> (hrleVectorType&lt; T, 3 &gt; coordinate, int material, hrleVectorType&lt; T, 3 &gt; normalVector=hrleVectorType&lt; T, 3 &gt;(T(0)))=0</td></tr>
 <tr class="separator:aea17948729dec556bd0451f2e3c342f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad5ac2ed650ca25b5e8cbbaab3edcc38e"><td class="memItemLeft" align="right" valign="top">virtual hrleVectorType&lt; T, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVelocityField.html#ad5ac2ed650ca25b5e8cbbaab3edcc38e">getVectorVelocity</a> (hrleVectorType&lt; T, 3 &gt; coordinate, int material, hrleVectorType&lt; T, 3 &gt; normalVector=hrleVectorType&lt; T, 3 &gt;(T(0)))=0</td></tr>
 <tr class="separator:ad5ac2ed650ca25b5e8cbbaab3edcc38e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a584c90d1d3e35d43e657a57ecaa12d45"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVelocityField.html#a584c90d1d3e35d43e657a57ecaa12d45">~lsVelocityField</a> ()</td></tr>
+<tr class="separator:a584c90d1d3e35d43e657a57ecaa12d45"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;class T&gt;<br />
@@ -113,7 +117,62 @@ class lsVelocityField&lt; T &gt;</h3>
 <p>Abstract class defining the interface for the velocity field used during advection using <a class="el" href="classlsAdvect.html" title="This class is used to advance level sets over time. Level sets are passed to the constructor in an st...">lsAdvect</a>. </p>
 <dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#_a1">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#_a1">Deposition.cpp</a>, <a class="el" href="PatternedSubstrate_8cpp-example.html#_a1">PatternedSubstrate.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#_a1">PeriodicBoundary.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#_a1">VoidEtching.cpp</a>.</dd>
 </dl>
-</div><h2 class="groupheader">Member Function Documentation</h2>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a0e78edc56bdb3f2ed2d27827a4388ff3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0e78edc56bdb3f2ed2d27827a4388ff3">&#9670;&nbsp;</a></span>lsVelocityField()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsVelocityField.html">lsVelocityField</a>&lt; T &gt;::<a class="el" href="classlsVelocityField.html">lsVelocityField</a> </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a584c90d1d3e35d43e657a57ecaa12d45"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a584c90d1d3e35d43e657a57ecaa12d45">&#9670;&nbsp;</a></span>~lsVelocityField()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="classlsVelocityField.html">lsVelocityField</a>&lt; T &gt;::~<a class="el" href="classlsVelocityField.html">lsVelocityField</a> </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
 <a id="aea17948729dec556bd0451f2e3c342f0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aea17948729dec556bd0451f2e3c342f0">&#9670;&nbsp;</a></span>getScalarVelocity()</h2>
 
