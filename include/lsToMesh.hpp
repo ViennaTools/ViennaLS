@@ -22,7 +22,7 @@ template <class T, int D> class lsToMesh {
   bool onlyActive;
 
 public:
-  lsToMesh();
+  lsToMesh() {};
 
   lsToMesh(const lsDomain<T, D> &passedLevelSet, lsMesh &passedMesh,
            bool passedOnlyDefined = true, bool passedOnlyActive = false)
