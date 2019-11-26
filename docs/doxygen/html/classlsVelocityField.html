@@ -103,10 +103,10 @@ $(document).ready(function(){initNavTree('classlsVelocityField.html','');});
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a0e78edc56bdb3f2ed2d27827a4388ff3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVelocityField.html#a0e78edc56bdb3f2ed2d27827a4388ff3">lsVelocityField</a> ()</td></tr>
 <tr class="separator:a0e78edc56bdb3f2ed2d27827a4388ff3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aea17948729dec556bd0451f2e3c342f0"><td class="memItemLeft" align="right" valign="top">virtual T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVelocityField.html#aea17948729dec556bd0451f2e3c342f0">getScalarVelocity</a> (hrleVectorType&lt; T, 3 &gt; coordinate, int material, hrleVectorType&lt; T, 3 &gt; normalVector=hrleVectorType&lt; T, 3 &gt;(T(0)))=0</td></tr>
-<tr class="separator:aea17948729dec556bd0451f2e3c342f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad5ac2ed650ca25b5e8cbbaab3edcc38e"><td class="memItemLeft" align="right" valign="top">virtual hrleVectorType&lt; T, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVelocityField.html#ad5ac2ed650ca25b5e8cbbaab3edcc38e">getVectorVelocity</a> (hrleVectorType&lt; T, 3 &gt; coordinate, int material, hrleVectorType&lt; T, 3 &gt; normalVector=hrleVectorType&lt; T, 3 &gt;(T(0)))=0</td></tr>
-<tr class="separator:ad5ac2ed650ca25b5e8cbbaab3edcc38e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1a74168867b2272073a2c7bad96481c1"><td class="memItemLeft" align="right" valign="top">virtual T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVelocityField.html#a1a74168867b2272073a2c7bad96481c1">getScalarVelocity</a> (const std::array&lt; T, 3 &gt; &amp;coordinate, int material, const std::array&lt; T, 3 &gt; &amp;normalVector)=0</td></tr>
+<tr class="separator:a1a74168867b2272073a2c7bad96481c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa5deb1c0f6e225515e6ca7f8e1570e37"><td class="memItemLeft" align="right" valign="top">virtual std::array&lt; T, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVelocityField.html#aa5deb1c0f6e225515e6ca7f8e1570e37">getVectorVelocity</a> (const std::array&lt; T, 3 &gt; &amp;coordinate, int material, const std::array&lt; T, 3 &gt; &amp;normalVector)=0</td></tr>
+<tr class="separator:aa5deb1c0f6e225515e6ca7f8e1570e37"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a584c90d1d3e35d43e657a57ecaa12d45"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVelocityField.html#a584c90d1d3e35d43e657a57ecaa12d45">~lsVelocityField</a> ()</td></tr>
 <tr class="separator:a584c90d1d3e35d43e657a57ecaa12d45"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -115,8 +115,6 @@ Public Member Functions</h2></td></tr>
 class lsVelocityField&lt; T &gt;</h3>
 
 <p>Abstract class defining the interface for the velocity field used during advection using <a class="el" href="classlsAdvect.html" title="This class is used to advance level sets over time. Level sets are passed to the constructor in an st...">lsAdvect</a>. </p>
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#_a1">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#_a1">Deposition.cpp</a>, <a class="el" href="PatternedSubstrate_8cpp-example.html#_a1">PatternedSubstrate.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#_a1">PeriodicBoundary.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#_a1">VoidEtching.cpp</a>.</dd>
-</dl>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a0e78edc56bdb3f2ed2d27827a4388ff3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0e78edc56bdb3f2ed2d27827a4388ff3">&#9670;&nbsp;</a></span>lsVelocityField()</h2>
@@ -124,7 +122,7 @@ class lsVelocityField&lt; T &gt;</h3>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T&gt; </div>
+template&lt;class T &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -151,7 +149,7 @@ template&lt;class T&gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T&gt; </div>
+template&lt;class T &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -173,13 +171,13 @@ template&lt;class T&gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="aea17948729dec556bd0451f2e3c342f0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aea17948729dec556bd0451f2e3c342f0">&#9670;&nbsp;</a></span>getScalarVelocity()</h2>
+<a id="a1a74168867b2272073a2c7bad96481c1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1a74168867b2272073a2c7bad96481c1">&#9670;&nbsp;</a></span>getScalarVelocity()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T&gt; </div>
+template&lt;class T &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -187,7 +185,7 @@ template&lt;class T&gt; </div>
         <tr>
           <td class="memname">virtual T <a class="el" href="classlsVelocityField.html">lsVelocityField</a>&lt; T &gt;::getScalarVelocity </td>
           <td>(</td>
-          <td class="paramtype">hrleVectorType&lt; T, 3 &gt;&#160;</td>
+          <td class="paramtype">const std::array&lt; T, 3 &gt; &amp;&#160;</td>
           <td class="paramname"><em>coordinate</em>, </td>
         </tr>
         <tr>
@@ -199,8 +197,8 @@ template&lt;class T&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">hrleVectorType&lt; T, 3 &gt;&#160;</td>
-          <td class="paramname"><em>normalVector</em> = <code>hrleVectorType&lt;&#160;T,&#160;3&#160;&gt;(T(0))</code>&#160;</td>
+          <td class="paramtype">const std::array&lt; T, 3 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>normalVector</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -215,25 +213,23 @@ template&lt;class T&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classisotropicDepo.html#aad903c5f27a0bd357da5153d1a8cbc3d">isotropicDepo</a>, <a class="el" href="classvelocityField.html#affabdf89deff57e4babac32f451915f2">velocityField</a>, <a class="el" href="classvelocityField.html#affabdf89deff57e4babac32f451915f2">velocityField</a>, <a class="el" href="classvelocityField.html#affabdf89deff57e4babac32f451915f2">velocityField</a>, <a class="el" href="classvelocityField.html#a588df6a6eb8bb0b4b1e59b96da8a1210">velocityField</a>, and <a class="el" href="classdirectionalEtch.html#af74383b5edc26776355ea982fa971dd0">directionalEtch</a>.</p>
-
 </div>
 </div>
-<a id="ad5ac2ed650ca25b5e8cbbaab3edcc38e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad5ac2ed650ca25b5e8cbbaab3edcc38e">&#9670;&nbsp;</a></span>getVectorVelocity()</h2>
+<a id="aa5deb1c0f6e225515e6ca7f8e1570e37"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa5deb1c0f6e225515e6ca7f8e1570e37">&#9670;&nbsp;</a></span>getVectorVelocity()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T&gt; </div>
+template&lt;class T &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual hrleVectorType&lt;T, 3&gt; <a class="el" href="classlsVelocityField.html">lsVelocityField</a>&lt; T &gt;::getVectorVelocity </td>
+          <td class="memname">virtual std::array&lt;T, 3&gt; <a class="el" href="classlsVelocityField.html">lsVelocityField</a>&lt; T &gt;::getVectorVelocity </td>
           <td>(</td>
-          <td class="paramtype">hrleVectorType&lt; T, 3 &gt;&#160;</td>
+          <td class="paramtype">const std::array&lt; T, 3 &gt; &amp;&#160;</td>
           <td class="paramname"><em>coordinate</em>, </td>
         </tr>
         <tr>
@@ -245,8 +241,8 @@ template&lt;class T&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">hrleVectorType&lt; T, 3 &gt;&#160;</td>
-          <td class="paramname"><em>normalVector</em> = <code>hrleVectorType&lt;&#160;T,&#160;3&#160;&gt;(T(0))</code>&#160;</td>
+          <td class="paramtype">const std::array&lt; T, 3 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>normalVector</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -260,8 +256,6 @@ template&lt;class T&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Implemented in <a class="el" href="classisotropicDepo.html#ac247bdd5a5e9f825808282ae0e376731">isotropicDepo</a>, <a class="el" href="classdirectionalEtch.html#a7eedae997263f096907b7e18c3c2a9a4">directionalEtch</a>, <a class="el" href="classvelocityField.html#a536ca04d0435d1d8a0aa3a24752d97a7">velocityField</a>, <a class="el" href="classvelocityField.html#a536ca04d0435d1d8a0aa3a24752d97a7">velocityField</a>, <a class="el" href="classvelocityField.html#a536ca04d0435d1d8a0aa3a24752d97a7">velocityField</a>, and <a class="el" href="classvelocityField.html#a536ca04d0435d1d8a0aa3a24752d97a7">velocityField</a>.</p>
 
 </div>
 </div>

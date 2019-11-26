@@ -2,8 +2,6 @@ var annotated_dup =
 [
     [ "lsInternal", "namespacelsInternal.html", "namespacelsInternal" ],
     [ "std", "namespacestd.html", "namespacestd" ],
-    [ "directionalEtch", "classdirectionalEtch.html", "classdirectionalEtch" ],
-    [ "isotropicDepo", "classisotropicDepo.html", "classisotropicDepo" ],
     [ "lsAdvect", "classlsAdvect.html", "classlsAdvect" ],
     [ "lsBooleanOperation", "classlsBooleanOperation.html", "classlsBooleanOperation" ],
     [ "lsBox", "classlsBox.html", "classlsBox" ],
@@ -29,6 +27,5 @@ var annotated_dup =
     [ "lsToVoxelMesh", "classlsToVoxelMesh.html", "classlsToVoxelMesh" ],
     [ "lsVelocityField", "classlsVelocityField.html", "classlsVelocityField" ],
     [ "lsVTKReader", "classlsVTKReader.html", "classlsVTKReader" ],
-    [ "lsVTKWriter", "classlsVTKWriter.html", "classlsVTKWriter" ],
-    [ "velocityField", "classvelocityField.html", "classvelocityField" ]
+    [ "lsVTKWriter", "classlsVTKWriter.html", "classlsVTKWriter" ]
 ];

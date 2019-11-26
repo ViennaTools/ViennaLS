@@ -59,9 +59,8 @@ public:
                            material, normalVector);
   }
 
-  vectorType getVectorVelocity(
-      const vectorType &coordinate, int material,
-      const vectorType &normalVector) override {
+  vectorType getVectorVelocity(const vectorType &coordinate, int material,
+                               const vectorType &normalVector) override {
     PYBIND11_OVERLOAD_PURE(vectorType, lsVelocityField<T>, getVectorVelocity,
                            coordinate, material, normalVector);
   }

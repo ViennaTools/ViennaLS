@@ -160,7 +160,8 @@ public:
 
     std::array<T, 3> vectorVelocity =
         velocities->getVectorVelocity(coordArray, material, {});
-    double scalarVelocity = velocities->getScalarVelocity(coordArray, material, {});
+    double scalarVelocity =
+        velocities->getScalarVelocity(coordArray, material, {});
 
     // if there is a vector velocity, we need to project it onto a scalar
     // velocity first using its normal vector
@@ -280,7 +281,8 @@ public:
           toifl *= -gradient[k] / denominator;
 
           // Osher (constant V) term
-          T osher = velocities->getScalarVelocity(coordArray, material, normal_p);
+          T osher =
+              velocities->getScalarVelocity(coordArray, material, normal_p);
 
           // Total derivative is sum of terms given above
           alpha[k] = std::fabs(monti + toifl + osher);

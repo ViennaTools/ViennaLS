@@ -30,14 +30,16 @@ var NAVTREE =
       [ "System Requirements", "index.html#autotoc_md7", null ],
       [ "Installing (with dependencies already installed)", "index.html#autotoc_md8", null ]
     ] ],
-    [ "Using ViennaLS in your project", "index.html#autotoc_md9", [
-      [ "Integration in CMake projects", "index.html#autotoc_md10", null ],
-      [ "Building examples", "index.html#autotoc_md11", null ],
-      [ "Shared libraries", "index.html#autotoc_md12", null ]
+    [ "Using ViennaLS in your project", "index.html#autotoc_md9", null ],
+    [ "Using the viennaLS python module", "index.html#autotoc_md10", [
+      [ "Integration in CMake projects", "index.html#autotoc_md11", null ],
+      [ "Building examples", "index.html#autotoc_md12", null ],
+      [ "Building the python module", "index.html#autotoc_md13", null ],
+      [ "Shared libraries", "index.html#autotoc_md14", null ]
     ] ],
-    [ "Contributing", "index.html#autotoc_md13", null ],
-    [ "Authors", "index.html#autotoc_md14", null ],
-    [ "License", "index.html#autotoc_md15", null ],
+    [ "Contributing", "index.html#autotoc_md15", null ],
+    [ "Authors", "index.html#autotoc_md16", null ],
+    [ "License", "index.html#autotoc_md17", null ],
     [ "Contributing", "md_CONTRIBUTING.html", null ],
     [ "Namespaces", "namespaces.html", [
       [ "Namespace List", "namespaces.html", "namespaces_dup" ],
@@ -49,7 +51,6 @@ var NAVTREE =
     [ "Classes", "annotated.html", [
       [ "Class List", "annotated.html", "annotated_dup" ],
       [ "Class Index", "classes.html", null ],
-      [ "Class Hierarchy", "hierarchy.html", "hierarchy" ],
       [ "Class Members", "functions.html", [
         [ "All", "functions.html", "functions_dup" ],
         [ "Functions", "functions_func.html", "functions_func" ],
@@ -61,19 +62,17 @@ var NAVTREE =
       [ "File List", "files.html", "files_dup" ],
       [ "File Members", "globals.html", [
         [ "All", "globals.html", null ],
-        [ "Functions", "globals_func.html", null ],
         [ "Enumerations", "globals_enum.html", null ],
         [ "Macros", "globals_defs.html", null ]
       ] ]
-    ] ],
-    [ "Examples", "examples.html", "examples" ]
+    ] ]
   ] ]
 ];
 
 var NAVTREEINDEX =
 [
-"AirGapDeposition_8cpp-example.html",
-"classlsReduce.html#abd2b04b19718f34f8719953185e01df9"
+"annotated.html",
+"classlsToSurfaceMesh.html#a4e035b7d07ce2ef93442ba8e45856ee4"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

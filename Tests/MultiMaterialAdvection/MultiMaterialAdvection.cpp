@@ -19,10 +19,9 @@
 // in this case just grow one of the materials
 class velocityField : public lsVelocityField<double> {
 public:
-  double getScalarVelocity(
-      const std::array<double, 3> &/*coordinate*/, int material,
-      const std::array<double,
-                     3> &/*normalVector*/) {
+  double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
+                           int material,
+                           const std::array<double, 3> & /*normalVector*/) {
     // Note that only the top material grows, so having two different,
     // positive velocities will only apply in the first advection step.
     // In the next step, the levelSets of the materials will not overlap
@@ -33,10 +32,10 @@ public:
     return ((material == 1) ? 0.5 : -0.2);
   }
 
-  std::array<double, 3> getVectorVelocity(
-      const std::array<double, 3> &/*coordinate*/, int /*material*/,
-      const std::array<double,
-                     3> &/*normalVector*/) {
+  std::array<double, 3>
+  getVectorVelocity(const std::array<double, 3> & /*coordinate*/,
+                    int /*material*/,
+                    const std::array<double, 3> & /*normalVector*/) {
     return std::array<double, 3>({});
   }
 };

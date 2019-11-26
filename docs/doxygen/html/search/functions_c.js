@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['weno3_410',['weno3',['../classlsInternal_1_1lsFiniteDifferences.html#a79d98864e22c1e1f124e334ba6c0387e',1,'lsInternal::lsFiniteDifferences']]],
-  ['weno5_411',['weno5',['../classlsInternal_1_1lsFiniteDifferences.html#ab0b417ce562ed42a8b484dd7214e8a13',1,'lsInternal::lsFiniteDifferences']]]
+  ['_7elsvelocityfield_388',['~lsVelocityField',['../classlsVelocityField.html#a584c90d1d3e35d43e657a57ecaa12d45',1,'lsVelocityField']]]
 ];

@@ -17,20 +17,19 @@
 // implement own velocity field
 class velocityField : public lsVelocityField<double> {
 public:
-  double getScalarVelocity(
-      const std::array<double, 3> &/*coordinate*/, int /*material*/,
-      const std::array<double,
-                     3> &/*normalVector*/) {
+  double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
+                           int /*material*/,
+                           const std::array<double, 3> & /*normalVector*/) {
     // Some arbitrary velocity function of your liking
     // (try changing it and see what happens :)
     double velocity = 1.;
     return velocity;
   }
 
-  std::array<double, 3> getVectorVelocity(
-      const std::array<double, 3> &/*coordinate*/, int /*material*/,
-      const std::array<double,
-                     3> &/*normalVector*/) {
+  std::array<double, 3>
+  getVectorVelocity(const std::array<double, 3> & /*coordinate*/,
+                    int /*material*/,
+                    const std::array<double, 3> & /*normalVector*/) {
     return std::array<double, 3>({});
   }
 };

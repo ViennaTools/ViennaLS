@@ -25,9 +25,9 @@
 // implement velocity field describing a directional etch
 class directionalEtch : public lsVelocityField<double> {
 public:
-  double getScalarVelocity(
-      const std::array<double, 3> &/*coordinate*/, int material,
-      const std::array<double, 3> &normalVector) {
+  double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
+                           int material,
+                           const std::array<double, 3> &normalVector) {
     // etch directionally
     if (material > 0) {
       return (normalVector[2] > 0.) ? -normalVector[2] : 0;
@@ -36,10 +36,10 @@ public:
     }
   }
 
-  std::array<double, 3> getVectorVelocity(
-      const std::array<double, 3> &/*coordinate*/, int /*material*/,
-      const std::array<double,
-                     3> &/*normalVector*/) {
+  std::array<double, 3>
+  getVectorVelocity(const std::array<double, 3> & /*coordinate*/,
+                    int /*material*/,
+                    const std::array<double, 3> & /*normalVector*/) {
     return std::array<double, 3>({});
   }
 };
@@ -47,18 +47,17 @@ public:
 // implement velocity field describing an isotropic deposition
 class isotropicDepo : public lsVelocityField<double> {
 public:
-  double getScalarVelocity(
-      const std::array<double, 3> &/*coordinate*/, int /*material*/,
-      const std::array<double,
-                     3> &/*normalVector*/) {
+  double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
+                           int /*material*/,
+                           const std::array<double, 3> & /*normalVector*/) {
     // deposit isotropically everywhere
     return 1;
   }
 
-  std::array<double, 3> getVectorVelocity(
-      const std::array<double, 3> &/*coordinate*/, int /*material*/,
-      const std::array<double,
-                     3> &/*normalVector*/) {
+  std::array<double, 3>
+  getVectorVelocity(const std::array<double, 3> & /*coordinate*/,
+                    int /*material*/,
+                    const std::array<double, 3> & /*normalVector*/) {
     return std::array<double, 3>({});
   }
 };

@@ -20,18 +20,17 @@
 // implement own velocity field
 class velocityField : public lsVelocityField<double> {
 public:
-  double getScalarVelocity(
-      const std::array<double, 3> &/*coordinate*/, int /*material*/,
-      const std::array<double,
-                     3> &/*normalVector*/) {
+  double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
+                           int /*material*/,
+                           const std::array<double, 3> & /*normalVector*/) {
     // isotropic etch rate
     return 1;
   }
 
-  std::array<double, 3> getVectorVelocity(
-      const std::array<double, 3> &/*coordinate*/, int /*material*/,
-      const std::array<double,
-                     3> &/*normalVector*/) {
+  std::array<double, 3>
+  getVectorVelocity(const std::array<double, 3> & /*coordinate*/,
+                    int /*material*/,
+                    const std::array<double, 3> & /*normalVector*/) {
     return std::array<double, 3>({});
   }
 };
