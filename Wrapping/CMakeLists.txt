@@ -7,7 +7,6 @@ project(ViennaLSPython)
 set(ViennaHRLE_DIR $ENV{VIENNAHRLE_DIR})
 set(ViennaLS_DIR "${ViennaLS_BINARY_DIR}")
 set(ViennaLS_COMMON_TARGET ${PROJECT_NAME})
-message(STATUS "Dir: ${ViennaLS_BINARY_DIR}")
 find_package(ViennaHRLE REQUIRED)
 find_package(ViennaLS REQUIRED)
 
@@ -33,7 +32,7 @@ if(VIENNALS_BUILD_PYTHON_3_6)
 
   pybind11_add_module(${VIENNALS_PYTHON_MODULE_NAME_2D} ${VIENNALS_PYTHON_SOURCE})
   target_include_directories(${VIENNALS_PYTHON_MODULE_NAME_2D} PUBLIC ${VIENNALS_INCLUDE_DIRS})
-  target_link_libraries(${VIENNALS_PYTHON_MODULE_NAME_2D} PRIVATE ${VIENNALS_LIBRARIES})
+  target_link_libraries(${VIENNALS_PYTHON_MODULE_NAME_2D} PRIVATE ${VIENNALS_PYTHON_LIBRARIES})
   #define compile dimension
   target_compile_definitions(${VIENNALS_PYTHON_MODULE_NAME_2D} PRIVATE -DVIENNALS_PYTHON_DIMENSION=2)
 
@@ -42,7 +41,7 @@ if(VIENNALS_BUILD_PYTHON_3_6)
 
   pybind11_add_module(${VIENNALS_PYTHON_MODULE_NAME_3D} ${VIENNALS_PYTHON_SOURCE})
   target_include_directories(${VIENNALS_PYTHON_MODULE_NAME_3D} PUBLIC ${VIENNALS_INCLUDE_DIRS})
-  target_link_libraries(${VIENNALS_PYTHON_MODULE_NAME_3D} PRIVATE ${VIENNALS_LIBRARIES})
+  target_link_libraries(${VIENNALS_PYTHON_MODULE_NAME_3D} PRIVATE ${VIENNALS_PYTHON_LIBRARIES})
   #define compile dimension
   target_compile_definitions(${VIENNALS_PYTHON_MODULE_NAME_3D} PRIVATE -DVIENNALS_PYTHON_DIMENSION=3)
 endif()

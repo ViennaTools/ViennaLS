@@ -55,6 +55,23 @@ This will install the necessary headers and CMake files to the specified path. I
 
 Have a look at the [example repo](https://github.com/ViennaTools/viennals-example) for creating a project with ViennaLS as a dependency.
 
+## Using the viennaLS python module
+
+In order to use ViennaLS in python, just download the python shared libraries from the [releases section](https://github.com/ViennaTools/ViennaLS/releases) and put it in your current folder.
+From this folder just import the 2D or the 3D version of the library:
+
+```
+import viennaLS2d as vls
+levelset = vls.lsDomain(0.2) # empty level set with grid spacing 0.2
+sphere = vls.lsSphere((0,0,0), 5) # sphere at origin with radius 5
+vls.lsMakeGeometry(levelset, sphere).apply() # create sphere in level set
+```
+
+All functions which are available in C++ are also available in Python. In order to switch to three dimensions, only the import needs to be changed:
+
+```
+import viennaLS3d as vls
+```
 
 ### Integration in CMake projects
 
@@ -79,6 +96,13 @@ cmake .. -DVIENNALS_BUILD_EXAMPLES=ON
 make
 ```
 
+### Building the python module
+
+In order to build the python module, set VIENNALS_BUILD_PYTHON_2_7 OR VIENNALS_BUILD_PYTHON_3_6 to ON:
+```
+cmake .. -DVIENNALS_BUILD_PYTHON_3_6=ON
+make
+```
 
 ### Shared libraries
 
