@@ -156,6 +156,8 @@ Public Member Functions</h2></td></tr>
 class lsAdvect&lt; T, D &gt;</h3>
 
 <p>This class is used to advance level sets over time. Level sets are passed to the constructor in an std::vector, with the last element being the level set to advect, or "top level set", while the others are then adjusted afterwards. In order to ensure that advection works correctly, the "top level set" has to include all lower level sets: LS_top = LS_top U LS_i for i = {0 ... n}, where n is the number of level sets. The velocities used to advect the level set are given in a concrete implementation of the <a class="el" href="classlsVelocityField.html" title="Abstract class defining the interface for the velocity field used during advection using lsAdvect.">lsVelocityField</a> (check Advection examples for guidance) </p>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#_a33">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#_a31">Deposition.cpp</a>, <a class="el" href="PatternedSubstrate_8cpp-example.html#_a30">PatternedSubstrate.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#_a26">PeriodicBoundary.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#_a20">VoidEtching.cpp</a>.</dd>
+</dl>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a04133cfc8f477fa8357e8ebda371dc1d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a04133cfc8f477fa8357e8ebda371dc1d">&#9670;&nbsp;</a></span>lsAdvect() <span class="overload">[1/5]</span></h2>
@@ -163,7 +165,7 @@ class lsAdvect&lt; T, D &gt;</h3>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T , int D&gt; </div>
+template&lt;class T, int D&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -190,7 +192,7 @@ template&lt;class T , int D&gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T , int D&gt; </div>
+template&lt;class T, int D&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -218,7 +220,7 @@ template&lt;class T , int D&gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T , int D&gt; </div>
+template&lt;class T, int D&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -256,7 +258,7 @@ template&lt;class T , int D&gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T , int D&gt; </div>
+template&lt;class T, int D&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -284,7 +286,7 @@ template&lt;class T , int D&gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T , int D&gt; </div>
+template&lt;class T, int D&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -323,7 +325,7 @@ template&lt;class T , int D&gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T , int D&gt; </div>
+template&lt;class T, int D&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -352,7 +354,7 @@ template&lt;class T , int D&gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T , int D&gt; </div>
+template&lt;class T, int D&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -381,7 +383,7 @@ template&lt;class T , int D&gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T , int D&gt; </div>
+template&lt;class T, int D&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -410,7 +412,7 @@ template&lt;class T , int D&gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T , int D&gt; </div>
+template&lt;class T, int D&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -439,7 +441,7 @@ template&lt;class T , int D&gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T , int D&gt; </div>
+template&lt;class T, int D&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -468,7 +470,7 @@ template&lt;class T , int D&gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T , int D&gt; </div>
+template&lt;class T, int D&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -498,7 +500,7 @@ template&lt;class T , int D&gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T , int D&gt; </div>
+template&lt;class T, int D&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -528,7 +530,7 @@ template&lt;class T , int D&gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T , int D&gt; </div>
+template&lt;class T, int D&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -558,7 +560,7 @@ template&lt;class T , int D&gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T , int D&gt; </div>
+template&lt;class T, int D&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -588,7 +590,7 @@ template&lt;class T , int D&gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T , int D&gt; </div>
+template&lt;class T, int D&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -618,7 +620,7 @@ template&lt;class T , int D&gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T , int D&gt; </div>
+template&lt;class T, int D&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -648,7 +650,7 @@ template&lt;class T , int D&gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T , int D&gt; </div>
+template&lt;class T, int D&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -678,7 +680,7 @@ template&lt;class T , int D&gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class T , int D&gt; </div>
+template&lt;class T, int D&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">

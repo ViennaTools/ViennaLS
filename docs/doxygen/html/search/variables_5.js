@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['origin_397',['origin',['../classlsSphere.html#a95e3ace00da655271be224ce280f933f',1,'lsSphere::origin()'],['../classlsPlane.html#a052dfdf35e72d77134d64fc53ab63026',1,'lsPlane::origin()']]]
+  ['griddelta_441',['gridDelta',['../namespaceAirGapDeposition.html#a2298757d8b928ab18a132ed7e268679b',1,'AirGapDeposition.gridDelta()'],['../namespaceDeposition.html#a388a3ed8b0b67bec94970f23ad4fe042',1,'Deposition.gridDelta()']]]
 ];

@@ -217,6 +217,8 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def(pybind11::init<hrleCoordType *, lsDomain<T, D>::BoundaryType *>())
       .def(pybind11::init<hrleCoordType *, lsDomain<T, D>::BoundaryType *,
                           hrleCoordType>())
+      .def(pybind11::init<std::vector<hrleCoordType>, std::vector<unsigned>,
+                          hrleCoordType>())
       .def(pybind11::init<lsDomain<T, D>::PointValueVectorType, hrleCoordType *,
                           lsDomain<T, D>::BoundaryType *>())
       .def(pybind11::init<lsDomain<T, D>::PointValueVectorType, hrleCoordType *,

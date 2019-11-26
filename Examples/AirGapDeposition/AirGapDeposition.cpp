@@ -107,7 +107,7 @@ int main() {
   advectionKernel.setIgnoreVoids(true);
 
   // Now advect the level set 50 times, outputting every
-  // 10th advection step. Save the physical time that
+  // advection step. Save the physical time that
   // passed during the advection.
   double passedTime = 0.;
   unsigned numberOfSteps = 60;

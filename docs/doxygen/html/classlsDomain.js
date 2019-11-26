@@ -9,6 +9,7 @@ var classlsDomain =
     [ "voidPointMarkersType", "classlsDomain.html#a39e1bd8e14e1930b35d6808bce0a272d", null ],
     [ "lsDomain", "classlsDomain.html#ae4d8f81852411480790eca52f704c101", null ],
     [ "lsDomain", "classlsDomain.html#a1b93737819bb59987f11239a38d26d1c", null ],
+    [ "lsDomain", "classlsDomain.html#a154f6f7b177bd272d5f7769cb94ac7e5", null ],
     [ "lsDomain", "classlsDomain.html#aa1b62b9875d64df99915f943a802fdec", null ],
     [ "lsDomain", "classlsDomain.html#a58c7ef76498ba1a3d0979f64b32f4af6", null ],
     [ "lsDomain", "classlsDomain.html#afb1e5d933d59916e39a4e7834c23647f", null ],
