@@ -12,6 +12,11 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   SET(CMAKE_CXX_STANDARD "17")
 endif()
 
+# tell VS to export all symbols to its dll files
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  SET(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE CACHE BOOL "Export all symbols")
+endif()
+
 # set whether to build static versions
 option(VIENNALS_STATIC_BUILD "Build all targets with static links." OFF)
 if(VIENNALS_STATIC_BUILD)
@@ -52,12 +57,6 @@ if(VIENNALS_BUILD_SHARED_LIBS)
   find_package(ViennaHRLE REQUIRED)
   file(GLOB SPECIALISATION_CPPS "lib/*.cpp")
   add_library(${PROJECT_NAME} SHARED ${SPECIALISATION_CPPS})
-
-  # tell VS to export all symbols to the dll file
-  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-    SET(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE CACHE BOOL "Export all symbols")
-  endif()
-
   target_link_libraries(${PROJECT_NAME} ViennaHRLE)
   target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/include/")
   set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
