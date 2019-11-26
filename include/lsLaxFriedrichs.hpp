@@ -118,7 +118,8 @@ alpha(a)*/
     }
 
     // Calculate normal vector for velocity calculation
-    hrleVectorType<T, 3> normalVector(T(0));
+    // use std::array since it will be exposed to interface
+    std::array<T, 3> normalVector = {};
     if (calculateNormalVectors) {
       T denominator = 0;
       for (int i = 0; i < D; i++) {
@@ -135,10 +136,13 @@ alpha(a)*/
       }
     }
 
+    // convert coordinate to std array for interface
+    std::array<T, 3> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
+
     double scalarVelocity =
-        velocities->getScalarVelocity(coordinate, material, normalVector);
-    hrleVectorType<T, 3> vectorVelocity =
-        velocities->getVectorVelocity(coordinate, material, normalVector);
+        velocities->getScalarVelocity(coordArray, material, normalVector);
+    std::array<T, 3> vectorVelocity =
+        velocities->getVectorVelocity(coordArray, material, normalVector);
 
     T alpha = 0;
     modulus = std::sqrt(modulus);

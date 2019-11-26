@@ -1,7 +1,7 @@
 #ifndef LS_VELOCITY_FIELD_HPP
 #define LS_VELOCITY_FIELD_HPP
 
-#include <hrleVectorType.hpp>
+#include <vector>
 #include <limits>
 
 /// Abstract class defining the interface for
@@ -11,14 +11,14 @@ public:
   lsVelocityField() {}
 
   virtual T getScalarVelocity(
-      hrleVectorType<T, 3> coordinate, int material,
-      hrleVectorType<T, 3> normalVector = hrleVectorType<T, 3>(T(0))) = 0;
+      const std::array<T, 3> &coordinate, int material,
+      const std::array<T, 3> &normalVector) = 0;
 
-  virtual hrleVectorType<T, 3> getVectorVelocity(
-      hrleVectorType<T, 3> coordinate, int material,
-      hrleVectorType<T, 3> normalVector = hrleVectorType<T, 3>(T(0))) = 0;
+  virtual std::array<T, 3> getVectorVelocity(
+      const std::array<T, 3> &coordinate, int material,
+      const std::array<T, 3> &normalVector) = 0;
 
-  virtual ~lsVelocityField(){};
+  virtual ~lsVelocityField() {}
 };
 
 #endif // LS_VELOCITY_FIELD_HPP

@@ -155,13 +155,16 @@ public:
     // move neighborIterator to current position
     neighborIterator.goToIndicesSequential(indices);
 
-    hrleVectorType<T, 3> vectorVelocity =
-        velocities->getVectorVelocity(coordinate, material);
-    double scalarVelocity = velocities->getScalarVelocity(coordinate, material);
+    // convert coordinate to std array for interface
+    std::array<T, 3> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
+
+    std::array<T, 3> vectorVelocity =
+        velocities->getVectorVelocity(coordArray, material, {});
+    double scalarVelocity = velocities->getScalarVelocity(coordArray, material, {});
 
     // if there is a vector velocity, we need to project it onto a scalar
     // velocity first using its normal vector
-    if (vectorVelocity != hrleVectorType<T, D>(0., 0., 0.)) {
+    if (vectorVelocity != std::array<T, 3>({})) {
       hrleVectorType<T, D> n;
       T denominator = 0; // normal modulus
       for (unsigned i = 0; i < D; i++) {
@@ -236,8 +239,8 @@ public:
           continue;
         }
 
-        hrleVectorType<T, 3> normal_n = normal;
-        hrleVectorType<T, 3> normal_p = normal;
+        std::array<T, 3> normal_p = {normal[0], normal[1], normal[2]};
+        std::array<T, 3> normal_n = {normal[0], normal[1], normal[2]};
 
         hrleVectorType<T, D> velocityDelta(T(0));
         const T DN = 1e-4;
@@ -247,8 +250,8 @@ public:
           normal_p[k] -= DN; // p=previous
           normal_n[k] += DN; // n==next
 
-          T vp = velocities->getScalarVelocity(coordinate, material, normal_p);
-          T vn = velocities->getScalarVelocity(coordinate, material, normal_n);
+          T vp = velocities->getScalarVelocity(coordArray, material, normal_p);
+          T vn = velocities->getScalarVelocity(coordArray, material, normal_n);
           // central difference
           velocityDelta[k] = (vn - vp) / (2.0 * DN);
 
@@ -277,7 +280,7 @@ public:
           toifl *= -gradient[k] / denominator;
 
           // Osher (constant V) term
-          T osher = velocities->getScalarVelocity(coordinate, material, normal);
+          T osher = velocities->getScalarVelocity(coordArray, material, normal_p);
 
           // Total derivative is sum of terms given above
           alpha[k] = std::fabs(monti + toifl + osher);

@@ -18,8 +18,8 @@
 class velocityField : public lsVelocityField<double> {
 public:
   double getScalarVelocity(
-      hrleVectorType<double, 3> /*coordinate*/, int /*material*/,
-      hrleVectorType<double, 3> normalVector = hrleVectorType<double, 3>(0.)) {
+      const std::array<double, 3> &/*coordinate*/, int /*material*/,
+      const std::array<double, 3> &normalVector) {
     // Some arbitrary velocity function of your liking
     // (try changing it and see what happens :)
     double velocity = 1. + ((normalVector[0] > 0) ? 2.3 : 0.5) *
@@ -27,11 +27,11 @@ public:
     return velocity;
   }
 
-  hrleVectorType<double, 3> getVectorVelocity(
-      hrleVectorType<double, 3> /*coordinate*/, int /*material*/,
-      hrleVectorType<double,
-                     3> /*normalVector = hrleVectorType<double, 3>(0.)*/) {
-    return hrleVectorType<double, 3>(0.);
+  std::array<double, 3> getVectorVelocity(
+      const std::array<double, 3> &/*coordinate*/, int /*material*/,
+      const std::array<double,
+                     3> &/*normalVector*/) {
+    return std::array<double, 3>({});
   }
 };
 

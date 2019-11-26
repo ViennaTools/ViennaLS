@@ -20,9 +20,9 @@
 class velocityField : public lsVelocityField<double> {
 public:
   double getScalarVelocity(
-      hrleVectorType<double, 3> /*coordinate*/, int material,
-      hrleVectorType<double,
-                     3> /*normalVector = hrleVectorType<double, 3>(0.)*/) {
+      const std::array<double, 3> &/*coordinate*/, int material,
+      const std::array<double,
+                     3> &/*normalVector*/) {
     // Note that only the top material grows, so having two different,
     // positive velocities will only apply in the first advection step.
     // In the next step, the levelSets of the materials will not overlap
@@ -33,11 +33,11 @@ public:
     return ((material == 1) ? 0.5 : -0.2);
   }
 
-  hrleVectorType<double, 3> getVectorVelocity(
-      hrleVectorType<double, 3> /*coordinate*/, int /*material*/,
-      hrleVectorType<double,
-                     3> /*normalVector = hrleVectorType<double, 3>(0.)*/) {
-    return hrleVectorType<double, 3>(0.);
+  std::array<double, 3> getVectorVelocity(
+      const std::array<double, 3> &/*coordinate*/, int /*material*/,
+      const std::array<double,
+                     3> &/*normalVector*/) {
+    return std::array<double, 3>({});
   }
 };
 

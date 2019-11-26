@@ -112,7 +112,8 @@ public:
     T vel_grad = 0.;
 
     // Calculate normal vector for velocity calculation
-    hrleVectorType<T, 3> normalVector(T(0));
+    // use std::array since it will be exposed to interface
+    std::array<T, 3> normalVector = {};
     if (calculateNormalVectors) {
       T denominator = 0;
       for (int i = 0; i < D; i++) {
@@ -129,10 +130,13 @@ public:
       }
     }
 
+    // convert coordinate to std array for interface
+    std::array<T, 3> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
+
     double scalarVelocity =
-        velocities->getScalarVelocity(coordinate, material, normalVector);
-    hrleVectorType<T, 3> vectorVelocity =
-        velocities->getVectorVelocity(coordinate, material, normalVector);
+        velocities->getScalarVelocity(coordArray, material, normalVector);
+    std::array<T, 3> vectorVelocity =
+        velocities->getVectorVelocity(coordArray, material, normalVector);
 
     if (scalarVelocity > 0) {
       vel_grad += std::sqrt(gradPosTotal) * scalarVelocity;

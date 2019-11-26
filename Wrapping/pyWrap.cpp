@@ -49,19 +49,19 @@ constexpr int D = VIENNALS_PYTHON_DIMENSION;
 // BASE CLASS WRAPPERS
 // lsVelocityField only defines interface and has no functionality
 class PylsVelocityField : public lsVelocityField<T> {
-  typedef hrleVectorType<T, 3> vectorType;
+  typedef std::array<T, 3> vectorType;
   using lsVelocityField<T>::lsVelocityField;
 
 public:
-  T getScalarVelocity(vectorType coordinate, int material,
-                      vectorType normalVector = vectorType(T(0))) override {
+  T getScalarVelocity(const vectorType &coordinate, int material,
+                      const vectorType &normalVector) override {
     PYBIND11_OVERLOAD_PURE(T, lsVelocityField<T>, getScalarVelocity, coordinate,
                            material, normalVector);
   }
 
   vectorType getVectorVelocity(
-      hrleVectorType<T, 3> coordinate, int material,
-      hrleVectorType<T, 3> normalVector = hrleVectorType<T, 3>(T(0))) override {
+      const vectorType &coordinate, int material,
+      const vectorType &normalVector) override {
     PYBIND11_OVERLOAD_PURE(vectorType, lsVelocityField<T>, getVectorVelocity,
                            coordinate, material, normalVector);
   }
@@ -92,11 +92,6 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
   // hangs a the end of parallel section
   // most likely to do with some omp issue
   omp_set_num_threads(1);
-
-  // hrleVectorType
-  pybind11::class_<hrleVectorType<T, 3>>(module, "lsVectorType")
-      // constructors
-      .def(pybind11::init<double, double, double>());
 
   // lsAdvect
   pybind11::class_<lsAdvect<T, D>>(module, "lsAdvect")
