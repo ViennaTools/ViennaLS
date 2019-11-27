@@ -95,6 +95,7 @@ public:
   }
 
 private:
+#ifdef VIENNALS_USE_VTK
   void readVTP(std::string filename) {
     if (mesh == nullptr) {
       lsMessage::getInstance()
@@ -297,6 +298,8 @@ private:
       }
     }
   }
+
+#endif // VIENNALS_USE_VTK
 
   void readVTKLegacy(std::string filename) {
     if (mesh == nullptr) {

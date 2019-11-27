@@ -125,6 +125,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ae4d8f81852411480790eca52f704c101"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1b93737819bb59987f11239a38d26d1c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a1b93737819bb59987f11239a38d26d1c">lsDomain</a> (hrleCoordType *bounds, <a class="el" href="classlsDomain.html#a5f260245949e4b99d9402eb9716f0089">BoundaryType</a> *boundaryConditions, hrleCoordType gridDelta=1.0)</td></tr>
 <tr class="separator:a1b93737819bb59987f11239a38d26d1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a154f6f7b177bd272d5f7769cb94ac7e5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a154f6f7b177bd272d5f7769cb94ac7e5">lsDomain</a> (std::vector&lt; hrleCoordType &gt; bounds, std::vector&lt; unsigned &gt; boundaryConditions, hrleCoordType gridDelta=1.0)</td></tr>
+<tr class="separator:a154f6f7b177bd272d5f7769cb94ac7e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa1b62b9875d64df99915f943a802fdec"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#aa1b62b9875d64df99915f943a802fdec">lsDomain</a> (<a class="el" href="classlsDomain.html#a81a5c708142e9a0b5bcf2a537934cf7f">PointValueVectorType</a> pointData, hrleCoordType *bounds, <a class="el" href="classlsDomain.html#a5f260245949e4b99d9402eb9716f0089">BoundaryType</a> *boundaryConditions, hrleCoordType gridDelta=1.0)</td></tr>
 <tr class="memdesc:aa1b62b9875d64df99915f943a802fdec"><td class="mdescLeft">&#160;</td><td class="mdescRight">initialise <a class="el" href="classlsDomain.html" title="Class containing all information about the level set, including the dimensions of the domain,...">lsDomain</a> with domain size "bounds", filled with point/value pairs in pointData  <a href="classlsDomain.html#aa1b62b9875d64df99915f943a802fdec">More...</a><br /></td></tr>
 <tr class="separator:aa1b62b9875d64df99915f943a802fdec"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -192,7 +194,7 @@ Static Public Attributes</h2></td></tr>
 class lsDomain&lt; T, D &gt;</h3>
 
 <p>Class containing all information about the level set, including the dimensions of the domain, boundary conditions and all data. </p>
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#_a5">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#_a5">Deposition.cpp</a>, <a class="el" href="PatternedSubstrate_8cpp-example.html#_a14">PatternedSubstrate.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#_a5">PeriodicBoundary.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#_a5">VoidEtching.cpp</a>.</dd>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#_a9">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#_a9">Deposition.cpp</a>, <a class="el" href="PatternedSubstrate_8cpp-example.html#_a18">PatternedSubstrate.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#_a9">PeriodicBoundary.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#_a9">VoidEtching.cpp</a>.</dd>
 </dl>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a5f260245949e4b99d9402eb9716f0089"></a>
@@ -309,7 +311,7 @@ template&lt;class T, int D&gt; </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ae4d8f81852411480790eca52f704c101"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae4d8f81852411480790eca52f704c101">&#9670;&nbsp;</a></span>lsDomain() <span class="overload">[1/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae4d8f81852411480790eca52f704c101">&#9670;&nbsp;</a></span>lsDomain() <span class="overload">[1/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -339,7 +341,7 @@ template&lt;class T, int D&gt; </div>
 </div>
 </div>
 <a id="a1b93737819bb59987f11239a38d26d1c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1b93737819bb59987f11239a38d26d1c">&#9670;&nbsp;</a></span>lsDomain() <span class="overload">[2/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1b93737819bb59987f11239a38d26d1c">&#9670;&nbsp;</a></span>lsDomain() <span class="overload">[2/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -382,8 +384,52 @@ template&lt;class T, int D&gt; </div>
 
 </div>
 </div>
+<a id="a154f6f7b177bd272d5f7769cb94ac7e5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a154f6f7b177bd272d5f7769cb94ac7e5">&#9670;&nbsp;</a></span>lsDomain() <span class="overload">[3/6]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T, int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;::<a class="el" href="classlsDomain.html">lsDomain</a> </td>
+          <td>(</td>
+          <td class="paramtype">std::vector&lt; hrleCoordType &gt;&#160;</td>
+          <td class="paramname"><em>bounds</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; unsigned &gt;&#160;</td>
+          <td class="paramname"><em>boundaryConditions</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">hrleCoordType&#160;</td>
+          <td class="paramname"><em>gridDelta</em> = <code>1.0</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="aa1b62b9875d64df99915f943a802fdec"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa1b62b9875d64df99915f943a802fdec">&#9670;&nbsp;</a></span>lsDomain() <span class="overload">[3/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa1b62b9875d64df99915f943a802fdec">&#9670;&nbsp;</a></span>lsDomain() <span class="overload">[4/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -435,7 +481,7 @@ template&lt;class T, int D&gt; </div>
 </div>
 </div>
 <a id="a58c7ef76498ba1a3d0979f64b32f4af6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a58c7ef76498ba1a3d0979f64b32f4af6">&#9670;&nbsp;</a></span>lsDomain() <span class="overload">[4/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a58c7ef76498ba1a3d0979f64b32f4af6">&#9670;&nbsp;</a></span>lsDomain() <span class="overload">[5/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -463,7 +509,7 @@ template&lt;class T, int D&gt; </div>
 </div>
 </div>
 <a id="afb1e5d933d59916e39a4e7834c23647f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afb1e5d933d59916e39a4e7834c23647f">&#9670;&nbsp;</a></span>lsDomain() <span class="overload">[5/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#afb1e5d933d59916e39a4e7834c23647f">&#9670;&nbsp;</a></span>lsDomain() <span class="overload">[6/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">

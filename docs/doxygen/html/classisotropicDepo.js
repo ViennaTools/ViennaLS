@@ -1,5 +1,5 @@
 var classisotropicDepo =
 [
-    [ "getScalarVelocity", "classisotropicDepo.html#aad903c5f27a0bd357da5153d1a8cbc3d", null ],
-    [ "getVectorVelocity", "classisotropicDepo.html#ac247bdd5a5e9f825808282ae0e376731", null ]
+    [ "getScalarVelocity", "classisotropicDepo.html#af50c21cff953171d83cc7c835628ebc5", null ],
+    [ "getVectorVelocity", "classisotropicDepo.html#afb724a635346da933d287e2adc42ef1a", null ]
 ];

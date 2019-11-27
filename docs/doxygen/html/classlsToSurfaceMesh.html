@@ -101,6 +101,8 @@ $(document).ready(function(){initNavTree('classlsToSurfaceMesh.html','');});
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:aac753633d2f8da94ecabf86ea2e2e346"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToSurfaceMesh.html#aac753633d2f8da94ecabf86ea2e2e346">lsToSurfaceMesh</a> (double eps=1e-12)</td></tr>
+<tr class="separator:aac753633d2f8da94ecabf86ea2e2e346"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a00d60b93b792a0b3f6fc42c6e9f88726"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToSurfaceMesh.html#a00d60b93b792a0b3f6fc42c6e9f88726">lsToSurfaceMesh</a> (const <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedLevelSet, <a class="el" href="classlsMesh.html">lsMesh</a> &amp;passedMesh, double eps=1e-12)</td></tr>
 <tr class="separator:a00d60b93b792a0b3f6fc42c6e9f88726"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7116d1751f457ec75e838f866ff62d4d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToSurfaceMesh.html#a7116d1751f457ec75e838f866ff62d4d">setLevelSet</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedlsDomain)</td></tr>
@@ -115,11 +117,39 @@ Public Member Functions</h2></td></tr>
 class lsToSurfaceMesh&lt; T, D &gt;</h3>
 
 <p>Extract an explicit <a class="el" href="classlsMesh.html" title="This class holds an explicit mesh, which is always given in 3 dimensions. If it describes a 2D mesh,...">lsMesh</a> instance from an <a class="el" href="classlsDomain.html" title="Class containing all information about the level set, including the dimensions of the domain,...">lsDomain</a>. The interface is then described by explciit surface elements: Lines in 2D, Triangles in 3D. </p>
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#_a10">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#_a14">Deposition.cpp</a>, <a class="el" href="PatternedSubstrate_8cpp-example.html#_a26">PatternedSubstrate.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#_a11">PeriodicBoundary.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#_a17">VoidEtching.cpp</a>.</dd>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#_a18">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#_a25">Deposition.cpp</a>, <a class="el" href="PatternedSubstrate_8cpp-example.html#_a34">PatternedSubstrate.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#_a19">PeriodicBoundary.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#_a26">VoidEtching.cpp</a>.</dd>
 </dl>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="aac753633d2f8da94ecabf86ea2e2e346"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aac753633d2f8da94ecabf86ea2e2e346">&#9670;&nbsp;</a></span>lsToSurfaceMesh() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsToSurfaceMesh.html">lsToSurfaceMesh</a>&lt; T, D &gt;::<a class="el" href="classlsToSurfaceMesh.html">lsToSurfaceMesh</a> </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>eps</em> = <code>1e-12</code></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a00d60b93b792a0b3f6fc42c6e9f88726"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a00d60b93b792a0b3f6fc42c6e9f88726">&#9670;&nbsp;</a></span>lsToSurfaceMesh()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a00d60b93b792a0b3f6fc42c6e9f88726">&#9670;&nbsp;</a></span>lsToSurfaceMesh() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -187,7 +217,7 @@ template&lt;class T , int D&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#a11">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#a15">Deposition.cpp</a>, <a class="el" href="PatternedSubstrate_8cpp-example.html#a27">PatternedSubstrate.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#a12">PeriodicBoundary.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#a18">VoidEtching.cpp</a>.</dd>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#a19">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#a26">Deposition.cpp</a>, <a class="el" href="PatternedSubstrate_8cpp-example.html#a35">PatternedSubstrate.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#a20">PeriodicBoundary.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#a27">VoidEtching.cpp</a>.</dd>
 </dl>
 
 </div>

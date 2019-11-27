@@ -22,6 +22,8 @@ template <class T, int D> class lsFromVolumeMesh {
   bool removeBoundaryTriangles = true;
 
 public:
+  lsFromVolumeMesh() {}
+
   lsFromVolumeMesh(std::vector<lsDomain<T, D>> &passedLevelSets,
                    lsMesh &passedMesh,
                    bool passedRemoveBoundaryTriangles = true)

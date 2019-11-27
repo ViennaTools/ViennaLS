@@ -11,7 +11,6 @@
 
 ///  Class containing all information about the level set, including
 ///  the dimensions of the domain, boundary conditions and all data.
-
 template <class T, int D> class lsDomain {
 public:
   // TYPEDEFS
@@ -64,6 +63,16 @@ public:
 
     grid = GridType(gridMin, gridMax, gridDelta, boundaryConditions);
     domain.deepCopy(grid, DomainType(grid, T(POS_VALUE)));
+  }
+
+  lsDomain(std::vector<hrleCoordType> bounds,
+           std::vector<unsigned> boundaryConditions,
+           hrleCoordType gridDelta = 1.0) {
+    BoundaryType boundaryCons[D];
+    for (unsigned i = 0; i < D; ++i) {
+      boundaryCons[i] = static_cast<BoundaryType>(boundaryConditions[i]);
+    }
+    this->deepCopy(lsDomain<T, D>(bounds.data(), boundaryCons, gridDelta));
   }
 
   /// initialise lsDomain with domain size "bounds", filled with point/value

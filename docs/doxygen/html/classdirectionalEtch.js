@@ -1,5 +1,5 @@
 var classdirectionalEtch =
 [
-    [ "getScalarVelocity", "classdirectionalEtch.html#af74383b5edc26776355ea982fa971dd0", null ],
-    [ "getVectorVelocity", "classdirectionalEtch.html#a7eedae997263f096907b7e18c3c2a9a4", null ]
+    [ "getScalarVelocity", "classdirectionalEtch.html#a69c7081d54ab4996257de3aa3ee169ca", null ],
+    [ "getVectorVelocity", "classdirectionalEtch.html#a94c0e627884365fc5934a47a745cc2ef", null ]
 ];

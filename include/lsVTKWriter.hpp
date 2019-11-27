@@ -94,6 +94,7 @@ public:
   }
 
 private:
+#ifdef VIENNALS_USE_VTK
   void writeVTP(std::string filename) const {
     if (mesh == nullptr) {
       lsMessage::getInstance()
@@ -303,6 +304,8 @@ private:
     owriter->SetInputData(uGrid);
     owriter->Write();
   }
+
+#endif // VIENNALS_USE_VTK
 
   void writeVTKLegacy(std::string filename) {
     if (mesh == nullptr) {

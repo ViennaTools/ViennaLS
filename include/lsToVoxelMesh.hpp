@@ -53,8 +53,6 @@ template <class T, int D> class lsToVoxelMesh {
   lsMesh *mesh = nullptr;
   hrleVectorType<hrleIndexType, D> minIndex, maxIndex;
 
-  lsToVoxelMesh();
-
   void calculateBounds() {
     // set to zero
     for (unsigned i = 0; i < D; ++i) {
@@ -77,6 +75,8 @@ template <class T, int D> class lsToVoxelMesh {
   }
 
 public:
+  lsToVoxelMesh() {}
+
   lsToVoxelMesh(lsMesh &passedMesh) : mesh(&passedMesh) {}
 
   lsToVoxelMesh(const lsDomain<T, D> &passedLevelSet, lsMesh &passedMesh)

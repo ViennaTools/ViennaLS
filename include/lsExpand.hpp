@@ -17,10 +17,12 @@ template <class T, int D> class lsExpand {
   int width = 0;
 
 public:
-  lsExpand(lsDomain<T, D> &passedlsDomain) : levelSet(&passedlsDomain){};
+  lsExpand() {}
+
+  lsExpand(lsDomain<T, D> &passedlsDomain) : levelSet(&passedlsDomain) {}
 
   lsExpand(lsDomain<T, D> &passedlsDomain, int passedWidth)
-      : levelSet(&passedlsDomain), width(passedWidth){};
+      : levelSet(&passedlsDomain), width(passedWidth) {}
 
   void setLevelSet(lsDomain<T, D> &passedlsDomain) {
     levelSet = &passedlsDomain;

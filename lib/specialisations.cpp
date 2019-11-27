@@ -16,6 +16,7 @@
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
 #include <lsReduce.hpp>
+#include <lsToDiskMesh.hpp>
 #include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsToVoxelMesh.hpp>
@@ -36,6 +37,7 @@ PRECOMPILE_SPECIALIZE(lsPointCloud)
 PRECOMPILE_SPECIALIZE(lsMakeGeometry)
 PRECOMPILE_SPECIALIZE(lsPrune)
 PRECOMPILE_SPECIALIZE(lsReduce)
-PRECOMPILE_SPECIALIZE(lsToSurfaceMesh)
+PRECOMPILE_SPECIALIZE(lsToDiskMesh)
 PRECOMPILE_SPECIALIZE(lsToMesh)
+PRECOMPILE_SPECIALIZE(lsToSurfaceMesh)
 PRECOMPILE_SPECIALIZE(lsToVoxelMesh)

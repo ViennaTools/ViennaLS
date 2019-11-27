@@ -124,7 +124,16 @@ Installing (with dependencies already installed)</h2>
 <h1><a class="anchor" id="autotoc_md9"></a>
 Using ViennaLS in your project</h1>
 <p>Have a look at the <a href="https://github.com/ViennaTools/viennals-example">example repo</a> for creating a project with ViennaLS as a dependency.</p>
-<h2><a class="anchor" id="autotoc_md10"></a>
+<h1><a class="anchor" id="autotoc_md10"></a>
+Using the viennaLS python module</h1>
+<p>In order to use ViennaLS in python, just download the python shared libraries from the <a href="https://github.com/ViennaTools/ViennaLS/releases">releases section</a> and put it in your current folder. From this folder just import the 2D or the 3D version of the library:</p>
+<div class="fragment"><div class="line">import viennaLS2d as vls</div>
+<div class="line">levelset = vls.lsDomain(0.2) # empty level set with grid spacing 0.2</div>
+<div class="line">sphere = vls.lsSphere((0,0,0), 5) # sphere at origin with radius 5</div>
+<div class="line">vls.lsMakeGeometry(levelset, sphere).apply() # create sphere in level set</div>
+</div><!-- fragment --><p>All functions which are available in C++ are also available in Python. In order to switch to three dimensions, only the import needs to be changed:</p>
+<div class="fragment"><div class="line">import viennaLS3d as vls</div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md11"></a>
 Integration in CMake projects</h2>
 <p>In order to use this library in your CMake project, add the following lines to the CMakeLists.txt of your project:\ (also do not forget to include ViennaHRLE)</p>
 <div class="fragment"><div class="line">set(ViennaLS_DIR &quot;/path/to/your/custom/install/&quot;)</div>
@@ -132,26 +141,30 @@ Integration in CMake projects</h2>
 <div class="line">add_executable(...)</div>
 <div class="line">target_include_directories(${PROJECT_NAME} PUBLIC ${VIENNALS_INCLUDE_DIRS})</div>
 <div class="line">target_link_libraries(${PROJECT_NAME} ${VIENNALS_LIBRARIES})</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md11"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md12"></a>
 Building examples</h2>
 <p>The examples can be built using CMake:</p>
 <div class="fragment"><div class="line">mkdir build &amp;&amp; cd build</div>
 <div class="line">cmake .. -DVIENNALS_BUILD_EXAMPLES=ON</div>
 <div class="line">make</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md12"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md13"></a>
+Building the python module</h2>
+<p>In order to build the python module, set VIENNALS_BUILD_PYTHON_2_7 OR VIENNALS_BUILD_PYTHON_3_6 to ON: </p><div class="fragment"><div class="line">cmake .. -DVIENNALS_BUILD_PYTHON_3_6=ON</div>
+<div class="line">make</div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md14"></a>
 Shared libraries</h2>
 <p>In order to save build time during developement, dynamically linked shared libraries can be used if ViennaLS was built with them. This is done by precompiling the most common template specialisations. In order to use this, set VIENNALS_BUILD_SHARED_LIBS=ON when building ViennaLS. If ViennaLS was build with shared libraries, CMake will automatically link them to your project. In order to build a release of your own project with better runtime performance, but longer build times, the CMake option VIENNALS_USE_SHARED_LIBS=OFF should be used.</p>
-<h1><a class="anchor" id="autotoc_md13"></a>
+<h1><a class="anchor" id="autotoc_md15"></a>
 Contributing</h1>
 <p>If you want to contribute to ViennaLS, make sure to follow the <a href="https://llvm.org/docs/CodingStandards.html">LLVM Coding guidelines</a>. Before creating a pull request, make sure ALL files have been formatted by clang-format, which can be done using the format-project.sh script in the root directory.</p>
 <p>Before being able to merge your PR, make sure you have met all points on the checklist in <a href="https://github.com/ViennaTools/viennals/blob/master/CONTRIBUTING.md">CONTRIBUTING.md</a>.</p>
-<h1><a class="anchor" id="autotoc_md14"></a>
+<h1><a class="anchor" id="autotoc_md16"></a>
 Authors</h1>
 <p>Current contributors: Lado Filipovic, Paul Manstetten, Xaver Klemenschits and Josef Weinbub</p>
 <p>Founder and initial developer: Otmar Ertl</p>
 <p>Contact us via: <a href="#" onclick="location.href='mai'+'lto:'+'vie'+'nn'+'ats'+'@i'+'ue.'+'tu'+'wie'+'n.'+'ac.'+'at'; return false;">vienn<span style="display: none;">.nosp@m.</span>ats@<span style="display: none;">.nosp@m.</span>iue.t<span style="display: none;">.nosp@m.</span>uwie<span style="display: none;">.nosp@m.</span>n.ac.<span style="display: none;">.nosp@m.</span>at</a></p>
 <p>ViennaLS was developed under the aegis of the 'Institute for Microelectronics' at the 'TU Wien'. <a href="http://www.iue.tuwien.ac.at/">http://www.iue.tuwien.ac.at/</a></p>
-<h1><a class="anchor" id="autotoc_md15"></a>
+<h1><a class="anchor" id="autotoc_md17"></a>
 License</h1>
 <p>See file LICENSE in the base directory. </p>
 </div></div><!-- PageDoc -->

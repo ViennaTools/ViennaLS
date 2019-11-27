@@ -209,6 +209,8 @@ template <class T, int D> class lsFromSurfaceMesh {
   }
 
 public:
+  lsFromSurfaceMesh() {}
+
   lsFromSurfaceMesh(lsDomain<T, D> &passedLevelSet, lsMesh &passedMesh,
                     bool passedRemoveBoundaryTriangles = true)
       : levelSet(&passedLevelSet), mesh(&passedMesh),

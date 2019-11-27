@@ -32,6 +32,10 @@ var hierarchy =
     [ "lsToSurfaceMesh< T, D >", "classlsToSurfaceMesh.html", null ],
     [ "lsToVoxelMesh< T, D >", "classlsToVoxelMesh.html", null ],
     [ "lsVelocityField< T >", "classlsVelocityField.html", null ],
+    [ "lsVelocityField", null, [
+      [ "AirGapDeposition.velocityField", "classAirGapDeposition_1_1velocityField.html", null ],
+      [ "Deposition.velocityField", "classDeposition_1_1velocityField.html", null ]
+    ] ],
     [ "lsVelocityField< double >", "classlsVelocityField.html", [
       [ "directionalEtch", "classdirectionalEtch.html", null ],
       [ "isotropicDepo", "classisotropicDepo.html", null ],

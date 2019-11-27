@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.4)
 
 project(
   "ViennaLS"
-  VERSION 0.1.1)
+  VERSION 1.0.0)
 
 include(GNUInstallDirs)
 
@@ -12,16 +12,33 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   SET(CMAKE_CXX_STANDARD "17")
 endif()
 
+# tell VS to export all symbols to its dll files
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  SET(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE CACHE BOOL "Export all symbols")
+endif()
+
+# set whether to build static versions
+option(VIENNALS_STATIC_BUILD "Build all targets with static links." OFF)
+if(VIENNALS_STATIC_BUILD)
+  set(VTK_DIR $ENV{VTK_STATIC_DIR})
+  list(APPEND VIENNALS_LIBRARIES "-static")
+endif(VIENNALS_STATIC_BUILD)
+
 # VTK File type support
 option(VIENNALS_USE_VTK "Build with VTK file support." ON)
 if(VIENNALS_USE_VTK)
-  set(VTK_DIR $ENV{VTK_DIR})
+  if(NOT VTK_DIR)
+    set(VTK_DIR $ENV{VTK_DIR})
+  endif(NOT VTK_DIR)
   find_package(VTK QUIET)
   if(VTK_FOUND)
     message(STATUS "Found VTK")
     add_definitions(-DVIENNALS_USE_VTK)
     include(${VTK_USE_FILE})
+    # only link needed vtk libraries
+    set(VTK_LIBRARIES vtksys;vtkIOCore;vtkexpat;vtklz4;vtkzlib;vtklzma;vtkdoubleconversion;vtkCommonMisc;vtkCommonSystem;vtkIOXML)
     list(APPEND VIENNALS_LIBRARIES ${VTK_LIBRARIES})
+    list(APPEND VIENNALS_PYTHON_LIBRARIES ${VTK_LIBRARIES})
   else(VTK_FOUND)
     message(STATUS "No VTK install found: Building without VTK.")
   endif(VTK_FOUND)
@@ -40,12 +57,6 @@ if(VIENNALS_BUILD_SHARED_LIBS)
   find_package(ViennaHRLE REQUIRED)
   file(GLOB SPECIALISATION_CPPS "lib/*.cpp")
   add_library(${PROJECT_NAME} SHARED ${SPECIALISATION_CPPS})
-
-  # tell VS to export all symbols to the dll file
-  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-    SET(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE CACHE BOOL "Export all symbols")
-  endif()
-
   target_link_libraries(${PROJECT_NAME} ViennaHRLE)
   target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/include/")
   set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
@@ -99,6 +110,12 @@ option(VIENNALS_BUILD_TESTS "Build tests." OFF)
 if(VIENNALS_BUILD_TESTS)
   add_subdirectory(Tests)
 endif(VIENNALS_BUILD_TESTS)
+
+
+#################################################
+# BUILD PYTHON MODULE
+#################################################
+add_subdirectory(Wrapping)
 
 
 #################################################

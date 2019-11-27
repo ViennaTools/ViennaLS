@@ -1,5 +1,6 @@
 var classlsReduce =
 [
+    [ "lsReduce", "classlsReduce.html#a0f69e06b5514aca84eaed1c8453d6fce", null ],
     [ "lsReduce", "classlsReduce.html#adc558866ffb526f539bf7b21b3d51d18", null ],
     [ "lsReduce", "classlsReduce.html#abd2b04b19718f34f8719953185e01df9", null ],
     [ "apply", "classlsReduce.html#a637a2597465ce102c290b5e7d1f7c547", null ],

@@ -1,5 +1,7 @@
 var annotated_dup =
 [
+    [ "AirGapDeposition", "namespaceAirGapDeposition.html", "namespaceAirGapDeposition" ],
+    [ "Deposition", "namespaceDeposition.html", "namespaceDeposition" ],
     [ "lsInternal", "namespacelsInternal.html", "namespacelsInternal" ],
     [ "std", "namespacestd.html", "namespacestd" ],
     [ "directionalEtch", "classdirectionalEtch.html", "classdirectionalEtch" ],
