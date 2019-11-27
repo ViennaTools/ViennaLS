@@ -1,7 +1,7 @@
 @PACKAGE_INIT@
 
 ###############################################
-#  compiler dependent settings for OpenMP
+#  compiler dependent settings for ViennaLS
 ###############################################
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 #    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Werror -ferror-limit=2")
@@ -20,7 +20,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qopenmp")
 #    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -fmax-errors=2")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp /wd\"4267\" /wd\"4244\"")
 endif()
 
 

@@ -342,7 +342,8 @@ template <class T, int D> class lsAdvect {
       double tempMaxTimeStep = maxTimeStep;
       auto &tempRates = totalTempRates[p];
       tempRates.reserve(topDomain.getNumberOfPoints() /
-                        double((levelSets.back())->getNumberOfSegments()));
+                            double((levelSets.back())->getNumberOfSegments()) +
+                        10);
 
       // an iterator for each level set
       std::vector<hrleSparseIterator<typename lsDomain<T, D>::DomainType>>
