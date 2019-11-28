@@ -154,7 +154,7 @@ public:
         }
 
         if (centerValue <= 0.) {
-          unsigned voxel[1 << D];
+          std::array<unsigned, 1 << D> voxel;
           // now insert all points of voxel into pointList
           for (unsigned i = 0; i < (1 << D); ++i) {
             hrleVectorType<hrleIndexType, D> index;
@@ -174,13 +174,14 @@ public:
           // create element
           if (D == 3) {
             // reorder elements for hexas to be ordered correctly
-            hrleVectorType<unsigned, 8> hexa(voxel);
+            std::array<unsigned, 8> hexa{0, 1, 3, 2, 4, 5, 7, 6};
+
             std::swap(hexa[2], hexa[3]);
             std::swap(hexa[6], hexa[7]);
             mesh->hexas.push_back(hexa);
             mesh->scalarData[0].push_back(materialId);
           } else {
-            hrleVectorType<unsigned, 3> triangle(voxel[0], voxel[1], voxel[2]);
+            std::array<unsigned, 3> triangle{voxel[0], voxel[1], voxel[2]};
             mesh->triangles.push_back(triangle);
             mesh->scalarData[0].push_back(materialId);
             triangle[0] = voxel[3];
@@ -197,7 +198,7 @@ public:
     double gridDelta = grid.getGridDelta();
     mesh->nodes.resize(pointIdMapping.size());
     for (auto it = pointIdMapping.begin(); it != pointIdMapping.end(); ++it) {
-      hrleVectorType<double, D> coords;
+      std::array<double, 3> coords{};
       for (unsigned i = 0; i < D; ++i) {
         coords[i] = gridDelta * it->first[i];
       }

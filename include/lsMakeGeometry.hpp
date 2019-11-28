@@ -277,7 +277,7 @@ private:
 
     // find minimum and maximum points in infinite direction
     // there are 2*(D-1) points in the corners of the simulation domain
-    std::vector<hrleVectorType<double, 3>> cornerPoints;
+    std::vector<std::array<double, 3>> cornerPoints;
     cornerPoints.resize(2 * (D - 1));
 
     // cyclic permutations
@@ -319,12 +319,12 @@ private:
     }
 
     if (D == 2) {
-      hrleVectorType<unsigned, 2> line(0, 1);
+      std::array<unsigned, 2> line = {0, 1};
       mesh.insertNextLine(line);
     } else {
-      hrleVectorType<unsigned, 3> triangle(0, 1, 2);
+      std::array<unsigned, 3> triangle = {0, 1, 2};
       mesh.insertNextTriangle(triangle);
-      triangle = hrleVectorType<unsigned, 3>(0, 3, 1);
+      triangle = {0, 3, 1};
       mesh.insertNextTriangle(triangle);
     }
     // now convert mesh to levelset
@@ -347,8 +347,8 @@ private:
     }
 
     // draw all triangles for the surface and then import from the mesh
-    std::vector<hrleVectorType<double, 3>> corners;
-    corners.resize(std::pow(2, D), hrleVectorType<double, 3>(0.));
+    std::vector<std::array<double, 3>> corners;
+    corners.resize(std::pow(2, D), {0, 0, 0});
 
     // first corner is the minCorner
     for (unsigned i = 0; i < D; ++i)
@@ -386,27 +386,13 @@ private:
     }
 
     if (D == 2) {
-      hrleVectorType<unsigned, 2> lines[4];
-      lines[0] = hrleVectorType<unsigned, 2>(0, 2);
-      lines[1] = hrleVectorType<unsigned, 2>(2, 3);
-      lines[2] = hrleVectorType<unsigned, 2>(3, 1);
-      lines[3] = hrleVectorType<unsigned, 2>(1, 0);
+      std::array<unsigned, 2> lines[4] = {{0, 2}, {2, 3}, {3, 1}, {1, 0}};
       for (unsigned i = 0; i < 4; ++i)
         mesh.insertNextLine(lines[i]);
     } else {
-      hrleVectorType<unsigned, 3> triangles[12];
-      triangles[0] = hrleVectorType<unsigned, 3>(0, 3, 1);
-      triangles[1] = hrleVectorType<unsigned, 3>(0, 2, 3);
-      triangles[2] = hrleVectorType<unsigned, 3>(0, 1, 5);
-      triangles[3] = hrleVectorType<unsigned, 3>(0, 5, 4);
-      triangles[4] = hrleVectorType<unsigned, 3>(0, 4, 2);
-      triangles[5] = hrleVectorType<unsigned, 3>(4, 6, 2);
-      triangles[6] = hrleVectorType<unsigned, 3>(7, 6, 4);
-      triangles[7] = hrleVectorType<unsigned, 3>(7, 4, 5);
-      triangles[8] = hrleVectorType<unsigned, 3>(7, 2, 6);
-      triangles[9] = hrleVectorType<unsigned, 3>(7, 3, 2);
-      triangles[10] = hrleVectorType<unsigned, 3>(1, 3, 5);
-      triangles[11] = hrleVectorType<unsigned, 3>(3, 7, 5);
+      std::array<unsigned, 3> triangles[12] = {
+          {0, 3, 1}, {0, 2, 3}, {0, 1, 5}, {0, 5, 4}, {0, 4, 2}, {4, 6, 2},
+          {7, 6, 4}, {7, 4, 5}, {7, 2, 6}, {7, 3, 2}, {1, 3, 5}, {3, 7, 5}};
       for (unsigned i = 0; i < 12; ++i)
         mesh.insertNextTriangle(triangles[i]);
     }

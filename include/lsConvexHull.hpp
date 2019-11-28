@@ -391,16 +391,16 @@ public:
     std::unordered_map<unsigned, unsigned> oldToNewNodes;
     for (unsigned i = 0; i < hullElements.size(); ++i) {
       // here add translation of old index to new index for new points
-      hrleVectorType<unsigned, D> newElement;
+      std::array<unsigned, D> newElement;
       for (unsigned j = 0; j < D; ++j) {
         auto insertion = oldToNewNodes.insert(
             std::make_pair(hullElements[i][j], oldToNewNodes.size()));
 
         // if insertion took place, add the point to the nodes
         if (insertion.second) {
-          hrleVectorType<double, 3> node(
+          std::array<double, 3> node{
               points[hullElements[i][j]][0], points[hullElements[i][j]][1],
-              (D == 2) ? 0. : points[hullElements[i][j]][2]);
+              (D == 2) ? 0. : points[hullElements[i][j]][2]};
           mesh->nodes.push_back(node);
         }
 

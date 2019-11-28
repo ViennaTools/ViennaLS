@@ -196,11 +196,17 @@ public:
       for (auto it = surfaceElements.begin(); it != surfaceElements.end();
            ++it) {
         if (((*matIt) >= it->second.first) && ((*matIt) < it->second.second)) {
-          meshElements.push_back(it->first);
+          std::array<unsigned, D> element{it->first[0], it->first[1]};
+          if (D == 3)
+            element[2] = it->first[2];
+          meshElements.push_back(element);
         } else if (((*matIt) >= it->second.second) &&
                    ((*matIt) < it->second.first)) {
-          meshElements.push_back(it->first);
-          std::swap(meshElements.back()[0], meshElements.back()[1]);
+          // swap first two elements since triangle has different orientation
+          std::array<unsigned, D> element{it->first[1], it->first[0]};
+          if (D == 3)
+            element[2] = it->first[2];
+          meshElements.push_back(element);
         }
       }
 

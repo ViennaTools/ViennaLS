@@ -20,7 +20,7 @@ public:
   typedef typename GridType::boundaryType BoundaryType;
   typedef typename std::vector<std::pair<hrleVectorType<hrleIndexType, D>, T>>
       PointValueVectorType;
-  typedef typename std::vector<hrleVectorType<T, D>> NormalVectorType;
+  typedef typename std::vector<std::array<T, D>> NormalVectorType;
   typedef typename std::vector<bool> voidPointMarkersType;
 
 private:

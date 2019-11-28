@@ -4,7 +4,7 @@
 #include <iostream>
 #include <vector>
 
-#include <hrleVectorType.hpp>
+#include <array>
 
 /// This class holds an explicit mesh, which is always given in 3 dimensions.
 /// If it describes a 2D mesh, the third dimension is set to 0.
@@ -12,15 +12,15 @@
 /// elements.
 class lsMesh {
 public:
-  std::vector<hrleVectorType<double, 3>> nodes;
-  std::vector<hrleVectorType<unsigned, 1>> vertices;
-  std::vector<hrleVectorType<unsigned, 2>> lines;
-  std::vector<hrleVectorType<unsigned, 3>> triangles;
-  std::vector<hrleVectorType<unsigned, 4>> tetras;
-  std::vector<hrleVectorType<unsigned, 8>> hexas;
+  std::vector<std::array<double, 3>> nodes;
+  std::vector<std::array<unsigned, 1>> vertices;
+  std::vector<std::array<unsigned, 2>> lines;
+  std::vector<std::array<unsigned, 3>> triangles;
+  std::vector<std::array<unsigned, 4>> tetras;
+  std::vector<std::array<unsigned, 8>> hexas;
   std::vector<std::vector<double>> scalarData;
   std::vector<std::string> scalarDataLabels;
-  std::vector<std::vector<hrleVectorType<double, 3>>> vectorData;
+  std::vector<std::vector<std::array<double, 3>>> vectorData;
   std::vector<std::string> vectorDataLabels;
 
 private:
@@ -28,7 +28,7 @@ private:
   template <class ElementType>
   void replaceNode(ElementType &elements, std::pair<unsigned, unsigned> node) {
     for (unsigned i = 0; i < elements.size(); ++i) {
-      for (unsigned j = 0; j < ElementType::value_type::dimension; ++j) {
+      for (unsigned j = 0; j < elements[i].size(); ++j) {
         if (elements[i][j] == node.first) {
           elements[i][j] = node.second;
         }
@@ -37,94 +37,92 @@ private:
   };
 
 public:
-  const std::vector<hrleVectorType<double, 3>> &getNodes() const {
-    return nodes;
-  }
+  const std::vector<std::array<double, 3>> &getNodes() const { return nodes; }
 
-  std::vector<hrleVectorType<double, 3>> &getNodes() { return nodes; }
+  std::vector<std::array<double, 3>> &getNodes() { return nodes; }
 
   std::vector<double> &getScalarData(int i) { return scalarData[i]; }
 
-  std::vector<hrleVectorType<double, 3>> &getVectorData(int i) {
+  std::vector<std::array<double, 3>> &getVectorData(int i) {
     return vectorData[i];
   }
 
   template <int D, typename std::enable_if<D == 1, int>::type = 0>
-  std::vector<hrleVectorType<unsigned, D>> &getElements() {
+  std::vector<std::array<unsigned, D>> &getElements() {
     return vertices;
   }
 
   template <int D, typename std::enable_if<D == 2, int>::type = 0>
-  std::vector<hrleVectorType<unsigned, D>> &getElements() {
+  std::vector<std::array<unsigned, D>> &getElements() {
     return lines;
   }
 
   template <int D, typename std::enable_if<D == 3, int>::type = 0>
-  std::vector<hrleVectorType<unsigned, D>> &getElements() {
+  std::vector<std::array<unsigned, D>> &getElements() {
     return triangles;
   }
 
   template <int D, typename std::enable_if<D == 4, int>::type = 0>
-  std::vector<hrleVectorType<unsigned, D>> &getElements() {
+  std::vector<std::array<unsigned, D>> &getElements() {
     return tetras;
   }
 
   template <int D, typename std::enable_if<D == 8, int>::type = 0>
-  std::vector<hrleVectorType<unsigned, D>> &getElements() {
+  std::vector<std::array<unsigned, D>> &getElements() {
     return hexas;
   }
 
-  unsigned insertNextNode(hrleVectorType<double, 3> &node) {
+  unsigned insertNextNode(std::array<double, 3> &node) {
     nodes.push_back(node);
     return nodes.size() - 1;
   }
 
-  unsigned insertNextVertex(hrleVectorType<unsigned, 1> &vertex) {
+  unsigned insertNextVertex(std::array<unsigned, 1> &vertex) {
     vertices.push_back(vertex);
     return vertices.size() - 1;
   }
 
-  unsigned insertNextLine(hrleVectorType<unsigned, 2> &line) {
+  unsigned insertNextLine(std::array<unsigned, 2> &line) {
     lines.push_back(line);
     return lines.size() - 1;
   }
 
-  unsigned insertNextTriangle(hrleVectorType<unsigned, 3> &triangle) {
+  unsigned insertNextTriangle(std::array<unsigned, 3> &triangle) {
     triangles.push_back(triangle);
     return triangles.size() - 1;
   }
 
-  unsigned insertNextTetra(hrleVectorType<unsigned, 4> &tetra) {
+  unsigned insertNextTetra(std::array<unsigned, 4> &tetra) {
     tetras.push_back(tetra);
     return tetras.size() - 1;
   }
 
-  unsigned insertNextHexa(hrleVectorType<unsigned, 8> &hexa) {
+  unsigned insertNextHexa(std::array<unsigned, 8> &hexa) {
     hexas.push_back(hexa);
     return hexas.size();
   }
 
-  unsigned insertNextElement(hrleVectorType<unsigned, 1> &vertex) {
+  unsigned insertNextElement(std::array<unsigned, 1> &vertex) {
     vertices.push_back(vertex);
     return vertices.size() - 1;
   }
 
-  unsigned insertNextElement(hrleVectorType<unsigned, 2> &line) {
+  unsigned insertNextElement(std::array<unsigned, 2> &line) {
     lines.push_back(line);
     return lines.size() - 1;
   }
 
-  unsigned insertNextElement(hrleVectorType<unsigned, 3> &triangle) {
+  unsigned insertNextElement(std::array<unsigned, 3> &triangle) {
     triangles.push_back(triangle);
     return triangles.size() - 1;
   }
 
-  unsigned insertNextElement(hrleVectorType<unsigned, 4> &tetra) {
+  unsigned insertNextElement(std::array<unsigned, 4> &tetra) {
     tetras.push_back(tetra);
     return tetras.size() - 1;
   }
 
-  unsigned insertNextElement(hrleVectorType<unsigned, 8> &hexa) {
+  unsigned insertNextElement(std::array<unsigned, 8> &hexa) {
     hexas.push_back(hexa);
     return hexas.size();
   }
@@ -135,14 +133,14 @@ public:
     scalarDataLabels.push_back(label);
   }
 
-  void insertNextVectorData(std::vector<hrleVectorType<double, 3>> &vectors,
+  void insertNextVectorData(std::vector<std::array<double, 3>> &vectors,
                             std::string label = "Vectors") {
     vectorData.push_back(vectors);
     vectorDataLabels.push_back(label);
   }
 
   void removeDuplicateNodes() {
-    std::vector<hrleVectorType<double, 3>> newNodes;
+    std::vector<std::array<double, 3>> newNodes;
     // can just push first point since it cannot be duplicate
     newNodes.push_back(nodes[0]);
     // now check for duplicates
@@ -201,6 +199,19 @@ public:
       std::cout << "Number of Tetrahedrons: " << tetras.size() << std::endl;
     if (hexas.size() > 0)
       std::cout << "Number of Hexas: " << hexas.size() << std::endl;
+    // data
+    if (scalarData.size() > 0)
+      std::cout << "Scalar data:" << std::endl;
+    for (unsigned i = 0; i < scalarData.size(); ++i) {
+      std::cout << "  \"" << scalarDataLabels[i] << "\" of size "
+                << scalarData[i].size() << std::endl;
+    }
+    if (vectorData.size() > 0)
+      std::cout << "Vector data:" << std::endl;
+    for (unsigned i = 0; i < vectorData.size(); ++i) {
+      std::cout << "  \"" << vectorDataLabels[i] << "\" of size "
+                << vectorData[i].size() << std::endl;
+    }
   }
 };
 

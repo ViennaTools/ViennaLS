@@ -348,6 +348,57 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       // constructors
       .def(pybind11::init<>())
       // methods
+      .def("getNodes",
+           (std::vector<std::array<double, 3>> & (lsMesh::*)()) &
+               lsMesh::getNodes,
+           "Get all nodes of the mesh as a list.")
+      .def("getNodes",
+           (const std::vector<std::array<double, 3>> &(lsMesh::*)() const) &
+               lsMesh::getNodes,
+           "Get all nodes of the mesh as a list.")
+      .def("getScalarData", &lsMesh::getScalarData,
+           "Get the scalar data stored on the mesh.")
+      .def("getVectorData", &lsMesh::getVectorData,
+           "Get the vector data stored on the mesh.")
+      .def("getVerticies",
+           (std::vector<std::array<unsigned, 1>> & (lsMesh::*)()) &
+               lsMesh::getElements<1>,
+           "Get a list of verticies of the mesh.")
+      .def("getLines",
+           (std::vector<std::array<unsigned, 2>> & (lsMesh::*)()) &
+               lsMesh::getElements<2>,
+           "Get a list of lines of the mesh.")
+      .def("getTriangles",
+           (std::vector<std::array<unsigned, 3>> & (lsMesh::*)()) &
+               lsMesh::getElements<3>,
+           "Get a list of verticies of the mesh.")
+      .def("getTetras",
+           (std::vector<std::array<unsigned, 4>> & (lsMesh::*)()) &
+               lsMesh::getElements<4>,
+           "Get a list of tetrahedrons of the mesh.")
+      .def("getHexas",
+           (std::vector<std::array<unsigned, 8>> & (lsMesh::*)()) &
+               lsMesh::getElements<8>,
+           "Get a list of hexahedrons of the mesh.")
+      .def("insertNextNode", &lsMesh::insertNextNode,
+           "Insert a node in the mesh.")
+      .def("insertNextLine", &lsMesh::insertNextLine,
+           "Insert a line in the mesh.")
+      .def("insertNextTriangle", &lsMesh::insertNextTriangle,
+           "Insert a triangle in the mesh.")
+      .def("insertNextTetra", &lsMesh::insertNextTetra,
+           "Insert a tetrahedron in the mesh.")
+      .def("insertNextHexa", &lsMesh::insertNextHexa,
+           "Insert a hexahedron in the mesh.")
+      .def("insertNextScalarData", &lsMesh::insertNextScalarData,
+           "Insert a list of scalar data.", pybind11::arg("scalars"),
+           pybind11::arg("label") = "Scalars")
+      .def("insertNextVectorData", &lsMesh::insertNextVectorData,
+           "Insert a list of vector data.", pybind11::arg("vectors"),
+           pybind11::arg("label") = "Vectors")
+      .def("removeDuplicateNodes", &lsMesh::removeDuplicateNodes,
+           "Remove nodes which occur twice in the mesh, and replace their IDs "
+           "in the mesh elements.")
       .def("print", &lsMesh::print, "Print basic information about the mesh.");
 
   // lsPrune

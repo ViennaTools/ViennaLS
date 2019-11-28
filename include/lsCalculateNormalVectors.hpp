@@ -49,7 +49,7 @@ public:
           .print();
     }
 
-    std::vector<std::vector<hrleVectorType<T, D>>> normalVectorsVector(
+    std::vector<std::vector<std::array<T, D>>> normalVectorsVector(
         domain->getNumberOfSegments());
     double pointsPerSegment =
         double(2 * domain->getDomain().getNumberOfPoints()) /
@@ -66,7 +66,7 @@ public:
       p = omp_get_thread_num();
 #endif
 
-      std::vector<hrleVectorType<T, D>> &normalVectors = normalVectorsVector[p];
+      std::vector<std::array<T, D>> &normalVectors = normalVectorsVector[p];
       normalVectors.reserve(pointsPerSegment);
 
       hrleVectorType<hrleIndexType, D> startVector =
@@ -87,7 +87,7 @@ public:
             (onlyActivePoints && std::abs(center.getValue()) > 0.5))
           continue;
 
-        hrleVectorType<T, D> n;
+        std::array<T, D> n;
 
         T denominator = 0;
         for (int i = 0; i < D; i++) {
