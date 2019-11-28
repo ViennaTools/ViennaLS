@@ -115,8 +115,8 @@ private:
 
     mesh->nodes.resize(polyData->GetNumberOfPoints());
     for (unsigned i = 0; i < mesh->nodes.size(); ++i) {
-      hrleVectorType<double, 3> coords;
-      polyData->GetPoint(i, &(coords[0]));
+      std::array<double, 3> coords;
+      polyData->GetPoint(i, coords.data());
       mesh->nodes[i] = coords;
     }
 
@@ -129,7 +129,7 @@ private:
       cellArray->InitTraversal();
       vtkIdList *pointList = vtkIdList::New();
       while (cellArray->GetNextCell(pointList)) {
-        hrleVectorType<unsigned, 1> cell;
+        std::array<unsigned, 1> cell;
         cell[0] = pointList->GetId(0);
         mesh->vertices.push_back(cell);
       }
@@ -142,7 +142,7 @@ private:
       cellArray->InitTraversal();
       vtkIdList *pointList = vtkIdList::New();
       while (cellArray->GetNextCell(pointList)) {
-        hrleVectorType<unsigned, 2> cell;
+        std::array<unsigned, 2> cell;
         for (unsigned i = 0; i < 2; ++i) {
           cell[i] = pointList->GetId(i);
         }
@@ -157,7 +157,7 @@ private:
       cellArray->InitTraversal();
       vtkIdList *pointList = vtkIdList::New();
       while (cellArray->GetNextCell(pointList)) {
-        hrleVectorType<unsigned, 3> cell;
+        std::array<unsigned, 3> cell;
         for (unsigned i = 0; i < 3; ++i) {
           cell[i] = pointList->GetId(i);
         }
@@ -184,10 +184,10 @@ private:
       } else if (cellData->GetNumberOfComponents() == 3) {
         mesh->vectorDataLabels.push_back(
             std::string(cellData->GetArrayName(i)));
-        mesh->vectorData.push_back(std::vector<hrleVectorType<double, 3>>());
+        mesh->vectorData.push_back(std::vector<std::array<double, 3>>());
         mesh->vectorData[i].resize(cellData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
-          hrleVectorType<double, 3> vector;
+          std::array<double, 3> vector;
           dataArray->GetTuple(j, &(vector[0]));
           mesh->vectorData[i][j] = vector;
         }
@@ -217,7 +217,7 @@ private:
     // get all points
     mesh->nodes.resize(ugrid->GetNumberOfPoints());
     for (unsigned i = 0; i < mesh->nodes.size(); ++i) {
-      hrleVectorType<double, 3> coords;
+      std::array<double, 3> coords;
       ugrid->GetPoint(i, &(coords[0]));
       mesh->nodes[i] = coords;
     }
@@ -230,13 +230,13 @@ private:
       switch (ugrid->GetCellType(i)) {
       case 1: // vert
       {
-        hrleVectorType<unsigned, 1> vert;
+        std::array<unsigned, 1> vert;
         vert[0] = pointList->GetId(0);
         mesh->vertices.push_back(vert);
       } break;
       case 3: // line
       {
-        hrleVectorType<unsigned, 2> elements;
+        std::array<unsigned, 2> elements;
         for (unsigned j = 0; j < 2; ++j) {
           elements[j] = pointList->GetId(j);
         }
@@ -244,7 +244,7 @@ private:
       } break;
       case 5: // triangle
       {
-        hrleVectorType<unsigned, 3> elements;
+        std::array<unsigned, 3> elements;
         for (unsigned j = 0; j < 3; ++j) {
           elements[j] = pointList->GetId(j);
         }
@@ -252,7 +252,7 @@ private:
       } break;
       case 10: // tetra
       {
-        hrleVectorType<unsigned, 4> elements;
+        std::array<unsigned, 4> elements;
         for (unsigned j = 0; j < 4; ++j) {
           elements[j] = pointList->GetId(j);
         }
@@ -260,7 +260,7 @@ private:
       } break;
       case 12: // hexa
       {
-        hrleVectorType<unsigned, 8> elements;
+        std::array<unsigned, 8> elements;
         for (unsigned j = 0; j < 8; ++j) {
           elements[j] = pointList->GetId(j);
         }
@@ -288,10 +288,10 @@ private:
       } else if (cellData->GetNumberOfComponents() == 3) {
         mesh->vectorDataLabels.push_back(
             std::string(cellData->GetArrayName(i)));
-        mesh->vectorData.push_back(std::vector<hrleVectorType<double, 3>>());
+        mesh->vectorData.push_back(std::vector<std::array<double, 3>>());
         mesh->vectorData[i].resize(cellData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
-          hrleVectorType<double, 3> vector;
+          std::array<double, 3> vector;
           dataArray->GetTuple(j, &(vector[0]));
           mesh->vectorData[i][j] = vector;
         }
@@ -416,7 +416,7 @@ private:
         // check for different types to subdivide them into supported types
         switch (cell_type) {
         case 3: {
-          hrleVectorType<unsigned, 2> elem;
+          std::array<unsigned, 2> elem;
           for (unsigned j = 0; j < number_nodes; ++j) {
             f >> elem[j];
           }
@@ -426,7 +426,7 @@ private:
         }
         case 5: // triangle for 2D
         {
-          hrleVectorType<unsigned, 3> elem;
+          std::array<unsigned, 3> elem;
           for (unsigned j = 0; j < number_nodes; ++j) {
             f >> elem[j];
           }
@@ -437,7 +437,7 @@ private:
 
         case 10: // tetra for 3D
         {
-          hrleVectorType<unsigned, 4> elem;
+          std::array<unsigned, 4> elem;
           for (unsigned j = 0; j < number_nodes; ++j) {
             f >> elem[j];
           }
@@ -448,7 +448,7 @@ private:
 
         case 9: // this is a quad, so just plit it into two triangles
         {
-          hrleVectorType<unsigned, 3> elem;
+          std::array<unsigned, 3> elem;
           for (unsigned j = 0; j < 3; ++j) {
             f >> elem[j];
           }

@@ -101,8 +101,7 @@ public:
                                       : marchingCubes.polygonize3d(signs);
 
       for (; Triangles[0] != -1; Triangles += D) {
-        hrleVectorType<unsigned, D> nod_numbers;
-        hrleVectorType<unsigned, D> nod_numbers2;
+        std::array<unsigned, D> nod_numbers;
 
         // for each node
         for (int n = 0; n < D; n++) {
@@ -124,7 +123,7 @@ public:
           } else { // if node does not exist yet
 
             // calculate coordinate of new node
-            hrleVectorType<double, 3> cc(0.);
+            std::array<double, 3> cc{}; // initialise with zeros
             for (int z = 0; z < D; z++) {
               if (z != dir) {
                 // TODO might not need BitMaskToVector here, just check if z bit

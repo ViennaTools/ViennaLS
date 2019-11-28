@@ -58,7 +58,7 @@ public:
     // set up data arrays
     std::vector<double> values(normalVectors.size());
     std::vector<double> gridSpacing(normalVectors.size());
-    std::vector<hrleVectorType<double, 3>> normals(normalVectors.size());
+    std::vector<std::array<double, 3>> normals(normalVectors.size());
 
     unsigned pointId = 0;
 
@@ -68,13 +68,13 @@ public:
         continue;
 
       // insert vertex
-      hrleVectorType<unsigned, 1> vertex;
+      std::array<unsigned, 1> vertex;
       vertex[0] = mesh->nodes.size();
       mesh->insertNextVertex(vertex);
 
       // insert corresponding node shifted by ls value in direction of the
       // normal vector
-      hrleVectorType<double, 3> node;
+      std::array<double, 3> node;
       node[2] = 0.;
       for (unsigned i = 0; i < D; ++i) {
         // original position

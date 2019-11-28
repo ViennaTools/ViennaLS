@@ -103,9 +103,9 @@ int main() {
 
   lsMesh pointMesh;
   for (unsigned i = 0; i < cloud.points.size(); ++i) {
-    pointMesh.nodes.push_back(hrleVectorType<double, 3>(
-        cloud.points[i][0], cloud.points[i][1], cloud.points[i][2]));
-    pointMesh.vertices.push_back(hrleVectorType<unsigned, 1>(i));
+    pointMesh.nodes.push_back(std::array<double, 3>{
+        cloud.points[i][0], cloud.points[i][1], cloud.points[i][2]});
+    pointMesh.vertices.push_back(std::array<unsigned, 1>{i});
   }
   std::cout << "Output point cloud" << std::endl;
   lsVTKWriter(pointMesh, lsFileFormatEnum::VTP, "points.vtp").apply();

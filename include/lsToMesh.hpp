@@ -69,12 +69,12 @@ public:
         continue;
 
       // insert vertex
-      hrleVectorType<unsigned, 1> vertex;
+      std::array<unsigned, 1> vertex;
       vertex[0] = mesh->nodes.size();
       mesh->insertNextVertex(vertex);
 
       // insert corresponding node
-      hrleVectorType<double, 3> node;
+      std::array<double, 3> node;
       if (D == 2)
         node[2] = 0.;
       for (unsigned i = 0; i < D; ++i) {
