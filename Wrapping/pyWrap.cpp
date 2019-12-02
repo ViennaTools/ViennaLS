@@ -86,12 +86,6 @@ public:
 PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
   module.doc() = "ViennaLS python module.";
 
-  // maximum number of threads to use
-  // must be set to one for now because lsAdvect
-  // hangs a the end of parallel section
-  // most likely to do with some omp issue
-  omp_set_num_threads(1);
-
   // lsAdvect
   pybind11::class_<lsAdvect<T, D>>(module, "lsAdvect")
       // constructors
@@ -130,7 +124,11 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Set the integration scheme to use during advection.")
       .def("setDissipationAlpha", &lsAdvect<T, D>::setDissipationAlpha,
            "Set the dissipation value to use for Lax Friedrichs integration.")
-      .def("apply", &lsAdvect<T, D>::apply, "Perform advection.");
+      // need scoped release since we are calling a python method from
+      // parallelised C++ code here
+      .def("apply", &lsAdvect<T, D>::apply,
+           pybind11::call_guard<pybind11::gil_scoped_release>(),
+           "Perform advection.");
   // enums
   pybind11::enum_<lsIntegrationSchemeEnum>(module, "lsIntegrationSchemeEnum")
       .value("ENGQUIST_OSHER_1ST_ORDER",
