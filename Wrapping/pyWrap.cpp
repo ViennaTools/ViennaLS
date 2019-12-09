@@ -28,6 +28,7 @@
 #include <lsGeometries.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsMesh.hpp>
+#include <lsPointData.hpp>
 #include <lsPrune.hpp>
 #include <lsReduce.hpp>
 #include <lsToDiskMesh.hpp>
@@ -55,14 +56,14 @@ class PylsVelocityField : public lsVelocityField<T> {
 public:
   T getScalarVelocity(const vectorType &coordinate, int material,
                       const vectorType &normalVector) override {
-    PYBIND11_OVERLOAD_PURE(T, lsVelocityField<T>, getScalarVelocity, coordinate,
-                           material, normalVector);
+    PYBIND11_OVERLOAD(T, lsVelocityField<T>, getScalarVelocity, coordinate,
+                      material, normalVector);
   }
 
   vectorType getVectorVelocity(const vectorType &coordinate, int material,
                                const vectorType &normalVector) override {
-    PYBIND11_OVERLOAD_PURE(vectorType, lsVelocityField<T>, getVectorVelocity,
-                           coordinate, material, normalVector);
+    PYBIND11_OVERLOAD(vectorType, lsVelocityField<T>, getVectorVelocity,
+                      coordinate, material, normalVector);
   }
 };
 
@@ -341,8 +342,40 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
 
       .def("apply", &lsMakeGeometry<T, D>::apply, "Generate the geometry.");
 
+  // lsPointData
+  pybind11::class_<lsPointData>(module, "lsPointData")
+      // constructors
+      .def(pybind11::init<>())
+      // methods
+      .def("insertNextScalarData",
+           (void (lsPointData::*)(const lsPointData::ScalarDataType &,
+                                  std::string)) &
+               lsPointData::insertNextScalarData,
+           pybind11::arg("scalars"), pybind11::arg("label") = "Scalars")
+      .def("insertNextVectorData",
+           (void (lsPointData::*)(const lsPointData::VectorDataType &,
+                                  std::string)) &
+               lsPointData::insertNextVectorData,
+           pybind11::arg("vectors"), pybind11::arg("label") = "Vectors")
+      .def("getScalarDataSize", &lsPointData::getScalarDataSize)
+      .def("getVectorDataSize", &lsPointData::getVectorDataSize)
+      .def("getScalarData",
+           (lsPointData::ScalarDataType * (lsPointData::*)(int)) &
+               lsPointData::getScalarData)
+      .def("getScalarData",
+           (lsPointData::ScalarDataType * (lsPointData::*)(std::string)) &
+               lsPointData::getScalarData)
+      .def("getScalarDataLabel", &lsPointData::getScalarDataLabel)
+      .def("getVectorData",
+           (lsPointData::VectorDataType * (lsPointData::*)(int)) &
+               lsPointData::getVectorData)
+      .def("getVectorData",
+           (lsPointData::VectorDataType * (lsPointData::*)(std::string)) &
+               lsPointData::getVectorData)
+      .def("getVectorDataLabel", &lsPointData::getVectorDataLabel);
+
   // lsMesh
-  pybind11::class_<lsMesh>(module, "lsMesh")
+  pybind11::class_<lsMesh, lsPointData>(module, "lsMesh")
       // constructors
       .def(pybind11::init<>())
       // methods
@@ -354,10 +387,6 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            (const std::vector<std::array<double, 3>> &(lsMesh::*)() const) &
                lsMesh::getNodes,
            "Get all nodes of the mesh as a list.")
-      .def("getScalarData", &lsMesh::getScalarData,
-           "Get the scalar data stored on the mesh.")
-      .def("getVectorData", &lsMesh::getVectorData,
-           "Get the vector data stored on the mesh.")
       .def("getVerticies",
            (std::vector<std::array<unsigned, 1>> & (lsMesh::*)()) &
                lsMesh::getElements<1>,
@@ -388,12 +417,6 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Insert a tetrahedron in the mesh.")
       .def("insertNextHexa", &lsMesh::insertNextHexa,
            "Insert a hexahedron in the mesh.")
-      .def("insertNextScalarData", &lsMesh::insertNextScalarData,
-           "Insert a list of scalar data.", pybind11::arg("scalars"),
-           pybind11::arg("label") = "Scalars")
-      .def("insertNextVectorData", &lsMesh::insertNextVectorData,
-           "Insert a list of vector data.", pybind11::arg("vectors"),
-           pybind11::arg("label") = "Vectors")
       .def("removeDuplicateNodes", &lsMesh::removeDuplicateNodes,
            "Remove nodes which occur twice in the mesh, and replace their IDs "
            "in the mesh elements.")
@@ -500,10 +523,14 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       // constructors
       .def(pybind11::init<>())
       .def(pybind11::init<lsMesh &>())
-      .def(pybind11::init<lsMesh &, lsFileFormatEnum, std::string>())
       .def(pybind11::init<lsMesh &, std::string>())
+      .def(pybind11::init<lsMesh &, lsFileFormatEnum, std::string>())
       // methods
       .def("setMesh", &lsVTKReader::setMesh, "Set the mesh to read into.")
+      .def("setFileFormat", &lsVTKReader::setFileFormat,
+           "Set the file format of the file to be read.")
+      .def("setFileName", &lsVTKReader::setFileName,
+           "Set the name of the input file.")
       .def("apply", &lsVTKReader::apply, "Read the mesh.");
 
   // lsVTKWriter
@@ -511,9 +538,13 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       // constructors
       .def(pybind11::init<>())
       .def(pybind11::init<lsMesh &>())
-      .def(pybind11::init<lsMesh &, lsFileFormatEnum, std::string>())
       .def(pybind11::init<lsMesh &, std::string>())
+      .def(pybind11::init<lsMesh &, lsFileFormatEnum, std::string>())
       // methods
       .def("setMesh", &lsVTKWriter::setMesh, "Set the mesh to output.")
+      .def("setFileFormat", &lsVTKWriter::setFileFormat,
+           "Set the file format, the mesh should be written to.")
+      .def("setFileName", &lsVTKWriter::setFileName,
+           "Set the name of the output file.")
       .def("apply", &lsVTKWriter::apply, "Write the mesh.");
 }

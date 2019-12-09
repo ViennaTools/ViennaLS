@@ -53,6 +53,7 @@ template <class T, int D> class lsAdvect {
   bool ignoreVoids = false;
   double advectionTime = 0.;
   unsigned numberOfTimeSteps = 0;
+  bool saveAdvectionVelocities = false;
 
   // SFINAE functions needed for StencilLocalLaxFriedrichs
   template <
@@ -101,6 +102,11 @@ template <class T, int D> class lsAdvect {
                          domain.getAllocation() *
                              (2.0 / levelSets.back()->getLevelSetWidth()));
 
+    // save how data should be transferred to new level set
+    // list of indices into the old pointData vector
+    std::vector<std::vector<unsigned>> newDataSourceIds;
+    newDataSourceIds.resize(newDomain.getNumberOfSegments());
+
 #pragma omp parallel num_threads(newDomain.getNumberOfSegments())
     {
       int p = 0;
@@ -119,6 +125,10 @@ template <class T, int D> class lsAdvect {
               ? newDomain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
+      // reserve a bit more to avoid reallocation
+      // would expect number of points to roughly double
+      newDataSourceIds[p].reserve(2.5 * domainSegment.getNumberOfPoints());
+
       for (hrleSparseStarIterator<typename lsDomain<T, D>::DomainType> it(
                domain, startVector);
            it.getIndices() < endVector; ++it) {
@@ -129,8 +139,8 @@ template <class T, int D> class lsAdvect {
 
           int k = 0;
           for (; k < 2 * D; k++)
-            if (std::signbit(it.getNeighbor(k).getValue()) !=
-                std::signbit(it.getCenter().getValue()))
+            if (std::signbit(it.getNeighbor(k).getValue() - 1e-9) !=
+                std::signbit(it.getCenter().getValue()) + 1e-9)
               break;
 
           // if there is at least one neighbor of opposite sign
@@ -145,9 +155,11 @@ template <class T, int D> class lsAdvect {
               if (j == 2 * D) {
                 domainSegment.insertNextDefinedPoint(
                     it.getIndices(), it.getCenter().getDefinedValue());
+                newDataSourceIds[p].push_back(it.getCenter().getPointId());
                 // if there is at least one active grid point, which is < -0.5
               } else {
                 domainSegment.insertNextDefinedPoint(it.getIndices(), 0.5);
+                newDataSourceIds[p].push_back(it.getNeighbor(j).getPointId());
               }
             } else if (it.getCenter().getDefinedValue() < -0.5) {
               int j = 0;
@@ -160,13 +172,16 @@ template <class T, int D> class lsAdvect {
               if (j == 2 * D) {
                 domainSegment.insertNextDefinedPoint(
                     it.getIndices(), it.getCenter().getDefinedValue());
+                newDataSourceIds[p].push_back(it.getCenter().getPointId());
                 // if there is at least one active grid point, which is > 0.5
               } else {
                 domainSegment.insertNextDefinedPoint(it.getIndices(), -0.5);
+                newDataSourceIds[p].push_back(it.getNeighbor(j).getPointId());
               }
             } else {
               domainSegment.insertNextDefinedPoint(
                   it.getIndices(), it.getCenter().getDefinedValue());
+              newDataSourceIds[p].push_back(it.getCenter().getPointId());
             }
           } else {
             domainSegment.insertNextUndefinedPoint(
@@ -177,41 +192,95 @@ template <class T, int D> class lsAdvect {
 
         } else { // if the center is not an active grid point
           if (it.getCenter().getValue() >= 0) {
+            int usedNeighbor = -1;
             T distance = lsDomain<T, D>::POS_VALUE;
             for (int i = 0; i < 2 * D; i++) {
               T value = it.getNeighbor(i).getValue();
               if (std::abs(value) <= 1.0 && (value < 0.)) {
                 if (distance > value + 1.0) {
                   distance = value + 1.0;
+                  usedNeighbor = i;
                 }
               }
             }
 
             if (distance <= 1.) {
               domainSegment.insertNextDefinedPoint(it.getIndices(), distance);
+              newDataSourceIds[p].push_back(
+                  it.getNeighbor(usedNeighbor).getPointId());
             } else {
               domainSegment.insertNextUndefinedPoint(it.getIndices(),
                                                      lsDomain<T, D>::POS_VALUE);
             }
 
           } else {
+            int usedNeighbor = -1;
             T distance = lsDomain<T, D>::NEG_VALUE;
             for (int i = 0; i < 2 * D; i++) {
               T value = it.getNeighbor(i).getValue();
               if (std::abs(value) <= 1.0 && (value > 0)) {
                 if (distance < value - 1.0) {
-                  distance = std::max(distance, value - T(1.0));
+                  // distance = std::max(distance, value - T(1.0));
+                  distance = value - 1.0;
+                  usedNeighbor = i;
                 }
               }
             }
 
             if (distance >= -1.) {
               domainSegment.insertNextDefinedPoint(it.getIndices(), distance);
+              newDataSourceIds[p].push_back(
+                  it.getNeighbor(usedNeighbor).getPointId());
             } else {
               domainSegment.insertNextUndefinedPoint(it.getIndices(),
                                                      lsDomain<T, D>::NEG_VALUE);
             }
           }
+        }
+      }
+    }
+
+    // now copy old data into new level set
+    auto &pointData = levelSets.back()->getPointData();
+    if (!pointData.getScalarDataSize() || !pointData.getVectorDataSize()) {
+      auto &newPointData = newlsDomain.getPointData();
+      // concatenate all source ids into one vector
+      newDataSourceIds.reserve(newlsDomain.getNumberOfPoints());
+      for (unsigned i = 1; i < newDataSourceIds.size(); ++i) {
+        for (unsigned j = 0; j < newDataSourceIds[i].size(); ++j) {
+          newDataSourceIds[0].push_back(newDataSourceIds[i][j]);
+        }
+        // free memory of copied vectors
+        std::vector<unsigned>().swap(newDataSourceIds[i]);
+      }
+
+      // scalars
+      for (unsigned scalarId = 0; scalarId < pointData.getScalarDataSize();
+           ++scalarId) {
+        newPointData.insertNextScalarData(
+            lsPointData::ScalarDataType(),
+            pointData.getScalarDataLabel(scalarId));
+        auto &newScalars = *(newPointData.getScalarData(scalarId));
+        auto &scalars = *(pointData.getScalarData(scalarId));
+        newScalars.reserve(newlsDomain.getNumberOfPoints());
+
+        for (unsigned i = 0; i < newDataSourceIds[0].size(); ++i) {
+          newScalars.push_back(scalars[newDataSourceIds[0][i]]);
+        }
+      }
+
+      // vectors
+      for (unsigned vectorId = 0; vectorId < pointData.getVectorDataSize();
+           ++vectorId) {
+        newPointData.insertNextVectorData(
+            lsPointData::VectorDataType(),
+            pointData.getVectorDataLabel(vectorId));
+        auto &newVectors = *(newPointData.getVectorData(vectorId));
+        auto &vectors = *(pointData.getVectorData(vectorId));
+        newVectors.reserve(newlsDomain.getNumberOfPoints());
+
+        for (unsigned i = 0; i < newDataSourceIds[0].size(); ++i) {
+          newVectors.push_back(vectors[newDataSourceIds[0][i]]);
         }
       }
     }
@@ -238,6 +307,9 @@ template <class T, int D> class lsAdvect {
           .print();
       return std::numeric_limits<double>::max();
     }
+
+    // clear all metadata as it will be invalidated
+    levelSets.back()->clearMetaData();
 
     double currentTime = 0.;
     if (integrationScheme ==
@@ -291,9 +363,6 @@ template <class T, int D> class lsAdvect {
             .apply();
       }
     }
-
-    // clear all metadata since it is invalid now
-    levelSets.back()->clearMetaData();
 
     return currentTime;
   }
@@ -456,6 +525,10 @@ template <class T, int D> class lsAdvect {
     // domain segments --> DO NOT CHANGE SEGMENTATION HERE (true parameter)
     lsReduce<T, D>(*levelSets.back(), 1, true).apply();
 
+    const bool saveVelocities = saveAdvectionVelocities;
+    std::vector<std::vector<double>> velocityVectors(
+        levelSets.back()->getNumberOfSegments());
+
 #pragma omp parallel num_threads((levelSets.back())->getNumberOfSegments())
     {
       int p = 0;
@@ -467,6 +540,11 @@ template <class T, int D> class lsAdvect {
           totalTempRates[p].begin();
       auto &segment = topDomain.getDomainSegment(p);
       unsigned maxId = segment.getNumberOfPoints();
+
+      if (saveVelocities) {
+        velocityVectors[p].resize(maxId);
+      }
+
       for (unsigned localId = 0; localId < maxId; ++localId) {
         T &value = segment.definedValues[localId];
         double time = maxTimeStep;
@@ -483,6 +561,10 @@ template <class T, int D> class lsAdvect {
         // now deduct the velocity times the time step we take
         value -= time * itRS->first;
 
+        if (saveVelocities) {
+          velocityVectors[p][localId] = time * itRS->first;
+        }
+
         // this
         // is run when two materials are close but the velocity is too slow to
         // actually reach the second material, to get rid of the extra entry in
@@ -493,6 +575,17 @@ template <class T, int D> class lsAdvect {
         // advance the TempStopRates iterator by one
         ++itRS;
       }
+    }
+
+    if (saveVelocities) {
+      typename lsPointData::ScalarDataType pointData;
+      for (unsigned i = 0; i < velocityVectors.size(); ++i) {
+        pointData.insert(pointData.end(),
+                         std::make_move_iterator(velocityVectors[i].begin()),
+                         std::make_move_iterator(velocityVectors[i].end()));
+      }
+      levelSets.back()->getPointData().insertNextScalarData(
+          pointData, "AdvectionVelocity");
     }
 
     return maxTimeStep;
@@ -555,6 +648,10 @@ public:
   /// Defaults to false. If set to true, only the "top" values will
   /// be advected. All others values are not changed.
   void setIgnoreVoids(bool iV) { ignoreVoids = iV; }
+
+  /// Set whether the velocities applied to each point should be saved in
+  /// the level set for debug purposes.
+  void setSaveAdvectionVelocities(bool sAV) { saveAdvectionVelocities = sAV; }
 
   /// Get by how much the physical time was advanced during the last apply()
   /// call.

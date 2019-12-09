@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['directionaletch_234',['directionalEtch',['../classdirectionalEtch.html',1,'']]]
+  ['directionaletch',['directionalEtch',['../classdirectionalEtch.html',1,'']]]
 ];

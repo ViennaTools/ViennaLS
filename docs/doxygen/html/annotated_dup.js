@@ -22,6 +22,7 @@ var annotated_dup =
     [ "lsMessage", "classlsMessage.html", "classlsMessage" ],
     [ "lsPlane", "classlsPlane.html", "classlsPlane" ],
     [ "lsPointCloud", "classlsPointCloud.html", "classlsPointCloud" ],
+    [ "lsPointData", "classlsPointData.html", "classlsPointData" ],
     [ "lsPrune", "classlsPrune.html", "classlsPrune" ],
     [ "lsReduce", "classlsReduce.html", "classlsReduce" ],
     [ "lsSphere", "classlsSphere.html", "classlsSphere" ],

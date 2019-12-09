@@ -124,8 +124,8 @@ public:
     size_t currentPointId = 0;
 
     // prepare mesh for material ids
-    mesh->scalarDataLabels.push_back("Material ID");
-    mesh->scalarData.push_back(std::vector<double>());
+    mesh->insertNextScalarData(lsPointData::ScalarDataType(), "Material");
+    auto &materialIds = *(mesh->getScalarData(0));
 
     // set up iterators for all materials
     std::vector<hrleConstDenseCellIterator<typename lsDomain<T, D>::DomainType>>
@@ -179,14 +179,14 @@ public:
             std::swap(hexa[2], hexa[3]);
             std::swap(hexa[6], hexa[7]);
             mesh->hexas.push_back(hexa);
-            mesh->scalarData[0].push_back(materialId);
+            materialIds.push_back(materialId);
           } else {
             std::array<unsigned, 3> triangle{voxel[0], voxel[1], voxel[2]};
             mesh->triangles.push_back(triangle);
-            mesh->scalarData[0].push_back(materialId);
+            materialIds.push_back(materialId);
             triangle[0] = voxel[3];
             mesh->triangles.push_back(triangle);
-            mesh->scalarData[0].push_back(materialId);
+            materialIds.push_back(materialId);
           }
           // jump out of material for loop
           break;

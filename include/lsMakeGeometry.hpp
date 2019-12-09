@@ -320,14 +320,17 @@ private:
 
     if (D == 2) {
       std::array<unsigned, 2> line = {0, 1};
-      if(normal[i] < 0.) std::swap(line[0], line[1]);
+      if (normal[i] < 0.)
+        std::swap(line[0], line[1]);
       mesh.insertNextLine(line);
     } else {
       std::array<unsigned, 3> triangle = {0, 1, 2};
-      if(normal[i] < 0.) std::swap(triangle[0], triangle[1]);
+      if (normal[i] < 0.)
+        std::swap(triangle[0], triangle[1]);
       mesh.insertNextTriangle(triangle);
       triangle = {0, 3, 1};
-      if(normal[i] < 0.) std::swap(triangle[0], triangle[1]);
+      if (normal[i] < 0.)
+        std::swap(triangle[0], triangle[1]);
       mesh.insertNextTriangle(triangle);
     }
     // now convert mesh to levelset

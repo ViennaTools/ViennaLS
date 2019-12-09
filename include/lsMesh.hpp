@@ -1,16 +1,17 @@
 #ifndef LS_MESH_HPP
 #define LS_MESH_HPP
 
+#include <array>
 #include <iostream>
 #include <vector>
 
-#include <array>
+#include <lsPointData.hpp>
 
 /// This class holds an explicit mesh, which is always given in 3 dimensions.
 /// If it describes a 2D mesh, the third dimension is set to 0.
 /// Vertices, Lines, Triangles, Tetras & Hexas are supported as geometric
 /// elements.
-class lsMesh {
+class lsMesh : public lsPointData {
 public:
   std::vector<std::array<double, 3>> nodes;
   std::vector<std::array<unsigned, 1>> vertices;
@@ -18,10 +19,7 @@ public:
   std::vector<std::array<unsigned, 3>> triangles;
   std::vector<std::array<unsigned, 4>> tetras;
   std::vector<std::array<unsigned, 8>> hexas;
-  std::vector<std::vector<double>> scalarData;
-  std::vector<std::string> scalarDataLabels;
-  std::vector<std::vector<std::array<double, 3>>> vectorData;
-  std::vector<std::string> vectorDataLabels;
+  // lsPointData data;
 
 private:
   // helper function for duplicate removal
@@ -40,12 +38,6 @@ public:
   const std::vector<std::array<double, 3>> &getNodes() const { return nodes; }
 
   std::vector<std::array<double, 3>> &getNodes() { return nodes; }
-
-  std::vector<double> &getScalarData(int i) { return scalarData[i]; }
-
-  std::vector<std::array<double, 3>> &getVectorData(int i) {
-    return vectorData[i];
-  }
 
   template <int D, typename std::enable_if<D == 1, int>::type = 0>
   std::vector<std::array<unsigned, D>> &getElements() {
@@ -127,18 +119,6 @@ public:
     return hexas.size();
   }
 
-  void insertNextScalarData(std::vector<double> &scalars,
-                            std::string label = "Scalars") {
-    scalarData.push_back(scalars);
-    scalarDataLabels.push_back(label);
-  }
-
-  void insertNextVectorData(std::vector<std::array<double, 3>> &vectors,
-                            std::string label = "Vectors") {
-    vectorData.push_back(vectors);
-    vectorDataLabels.push_back(label);
-  }
-
   void removeDuplicateNodes() {
     std::vector<std::array<double, 3>> newNodes;
     // can just push first point since it cannot be duplicate
@@ -180,10 +160,7 @@ public:
     triangles.clear();
     tetras.clear();
     hexas.clear();
-    scalarData.clear();
-    scalarDataLabels.clear();
-    vectorData.clear();
-    vectorDataLabels.clear();
+    lsPointData::clear();
   }
 
   void print() {
@@ -200,17 +177,19 @@ public:
     if (hexas.size() > 0)
       std::cout << "Number of Hexas: " << hexas.size() << std::endl;
     // data
-    if (scalarData.size() > 0)
+    if (getScalarDataSize() > 0) {
       std::cout << "Scalar data:" << std::endl;
-    for (unsigned i = 0; i < scalarData.size(); ++i) {
-      std::cout << "  \"" << scalarDataLabels[i] << "\" of size "
-                << scalarData[i].size() << std::endl;
+      for (unsigned i = 0; i < getScalarDataSize(); ++i) {
+        std::cout << "  \"" << getScalarDataLabel(i) << "\" of size "
+                  << getScalarData(i)->size() << std::endl;
+      }
     }
-    if (vectorData.size() > 0)
+    if (getVectorDataSize() > 0) {
       std::cout << "Vector data:" << std::endl;
-    for (unsigned i = 0; i < vectorData.size(); ++i) {
-      std::cout << "  \"" << vectorDataLabels[i] << "\" of size "
-                << vectorData[i].size() << std::endl;
+      for (unsigned i = 0; i < getVectorDataSize(); ++i) {
+        std::cout << "  \"" << getVectorDataLabel(i) << "\" of size "
+                  << getVectorData(i)->size() << std::endl;
+      }
     }
   }
 };
