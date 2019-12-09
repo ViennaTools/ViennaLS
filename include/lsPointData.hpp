@@ -17,20 +17,24 @@ private:
   std::vector<std::string> vectorDataLabels;
 
 public:
+  /// insert new scalar data array
   void insertNextScalarData(const ScalarDataType &scalars,
                             std::string label = "Scalars") {
     scalarData.push_back(scalars);
     scalarDataLabels.push_back(label);
   }
 
+  /// insert new vector data array
   void insertNextVectorData(const VectorDataType &vectors,
                             std::string label = "Vectors") {
     vectorData.push_back(vectors);
     vectorDataLabels.push_back(label);
   }
 
+  /// get the number of different scalar data arrays saved
   unsigned getScalarDataSize() const { return scalarData.size(); }
 
+  /// get the number of different vector data arrays saved
   unsigned getVectorDataSize() const { return vectorData.size(); }
 
   ScalarDataType *getScalarData(int index) { return &(scalarData[index]); }

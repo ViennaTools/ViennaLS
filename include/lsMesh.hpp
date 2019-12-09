@@ -19,7 +19,6 @@ public:
   std::vector<std::array<unsigned, 3>> triangles;
   std::vector<std::array<unsigned, 4>> tetras;
   std::vector<std::array<unsigned, 8>> hexas;
-  // lsPointData data;
 
 private:
   // helper function for duplicate removal
