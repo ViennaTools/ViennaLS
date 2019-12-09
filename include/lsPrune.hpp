@@ -14,6 +14,7 @@
 /// possible.
 template <class T, int D> class lsPrune {
   lsDomain<T, D> *levelSet = nullptr;
+  const double numericEps = 1e-9;
 
 public:
   lsPrune() {}
@@ -68,7 +69,8 @@ public:
         if (centerIt.isDefined()) {
           int i = 0;
           for (; i < 2 * D; i++) {
-            if ((neighborIt.getNeighbor(i).getValue() < 0) != centerSign)
+            if ((neighborIt.getNeighbor(i).getValue() < 0 + numericEps) !=
+                centerSign)
               break;
           }
           if (i != 2 * D) {

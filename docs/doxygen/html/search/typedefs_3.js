@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['normalvectortype_471',['NormalVectorType',['../classlsDomain.html#ac3efb47c6848a93e796b0c13a8e41973',1,'lsDomain']]]
+  ['normalvectortype',['NormalVectorType',['../classlsDomain.html#a1b5387cd91551921f8f4b034aef54c80',1,'lsDomain']]]
 ];

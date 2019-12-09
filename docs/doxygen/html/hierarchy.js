@@ -19,10 +19,12 @@ var hierarchy =
     [ "lsMakeGeometry< T, D >", "classlsMakeGeometry.html", null ],
     [ "lsInternal::lsMarchingCubes", "classlsInternal_1_1lsMarchingCubes.html", null ],
     [ "lsMarkVoidPoints< T, D >", "classlsMarkVoidPoints.html", null ],
-    [ "lsMesh", "classlsMesh.html", null ],
     [ "lsMessage", "classlsMessage.html", null ],
     [ "lsPlane< T, D >", "classlsPlane.html", null ],
     [ "lsPointCloud< T, D >", "classlsPointCloud.html", null ],
+    [ "lsPointData", "classlsPointData.html", [
+      [ "lsMesh", "classlsMesh.html", null ]
+    ] ],
     [ "lsPrune< T, D >", "classlsPrune.html", null ],
     [ "lsReduce< T, D >", "classlsReduce.html", null ],
     [ "lsSphere< T, D >", "classlsSphere.html", null ],

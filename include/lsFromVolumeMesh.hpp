@@ -56,26 +56,18 @@ public:
 
     // get the unique material numbers for explicit booling
     std::vector<int> materialInts;
-    int scalarDataIndex = -1;
-    // see if there is a scalar data array specifying "Material"
-    {
-      auto it = std::find(mesh->scalarDataLabels.begin(),
-                          mesh->scalarDataLabels.end(), "Material");
-      if (it != mesh->scalarDataLabels.end()) {
-        scalarDataIndex = std::distance(mesh->scalarDataLabels.begin(), it);
-
-        for (auto materialIt = mesh->scalarData[scalarDataIndex].begin();
-             materialIt != mesh->scalarData[scalarDataIndex].end();
-             ++materialIt) {
-          if (std::find(materialInts.begin(), materialInts.end(),
-                        *materialIt) == materialInts.end()) {
-            materialInts.push_back(static_cast<int>(*materialIt));
-          }
-        }
-        std::sort(materialInts.begin(), materialInts.end());
-      } else {
-        materialInts.push_back(0);
-      }
+    typename lsPointData::ScalarDataType *materialData =
+        mesh->getScalarData("Material");
+    if (materialData != nullptr) {
+      // make unique list of materialIds
+      materialInts =
+          std::vector<int>(materialData->begin(), materialData->end());
+      std::sort(materialInts.begin(), materialInts.end());
+      auto it = std::unique(materialInts.begin(), materialInts.end());
+      materialInts.erase(it, materialInts.end());
+    } else {
+      // no materials are defined
+      materialInts.push_back(0);
     }
 
     // Map for all surfaceElements and their corresponding material
@@ -142,9 +134,8 @@ public:
                       std::to_string(i))
                   .print();
             }
-            it->second.second = (scalarDataIndex == -1)
-                                    ? 0
-                                    : mesh->scalarData[scalarDataIndex][i];
+            it->second.second =
+                (materialData == nullptr) ? 0 : (*materialData)[i];
           } else {
             if (it->second.first != materialInts.back() + 1) {
               lsMessage::getInstance()
@@ -154,9 +145,8 @@ public:
                       std::to_string(i))
                   .print();
             }
-            it->second.first = (scalarDataIndex == -1)
-                                   ? 0
-                                   : mesh->scalarData[scalarDataIndex][i];
+            it->second.first =
+                (materialData == nullptr) ? 0 : (*materialData)[i];
           }
 
           if (it->second.first == it->second.second)
@@ -165,22 +155,18 @@ public:
         } else {
           if (Orientation(currentElementPoints)) {
             surfaceElements.insert(
-                it, std::make_pair(
-                        currentSurfaceElement,
-                        std::make_pair(
-                            materialInts.back() + 1,
-                            (scalarDataIndex == -1)
-                                ? 0
-                                : mesh->scalarData[scalarDataIndex][i])));
+                it, std::make_pair(currentSurfaceElement,
+                                   std::make_pair(materialInts.back() + 1,
+                                                  (materialData == nullptr)
+                                                      ? 0
+                                                      : (*materialData)[i])));
           } else {
             surfaceElements.insert(
-                it,
-                std::make_pair(
-                    currentSurfaceElement,
-                    std::make_pair((scalarDataIndex == -1)
-                                       ? 0
-                                       : mesh->scalarData[scalarDataIndex][i],
-                                   materialInts.back() + 1)));
+                it, std::make_pair(currentSurfaceElement,
+                                   std::make_pair((materialData == nullptr)
+                                                      ? 0
+                                                      : (*materialData)[i],
+                                                  materialInts.back() + 1)));
           }
         }
       }

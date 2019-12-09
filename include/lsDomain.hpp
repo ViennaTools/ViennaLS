@@ -9,6 +9,8 @@
 #include <hrleFillDomainWithSignedDistance.hpp>
 #include <hrleVectorType.hpp>
 
+#include <lsPointData.hpp>
+
 ///  Class containing all information about the level set, including
 ///  the dimensions of the domain, boundary conditions and all data.
 template <class T, int D> class lsDomain {
@@ -21,7 +23,8 @@ public:
   typedef typename std::vector<std::pair<hrleVectorType<hrleIndexType, D>, T>>
       PointValueVectorType;
   typedef typename std::vector<std::array<T, D>> NormalVectorType;
-  typedef typename std::vector<bool> voidPointMarkersType;
+  typedef lsPointData PointDataType;
+  typedef typename std::vector<bool> VoidPointMarkersType;
 
 private:
   // PRIVATE MEMBER VARIABLES
@@ -29,7 +32,8 @@ private:
   DomainType domain;
   int levelSetWidth = 1;
   NormalVectorType normalVectors;
-  voidPointMarkersType voidPointMarkers;
+  PointDataType pointData;
+  VoidPointMarkersType voidPointMarkers;
 
 public:
   // STATIC CONSTANTS
@@ -103,6 +107,7 @@ public:
     grid = passedlsDomain.grid;
     domain.deepCopy(grid, passedlsDomain.domain);
     levelSetWidth = passedlsDomain.levelSetWidth;
+    pointData = passedlsDomain.pointData;
   }
 
   /// re-initalise lsDomain with the point/value pairs in pointData
@@ -133,6 +138,7 @@ public:
   // clear all additional data
   void clearMetaData() {
     normalVectors.clear();
+    pointData.clear();
     voidPointMarkers.clear();
   }
 
@@ -141,10 +147,15 @@ public:
 
   const NormalVectorType &getNormalVectors() const { return normalVectors; }
 
-  /// get reference to the voidPoints markers for all points
-  voidPointMarkersType &getVoidPointMarkers() { return voidPointMarkers; }
+  /// get reference to point data saved in the level set
+  PointDataType &getPointData() { return pointData; }
 
-  const voidPointMarkersType &getVoidPointMarkers() const {
+  const PointDataType &getPointData() const { return pointData; }
+
+  /// get reference to the voidPoints markers for all points
+  VoidPointMarkersType &getVoidPointMarkers() { return voidPointMarkers; }
+
+  const VoidPointMarkersType &getVoidPointMarkers() const {
     return voidPointMarkers;
   }
 

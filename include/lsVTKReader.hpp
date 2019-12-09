@@ -174,22 +174,22 @@ private:
       vtkDataArray *dataArray;
       dataArray = cellData->GetArray(i);
       if (cellData->GetNumberOfComponents() == 1) {
-        mesh->scalarDataLabels.push_back(
-            std::string(cellData->GetArrayName(i)));
-        mesh->scalarData.push_back(std::vector<double>());
-        mesh->scalarData[i].resize(cellData->GetNumberOfTuples());
+        mesh->insertNextScalarData(lsPointData::ScalarDataType(),
+                                   std::string(cellData->GetArrayName(i)));
+        auto &scalars = *(mesh->getScalarData(i));
+        scalars.resize(cellData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
-          mesh->scalarData[i][j] = dataArray->GetTuple1(j);
+          scalars[j] = dataArray->GetTuple1(j);
         }
       } else if (cellData->GetNumberOfComponents() == 3) {
-        mesh->vectorDataLabels.push_back(
-            std::string(cellData->GetArrayName(i)));
-        mesh->vectorData.push_back(std::vector<std::array<double, 3>>());
-        mesh->vectorData[i].resize(cellData->GetNumberOfTuples());
+        mesh->insertNextVectorData(lsPointData::VectorDataType(),
+                                   std::string(cellData->GetArrayName(i)));
+        auto &vectors = *(mesh->getVectorData(i));
+        vectors.resize(cellData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
           std::array<double, 3> vector;
           dataArray->GetTuple(j, &(vector[0]));
-          mesh->vectorData[i][j] = vector;
+          vectors[j] = vector;
         }
       }
     }
@@ -278,22 +278,22 @@ private:
       vtkDataArray *dataArray;
       dataArray = cellData->GetArray(i);
       if (cellData->GetNumberOfComponents() == 1) {
-        mesh->scalarDataLabels.push_back(
-            std::string(cellData->GetArrayName(i)));
-        mesh->scalarData.push_back(std::vector<double>());
-        mesh->scalarData[i].resize(cellData->GetNumberOfTuples());
+        mesh->insertNextScalarData(std::vector<double>(),
+                                   std::string(cellData->GetArrayName(i)));
+        auto &scalars = *(mesh->getScalarData(i));
+        scalars.resize(cellData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
-          mesh->scalarData[i][j] = dataArray->GetTuple1(j);
+          scalars[j] = dataArray->GetTuple1(j);
         }
       } else if (cellData->GetNumberOfComponents() == 3) {
-        mesh->vectorDataLabels.push_back(
-            std::string(cellData->GetArrayName(i)));
-        mesh->vectorData.push_back(std::vector<std::array<double, 3>>());
-        mesh->vectorData[i].resize(cellData->GetNumberOfTuples());
+        mesh->insertNextVectorData(lsPointData::VectorDataType(),
+                                   std::string(cellData->GetArrayName(i)));
+        auto &vectors = *(mesh->getVectorData(i));
+        vectors.resize(cellData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
           std::array<double, 3> vector;
           dataArray->GetTuple(j, &(vector[0]));
-          mesh->vectorData[i][j] = vector;
+          vectors[j] = vector;
         }
       }
     }
@@ -479,8 +479,7 @@ private:
       }
     }
 
-    mesh->scalarData.push_back(materials);
-    mesh->scalarDataLabels.push_back("Material");
+    mesh->insertNextScalarData(materials, "Material");
 
     f_ct.close();
     f_m.close();

@@ -7,6 +7,7 @@
 #include <hrleVectorType.hpp>
 #include <lsDomain.hpp>
 #include <lsMessage.hpp>
+#include <lsPrune.hpp>
 
 /// Enumeration for the different types
 /// of boolean operations which are
@@ -97,9 +98,10 @@ template <class T, int D> class lsBooleanOperation {
     newDomain.finalize();
     newDomain.segment();
     newlsDomain.setLevelSetWidth(levelSetA->getLevelSetWidth());
+    // now we need to prune, to remove stray defined points
+    lsPrune<T, D>(newlsDomain).apply();
+
     levelSetA->deepCopy(newlsDomain);
-    levelSetA->finalize(
-        std::min(levelSetA->getLevelSetWidth(), levelSetB->getLevelSetWidth()));
   }
 
   void invert() {

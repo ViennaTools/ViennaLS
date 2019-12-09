@@ -56,6 +56,9 @@ var dir_d44c64559bbebec7f509842c48db8b23 =
     [ "lsMessage.hpp", "lsMessage_8hpp.html", [
       [ "lsMessage", "classlsMessage.html", "classlsMessage" ]
     ] ],
+    [ "lsPointData.hpp", "lsPointData_8hpp.html", [
+      [ "lsPointData", "classlsPointData.html", "classlsPointData" ]
+    ] ],
     [ "lsPreCompileMacros.hpp", "lsPreCompileMacros_8hpp.html", "lsPreCompileMacros_8hpp" ],
     [ "lsPrune.hpp", "lsPrune_8hpp.html", [
       [ "lsPrune", "classlsPrune.html", "classlsPrune" ]

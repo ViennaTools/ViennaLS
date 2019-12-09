@@ -89,6 +89,10 @@ public:
 
     mesh->insertNextScalarData(scalarData, "LSValues");
     mesh->insertNextScalarData(subLS, "SegmentID");
+    if (levelSet->getPointData().getScalarDataSize() > 0 ||
+        levelSet->getPointData().getVectorDataSize() > 0) {
+      mesh->append(levelSet->getPointData());
+    }
   }
 };
 
