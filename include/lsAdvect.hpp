@@ -48,7 +48,7 @@ template <class T, int D> class lsAdvect {
   lsIntegrationSchemeEnum integrationScheme =
       lsIntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER;
   double timeStepRatio = 0.4999;
-  double dissipationAlpha = 0.;
+  double dissipationAlpha = 1.0; // 1 is default for lax friedrichs
   bool calculateNormalVectors = true;
   bool ignoreVoids = false;
   double advectionTime = 0.;
@@ -328,13 +328,13 @@ template <class T, int D> class lsAdvect {
                lsIntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
       lsInternal::lsLaxFriedrichs<T, D, 1>::prepareLS(*(levelSets.back()));
       auto is = lsInternal::lsLaxFriedrichs<T, D, 1>(*(levelSets.back()),
-                                                     calculateNormalVectors);
+                                                     calculateNormalVectors, dissipationAlpha);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER) {
       lsInternal::lsLaxFriedrichs<T, D, 2>::prepareLS(*(levelSets.back()));
       auto is = lsInternal::lsLaxFriedrichs<T, D, 2>(*(levelSets.back()),
-                                                     calculateNormalVectors);
+                                                     calculateNormalVectors, dissipationAlpha);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS) {
@@ -545,9 +545,9 @@ template <class T, int D> class lsAdvect {
         velocityVectors[p].resize(maxId);
       }
 
+      double time = maxTimeStep;
       for (unsigned localId = 0; localId < maxId; ++localId) {
         T &value = segment.definedValues[localId];
-        double time = maxTimeStep;
 
         // if there is a change in materials during one time step, deduct the
         // time taken to advect up to the end of the top material and set the LS

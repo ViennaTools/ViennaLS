@@ -9,14 +9,15 @@ template <class T> class lsVelocityField {
 public:
   lsVelocityField() {}
 
-  virtual T getScalarVelocity(const std::array<T, 3> &coordinate, int material,
-                              const std::array<T, 3> &normalVector) {
+  virtual T getScalarVelocity(const std::array<T, 3> & /*coordinate*/,
+                              int /*material*/,
+                              const std::array<T, 3> & /*normalVector*/) {
     return 0;
   }
 
   virtual std::array<T, 3>
-  getVectorVelocity(const std::array<T, 3> &coordinate, int material,
-                    const std::array<T, 3> &normalVector) {
+  getVectorVelocity(const std::array<T, 3> & /*coordinate*/, int /*material*/,
+                    const std::array<T, 3> & /*normalVector*/) {
     return {0, 0, 0};
   }
 
