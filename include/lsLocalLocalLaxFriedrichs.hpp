@@ -1,5 +1,5 @@
-#ifndef LS_LAX_FRIEDRICHS_HPP
-#define LS_LAX_FRIEDRICHS_HPP
+#ifndef LS_LOCAL_LOCAL_LAX_FRIEDRICHS_HPP
+#define LS_LOCAL_LOCAL_LAX_FRIEDRICHS_HPP
 
 #include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
@@ -8,11 +8,11 @@
 #include <lsExpand.hpp>
 
 namespace lsInternal {
-template <class T, int D, int order> class lsLaxFriedrichs {
+
+///
+template <class T, int D, int order> class lsLocalLocalLaxFriedrichs {
   lsDomain<T, D> &levelSet;
   hrleSparseStarIterator<hrleDomain<T, D>> neighborIterator;
-  bool calculateNormalVectors = true;
-  const double alpha = 1.0;
 
   static T pow2(const T &value) { return value * value; }
 
@@ -22,13 +22,10 @@ public:
     lsExpand<T, D>(passedlsDomain, 2 * order + 1).apply();
   }
 
-  lsLaxFriedrichs(lsDomain<T, D> &passedlsDomain,
-                  bool calcNormal = true, double a = 1.0)
+  lsLocalLocalLaxFriedrichs(lsDomain<T, D> &passedlsDomain)
       : levelSet(passedlsDomain),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>>(
-            levelSet.getDomain(), order)),
-        calculateNormalVectors(calcNormal),
-        alpha(a) {}
+            levelSet.getDomain(), order)) {}
 
   T operator()(const hrleVectorType<hrleIndexType, D> &indices,
                lsVelocityField<T> *velocities, int material) {
@@ -44,6 +41,11 @@ public:
     // move neighborIterator to current position
     neighborIterator.goToIndicesSequential(indices);
 
+
+
+    // convert coordinate to std array for interface
+    std::array<T, 3> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
+
     T gradPos[D];
     T gradNeg[D];
 
@@ -52,7 +54,6 @@ public:
 
     std::array<T, 3> normalVector = {};
     T normalModulus = 0;
-    const bool calcNormals = calculateNormalVectors;
 
     for (int i = 0; i < D; i++) { // iterate over dimensions
 
@@ -108,30 +109,25 @@ public:
       gradPos[i] = diffNeg;
       gradNeg[i] = diffPos;
 
-      if(calcNormals) {
-        normalVector[i] = (diffNeg + diffPos) * 0.5;
-        normalModulus += normalVector[i] * normalVector[i];
-      }
+      normalVector[i] = (diffNeg + diffPos) * 0.5;
+      normalModulus += normalVector[i] * normalVector[i];
 
       grad += pow2((diffNeg + diffPos) * 0.5);
-      dissipation += (diffPos - diffNeg) * 0.5;
     }
 
-    if(calcNormals) {
-      normalModulus = std::sqrt(normalModulus);
-      for (unsigned i = 0; i < D; ++i) {
-        normalVector[i] /= normalModulus;
-      }
+    // normalise normal vector
+    normalModulus = std::sqrt(normalModulus);
+    for (unsigned i = 0; i < D; ++i) {
+      normalVector[i] /= normalModulus;
     }
 
-    // convert coordinate to std array for interface
-    std::array<T, 3> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
-
+    // Get velocities
     double scalarVelocity =
         velocities->getScalarVelocity(coordArray, material, normalVector);
     std::array<T, 3> vectorVelocity =
         velocities->getVectorVelocity(coordArray, material, normalVector);
 
+    //calculate hamiltonian
     T totalGrad = 0.;
     if (scalarVelocity != 0.) {
       totalGrad = scalarVelocity * std::sqrt(grad);
@@ -145,9 +141,16 @@ public:
       }
     }
 
-    return totalGrad - ((totalGrad != 0.) ? alpha * dissipation : 0);
+    // calculate local dissipation alphas for each direction
+    // and add to dissipation term
+    for(unsigned i = 0; i < D; ++i) {
+      T alpha = std::abs((scalarVelocity + vectorVelocity[i]) * normalVector[i]);
+      dissipation += alpha * (gradNeg[i] - gradPos[i]) * 0.5;
+    }
+
+    return totalGrad - ((totalGrad != 0.) ? dissipation : 0);
   }
 };
 } // namespace lsInternal
 
-#endif // LS_LAX_FRIEDRICHS_HPP
+#endif // LS_LOCAL_LOCAL_LAX_FRIEDRICHS_HPP

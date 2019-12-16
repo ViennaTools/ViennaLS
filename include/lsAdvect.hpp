@@ -18,6 +18,8 @@
 // Integration schemes
 #include <lsEnquistOsher.hpp>
 #include <lsLaxFriedrichs.hpp>
+#include <lsLocalLocalLaxFriedrichs.hpp>
+#include <lsLocalLaxFriedrichs.hpp>
 #include <lsStencilLocalLaxFriedrichsScalar.hpp>
 
 // Velocity accessor
@@ -30,7 +32,11 @@ enum struct lsIntegrationSchemeEnum : unsigned {
   ENGQUIST_OSHER_2ND_ORDER = 1,
   LAX_FRIEDRICHS_1ST_ORDER = 2,
   LAX_FRIEDRICHS_2ND_ORDER = 3,
-  STENCIL_LOCAL_LAX_FRIEDRICHS = 4
+  LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 4,
+  LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER = 5,
+  LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 6,
+  LOCAL_LAX_FRIEDRICHS_2ND_ORDER = 7,
+  STENCIL_LOCAL_LAX_FRIEDRICHS = 8
 };
 
 /// This class is used to advance level sets over time.
@@ -46,7 +52,7 @@ template <class T, int D> class lsAdvect {
   std::vector<lsDomain<T, D> *> levelSets;
   lsVelocityField<T> *velocities = nullptr;
   lsIntegrationSchemeEnum integrationScheme =
-      lsIntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER;
+      lsIntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER;
   double timeStepRatio = 0.4999;
   double dissipationAlpha = 1.0; // 1 is default for lax friedrichs
   bool calculateNormalVectors = true;
@@ -80,6 +86,7 @@ template <class T, int D> class lsAdvect {
 
     MaxTimeStep = 0;
     for (int i = 0; i < 3; ++i) {
+      // TODO why does this condition exist
       if (std::abs(dxs[i]) > 1e-6) {
         MaxTimeStep += alphas[i] / dxs[i];
       }
@@ -139,8 +146,8 @@ template <class T, int D> class lsAdvect {
 
           int k = 0;
           for (; k < 2 * D; k++)
-            if (std::signbit(it.getNeighbor(k).getValue() - 1e-9) !=
-                std::signbit(it.getCenter().getValue()) + 1e-9)
+            if (std::signbit(it.getNeighbor(k).getValue() - 1e-7) !=
+                std::signbit(it.getCenter().getValue() + 1e-7))
               break;
 
           // if there is at least one neighbor of opposite sign
@@ -337,6 +344,26 @@ template <class T, int D> class lsAdvect {
                                                      calculateNormalVectors, dissipationAlpha);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
+               lsIntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+      lsInternal::lsLocalLocalLaxFriedrichs<T, D, 1>::prepareLS(*(levelSets.back()));
+      auto is = lsInternal::lsLocalLocalLaxFriedrichs<T, D, 1>(*(levelSets.back()));
+      currentTime = integrateTime(is, maxTimeStep);
+    } else if (integrationScheme ==
+               lsIntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
+      lsInternal::lsLocalLocalLaxFriedrichs<T, D, 2>::prepareLS(*(levelSets.back()));
+      auto is = lsInternal::lsLocalLocalLaxFriedrichs<T, D, 2>(*(levelSets.back()));
+      currentTime = integrateTime(is, maxTimeStep);
+    } else if (integrationScheme ==
+               lsIntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+      lsInternal::lsLocalLaxFriedrichs<T, D, 1>::prepareLS(*(levelSets.back()));
+      auto is = lsInternal::lsLocalLaxFriedrichs<T, D, 1>(*(levelSets.back()));
+      currentTime = integrateTime(is, maxTimeStep);
+    } else if (integrationScheme ==
+               lsIntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
+      lsInternal::lsLocalLaxFriedrichs<T, D, 2>::prepareLS(*(levelSets.back()));
+      auto is = lsInternal::lsLocalLaxFriedrichs<T, D, 2>(*(levelSets.back()));
+      currentTime = integrateTime(is, maxTimeStep);
+    } else if (integrationScheme ==
                lsIntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS) {
       lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>::prepareLS(
           *(levelSets.back()));
@@ -344,7 +371,10 @@ template <class T, int D> class lsAdvect {
           *(levelSets.back()));
       currentTime = integrateTime(is, maxTimeStep);
     } else {
+      lsMessage::getInstance().addWarning("lsAdvect: Integration scheme not found. Not advecting.").print();
+
       // if no correct scheme was found return infinity
+      // to stop advection
       return std::numeric_limits<double>::max();
     }
 

@@ -332,68 +332,58 @@ private:
       f << std::endl;
     }
 
+    const unsigned numberOfCells = mesh->vertices.size() + mesh->lines.size() + mesh->triangles.size() + mesh->tetras.size() + mesh->hexas.size();
+    const unsigned cellDataSize = 2* mesh->vertices.size() + 3 * mesh->lines.size() + 4 * mesh->triangles.size() + 5 * mesh->tetras.size() + 9 * mesh->hexas.size();
+
+    f << "CELLS " << numberOfCells << " " << cellDataSize << std::endl;
+
     // print elements
-    if (!mesh->vertices.empty()) {
-      f << "CELLS " << mesh->vertices.size() << " " << 2 * mesh->vertices.size()
-        << std::endl;
-      for (unsigned int i = 0; i < mesh->vertices.size(); i++) {
-        f << 1 << " " << mesh->vertices[i][0] << std::endl;
-      }
-      f << "CELL_TYPES " << mesh->vertices.size() << std::endl;
-      for (unsigned i = 0; i < mesh->vertices.size(); ++i)
-        f << 1 << std::endl;
-
-    } else if (!mesh->lines.empty()) {
-      f << "CELLS " << mesh->lines.size() << " " << 3 * mesh->lines.size()
-        << std::endl;
-      for (unsigned int i = 0; i < mesh->lines.size(); i++) {
-        f << 2 << " ";
-        for (int j = 0; j < 2; j++)
-          f << mesh->lines[i][j] << " ";
-        f << std::endl;
-      }
-      f << "CELL_TYPES " << mesh->lines.size() << std::endl;
-      for (unsigned i = 0; i < mesh->lines.size(); ++i)
-        f << 3 << std::endl;
-
-    } else if (!mesh->triangles.empty()) {
-      f << "CELLS " << mesh->triangles.size() << " "
-        << 4 * mesh->triangles.size() << std::endl;
-      for (unsigned int i = 0; i < mesh->triangles.size(); i++) {
-        f << 3 << " ";
-        for (int j = 0; j < 3; j++)
-          f << mesh->triangles[i][j] << " ";
-        f << std::endl;
-      }
-      f << "CELL_TYPES " << mesh->triangles.size() << std::endl;
-      for (unsigned i = 0; i < mesh->triangles.size(); ++i)
-        f << 5 << std::endl;
-
-    } else if (!mesh->tetras.empty()) {
-      f << "CELLS " << mesh->tetras.size() << " " << 5 * mesh->tetras.size()
-        << std::endl;
-      for (unsigned int i = 0; i < mesh->tetras.size(); i++) {
-        f << 4 << " ";
-        for (int j = 0; j < 4; j++)
-          f << mesh->tetras[i][j] << " ";
-        f << std::endl;
-      }
-      f << "CELL_TYPES " << mesh->tetras.size() << std::endl;
-      for (unsigned i = 0; i < mesh->tetras.size(); ++i)
-        f << 10 << std::endl;
-    } else if (!mesh->hexas.empty()) {
-      f << "CELLS " << mesh->hexas.size() << " " << 9 * mesh->hexas.size()
-        << std::endl;
-      for (unsigned int i = 0; i < mesh->hexas.size(); i++) {
-        f << 8 << " ";
-        for (int j = 0; j < 8; j++)
-          f << mesh->hexas[i][j] << " ";
-        f << std::endl;
-      }
-      f << "CELL_TYPES " << mesh->hexas.size() << std::endl;
-      for (unsigned i = 0; i < mesh->hexas.size(); ++i)
-        f << 12 << std::endl;
+    for (unsigned int i = 0; i < mesh->vertices.size(); i++) {
+      f << 1 << " " << mesh->vertices[i][0] << std::endl;
     }
+    for (unsigned int i = 0; i < mesh->lines.size(); i++) {
+      f << 2 << " ";
+      for (int j = 0; j < 2; j++)
+        f << mesh->lines[i][j] << " ";
+      f << std::endl;
+    }
+
+    for (unsigned int i = 0; i < mesh->triangles.size(); i++) {
+      f << 3 << " ";
+      for (int j = 0; j < 3; j++)
+        f << mesh->triangles[i][j] << " ";
+      f << std::endl;
+    }
+
+    for (unsigned int i = 0; i < mesh->tetras.size(); i++) {
+      f << 4 << " ";
+      for (int j = 0; j < 4; j++)
+        f << mesh->tetras[i][j] << " ";
+      f << std::endl;
+    }
+
+    for (unsigned int i = 0; i < mesh->hexas.size(); i++) {
+      f << 8 << " ";
+      for (int j = 0; j < 8; j++)
+        f << mesh->hexas[i][j] << " ";
+      f << std::endl;
+    }
+
+    f << "CELL_TYPES " << numberOfCells << std::endl;
+    for (unsigned i = 0; i < mesh->vertices.size(); ++i)
+      f << 1 << std::endl;
+
+    for (unsigned i = 0; i < mesh->lines.size(); ++i)
+      f << 3 << std::endl;
+
+    for (unsigned i = 0; i < mesh->triangles.size(); ++i)
+      f << 5 << std::endl;
+
+    for (unsigned i = 0; i < mesh->tetras.size(); ++i)
+      f << 10 << std::endl;
+
+    for (unsigned i = 0; i < mesh->hexas.size(); ++i)
+      f << 12 << std::endl;
 
     // WRITE SCALAR DATA
     if (mesh->getScalarDataSize()) {

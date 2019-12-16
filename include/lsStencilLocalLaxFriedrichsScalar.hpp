@@ -14,7 +14,7 @@ namespace lsInternal {
 /// It uses a stencil of order around active points, in order to
 /// evaluate dissipation values for each point, taking into account
 /// the mathematical nature of the speed function.
-/// see Toifl et al., 2019. ISBN: 978-1-7281-0938-1
+/// see Toifl et al., 2019. ISBN: 978-1-7281-0938-1; DOI: 10.1109/SISPAD.2019.8870443
 template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
   lsDomain<T, D> &levelSet;
   const DifferentiationSchemeEnum finiteDifferenceScheme =
@@ -158,39 +158,45 @@ public:
     // convert coordinate to std array for interface
     std::array<T, 3> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
 
-    std::array<T, 3> vectorVelocity =
-        velocities->getVectorVelocity(coordArray, material, {});
-    double scalarVelocity =
-        velocities->getScalarVelocity(coordArray, material, {});
+
 
     // if there is a vector velocity, we need to project it onto a scalar
     // velocity first using its normal vector
-    if (vectorVelocity != std::array<T, 3>({})) {
-      hrleVectorType<T, D> n;
+    // /*if (vectorVelocity != std::array<T, 3>({}))*/ {
+      std::array<T, 3> normalVector = {};
       T denominator = 0; // normal modulus
       for (unsigned i = 0; i < D; i++) {
-        int index[3] = {i == 0, i == 1, i == 2}; // unit vector in direction
+        hrleVectorType<T, 3> neighborIndex(T(0));
+        neighborIndex[i] = 1;
         // normal vector calculation
-        T pos = neighborIterator.getNeighbor(index).getValue() -
+        T pos = neighborIterator.getNeighbor(neighborIndex).getValue() -
                 neighborIterator.getCenter().getValue();
-        index[i] = -index[i];
         T neg = neighborIterator.getCenter().getValue() -
-                neighborIterator.getNeighbor(index).getValue();
-        n[i] = (pos + neg) * 0.5;
+                neighborIterator.getNeighbor(-neighborIndex).getValue();
+        normalVector[i] = (pos + neg) * 0.5;
         // normalise normal vector
-        denominator += n[i] * n[i];
+        denominator += normalVector[i] * normalVector[i];
       }
       denominator = std::sqrt(denominator);
+
+      for(unsigned i = 0; i < D; ++i) {
+        normalVector[i] /= denominator;
+      }
+
+      double scalarVelocity =
+          velocities->getScalarVelocity(coordArray, material, normalVector);
+      std::array<T, 3> vectorVelocity =
+          velocities->getVectorVelocity(coordArray, material, normalVector);
+
       // now calculate scalar product of normal vector with velocity
       for (unsigned i = 0; i < D; ++i) {
-        scalarVelocity += vectorVelocity[i] * n[i] / denominator;
+        scalarVelocity += vectorVelocity[i] * normalVector[i];
       }
-    }
+    // }
 
     if (scalarVelocity == T(0)) {
       return 0;
     }
-
     // const bool DEBUG = false;
 
     // typename LevelSetType::neighbor_stencil n(LS, it, stencilOrder);
