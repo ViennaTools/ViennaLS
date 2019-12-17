@@ -22,13 +22,12 @@ public:
     lsExpand<T, D>(passedlsDomain, 2 * order + 1).apply();
   }
 
-  lsLaxFriedrichs(lsDomain<T, D> &passedlsDomain,
-                  bool calcNormal = true, double a = 1.0)
+  lsLaxFriedrichs(lsDomain<T, D> &passedlsDomain, bool calcNormal = true,
+                  double a = 1.0)
       : levelSet(passedlsDomain),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>>(
             levelSet.getDomain(), order)),
-        calculateNormalVectors(calcNormal),
-        alpha(a) {}
+        calculateNormalVectors(calcNormal), alpha(a) {}
 
   T operator()(const hrleVectorType<hrleIndexType, D> &indices,
                lsVelocityField<T> *velocities, int material) {
@@ -108,7 +107,7 @@ public:
       gradPos[i] = diffNeg;
       gradNeg[i] = diffPos;
 
-      if(calcNormals) {
+      if (calcNormals) {
         normalVector[i] = (diffNeg + diffPos) * 0.5;
         normalModulus += normalVector[i] * normalVector[i];
       }
@@ -117,7 +116,7 @@ public:
       dissipation += (diffPos - diffNeg) * 0.5;
     }
 
-    if(calcNormals) {
+    if (calcNormals) {
       normalModulus = std::sqrt(normalModulus);
       for (unsigned i = 0; i < D; ++i) {
         normalVector[i] /= normalModulus;

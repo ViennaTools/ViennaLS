@@ -332,8 +332,13 @@ private:
       f << std::endl;
     }
 
-    const unsigned numberOfCells = mesh->vertices.size() + mesh->lines.size() + mesh->triangles.size() + mesh->tetras.size() + mesh->hexas.size();
-    const unsigned cellDataSize = 2* mesh->vertices.size() + 3 * mesh->lines.size() + 4 * mesh->triangles.size() + 5 * mesh->tetras.size() + 9 * mesh->hexas.size();
+    const unsigned numberOfCells = mesh->vertices.size() + mesh->lines.size() +
+                                   mesh->triangles.size() +
+                                   mesh->tetras.size() + mesh->hexas.size();
+    const unsigned cellDataSize =
+        2 * mesh->vertices.size() + 3 * mesh->lines.size() +
+        4 * mesh->triangles.size() + 5 * mesh->tetras.size() +
+        9 * mesh->hexas.size();
 
     f << "CELLS " << numberOfCells << " " << cellDataSize << std::endl;
 

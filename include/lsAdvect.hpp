@@ -18,8 +18,8 @@
 // Integration schemes
 #include <lsEnquistOsher.hpp>
 #include <lsLaxFriedrichs.hpp>
-#include <lsLocalLocalLaxFriedrichs.hpp>
 #include <lsLocalLaxFriedrichs.hpp>
+#include <lsLocalLocalLaxFriedrichs.hpp>
 #include <lsStencilLocalLaxFriedrichsScalar.hpp>
 
 // Velocity accessor
@@ -334,24 +334,28 @@ template <class T, int D> class lsAdvect {
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
       lsInternal::lsLaxFriedrichs<T, D, 1>::prepareLS(*(levelSets.back()));
-      auto is = lsInternal::lsLaxFriedrichs<T, D, 1>(*(levelSets.back()),
-                                                     calculateNormalVectors, dissipationAlpha);
+      auto is = lsInternal::lsLaxFriedrichs<T, D, 1>(
+          *(levelSets.back()), calculateNormalVectors, dissipationAlpha);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER) {
       lsInternal::lsLaxFriedrichs<T, D, 2>::prepareLS(*(levelSets.back()));
-      auto is = lsInternal::lsLaxFriedrichs<T, D, 2>(*(levelSets.back()),
-                                                     calculateNormalVectors, dissipationAlpha);
+      auto is = lsInternal::lsLaxFriedrichs<T, D, 2>(
+          *(levelSets.back()), calculateNormalVectors, dissipationAlpha);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-      lsInternal::lsLocalLocalLaxFriedrichs<T, D, 1>::prepareLS(*(levelSets.back()));
-      auto is = lsInternal::lsLocalLocalLaxFriedrichs<T, D, 1>(*(levelSets.back()));
+      lsInternal::lsLocalLocalLaxFriedrichs<T, D, 1>::prepareLS(
+          *(levelSets.back()));
+      auto is =
+          lsInternal::lsLocalLocalLaxFriedrichs<T, D, 1>(*(levelSets.back()));
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
-      lsInternal::lsLocalLocalLaxFriedrichs<T, D, 2>::prepareLS(*(levelSets.back()));
-      auto is = lsInternal::lsLocalLocalLaxFriedrichs<T, D, 2>(*(levelSets.back()));
+      lsInternal::lsLocalLocalLaxFriedrichs<T, D, 2>::prepareLS(
+          *(levelSets.back()));
+      auto is =
+          lsInternal::lsLocalLocalLaxFriedrichs<T, D, 2>(*(levelSets.back()));
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
@@ -371,7 +375,9 @@ template <class T, int D> class lsAdvect {
           *(levelSets.back()));
       currentTime = integrateTime(is, maxTimeStep);
     } else {
-      lsMessage::getInstance().addWarning("lsAdvect: Integration scheme not found. Not advecting.").print();
+      lsMessage::getInstance()
+          .addWarning("lsAdvect: Integration scheme not found. Not advecting.")
+          .print();
 
       // if no correct scheme was found return infinity
       // to stop advection

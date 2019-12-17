@@ -160,39 +160,47 @@ public:
 
     // go through all elements and increase node IDs to match new IDS
     const unsigned numberOfVertices = vertices.size();
-    vertices.insert(vertices.end(), passedMesh.vertices.begin(), passedMesh.vertices.end());
-    for(unsigned i = numberOfVertices; i < passedMesh.vertices.size() + numberOfVertices; ++i) {
+    vertices.insert(vertices.end(), passedMesh.vertices.begin(),
+                    passedMesh.vertices.end());
+    for (unsigned i = numberOfVertices;
+         i < passedMesh.vertices.size() + numberOfVertices; ++i) {
       vertices[i][0] += numberOfOldNodes;
     }
 
     const unsigned numberOfLines = lines.size();
     lines.insert(lines.end(), passedMesh.lines.begin(), passedMesh.lines.end());
-    for(unsigned i = numberOfLines; i < passedMesh.lines.size() + numberOfLines; ++i) {
-      for(unsigned d = 0; d < 2; ++d){
+    for (unsigned i = numberOfLines;
+         i < passedMesh.lines.size() + numberOfLines; ++i) {
+      for (unsigned d = 0; d < 2; ++d) {
         lines[i][d] += numberOfOldNodes;
       }
     }
 
     const unsigned numberOfTriangles = triangles.size();
-    triangles.insert(triangles.end(), passedMesh.triangles.begin(), passedMesh.triangles.end());
-    for(unsigned i = numberOfTriangles; i < passedMesh.triangles.size() + numberOfTriangles; ++i) {
-      for(unsigned d = 0; d < 3; ++d){
+    triangles.insert(triangles.end(), passedMesh.triangles.begin(),
+                     passedMesh.triangles.end());
+    for (unsigned i = numberOfTriangles;
+         i < passedMesh.triangles.size() + numberOfTriangles; ++i) {
+      for (unsigned d = 0; d < 3; ++d) {
         triangles[i][d] += numberOfOldNodes;
       }
     }
 
     const unsigned numberOfTetras = tetras.size();
-    tetras.insert(tetras.end(), passedMesh.tetras.begin(), passedMesh.tetras.end());
-    for(unsigned i = numberOfTetras; i < passedMesh.tetras.size() + numberOfTetras; ++i) {
-      for(unsigned d = 0; d < 4; ++d){
+    tetras.insert(tetras.end(), passedMesh.tetras.begin(),
+                  passedMesh.tetras.end());
+    for (unsigned i = numberOfTetras;
+         i < passedMesh.tetras.size() + numberOfTetras; ++i) {
+      for (unsigned d = 0; d < 4; ++d) {
         tetras[i][d] += numberOfOldNodes;
       }
     }
 
     const unsigned numberOfHexas = hexas.size();
     hexas.insert(hexas.end(), passedMesh.hexas.begin(), passedMesh.hexas.end());
-    for(unsigned i = numberOfHexas; i < passedMesh.hexas.size() + numberOfHexas; ++i) {
-      for(unsigned d = 0; d < 8; ++d){
+    for (unsigned i = numberOfHexas;
+         i < passedMesh.hexas.size() + numberOfHexas; ++i) {
+      for (unsigned d = 0; d < 8; ++d) {
         hexas[i][d] += numberOfOldNodes;
       }
     }
@@ -203,10 +211,10 @@ public:
     lsPointData::append(passedMesh);
 
     // if(lsPointData::scalarData.size() < nodes.size())
-    for(unsigned i = 0; i < lsPointData::getScalarDataSize(); ++i) {
+    for (unsigned i = 0; i < lsPointData::getScalarDataSize(); ++i) {
       lsPointData::getScalarData(i)->resize(vertices.size());
     }
-    for(unsigned i = 0; i < lsPointData::getVectorDataSize(); ++i) {
+    for (unsigned i = 0; i < lsPointData::getVectorDataSize(); ++i) {
       lsPointData::getVectorData(i)->resize(vertices.size());
     }
   }

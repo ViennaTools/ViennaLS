@@ -41,8 +41,6 @@ public:
     // move neighborIterator to current position
     neighborIterator.goToIndicesSequential(indices);
 
-
-
     // convert coordinate to std array for interface
     std::array<T, 3> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
 
@@ -127,7 +125,7 @@ public:
     std::array<T, 3> vectorVelocity =
         velocities->getVectorVelocity(coordArray, material, normalVector);
 
-    //calculate hamiltonian
+    // calculate hamiltonian
     T totalGrad = 0.;
     if (scalarVelocity != 0.) {
       totalGrad = scalarVelocity * std::sqrt(grad);
@@ -143,8 +141,9 @@ public:
 
     // calculate local dissipation alphas for each direction
     // and add to dissipation term
-    for(unsigned i = 0; i < D; ++i) {
-      T alpha = std::abs((scalarVelocity + vectorVelocity[i]) * normalVector[i]);
+    for (unsigned i = 0; i < D; ++i) {
+      T alpha =
+          std::abs((scalarVelocity + vectorVelocity[i]) * normalVector[i]);
       dissipation += alpha * (gradNeg[i] - gradPos[i]) * 0.5;
     }
 

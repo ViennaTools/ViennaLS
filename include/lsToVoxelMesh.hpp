@@ -150,7 +150,7 @@ public:
         // find out whether the centre of the box is inside
         T centerValue = 0.;
         for (int i = 0; i < (1 << D); ++i) {
-          centerValue = cellIt.getCorner(i).getValue();
+          centerValue += cellIt.getCorner(i).getValue();
         }
 
         if (centerValue <= 0.) {
@@ -174,10 +174,9 @@ public:
           // create element
           if (D == 3) {
             // reorder elements for hexas to be ordered correctly
-            std::array<unsigned, 8> hexa{0, 1, 3, 2, 4, 5, 7, 6};
-
-            std::swap(hexa[2], hexa[3]);
-            std::swap(hexa[6], hexa[7]);
+            std::array<unsigned, 8> hexa{voxel[0], voxel[1], voxel[3],
+                                         voxel[2], voxel[4], voxel[5],
+                                         voxel[7], voxel[6]};
             mesh->hexas.push_back(hexa);
             materialIds.push_back(materialId);
           } else {

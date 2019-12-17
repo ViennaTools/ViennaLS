@@ -22,10 +22,11 @@ template <class T, int D, int order> class lsLocalLaxFriedrichs {
     return (diffPos + diffNeg) * 0.5;
   }
 
-  void incrementIndices(hrleVectorType<hrleIndexType, D> &index, hrleIndexType minIndex, hrleIndexType maxIndex) {
+  void incrementIndices(hrleVectorType<hrleIndexType, D> &index,
+                        hrleIndexType minIndex, hrleIndexType maxIndex) {
     unsigned dir = 0;
-    for(; dir < D-1; ++dir) {
-      if(index[dir] < maxIndex)
+    for (; dir < D - 1; ++dir) {
+      if (index[dir] < maxIndex)
         break;
       index[dir] = minIndex;
     }
@@ -37,13 +38,12 @@ public:
     assert(order == 1 || order == 2);
     // at least order+1 layers since we need neighbor neighbors for
     // dissipation alpha calculation
-    lsExpand<T, D>(passedlsDomain, 2 * (order+2) + 1).apply();
+    lsExpand<T, D>(passedlsDomain, 2 * (order + 2) + 1).apply();
   }
 
   // neighboriterator always needs order 2 for alpha calculation
   lsLocalLaxFriedrichs(lsDomain<T, D> &passedlsDomain)
-      : levelSet(passedlsDomain),
-        neighborIterator(levelSet.getDomain(), 2) {}
+      : levelSet(passedlsDomain), neighborIterator(levelSet.getDomain(), 2) {}
 
   T operator()(const hrleVectorType<hrleIndexType, D> &indices,
                lsVelocityField<T> *velocities, int material) {
@@ -98,10 +98,8 @@ public:
             (((deltaNeg * phiPos - deltaPos * phiNeg) / (deltaPos - deltaNeg) +
               phi0)) /
             (deltaPos * deltaNeg);
-        const T phiPosPos =
-            neighborIterator.getNeighbor(posUnit).getValue();
-        const T phiNegNeg =
-            neighborIterator.getNeighbor(negUnit).getValue();
+        const T phiPosPos = neighborIterator.getNeighbor(posUnit).getValue();
+        const T phiNegNeg = neighborIterator.getNeighbor(negUnit).getValue();
 
         const T diffNegNeg = (((deltaNeg * phiNegNeg - deltaNegNeg * phiNeg) /
                                    (deltaNegNeg - deltaNeg) +
@@ -150,7 +148,7 @@ public:
     std::array<T, 3> vectorVelocity =
         velocities->getVectorVelocity(coordArray, material, normalVector);
 
-    //calculate hamiltonian
+    // calculate hamiltonian
     T totalGrad = 0.;
     if (scalarVelocity != 0.) {
       totalGrad = scalarVelocity * std::sqrt(grad);
@@ -173,24 +171,26 @@ public:
       const unsigned numNeighbors = std::pow((maxIndex - minIndex), D);
 
       hrleVectorType<hrleIndexType, D> neighborIndex(minIndex);
-      for(unsigned i = 0; i < numNeighbors; ++i) {
+      for (unsigned i = 0; i < numNeighbors; ++i) {
         std::array<double, 3> coords;
-        for(unsigned dir = 0; dir < D; ++dir) {
+        for (unsigned dir = 0; dir < D; ++dir) {
           coords[dir] = coordinate[dir] + neighborIndex[dir] * gridDelta;
         }
         std::array<double, 3> normal = {};
         auto center = neighborIterator.getNeighbor(neighborIndex).getValue();
-        for(unsigned dir = 0; dir < D; ++dir) {
+        for (unsigned dir = 0; dir < D; ++dir) {
           hrleVectorType<hrleIndexType, D> unity(0);
           unity[dir] = 1;
-          auto neg = neighborIterator.getNeighbor(neighborIndex - unity).getValue();
-          auto pos = neighborIterator.getNeighbor(neighborIndex + unity).getValue();
+          auto neg =
+              neighborIterator.getNeighbor(neighborIndex - unity).getValue();
+          auto pos =
+              neighborIterator.getNeighbor(neighborIndex + unity).getValue();
           normal[dir] = calculateNormalComponent(neg, center, pos, gridDelta);
         }
         T scaVel = velocities->getScalarVelocity(coords, material, normal);
         auto vecVel = velocities->getVectorVelocity(coords, material, normal);
 
-        for(unsigned dir = 0; dir < D; ++dir) {
+        for (unsigned dir = 0; dir < D; ++dir) {
           T tempAlpha = std::abs((scaVel + vecVel[i]) * normal[i]);
           alpha[dir] = std::max(alpha[dir], tempAlpha);
         }
@@ -202,11 +202,12 @@ public:
 
     // calculate local dissipation alphas for each direction
     // and add to dissipation term
-    for(unsigned i = 0; i < D; ++i) {
+    for (unsigned i = 0; i < D; ++i) {
       dissipation += alpha[i] * (gradNeg[i] - gradPos[i]) * 0.5;
     }
 
-    // std::cout << neighborIterator.getCenter().getPointId() << " dissipation: " << dissipation << std::endl;
+    // std::cout << neighborIterator.getCenter().getPointId() << " dissipation:
+    // " << dissipation << std::endl;
     return totalGrad - ((totalGrad != 0.) ? dissipation : 0);
   }
 };
