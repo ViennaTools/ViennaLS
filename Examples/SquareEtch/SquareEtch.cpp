@@ -37,7 +37,7 @@ int main() {
   omp_set_num_threads(1);
 
   double extent = 30;
-  double gridDelta = 0.5;
+  double gridDelta = 0.47;
 
   double bounds[2 * D] = {-extent, extent, -extent,
                           extent}; //, -extent, extent};
@@ -81,13 +81,14 @@ int main() {
                                 lsBooleanOperationEnum::INTERSECT)
       .apply();
 
+  std::string fileName = "slesurface-";
   {
     std::cout << "Extracting..." << std::endl;
     // output substrate layer (which wraps around mask layer)
     // wrapping is necessary for stable advection
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "surface-0.vtk").apply();
+    lsVTKWriter(mesh, fileName + "0.vtk").apply();
 
     // output mask layer
     lsToSurfaceMesh<double, D>(mask, mesh).apply();
@@ -110,18 +111,19 @@ int main() {
   // Lax Friedrichs is necessary for correct integration of the given velocity
   // function
   advectionKernel.setIntegrationScheme(
-      lsIntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS);
+      lsIntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER);
 
   // advect the level set 30 times
-  for (unsigned counter = 1; counter < 400.; ++counter) {
+  for (unsigned counter = 1; counter < 100.; ++counter) {
     advectionKernel.apply();
+    std::cout << "Advection step: " << counter
+              << ", time: " << advectionKernel.getAdvectionTime() << std::endl;
 
-    std::cout << "\rAdvection step: " << counter;
+    advectionKernel.setAdvectionTime(0);
+
     lsMesh mesh;
-    lsToMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "slsurface-" + std::to_string(counter) + ".vtk").apply();
-    std::cout << "step size: " << advectionKernel.getAdvectionTime()
-              << std::endl;
+    lsToSurfaceMesh<double, D>(substrate, mesh).apply();
+    lsVTKWriter(mesh, fileName + std::to_string(counter) + ".vtk").apply();
     // break;
   }
   std::cout << std::endl;

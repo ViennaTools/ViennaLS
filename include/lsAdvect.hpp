@@ -15,6 +15,9 @@
 #include <lsMessage.hpp>
 #include <lsReduce.hpp>
 
+#include <lsToMesh.hpp>
+#include <lsVTKWriter.hpp>
+
 // Integration schemes
 #include <lsEnquistOsher.hpp>
 #include <lsLaxFriedrichs.hpp>
@@ -32,11 +35,12 @@ enum struct lsIntegrationSchemeEnum : unsigned {
   ENGQUIST_OSHER_2ND_ORDER = 1,
   LAX_FRIEDRICHS_1ST_ORDER = 2,
   LAX_FRIEDRICHS_2ND_ORDER = 3,
-  LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 4,
-  LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER = 5,
-  LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 6,
-  LOCAL_LAX_FRIEDRICHS_2ND_ORDER = 7,
-  STENCIL_LOCAL_LAX_FRIEDRICHS = 8
+  LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER = 4,
+  LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 5,
+  LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER = 6,
+  LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 7,
+  LOCAL_LAX_FRIEDRICHS_2ND_ORDER = 8,
+  STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 9
 };
 
 /// This class is used to advance level sets over time.
@@ -84,15 +88,16 @@ template <class T, int D> class lsAdvect {
     hrleVectorType<T, 3> alphas = scheme.getFinalAlphas();
     hrleVectorType<T, 3> dxs = scheme.getDeltas();
 
-    MaxTimeStep = 0;
+    double timeStep = 0;
     for (int i = 0; i < 3; ++i) {
       // TODO why does this condition exist
       if (std::abs(dxs[i]) > 1e-6) {
-        MaxTimeStep += alphas[i] / dxs[i];
+        timeStep += alphas[i] / dxs[i];
       }
     }
 
-    MaxTimeStep = alpha_maxCFL / MaxTimeStep;
+    timeStep = alpha_maxCFL / timeStep;
+    MaxTimeStep = std::min(timeStep, MaxTimeStep);
   }
 
   void rebuildLS() {
@@ -368,7 +373,8 @@ template <class T, int D> class lsAdvect {
       auto is = lsInternal::lsLocalLaxFriedrichs<T, D, 2>(*(levelSets.back()));
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
-               lsIntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS) {
+               lsIntegrationSchemeEnum::
+                   STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>::prepareLS(
           *(levelSets.back()));
       auto is = lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>(
@@ -384,7 +390,22 @@ template <class T, int D> class lsAdvect {
       return std::numeric_limits<double>::max();
     }
 
+    static unsigned counter = 0;
+    {
+      lsMesh mesh;
+      lsToMesh<T, D>(*(levelSets.back()), mesh).apply();
+      lsVTKWriter(mesh, "before" + std::to_string(counter) + ".vtk").apply();
+    }
+    // levelSets.back()->print();
+
     rebuildLS();
+
+    {
+      lsMesh mesh;
+      lsToMesh<T, D>(*(levelSets.back()), mesh).apply();
+      lsVTKWriter(mesh, "after" + std::to_string(counter) + ".vtk").apply();
+      ++counter;
+    }
 
     // Adjust all level sets below the advected one
     // This means, that when the top levelset and one below
@@ -392,7 +413,7 @@ template <class T, int D> class lsAdvect {
     // TODO: Adjust lower layers also when they have grown,
     // to allow for two different growth rates of materials
     if (integrationScheme !=
-        lsIntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS) {
+        lsIntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       for (unsigned i = 0; i < levelSets.size() - 1; ++i) {
         lsBooleanOperation<T, D>(*levelSets[i], *(levelSets.back()),
                                  lsBooleanOperationEnum::INTERSECT)
