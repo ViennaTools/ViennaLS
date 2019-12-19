@@ -15,13 +15,11 @@
 #include <lsMessage.hpp>
 #include <lsReduce.hpp>
 
-#include <lsToMesh.hpp>
-#include <lsVTKWriter.hpp>
-
 // Integration schemes
 #include <lsEnquistOsher.hpp>
 #include <lsLaxFriedrichs.hpp>
 #include <lsLocalLaxFriedrichs.hpp>
+#include <lsLocalLaxFriedrichsAnalytical.hpp>
 #include <lsLocalLocalLaxFriedrichs.hpp>
 #include <lsStencilLocalLaxFriedrichsScalar.hpp>
 
@@ -56,12 +54,16 @@ template <class T, int D> class lsAdvect {
   std::vector<lsDomain<T, D> *> levelSets;
   lsVelocityField<T> *velocities = nullptr;
   lsIntegrationSchemeEnum integrationScheme =
-      lsIntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER;
+      lsIntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER;
   double timeStepRatio = 0.4999;
-  double dissipationAlpha = 1.0; // 1 is default for lax friedrichs
+  /// For lsLaxFriedrichs, this is used as the alpha value.
+  /// For all other LaxFriedrichs schemes it is used as a
+  /// scaling factor for the calculated alpha values.
+  double dissipationAlpha = 1.0;
   bool calculateNormalVectors = true;
   bool ignoreVoids = false;
   double advectionTime = 0.;
+  double advectedTime = 0.;
   unsigned numberOfTimeSteps = 0;
   bool saveAdvectionVelocities = false;
 
@@ -82,18 +84,15 @@ template <class T, int D> class lsAdvect {
           std::nullptr_t>::type = nullptr>
   void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &scheme,
                                     double &MaxTimeStep) {
-    // TODO Can be potentially smaller than 1 (user input???)
     const double alpha_maxCFL = 1.0;
     // second time step test, based on alphas
     hrleVectorType<T, 3> alphas = scheme.getFinalAlphas();
-    hrleVectorType<T, 3> dxs = scheme.getDeltas();
+
+    auto gridDelta = levelSets.back()->getGrid().getGridDelta();
 
     double timeStep = 0;
-    for (int i = 0; i < 3; ++i) {
-      // TODO why does this condition exist
-      if (std::abs(dxs[i]) > 1e-6) {
-        timeStep += alphas[i] / dxs[i];
-      }
+    for (int i = 0; i < D; ++i) {
+      timeStep += alphas[i] / gridDelta;
     }
 
     timeStep = alpha_maxCFL / timeStep;
@@ -349,28 +348,38 @@ template <class T, int D> class lsAdvect {
           *(levelSets.back()), calculateNormalVectors, dissipationAlpha);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
+               lsIntegrationSchemeEnum::
+                   LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER) {
+      lsInternal::lsLocalLaxFriedrichsAnalytical<T, D, 1>::prepareLS(
+          *(levelSets.back()));
+      auto is = lsInternal::lsLocalLaxFriedrichsAnalytical<T, D, 1>(
+          *(levelSets.back()));
+      currentTime = integrateTime(is, maxTimeStep);
+    } else if (integrationScheme ==
                lsIntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       lsInternal::lsLocalLocalLaxFriedrichs<T, D, 1>::prepareLS(
           *(levelSets.back()));
-      auto is =
-          lsInternal::lsLocalLocalLaxFriedrichs<T, D, 1>(*(levelSets.back()));
+      auto is = lsInternal::lsLocalLocalLaxFriedrichs<T, D, 1>(
+          *(levelSets.back()), dissipationAlpha);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
       lsInternal::lsLocalLocalLaxFriedrichs<T, D, 2>::prepareLS(
           *(levelSets.back()));
-      auto is =
-          lsInternal::lsLocalLocalLaxFriedrichs<T, D, 2>(*(levelSets.back()));
+      auto is = lsInternal::lsLocalLocalLaxFriedrichs<T, D, 2>(
+          *(levelSets.back()), dissipationAlpha);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       lsInternal::lsLocalLaxFriedrichs<T, D, 1>::prepareLS(*(levelSets.back()));
-      auto is = lsInternal::lsLocalLaxFriedrichs<T, D, 1>(*(levelSets.back()));
+      auto is = lsInternal::lsLocalLaxFriedrichs<T, D, 1>(*(levelSets.back()),
+                                                          dissipationAlpha);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
       lsInternal::lsLocalLaxFriedrichs<T, D, 2>::prepareLS(*(levelSets.back()));
-      auto is = lsInternal::lsLocalLaxFriedrichs<T, D, 2>(*(levelSets.back()));
+      auto is = lsInternal::lsLocalLaxFriedrichs<T, D, 2>(*(levelSets.back()),
+                                                          dissipationAlpha);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::
@@ -378,7 +387,7 @@ template <class T, int D> class lsAdvect {
       lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>::prepareLS(
           *(levelSets.back()));
       auto is = lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>(
-          *(levelSets.back()));
+          *(levelSets.back()), dissipationAlpha);
       currentTime = integrateTime(is, maxTimeStep);
     } else {
       lsMessage::getInstance()
@@ -390,22 +399,7 @@ template <class T, int D> class lsAdvect {
       return std::numeric_limits<double>::max();
     }
 
-    static unsigned counter = 0;
-    {
-      lsMesh mesh;
-      lsToMesh<T, D>(*(levelSets.back()), mesh).apply();
-      lsVTKWriter(mesh, "before" + std::to_string(counter) + ".vtk").apply();
-    }
-    // levelSets.back()->print();
-
     rebuildLS();
-
-    {
-      lsMesh mesh;
-      lsToMesh<T, D>(*(levelSets.back()), mesh).apply();
-      lsVTKWriter(mesh, "after" + std::to_string(counter) + ".vtk").apply();
-      ++counter;
-    }
 
     // Adjust all level sets below the advected one
     // This means, that when the top levelset and one below
@@ -712,7 +706,7 @@ public:
 
   /// Get by how much the physical time was advanced during the last apply()
   /// call.
-  double getAdvectionTime() { return advectionTime; }
+  double getAdvectedTime() { return advectedTime; }
 
   /// Get how many advection steps were performed during the last apply() call.
   unsigned getNumberOfTimeSteps() { return numberOfTimeSteps; }
@@ -736,7 +730,7 @@ public:
   /// Perform the advection.
   void apply() {
     if (advectionTime == 0.) {
-      advectionTime = advect();
+      advectedTime = advect();
       numberOfTimeSteps = 1;
     } else {
       double currentTime = 0.0;

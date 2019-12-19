@@ -100,7 +100,7 @@ int main() {
   advectionKernel.setVelocityField(velocities);
   // advectionKernel.setAdvectionTime(4.);
   unsigned counter = 1;
-  for (double time = 0; time < 4.; time += advectionKernel.getAdvectionTime()) {
+  for (double time = 0; time < 4.; time += advectionKernel.getAdvectedTime()) {
     advectionKernel.apply();
 
     lsMesh mesh;

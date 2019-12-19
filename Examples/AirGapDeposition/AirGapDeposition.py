@@ -77,7 +77,7 @@ passedTime = 0
 numberOfSteps = 60
 for i in range(numberOfSteps):
   advectionKernel.apply()
-  passedTime += advectionKernel.getAdvectionTime()
+  passedTime += advectionKernel.getAdvectedTime()
 
   print("Advection step {} / {}".format(i, numberOfSteps))
 

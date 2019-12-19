@@ -9,10 +9,15 @@
 
 namespace lsInternal {
 
-///
+/// Lax Friedrichs integration scheme, which uses a first neighbour
+/// stencil to calculate the alpha values for all neighbours.
+/// The largest alpha value is then chosen for dissipation.
+/// Slower than lsLocalLocalLaxFriedrichs or lsEngquistOsher
+/// but more reliable for complex velocity fields.
 template <class T, int D, int order> class lsLocalLaxFriedrichs {
   lsDomain<T, D> &levelSet;
   hrleSparseBoxIterator<hrleDomain<T, D>> neighborIterator;
+  const double alphaFactor;
 
   static T pow2(const T &value) { return value * value; }
 
@@ -42,8 +47,9 @@ public:
   }
 
   // neighboriterator always needs order 2 for alpha calculation
-  lsLocalLaxFriedrichs(lsDomain<T, D> &passedlsDomain)
-      : levelSet(passedlsDomain), neighborIterator(levelSet.getDomain(), 2) {}
+  lsLocalLaxFriedrichs(lsDomain<T, D> &passedlsDomain, double a = 1.0)
+      : levelSet(passedlsDomain), neighborIterator(levelSet.getDomain(), 2),
+        alphaFactor(a) {}
 
   T operator()(const hrleVectorType<hrleIndexType, D> &indices,
                lsVelocityField<T> *velocities, int material) {
@@ -177,6 +183,7 @@ public:
           coords[dir] = coordinate[dir] + neighborIndex[dir] * gridDelta;
         }
         std::array<double, 3> normal = {};
+        double normalModulus = 0.;
         auto center = neighborIterator.getNeighbor(neighborIndex).getValue();
         for (unsigned dir = 0; dir < D; ++dir) {
           hrleVectorType<hrleIndexType, D> unity(0);
@@ -186,11 +193,16 @@ public:
           auto pos =
               neighborIterator.getNeighbor(neighborIndex + unity).getValue();
           normal[dir] = calculateNormalComponent(neg, center, pos, gridDelta);
+          normalModulus += normal[dir] * normal[dir];
         }
+        normalModulus = std::sqrt(normalModulus);
+
         T scaVel = velocities->getScalarVelocity(coords, material, normal);
         auto vecVel = velocities->getVectorVelocity(coords, material, normal);
 
         for (unsigned dir = 0; dir < D; ++dir) {
+          // normalise normal vector
+          normal[i] /= normalModulus;
           T tempAlpha = std::abs((scaVel + vecVel[i]) * normal[i]);
           alpha[dir] = std::max(alpha[dir], tempAlpha);
         }
@@ -203,7 +215,7 @@ public:
     // calculate local dissipation alphas for each direction
     // and add to dissipation term
     for (unsigned i = 0; i < D; ++i) {
-      dissipation += alpha[i] * (gradNeg[i] - gradPos[i]) * 0.5;
+      dissipation += alphaFactor * alpha[i] * (gradNeg[i] - gradPos[i]) * 0.5;
     }
 
     // std::cout << neighborIterator.getCenter().getPointId() << " dissipation:

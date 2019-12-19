@@ -17,7 +17,9 @@
   \example SquareEtch.cpp
 */
 
-// implement own velocity field
+// Numerical velocity field.
+// Advection scheme will take care of numerical
+// artefacts itself.
 class velocityField : public lsVelocityField<double> {
 public:
   double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
@@ -31,10 +33,53 @@ public:
   }
 };
 
+// Same velocity field, but analytical
+// If the dissipation alphas can be derived,
+// this will produce better results than numerical
+// approximations. lsLocalLaxFriedrichsAnalytical has
+// to be used for advection.
+class analyticalField : public lsVelocityField<double> {
+  const double velocity = -1;
+
+public:
+  double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
+                           int material,
+                           const std::array<double, 3> &normalVector) {
+    if (material != 1)
+      return 0.;
+
+    return velocity * std::abs(normalVector[1]);
+  }
+
+  double getDissipationAlpha(int direction, int material,
+                             const std::array<double, 3> &centralDifferences) {
+    if (material != 1)
+      return 0;
+
+    double gradient = 0.;
+    for (unsigned i = 0; i < 3; ++i) {
+      gradient += centralDifferences[i] * centralDifferences[i];
+    }
+    gradient = std::sqrt(gradient);
+
+    // alpha in x direction
+    if (direction == 0) {
+      return 0;
+    } else if (direction == 1) {
+      return std::abs(velocity);
+    } else {
+      return 0;
+    }
+  }
+};
+
 int main() {
 
   constexpr int D = 2;
   omp_set_num_threads(1);
+
+  // Change this to use the analytical velocity field
+  const bool useAnalyticalVelocity = false;
 
   double extent = 30;
   double gridDelta = 0.47;
@@ -49,7 +94,7 @@ int main() {
   lsDomain<double, D> substrate(bounds, boundaryCons, gridDelta);
 
   double origin[3] = {0., 0., 0.};
-  double planeNormal[3] = {0., 1.}; //, 1.};
+  double planeNormal[3] = {0., 1., 0.};
 
   lsMakeGeometry<double, D>(substrate, lsPlane<double, D>(origin, planeNormal))
       .apply();
@@ -58,8 +103,8 @@ int main() {
   // make -x and +x greater than domain for numerical stability
   // trench bottom is the initial bottom of the trench
   double trenchBottom = -2.;
-  double minCorner[D] = {-extent / 1.5, /*-extent / 1.5,*/ trenchBottom};
-  double maxCorner[D] = {extent / 1.5, /*extent / 1.5,*/ 1.};
+  double minCorner[D] = {-extent / 1.5, trenchBottom};
+  double maxCorner[D] = {extent / 1.5, 1.};
   lsMakeGeometry<double, D>(trench, lsBox<double, D>(minCorner, maxCorner))
       .apply();
 
@@ -81,7 +126,11 @@ int main() {
                                 lsBooleanOperationEnum::INTERSECT)
       .apply();
 
-  std::string fileName = "slesurface-";
+  std::string fileName;
+  if (useAnalyticalVelocity)
+    fileName = "analytical-";
+  else
+    fileName = "numerical-";
   {
     std::cout << "Extracting..." << std::endl;
     // output substrate layer (which wraps around mask layer)
@@ -97,6 +146,7 @@ int main() {
 
   // START ADVECTION
   velocityField velocities;
+  analyticalField analyticalVelocities;
 
   std::cout << "Advecting" << std::endl;
   lsAdvect<double, D> advectionKernel;
@@ -105,30 +155,43 @@ int main() {
   // the other is used as the mask layer for etching
   advectionKernel.insertNextLevelSet(mask);
   advectionKernel.insertNextLevelSet(substrate);
-  advectionKernel.setVelocityField(velocities);
   advectionKernel.setSaveAdvectionVelocities(true);
 
-  // Lax Friedrichs is necessary for correct integration of the given velocity
-  // function
-  advectionKernel.setIntegrationScheme(
-      lsIntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER);
+  if (useAnalyticalVelocity) {
+    advectionKernel.setVelocityField(analyticalVelocities);
+    // Analytical velocity fields and dissipation coefficients
+    // can only be used with this integration scheme
+    advectionKernel.setIntegrationScheme(
+        lsIntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER);
+  } else {
+    // for numerical velocities, just use the default
+    // integration scheme, which is not accurate for certain
+    // velocity functions but very fast
+    advectionKernel.setVelocityField(velocities);
 
-  // advect the level set 30 times
-  for (unsigned counter = 1; counter < 100.; ++counter) {
+    // For coordinate independent velocity functions
+    // this numerical scheme is superior though.
+    // However, it is slower.
+    // advectionKernel.setIntegrationScheme(
+    //     lsIntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER);
+  }
+
+  // advect the level set until 50s have passed
+  double finalTime = 50;
+  unsigned counter = 1;
+  for (double time = 0.; time < finalTime;
+       time += advectionKernel.getAdvectedTime()) {
     advectionKernel.apply();
     std::cout << "Advection step: " << counter
-              << ", time: " << advectionKernel.getAdvectionTime() << std::endl;
-
-    advectionKernel.setAdvectionTime(0);
+              << ", time: " << advectionKernel.getAdvectedTime() << std::endl;
 
     lsMesh mesh;
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
     lsVTKWriter(mesh, fileName + std::to_string(counter) + ".vtk").apply();
-    // break;
+    ++counter;
   }
   std::cout << std::endl;
-  // std::cout << "Number of Advection steps taken: " << advectionKernel <<
-  // std::endl;
+  std::cout << "Number of Advection steps taken: " << counter << std::endl;
 
   lsMesh mesh;
   lsToSurfaceMesh<double, D>(substrate, mesh).apply();

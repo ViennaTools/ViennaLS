@@ -20,15 +20,14 @@ template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
   lsDomain<T, D> &levelSet;
   const DifferentiationSchemeEnum finiteDifferenceScheme =
       DifferentiationSchemeEnum::FIRST_ORDER;
-  // const int stencilOrder = 1;
   hrleSparseBoxIterator<hrleDomain<T, D>> neighborIterator;
+  const double alphaFactor;
   const double normalEpsilon =
       std::cbrt(std::numeric_limits<double>::epsilon());
 
   // Final dissipation coefficients that are used by the time integrator. If
   // D==2 last entries are 0.
   hrleVectorType<T, 3> finalAlphas;
-  hrleVectorType<T, 3> gridDeltas;
   const unsigned numStencilPoints;
 
   static T pow2(const T &value) { return value * value; }
@@ -124,7 +123,6 @@ template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
 
 public:
   const hrleVectorType<T, 3> &getFinalAlphas() const { return finalAlphas; }
-  const hrleVectorType<T, 3> &getDeltas() const { return gridDeltas; }
 
   static void prepareLS(lsDomain<T, D> &passedlsDomain) {
     // Expansion of sparse field must depend on spatial derivative order
@@ -133,16 +131,15 @@ public:
   }
 
   lsStencilLocalLaxFriedrichsScalar(
-      lsDomain<T, D> &passedlsDomain,
+      lsDomain<T, D> &passedlsDomain, double a = 1.0,
       DifferentiationSchemeEnum scheme = DifferentiationSchemeEnum::FIRST_ORDER)
       : levelSet(passedlsDomain), finiteDifferenceScheme(scheme),
         neighborIterator(hrleSparseBoxIterator<hrleDomain<T, D>>(
             levelSet.getDomain(), static_cast<unsigned>(scheme) + 1 + order)),
-        numStencilPoints(std::pow(2 * order + 1, D)) {
+        alphaFactor(a), numStencilPoints(std::pow(2 * order + 1, D)) {
 
     for (int i = 0; i < 3; ++i) {
       finalAlphas[i] = 0;
-      gridDeltas[i] = 0;
     }
   }
 
@@ -194,21 +191,9 @@ public:
     for (unsigned i = 0; i < D; ++i) {
       scalarVelocity += vectorVelocity[i] * normalVector[i];
     }
-    // }
 
     if (scalarVelocity == T(0)) {
       return 0;
-    }
-    // const bool DEBUG = false;
-
-    // typename LevelSetType::neighbor_stencil n(LS, it, stencilOrder);
-    // std::vector<typename LevelSetType::star_stencil> stars =
-    //     n.star_stencils(LevelSetType::differentiation_scheme::FIRST_ORDER);
-    // typename LevelSetType::star_stencil center = stars[n.get_center_index()];
-
-    // hrleVectorType<T, D> dxs = center.getDx();
-    for (unsigned i = 0; i < D; ++i) {
-      gridDeltas[i] = gridDelta;
     }
 
     T hamiltonian =

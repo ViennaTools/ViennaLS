@@ -137,7 +137,7 @@ int main() {
     }
 
     advectionKernel.apply();
-    passedTime += advectionKernel.getAdvectionTime();
+    passedTime += advectionKernel.getAdvectedTime();
   }
   std::cout << std::endl;
 

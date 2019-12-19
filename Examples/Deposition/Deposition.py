@@ -70,7 +70,7 @@ passedTime = 0
 mesh = vls.lsMesh()
 while(passedTime < 4):
   advectionKernel.apply()
-  passedTime += advectionKernel.getAdvectionTime()
+  passedTime += advectionKernel.getAdvectedTime()
 
   vls.lsToSurfaceMesh(newLayer, mesh).apply()
   vls.lsVTKWriter(mesh, "trench-{}.vtk".format(counter)).apply()

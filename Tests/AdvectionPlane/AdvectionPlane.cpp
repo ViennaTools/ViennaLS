@@ -77,7 +77,7 @@ int main() {
   std::cout << "Advecting" << std::endl;
   lsAdvect<double, D> advectionKernel(lsDomains, velocities);
   advectionKernel.apply();
-  double advectionTime = advectionKernel.getAdvectionTime();
+  double advectionTime = advectionKernel.getAdvectedTime();
   std::cout << "Time difference: " << advectionTime << std::endl;
 
   lsPrune<double, D>(plane).apply();
