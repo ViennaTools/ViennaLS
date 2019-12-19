@@ -62,7 +62,7 @@ public:
     }
     gradient = std::sqrt(gradient);
 
-    // alpha in x direction
+    // alpha for different directions
     if (direction == 0) {
       return 0;
     } else if (direction == 1) {
@@ -100,7 +100,6 @@ int main() {
       .apply();
 
   lsDomain<double, D> trench(bounds, boundaryCons, gridDelta);
-  // make -x and +x greater than domain for numerical stability
   // trench bottom is the initial bottom of the trench
   double trenchBottom = -2.;
   double minCorner[D] = {-extent / 1.5, trenchBottom};
