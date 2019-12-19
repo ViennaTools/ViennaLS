@@ -56,9 +56,6 @@ template <class T, int D> class lsAdvect {
   lsIntegrationSchemeEnum integrationScheme =
       lsIntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER;
   double timeStepRatio = 0.4999;
-  /// For lsLaxFriedrichs, this is used as the alpha value.
-  /// For all other LaxFriedrichs schemes it is used as a
-  /// scaling factor for the calculated alpha values.
   double dissipationAlpha = 1.0;
   bool calculateNormalVectors = true;
   bool ignoreVoids = false;
@@ -723,8 +720,10 @@ public:
     integrationScheme = scheme;
   }
 
-  /// Set the alpha dissipation coefficient for the Lax Friedrichs integration
-  /// schemes. This value is ignored for all other integration schemes.
+  /// Set the alpha dissipation coefficient.
+  /// For lsLaxFriedrichs, this is used as the alpha value.
+  /// For all other LaxFriedrichs schemes it is used as a
+  /// scaling factor for the calculated alpha values.
   void setDissipationAlpha(const double &a) { dissipationAlpha = a; }
 
   /// Perform the advection.
