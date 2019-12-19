@@ -41,6 +41,15 @@ var dir_d44c64559bbebec7f509842c48db8b23 =
     [ "lsLaxFriedrichs.hpp", "lsLaxFriedrichs_8hpp.html", [
       [ "lsLaxFriedrichs", "classlsInternal_1_1lsLaxFriedrichs.html", "classlsInternal_1_1lsLaxFriedrichs" ]
     ] ],
+    [ "lsLocalLaxFriedrichs.hpp", "lsLocalLaxFriedrichs_8hpp.html", [
+      [ "lsLocalLaxFriedrichs", "classlsInternal_1_1lsLocalLaxFriedrichs.html", "classlsInternal_1_1lsLocalLaxFriedrichs" ]
+    ] ],
+    [ "lsLocalLaxFriedrichsAnalytical.hpp", "lsLocalLaxFriedrichsAnalytical_8hpp.html", [
+      [ "lsLocalLaxFriedrichsAnalytical", "classlsInternal_1_1lsLocalLaxFriedrichsAnalytical.html", "classlsInternal_1_1lsLocalLaxFriedrichsAnalytical" ]
+    ] ],
+    [ "lsLocalLocalLaxFriedrichs.hpp", "lsLocalLocalLaxFriedrichs_8hpp.html", [
+      [ "lsLocalLocalLaxFriedrichs", "classlsInternal_1_1lsLocalLocalLaxFriedrichs.html", "classlsInternal_1_1lsLocalLocalLaxFriedrichs" ]
+    ] ],
     [ "lsMakeGeometry.hpp", "lsMakeGeometry_8hpp.html", [
       [ "lsMakeGeometry", "classlsMakeGeometry.html", "classlsMakeGeometry" ]
     ] ],

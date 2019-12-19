@@ -2,6 +2,7 @@ var classlsMesh =
 [
     [ "ScalarDataType", "classlsMesh.html#a4a7e6df1e02124bf6aeb8eea86266183", null ],
     [ "VectorDataType", "classlsMesh.html#ad1cafda925e697b552ccfadd4e965734", null ],
+    [ "append", "classlsMesh.html#ae24b222a26c0706bc6a02e75ce3044b4", null ],
     [ "append", "classlsMesh.html#a197658654734702984728ca31cc9e975", null ],
     [ "clear", "classlsMesh.html#a88e396f7712171b58a932463ecdd4843", null ],
     [ "getElements", "classlsMesh.html#aa39589d7fab800bb8320476a9368bea3", null ],
@@ -9,8 +10,8 @@ var classlsMesh =
     [ "getElements", "classlsMesh.html#aa39589d7fab800bb8320476a9368bea3", null ],
     [ "getElements", "classlsMesh.html#aa39589d7fab800bb8320476a9368bea3", null ],
     [ "getElements", "classlsMesh.html#aa39589d7fab800bb8320476a9368bea3", null ],
-    [ "getNodes", "classlsMesh.html#a7533a162ade9e6955e90462240989301", null ],
     [ "getNodes", "classlsMesh.html#a77b4f087640c3c0fdf66c9ce6c6ae1f7", null ],
+    [ "getNodes", "classlsMesh.html#a7533a162ade9e6955e90462240989301", null ],
     [ "getScalarData", "classlsMesh.html#a456aa18530cd3ed64ae35d1891bde290", null ],
     [ "getScalarData", "classlsMesh.html#a144a3249a9b65ba1f47a3d7abb778ed2", null ],
     [ "getScalarData", "classlsMesh.html#a416e6e1e3671bae2c3c99eae206b5e4f", null ],

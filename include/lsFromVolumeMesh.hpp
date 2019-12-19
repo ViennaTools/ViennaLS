@@ -10,12 +10,10 @@
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
 
-/**
-  This class creates a level set from a tetrahedral mesh.
-  If the mesh contains a scalar data array called "Material"
-  One level set for each material will be created and stored
-  in the supplied std::vector<lsDomain<T,D>> object.
-*/
+/// This class creates a level set from a tetrahedral mesh.
+/// If the mesh contains a scalar data array called "Material",
+/// one level set for each material will be created and stored
+/// in the supplied std::vector<lsDomain<T,D>> object.
 template <class T, int D> class lsFromVolumeMesh {
   std::vector<lsDomain<T, D>> *levelSets = nullptr;
   lsMesh *mesh = nullptr;

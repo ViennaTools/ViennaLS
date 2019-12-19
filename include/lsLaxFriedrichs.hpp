@@ -8,6 +8,11 @@
 #include <lsExpand.hpp>
 
 namespace lsInternal {
+
+/// Lax Friedrichs integration scheme with constant alpha
+/// value for dissipation. This alpha value should be fitted
+/// based on the results of the advection and passed to the
+/// advection Kernel.
 template <class T, int D, int order> class lsLaxFriedrichs {
   lsDomain<T, D> &levelSet;
   hrleSparseStarIterator<hrleDomain<T, D>> neighborIterator;
