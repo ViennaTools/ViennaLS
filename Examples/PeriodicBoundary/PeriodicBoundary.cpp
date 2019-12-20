@@ -98,7 +98,7 @@ int main() {
     lsVTKWriter(mesh, "pillar-" + std::to_string(i) + ".vtk").apply();
 
     advectionKernel.apply();
-    passedTime += advectionKernel.getAdvectionTime();
+    passedTime += advectionKernel.getAdvectedTime();
   }
   std::cout << std::endl;
 

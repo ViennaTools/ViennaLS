@@ -16,6 +16,9 @@ var hierarchy =
     [ "lsFromVolumeMesh< T, D >", "classlsFromVolumeMesh.html", null ],
     [ "lsInternal::lsGraph", "classlsInternal_1_1lsGraph.html", null ],
     [ "lsInternal::lsLaxFriedrichs< T, D, order >", "classlsInternal_1_1lsLaxFriedrichs.html", null ],
+    [ "lsInternal::lsLocalLaxFriedrichs< T, D, order >", "classlsInternal_1_1lsLocalLaxFriedrichs.html", null ],
+    [ "lsInternal::lsLocalLaxFriedrichsAnalytical< T, D, order >", "classlsInternal_1_1lsLocalLaxFriedrichsAnalytical.html", null ],
+    [ "lsInternal::lsLocalLocalLaxFriedrichs< T, D, order >", "classlsInternal_1_1lsLocalLocalLaxFriedrichs.html", null ],
     [ "lsMakeGeometry< T, D >", "classlsMakeGeometry.html", null ],
     [ "lsInternal::lsMarchingCubes", "classlsInternal_1_1lsMarchingCubes.html", null ],
     [ "lsMarkVoidPoints< T, D >", "classlsMarkVoidPoints.html", null ],
@@ -38,14 +41,7 @@ var hierarchy =
       [ "AirGapDeposition.velocityField", "classAirGapDeposition_1_1velocityField.html", null ],
       [ "Deposition.velocityField", "classDeposition_1_1velocityField.html", null ]
     ] ],
-    [ "lsVelocityField< double >", "classlsVelocityField.html", [
-      [ "directionalEtch", "classdirectionalEtch.html", null ],
-      [ "isotropicDepo", "classisotropicDepo.html", null ],
-      [ "velocityField", "classvelocityField.html", null ],
-      [ "velocityField", "classvelocityField.html", null ],
-      [ "velocityField", "classvelocityField.html", null ],
-      [ "velocityField", "classvelocityField.html", null ]
-    ] ],
+    [ "lsVelocityField< double >", "classlsVelocityField.html", null ],
     [ "lsVTKReader", "classlsVTKReader.html", null ],
     [ "lsVTKWriter", "classlsVTKWriter.html", null ]
 ];

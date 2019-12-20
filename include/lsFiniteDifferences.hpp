@@ -23,6 +23,18 @@ class lsFiniteDifferences {
 public:
   lsFiniteDifferences(){};
 
+  static unsigned getNumberOfValues(DifferentiationSchemeEnum s) {
+    switch (s) {
+    case DifferentiationSchemeEnum::FIRST_ORDER:
+      return 3;
+    case DifferentiationSchemeEnum::SECOND_ORDER:
+    case DifferentiationSchemeEnum::WENO3:
+      return 5;
+    case DifferentiationSchemeEnum::WENO5:
+      return 7;
+    }
+  }
+
   /// Weighted essentially non-oscillatory differentiation scheme 3rd order
   /// x1 ... x5 stencil points from left to right
   /// plus == true => right-sided
@@ -123,7 +135,7 @@ public:
   // WENO5: x_-3, x_-2, x_-1, x, x_+1, x_+2, x_+3
   static T differenceNegative(const T *values, const double &delta) {
     if (scheme == DifferentiationSchemeEnum::FIRST_ORDER) {
-      return (values[0] - values[1]) / delta;
+      return (values[1] - values[0]) / delta;
     } else if (scheme == DifferentiationSchemeEnum::SECOND_ORDER) {
       // TODO: implement second order integration here
     } else if (scheme == DifferentiationSchemeEnum::WENO3) {

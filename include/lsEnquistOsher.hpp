@@ -10,6 +10,9 @@
 
 namespace lsInternal {
 
+/// Engquist osher integration scheme based on the
+/// upwind integration scheme. Offers high performance
+/// but lower accuracy for complex velocity fields.
 template <class T, int D, int order> class lsEnquistOsher {
   lsDomain<T, D> &levelSet;
   hrleSparseStarIterator<hrleDomain<T, D>> neighborIterator;
@@ -27,9 +30,7 @@ public:
       : levelSet(passedlsDomain),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>>(
             levelSet.getDomain(), order)),
-        calculateNormalVectors(calcNormal) {
-    // levelSet.calculateActivePointIds();
-  }
+        calculateNormalVectors(calcNormal) {}
 
   T operator()(const hrleVectorType<hrleIndexType, D> &indices,
                lsVelocityField<T> *velocities, int material) {

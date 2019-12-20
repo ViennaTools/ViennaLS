@@ -14,18 +14,20 @@ namespace lsInternal {
 /// It uses a stencil of order around active points, in order to
 /// evaluate dissipation values for each point, taking into account
 /// the mathematical nature of the speed function.
-/// see Toifl et al., 2019. ISBN: 978-1-7281-0938-1
+/// see Toifl et al., 2019. ISBN: 978-1-7281-0938-1;
+/// DOI: 10.1109/SISPAD.2019.8870443
 template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
   lsDomain<T, D> &levelSet;
   const DifferentiationSchemeEnum finiteDifferenceScheme =
       DifferentiationSchemeEnum::FIRST_ORDER;
-  // const int stencilOrder = 1;
   hrleSparseBoxIterator<hrleDomain<T, D>> neighborIterator;
+  const double alphaFactor;
+  const double normalEpsilon =
+      std::cbrt(std::numeric_limits<double>::epsilon());
 
   // Final dissipation coefficients that are used by the time integrator. If
   // D==2 last entries are 0.
   hrleVectorType<T, 3> finalAlphas;
-  hrleVectorType<T, 3> gridDeltas;
   const unsigned numStencilPoints;
 
   static T pow2(const T &value) { return value * value; }
@@ -40,7 +42,7 @@ template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
       hrleVectorType<hrleIndexType, D> index(offset);
       std::vector<T> values;
       for (unsigned j = 0; j < 3; ++j) {
-        index[i] += startIndex + j;
+        index[i] = startIndex + j;
         values.push_back(neighborIterator.getNeighbor(index).getValue());
       }
       normal[i] = lsFiniteDifferences<T>::calculateGradient(
@@ -59,14 +61,14 @@ template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
     hrleVectorType<T, D> gradient;
 
     const unsigned numValues =
-        static_cast<unsigned>(finiteDifferenceScheme) + 2;
+        lsFiniteDifferences<T>::getNumberOfValues(finiteDifferenceScheme);
     const int startIndex = -std::floor(numValues / 2);
 
     for (unsigned i = 0; i < D; ++i) {
       hrleVectorType<hrleIndexType, D> index(offset);
       std::vector<T> values;
       for (unsigned j = 0; j < numValues; ++j) {
-        index[i] += startIndex + j;
+        index[i] = startIndex + j;
         values.push_back(neighborIterator.getNeighbor(index).getValue());
       }
 
@@ -90,7 +92,7 @@ template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
     hrleVectorType<T, D> gradient;
 
     const unsigned numValues =
-        static_cast<unsigned>(finiteDifferenceScheme) + 2;
+        lsFiniteDifferences<T>::getNumberOfValues(finiteDifferenceScheme);
     const int startIndex = -std::floor(numValues / 2);
 
     for (unsigned i = 0; i < D; ++i) {
@@ -121,24 +123,23 @@ template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
 
 public:
   const hrleVectorType<T, 3> &getFinalAlphas() const { return finalAlphas; }
-  const hrleVectorType<T, 3> &getDeltas() const { return gridDeltas; }
 
   static void prepareLS(lsDomain<T, D> &passedlsDomain) {
     // Expansion of sparse field must depend on spatial derivative order
     // AND  slf stencil order! --> currently assume scheme = 3rd order always
-    lsExpand<T, D>(passedlsDomain, 2 * order + 4).apply();
+    lsExpand<T, D>(passedlsDomain, 2 * (order + 1) + 4).apply();
   }
 
   lsStencilLocalLaxFriedrichsScalar(
-      lsDomain<T, D> &passedlsDomain,
+      lsDomain<T, D> &passedlsDomain, double a = 1.0,
       DifferentiationSchemeEnum scheme = DifferentiationSchemeEnum::FIRST_ORDER)
       : levelSet(passedlsDomain), finiteDifferenceScheme(scheme),
         neighborIterator(hrleSparseBoxIterator<hrleDomain<T, D>>(
             levelSet.getDomain(), static_cast<unsigned>(scheme) + 1 + order)),
-        numStencilPoints(std::pow(2 * order + 1, D)) {
+        alphaFactor(a), numStencilPoints(std::pow(2 * order + 1, D)) {
+
     for (int i = 0; i < 3; ++i) {
       finalAlphas[i] = 0;
-      gridDeltas[i] = 0;
     }
   }
 
@@ -158,67 +159,47 @@ public:
     // convert coordinate to std array for interface
     std::array<T, 3> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
 
-    std::array<T, 3> vectorVelocity =
-        velocities->getVectorVelocity(coordArray, material, {});
-    double scalarVelocity =
-        velocities->getScalarVelocity(coordArray, material, {});
-
     // if there is a vector velocity, we need to project it onto a scalar
     // velocity first using its normal vector
-    if (vectorVelocity != std::array<T, 3>({})) {
-      hrleVectorType<T, D> n;
-      T denominator = 0; // normal modulus
-      for (unsigned i = 0; i < D; i++) {
-        int index[3] = {i == 0, i == 1, i == 2}; // unit vector in direction
-        // normal vector calculation
-        T pos = neighborIterator.getNeighbor(index).getValue() -
-                neighborIterator.getCenter().getValue();
-        index[i] = -index[i];
-        T neg = neighborIterator.getCenter().getValue() -
-                neighborIterator.getNeighbor(index).getValue();
-        n[i] = (pos + neg) * 0.5;
-        // normalise normal vector
-        denominator += n[i] * n[i];
-      }
-      denominator = std::sqrt(denominator);
-      // now calculate scalar product of normal vector with velocity
-      for (unsigned i = 0; i < D; ++i) {
-        scalarVelocity += vectorVelocity[i] * n[i] / denominator;
-      }
+    // /*if (vectorVelocity != std::array<T, 3>({}))*/ {
+    std::array<T, 3> normalVector = {};
+    T denominator = 0; // normal modulus
+    for (unsigned i = 0; i < D; i++) {
+      hrleVectorType<T, 3> neighborIndex(T(0));
+      neighborIndex[i] = 1;
+      // normal vector calculation
+      T pos = neighborIterator.getNeighbor(neighborIndex).getValue() -
+              neighborIterator.getCenter().getValue();
+      T neg = neighborIterator.getCenter().getValue() -
+              neighborIterator.getNeighbor(-neighborIndex).getValue();
+      normalVector[i] = (pos + neg) * 0.5;
+      // normalise normal vector
+      denominator += normalVector[i] * normalVector[i];
+    }
+    denominator = std::sqrt(denominator);
+
+    for (unsigned i = 0; i < D; ++i) {
+      normalVector[i] /= denominator;
+    }
+
+    double scalarVelocity =
+        velocities->getScalarVelocity(coordArray, material, normalVector);
+    std::array<T, 3> vectorVelocity =
+        velocities->getVectorVelocity(coordArray, material, normalVector);
+
+    // now calculate scalar product of normal vector with velocity
+    for (unsigned i = 0; i < D; ++i) {
+      scalarVelocity += vectorVelocity[i] * normalVector[i];
     }
 
     if (scalarVelocity == T(0)) {
       return 0;
     }
 
-    // const bool DEBUG = false;
-
-    // typename LevelSetType::neighbor_stencil n(LS, it, stencilOrder);
-    // std::vector<typename LevelSetType::star_stencil> stars =
-    //     n.star_stencils(LevelSetType::differentiation_scheme::FIRST_ORDER);
-    // typename LevelSetType::star_stencil center = stars[n.get_center_index()];
-
-    // hrleVectorType<T, D> dxs = center.getDx();
-    for (unsigned i = 0; i < D; ++i) {
-      gridDeltas[i] = gridDelta;
-    }
-
-    // if (DEBUG) {
-    //   for (auto star : stars) {
-    //     std::cout << star.position() << std::endl;
-    //     std::cout << star.center().value() << std::endl;
-    //     std::cout << star.center().active_pt_id() << std::endl;
-    //   }
-    //   std::cout << std::endl;
-    // }
-
     T hamiltonian =
         NormL2(calculateGradient(hrleVectorType<hrleIndexType, D>(0))) *
         scalarVelocity;
     T dissipation = 0.; // dissipation
-
-    // if (DEBUG)
-    //   std::cout << "H = " << hamiltonian << std::endl;
 
     // dissipation block
     {
@@ -244,15 +225,32 @@ public:
         std::array<T, 3> normal_n = {normal[0], normal[1], normal[2]};
 
         hrleVectorType<T, D> velocityDelta(T(0));
-        const T DN = 1e-4;
+
+        // get local velocity
+        std::array<T, 3> localCoordArray = coordArray;
+        for (unsigned dir = 0; dir < D; ++dir)
+          localCoordArray[dir] += currentIndex[dir];
+
+        T localScalarVelocity =
+            velocities->getScalarVelocity(localCoordArray, material, normal_p);
+        std::array<T, 3> localVectorVelocity =
+            velocities->getVectorVelocity(localCoordArray, material, normal_p);
+        // now calculate scalar product of normal vector with velocity
+        for (unsigned i = 0; i < D; ++i) {
+          localScalarVelocity += localVectorVelocity[i] * normal[i];
+        }
+
+        const T DN = std::abs(normalEpsilon * scalarVelocity);
 
         for (int k = 0; k < D; ++k) {
 
           normal_p[k] -= DN; // p=previous
           normal_n[k] += DN; // n==next
 
-          T vp = velocities->getScalarVelocity(coordArray, material, normal_p);
-          T vn = velocities->getScalarVelocity(coordArray, material, normal_n);
+          T vp = velocities->getScalarVelocity(localCoordArray, material,
+                                               normal_p);
+          T vn = velocities->getScalarVelocity(localCoordArray, material,
+                                               normal_n);
           // central difference
           velocityDelta[k] = (vn - vp) / (2.0 * DN);
 
@@ -281,9 +279,7 @@ public:
           toifl *= -gradient[k] / denominator;
 
           // Osher (constant V) term
-          T osher =
-              velocities->getScalarVelocity(coordArray, material, normal_p);
-
+          T osher = localScalarVelocity * normal[k];
           // Total derivative is sum of terms given above
           alpha[k] = std::fabs(monti + toifl + osher);
         }
@@ -303,32 +299,17 @@ public:
       }
 
       // determine max alphas for every axis
-      hrleVectorType<T, D> maxal;
       hrleVectorType<T, D> gradientDiff = calculateGradientDiff();
       for (int d = 0; d < D; ++d) {
-        maxal[d] = 0;
-        std::vector<T> alpha_comp;
+        T maxAlpha = 0;
 
         for (size_t i = 0; i < numStencilPoints; ++i) {
-          alpha_comp.push_back(alphas[i][d]);
+          maxAlpha = std::max(maxAlpha, alphas[i][d]);
         }
-        maxal[d] = *std::max_element(alpha_comp.begin(), alpha_comp.end());
 
-        finalAlphas[d] = maxal[d];
-
-        dissipation += maxal[d] * gradientDiff[d];
+        finalAlphas[d] = maxAlpha;
+        dissipation += maxAlpha * gradientDiff[d];
       }
-      //   if (DEBUG)
-      //     std::cout << "max(alpha) = " << maxal << std::endl << std::endl;
-      //   if (DEBUG)
-      //     std::cout << "D = " << dissipation << std::endl;
-      //
-      //   if (DEBUG)
-      //     std::cout << "diff = " << center.gradient_diff() << "\n";
-      // }
-      //
-      // if (DEBUG)
-      //   std::cout << "H-D = " << hamiltonian - dissipation << std::endl;
 
       return hamiltonian - dissipation;
     }

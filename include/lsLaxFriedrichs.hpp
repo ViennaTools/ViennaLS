@@ -1,5 +1,5 @@
-#ifndef LAX_FRIEDRICHS_SCALAR_HPP
-#define LAX_FRIEDRICHS_SCALAR_HPP
+#ifndef LS_LAX_FRIEDRICHS_HPP
+#define LS_LAX_FRIEDRICHS_HPP
 
 #include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
@@ -8,11 +8,16 @@
 #include <lsExpand.hpp>
 
 namespace lsInternal {
+
+/// Lax Friedrichs integration scheme with constant alpha
+/// value for dissipation. This alpha value should be fitted
+/// based on the results of the advection and passed to the
+/// advection Kernel.
 template <class T, int D, int order> class lsLaxFriedrichs {
   lsDomain<T, D> &levelSet;
   hrleSparseStarIterator<hrleDomain<T, D>> neighborIterator;
   bool calculateNormalVectors = true;
-  // const double alpha;
+  const double alpha = 1.0;
 
   static T pow2(const T &value) { return value * value; }
 
@@ -22,16 +27,12 @@ public:
     lsExpand<T, D>(passedlsDomain, 2 * order + 1).apply();
   }
 
-  lsLaxFriedrichs(lsDomain<T, D> &passedlsDomain,
-                  bool calcNormal = true) //, double a = 0.1)
+  lsLaxFriedrichs(lsDomain<T, D> &passedlsDomain, bool calcNormal = true,
+                  double a = 1.0)
       : levelSet(passedlsDomain),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>>(
             levelSet.getDomain(), order)),
-        calculateNormalVectors(calcNormal) /*,
-alpha(a)*/
-  {
-    // levelSet.calculateActivePointIds();
-  }
+        calculateNormalVectors(calcNormal), alpha(a) {}
 
   T operator()(const hrleVectorType<hrleIndexType, D> &indices,
                lsVelocityField<T> *velocities, int material) {
@@ -53,8 +54,9 @@ alpha(a)*/
     T grad = 0.;
     T dissipation = 0.;
 
-    hrleVectorType<T, D> normal;
-    T modulus = 0;
+    std::array<T, 3> normalVector = {};
+    T normalModulus = 0;
+    const bool calcNormals = calculateNormalVectors;
 
     for (int i = 0; i < D; i++) { // iterate over dimensions
 
@@ -110,29 +112,19 @@ alpha(a)*/
       gradPos[i] = diffNeg;
       gradNeg[i] = diffPos;
 
-      normal[i] = (diffNeg + diffPos) * 0.5;
-      modulus += normal[i] * normal[i];
+      if (calcNormals) {
+        normalVector[i] = (diffNeg + diffPos) * 0.5;
+        normalModulus += normalVector[i] * normalVector[i];
+      }
 
       grad += pow2((diffNeg + diffPos) * 0.5);
       dissipation += (diffPos - diffNeg) * 0.5;
     }
 
-    // Calculate normal vector for velocity calculation
-    // use std::array since it will be exposed to interface
-    std::array<T, 3> normalVector = {};
-    if (calculateNormalVectors) {
-      T denominator = 0;
-      for (int i = 0; i < D; i++) {
-        T pos = neighborIterator.getNeighbor(i).getValue() -
-                neighborIterator.getCenter().getValue();
-        T neg = neighborIterator.getCenter().getValue() -
-                neighborIterator.getNeighbor(i + D).getValue();
-        normalVector[i] = (pos + neg) * 0.5; // = 0;
-        denominator += normalVector[i] * normalVector[i];
-      }
-      denominator = std::sqrt(denominator);
+    if (calcNormals) {
+      normalModulus = std::sqrt(normalModulus);
       for (unsigned i = 0; i < D; ++i) {
-        normalVector[i] /= denominator;
+        normalVector[i] /= normalModulus;
       }
     }
 
@@ -144,14 +136,7 @@ alpha(a)*/
     std::array<T, 3> vectorVelocity =
         velocities->getVectorVelocity(coordArray, material, normalVector);
 
-    T alpha = 0;
-    modulus = std::sqrt(modulus);
-    for (unsigned i = 0; i < D; ++i) {
-      alpha += std::abs(scalarVelocity * normal[i] / modulus);
-    }
-
     T totalGrad = 0.;
-
     if (scalarVelocity != 0.) {
       totalGrad = scalarVelocity * std::sqrt(grad);
     }
@@ -164,9 +149,9 @@ alpha(a)*/
       }
     }
 
-    return totalGrad - ((totalGrad != 0.) ? dissipation : 0);
+    return totalGrad - ((totalGrad != 0.) ? alpha * dissipation : 0);
   }
 };
 } // namespace lsInternal
 
-#endif // LAX_FRIEDRICHS_SCALAR_HPP
+#endif // LS_LAX_FRIEDRICHS_HPP

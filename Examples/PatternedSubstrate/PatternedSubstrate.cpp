@@ -199,7 +199,7 @@ int main() {
       lsVTKWriter(mesh, "substrate-" + std::to_string(i) + ".vtk").apply();
 
       advectionKernel.apply();
-      passedTime += advectionKernel.getAdvectionTime();
+      passedTime += advectionKernel.getAdvectedTime();
     }
     std::cout << std::endl;
 
@@ -243,7 +243,7 @@ int main() {
           .apply();
 
       advectionKernel.apply();
-      passedTime += advectionKernel.getAdvectionTime();
+      passedTime += advectionKernel.getAdvectedTime();
     }
     std::cout << std::endl;
 

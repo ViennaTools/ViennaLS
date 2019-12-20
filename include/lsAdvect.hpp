@@ -18,6 +18,9 @@
 // Integration schemes
 #include <lsEnquistOsher.hpp>
 #include <lsLaxFriedrichs.hpp>
+#include <lsLocalLaxFriedrichs.hpp>
+#include <lsLocalLaxFriedrichsAnalytical.hpp>
+#include <lsLocalLocalLaxFriedrichs.hpp>
 #include <lsStencilLocalLaxFriedrichsScalar.hpp>
 
 // Velocity accessor
@@ -30,7 +33,12 @@ enum struct lsIntegrationSchemeEnum : unsigned {
   ENGQUIST_OSHER_2ND_ORDER = 1,
   LAX_FRIEDRICHS_1ST_ORDER = 2,
   LAX_FRIEDRICHS_2ND_ORDER = 3,
-  STENCIL_LOCAL_LAX_FRIEDRICHS = 4
+  LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER = 4,
+  LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 5,
+  LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER = 6,
+  LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 7,
+  LOCAL_LAX_FRIEDRICHS_2ND_ORDER = 8,
+  STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 9
 };
 
 /// This class is used to advance level sets over time.
@@ -48,10 +56,11 @@ template <class T, int D> class lsAdvect {
   lsIntegrationSchemeEnum integrationScheme =
       lsIntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER;
   double timeStepRatio = 0.4999;
-  double dissipationAlpha = 0.;
+  double dissipationAlpha = 1.0;
   bool calculateNormalVectors = true;
   bool ignoreVoids = false;
   double advectionTime = 0.;
+  double advectedTime = 0.;
   unsigned numberOfTimeSteps = 0;
   bool saveAdvectionVelocities = false;
 
@@ -72,20 +81,19 @@ template <class T, int D> class lsAdvect {
           std::nullptr_t>::type = nullptr>
   void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &scheme,
                                     double &MaxTimeStep) {
-    // TODO Can be potentially smaller than 1 (user input???)
     const double alpha_maxCFL = 1.0;
     // second time step test, based on alphas
     hrleVectorType<T, 3> alphas = scheme.getFinalAlphas();
-    hrleVectorType<T, 3> dxs = scheme.getDeltas();
 
-    MaxTimeStep = 0;
-    for (int i = 0; i < 3; ++i) {
-      if (std::abs(dxs[i]) > 1e-6) {
-        MaxTimeStep += alphas[i] / dxs[i];
-      }
+    auto gridDelta = levelSets.back()->getGrid().getGridDelta();
+
+    double timeStep = 0;
+    for (int i = 0; i < D; ++i) {
+      timeStep += alphas[i] / gridDelta;
     }
 
-    MaxTimeStep = alpha_maxCFL / MaxTimeStep;
+    timeStep = alpha_maxCFL / timeStep;
+    MaxTimeStep = std::min(timeStep, MaxTimeStep);
   }
 
   void rebuildLS() {
@@ -139,8 +147,8 @@ template <class T, int D> class lsAdvect {
 
           int k = 0;
           for (; k < 2 * D; k++)
-            if (std::signbit(it.getNeighbor(k).getValue() - 1e-9) !=
-                std::signbit(it.getCenter().getValue()) + 1e-9)
+            if (std::signbit(it.getNeighbor(k).getValue() - 1e-7) !=
+                std::signbit(it.getCenter().getValue() + 1e-7))
               break;
 
           // if there is at least one neighbor of opposite sign
@@ -327,24 +335,64 @@ template <class T, int D> class lsAdvect {
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
       lsInternal::lsLaxFriedrichs<T, D, 1>::prepareLS(*(levelSets.back()));
-      auto is = lsInternal::lsLaxFriedrichs<T, D, 1>(*(levelSets.back()),
-                                                     calculateNormalVectors);
+      auto is = lsInternal::lsLaxFriedrichs<T, D, 1>(
+          *(levelSets.back()), calculateNormalVectors, dissipationAlpha);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER) {
       lsInternal::lsLaxFriedrichs<T, D, 2>::prepareLS(*(levelSets.back()));
-      auto is = lsInternal::lsLaxFriedrichs<T, D, 2>(*(levelSets.back()),
-                                                     calculateNormalVectors);
+      auto is = lsInternal::lsLaxFriedrichs<T, D, 2>(
+          *(levelSets.back()), calculateNormalVectors, dissipationAlpha);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
-               lsIntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS) {
+               lsIntegrationSchemeEnum::
+                   LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER) {
+      lsInternal::lsLocalLaxFriedrichsAnalytical<T, D, 1>::prepareLS(
+          *(levelSets.back()));
+      auto is = lsInternal::lsLocalLaxFriedrichsAnalytical<T, D, 1>(
+          *(levelSets.back()));
+      currentTime = integrateTime(is, maxTimeStep);
+    } else if (integrationScheme ==
+               lsIntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+      lsInternal::lsLocalLocalLaxFriedrichs<T, D, 1>::prepareLS(
+          *(levelSets.back()));
+      auto is = lsInternal::lsLocalLocalLaxFriedrichs<T, D, 1>(
+          *(levelSets.back()), dissipationAlpha);
+      currentTime = integrateTime(is, maxTimeStep);
+    } else if (integrationScheme ==
+               lsIntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
+      lsInternal::lsLocalLocalLaxFriedrichs<T, D, 2>::prepareLS(
+          *(levelSets.back()));
+      auto is = lsInternal::lsLocalLocalLaxFriedrichs<T, D, 2>(
+          *(levelSets.back()), dissipationAlpha);
+      currentTime = integrateTime(is, maxTimeStep);
+    } else if (integrationScheme ==
+               lsIntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+      lsInternal::lsLocalLaxFriedrichs<T, D, 1>::prepareLS(*(levelSets.back()));
+      auto is = lsInternal::lsLocalLaxFriedrichs<T, D, 1>(*(levelSets.back()),
+                                                          dissipationAlpha);
+      currentTime = integrateTime(is, maxTimeStep);
+    } else if (integrationScheme ==
+               lsIntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
+      lsInternal::lsLocalLaxFriedrichs<T, D, 2>::prepareLS(*(levelSets.back()));
+      auto is = lsInternal::lsLocalLaxFriedrichs<T, D, 2>(*(levelSets.back()),
+                                                          dissipationAlpha);
+      currentTime = integrateTime(is, maxTimeStep);
+    } else if (integrationScheme ==
+               lsIntegrationSchemeEnum::
+                   STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>::prepareLS(
           *(levelSets.back()));
       auto is = lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>(
-          *(levelSets.back()));
+          *(levelSets.back()), dissipationAlpha);
       currentTime = integrateTime(is, maxTimeStep);
     } else {
+      lsMessage::getInstance()
+          .addWarning("lsAdvect: Integration scheme not found. Not advecting.")
+          .print();
+
       // if no correct scheme was found return infinity
+      // to stop advection
       return std::numeric_limits<double>::max();
     }
 
@@ -356,7 +404,7 @@ template <class T, int D> class lsAdvect {
     // TODO: Adjust lower layers also when they have grown,
     // to allow for two different growth rates of materials
     if (integrationScheme !=
-        lsIntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS) {
+        lsIntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       for (unsigned i = 0; i < levelSets.size() - 1; ++i) {
         lsBooleanOperation<T, D>(*levelSets[i], *(levelSets.back()),
                                  lsBooleanOperationEnum::INTERSECT)
@@ -545,9 +593,9 @@ template <class T, int D> class lsAdvect {
         velocityVectors[p].resize(maxId);
       }
 
+      double time = maxTimeStep;
       for (unsigned localId = 0; localId < maxId; ++localId) {
         T &value = segment.definedValues[localId];
-        double time = maxTimeStep;
 
         // if there is a change in materials during one time step, deduct the
         // time taken to advect up to the end of the top material and set the LS
@@ -655,7 +703,7 @@ public:
 
   /// Get by how much the physical time was advanced during the last apply()
   /// call.
-  double getAdvectionTime() { return advectionTime; }
+  double getAdvectedTime() { return advectedTime; }
 
   /// Get how many advection steps were performed during the last apply() call.
   unsigned getNumberOfTimeSteps() { return numberOfTimeSteps; }
@@ -672,14 +720,16 @@ public:
     integrationScheme = scheme;
   }
 
-  /// Set the alpha dissipation coefficient for the Lax Friedrichs integration
-  /// schemes. This value is ignored for all other integration schemes.
+  /// Set the alpha dissipation coefficient.
+  /// For lsLaxFriedrichs, this is used as the alpha value.
+  /// For all other LaxFriedrichs schemes it is used as a
+  /// scaling factor for the calculated alpha values.
   void setDissipationAlpha(const double &a) { dissipationAlpha = a; }
 
   /// Perform the advection.
   void apply() {
     if (advectionTime == 0.) {
-      advectionTime = advect();
+      advectedTime = advect();
       numberOfTimeSteps = 1;
     } else {
       double currentTime = 0.0;

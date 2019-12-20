@@ -111,8 +111,8 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("setIgnoreVoids", &lsAdvect<T, D>::setIgnoreVoids,
            "Set whether voids in the geometry should be ignored during "
            "advection or not.")
-      .def("getAdvectionTime", &lsAdvect<T, D>::getAdvectionTime,
-           "Get the advection time.")
+      .def("getAdvectedTime", &lsAdvect<T, D>::getAdvectedTime,
+           "Get the time passed during advection.")
       .def("getNumberOfTimeSteps", &lsAdvect<T, D>::getNumberOfTimeSteps,
            "Get how many advection steps were performed after the last apply() "
            "call.")
@@ -140,8 +140,18 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
              lsIntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER)
       .value("LAX_FRIEDRICHS_2ND_ORDER",
              lsIntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER)
-      .value("STENCIL_LOCAL_LAX_FRIEDRICHS",
-             lsIntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS);
+      .value("LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER",
+             lsIntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER)
+      .value("LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER",
+             lsIntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER)
+      .value("LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER",
+             lsIntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER)
+      .value("LOCAL_LAX_FRIEDRICHS_1ST_ORDER",
+             lsIntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER)
+      .value("LOCAL_LAX_FRIEDRICHS_2ND_ORDER",
+             lsIntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER)
+      .value("STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER",
+             lsIntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER);
 
   // lsBooleanOperation
   pybind11::class_<lsBooleanOperation<T, D>>(module, "lsBooleanOperation")
@@ -516,7 +526,10 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "with normal vector normal.")
       .def("getVectorVelocity", &lsVelocityField<T>::getVectorVelocity,
            "Return the vector velocity for a point of material at coordinate "
-           "with normal vector normal.");
+           "with normal vector normal.")
+      .def("getDissipationAlpha", &lsVelocityField<T>::getDissipationAlpha,
+           "Return the analytical dissipation alpha value if the "
+           "lsLocalLaxFriedrichsAnalytical scheme is used for advection.");
 
   // lsVTKReader
   pybind11::class_<lsVTKReader>(module, "lsVTKReader")

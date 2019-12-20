@@ -2,6 +2,7 @@
 
 #root directory of project and config file for doxygen
 parentname="ViennaLS"
+templatefile="doxygen_template.txt"
 configfile="doxygen_config.txt"
 
 #filename for html shortcut to Documentation outside of html folder
@@ -26,6 +27,9 @@ argument[2]="$viennaLSdir\/cmake $viennaLSdir\/Tests $viennaLSdir\/Wrapping"
 argument[3]="$viennaLSdir\/docs\/doxygen\/logo.png"
 argument[4]="$viennaLSdir"
 argument[5]="$viennaLSdir\/Examples"
+
+#create doxygen config file
+cp $templatefile $configfile
 
 #change the doxygen config file to the new parameters
 for i in `seq 0 $(( ${#commands[*]} - 1 ))`; do

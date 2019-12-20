@@ -113,7 +113,7 @@ int main() {
   unsigned numberOfSteps = 60;
   for (unsigned i = 0; i < numberOfSteps; ++i) {
     advectionKernel.apply();
-    passedTime += advectionKernel.getAdvectionTime();
+    passedTime += advectionKernel.getAdvectedTime();
 
     std::cout << "\rAdvection step " + std::to_string(i) + " / "
               << numberOfSteps << std::flush;

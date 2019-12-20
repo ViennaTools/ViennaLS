@@ -80,7 +80,7 @@ int main() {
   advectionKernel.setAdvectionTime(20.);
   advectionKernel.apply();
 
-  double advectionTime = advectionKernel.getAdvectionTime();
+  double advectionTime = advectionKernel.getAdvectedTime();
   unsigned advectionSteps = advectionKernel.getNumberOfTimeSteps();
   std::cout << "Time difference: " << advectionTime << std::endl;
   std::cout << "Number of advection steps: " << advectionSteps << std::endl;
