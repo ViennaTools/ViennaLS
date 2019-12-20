@@ -5,3 +5,5 @@ build*
 *.vtp
 .vs
 CMakeSettings.json
+docs/doxygen/*.txt
+!docs/doxygen/doxygen_template.txt
