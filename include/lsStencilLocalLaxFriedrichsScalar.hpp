@@ -301,7 +301,7 @@ public:
       // determine max alphas for every axis
       hrleVectorType<T, D> gradientDiff = calculateGradientDiff();
       for (int d = 0; d < D; ++d) {
-        double maxAlpha = 0;
+        T maxAlpha = 0;
 
         for (size_t i = 0; i < numStencilPoints; ++i) {
           maxAlpha = std::max(maxAlpha, alphas[i][d]);

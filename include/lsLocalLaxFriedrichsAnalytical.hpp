@@ -177,7 +177,7 @@ public:
       hrleVectorType<hrleIndexType, D> neighborIndex(minIndex);
       for (unsigned i = 0; i < numNeighbors; ++i) {
 
-        std::array<double, 3> normal = {};
+        std::array<T, 3> normal = {};
         auto center = neighborIterator.getNeighbor(neighborIndex).getValue();
         for (unsigned dir = 0; dir < D; ++dir) {
           hrleVectorType<hrleIndexType, D> unity(0);

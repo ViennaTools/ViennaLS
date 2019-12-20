@@ -178,11 +178,11 @@ public:
 
       hrleVectorType<hrleIndexType, D> neighborIndex(minIndex);
       for (unsigned i = 0; i < numNeighbors; ++i) {
-        std::array<double, 3> coords;
+        std::array<T, 3> coords;
         for (unsigned dir = 0; dir < D; ++dir) {
           coords[dir] = coordinate[dir] + neighborIndex[dir] * gridDelta;
         }
-        std::array<double, 3> normal = {};
+        std::array<T, 3> normal = {};
         double normalModulus = 0.;
         auto center = neighborIterator.getNeighbor(neighborIndex).getValue();
         for (unsigned dir = 0; dir < D; ++dir) {
