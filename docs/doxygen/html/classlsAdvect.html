@@ -148,7 +148,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a5f46e20b204edca8a987514909e34907"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set which integration scheme should be used out of the ones specified in lsIntegrationSchemeEnum.  <a href="classlsAdvect.html#a5f46e20b204edca8a987514909e34907">More...</a><br /></td></tr>
 <tr class="separator:a5f46e20b204edca8a987514909e34907"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af644ebf0efd6dbef33865a9c5c61988c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#af644ebf0efd6dbef33865a9c5c61988c">setDissipationAlpha</a> (const double &amp;a)</td></tr>
-<tr class="memdesc:af644ebf0efd6dbef33865a9c5c61988c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the alpha dissipation coefficient for the Lax Friedrichs integration schemes. This value is ignored for all other integration schemes.  <a href="classlsAdvect.html#af644ebf0efd6dbef33865a9c5c61988c">More...</a><br /></td></tr>
+<tr class="memdesc:af644ebf0efd6dbef33865a9c5c61988c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the alpha dissipation coefficient. For lsLaxFriedrichs, this is used as the alpha value. For all other LaxFriedrichs schemes it is used as a scaling factor for the calculated alpha values.  <a href="classlsAdvect.html#af644ebf0efd6dbef33865a9c5c61988c">More...</a><br /></td></tr>
 <tr class="separator:af644ebf0efd6dbef33865a9c5c61988c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7b6f35f0b35133d40ceeb866b5c733f3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#a7b6f35f0b35133d40ceeb866b5c733f3">apply</a> ()</td></tr>
 <tr class="memdesc:a7b6f35f0b35133d40ceeb866b5c733f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform the advection.  <a href="classlsAdvect.html#a7b6f35f0b35133d40ceeb866b5c733f3">More...</a><br /></td></tr>
@@ -583,7 +583,7 @@ template&lt;class T, int D&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>Set the alpha dissipation coefficient for the Lax Friedrichs integration schemes. This value is ignored for all other integration schemes. </p>
+<p>Set the alpha dissipation coefficient. For lsLaxFriedrichs, this is used as the alpha value. For all other LaxFriedrichs schemes it is used as a scaling factor for the calculated alpha values. </p>
 
 </div>
 </div>

@@ -148,7 +148,7 @@ $(document).ready(function(){initNavTree('SquareEtch_8cpp-example.html','');});
 <div class="line">    }</div>
 <div class="line">    gradient = std::sqrt(gradient);</div>
 <div class="line"> </div>
-<div class="line">    <span class="comment">// alpha in x direction</span></div>
+<div class="line">    <span class="comment">// alpha for different directions</span></div>
 <div class="line">    <span class="keywordflow">if</span> (direction == 0) {</div>
 <div class="line">      <span class="keywordflow">return</span> 0;</div>
 <div class="line">    } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (direction == 1) {</div>
@@ -186,7 +186,6 @@ $(document).ready(function(){initNavTree('SquareEtch_8cpp-example.html','');});
 <div class="line">      .<a name="a14"></a><a class="code" href="classlsMakeGeometry.html#a3256e05d1dec7d632f0ea1edef69f7b5">apply</a>();</div>
 <div class="line"> </div>
 <div class="line">  <a class="code" href="classlsDomain.html">lsDomain&lt;double, D&gt;</a> <a name="a15"></a><a class="code" href="namespaceAirGapDeposition.html#adc994ddcd49604c115802be0b6394a33">trench</a>(<a class="code" href="namespaceAirGapDeposition.html#a4ed932eb04869593914daf91837d5e08">bounds</a>, <a class="code" href="namespaceAirGapDeposition.html#a0a16a1d4a9f90f67f7251d38034723e0">boundaryCons</a>, <a class="code" href="namespaceAirGapDeposition.html#a2298757d8b928ab18a132ed7e268679b">gridDelta</a>);</div>
-<div class="line">  <span class="comment">// make -x and +x greater than domain for numerical stability</span></div>
 <div class="line">  <span class="comment">// trench bottom is the initial bottom of the trench</span></div>
 <div class="line">  <span class="keywordtype">double</span> trenchBottom = -2.;</div>
 <div class="line">  <span class="keywordtype">double</span> <a name="a16"></a><a class="code" href="namespaceAirGapDeposition.html#ae202b9c552c69548274e05624dc8c47b">minCorner</a>[D] = {-<a class="code" href="namespaceAirGapDeposition.html#ad57d3494da9650c7081894b7de007eba">extent</a> / 1.5, trenchBottom};</div>
