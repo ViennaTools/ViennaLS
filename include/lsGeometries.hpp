@@ -1,6 +1,8 @@
 #ifndef LS_GEOMETRIES_HPP
 #define LS_GEOMETRIES_HPP
 
+#include <vector>
+
 /// Class describing a sphere via origin and radius.
 template <class T, int D> class lsSphere {
 public:

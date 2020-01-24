@@ -290,6 +290,7 @@ public:
 
     mesh->clear();
     auto &points = pointCloud->points;
+    if(points.size() == 0) return;
 
     {
       // find first hull point
