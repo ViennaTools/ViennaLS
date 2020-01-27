@@ -9,39 +9,6 @@
 #include <lsDomain.hpp>
 #include <lsMesh.hpp>
 
-// std::hash specialisation in order to use unordered_map
-// namespace std {
-// template <int D> struct hash<hrleVectorType<hrleIndexType, D>> {
-//   std::size_t operator()(const hrleVectorType<hrleIndexType, D> &v) const {
-//     using std::hash;
-//     using std::size_t;
-//     using std::string;
-//
-//     /* Better hash combine functions might be:
-//       hash(a)<<1 + hash(a) + hash(b)
-//       or from boost:
-//       size_t hash_combine( size_t lhs, size_t rhs ) {
-//         lhs ^= rhs + 0x9e3779b9 + (lhs << 6) + (lhs >> 2);
-//         return lhs;
-//       }
-//       https://stackoverflow.com/questions/5889238/why-is-xor-the-default-way-to-combine-hashes
-//     */
-//
-//     // Compute individual hash values for first,
-//     // second and third and combine them using XOR
-//     // and bit shifting:
-//
-//     size_t result = hash<hrleIndexType>()(v[0]);
-//     result ^= hash<hrleIndexType>()(v[1]) << 1;
-//     if (D == 3) {
-//       result = (result >> 1) ^ (hash<hrleIndexType>()(v[3]) << 1);
-//     }
-//     return result;
-//   }
-// };
-//
-// } // namespace std
-
 /// Creates a mesh, which consists only of quads/hexas for completely
 /// filled grid cells in the level set. Interfaces will not be smooth
 /// but stepped. (This can be used to create meshes for finite difference
