@@ -14,6 +14,7 @@
 
 /// This algorithm creates a convex hull mesh from a
 /// point cloud. This is done using the gift wrapping approach.
+/// The points in the point cloud must be unique.
 template <class T, int D> class lsConvexHull {
   typedef hrleVectorType<unsigned, D - 1> EdgeType;
 
@@ -64,7 +65,7 @@ template <class T, int D> class lsConvexHull {
       auto product = DotProduct(distance, normal);
       // if dot product is very small, point is very close to plane
       // we need to check if we already have the correct point
-      // or if i is the next correct one
+      // or if it is the next correct one
       if (std::abs(product) < 1e-9) {
         // check if suggested triangle intersects with any other
         // in the same plane
@@ -302,16 +303,15 @@ public:
       } else {
         // need to check if there is second point at same z coord
         int currentPointIndex = -1;
-        double hullMetric = 0.;
+        double hullMetric = std::numeric_limits<double>::max();
         for (unsigned i = 0; i < points.size(); ++i) {
           if (i == currentIndex)
             continue;
-          if (points[i][2] == points[currentIndex][2]) {
+          if (std::abs(points[i][2]-points[currentIndex][2]) < 1e-7) {
             auto diff = points[currentIndex] - points[i];
-            // if y is same divide by small number to favour current point
-            double currentHullMetric =
-                diff[0] / ((diff[1] != 0.) ? diff[1] : 1e-6);
-            if (currentHullMetric > hullMetric) {
+            // choose closest point if points are in z plane
+            double currentHullMetric = DotProduct(diff, diff);
+            if (currentHullMetric < hullMetric) {
               hullMetric = currentHullMetric;
               currentPointIndex = i;
             }

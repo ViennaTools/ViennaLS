@@ -1,7 +1,12 @@
 #ifndef LS_GEOMETRIES_HPP
 #define LS_GEOMETRIES_HPP
 
+#include <cassert>
 #include <vector>
+
+#include <hrleVectorType.hpp>
+
+#include <lsPreCompileMacros.hpp>
 
 /// Class describing a sphere via origin and radius.
 template <class T, int D> class lsSphere {
@@ -95,6 +100,30 @@ public:
   void insertNextPoint(const std::vector<T> &newPoint) {
     hrleVectorType<T, D> point(newPoint);
     points.push_back(point);
+  }
+
+  std::pair<typename std::vector<hrleVectorType<T, D>>::iterator, bool> insertNextUniquePoint(hrleVectorType<T, D> newPoint) {
+    for(auto it = points.begin(); it != points.end(); ++it) {
+      if(newPoint == *it) return std::make_pair(it, false);
+    }
+    points.push_back(newPoint);
+    return std::make_pair(--points.end(), true);
+  }
+
+  typename std::vector<hrleVectorType<T, D>>::iterator begin() {
+    return points.begin();
+  }
+
+  typename std::vector<hrleVectorType<T, D>>::iterator end() {
+    return points.end();
+  }
+
+  std::size_t size() {
+    return points.size();
+  }
+
+  hrleVectorType<T, D> &operator[](std::size_t i) {
+    return points[i];
   }
 };
 
