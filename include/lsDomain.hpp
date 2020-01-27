@@ -119,6 +119,9 @@ public:
   /// get reference to the grid on which the levelset is defined
   const GridType &getGrid() const { return grid; }
 
+  /// get mutable reference to the grid on which the level set is defined
+  GridType &getGrid() { return grid; }
+
   /// get const reference to the underlying hrleDomain data structure
   DomainType &getDomain() { return domain; }
 

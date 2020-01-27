@@ -98,8 +98,12 @@ public:
         }
 
         denominator = std::sqrt(denominator);
-        for (unsigned i = 0; i < D; ++i) {
-          n[i] /= denominator;
+        if(std::abs(denominator) < 1e-12){
+          for(unsigned i=0; i<D; ++i) n[i] = 0.;
+        } else {
+          for (unsigned i = 0; i < D; ++i) {
+            n[i] /= denominator;
+          }
         }
 
         normalVectors.push_back(n);

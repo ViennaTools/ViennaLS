@@ -1,6 +1,8 @@
 #ifndef LS_MAKE_GEOMETRY_HPP
 #define LS_MAKE_GEOMETRY_HPP
 
+#include <cassert>
+
 #include <lsPreCompileMacros.hpp>
 
 #include <hrleIndexType.hpp>

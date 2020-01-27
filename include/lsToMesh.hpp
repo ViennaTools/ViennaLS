@@ -57,6 +57,11 @@ public:
 
     mesh->clear();
 
+    // check if level set is empty
+    if(levelSet->getNumberOfPoints() == 0) {
+      return;
+    }
+
     std::vector<double> scalarData;
     std::vector<double> subLS;
 

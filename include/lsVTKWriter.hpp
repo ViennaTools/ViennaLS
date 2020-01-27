@@ -53,14 +53,14 @@ public:
     // check mesh
     if (mesh == nullptr) {
       lsMessage::getInstance()
-          .addWarning("No mesh was passed to lsVTKWriter. Not reading.")
+          .addWarning("No mesh was passed to lsVTKWriter. Not writing.")
           .print();
       return;
     }
     // check filename
     if (fileName.empty()) {
       lsMessage::getInstance()
-          .addWarning("No file name specified for lsVTKWriter. Not reading.")
+          .addWarning("No file name specified for lsVTKWriter. Not writing.")
           .print();
       return;
     }
@@ -83,12 +83,12 @@ public:
       lsMessage::getInstance()
           .addWarning(
               "lsVTKWriter was built without VTK support. Only VTK_LEGACY "
-              "can be used. File not read.")
+              "can be used. File not written.")
           .print();
 #endif
     default:
       lsMessage::getInstance()
-          .addWarning("No valid file format set for lsVTKWriter. Not reading.")
+          .addWarning("No valid file format set for lsVTKWriter. Not writing.")
           .print();
     }
   }
