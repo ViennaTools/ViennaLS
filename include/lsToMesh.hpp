@@ -58,7 +58,7 @@ public:
     mesh->clear();
 
     // check if level set is empty
-    if(levelSet->getNumberOfPoints() == 0) {
+    if (levelSet->getNumberOfPoints() == 0) {
       return;
     }
 

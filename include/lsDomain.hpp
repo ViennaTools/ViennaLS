@@ -11,6 +11,8 @@
 
 #include <lsPointData.hpp>
 
+#define LS_DOMAIN_SERIALIZATION_VERSION 0
+
 ///  Class containing all information about the level set, including
 ///  the dimensions of the domain, boundary conditions and all data.
 template <class T, int D> class lsDomain {
@@ -171,6 +173,71 @@ public:
       std::cout << &(domain.getDomainSegment(i)) << std::endl;
     }
     domain.print();
+  }
+
+  /// Serializes the lsDomain into a binary stream
+  std::ostream &serialize(std::ostream &stream) {
+    // Save header to identify lsDomain
+    stream << "lsDomain";
+
+    // serialize grid
+    grid.serialize(stream);
+
+    // serialize hrleDomain which saves LS values
+    domain.serialize(stream);
+
+    // serialize lsDomain members
+    // level set width as 32bit uint
+    const uint32_t width = levelSetWidth;
+    stream.write(reinterpret_cast<const char *>(&width), sizeof(uint32_t));
+
+    // serialize pointData if there is any point data associated with this
+    // lsDomain mark whether there is point data or not (1/0)
+    char hasPointData = (pointData.empty()) ? 0 : 1;
+    stream.write(&hasPointData, 1);
+    if (hasPointData == 1) {
+      pointData.serialize(stream);
+    }
+
+    return stream;
+  }
+
+  /// Deserialize lsDomain from binary stream
+  std::istream &deserialize(std::istream &stream) {
+    // Check identifier
+    char identifier[8];
+    stream.read(identifier, 8);
+    if (std::string(identifier).compare(0, 8, "lsDomain")) {
+      lsMessage::getInstance()
+          .addWarning(
+              "Reading lsDomain from stream failed. Header could not be found.")
+          .print();
+      return stream;
+    }
+
+    // read in the grid
+    grid.deserialize(stream);
+
+    // read in the hrleDoamin
+    // grid pointer in hrleDomain is implicitly set
+    // to the correct grid already since they were
+    // initialized together
+    domain.deserialize(stream);
+
+    // read in the level set width
+    uint32_t width;
+    stream.read(reinterpret_cast<char *>(&width), sizeof(uint32_t));
+    levelSetWidth = width;
+
+    // check wether there is point data to read
+    char hasPointData;
+    stream.read(&hasPointData, 1);
+    if (hasPointData == 1) {
+      pointData.clear();
+      pointData.deserialize(stream);
+    }
+
+    return stream;
   }
 };
 

@@ -102,9 +102,11 @@ public:
     points.push_back(point);
   }
 
-  std::pair<typename std::vector<hrleVectorType<T, D>>::iterator, bool> insertNextUniquePoint(hrleVectorType<T, D> newPoint) {
-    for(auto it = points.begin(); it != points.end(); ++it) {
-      if(newPoint == *it) return std::make_pair(it, false);
+  std::pair<typename std::vector<hrleVectorType<T, D>>::iterator, bool>
+  insertNextUniquePoint(hrleVectorType<T, D> newPoint) {
+    for (auto it = points.begin(); it != points.end(); ++it) {
+      if (newPoint == *it)
+        return std::make_pair(it, false);
     }
     points.push_back(newPoint);
     return std::make_pair(--points.end(), true);
@@ -118,13 +120,9 @@ public:
     return points.end();
   }
 
-  std::size_t size() {
-    return points.size();
-  }
+  std::size_t size() { return points.size(); }
 
-  hrleVectorType<T, D> &operator[](std::size_t i) {
-    return points[i];
-  }
+  hrleVectorType<T, D> &operator[](std::size_t i) { return points[i]; }
 };
 
 // add all template specialisations for this class
