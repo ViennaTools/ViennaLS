@@ -1,5 +1,5 @@
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <lsBooleanOperation.hpp>
 #include <lsDomain.hpp>
 #include <lsMakeGeometry.hpp>
@@ -34,7 +34,7 @@ int main() {
   }
 
   data.insertNextScalarData(scalars, "myScalars");
-  data.insertNextVectorData(vectors, "llaalalalalaalalalalalaalal");
+  data.insertNextVectorData(vectors, "myVectors");
 
   {
     std::ofstream fout("test.lvst", std::ofstream::binary);

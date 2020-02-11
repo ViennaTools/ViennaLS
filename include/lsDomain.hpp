@@ -180,6 +180,10 @@ public:
     // Save header to identify lsDomain
     stream << "lsDomain";
 
+    // now write format version number
+    char formatVersion = LS_DOMAIN_SERIALIZATION_VERSION;
+    stream.write(&formatVersion, 1);
+
     // serialize grid
     grid.serialize(stream);
 
@@ -211,6 +215,19 @@ public:
       lsMessage::getInstance()
           .addWarning(
               "Reading lsDomain from stream failed. Header could not be found.")
+          .print();
+      return stream;
+    }
+
+    // check format version for compatibility
+    char formatVersion;
+    stream.read(&formatVersion, 1);
+    if (formatVersion > LS_DOMAIN_SERIALIZATION_VERSION) {
+      lsMessage::getInstance()
+          .addWarning(
+              "Reading lsDomain of version " + std::to_string(formatVersion) +
+              " with reader of version " +
+              std::to_string(LS_DOMAIN_SERIALIZATION_VERSION) + " failed.")
           .print();
       return stream;
     }
