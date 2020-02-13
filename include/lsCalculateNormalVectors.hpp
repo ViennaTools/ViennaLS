@@ -12,28 +12,20 @@
 #include <lsMessage.hpp>
 
 /// This algorithm is used to compute the normal vectors for all points
-/// defined in the level set. The result is saved in the lsDomain and
+/// with level set values <= 0.5. The result is saved in the lsDomain and
 /// can be retrieved with lsDomain.getNormalVectors().
 /// Since neighbors in each cartesian direction are necessary for
 /// the calculation, the levelset width must be >=3.
 template <class T, int D> class lsCalculateNormalVectors {
   lsDomain<T, D> *domain = nullptr;
-  bool onlyActivePoints = false;
 
 public:
   lsCalculateNormalVectors() {}
 
-  lsCalculateNormalVectors(lsDomain<T, D> &passedDomain,
-                           bool passedOnlyActivePoints = false)
-      : domain(&passedDomain), onlyActivePoints(passedOnlyActivePoints) {}
+  lsCalculateNormalVectors(lsDomain<T, D> &passedDomain)
+      : domain(&passedDomain) {}
 
   void setLevelSet(lsDomain<T, D> &passedDomain) { domain = &passedDomain; }
-
-  /// Set whether normal vectors should only be calculated for level set
-  /// points <=0.5. Defaults to false.
-  void setOnlyActivePoints(bool passedOnlyActivePoints) {
-    onlyActivePoints = passedOnlyActivePoints;
-  }
 
   void apply() {
     if (domain == nullptr) {
@@ -53,8 +45,7 @@ public:
         domain->getNumberOfSegments());
     double pointsPerSegment =
         double(2 * domain->getDomain().getNumberOfPoints()) /
-        double(domain->getLevelSetWidth() *
-               domain->getDomain().getNumberOfSegments());
+        double(domain->getLevelSetWidth());
 
     auto grid = domain->getGrid();
 
@@ -84,7 +75,7 @@ public:
 
         auto &center = neighborIt.getCenter();
         if (!center.isDefined() ||
-            (onlyActivePoints && std::abs(center.getValue()) > 0.5))
+            std::abs(center.getValue()) > 0.5)
           continue;
 
         std::array<T, D> n;

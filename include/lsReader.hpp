@@ -3,6 +3,7 @@
 
 #include <fstream>
 
+#include <lsPreCompileMacros.hpp>
 #include <lsDomain.hpp>
 
 template <class T, int D> class lsReader {

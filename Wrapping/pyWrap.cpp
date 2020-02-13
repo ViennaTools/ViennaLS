@@ -185,14 +185,9 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       // constructors
       .def(pybind11::init<>())
       .def(pybind11::init<lsDomain<T, D> &>())
-      .def(pybind11::init<lsDomain<T, D> &, bool>())
       // methods
       .def("setLevelSet", &lsCalculateNormalVectors<T, D>::setLevelSet,
            "Set levelset for which to calculate normal vectors.")
-      .def("setOnlyActivePoints",
-           &lsCalculateNormalVectors<T, D>::setOnlyActivePoints,
-           "Set whether normal vectors should only be calculated for level set "
-           "points <0.5.")
       .def("apply", &lsCalculateNormalVectors<T, D>::apply,
            "Perform normal vector calculation.");
 
