@@ -50,7 +50,7 @@ public:
     mesh->clear();
 
     lsExpand<T, D>(*levelSet, 3).apply();
-    lsCalculateNormalVectors<T, D>(*levelSet, true).apply();
+    lsCalculateNormalVectors<T, D>(*levelSet).apply();
 
     const T gridDelta = levelSet->getGrid().getGridDelta();
     const auto &normalVectors = levelSet->getNormalVectors();

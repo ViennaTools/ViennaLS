@@ -52,7 +52,7 @@ int main() {
 
   // normal vectors are only valid as long as the underlying
   // level set does not change
-  lsCalculateNormalVectors<double, 3>(sphere1, true).apply();
+  lsCalculateNormalVectors<double, 3>(sphere1).apply();
   auto &normalVectors = sphere1.getNormalVectors();
 
   std::cout << "Number of Normal vectors: " << normalVectors.size()

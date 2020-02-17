@@ -74,8 +74,7 @@ public:
            neighborIt.getIndices() < endVector; neighborIt.next()) {
 
         auto &center = neighborIt.getCenter();
-        if (!center.isDefined() ||
-            std::abs(center.getValue()) > 0.5)
+        if (!center.isDefined() || std::abs(center.getValue()) > 0.5)
           continue;
 
         std::array<T, D> n;

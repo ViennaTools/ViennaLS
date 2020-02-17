@@ -3,8 +3,8 @@
 
 #include <fstream>
 
-#include <lsPreCompileMacros.hpp>
 #include <lsDomain.hpp>
+#include <lsPreCompileMacros.hpp>
 
 template <class T, int D> class lsReader {
   lsDomain<T, D> *levelSet = nullptr;
