@@ -8,6 +8,7 @@
 #include <lsCalculateNormalVectors.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
+#include <lsMesh.hpp>
 
 /// This class creates a mesh from the level set
 /// with all grid points with a level set value <= 0.5.
@@ -20,12 +21,15 @@ template <class T, int D> class lsToDiskMesh {
 
   lsDomain<T, D> *levelSet = nullptr;
   lsMesh *mesh = nullptr;
+  T maxValue;
 
 public:
   lsToDiskMesh() {}
 
-  lsToDiskMesh(lsDomain<T, D> &passedLevelSet, lsMesh &passedMesh)
-      : levelSet(&passedLevelSet), mesh(&passedMesh) {}
+  lsToDiskMesh(lsDomain<T, D> &passedLevelSet, lsMesh &passedMesh,
+               T passedMaxValue = 0.5)
+      : levelSet(&passedLevelSet), mesh(&passedMesh), maxValue(passedMaxValue) {
+  }
 
   void setLevelSet(lsDomain<T, D> &passedLevelSet) {
     levelSet = &passedLevelSet;
@@ -49,8 +53,8 @@ public:
 
     mesh->clear();
 
-    lsExpand<T, D>(*levelSet, 3).apply();
-    lsCalculateNormalVectors<T, D>(*levelSet).apply();
+    lsExpand<T, D>(*levelSet, (maxValue * 4) + 1).apply();
+    lsCalculateNormalVectors<T, D>(*levelSet, maxValue).apply();
 
     const T gridDelta = levelSet->getGrid().getGridDelta();
     const auto &normalVectors = levelSet->getNormalVectors();
@@ -64,7 +68,7 @@ public:
 
     for (hrleConstSparseIterator<hrleDomainType> it(levelSet->getDomain());
          !it.isFinished(); ++it) {
-      if (!it.isDefined() || (std::abs(it.getValue()) > 0.5))
+      if (!it.isDefined() || (std::abs(it.getValue()) > maxValue))
         continue;
 
       // insert vertex
@@ -76,12 +80,22 @@ public:
       // normal vector
       std::array<double, 3> node;
       node[2] = 0.;
+      double max = 0.;
       for (unsigned i = 0; i < D; ++i) {
         // original position
         node[i] = double(it.getStartIndices(i)) * gridDelta;
-        // shift position
-        node[i] -= it.getValue() * gridDelta * normalVectors[pointId][i];
+
+        if (std::abs(normalVectors[pointId][i]) > max) {
+          max = std::abs(normalVectors[pointId][i]);
+        }
       }
+
+      // now normalize vector to scale position correctly to manhatten distance
+      double scaling = it.getValue() * gridDelta * max;
+      for (unsigned i = 0; i < D; ++i) {
+        node[i] -= scaling * normalVectors[pointId][i];
+      }
+
       mesh->insertNextNode(node);
 
       // add data into mesh

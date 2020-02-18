@@ -18,12 +18,13 @@
 /// the calculation, the levelset width must be >=3.
 template <class T, int D> class lsCalculateNormalVectors {
   lsDomain<T, D> *domain = nullptr;
+  T maxValue;
 
 public:
   lsCalculateNormalVectors() {}
 
-  lsCalculateNormalVectors(lsDomain<T, D> &passedDomain)
-      : domain(&passedDomain) {}
+  lsCalculateNormalVectors(lsDomain<T, D> &passedDomain, T passedMaxValue = 0.5)
+      : domain(&passedDomain), maxValue(passedMaxValue) {}
 
   void setLevelSet(lsDomain<T, D> &passedDomain) { domain = &passedDomain; }
 
@@ -34,10 +35,11 @@ public:
           .print();
     }
 
-    if (domain->getLevelSetWidth() < 3) {
+    if (domain->getLevelSetWidth() < (maxValue * 4) + 1) {
       lsMessage::getInstance()
           .addWarning("lsCalculateNormalVectors: Level set width must be "
-                      "greater than 2!")
+                      "greater than " +
+                      std::to_string((maxValue * 4) + 1) + " 2!")
           .print();
     }
 
@@ -74,7 +76,7 @@ public:
            neighborIt.getIndices() < endVector; neighborIt.next()) {
 
         auto &center = neighborIt.getCenter();
-        if (!center.isDefined() || std::abs(center.getValue()) > 0.5)
+        if (!center.isDefined() || std::abs(center.getValue()) > maxValue)
           continue;
 
         std::array<T, D> n;
