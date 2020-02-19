@@ -1,6 +1,8 @@
 #ifndef LS_FAST_ADVECT_DISTRIBUTIONS_HPP
 #define LS_FAST_ADVECT_DISTRIBUTIONS_HPP
 
+#include <hrleVectorType.hpp>
+
 /// Base class for distributions used by lsFastAdvect.
 /// All functions are pure virtual and must be implemented
 /// by any advection distribution.
@@ -11,7 +13,8 @@ public:
   virtual bool isInside(hrleVectorType<T, D> &v, double eps = 0.) const = 0;
 
   /// Returns the signed distance of a point relative to the distributions
-  /// center. This is the signed manhatten distance to the nearest surface point.
+  /// center. This is the signed manhatten distance to the nearest surface
+  /// point.
   virtual double getSignedDistance(hrleVectorType<T, D> &v) const = 0;
 
   /// Sets bounds to the bounding box of the distribution.
@@ -46,20 +49,51 @@ public:
       T x = radius2 - y * y - z * z;
       if (x < 0.)
         continue;
-      T dirRadius =
-          std::abs(v[i]) - std::sqrt(x);
+      T dirRadius = std::abs(v[i]) - std::sqrt(x);
       if (std::abs(dirRadius) < std::abs(distance))
         distance = dirRadius;
     }
     return distance;
-
-    // return std::sqrt(DotProduct(v, v)) - radius;
   }
 
   void getBounds(double *bounds) const {
     for (unsigned i = 0; i < D; ++i) {
       bounds[2 * i] = -radius;
       bounds[2 * i + 1] = radius;
+    }
+  }
+};
+
+/// Concrete implementation of lsFastAdvectDistribution
+/// for a rectangular box distribution.
+template<class T, int D> class lsBoxDistribution : public lsFastAdvectDistribution<T, D> {
+public:
+  const hrleVectorType<T, D> posExtent;
+
+  lsBoxDistribution(const hrleVectorType<T, D> halfAxes)
+      : posExtent(halfAxes) {}
+
+  bool isInside(hrleVectorType<T, D> &v, double eps = 0.) const {
+    for(unsigned i = 0; i < D; ++i) {
+      if(std::abs(v[i]) > (posExtent[i] + eps)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  double getSignedDistance(hrleVectorType<T, D> &v) const {
+    T distance = std::numeric_limits<T>::lowest();
+    for (unsigned i = 0; i < D; ++i) {
+      distance = std::max(std::abs(v[i]) - posExtent[i], distance);
+    }
+    return distance;
+  }
+
+  void getBounds(double *bounds) const {
+    for (unsigned i = 0; i < D; ++i) {
+      bounds[2 * i] = -posExtent[i];
+      bounds[2 * i + 1] = posExtent[i];
     }
   }
 };

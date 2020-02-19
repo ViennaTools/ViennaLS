@@ -14,7 +14,7 @@
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsFastAdvectDistributions.hpp>
-#include <lsToDiskMesh.hpp>
+#include <lsToMesh.hpp>
 #include <lsVTKWriter.hpp>
 
 /// This class advects the level set according to a given distribution.
@@ -47,6 +47,15 @@ public:
   lsFastAdvect(lsDomain<T, D> &passedLevelSet, DistType &passedDist)
       : levelSet(&passedLevelSet), dist(&passedDist) {}
 
+  void setLevelSet(lsDomain<T, D> &passedLevelSet) {
+    levelSet = &passedLevelSet;
+  }
+
+  void setAdvectionDistribution(
+      const lsFastAdvectDistribution<hrleCoordType, D> &distribution) {
+    dist = &distribution;
+  }
+
   // iterate through all points of new cell set and check whether distributions
   // on the old cell set will set the point
   void apply() {
@@ -68,45 +77,9 @@ public:
 
     // expand for normalvector calculation
     lsExpand<T, D>(*levelSet, 3).apply();
+    lsCalculateNormalVectors<T, D>(*levelSet).apply();
 
-    // calculate normal vectors and save in a hash
-    std::unordered_map<hrleVectorType<hrleIndexType, D>,
-                       hrleVectorType<hrleCoordType, D>,
-                       typename hrleVectorType<hrleIndexType, D>::hash>
-        normalVectors;
-    for (hrleConstSparseStarIterator<DomainType> neighborIt(
-             levelSet->getDomain());
-         !neighborIt.isFinished(); ++neighborIt) {
-      auto &center = neighborIt.getCenter();
-      if (!center.isDefined() || std::abs(center.getValue()) > 0.5)
-        continue;
-
-      hrleVectorType<hrleCoordType, D> n;
-      T denominator = 0;
-      for (int i = 0; i < D; i++) {
-        n[i] = (neighborIt.getNeighbor(i).getValue() -
-                neighborIt.getNeighbor(i + D).getValue()) *
-               0.5;
-        denominator += n[i] * n[i];
-      }
-
-      denominator = std::sqrt(denominator);
-      if (std::abs(denominator) < 1e-12) {
-        for (unsigned i = 0; i < D; ++i)
-          n[i] = 0.;
-      } else {
-        for (unsigned i = 0; i < D; ++i) {
-          n[i] /= denominator;
-        }
-      }
-
-      auto pair =
-          normalVectors.insert(std::make_pair(center.getStartIndices(), n));
-      if (!pair.second) {
-        std::cout << "Could not insert " << center.getStartIndices()
-                  << " because of " << (pair.first)->first << std::endl;
-      }
-    }
+    auto &normalVectors = levelSet->getNormalVectors();
 
     auto &domain = levelSet->getDomain();
 
@@ -115,7 +88,8 @@ public:
     lsDomain<T, D> newLevelSet(grid);
     auto &newDomain = newLevelSet.getDomain();
 
-    newDomain.initialize(domain.getNewSegmentation(), domain.getAllocation());
+    // initialize as single threaded
+    newDomain.initialize();
 
     // find bounds of distribution
     hrleCoordType distBounds[2 * D];
@@ -144,18 +118,10 @@ public:
 
     // set first undefined run
     {
-      if(domain.getNumberOfSegments() != 0) {
-        auto segment = domain.getDomainSegment(0);
-        if (segment.runTypes[0].size() != 0) {
-          // set the first runtype of old domain
-          auto firstRunValue = segment.undefinedValues[hrleRunTypeValues::UNDEF_PT - segment.runTypes[0][0]];
-          newDomain.insertNextUndefinedPoint(0, grid.getMinGridPoint(),
-                                             firstRunValue);
-        }
-      } else {
-        newDomain.insertNextUndefinedPoint(0, grid.getMinGridPoint(),
-                                           levelSet->POS_VALUE);
-      }
+      // get iterator to min
+      hrleConstSparseIterator<DomainType> checkIt(levelSet->getDomain());
+      newDomain.insertNextUndefinedPoint(0, grid.getMinGridPoint(),
+                                         checkIt.getValue());
     }
 
     // Iterate through the bounds of new lsDomain lexicographically
@@ -172,9 +138,6 @@ public:
                                                levelSet->NEG_VALUE);
             currentFullRun = true;
             currentEmptyRun = false;
-            // std::cout << "N ";
-          } else {
-            // std::cout << "# ";
           }
           continue;
         }
@@ -212,12 +175,13 @@ public:
         // if we are outside min/max go to next index inside
         {
           bool outside = false;
-          for(unsigned i = 0; i < D; ++i) {
-            if(distIndex[i] < currentDistMin[i] || distIndex[i] > currentDistMax[i]) {
+          for (unsigned i = 0; i < D; ++i) {
+            if (distIndex[i] < currentDistMin[i] ||
+                distIndex[i] > currentDistMax[i]) {
               outside = true;
             }
           }
-          if(outside) {
+          if (outside) {
             incrementIndices(distIndex, currentDistMin, currentDistMax);
             --distIndex[0];
             distIt.goToIndices(distIndex);
@@ -227,8 +191,7 @@ public:
 
         hrleVectorType<hrleCoordType, D> distCoords;
 
-        auto normalsIt = normalVectors.find(distIndex);
-        auto distNormal = normalsIt->second;
+        auto distNormal = normalVectors[distIt.getPointId()];
         double vectorMax = 0.;
         for (unsigned i = 0; i < D; ++i) {
           distCoords[i] = distIndex[i] * gridDelta;
@@ -238,7 +201,8 @@ public:
         }
         for (unsigned i = 0; i < D; ++i) {
           // shift distcoords to surface from grid point
-          distCoords[i] -= distIt.getValue() * gridDelta * distNormal[i] * vectorMax;
+          distCoords[i] -=
+              distIt.getValue() * gridDelta * distNormal[i] * vectorMax;
         }
 
         hrleVectorType<hrleCoordType, D> localCoords =
@@ -293,9 +257,6 @@ public:
                                              levelSet->NEG_VALUE);
           currentFullRun = true;
           currentEmptyRun = false;
-          // std::cout << "F ";
-        } else {
-          // std::cout << "_ ";
         }
       } else if (distance >= 0.5) {
         if (!currentEmptyRun) {
@@ -303,24 +264,19 @@ public:
                                              levelSet->POS_VALUE);
           currentEmptyRun = true;
           currentFullRun = false;
-          // std::cout << "E ";
-        } else {
-          // std::cout << ". ";
         }
       } else {
         newDomain.insertNextDefinedPoint(0, currentIndex, distance);
         currentEmptyRun = false;
         currentFullRun = false;
-        // std::cout << "D ";
       }
 
     } // domainBounds for
-    // std::cout << std::endl;
 
     // insert final undefined run
     hrleVectorType<hrleIndexType, D> finalRun = grid.getMaxGridPoint();
     ++finalRun[D - 1];
-    if(currentEmptyRun) {
+    if (currentEmptyRun) {
       newDomain.insertNextUndefinedPoint(0, finalRun, levelSet->POS_VALUE);
     } else {
       newDomain.insertNextUndefinedPoint(0, finalRun, levelSet->NEG_VALUE);
@@ -328,7 +284,12 @@ public:
 
     // newDomain.print();
 
+    lsMesh mesh;
+    lsToMesh<T, D>(newLevelSet, mesh).apply();
+    lsVTKWriter(mesh, "beforeExpand.vtk").apply();
+
     newDomain.finalize();
+    newDomain.segment();
     levelSet->deepCopy(newLevelSet);
     lsExpand<T, D>(*levelSet, 2).apply();
   }

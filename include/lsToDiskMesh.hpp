@@ -21,7 +21,7 @@ template <class T, int D> class lsToDiskMesh {
 
   lsDomain<T, D> *levelSet = nullptr;
   lsMesh *mesh = nullptr;
-  T maxValue;
+  T maxValue = 0.5;
 
 public:
   lsToDiskMesh() {}
@@ -36,6 +36,8 @@ public:
   }
 
   void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
+
+  void setMaxValue(const T passedMaxValue) { maxValue = passedMaxValue; }
 
   void apply() {
     if (levelSet == nullptr) {
@@ -64,12 +66,13 @@ public:
     std::vector<double> gridSpacing(normalVectors.size());
     std::vector<std::array<double, 3>> normals(normalVectors.size());
 
-    unsigned pointId = 0;
-
     for (hrleConstSparseIterator<hrleDomainType> it(levelSet->getDomain());
          !it.isFinished(); ++it) {
-      if (!it.isDefined() || (std::abs(it.getValue()) > maxValue))
+      if (!it.isDefined() || std::abs(it.getValue()) > maxValue) {
         continue;
+      }
+
+      unsigned pointId = it.getPointId();
 
       // insert vertex
       std::array<unsigned, 1> vertex;
@@ -107,8 +110,6 @@ public:
       for (unsigned i = 0; i < D; ++i) {
         normals[pointId][i] = normalVectors[pointId][i];
       }
-
-      ++pointId;
     }
 
     mesh->insertNextScalarData(values, "LSValues");

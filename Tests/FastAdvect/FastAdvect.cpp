@@ -10,7 +10,7 @@
 #include <lsVTKWriter.hpp>
 
 int main() {
-  omp_set_num_threads(1);
+  omp_set_num_threads(4);
 
   constexpr int D = 3;
   typedef double NumericType;
@@ -44,37 +44,24 @@ int main() {
   lsDomain<NumericType, D> sphere2(bounds, boundaryCons, gridDelta);
 
   origin[1] = 10.0;
-  // radius = 8.0;
   lsMakeGeometry<NumericType, D>(sphere2,
                                  lsSphere<NumericType, D>(origin, radius))
       .apply();
 
-  lsBooleanOperation<NumericType, D>(levelSet, sphere2, lsBooleanOperationEnum::UNION).apply();
+  lsBooleanOperation<NumericType, D>(levelSet, sphere2,
+                                     lsBooleanOperationEnum::UNION)
+      .apply();
 
   lsMesh mesh;
-  // lsToMesh<NumericType, D>(perfectSphere, mesh).apply();
-  // lsVTKWriter(mesh, "sphereLS.vtk").apply();
-  // lsToSurfaceMesh<NumericType, D>(perfectSphere, mesh).apply();
-  // lsVTKWriter(mesh, "sphere.vtk").apply();
-
-  // std::cout << myDomain.getLevelSet().getGrid().getGridDelta() << std::endl;
 
   lsToMesh<NumericType, D>(levelSet, mesh).apply();
   lsVTKWriter(mesh, "points.vtk").apply();
   lsToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
   lsVTKWriter(mesh, "surface.vtk").apply();
 
-  // lsCalculateNormalVectors<NumericType, D>(levelSet).apply();
-  // for(auto n : levelSet.getNormalVectors()) {
-  //   std::cout << n[0] << ", " << n[1] << std::endl;
-  // }
   // set up spherical advection dist
   lsSphereDistribution<double, D> dist(20.0);
   lsFastAdvect<NumericType, D>(levelSet, dist).apply();
-
-  // myDomain.getCellSet().getDomain().print();
-  // myDomain.getCellSet().getGrid().print();
-  // std::cout << "PRINTING" << std::endl;
 
   lsToMesh<NumericType, D>(levelSet, mesh).apply();
   lsVTKWriter(mesh, "finalLS.vtk").apply();

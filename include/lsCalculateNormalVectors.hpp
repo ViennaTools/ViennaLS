@@ -17,25 +17,30 @@
 /// Since neighbors in each cartesian direction are necessary for
 /// the calculation, the levelset width must be >=3.
 template <class T, int D> class lsCalculateNormalVectors {
-  lsDomain<T, D> *domain = nullptr;
-  T maxValue;
+  lsDomain<T, D> *levelSet = nullptr;
+  T maxValue = 0.5;
 
 public:
   lsCalculateNormalVectors() {}
 
-  lsCalculateNormalVectors(lsDomain<T, D> &passedDomain, T passedMaxValue = 0.5)
-      : domain(&passedDomain), maxValue(passedMaxValue) {}
+  lsCalculateNormalVectors(lsDomain<T, D> &passedLevelSet,
+                           T passedMaxValue = 0.5)
+      : levelSet(&passedLevelSet), maxValue(passedMaxValue) {}
 
-  void setLevelSet(lsDomain<T, D> &passedDomain) { domain = &passedDomain; }
+  void setLevelSet(lsDomain<T, D> &passedLevelSet) {
+    levelSet = &passedLevelSet;
+  }
+
+  void setMaxValue(const T passedMaxValue) { maxValue = passedMaxValue; }
 
   void apply() {
-    if (domain == nullptr) {
+    if (levelSet == nullptr) {
       lsMessage::getInstance()
           .addWarning("No level set was passed to lsCalculateNormalVectors.")
           .print();
     }
 
-    if (domain->getLevelSetWidth() < (maxValue * 4) + 1) {
+    if (levelSet->getLevelSetWidth() < (maxValue * 4) + 1) {
       lsMessage::getInstance()
           .addWarning("lsCalculateNormalVectors: Level set width must be "
                       "greater than " +
@@ -44,15 +49,15 @@ public:
     }
 
     std::vector<std::vector<std::array<T, D>>> normalVectorsVector(
-        domain->getNumberOfSegments());
+        levelSet->getNumberOfSegments());
     double pointsPerSegment =
-        double(2 * domain->getDomain().getNumberOfPoints()) /
-        double(domain->getLevelSetWidth());
+        double(2 * levelSet->getDomain().getNumberOfPoints()) /
+        double(levelSet->getLevelSetWidth());
 
-    auto grid = domain->getGrid();
+    auto grid = levelSet->getGrid();
 
     //! Calculate Normalvectors
-#pragma omp parallel num_threads(domain->getNumberOfSegments())
+#pragma omp parallel num_threads(levelSet->getNumberOfSegments())
     {
       int p = 0;
 #ifdef _OPENMP
@@ -64,20 +69,26 @@ public:
 
       hrleVectorType<hrleIndexType, D> startVector =
           (p == 0) ? grid.getMinGridPoint()
-                   : domain->getDomain().getSegmentation()[p - 1];
+                   : levelSet->getDomain().getSegmentation()[p - 1];
 
       hrleVectorType<hrleIndexType, D> endVector =
-          (p != static_cast<int>(domain->getNumberOfSegments() - 1))
-              ? domain->getDomain().getSegmentation()[p]
+          (p != static_cast<int>(levelSet->getNumberOfSegments() - 1))
+              ? levelSet->getDomain().getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
       for (hrleConstSparseStarIterator<typename lsDomain<T, D>::DomainType>
-               neighborIt(domain->getDomain(), startVector);
+               neighborIt(levelSet->getDomain(), startVector);
            neighborIt.getIndices() < endVector; neighborIt.next()) {
 
         auto &center = neighborIt.getCenter();
-        if (!center.isDefined() || std::abs(center.getValue()) > maxValue)
+        if (!center.isDefined()) {
           continue;
+        } else if(std::abs(center.getValue()) > maxValue){
+          // push an empty vector to keep ordering correct
+          std::array<T, D> tmp = {static_cast<double>(center.getPointId())};
+          normalVectors.push_back(tmp);
+          continue;
+        }
 
         std::array<T, D> n;
 
@@ -104,15 +115,15 @@ public:
     }
 
     // copy all normals
-    auto &normals = domain->getNormalVectors();
+    auto &normals = levelSet->getNormalVectors();
     normals.clear();
     unsigned numberOfNormals = 0;
-    for (unsigned i = 0; i < domain->getNumberOfSegments(); ++i) {
+    for (unsigned i = 0; i < levelSet->getNumberOfSegments(); ++i) {
       numberOfNormals += normalVectorsVector[i].size();
     }
     normals.reserve(numberOfNormals);
 
-    for (unsigned i = 0; i < domain->getNumberOfSegments(); ++i) {
+    for (unsigned i = 0; i < levelSet->getNumberOfSegments(); ++i) {
       normals.insert(normals.end(), normalVectorsVector[i].begin(),
                      normalVectorsVector[i].end());
     }
