@@ -103,12 +103,14 @@ $(document).ready(function(){initNavTree('classlsToDiskMesh.html','');});
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a57a21915abbc729ff091f66cb62259ce"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToDiskMesh.html#a57a21915abbc729ff091f66cb62259ce">lsToDiskMesh</a> ()</td></tr>
 <tr class="separator:a57a21915abbc729ff091f66cb62259ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adc5b81f6a8e240fefd787e74e626db3a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToDiskMesh.html#adc5b81f6a8e240fefd787e74e626db3a">lsToDiskMesh</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedLevelSet, <a class="el" href="classlsMesh.html">lsMesh</a> &amp;passedMesh)</td></tr>
-<tr class="separator:adc5b81f6a8e240fefd787e74e626db3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac9d289c5eb1ca4c481a61d340b9f25af"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToDiskMesh.html#ac9d289c5eb1ca4c481a61d340b9f25af">lsToDiskMesh</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedLevelSet, <a class="el" href="classlsMesh.html">lsMesh</a> &amp;passedMesh, T passedMaxValue=0.5)</td></tr>
+<tr class="separator:ac9d289c5eb1ca4c481a61d340b9f25af"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a143ff88fbbe1cb0c44b1e7f05cfcbac6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToDiskMesh.html#a143ff88fbbe1cb0c44b1e7f05cfcbac6">setLevelSet</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedLevelSet)</td></tr>
 <tr class="separator:a143ff88fbbe1cb0c44b1e7f05cfcbac6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a49af8457ac6df369b6b6215a7f16dde4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToDiskMesh.html#a49af8457ac6df369b6b6215a7f16dde4">setMesh</a> (<a class="el" href="classlsMesh.html">lsMesh</a> &amp;passedMesh)</td></tr>
 <tr class="separator:a49af8457ac6df369b6b6215a7f16dde4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a518310ad106cefecd7e01eb91cbc2f9b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToDiskMesh.html#a518310ad106cefecd7e01eb91cbc2f9b">setMaxValue</a> (const T passedMaxValue)</td></tr>
+<tr class="separator:a518310ad106cefecd7e01eb91cbc2f9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4f4e7532e5050046a982dc7bd3a68f40"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToDiskMesh.html#a4f4e7532e5050046a982dc7bd3a68f40">apply</a> ()</td></tr>
 <tr class="separator:a4f4e7532e5050046a982dc7bd3a68f40"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -147,8 +149,8 @@ template&lt;class T , int D&gt; </div>
 
 </div>
 </div>
-<a id="adc5b81f6a8e240fefd787e74e626db3a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adc5b81f6a8e240fefd787e74e626db3a">&#9670;&nbsp;</a></span>lsToDiskMesh() <span class="overload">[2/2]</span></h2>
+<a id="ac9d289c5eb1ca4c481a61d340b9f25af"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac9d289c5eb1ca4c481a61d340b9f25af">&#9670;&nbsp;</a></span>lsToDiskMesh() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -168,7 +170,13 @@ template&lt;class T , int D&gt; </div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="classlsMesh.html">lsMesh</a> &amp;&#160;</td>
-          <td class="paramname"><em>passedMesh</em>&#160;</td>
+          <td class="paramname"><em>passedMesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">T&#160;</td>
+          <td class="paramname"><em>passedMaxValue</em> = <code>0.5</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -231,6 +239,34 @@ template&lt;class T , int D&gt; </div>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
           <td class="paramname"><em>passedLevelSet</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a518310ad106cefecd7e01eb91cbc2f9b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a518310ad106cefecd7e01eb91cbc2f9b">&#9670;&nbsp;</a></span>setMaxValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsToDiskMesh.html">lsToDiskMesh</a>&lt; T, D &gt;::setMaxValue </td>
+          <td>(</td>
+          <td class="paramtype">const T&#160;</td>
+          <td class="paramname"><em>passedMaxValue</em></td><td>)</td>
           <td></td>
         </tr>
       </table>

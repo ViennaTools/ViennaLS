@@ -12,54 +12,52 @@
 #include <lsMessage.hpp>
 
 /// This algorithm is used to compute the normal vectors for all points
-/// defined in the level set. The result is saved in the lsDomain and
+/// with level set values <= 0.5. The result is saved in the lsDomain and
 /// can be retrieved with lsDomain.getNormalVectors().
 /// Since neighbors in each cartesian direction are necessary for
 /// the calculation, the levelset width must be >=3.
 template <class T, int D> class lsCalculateNormalVectors {
-  lsDomain<T, D> *domain = nullptr;
-  bool onlyActivePoints = false;
+  lsDomain<T, D> *levelSet = nullptr;
+  T maxValue = 0.5;
 
 public:
   lsCalculateNormalVectors() {}
 
-  lsCalculateNormalVectors(lsDomain<T, D> &passedDomain,
-                           bool passedOnlyActivePoints = false)
-      : domain(&passedDomain), onlyActivePoints(passedOnlyActivePoints) {}
+  lsCalculateNormalVectors(lsDomain<T, D> &passedLevelSet,
+                           T passedMaxValue = 0.5)
+      : levelSet(&passedLevelSet), maxValue(passedMaxValue) {}
 
-  void setLevelSet(lsDomain<T, D> &passedDomain) { domain = &passedDomain; }
-
-  /// Set whether normal vectors should only be calculated for level set
-  /// points <=0.5. Defaults to false.
-  void setOnlyActivePoints(bool passedOnlyActivePoints) {
-    onlyActivePoints = passedOnlyActivePoints;
+  void setLevelSet(lsDomain<T, D> &passedLevelSet) {
+    levelSet = &passedLevelSet;
   }
 
+  void setMaxValue(const T passedMaxValue) { maxValue = passedMaxValue; }
+
   void apply() {
-    if (domain == nullptr) {
+    if (levelSet == nullptr) {
       lsMessage::getInstance()
           .addWarning("No level set was passed to lsCalculateNormalVectors.")
           .print();
     }
 
-    if (domain->getLevelSetWidth() < 3) {
+    if (levelSet->getLevelSetWidth() < (maxValue * 4) + 1) {
       lsMessage::getInstance()
           .addWarning("lsCalculateNormalVectors: Level set width must be "
-                      "greater than 2!")
+                      "greater than " +
+                      std::to_string((maxValue * 4) + 1) + " 2!")
           .print();
     }
 
     std::vector<std::vector<std::array<T, D>>> normalVectorsVector(
-        domain->getNumberOfSegments());
+        levelSet->getNumberOfSegments());
     double pointsPerSegment =
-        double(2 * domain->getDomain().getNumberOfPoints()) /
-        double(domain->getLevelSetWidth() *
-               domain->getDomain().getNumberOfSegments());
+        double(2 * levelSet->getDomain().getNumberOfPoints()) /
+        double(levelSet->getLevelSetWidth());
 
-    auto grid = domain->getGrid();
+    auto grid = levelSet->getGrid();
 
     //! Calculate Normalvectors
-#pragma omp parallel num_threads(domain->getNumberOfSegments())
+#pragma omp parallel num_threads(levelSet->getNumberOfSegments())
     {
       int p = 0;
 #ifdef _OPENMP
@@ -71,21 +69,26 @@ public:
 
       hrleVectorType<hrleIndexType, D> startVector =
           (p == 0) ? grid.getMinGridPoint()
-                   : domain->getDomain().getSegmentation()[p - 1];
+                   : levelSet->getDomain().getSegmentation()[p - 1];
 
       hrleVectorType<hrleIndexType, D> endVector =
-          (p != static_cast<int>(domain->getNumberOfSegments() - 1))
-              ? domain->getDomain().getSegmentation()[p]
+          (p != static_cast<int>(levelSet->getNumberOfSegments() - 1))
+              ? levelSet->getDomain().getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
       for (hrleConstSparseStarIterator<typename lsDomain<T, D>::DomainType>
-               neighborIt(domain->getDomain(), startVector);
+               neighborIt(levelSet->getDomain(), startVector);
            neighborIt.getIndices() < endVector; neighborIt.next()) {
 
         auto &center = neighborIt.getCenter();
-        if (!center.isDefined() ||
-            (onlyActivePoints && std::abs(center.getValue()) > 0.5))
+        if (!center.isDefined()) {
           continue;
+        } else if (std::abs(center.getValue()) > maxValue) {
+          // push an empty vector to keep ordering correct
+          std::array<T, D> tmp = {};
+          normalVectors.push_back(tmp);
+          continue;
+        }
 
         std::array<T, D> n;
 
@@ -98,8 +101,9 @@ public:
         }
 
         denominator = std::sqrt(denominator);
-        if(std::abs(denominator) < 1e-12){
-          for(unsigned i=0; i<D; ++i) n[i] = 0.;
+        if (std::abs(denominator) < 1e-12) {
+          for (unsigned i = 0; i < D; ++i)
+            n[i] = 0.;
         } else {
           for (unsigned i = 0; i < D; ++i) {
             n[i] /= denominator;
@@ -111,15 +115,15 @@ public:
     }
 
     // copy all normals
-    auto &normals = domain->getNormalVectors();
+    auto &normals = levelSet->getNormalVectors();
     normals.clear();
     unsigned numberOfNormals = 0;
-    for (unsigned i = 0; i < domain->getNumberOfSegments(); ++i) {
+    for (unsigned i = 0; i < levelSet->getNumberOfSegments(); ++i) {
       numberOfNormals += normalVectorsVector[i].size();
     }
     normals.reserve(numberOfNormals);
 
-    for (unsigned i = 0; i < domain->getNumberOfSegments(); ++i) {
+    for (unsigned i = 0; i < levelSet->getNumberOfSegments(); ++i) {
       normals.insert(normals.end(), normalVectorsVector[i].begin(),
                      normalVectorsVector[i].end());
     }

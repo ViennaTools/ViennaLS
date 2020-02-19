@@ -10,8 +10,8 @@ set(ViennaLS_COMMON_TARGET ${PROJECT_NAME})
 find_package(ViennaHRLE REQUIRED)
 find_package(ViennaLS REQUIRED)
 
-option(VIENNALS_BUILD_PYTHON_2_7 "Build for python2.7." OFF)
-option(VIENNALS_BUILD_PYTHON_3_6 "Build for python3.6. Trumps python2.7 build." OFF)
+option(VIENNALS_BUILD_PYTHON_2_7 "Build for python2.x." OFF)
+option(VIENNALS_BUILD_PYTHON_3_6 "Build for python3.x. Trumps python2.x build." OFF)
 
 set(VIENNALS_PYTHON_SOURCE "pyWrap.cpp")
 set(VIENNALS_PYTHON_MODULE_NAME "viennaLS")

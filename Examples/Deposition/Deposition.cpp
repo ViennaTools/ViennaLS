@@ -117,13 +117,5 @@ int main() {
   // std::cout << "Number of Advection steps taken: " << advectionSteps
   // << std::endl;
 
-  // {
-  //   std::cout << "Extracting..." << std::endl;
-  //   lsMesh mesh;
-  //   lsToSurfaceMesh<double, D>(newLayer, mesh).apply();
-  //
-  //   lsVTKWriter(mesh, "grown.vtk").apply();
-  // }
-
   return 0;
 }

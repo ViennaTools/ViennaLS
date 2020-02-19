@@ -151,6 +151,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a1b8d18c724f766b6d89b421c130544a3"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classlsDomain.html#acd1ed71ed408b19ab82f4b33db28a20d">GridType</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a1b8d18c724f766b6d89b421c130544a3">getGrid</a> () const</td></tr>
 <tr class="memdesc:a1b8d18c724f766b6d89b421c130544a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">get reference to the grid on which the levelset is defined  <a href="classlsDomain.html#a1b8d18c724f766b6d89b421c130544a3">More...</a><br /></td></tr>
 <tr class="separator:a1b8d18c724f766b6d89b421c130544a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a17da935be733bf5d51f11a5c5b8c25ae"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classlsDomain.html#acd1ed71ed408b19ab82f4b33db28a20d">GridType</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a17da935be733bf5d51f11a5c5b8c25ae">getGrid</a> ()</td></tr>
+<tr class="memdesc:a17da935be733bf5d51f11a5c5b8c25ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">get mutable reference to the grid on which the level set is defined  <a href="classlsDomain.html#a17da935be733bf5d51f11a5c5b8c25ae">More...</a><br /></td></tr>
+<tr class="separator:a17da935be733bf5d51f11a5c5b8c25ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abcc443a9e4a28b3f85d517b5c933da39"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classlsDomain.html#a7e989b2c137e03c4f8e09c181b6311af">DomainType</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#abcc443a9e4a28b3f85d517b5c933da39">getDomain</a> ()</td></tr>
 <tr class="memdesc:abcc443a9e4a28b3f85d517b5c933da39"><td class="mdescLeft">&#160;</td><td class="mdescRight">get const reference to the underlying hrleDomain data structure  <a href="classlsDomain.html#abcc443a9e4a28b3f85d517b5c933da39">More...</a><br /></td></tr>
 <tr class="separator:abcc443a9e4a28b3f85d517b5c933da39"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -186,6 +189,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aadf4b2701ea2e00e344872ef85389382"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#aadf4b2701ea2e00e344872ef85389382">print</a> ()</td></tr>
 <tr class="memdesc:aadf4b2701ea2e00e344872ef85389382"><td class="mdescLeft">&#160;</td><td class="mdescRight">prints basic information and all memebers of the levelset structure  <a href="classlsDomain.html#aadf4b2701ea2e00e344872ef85389382">More...</a><br /></td></tr>
 <tr class="separator:aadf4b2701ea2e00e344872ef85389382"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9dfe51a8b5d89f8da7c7f4ea68a398ea"><td class="memItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a9dfe51a8b5d89f8da7c7f4ea68a398ea">serialize</a> (std::ostream &amp;stream)</td></tr>
+<tr class="memdesc:a9dfe51a8b5d89f8da7c7f4ea68a398ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Serializes the <a class="el" href="classlsDomain.html" title="Class containing all information about the level set, including the dimensions of the domain,...">lsDomain</a> into a binary stream.  <a href="classlsDomain.html#a9dfe51a8b5d89f8da7c7f4ea68a398ea">More...</a><br /></td></tr>
+<tr class="separator:a9dfe51a8b5d89f8da7c7f4ea68a398ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a73014e5d51f5a3162d0009d56e5a5f33"><td class="memItemLeft" align="right" valign="top">std::istream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a73014e5d51f5a3162d0009d56e5a5f33">deserialize</a> (std::istream &amp;stream)</td></tr>
+<tr class="memdesc:a73014e5d51f5a3162d0009d56e5a5f33"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deserialize <a class="el" href="classlsDomain.html" title="Class containing all information about the level set, including the dimensions of the domain,...">lsDomain</a> from binary stream.  <a href="classlsDomain.html#a73014e5d51f5a3162d0009d56e5a5f33">More...</a><br /></td></tr>
+<tr class="separator:a73014e5d51f5a3162d0009d56e5a5f33"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
@@ -201,7 +210,7 @@ Static Public Attributes</h2></td></tr>
 class lsDomain&lt; T, D &gt;</h3>
 
 <p>Class containing all information about the level set, including the dimensions of the domain, boundary conditions and all data. </p>
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#_a8">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#_a8">Deposition.cpp</a>, <a class="el" href="PatternedSubstrate_8cpp-example.html#_a14">PatternedSubstrate.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#_a8">PeriodicBoundary.cpp</a>, <a class="el" href="SquareEtch_8cpp-example.html#_a8">SquareEtch.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#_a8">VoidEtching.cpp</a>.</dd>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#_a8">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#_a8">Deposition.cpp</a>, <a class="el" href="FastAdvection_8cpp-example.html#_a5">FastAdvection.cpp</a>, <a class="el" href="PatternedSubstrate_8cpp-example.html#_a14">PatternedSubstrate.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#_a8">PeriodicBoundary.cpp</a>, <a class="el" href="SquareEtch_8cpp-example.html#_a8">SquareEtch.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#_a8">VoidEtching.cpp</a>.</dd>
 </dl>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a5f260245949e4b99d9402eb9716f0089"></a>
@@ -617,6 +626,36 @@ template&lt;class T, int D&gt; </div>
 
 </div>
 </div>
+<a id="a73014e5d51f5a3162d0009d56e5a5f33"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a73014e5d51f5a3162d0009d56e5a5f33">&#9670;&nbsp;</a></span>deserialize()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T, int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::istream&amp; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;::deserialize </td>
+          <td>(</td>
+          <td class="paramtype">std::istream &amp;&#160;</td>
+          <td class="paramname"><em>stream</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Deserialize <a class="el" href="classlsDomain.html" title="Class containing all information about the level set, including the dimensions of the domain,...">lsDomain</a> from binary stream. </p>
+
+</div>
+</div>
 <a id="ad3d4f7ece6737806c42f642aa42d8309"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad3d4f7ece6737806c42f642aa42d8309">&#9670;&nbsp;</a></span>finalize() <span class="overload">[1/2]</span></h2>
 
@@ -732,8 +771,37 @@ template&lt;class T, int D&gt; </div>
 
 </div>
 </div>
+<a id="a17da935be733bf5d51f11a5c5b8c25ae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a17da935be733bf5d51f11a5c5b8c25ae">&#9670;&nbsp;</a></span>getGrid() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T, int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsDomain.html#acd1ed71ed408b19ab82f4b33db28a20d">GridType</a>&amp; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;::getGrid </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>get mutable reference to the grid on which the level set is defined </p>
+
+</div>
+</div>
 <a id="a1b8d18c724f766b6d89b421c130544a3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1b8d18c724f766b6d89b421c130544a3">&#9670;&nbsp;</a></span>getGrid()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1b8d18c724f766b6d89b421c130544a3">&#9670;&nbsp;</a></span>getGrid() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1070,6 +1138,36 @@ template&lt;class T, int D&gt; </div>
 </div><div class="memdoc">
 
 <p>prints basic information and all memebers of the levelset structure </p>
+
+</div>
+</div>
+<a id="a9dfe51a8b5d89f8da7c7f4ea68a398ea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9dfe51a8b5d89f8da7c7f4ea68a398ea">&#9670;&nbsp;</a></span>serialize()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T, int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::ostream&amp; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;::serialize </td>
+          <td>(</td>
+          <td class="paramtype">std::ostream &amp;&#160;</td>
+          <td class="paramname"><em>stream</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Serializes the <a class="el" href="classlsDomain.html" title="Class containing all information about the level set, including the dimensions of the domain,...">lsDomain</a> into a binary stream. </p>
 
 </div>
 </div>

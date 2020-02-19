@@ -291,7 +291,8 @@ public:
 
     mesh->clear();
     auto &points = pointCloud->points;
-    if(points.size() == 0) return;
+    if (points.size() == 0)
+      return;
 
     {
       // find first hull point
@@ -307,7 +308,7 @@ public:
         for (unsigned i = 0; i < points.size(); ++i) {
           if (i == currentIndex)
             continue;
-          if (std::abs(points[i][2]-points[currentIndex][2]) < 1e-7) {
+          if (std::abs(points[i][2] - points[currentIndex][2]) < 1e-7) {
             auto diff = points[currentIndex] - points[i];
             // choose closest point if points are in z plane
             double currentHullMetric = DotProduct(diff, diff);

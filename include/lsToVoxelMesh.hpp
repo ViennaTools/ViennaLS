@@ -87,7 +87,9 @@ public:
 
     calculateBounds();
 
-    std::unordered_map<hrleVectorType<hrleIndexType, D>, size_t, typename hrleVectorType<hrleIndexType, D>::hash> pointIdMapping;
+    std::unordered_map<hrleVectorType<hrleIndexType, D>, size_t,
+                       typename hrleVectorType<hrleIndexType, D>::hash>
+        pointIdMapping;
     size_t currentPointId = 0;
 
     // prepare mesh for material ids

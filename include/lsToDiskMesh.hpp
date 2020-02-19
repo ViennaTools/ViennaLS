@@ -8,6 +8,7 @@
 #include <lsCalculateNormalVectors.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
+#include <lsMesh.hpp>
 
 /// This class creates a mesh from the level set
 /// with all grid points with a level set value <= 0.5.
@@ -20,18 +21,23 @@ template <class T, int D> class lsToDiskMesh {
 
   lsDomain<T, D> *levelSet = nullptr;
   lsMesh *mesh = nullptr;
+  T maxValue = 0.5;
 
 public:
   lsToDiskMesh() {}
 
-  lsToDiskMesh(lsDomain<T, D> &passedLevelSet, lsMesh &passedMesh)
-      : levelSet(&passedLevelSet), mesh(&passedMesh) {}
+  lsToDiskMesh(lsDomain<T, D> &passedLevelSet, lsMesh &passedMesh,
+               T passedMaxValue = 0.5)
+      : levelSet(&passedLevelSet), mesh(&passedMesh), maxValue(passedMaxValue) {
+  }
 
   void setLevelSet(lsDomain<T, D> &passedLevelSet) {
     levelSet = &passedLevelSet;
   }
 
   void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
+
+  void setMaxValue(const T passedMaxValue) { maxValue = passedMaxValue; }
 
   void apply() {
     if (levelSet == nullptr) {
@@ -49,8 +55,8 @@ public:
 
     mesh->clear();
 
-    lsExpand<T, D>(*levelSet, 3).apply();
-    lsCalculateNormalVectors<T, D>(*levelSet, true).apply();
+    lsExpand<T, D>(*levelSet, (maxValue * 4) + 1).apply();
+    lsCalculateNormalVectors<T, D>(*levelSet, maxValue).apply();
 
     const T gridDelta = levelSet->getGrid().getGridDelta();
     const auto &normalVectors = levelSet->getNormalVectors();
@@ -60,12 +66,13 @@ public:
     std::vector<double> gridSpacing(normalVectors.size());
     std::vector<std::array<double, 3>> normals(normalVectors.size());
 
-    unsigned pointId = 0;
-
     for (hrleConstSparseIterator<hrleDomainType> it(levelSet->getDomain());
          !it.isFinished(); ++it) {
-      if (!it.isDefined() || (std::abs(it.getValue()) > 0.5))
+      if (!it.isDefined() || std::abs(it.getValue()) > maxValue) {
         continue;
+      }
+
+      unsigned pointId = it.getPointId();
 
       // insert vertex
       std::array<unsigned, 1> vertex;
@@ -76,12 +83,22 @@ public:
       // normal vector
       std::array<double, 3> node;
       node[2] = 0.;
+      double max = 0.;
       for (unsigned i = 0; i < D; ++i) {
         // original position
         node[i] = double(it.getStartIndices(i)) * gridDelta;
-        // shift position
-        node[i] -= it.getValue() * gridDelta * normalVectors[pointId][i];
+
+        if (std::abs(normalVectors[pointId][i]) > max) {
+          max = std::abs(normalVectors[pointId][i]);
+        }
       }
+
+      // now normalize vector to scale position correctly to manhatten distance
+      double scaling = it.getValue() * gridDelta * max;
+      for (unsigned i = 0; i < D; ++i) {
+        node[i] -= scaling * normalVectors[pointId][i];
+      }
+
       mesh->insertNextNode(node);
 
       // add data into mesh
@@ -93,8 +110,6 @@ public:
       for (unsigned i = 0; i < D; ++i) {
         normals[pointId][i] = normalVectors[pointId][i];
       }
-
-      ++pointId;
     }
 
     mesh->insertNextScalarData(values, "LSValues");

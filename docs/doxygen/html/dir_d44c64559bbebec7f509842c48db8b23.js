@@ -11,14 +11,20 @@ var dir_d44c64559bbebec7f509842c48db8b23 =
     [ "lsConvexHull.hpp", "lsConvexHull_8hpp.html", [
       [ "lsConvexHull", "classlsConvexHull.html", "classlsConvexHull" ]
     ] ],
-    [ "lsDomain.hpp", "lsDomain_8hpp.html", [
-      [ "lsDomain", "classlsDomain.html", "classlsDomain" ]
-    ] ],
+    [ "lsDomain.hpp", "lsDomain_8hpp.html", "lsDomain_8hpp" ],
     [ "lsEnquistOsher.hpp", "lsEnquistOsher_8hpp.html", [
       [ "lsEnquistOsher", "classlsInternal_1_1lsEnquistOsher.html", "classlsInternal_1_1lsEnquistOsher" ]
     ] ],
     [ "lsExpand.hpp", "lsExpand_8hpp.html", [
       [ "lsExpand", "classlsExpand.html", "classlsExpand" ]
+    ] ],
+    [ "lsFastAdvect.hpp", "lsFastAdvect_8hpp.html", [
+      [ "lsFastAdvect", "classlsFastAdvect.html", "classlsFastAdvect" ]
+    ] ],
+    [ "lsFastAdvectDistributions.hpp", "lsFastAdvectDistributions_8hpp.html", [
+      [ "lsFastAdvectDistribution", "classlsFastAdvectDistribution.html", "classlsFastAdvectDistribution" ],
+      [ "lsSphereDistribution", "classlsSphereDistribution.html", "classlsSphereDistribution" ],
+      [ "lsBoxDistribution", "classlsBoxDistribution.html", "classlsBoxDistribution" ]
     ] ],
     [ "lsFileFormats.hpp", "lsFileFormats_8hpp.html", "lsFileFormats_8hpp" ],
     [ "lsFiniteDifferences.hpp", "lsFiniteDifferences_8hpp.html", "lsFiniteDifferences_8hpp" ],
@@ -72,6 +78,9 @@ var dir_d44c64559bbebec7f509842c48db8b23 =
     [ "lsPrune.hpp", "lsPrune_8hpp.html", [
       [ "lsPrune", "classlsPrune.html", "classlsPrune" ]
     ] ],
+    [ "lsReader.hpp", "lsReader_8hpp.html", [
+      [ "lsReader", "classlsReader.html", "classlsReader" ]
+    ] ],
     [ "lsReduce.hpp", "lsReduce_8hpp.html", [
       [ "lsReduce", "classlsReduce.html", "classlsReduce" ]
     ] ],
@@ -88,7 +97,6 @@ var dir_d44c64559bbebec7f509842c48db8b23 =
       [ "lsToSurfaceMesh", "classlsToSurfaceMesh.html", "classlsToSurfaceMesh" ]
     ] ],
     [ "lsToVoxelMesh.hpp", "lsToVoxelMesh_8hpp.html", [
-      [ "hash< hrleVectorType< hrleIndexType, D > >", "structstd_1_1hash_3_01hrleVectorType_3_01hrleIndexType_00_01D_01_4_01_4.html", "structstd_1_1hash_3_01hrleVectorType_3_01hrleIndexType_00_01D_01_4_01_4" ],
       [ "lsToVoxelMesh", "classlsToVoxelMesh.html", "classlsToVoxelMesh" ]
     ] ],
     [ "lsVelocityField.hpp", "lsVelocityField_8hpp.html", [
@@ -99,5 +107,8 @@ var dir_d44c64559bbebec7f509842c48db8b23 =
     ] ],
     [ "lsVTKWriter.hpp", "lsVTKWriter_8hpp.html", [
       [ "lsVTKWriter", "classlsVTKWriter.html", "classlsVTKWriter" ]
+    ] ],
+    [ "lsWriter.hpp", "lsWriter_8hpp.html", [
+      [ "lsWriter", "classlsWriter.html", "classlsWriter" ]
     ] ]
 ];

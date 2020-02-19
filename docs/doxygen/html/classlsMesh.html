@@ -202,6 +202,13 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a339e714241c57052d70efd59fb56a450"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a197658654734702984728ca31cc9e975"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#a197658654734702984728ca31cc9e975">append</a> (const <a class="el" href="classlsPointData.html">lsPointData</a> &amp;passedData)</td></tr>
 <tr class="separator:a197658654734702984728ca31cc9e975"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae074c8aa7ac4bdb5def8046dfe2f575f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#ae074c8aa7ac4bdb5def8046dfe2f575f">empty</a> ()</td></tr>
+<tr class="separator:ae074c8aa7ac4bdb5def8046dfe2f575f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1fc60f4fb8abd13f7d7e11ef6a033d19"><td class="memItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#a1fc60f4fb8abd13f7d7e11ef6a033d19">serialize</a> (std::ostream &amp;stream)</td></tr>
+<tr class="memdesc:a1fc60f4fb8abd13f7d7e11ef6a033d19"><td class="mdescLeft">&#160;</td><td class="mdescRight">Serialize <a class="el" href="classlsPointData.html" title="This class holds data associated with points in space.">lsPointData</a> into a binary stream.  <a href="classlsPointData.html#a1fc60f4fb8abd13f7d7e11ef6a033d19">More...</a><br /></td></tr>
+<tr class="separator:a1fc60f4fb8abd13f7d7e11ef6a033d19"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a68f5389c5c95019ba65cdd34729791c1"><td class="memItemLeft" align="right" valign="top">std::istream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#a68f5389c5c95019ba65cdd34729791c1">deserialize</a> (std::istream &amp;stream)</td></tr>
+<tr class="separator:a68f5389c5c95019ba65cdd34729791c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -220,7 +227,7 @@ Public Attributes</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>This class holds an explicit mesh, which is always given in 3 dimensions. If it describes a 2D mesh, the third dimension is set to 0. Vertices, Lines, Triangles, Tetras &amp; Hexas are supported as geometric elements. </p>
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#_a15">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#_a22">Deposition.cpp</a>, <a class="el" href="PatternedSubstrate_8cpp-example.html#_a4">PatternedSubstrate.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#_a16">PeriodicBoundary.cpp</a>, <a class="el" href="SharedLib_8cpp-example.html#_a3">SharedLib.cpp</a>, <a class="el" href="SquareEtch_8cpp-example.html#_a23">SquareEtch.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#_a23">VoidEtching.cpp</a>.</dd>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#_a15">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#_a22">Deposition.cpp</a>, <a class="el" href="FastAdvection_8cpp-example.html#_a19">FastAdvection.cpp</a>, <a class="el" href="PatternedSubstrate_8cpp-example.html#_a4">PatternedSubstrate.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#_a16">PeriodicBoundary.cpp</a>, <a class="el" href="SharedLib_8cpp-example.html#_a3">SharedLib.cpp</a>, <a class="el" href="SquareEtch_8cpp-example.html#_a23">SquareEtch.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#_a23">VoidEtching.cpp</a>.</dd>
 </dl>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a4a7e6df1e02124bf6aeb8eea86266183"></a>
@@ -339,6 +346,57 @@ Public Attributes</h2></td></tr>
   </td>
   <td class="mlabels-right">
 <span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a68f5389c5c95019ba65cdd34729791c1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a68f5389c5c95019ba65cdd34729791c1">&#9670;&nbsp;</a></span>deserialize()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::istream&amp; lsPointData::deserialize </td>
+          <td>(</td>
+          <td class="paramtype">std::istream &amp;&#160;</td>
+          <td class="paramname"><em>stream</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae074c8aa7ac4bdb5def8046dfe2f575f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae074c8aa7ac4bdb5def8046dfe2f575f">&#9670;&nbsp;</a></span>empty()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool lsPointData::empty </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
@@ -1253,6 +1311,34 @@ template&lt;int D, typename std::enable_if&lt; D==8, int &gt;::type  = 0&gt; </d
   </tr>
 </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="a1fc60f4fb8abd13f7d7e11ef6a033d19"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1fc60f4fb8abd13f7d7e11ef6a033d19">&#9670;&nbsp;</a></span>serialize()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::ostream&amp; lsPointData::serialize </td>
+          <td>(</td>
+          <td class="paramtype">std::ostream &amp;&#160;</td>
+          <td class="paramname"><em>stream</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Serialize <a class="el" href="classlsPointData.html" title="This class holds data associated with points in space.">lsPointData</a> into a binary stream. </p>
 
 </div>
 </div>

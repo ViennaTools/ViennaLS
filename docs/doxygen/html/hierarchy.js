@@ -1,6 +1,5 @@
 var hierarchy =
 [
-    [ "std::hash< hrleVectorType< hrleIndexType, D > >", "structstd_1_1hash_3_01hrleVectorType_3_01hrleIndexType_00_01D_01_4_01_4.html", null ],
     [ "lsFromSurfaceMesh< T, D >::box::iterator", "classlsFromSurfaceMesh_1_1box_1_1iterator.html", null ],
     [ "lsAdvect< T, D >", "classlsAdvect.html", null ],
     [ "lsBooleanOperation< T, D >", "classlsBooleanOperation.html", null ],
@@ -11,6 +10,12 @@ var hierarchy =
     [ "lsDomain< T, D >", "classlsDomain.html", null ],
     [ "lsInternal::lsEnquistOsher< T, D, order >", "classlsInternal_1_1lsEnquistOsher.html", null ],
     [ "lsExpand< T, D >", "classlsExpand.html", null ],
+    [ "lsFastAdvect< T, D >", "classlsFastAdvect.html", null ],
+    [ "lsFastAdvectDistribution< T, D >", "classlsFastAdvectDistribution.html", [
+      [ "lsBoxDistribution< T, D >", "classlsBoxDistribution.html", null ],
+      [ "lsSphereDistribution< T, D >", "classlsSphereDistribution.html", null ]
+    ] ],
+    [ "lsFastAdvectDistribution< hrleCoordType, D >", "classlsFastAdvectDistribution.html", null ],
     [ "lsInternal::lsFiniteDifferences< T, scheme >", "classlsInternal_1_1lsFiniteDifferences.html", null ],
     [ "lsFromSurfaceMesh< T, D >", "classlsFromSurfaceMesh.html", null ],
     [ "lsFromVolumeMesh< T, D >", "classlsFromVolumeMesh.html", null ],
@@ -29,6 +34,7 @@ var hierarchy =
       [ "lsMesh", "classlsMesh.html", null ]
     ] ],
     [ "lsPrune< T, D >", "classlsPrune.html", null ],
+    [ "lsReader< T, D >", "classlsReader.html", null ],
     [ "lsReduce< T, D >", "classlsReduce.html", null ],
     [ "lsSphere< T, D >", "classlsSphere.html", null ],
     [ "lsInternal::lsStencilLocalLaxFriedrichsScalar< T, D, order >", "classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar.html", null ],
@@ -43,5 +49,6 @@ var hierarchy =
     ] ],
     [ "lsVelocityField< double >", "classlsVelocityField.html", null ],
     [ "lsVTKReader", "classlsVTKReader.html", null ],
-    [ "lsVTKWriter", "classlsVTKWriter.html", null ]
+    [ "lsVTKWriter", "classlsVTKWriter.html", null ],
+    [ "lsWriter< T, D >", "classlsWriter.html", null ]
 ];

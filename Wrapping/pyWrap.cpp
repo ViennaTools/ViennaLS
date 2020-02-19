@@ -22,6 +22,8 @@
 #include <lsConvexHull.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
+#include <lsFastAdvect.hpp>
+#include <lsFastAdvectDistributions.hpp>
 #include <lsFileFormats.hpp>
 #include <lsFromSurfaceMesh.hpp>
 #include <lsFromVolumeMesh.hpp>
@@ -64,6 +66,26 @@ public:
                                const vectorType &normalVector) override {
     PYBIND11_OVERLOAD(vectorType, lsVelocityField<T>, getVectorVelocity,
                       coordinate, material, normalVector);
+  }
+};
+
+// lsFastAdvectDistribution
+class PylsFastAdvectDistribution : public lsFastAdvectDistribution<T, D> {
+  typedef std::array<hrleCoordType, D> vectorType;
+  typedef lsFastAdvectDistribution<T, D> ClassType;
+  using lsFastAdvectDistribution<T, D>::lsFastAdvectDistribution;
+
+public:
+  bool isInside(const vectorType &v, double eps = 0.) const override {
+    PYBIND11_OVERLOAD_PURE(bool, ClassType, isInside, v, eps);
+  }
+
+  T getSignedDistance(const vectorType &v) const override {
+    PYBIND11_OVERLOAD_PURE(T, ClassType, getSignedDistance, v);
+  }
+
+  void getBounds(std::array<hrleCoordType, 2 * D> &bounds) const override {
+    PYBIND11_OVERLOAD_PURE(void, ClassType, getBounds, bounds);
   }
 };
 
@@ -185,14 +207,9 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       // constructors
       .def(pybind11::init<>())
       .def(pybind11::init<lsDomain<T, D> &>())
-      .def(pybind11::init<lsDomain<T, D> &, bool>())
       // methods
       .def("setLevelSet", &lsCalculateNormalVectors<T, D>::setLevelSet,
            "Set levelset for which to calculate normal vectors.")
-      .def("setOnlyActivePoints",
-           &lsCalculateNormalVectors<T, D>::setOnlyActivePoints,
-           "Set whether normal vectors should only be calculated for level set "
-           "points <0.5.")
       .def("apply", &lsCalculateNormalVectors<T, D>::apply,
            "Perform normal vector calculation.");
 
@@ -250,6 +267,21 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("clearMetaData", &lsDomain<T, D>::clearMetaData,
            "Clear all metadata stored in the level set.")
       .def("print", &lsDomain<T, D>::print, "Print level set structure.");
+
+  // lsFastAdvect
+  pybind11::class_<lsFastAdvect<T, D>>(module, "lsFastAdvect")
+      // constructors
+      .def(pybind11::init<>())
+      .def(pybind11::init<lsDomain<T, D> &,
+                          lsFastAdvectDistribution<hrleCoordType, D> &>())
+      // methods
+      .def("setLevelSet", &lsFastAdvect<T, D>::setLevelSet,
+           "Set levelset to advect.")
+      .def(
+          "setAdvectionDistribution",
+          &lsFastAdvect<T, D>::setAdvectionDistribution,
+          "Set advection distribution to use as kernel for the fast advection.")
+      .def("apply", &lsFastAdvect<T, D>::apply, "Perform advection.");
 
   // lsExpand
   pybind11::class_<lsExpand<T, D>>(module, "lsExpand")

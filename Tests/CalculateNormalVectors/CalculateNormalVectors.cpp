@@ -52,17 +52,15 @@ int main() {
 
   // normal vectors are only valid as long as the underlying
   // level set does not change
-  lsCalculateNormalVectors<double, 3>(sphere1, true).apply();
+  lsCalculateNormalVectors<double, 3>(sphere1).apply();
   auto &normalVectors = sphere1.getNormalVectors();
-
-  std::cout << "Number of Normal vectors: " << normalVectors.size()
-            << std::endl;
 
   lsMesh mesh;
   lsToMesh<double, 3>(sphere1, mesh, true, true).apply();
 
   // also output LS values as scalar data
   std::vector<double> scalars;
+  std::vector<std::array<double, 3>> vectors;
   for (hrleConstSparseIterator<lsDomain<double, D>::DomainType> it(
            sphere1.getDomain());
        !it.isFinished(); ++it) {
@@ -70,11 +68,12 @@ int main() {
       continue;
 
     scalars.push_back(double(it.getValue()));
+    vectors.push_back(normalVectors[it.getPointId()]);
   }
   mesh.insertNextScalarData(scalars, "LSValues");
 
   // set normal vectors as vectordata to mesh
-  mesh.insertNextVectorData(normalVectors, "Normals");
+  mesh.insertNextVectorData(vectors, "Normals");
 
   auto writer = lsVTKWriter();
   writer.setMesh(mesh);
