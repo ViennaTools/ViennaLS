@@ -94,7 +94,7 @@ $(document).ready(function(){initNavTree('classlsCalculateNormalVectors.html',''
 </div><!--header-->
 <div class="contents">
 
-<p>This algorithm is used to compute the normal vectors for all points defined in the level set. The result is saved in the <a class="el" href="classlsDomain.html" title="Class containing all information about the level set, including the dimensions of the domain,...">lsDomain</a> and can be retrieved with <a class="el" href="classlsDomain.html#a50df1038d697f24ae4d4dba6540ce802" title="get reference to the normalVectors of all points">lsDomain.getNormalVectors()</a>. Since neighbors in each cartesian direction are necessary for the calculation, the levelset width must be &gt;=3.  
+<p>This algorithm is used to compute the normal vectors for all points with level set values &lt;= 0.5. The result is saved in the <a class="el" href="classlsDomain.html" title="Class containing all information about the level set, including the dimensions of the domain,...">lsDomain</a> and can be retrieved with <a class="el" href="classlsDomain.html#a50df1038d697f24ae4d4dba6540ce802" title="get reference to the normalVectors of all points">lsDomain.getNormalVectors()</a>. Since neighbors in each cartesian direction are necessary for the calculation, the levelset width must be &gt;=3.  
  <a href="classlsCalculateNormalVectors.html#details">More...</a></p>
 
 <p><code>#include &lt;lsCalculateNormalVectors.hpp&gt;</code></p>
@@ -103,13 +103,12 @@ $(document).ready(function(){initNavTree('classlsCalculateNormalVectors.html',''
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a83f4d828940212da64e23c9e13849839"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsCalculateNormalVectors.html#a83f4d828940212da64e23c9e13849839">lsCalculateNormalVectors</a> ()</td></tr>
 <tr class="separator:a83f4d828940212da64e23c9e13849839"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4f023d3967f709611984adebbc60aeaa"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsCalculateNormalVectors.html#a4f023d3967f709611984adebbc60aeaa">lsCalculateNormalVectors</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedDomain, bool passedOnlyActivePoints=false)</td></tr>
-<tr class="separator:a4f023d3967f709611984adebbc60aeaa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2d6c6da049e7dd0d6af36ea19ab3f4b2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsCalculateNormalVectors.html#a2d6c6da049e7dd0d6af36ea19ab3f4b2">setLevelSet</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedDomain)</td></tr>
-<tr class="separator:a2d6c6da049e7dd0d6af36ea19ab3f4b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a77ae8d4eeb6ff7a09893e367de65d951"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsCalculateNormalVectors.html#a77ae8d4eeb6ff7a09893e367de65d951">setOnlyActivePoints</a> (bool passedOnlyActivePoints)</td></tr>
-<tr class="memdesc:a77ae8d4eeb6ff7a09893e367de65d951"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set whether normal vectors should only be calculated for level set points &lt;=0.5. Defaults to false.  <a href="classlsCalculateNormalVectors.html#a77ae8d4eeb6ff7a09893e367de65d951">More...</a><br /></td></tr>
-<tr class="separator:a77ae8d4eeb6ff7a09893e367de65d951"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1d70a5fe578b734c336035c4976582f7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsCalculateNormalVectors.html#a1d70a5fe578b734c336035c4976582f7">lsCalculateNormalVectors</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedLevelSet, T passedMaxValue=0.5)</td></tr>
+<tr class="separator:a1d70a5fe578b734c336035c4976582f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a05ec008d2d7ac137e1aacd29828cdb18"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsCalculateNormalVectors.html#a05ec008d2d7ac137e1aacd29828cdb18">setLevelSet</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedLevelSet)</td></tr>
+<tr class="separator:a05ec008d2d7ac137e1aacd29828cdb18"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a92100e8acaca1a49e4f15e8dd1be7689"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsCalculateNormalVectors.html#a92100e8acaca1a49e4f15e8dd1be7689">setMaxValue</a> (const T passedMaxValue)</td></tr>
+<tr class="separator:a92100e8acaca1a49e4f15e8dd1be7689"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad613a081f288a83097fdbcfeb5b20825"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsCalculateNormalVectors.html#ad613a081f288a83097fdbcfeb5b20825">apply</a> ()</td></tr>
 <tr class="separator:ad613a081f288a83097fdbcfeb5b20825"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -117,7 +116,7 @@ Public Member Functions</h2></td></tr>
 <div class="textblock"><h3>template&lt;class T, int D&gt;<br />
 class lsCalculateNormalVectors&lt; T, D &gt;</h3>
 
-<p>This algorithm is used to compute the normal vectors for all points defined in the level set. The result is saved in the <a class="el" href="classlsDomain.html" title="Class containing all information about the level set, including the dimensions of the domain,...">lsDomain</a> and can be retrieved with <a class="el" href="classlsDomain.html#a50df1038d697f24ae4d4dba6540ce802" title="get reference to the normalVectors of all points">lsDomain.getNormalVectors()</a>. Since neighbors in each cartesian direction are necessary for the calculation, the levelset width must be &gt;=3. </p>
+<p>This algorithm is used to compute the normal vectors for all points with level set values &lt;= 0.5. The result is saved in the <a class="el" href="classlsDomain.html" title="Class containing all information about the level set, including the dimensions of the domain,...">lsDomain</a> and can be retrieved with <a class="el" href="classlsDomain.html#a50df1038d697f24ae4d4dba6540ce802" title="get reference to the normalVectors of all points">lsDomain.getNormalVectors()</a>. Since neighbors in each cartesian direction are necessary for the calculation, the levelset width must be &gt;=3. </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a83f4d828940212da64e23c9e13849839"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a83f4d828940212da64e23c9e13849839">&#9670;&nbsp;</a></span>lsCalculateNormalVectors() <span class="overload">[1/2]</span></h2>
@@ -146,8 +145,8 @@ template&lt;class T , int D&gt; </div>
 
 </div>
 </div>
-<a id="a4f023d3967f709611984adebbc60aeaa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4f023d3967f709611984adebbc60aeaa">&#9670;&nbsp;</a></span>lsCalculateNormalVectors() <span class="overload">[2/2]</span></h2>
+<a id="a1d70a5fe578b734c336035c4976582f7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1d70a5fe578b734c336035c4976582f7">&#9670;&nbsp;</a></span>lsCalculateNormalVectors() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -161,13 +160,13 @@ template&lt;class T , int D&gt; </div>
           <td class="memname"><a class="el" href="classlsCalculateNormalVectors.html">lsCalculateNormalVectors</a>&lt; T, D &gt;::<a class="el" href="classlsCalculateNormalVectors.html">lsCalculateNormalVectors</a> </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
-          <td class="paramname"><em>passedDomain</em>, </td>
+          <td class="paramname"><em>passedLevelSet</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>passedOnlyActivePoints</em> = <code>false</code>&#160;</td>
+          <td class="paramtype">T&#160;</td>
+          <td class="paramname"><em>passedMaxValue</em> = <code>0.5</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -213,8 +212,8 @@ template&lt;class T , int D&gt; </div>
 
 </div>
 </div>
-<a id="a2d6c6da049e7dd0d6af36ea19ab3f4b2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2d6c6da049e7dd0d6af36ea19ab3f4b2">&#9670;&nbsp;</a></span>setLevelSet()</h2>
+<a id="a05ec008d2d7ac137e1aacd29828cdb18"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a05ec008d2d7ac137e1aacd29828cdb18">&#9670;&nbsp;</a></span>setLevelSet()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -228,7 +227,7 @@ template&lt;class T , int D&gt; </div>
           <td class="memname">void <a class="el" href="classlsCalculateNormalVectors.html">lsCalculateNormalVectors</a>&lt; T, D &gt;::setLevelSet </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
-          <td class="paramname"><em>passedDomain</em></td><td>)</td>
+          <td class="paramname"><em>passedLevelSet</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -241,8 +240,8 @@ template&lt;class T , int D&gt; </div>
 
 </div>
 </div>
-<a id="a77ae8d4eeb6ff7a09893e367de65d951"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a77ae8d4eeb6ff7a09893e367de65d951">&#9670;&nbsp;</a></span>setOnlyActivePoints()</h2>
+<a id="a92100e8acaca1a49e4f15e8dd1be7689"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a92100e8acaca1a49e4f15e8dd1be7689">&#9670;&nbsp;</a></span>setMaxValue()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -253,10 +252,10 @@ template&lt;class T , int D&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classlsCalculateNormalVectors.html">lsCalculateNormalVectors</a>&lt; T, D &gt;::setOnlyActivePoints </td>
+          <td class="memname">void <a class="el" href="classlsCalculateNormalVectors.html">lsCalculateNormalVectors</a>&lt; T, D &gt;::setMaxValue </td>
           <td>(</td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>passedOnlyActivePoints</em></td><td>)</td>
+          <td class="paramtype">const T&#160;</td>
+          <td class="paramname"><em>passedMaxValue</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -266,8 +265,6 @@ template&lt;class T , int D&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Set whether normal vectors should only be calculated for level set points &lt;=0.5. Defaults to false. </p>
 
 </div>
 </div>

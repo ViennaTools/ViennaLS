@@ -10,15 +10,15 @@ template <class T, int D> class lsFastAdvectDistribution {
 public:
   /// Quick check whether a point relative to the distributions
   /// center is inside the distribution.
-  virtual bool isInside(hrleVectorType<T, D> &v, double eps = 0.) const = 0;
+  virtual bool isInside(const std::array<hrleCoordType, D> &v, double eps = 0.) const = 0;
 
   /// Returns the signed distance of a point relative to the distributions
   /// center. This is the signed manhatten distance to the nearest surface
   /// point.
-  virtual double getSignedDistance(hrleVectorType<T, D> &v) const = 0;
+  virtual T getSignedDistance(const std::array<hrleCoordType, D> &v) const = 0;
 
   /// Sets bounds to the bounding box of the distribution.
-  virtual void getBounds(double *bounds) const = 0;
+  virtual void getBounds(std::array<hrleCoordType, 2 * D> &bounds) const = 0;
 };
 
 /// Concrete implementation of lsFastAdvectDistribution for a spherical
@@ -32,14 +32,14 @@ public:
   lsSphereDistribution(T passedRadius)
       : radius(passedRadius), radius2(radius * radius) {}
 
-  bool isInside(hrleVectorType<T, D> &v, double eps = 0.) const {
+  bool isInside(const std::array<hrleCoordType, D> &v, double eps = 0.) const {
     if (std::sqrt(DotProduct(v, v)) <= radius + eps)
       return true;
     else
       return false;
   }
 
-  double getSignedDistance(hrleVectorType<T, D> &v) const {
+  T getSignedDistance(const std::array<hrleCoordType, D> &v) const {
     T distance = std::numeric_limits<T>::max();
     for (unsigned i = 0; i < D; ++i) {
       T y = (v[(i + 1) % D]);
@@ -56,7 +56,7 @@ public:
     return distance;
   }
 
-  void getBounds(double *bounds) const {
+  void getBounds(std::array<hrleCoordType, 2 * D> &bounds) const {
     for (unsigned i = 0; i < D; ++i) {
       bounds[2 * i] = -radius;
       bounds[2 * i + 1] = radius;
@@ -66,23 +66,24 @@ public:
 
 /// Concrete implementation of lsFastAdvectDistribution
 /// for a rectangular box distribution.
-template<class T, int D> class lsBoxDistribution : public lsFastAdvectDistribution<T, D> {
+template <class T, int D>
+class lsBoxDistribution : public lsFastAdvectDistribution<T, D> {
 public:
   const hrleVectorType<T, D> posExtent;
 
   lsBoxDistribution(const hrleVectorType<T, D> halfAxes)
       : posExtent(halfAxes) {}
 
-  bool isInside(hrleVectorType<T, D> &v, double eps = 0.) const {
-    for(unsigned i = 0; i < D; ++i) {
-      if(std::abs(v[i]) > (posExtent[i] + eps)) {
+  bool isInside(const std::array<hrleCoordType, D> &v, double eps = 0.) const {
+    for (unsigned i = 0; i < D; ++i) {
+      if (std::abs(v[i]) > (posExtent[i] + eps)) {
         return false;
       }
     }
     return true;
   }
 
-  double getSignedDistance(hrleVectorType<T, D> &v) const {
+  T getSignedDistance(const std::array<hrleCoordType, D> &v) const {
     T distance = std::numeric_limits<T>::lowest();
     for (unsigned i = 0; i < D; ++i) {
       distance = std::max(std::abs(v[i]) - posExtent[i], distance);
@@ -90,7 +91,7 @@ public:
     return distance;
   }
 
-  void getBounds(double *bounds) const {
+  void getBounds(std::array<hrleCoordType, 2 * D> &bounds) const {
     for (unsigned i = 0; i < D; ++i) {
       bounds[2 * i] = -posExtent[i];
       bounds[2 * i + 1] = posExtent[i];

@@ -9,13 +9,12 @@
 #include <hrleVectorType.hpp>
 
 #include <lsMessage.hpp>
+#include <lsPreCompileMacros.hpp>
 
 #include <lsCalculateNormalVectors.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsFastAdvectDistributions.hpp>
-#include <lsToMesh.hpp>
-#include <lsVTKWriter.hpp>
 
 /// This class advects the level set according to a given distribution.
 /// This distribution is overlayed at every cell. All cells within
@@ -92,8 +91,20 @@ public:
     newDomain.initialize();
 
     // find bounds of distribution
-    hrleCoordType distBounds[2 * D];
+    std::array<hrleCoordType, 2 * D> distBounds;
     dist->getBounds(distBounds);
+    // check bounds of distribution since they must be > gridDelta
+    for (unsigned i = 0; i < 2 * D; ++i) {
+      if (std::abs(distBounds[i]) < gridDelta / 2) {
+        lsMessage::getInstance()
+            .addWarning(
+                "Distribution passed to lsFastAdvect is too small. It must be "
+                "> gridDelta / 2 in every direction. Not performing Advection.")
+            .print();
+        return;
+      }
+    }
+
     hrleVectorType<hrleIndexType, D> distMin, distMax;
 
     // find bounding box of old domain
@@ -205,8 +216,10 @@ public:
               distIt.getValue() * gridDelta * distNormal[i] * vectorMax;
         }
 
-        hrleVectorType<hrleCoordType, D> localCoords =
-            currentCoords - distCoords;
+        std::array<hrleCoordType, D> localCoords;
+        for(unsigned i = 0; i < D; ++i) {
+          localCoords[i] = currentCoords[i] - distCoords[i];
+        }
 
         if (!dist->isInside(localCoords, 2 * gridDelta)) {
           continue;
@@ -282,17 +295,14 @@ public:
       newDomain.insertNextUndefinedPoint(0, finalRun, levelSet->NEG_VALUE);
     }
 
-    // newDomain.print();
-
-    lsMesh mesh;
-    lsToMesh<T, D>(newLevelSet, mesh).apply();
-    lsVTKWriter(mesh, "beforeExpand.vtk").apply();
-
     newDomain.finalize();
     newDomain.segment();
     levelSet->deepCopy(newLevelSet);
     lsExpand<T, D>(*levelSet, 2).apply();
   }
 };
+
+// add all template specialisations for this class
+PRECOMPILE_PRECISION_DIMENSION(lsFastAdvect)
 
 #endif // LS_FAST_ADVECT_HPP

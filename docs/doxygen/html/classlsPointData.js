@@ -4,6 +4,8 @@ var classlsPointData =
     [ "VectorDataType", "classlsPointData.html#ad1cafda925e697b552ccfadd4e965734", null ],
     [ "append", "classlsPointData.html#a197658654734702984728ca31cc9e975", null ],
     [ "clear", "classlsPointData.html#a8424031c117ccbde3cda28e1295791e2", null ],
+    [ "deserialize", "classlsPointData.html#a68f5389c5c95019ba65cdd34729791c1", null ],
+    [ "empty", "classlsPointData.html#ae074c8aa7ac4bdb5def8046dfe2f575f", null ],
     [ "getScalarData", "classlsPointData.html#a456aa18530cd3ed64ae35d1891bde290", null ],
     [ "getScalarData", "classlsPointData.html#a144a3249a9b65ba1f47a3d7abb778ed2", null ],
     [ "getScalarData", "classlsPointData.html#a416e6e1e3671bae2c3c99eae206b5e4f", null ],
@@ -17,5 +19,6 @@ var classlsPointData =
     [ "getVectorDataLabel", "classlsPointData.html#a339e714241c57052d70efd59fb56a450", null ],
     [ "getVectorDataSize", "classlsPointData.html#abfcf79ecd28198d35c113edb9fb69876", null ],
     [ "insertNextScalarData", "classlsPointData.html#a999c1153c314c94e1dd307ef86e2194e", null ],
-    [ "insertNextVectorData", "classlsPointData.html#a93083e62d93688bf51ec504b967eed67", null ]
+    [ "insertNextVectorData", "classlsPointData.html#a93083e62d93688bf51ec504b967eed67", null ],
+    [ "serialize", "classlsPointData.html#a1fc60f4fb8abd13f7d7e11ef6a033d19", null ]
 ];

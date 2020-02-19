@@ -14,7 +14,7 @@ int main() {
 
   constexpr int D = 3;
   typedef double NumericType;
-  double gridDelta = 0.7;
+  double gridDelta = 1.1;
 
   double extent = 50;
   double bounds[2 * D] = {-extent, extent, -extent, extent};
@@ -79,7 +79,8 @@ int main() {
   // set up spherical advection dist
   // lsSphereDistribution<NumericType, D> dist(15.0);
   std::cout << "Advecting..." << std::endl;
-  lsBoxDistribution<NumericType, D> dist(hrleVectorType<NumericType, D>(1.5, 1.5, 15));
+  lsBoxDistribution<NumericType, D> dist(
+      hrleVectorType<NumericType, D>(1.5, 1.5, 15));
   lsFastAdvect<NumericType, D>(substrate, dist).apply();
 
   std::cout << "Writing results..." << std::endl;

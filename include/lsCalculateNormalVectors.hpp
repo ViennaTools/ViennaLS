@@ -83,9 +83,9 @@ public:
         auto &center = neighborIt.getCenter();
         if (!center.isDefined()) {
           continue;
-        } else if(std::abs(center.getValue()) > maxValue){
+        } else if (std::abs(center.getValue()) > maxValue) {
           // push an empty vector to keep ordering correct
-          std::array<T, D> tmp = {static_cast<double>(center.getPointId())};
+          std::array<T, D> tmp = {};
           normalVectors.push_back(tmp);
           continue;
         }
