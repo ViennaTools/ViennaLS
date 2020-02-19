@@ -77,8 +77,7 @@ class PylsFastAdvectDistribution : public lsFastAdvectDistribution<T, D> {
 
 public:
   bool isInside(const vectorType &v, double eps = 0.) const override {
-    PYBIND11_OVERLOAD_PURE(bool, ClassType, isInside, v,
-                      eps);
+    PYBIND11_OVERLOAD_PURE(bool, ClassType, isInside, v, eps);
   }
 
   T getSignedDistance(const vectorType &v) const override {
@@ -273,12 +272,15 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
   pybind11::class_<lsFastAdvect<T, D>>(module, "lsFastAdvect")
       // constructors
       .def(pybind11::init<>())
-      .def(pybind11::init<lsDomain<T, D> &, lsFastAdvectDistribution<hrleCoordType, D> &>())
+      .def(pybind11::init<lsDomain<T, D> &,
+                          lsFastAdvectDistribution<hrleCoordType, D> &>())
       // methods
       .def("setLevelSet", &lsFastAdvect<T, D>::setLevelSet,
            "Set levelset to advect.")
-      .def("setAdvectionDistribution", &lsFastAdvect<T, D>::setAdvectionDistribution,
-            "Set advection distribution to use as kernel for the fast advection.")
+      .def(
+          "setAdvectionDistribution",
+          &lsFastAdvect<T, D>::setAdvectionDistribution,
+          "Set advection distribution to use as kernel for the fast advection.")
       .def("apply", &lsFastAdvect<T, D>::apply, "Perform advection.");
 
   // lsExpand

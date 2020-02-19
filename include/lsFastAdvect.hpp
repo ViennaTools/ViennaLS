@@ -139,6 +139,8 @@ public:
     for (hrleVectorType<hrleIndexType, D> currentIndex = min;
          currentIndex <= max; incrementIndices(currentIndex, min, max)) {
       // if point is already full in old level set, skip it
+      // TODO: do not always initialize new iterator
+      // but use the same and just increment it when necessary
       {
         hrleConstSparseIterator<DomainType> checkIt(levelSet->getDomain(),
                                                     currentIndex);
@@ -217,7 +219,7 @@ public:
         }
 
         std::array<hrleCoordType, D> localCoords;
-        for(unsigned i = 0; i < D; ++i) {
+        for (unsigned i = 0; i < D; ++i) {
           localCoords[i] = currentCoords[i] - distCoords[i];
         }
 

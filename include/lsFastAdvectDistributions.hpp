@@ -10,7 +10,8 @@ template <class T, int D> class lsFastAdvectDistribution {
 public:
   /// Quick check whether a point relative to the distributions
   /// center is inside the distribution.
-  virtual bool isInside(const std::array<hrleCoordType, D> &v, double eps = 0.) const = 0;
+  virtual bool isInside(const std::array<hrleCoordType, D> &v,
+                        double eps = 0.) const = 0;
 
   /// Returns the signed distance of a point relative to the distributions
   /// center. This is the signed manhatten distance to the nearest surface
@@ -33,7 +34,12 @@ public:
       : radius(passedRadius), radius2(radius * radius) {}
 
   bool isInside(const std::array<hrleCoordType, D> &v, double eps = 0.) const {
-    if (std::sqrt(DotProduct(v, v)) <= radius + eps)
+    hrleCoordType dot = 0.;
+    for (unsigned i = 0; i < D; ++i) {
+      dot += v[i] * v[i];
+    }
+
+    if (std::sqrt(dot) <= radius + eps)
       return true;
     else
       return false;

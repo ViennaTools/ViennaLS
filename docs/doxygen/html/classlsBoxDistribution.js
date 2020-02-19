@@ -1,8 +1,8 @@
 var classlsBoxDistribution =
 [
     [ "lsBoxDistribution", "classlsBoxDistribution.html#a6dffe5be9f6f479fbf47fdd779922c96", null ],
-    [ "getBounds", "classlsBoxDistribution.html#a8612e054c8dd60474818115ecb55a7da", null ],
-    [ "getSignedDistance", "classlsBoxDistribution.html#a27095d6b48f4ca5f915c008f8cbfb36e", null ],
-    [ "isInside", "classlsBoxDistribution.html#a2ce7639f5cfa67eb22f4cbc33d1cb0e7", null ],
+    [ "getBounds", "classlsBoxDistribution.html#a747fc7c87bd1b7276ea65da482dba524", null ],
+    [ "getSignedDistance", "classlsBoxDistribution.html#a89fe43209df406a8fd32ca575a82b6f3", null ],
+    [ "isInside", "classlsBoxDistribution.html#aa7d537d9b4a1619eccda25984a5b73a0", null ],
     [ "posExtent", "classlsBoxDistribution.html#a00e1e6fa2a9fdbcf5bbe79d8fe51cd86", null ]
 ];
