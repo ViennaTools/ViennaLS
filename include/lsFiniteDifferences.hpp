@@ -32,6 +32,9 @@ public:
       return 5;
     case DifferentiationSchemeEnum::WENO5:
       return 7;
+    default:
+      lsMessage::getInstance().addError("Invalid finite differences scheme!");
+      return 0;
     }
   }
 
