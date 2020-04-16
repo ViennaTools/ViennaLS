@@ -76,8 +76,6 @@ public:
     gridSpacing.reserve(normalVectors.size());
     normals.reserve(normalVectors.size());
 
-    int count = 0;
-
     for (hrleConstSparseIterator<hrleDomainType> it(levelSet->getDomain());
          !it.isFinished(); ++it) {
       if (!it.isDefined() || std::abs(it.getValue()) > maxValue) {
@@ -111,15 +109,9 @@ public:
         node[i] -= scaling * normalVectors[pointId][i];
       }
 
-      //TODO: REMOVE DEBUG
-      if(normalVectors[pointId][0]==0.0 && normalVectors[pointId][1]==0.0 && normalVectors[pointId][2]==0.0)
-        std::cout << "blub ";
-
       mesh->insertNextNode(node);
 
       // add data into mesh
-      //values[pointId] = it.getValue();
-      //gridSpacing[pointId] = gridDelta;
       // copy normal
       std::array<double, 3> test_normal;
       if (D == 2)
@@ -134,13 +126,7 @@ public:
       gridSpacing.push_back(gridDelta);
 
 
-      //TODO: REMOVE
-      count++;
     }
-
-    std::cout << "runs trough loop: " << count << std::endl;
-
-    //REVIEW: there are some zero values in the following vectors
 
     mesh->insertNextScalarData(values, "LSValues");
     mesh->insertNextScalarData(gridSpacing, "gridSpacing");
