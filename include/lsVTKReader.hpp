@@ -178,7 +178,7 @@ private:
                                    std::string(cellData->GetArrayName(i)));
         auto &scalars = *(mesh->getScalarData(i));
         scalars.resize(cellData->GetNumberOfTuples());
-        for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
+        for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++j) {
           scalars[j] = dataArray->GetTuple1(j);
         }
       } else if (cellData->GetNumberOfComponents() == 3) {
@@ -186,7 +186,7 @@ private:
                                    std::string(cellData->GetArrayName(i)));
         auto &vectors = *(mesh->getVectorData(i));
         vectors.resize(cellData->GetNumberOfTuples());
-        for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
+        for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++j) {
           std::array<double, 3> vector;
           dataArray->GetTuple(j, &(vector[0]));
           vectors[j] = vector;
@@ -282,7 +282,7 @@ private:
                                    std::string(cellData->GetArrayName(i)));
         auto &scalars = *(mesh->getScalarData(i));
         scalars.resize(cellData->GetNumberOfTuples());
-        for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
+        for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++j) {
           scalars[j] = dataArray->GetTuple1(j);
         }
       } else if (cellData->GetNumberOfComponents() == 3) {
@@ -290,7 +290,7 @@ private:
                                    std::string(cellData->GetArrayName(i)));
         auto &vectors = *(mesh->getVectorData(i));
         vectors.resize(cellData->GetNumberOfTuples());
-        for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++i) {
+        for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++j) {
           std::array<double, 3> vector;
           dataArray->GetTuple(j, &(vector[0]));
           vectors[j] = vector;
