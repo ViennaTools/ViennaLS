@@ -3,6 +3,7 @@ build*
 *.vtk
 *.vtu
 *.vtp
+*.vscode
 .vs
 CMakeSettings.json
 docs/doxygen/*.txt
