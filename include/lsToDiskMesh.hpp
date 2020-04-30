@@ -109,7 +109,7 @@ public:
       // copy normal
       std::array<double, 3> normal;
       if (D == 2)
-        normals[pointId][2] = 0.;
+        normal[2] = 0.;
       for (unsigned i = 0; i < D; ++i) {
         normal[i] = normalVectors[pointId][i];
       }
