@@ -277,6 +277,12 @@ private:
                                         "Boundary Condition. None found!");
     }
 
+    if (passedNormal[i] == 0.) {
+      lsMessage::getInstance().addError(
+          "lsMakeGeometry: Plane cannot be parallel to Infinite Boundary "
+          "direction!");
+    }
+
     // find minimum and maximum points in infinite direction
     // there are 2*(D-1) points in the corners of the simulation domain
     std::vector<std::array<double, 3>> cornerPoints;
@@ -288,9 +294,14 @@ private:
 
     double minCoord[2];
     double maxCoord[2];
+    // Find grid boundaries, there used to be a +-1 for the coords.
+    // If an error pops up here, probably has to do with that.
+    // But if +-1 is added here, the boundaries are exceeded and
+    // the correct boundary conditions will add stray points for
+    // tilted planes in lsFromSurfaceMesh later on.
     for (unsigned n = 0; n < D - 1; ++n) {
-      minCoord[n] = gridDelta * (grid.getMinIndex((i + n + 1) % D) - 1);
-      maxCoord[n] = gridDelta * (grid.getMaxIndex((i + n + 1) % D) + 1);
+      minCoord[n] = gridDelta * (grid.getMinIndex((i + n + 1) % D));
+      maxCoord[n] = gridDelta * (grid.getMaxIndex((i + n + 1) % D));
     }
 
     // set corner points
