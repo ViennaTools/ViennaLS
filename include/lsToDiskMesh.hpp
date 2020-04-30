@@ -61,13 +61,7 @@ public:
     const T gridDelta = levelSet->getGrid().getGridDelta();
     const auto &normalVectors = levelSet->getNormalVectors();
 
-
-    
     // set up data arrays
-    //std::vector<double> values(normalVectors.size());
-    //std::vector<double> gridSpacing(normalVectors.size());
-    //std::vector<std::array<double, 3>> normals(normalVectors.size());
-    
     std::vector<double> values;
     std::vector<double> gridSpacing;
     std::vector<std::array<double, 3>> normals;
@@ -113,19 +107,16 @@ public:
 
       // add data into mesh
       // copy normal
-      std::array<double, 3> test_normal;
+      std::array<double, 3> normal;
       if (D == 2)
         normals[pointId][2] = 0.;
       for (unsigned i = 0; i < D; ++i) {
-        //normals[pointId][i] = normalVectors[pointId][i];
-        test_normal[i] = normalVectors[pointId][i];
+        normal[i] = normalVectors[pointId][i];
       }
 
-      normals.push_back(test_normal);
+      normals.push_back(normal);
       values.push_back(it.getValue());
       gridSpacing.push_back(gridDelta);
-
-
     }
 
     mesh->insertNextScalarData(values, "LSValues");
