@@ -35,8 +35,10 @@ if(VIENNALS_USE_VTK)
     message(STATUS "Found VTK")
     add_definitions(-DVIENNALS_USE_VTK)
     include(${VTK_USE_FILE})
-    # only link needed vtk libraries
-    #set(VTK_LIBRARIES vtksys;vtkIOCore;vtkexpat;vtklz4;vtkzlib;vtklzma;vtkdoubleconversion;vtkCommonMisc;vtkCommonSystem;vtkIOXML)
+    # only link needed vtk libraries for static builds
+    if(VIENNALS_STATIC_BUILD)
+      set(VTK_LIBRARIES vtksys;vtkIOCore;vtkexpat;vtklz4;vtkzlib;vtklzma;vtkdoubleconversion;vtkCommonMisc;vtkCommonSystem;vtkIOXML)
+    endif(VIENNALS_STATIC_BUILD)
     list(APPEND VIENNALS_LIBRARIES ${VTK_LIBRARIES})
     list(APPEND VIENNALS_PYTHON_LIBRARIES ${VTK_LIBRARIES})
   else(VTK_FOUND)

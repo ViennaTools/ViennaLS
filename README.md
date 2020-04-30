@@ -57,6 +57,12 @@ Have a look at the [example repo](https://github.com/ViennaTools/viennals-exampl
 
 ## Using the viennaLS python module
 
+The Releases only contain the compiled library for the most common Python version per platform:
+* Windows: Python 3.8
+* Linux: Python 3.6
+
+For all other Python versions, the library has to be compiled by hand.
+
 In order to use ViennaLS in python, just download the python shared libraries from the [releases section](https://github.com/ViennaTools/ViennaLS/releases) and put it in your current folder.
 From this folder just import the 2D or the 3D version of the library:
 
@@ -112,9 +118,9 @@ In order to use this, set VIENNALS_BUILD_SHARED_LIBS=ON when building ViennaLS. 
 longer build times, the CMake option VIENNALS_USE_SHARED_LIBS=OFF should be used.
 
 ## Contributing
-If you want to contribute to ViennaLS, make sure to follow the [LLVM Coding guidelines](https://llvm.org/docs/CodingStandards.html). Before creating a pull request, make sure ALL files have been formatted by clang-format, which can be done using the format-project.sh script in the root directory.
-
 Before being able to merge your PR, make sure you have met all points on the checklist in [CONTRIBUTING.md](https://github.com/ViennaTools/viennals/blob/master/CONTRIBUTING.md).
+
+If you want to contribute to ViennaLS, make sure to follow the [LLVM Coding guidelines](https://llvm.org/docs/CodingStandards.html). Before creating a pull request, make sure ALL files have been formatted by clang-format, which can be done using the format-project.sh script in the root directory.
 
 ## Authors
 

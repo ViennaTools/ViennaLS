@@ -4,7 +4,7 @@ var classlsAdvect =
     [ "lsAdvect", "classlsAdvect.html#ad2b194ba95c8c24b13d83240871c51ce", null ],
     [ "lsAdvect", "classlsAdvect.html#a93c439eaa30a220fdf09e19dca291f2f", null ],
     [ "lsAdvect", "classlsAdvect.html#a9fbc1b543cde8e0c94026bee05f6bad2", null ],
-    [ "lsAdvect", "classlsAdvect.html#acb46dfa3db5f346f788287c8cafed806", null ],
+    [ "lsAdvect", "classlsAdvect.html#a9da2a356e1d5a132ddc699b014792701", null ],
     [ "apply", "classlsAdvect.html#a7b6f35f0b35133d40ceeb866b5c733f3", null ],
     [ "getAdvectedTime", "classlsAdvect.html#ab3aa1882d86169065989b55c839f061a", null ],
     [ "getCalculateNormalVectors", "classlsAdvect.html#a8a9e64c2f053d28d459d5742f18f424b", null ],

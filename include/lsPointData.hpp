@@ -203,8 +203,8 @@ public:
     for (unsigned i = 0; i < numberOfScalarData; ++i) {
       uint32_t sizeOfName;
       stream.read(reinterpret_cast<char *>(&sizeOfName), sizeof(uint32_t));
-      char dataLabel[sizeOfName + 1];
-      stream.read(reinterpret_cast<char *>(&dataLabel), sizeOfName);
+      std::vector<char> dataLabel(sizeOfName + 1);
+      stream.read(dataLabel.data(), sizeOfName);
       dataLabel[sizeOfName] = '\0';
       uint32_t numberOfValues;
       stream.read(reinterpret_cast<char *>(&numberOfValues), sizeof(uint32_t));
@@ -216,15 +216,16 @@ public:
                     sizeof(typename ScalarDataType::value_type));
       }
       // now add this scalar data to current lsPointData
-      insertNextScalarData(scalarData, std::string(dataLabel));
+      insertNextScalarData(scalarData,
+                           std::string(dataLabel.begin(), dataLabel.end()));
     }
 
     // read vector data
     for (unsigned i = 0; i < numberOfVectorData; ++i) {
       uint32_t sizeOfName;
       stream.read(reinterpret_cast<char *>(&sizeOfName), sizeof(uint32_t));
-      char dataLabel[sizeOfName + 1];
-      stream.read(reinterpret_cast<char *>(&dataLabel), sizeOfName);
+      std::vector<char> dataLabel(sizeOfName + 1);
+      stream.read(dataLabel.data(), sizeOfName);
       dataLabel[sizeOfName] = '\0';
       uint32_t numberOfValues;
       stream.read(reinterpret_cast<char *>(&numberOfValues), sizeof(uint32_t));
@@ -238,7 +239,8 @@ public:
         }
       }
       // now add this scalar data to current lsPointData
-      insertNextVectorData(vectorData, std::string(dataLabel));
+      insertNextVectorData(vectorData,
+                           std::string(dataLabel.begin(), dataLabel.end()));
     }
 
     return stream;

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['gridtype_563',['GridType',['../classlsDomain.html#acd1ed71ed408b19ab82f4b33db28a20d',1,'lsDomain']]]
+  ['gridtype',['GridType',['../classlsDomain.html#acd1ed71ed408b19ab82f4b33db28a20d',1,'lsDomain']]]
 ];
