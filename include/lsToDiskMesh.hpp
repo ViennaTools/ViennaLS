@@ -62,9 +62,13 @@ public:
     const auto &normalVectors = levelSet->getNormalVectors();
 
     // set up data arrays
-    std::vector<double> values(normalVectors.size());
-    std::vector<double> gridSpacing(normalVectors.size());
-    std::vector<std::array<double, 3>> normals(normalVectors.size());
+    std::vector<double> values;
+    std::vector<double> gridSpacing;
+    std::vector<std::array<double, 3>> normals;
+
+    values.reserve(normalVectors.size());
+    gridSpacing.reserve(normalVectors.size());
+    normals.reserve(normalVectors.size());
 
     for (hrleConstSparseIterator<hrleDomainType> it(levelSet->getDomain());
          !it.isFinished(); ++it) {
@@ -102,14 +106,17 @@ public:
       mesh->insertNextNode(node);
 
       // add data into mesh
-      values[pointId] = it.getValue();
-      gridSpacing[pointId] = gridDelta;
       // copy normal
+      std::array<double, 3> normal;
       if (D == 2)
-        normals[pointId][2] = 0.;
+        normal[2] = 0.;
       for (unsigned i = 0; i < D; ++i) {
-        normals[pointId][i] = normalVectors[pointId][i];
+        normal[i] = normalVectors[pointId][i];
       }
+
+      normals.push_back(normal);
+      values.push_back(it.getValue());
+      gridSpacing.push_back(gridDelta);
     }
 
     mesh->insertNextScalarData(values, "LSValues");
