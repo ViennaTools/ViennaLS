@@ -159,9 +159,9 @@ template <class T, int D> class lsBooleanOperation {
 public:
   lsBooleanOperation() {}
 
-  lsBooleanOperation(lsDomain<T, D> &passedlsDomain,
-                     lsBooleanOperationEnum passedOperation =
-                         lsBooleanOperationEnum::INTERSECT)
+  lsBooleanOperation(
+      lsDomain<T, D> &passedlsDomain,
+      lsBooleanOperationEnum passedOperation = lsBooleanOperationEnum::INVERT)
       : levelSetA(&passedlsDomain), operation(passedOperation) {}
 
   lsBooleanOperation(lsDomain<T, D> &passedlsDomainA,
