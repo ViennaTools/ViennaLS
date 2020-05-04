@@ -593,9 +593,9 @@ template <class T, int D> class lsAdvect {
         velocityVectors[p].resize(maxId);
       }
 
-      double time = maxTimeStep;
       for (unsigned localId = 0; localId < maxId; ++localId) {
         T &value = segment.definedValues[localId];
+        double time = maxTimeStep;
 
         // if there is a change in materials during one time step, deduct the
         // time taken to advect up to the end of the top material and set the LS

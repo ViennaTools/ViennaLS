@@ -1,5 +1,6 @@
 *a.out
 build*
+install*
 *.vtk
 *.vtu
 *.vtp
