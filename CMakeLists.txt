@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.4)
 
 project(
   "ViennaLS"
-  VERSION 1.0.0)
+  VERSION 1.1.1)
+
+add_definitions(-DVIENNALS_VERSION=${PROJECT_VERSION})
 
 include(GNUInstallDirs)
 

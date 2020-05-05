@@ -10,6 +10,9 @@
 #define TOKENPASTE_INTERNAL(x, y, z) x##y##z
 #define TOKENPASTE(x, y, z) TOKENPASTE_INTERNAL(x, y, z)
 #define VIENNALS_MODULE_NAME TOKENPASTE(viennaLS, VIENNALS_PYTHON_DIMENSION, d)
+#define STRINGIZE2(s) #s
+#define STRINGIZE(s) STRINGIZE2(s)
+#define VIENNALS_MODULE_VERSION STRINGIZE(VIENNALS_VERSION)
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -89,7 +92,7 @@ public:
   }
 };
 
-// REFERNCE HOLDING CLASS WRAPPERS
+// REFERENCE HOLDING CLASS WRAPPERS
 
 // maybe needed wrapper code once we move to smart pointers
 // https://github.com/pybind/pybind11/issues/1389
@@ -108,6 +111,9 @@ public:
 // module specification
 PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
   module.doc() = "ViennaLS python module.";
+
+  // set version string of python module
+  module.attr("__version__") = VIENNALS_MODULE_VERSION;
 
   // lsAdvect
   pybind11::class_<lsAdvect<T, D>>(module, "lsAdvect")

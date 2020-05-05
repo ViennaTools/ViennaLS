@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.4)
 
 # lowercase viennaLS is the python export
-project(ViennaLSPython)
+project("ViennaLSPython"
+        VERSION ${CMAKE_PROJECT_VERSION})
 
 # include viennals
 set(ViennaHRLE_DIR $ENV{VIENNAHRLE_DIR})
