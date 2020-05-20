@@ -11,7 +11,8 @@
 #include <lsMessage.hpp>
 #include <lsPreCompileMacros.hpp>
 
-#include <lsCalculateNormalVectors.hpp>
+#include <lsToDiskMesh.hpp>
+// #include <lsCalculateNormalVectors.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsFastAdvectDistributions.hpp>
@@ -75,10 +76,17 @@ public:
     typedef typename lsDomain<T, D>::DomainType DomainType;
 
     // expand for normalvector calculation
-    lsExpand<T, D>(*levelSet, 3).apply();
-    lsCalculateNormalVectors<T, D>(*levelSet).apply();
+    // lsExpand<T, D>(*levelSet, 3).apply();
+    // lsCalculateNormalVectors<T, D>(*levelSet).apply();
+    // auto &normalVectors = levelSet->getNormalVectors();
 
-    auto &normalVectors = levelSet->getNormalVectors();
+    // Extract the original surface as a point cloud of grid
+    // points shifted to the surface (disk mesh)
+    lsMesh surfaceMesh;
+    lsToDiskMesh<T, D>(*levelSet, surfaceMesh).apply();
+    // lsVTKWriter(surfaceMesh, "surfaceMesh.vtk").apply();
+    typedef std::vector<std::array<double, 3>> SurfaceNodesType;
+    SurfaceNodesType &surfaceNodes = surfaceMesh.getNodes();
 
     auto &domain = levelSet->getDomain();
 
@@ -116,10 +124,18 @@ public:
       distMin[i] = distBounds[2 * i] / gridDelta - 1;
       distMax[i] = distBounds[2 * i + 1] / gridDelta + 1;
 
-      min[i] =
-          bounds[2 * i] + ((grid.isNegBoundaryInfinite(i)) ? distMin[i] : 0);
-      max[i] = bounds[2 * i + 1] +
-               ((grid.isPosBoundaryInfinite(i)) ? distMax[i] : 0);
+      if(grid.isNegBoundaryInfinite(i)) {
+        min[i] = domain.getMinRunBreak(i) + distMin[i];
+      } else {
+        // TODO: here we need to respect boundary conditions better
+        min[i] = grid.getMinGridPoint(i);
+      }
+      
+      if(grid.isPosBoundaryInfinite(i)) {
+        max[i] = domain.getMaxRunBreak(i) + distMax[i];
+      } else {
+        max[i] = grid.getMaxGridPoint(i);
+      }
     }
 
     bool currentFullRun = false;
@@ -128,22 +144,17 @@ public:
     hrleVectorType<hrleIndexType, D> lastIndex = min;
 
     // set first undefined run
-    {
-      // get iterator to min
-      hrleConstSparseIterator<DomainType> checkIt(levelSet->getDomain());
-      newDomain.insertNextUndefinedPoint(0, grid.getMinGridPoint(),
-                                         checkIt.getValue());
-    }
+    // get iterator to min
+    hrleConstSparseIterator<DomainType> checkIt(levelSet->getDomain());
+    newDomain.insertNextUndefinedPoint(0, grid.getMinGridPoint(),
+                                        checkIt.getValue());
 
     // Iterate through the bounds of new lsDomain lexicographically
     for (hrleVectorType<hrleIndexType, D> currentIndex = min;
          currentIndex <= max; incrementIndices(currentIndex, min, max)) {
       // if point is already full in old level set, skip it
-      // TODO: do not always initialize new iterator
-      // but use the same and just increment it when necessary
       {
-        hrleConstSparseIterator<DomainType> checkIt(levelSet->getDomain(),
-                                                    currentIndex);
+        checkIt.goToIndicesSequential(currentIndex);
         // if run is negative undefined
         if (checkIt.getValue() < -0.5) {
           if (!currentFullRun) {
@@ -157,8 +168,8 @@ public:
       }
 
       hrleVectorType<hrleCoordType, D> currentCoords;
-      hrleVectorType<hrleIndexType, D> currentDistMin;
-      hrleVectorType<hrleIndexType, D> currentDistMax;
+      hrleVectorType<hrleCoordType, D> currentDistMin;
+      hrleVectorType<hrleCoordType, D> currentDistMax;
 
       for (unsigned i = 0; i < D; ++i) {
         currentCoords[i] = currentIndex[i] * gridDelta;
@@ -167,60 +178,41 @@ public:
         if (currentDistMin[i] < grid.getMinGridPoint(i)) {
           currentDistMin[i] = grid.getMinGridPoint(i);
         }
+        currentDistMin[i] *= gridDelta;
+
         currentDistMax[i] = currentIndex[i] + distMax[i];
         if (currentDistMin[i] > grid.getMaxGridPoint(i)) {
           currentDistMin[i] = grid.getMaxGridPoint(i);
         }
+        currentDistMax[i] *= gridDelta;
       }
 
       double distance = 0.5;
 
-      // Now start iterator over space around current index
-      for (hrleConstSparseIterator<DomainType> distIt(levelSet->getDomain(),
-                                                      currentDistMin);
-           distIt.getStartIndices() <= currentDistMax; ++distIt) {
-        if (!distIt.isDefined() || std::abs(distIt.getValue()) > 0.5) {
-          continue;
-        }
+      // now check which surface points contribute to currentIndex
+      for(typename SurfaceNodesType::const_iterator surfIt = surfaceNodes.begin();
+           surfIt != surfaceNodes.end(); ++surfIt) {
 
-        hrleVectorType<hrleIndexType, D> distIndex = distIt.getStartIndices();
+        auto &currentNode = *surfIt;
 
         // if we are outside min/max go to next index inside
         {
           bool outside = false;
           for (unsigned i = 0; i < D; ++i) {
-            if (distIndex[i] < currentDistMin[i] ||
-                distIndex[i] > currentDistMax[i]) {
-              outside = true;
-            }
+            if ((currentNode[i] < currentDistMin[i]) ||
+                (currentNode[i] > currentDistMax[i])) {
+                  outside = true;
+                  break;
+                }
           }
           if (outside) {
-            incrementIndices(distIndex, currentDistMin, currentDistMax);
-            --distIndex[0];
-            distIt.goToIndices(distIndex);
             continue;
           }
         }
 
-        hrleVectorType<hrleCoordType, D> distCoords;
-
-        auto distNormal = normalVectors[distIt.getPointId()];
-        double vectorMax = 0.;
-        for (unsigned i = 0; i < D; ++i) {
-          distCoords[i] = distIndex[i] * gridDelta;
-          if (std::abs(distNormal[i]) > vectorMax) {
-            vectorMax = std::abs(distNormal[i]);
-          }
-        }
-        for (unsigned i = 0; i < D; ++i) {
-          // shift distcoords to surface from grid point
-          distCoords[i] -=
-              distIt.getValue() * gridDelta * distNormal[i] * vectorMax;
-        }
-
         std::array<hrleCoordType, D> localCoords;
         for (unsigned i = 0; i < D; ++i) {
-          localCoords[i] = currentCoords[i] - distCoords[i];
+          localCoords[i] = currentCoords[i] - currentNode[i];
         }
 
         if (!dist->isInside(localCoords, 2 * gridDelta)) {

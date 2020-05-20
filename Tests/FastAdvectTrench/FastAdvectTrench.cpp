@@ -10,7 +10,7 @@
 #include <lsVTKWriter.hpp>
 
 int main() {
-  omp_set_num_threads(4);
+  omp_set_num_threads(1);
 
   constexpr int D = 3;
   typedef double NumericType;
@@ -79,8 +79,7 @@ int main() {
   // set up spherical advection dist
   // lsSphereDistribution<NumericType, D> dist(15.0);
   std::cout << "Advecting..." << std::endl;
-  lsBoxDistribution<NumericType, D> dist(
-      hrleVectorType<NumericType, D>(1.5, 1.5, 15));
+  lsBoxDistribution<NumericType, D> dist({1.5, 1.5, 15});
   lsFastAdvect<NumericType, D>(substrate, dist).apply();
 
   std::cout << "Writing results..." << std::endl;
