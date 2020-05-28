@@ -481,7 +481,7 @@ template <class T, int D> class lsAdvect {
         if (!it.isDefined() || std::abs(it.getValue()) > 0.5)
           continue;
 
-        const T value = it.getValue();
+        T value = it.getValue();
         double maxStepTime = 0;
         double cfl = timeStepRatio;
 
@@ -548,6 +548,8 @@ template <class T, int D> class lsAdvect {
               // this time step until the end of the material is reached
               tempRates.push_back(std::make_pair(velocity, valueBelow));
               cfl -= difference;
+              // use new LS value for next calculations
+              value = valueBelow;
             }
           }
         }
