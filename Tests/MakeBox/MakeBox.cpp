@@ -34,15 +34,14 @@ int main() {
 
   typename lsDomain<double, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D - 1; ++i) {
-    boundaryCons[i] =
-        lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+    boundaryCons[i] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   }
-  boundaryCons[D - 1] =
-      lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
+  boundaryCons[D - 1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
   lsDomain<double, D> levelSet(bounds, boundaryCons, gridDelta);
 
-  lsMakeGeometry<double, D>(levelSet, lsBox<double, D>({-10, -10, 0}, {10, 10, 4}))
+  lsMakeGeometry<double, D>(levelSet,
+                            lsBox<double, D>({-10, -10, 0}, {10, 10, 4}))
       .apply();
 
   std::cout << "Number of points: " << levelSet.getDomain().getNumberOfPoints()

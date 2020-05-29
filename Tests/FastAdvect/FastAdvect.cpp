@@ -7,7 +7,6 @@
 #include <lsToDiskMesh.hpp>
 #include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
-#include <lsToDiskMesh.hpp>
 #include <lsVTKWriter.hpp>
 
 int main() {

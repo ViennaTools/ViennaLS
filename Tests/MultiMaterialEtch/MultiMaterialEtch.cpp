@@ -32,7 +32,7 @@ public:
   double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
                            int material,
                            const std::array<double, 3> & /*normalVector*/) {
-    return (material==1)?-0.3:0;
+    return (material == 1) ? -0.3 : 0;
   }
 
   // std::array<double, 3>
@@ -67,21 +67,23 @@ int main() {
 
   lsDomain<double, D> substrate(bounds, boundaryCons, gridDelta);
   lsDomain<double, D> mask(bounds, boundaryCons, gridDelta);
-  
 
   double planeOrigin[3] = {0., 0., 0.};
   double planeNormal[3] = {0., D == 2, D == 3};
 
-  lsMakeGeometry<double, D>(substrate, lsPlane<double, D>(planeOrigin, planeNormal))
+  lsMakeGeometry<double, D>(substrate,
+                            lsPlane<double, D>(planeOrigin, planeNormal))
       .apply();
 
-  double maskOrigin[3] = {0., -10*(D==2), -10*(D==3)};
-  double maskNormal[3] = {0, -(D==2), -(D==3)};
+  double maskOrigin[3] = {0., -10 * (D == 2), -10 * (D == 3)};
+  double maskNormal[3] = {0, -(D == 2), -(D == 3)};
 
   lsMakeGeometry<double, D>(mask, lsPlane<double, D>(maskOrigin, maskNormal))
       .apply();
 
-  lsBooleanOperation<double, D>(mask, substrate, lsBooleanOperationEnum::INTERSECT).apply();
+  lsBooleanOperation<double, D>(mask, substrate,
+                                lsBooleanOperationEnum::INTERSECT)
+      .apply();
 
   {
     std::cout << "Extracting..." << std::endl;
@@ -150,8 +152,8 @@ int main() {
     lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
     lsVTKWriter(mesh, "surface0.vtk").apply();
   }
-  
-  for(unsigned i = 1; i < 10; ++i) {
+
+  for (unsigned i = 1; i < 10; ++i) {
     lsAdvect<double, D> deposition(depoVel);
     deposition.insertNextLevelSet(mask);
     deposition.insertNextLevelSet(substrate);
@@ -166,21 +168,20 @@ int main() {
 
     lsMesh mesh;
     lsToSurfaceMesh<NumericType, D>(mask, mesh).apply();
-    lsVTKWriter(mesh, "mask" + std::to_string(2*i) + ".vtk").apply();
+    lsVTKWriter(mesh, "mask" + std::to_string(2 * i) + ".vtk").apply();
     lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "surface" + std::to_string(2*i) + ".vtk").apply();
-    std::cout << "DepoSteps: " << deposition.getNumberOfTimeSteps() << std::endl;
+    lsVTKWriter(mesh, "surface" + std::to_string(2 * i) + ".vtk").apply();
+    std::cout << "DepoSteps: " << deposition.getNumberOfTimeSteps()
+              << std::endl;
 
     etching.apply();
 
     lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "surface" + std::to_string(2*i+1) + ".vtk").apply();
+    lsVTKWriter(mesh, "surface" + std::to_string(2 * i + 1) + ".vtk").apply();
     lsToSurfaceMesh<NumericType, D>(mask, mesh).apply();
-    lsVTKWriter(mesh, "mask" + std::to_string(2*i+1) + ".vtk").apply();
+    lsVTKWriter(mesh, "mask" + std::to_string(2 * i + 1) + ".vtk").apply();
     std::cout << "EtchSteps: " << etching.getNumberOfTimeSteps() << std::endl;
-
   }
-
 
   return 0;
 }

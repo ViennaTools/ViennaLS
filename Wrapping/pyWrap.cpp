@@ -290,29 +290,45 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("apply", &lsFastAdvect<T, D>::apply, "Perform advection.");
 
   // lsFastAdvectDistributions
-  pybind11::class_<lsFastAdvectDistribution<T, D>, PylsFastAdvectDistribution>(module, "lsFastAdvectDistribution")
-     // constructors
-     .def(pybind11::init<>())
-     // methods
-     .def("isInside", &lsFastAdvectDistribution<T, D>::isInside, "Check whether passed point is inside the distribution.")
-     .def("getSignedDistance", &lsFastAdvectDistribution<T, D>::getSignedDistance, "Get the signed distance of the passed point to the surface of the distribution.")
-     .def("getBounds", &lsFastAdvectDistribution<T, D>::getBounds, "Get the cartesian bounds of the distribution.");
+  pybind11::class_<lsFastAdvectDistribution<T, D>, PylsFastAdvectDistribution>(
+      module, "lsFastAdvectDistribution")
+      // constructors
+      .def(pybind11::init<>())
+      // methods
+      .def("isInside", &lsFastAdvectDistribution<T, D>::isInside,
+           "Check whether passed point is inside the distribution.")
+      .def("getSignedDistance",
+           &lsFastAdvectDistribution<T, D>::getSignedDistance,
+           "Get the signed distance of the passed point to the surface of the "
+           "distribution.")
+      .def("getBounds", &lsFastAdvectDistribution<T, D>::getBounds,
+           "Get the cartesian bounds of the distribution.");
 
-  pybind11::class_<lsSphereDistribution<T, D>, lsFastAdvectDistribution<T, D>>(module, "lsSphereDistribution")
-     // constructors
-     .def(pybind11::init<T>())
-     // methods
-     .def("isInside", &lsSphereDistribution<T, D>::isInside, "Check whether passed point is inside the distribution.")
-     .def("getSignedDistance", &lsSphereDistribution<T, D>::getSignedDistance, "Get the signed distance of the passed point to the surface of the distribution.")
-     .def("getBounds", &lsSphereDistribution<T, D>::getBounds, "Get the cartesian bounds of the distribution.");
+  pybind11::class_<lsSphereDistribution<T, D>, lsFastAdvectDistribution<T, D>>(
+      module, "lsSphereDistribution")
+      // constructors
+      .def(pybind11::init<T>())
+      // methods
+      .def("isInside", &lsSphereDistribution<T, D>::isInside,
+           "Check whether passed point is inside the distribution.")
+      .def("getSignedDistance", &lsSphereDistribution<T, D>::getSignedDistance,
+           "Get the signed distance of the passed point to the surface of the "
+           "distribution.")
+      .def("getBounds", &lsSphereDistribution<T, D>::getBounds,
+           "Get the cartesian bounds of the distribution.");
 
-  pybind11::class_<lsBoxDistribution<T, D>, lsFastAdvectDistribution<T, D>>(module, "lsBoxDistribution")
-     // constructors
-     .def(pybind11::init<const std::array<T, D>>())
-     // methods
-     .def("isInside", &lsBoxDistribution<T, D>::isInside, "Check whether passed point is inside the distribution.")
-     .def("getSignedDistance", &lsBoxDistribution<T, D>::getSignedDistance, "Get the signed distance of the passed point to the surface of the distribution.")
-     .def("getBounds", &lsBoxDistribution<T, D>::getBounds, "Get the cartesian bounds of the distribution.");
+  pybind11::class_<lsBoxDistribution<T, D>, lsFastAdvectDistribution<T, D>>(
+      module, "lsBoxDistribution")
+      // constructors
+      .def(pybind11::init<const std::array<T, D>>())
+      // methods
+      .def("isInside", &lsBoxDistribution<T, D>::isInside,
+           "Check whether passed point is inside the distribution.")
+      .def("getSignedDistance", &lsBoxDistribution<T, D>::getSignedDistance,
+           "Get the signed distance of the passed point to the surface of the "
+           "distribution.")
+      .def("getBounds", &lsBoxDistribution<T, D>::getBounds,
+           "Get the cartesian bounds of the distribution.");
 
   // lsExpand
   pybind11::class_<lsExpand<T, D>>(module, "lsExpand")

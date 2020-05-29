@@ -81,8 +81,7 @@ class lsBoxDistribution : public lsFastAdvectDistribution<T, D> {
 public:
   const hrleVectorType<T, D> posExtent;
 
-  lsBoxDistribution(const std::array<T, D> &halfAxes)
-      : posExtent(halfAxes) {}
+  lsBoxDistribution(const std::array<T, D> &halfAxes) : posExtent(halfAxes) {}
 
   bool isInside(const std::array<hrleCoordType, D> &v, double eps = 0.) const {
     for (unsigned i = 0; i < D; ++i) {

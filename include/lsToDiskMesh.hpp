@@ -66,6 +66,14 @@ public:
     std::vector<double> gridSpacing;
     std::vector<std::array<double, 3>> normals;
 
+    // save the extent of the resulting mesh
+    std::array<double, 3> minimumExtent = {};
+    std::array<double, 3> maximumExtent = {};
+    for(unsigned i = 0; i < D; ++i) {
+      minimumExtent[i] = std::numeric_limits<double>::max();
+      maximumExtent[i] = std::numeric_limits<double>::lowest();
+    }
+
     values.reserve(normalVectors.size());
     gridSpacing.reserve(normalVectors.size());
     normals.reserve(normalVectors.size());
@@ -91,6 +99,13 @@ public:
       for (unsigned i = 0; i < D; ++i) {
         // original position
         node[i] = double(it.getStartIndices(i)) * gridDelta;
+
+        // save extent
+        if(node[i] < minimumExtent[i]) {
+          minimumExtent[i] = node[i];
+        } else if(node[i] > maximumExtent[i]) {
+          maximumExtent[i] = node[i];
+        }
 
         if (std::abs(normalVectors[pointId][i]) > max) {
           max = std::abs(normalVectors[pointId][i]);
@@ -122,6 +137,8 @@ public:
     mesh->insertNextScalarData(values, "LSValues");
     mesh->insertNextScalarData(gridSpacing, "gridSpacing");
     mesh->insertNextVectorData(normals, "Normals");
+    mesh->minimumExtent = minimumExtent;
+    mesh->maximumExtent = maximumExtent;
   }
 };
 
