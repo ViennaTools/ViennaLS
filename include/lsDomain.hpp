@@ -113,9 +113,10 @@ public:
   }
 
   /// re-initalise lsDomain with the point/value pairs in pointData
-  void insertPoints(PointValueVectorType pointData) {
+  void insertPoints(PointValueVectorType pointData, bool sort = true) {
+    lsMessage::getInstance().addWarning("lsDomain::insertPoints is deprecated! Use lsFromMesh instead.").print();
     hrleFillDomainWithSignedDistance(domain, pointData, T(NEG_VALUE),
-                                     T(POS_VALUE));
+                                     T(POS_VALUE), sort);
   }
 
   /// get reference to the grid on which the levelset is defined

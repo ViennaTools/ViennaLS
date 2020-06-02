@@ -12,6 +12,7 @@
 #include <lsPreCompileMacros.hpp>
 
 #include <lsToDiskMesh.hpp>
+#include <lsFromMesh.hpp>
 // #include <lsCalculateNormalVectors.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
@@ -30,6 +31,7 @@
 template <class T, int D> class lsFastAdvect {
   lsDomain<T, D> *levelSet = nullptr;
   const lsFastAdvectDistribution<hrleCoordType, D> *dist = nullptr;
+  static constexpr T numericEps = 10 * std::numeric_limits<T>::epsilon();
 
   static void incrementIndices(hrleVectorType<hrleIndexType, D> &indices,
                                const hrleVectorType<hrleIndexType, D> &min,
@@ -109,9 +111,6 @@ public:
     // TODO: need to add support for periodic boundary conditions!
     hrleVectorType<hrleIndexType, D> distMin, distMax;
 
-    std::cout << "minPoint: " << domain.getDomainSegment(0).definedValues[0] << std::endl;
-    std::cout << "maxPoint: " << domain.getDomainSegment(domain.getNumberOfSegments()-1).definedValues.back() << std::endl;
-
     bool minPointNegative = domain.getDomainSegment(0).definedValues[0] < 0.;
     bool maxPointNegative = domain.getDomainSegment(domain.getNumberOfSegments()-1).definedValues.back() < 0.;
 
@@ -123,10 +122,6 @@ public:
       // translate from coords to indices
       distMin[i] = distBounds[2 * i] / gridDelta - 2;
       distMax[i] = distBounds[2 * i + 1] / gridDelta + 2;
-
-      // std::cout << "dim " << i << ": " << std::endl;
-      // std::cout << "Runbreaks: " << domain.getMinRunBreak(i) << ", " << domain.getMaxRunBreak(i) << std::endl;
-      // std::cout << "MinGrid: " << grid.getMinGridPoint(i) << ", " << grid.getMaxGridPoint(i) << std::endl;
 
       // use the extent of the diskMesh to identify bounding box of new
       // level set
@@ -152,10 +147,7 @@ public:
       if(max[i] > grid.getMaxGridPoint(i)) {
         max[i] = grid.getMaxGridPoint(i);
       }
-
-      std::cout << i << " min: " << min[i] << ", max: " << max[i] << std::endl;
     }
-    std::cout << "segments: " << domain.getNumberOfSegments() << std::endl;
     // initialize with segmentation for whole range
     typename hrleDomain<T, D>::hrleIndexPoints segmentation;
 
@@ -165,14 +157,9 @@ public:
       for (unsigned i = 0; i < D; ++i) {
         pointsPerDimension[i] = numPoints;
         numPoints *= max[i] - min[i];
-        std::cout << "pointsPerDimension " << i << ": " << pointsPerDimension[i]
-                  << std::endl;
       }
       unsigned long numberOfSegments = domain.getNumberOfSegments();
       unsigned long long pointsPerSegment = numPoints / numberOfSegments;
-      std::cout << "numPoints: " << numPoints << std::endl;
-      std::cout << "pointsPerSegment: " << pointsPerSegment
-                << " * N: " << pointsPerSegment * numberOfSegments << std::endl;
       unsigned long long pointId = 0;
       for (unsigned i = 0; i < numberOfSegments - 1; ++i) {
         pointId = pointsPerSegment * (i + 1);
@@ -181,7 +168,6 @@ public:
           segmentPoint[j] = pointId / (pointsPerDimension[j]) + min[j];
           pointId %= pointsPerDimension[j];
         }
-        std::cout << i << ": " << segmentPoint << std::endl;
         segmentation.push_back(segmentPoint);
       }
     }
@@ -191,7 +177,7 @@ public:
     std::vector<PointValueVector> newPoints;
     newPoints.resize(domain.getNumberOfSegments());
 
-    constexpr double cutoffValue = 1.0;
+    constexpr T cutoffValue = 1.0;
 
 // set up multithreading
 #pragma omp parallel num_threads(domain.getNumberOfSegments())
@@ -245,7 +231,7 @@ public:
           currentDistMax[i] *= gridDelta;
         }
 
-        double distance = std::numeric_limits<double>::max();
+        T distance = std::numeric_limits<double>::max();
 
         // now check which surface points contribute to currentIndex
         for (typename SurfaceNodesType::const_iterator surfIt =
@@ -280,10 +266,10 @@ public:
           }
 
           // get filling fraction from distance to dist surface
-          double tmpDistance = dist->getSignedDistance(localCoords) / gridDelta;
+          T tmpDistance = dist->getSignedDistance(localCoords) / gridDelta;
 
           // if cell is far within a distribution, set it filled
-          if (tmpDistance < -cutoffValue) {
+          if (tmpDistance <= -cutoffValue) {
             distance = std::numeric_limits<T>::lowest();
             break;
           }
@@ -295,7 +281,7 @@ public:
         }
 
         if (std::abs(distance) <= cutoffValue) {
-          newPoints[p].push_back(std::make_pair(currentIndex, distance));
+          newPoints[p].push_back(std::make_pair(currentIndex, distance - numericEps));
         }
 
       } // domainBounds for
@@ -303,32 +289,45 @@ public:
 
     // copy all points into the first vector
     {
-      std::cout << "Balancing: " << std::endl;
-      std::cout << "0: " << newPoints[0].size() << std::endl;
       unsigned long long numberOfPoints = newPoints[0].size();
       for (unsigned i = 1; i < domain.getNumberOfSegments(); ++i) {
         numberOfPoints += newPoints[i].size();
       }
       newPoints[0].reserve(numberOfPoints);
       for (unsigned i = 1; i < domain.getNumberOfSegments(); ++i) {
-        std::cout << i << ": " << newPoints[i].size() << std::endl;
-        // newPoints[0].reserve(newPoints[0].size() + newPoints[i].size());
         std::move(std::begin(newPoints[i]), std::end(newPoints[i]),
                   std::back_inserter(newPoints[0]));
-        // newPoints[i].clear();
       }
     }
 
     lsMesh mesh;
-    // for(auto it = newPoints[0].begin(); it != newPoints[0].end(); ++it) {
+    // output all points directly to mesh
+    {
+      std::cout << grid.getMinGridPoint() << "; " << grid.getMaxGridPoint() << std::endl;
+      std::vector<double> scalarData;
+      unsigned counter = 0;
+      for(auto it = newPoints[0].begin(); it != newPoints[0].end(); ++it) {
+        std::array<T, 3> node = {};
+        for(unsigned i = 0; i < D; ++i) {
+          node[i] = (it->first)[i] * gridDelta;
+        }
 
-    // }
-    // lsDomain<T, D> newLevelSet(grid);
-    // auto &newDomain = newLevelSet.getDomain();
-    // lsToMesh<T, D>(*levelSet, mesh, false).apply();
-    // lsVTKWriter(mesh, "beforeInsert.vtk").apply();
+        if(counter > 24074 && counter < 24085) {
+          std::cout << counter << ": " << (it->first)[0] << ", " << (it->first)[1] << ", " << (it->first)[2] << " = " << it->second << std::endl;
+        }
 
-    levelSet->insertPoints(newPoints[0]);
+        mesh.insertNextNode(node);
+        std::array<unsigned, 1> vertex;
+        vertex[0] = counter++;
+        mesh.insertNextVertex(vertex);
+        scalarData.push_back(it->second);
+      }
+      mesh.insertNextScalarData(scalarData, "LSValues");
+      lsVTKWriter(mesh, "beforeInsert.vtk").apply();
+    }
+
+    lsFromMesh<T, D>(*levelSet, mesh).apply();
+    // levelSet->insertPoints(newPoints[0], false);
     lsToMesh<T, D>(*levelSet, mesh, false).apply();
     lsVTKWriter(mesh, "afterInsert.vtk").apply();
     levelSet->setLevelSetWidth(1);

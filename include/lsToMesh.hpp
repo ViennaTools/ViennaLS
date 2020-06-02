@@ -3,7 +3,7 @@
 
 #include <lsPreCompileMacros.hpp>
 
-#include <iostream>
+#include <vector>
 
 #include <hrleSparseIterator.hpp>
 #include <lsDomain.hpp>
@@ -101,7 +101,12 @@ public:
       mesh->insertNextNode(node);
 
       // insert LS value
-      scalarData.push_back(it.isDefined()?it.getValue():-1000);
+      if(it.isDefined()) {
+        scalarData.push_back(it.getDefinedValue());
+      } else {
+        scalarData.push_back((it.getValue() < 0)?-1000:1000);
+      }
+      // scalarData.push_back(it.isDefined()?it.getValue():-1000);
       subLS.push_back(it.getSegmentId());
     }
 
