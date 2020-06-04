@@ -102,8 +102,10 @@ public:
 
       // insert LS value
       if(it.isDefined()) {
+        std::cout << "D: " << node[0] << ", " << node[1] << ", " << node[2] << " = " << it.getDefinedValue() << std::endl;
         scalarData.push_back(it.getDefinedValue());
       } else {
+        std::cout << "U: " << node[0] << ", " << node[1] << ", " << node[2] << " = " << it.getValue() << std::endl;
         scalarData.push_back((it.getValue() < 0)?-1000:1000);
       }
       // scalarData.push_back(it.isDefined()?it.getValue():-1000);

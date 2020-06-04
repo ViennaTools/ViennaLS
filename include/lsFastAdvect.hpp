@@ -169,6 +169,7 @@ public:
           pointId %= pointsPerDimension[j];
         }
         segmentation.push_back(segmentPoint);
+        std::cout << "segmentation " << i << ": " << segmentPoint << std::endl;
       }
     }
 
@@ -177,7 +178,7 @@ public:
     std::vector<PointValueVector> newPoints;
     newPoints.resize(domain.getNumberOfSegments());
 
-    constexpr T cutoffValue = 1.0;
+    constexpr T cutoffValue = 1.0 + numericEps;
 
 // set up multithreading
 #pragma omp parallel num_threads(domain.getNumberOfSegments())
@@ -189,6 +190,7 @@ public:
 
       hrleVectorType<hrleIndexType, D> startVector =
           (p == 0) ? min : segmentation[p - 1];
+      incrementIndices(startVector, min, max);
 
       hrleVectorType<hrleIndexType, D> endVector =
           (p != static_cast<int>(domain.getNumberOfSegments() - 1))
@@ -307,14 +309,12 @@ public:
       std::vector<double> scalarData;
       unsigned counter = 0;
       for(auto it = newPoints[0].begin(); it != newPoints[0].end(); ++it) {
+        std::cout << "original: " << it->first << std::endl;
         std::array<T, 3> node = {};
         for(unsigned i = 0; i < D; ++i) {
-          node[i] = (it->first)[i] * gridDelta;
+          node[i] = T((it->first)[i]) * gridDelta;
         }
-
-        if(counter > 24074 && counter < 24085) {
-          std::cout << counter << ": " << (it->first)[0] << ", " << (it->first)[1] << ", " << (it->first)[2] << " = " << it->second << std::endl;
-        }
+        std::cout << "node: " << "[" << node[0] << "," << node[1] << ", " << node[2] << "]" << std::endl;
 
         mesh.insertNextNode(node);
         std::array<unsigned, 1> vertex;
@@ -323,13 +323,16 @@ public:
         scalarData.push_back(it->second);
       }
       mesh.insertNextScalarData(scalarData, "LSValues");
+      // mesh.removeDuplicateNodes();
       lsVTKWriter(mesh, "beforeInsert.vtk").apply();
     }
 
     lsFromMesh<T, D>(*levelSet, mesh).apply();
+    levelSet->print();
     // levelSet->insertPoints(newPoints[0], false);
     lsToMesh<T, D>(*levelSet, mesh, false).apply();
     lsVTKWriter(mesh, "afterInsert.vtk").apply();
+    std::cout << "PRINTED AFTER INSERT!" << std::endl;
     levelSet->setLevelSetWidth(1);
     lsExpand<T, D>(*levelSet, 2).apply();
     lsToMesh<T, D>(*levelSet, mesh, false).apply();

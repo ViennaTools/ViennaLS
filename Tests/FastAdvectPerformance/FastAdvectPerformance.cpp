@@ -17,8 +17,8 @@ int main() {
   double gridDelta = 0.5;
   double bounds[2 * D] = {-extent, extent, -extent, extent};
   if (D == 3) {
-    bounds[4] = -extent;
-    bounds[5] = extent;
+    bounds[4] = -10;
+    bounds[5] = 10;
   }
 
   typename lsDomain<NumericType, D>::BoundaryType boundaryCons[D];
