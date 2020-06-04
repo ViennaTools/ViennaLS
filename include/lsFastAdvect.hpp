@@ -13,13 +13,9 @@
 
 #include <lsToDiskMesh.hpp>
 #include <lsFromMesh.hpp>
-// #include <lsCalculateNormalVectors.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsFastAdvectDistributions.hpp>
-
-#include <lsToMesh.hpp>
-#include <lsVTKWriter.hpp>
 
 /// This class advects the level set according to a given distribution.
 /// This distribution is overlayed at every cell. All cells within
@@ -84,7 +80,6 @@ public:
     // points shifted to the surface (disk mesh)
     lsMesh surfaceMesh;
     lsToDiskMesh<T, D>(*levelSet, surfaceMesh).apply();
-    // lsVTKWriter(surfaceMesh, "surfaceMesh.vtk").apply();
     typedef std::vector<std::array<double, 3>> SurfaceNodesType;
     const SurfaceNodesType &surfaceNodes = surfaceMesh.getNodes();
 
@@ -169,7 +164,6 @@ public:
           pointId %= pointsPerDimension[j];
         }
         segmentation.push_back(segmentPoint);
-        std::cout << "segmentation " << i << ": " << segmentPoint << std::endl;
       }
     }
 
@@ -188,9 +182,13 @@ public:
       p = omp_get_thread_num();
 #endif
 
-      hrleVectorType<hrleIndexType, D> startVector =
-          (p == 0) ? min : segmentation[p - 1];
-      incrementIndices(startVector, min, max);
+      hrleVectorType<hrleIndexType, D> startVector;
+      if(p == 0){
+        startVector = min;
+      } else {
+        startVector = segmentation[p - 1];
+        incrementIndices(startVector, min, max);
+      }
 
       hrleVectorType<hrleIndexType, D> endVector =
           (p != static_cast<int>(domain.getNumberOfSegments() - 1))
@@ -305,43 +303,27 @@ public:
     lsMesh mesh;
     // output all points directly to mesh
     {
-      std::cout << grid.getMinGridPoint() << "; " << grid.getMaxGridPoint() << std::endl;
       std::vector<double> scalarData;
-      unsigned counter = 0;
       for(auto it = newPoints[0].begin(); it != newPoints[0].end(); ++it) {
-        std::cout << "original: " << it->first << std::endl;
         std::array<T, 3> node = {};
         for(unsigned i = 0; i < D; ++i) {
           node[i] = T((it->first)[i]) * gridDelta;
         }
-        std::cout << "node: " << "[" << node[0] << "," << node[1] << ", " << node[2] << "]" << std::endl;
 
         mesh.insertNextNode(node);
         std::array<unsigned, 1> vertex;
-        vertex[0] = counter++;
+        vertex[0] = mesh.vertices.size();
         mesh.insertNextVertex(vertex);
         scalarData.push_back(it->second);
       }
       mesh.insertNextScalarData(scalarData, "LSValues");
-      // mesh.removeDuplicateNodes();
-      lsVTKWriter(mesh, "beforeInsert.vtk").apply();
     }
 
     lsFromMesh<T, D>(*levelSet, mesh).apply();
-    levelSet->print();
-    // levelSet->insertPoints(newPoints[0], false);
-    lsToMesh<T, D>(*levelSet, mesh, false).apply();
-    lsVTKWriter(mesh, "afterInsert.vtk").apply();
-    std::cout << "PRINTED AFTER INSERT!" << std::endl;
-    levelSet->setLevelSetWidth(1);
-    lsExpand<T, D>(*levelSet, 2).apply();
-    lsToMesh<T, D>(*levelSet, mesh, false).apply();
-    lsVTKWriter(mesh, "afterExpand.vtk").apply();
 
     levelSet->getDomain().segment();
     levelSet->finalize(1);
 
-    // levelSet->deepCopy(newLevelSet);
     lsExpand<T, D>(*levelSet, 2).apply();
   }
 };

@@ -6,9 +6,6 @@
 #include <lsDomain.hpp>
 #include <lsMesh.hpp>
 
-//TODO remove
-#include <lsVTKWriter.hpp>
-
 /// Import the regular grid, on which the level set values are
 /// defined, from an explicit lsMesh. The Vertices must be defined,
 /// as well as a scalar data field "LSValues". If used for custom
@@ -92,11 +89,6 @@ public:
 
     hrleVectorType<bool, D> signs(values->front() < 0);
 
-    // TODO: remove
-    lsMesh newMesh;
-    std::vector<double> scalarData;
-    unsigned counter = 0;
-
     while (pointDataIt != pointDataEnd && valueIt != valueEnd) {
       // only read in points within the first 5 layers, to ignore
       // undefined points
@@ -126,17 +118,6 @@ public:
 
       if (setPoint) {
         // Add defined point as it appears in the list
-        // TODO: remove
-        std::array<T, 3> node = {};
-        for(unsigned i = 0; i < D; ++i) {
-          node[i] = currentIndex[i] * gridDelta;
-        }
-        std::cout << "D: " << node[0] << ", " << node[1] << ", " << node[2] << " = " << *valueIt << std::endl;
-        newMesh.insertNextNode(node);
-        std::array<unsigned, 1> vertex;
-        vertex[0] = counter++;
-        newMesh.insertNextVertex(vertex);
-        scalarData.push_back(*valueIt);
         domain.insertNextDefinedPoint(0, currentIndex,
                                         *valueIt);
 
@@ -182,24 +163,10 @@ public:
         if (tmp >= nextIndex)
           break;
 
-        // TODO: remove
-        std::array<T, 3> node = {};
-        for(unsigned i = 0; i < D; ++i) {
-          node[i] = tmp[i] * gridDelta;
-        }
-        std::cout << "U: " << node[0] << ", " << node[1] << ", " << node[2] << " = " << (signs[q] ? lsDomain<T, D>::NEG_VALUE : lsDomain<T, D>::POS_VALUE) << std::endl;
-        newMesh.insertNextNode(node);
-        std::array<unsigned, 1> vertex;
-        vertex[0] = counter++;
-        newMesh.insertNextVertex(vertex);
-        scalarData.push_back(signs[q]?-100:100);
         domain.insertNextUndefinedPoint(0, tmp,
                                           signs[q] ? lsDomain<T, D>::NEG_VALUE : lsDomain<T, D>::POS_VALUE);
       }
     }
-
-    newMesh.insertNextScalarData(scalarData, "LSValues");
-    lsVTKWriter(newMesh, "duringInsert.vtk").apply();
 
     domain.finalize();
   }
