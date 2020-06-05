@@ -21,8 +21,6 @@ int main() {
 
   constexpr int D = 3;
 
-  omp_set_num_threads(1);
-
   double gridDelta = 0.5;
 
   double extent = 30;
@@ -40,8 +38,10 @@ int main() {
 
   lsDomain<double, D> levelSet(bounds, boundaryCons, gridDelta);
 
+  hrleVectorType<double, D> min(-10, -10, 0);
+  hrleVectorType<double, D> max(10, 10 , 4);
   lsMakeGeometry<double, D>(levelSet,
-                            lsBox<double, D>({-10, -10, 0}, {10, 10, 4}))
+                            lsBox<double, D>(min, max))
       .apply();
 
   std::cout << "Number of points: " << levelSet.getDomain().getNumberOfPoints()

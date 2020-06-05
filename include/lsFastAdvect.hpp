@@ -305,7 +305,7 @@ public:
     {
       std::vector<double> scalarData;
       for(auto it = newPoints[0].begin(); it != newPoints[0].end(); ++it) {
-        std::array<T, 3> node = {};
+        std::array<double, 3> node = {};
         for(unsigned i = 0; i < D; ++i) {
           node[i] = T((it->first)[i]) * gridDelta;
         }

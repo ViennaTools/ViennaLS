@@ -1,5 +1,7 @@
 #include <iostream>
+#include <chrono>
 
+#include <lsAdvect.hpp>
 #include <lsBooleanOperation.hpp>
 #include <lsExpand.hpp>
 #include <lsFastAdvect.hpp>
@@ -8,13 +10,22 @@
 #include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
+#include <lsVelocityField.hpp>
+
+class velocityField : public lsVelocityField<double> {
+  double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
+                              int /*material*/,
+                              const std::array<double, 3> & /*normalVector*/) {
+    return 1;
+  }
+};
 
 int main() {
   constexpr int D = 3;
   typedef double NumericType;
 
   double extent = 30;
-  double gridDelta = 0.5;
+  double gridDelta = 0.25;
   double bounds[2 * D] = {-extent, extent, -extent, extent};
   if (D == 3) {
     bounds[4] = -10;
@@ -80,19 +91,55 @@ int main() {
   lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
   lsVTKWriter(mesh, "surface.vtk").apply();
 
+  // Distance to advect to
+  double depositionDistance = 4.0;
+
   // set up spherical advection dist
-  lsSphereDistribution<NumericType, D> dist(4);
+  lsSphereDistribution<NumericType, D> dist(depositionDistance);
 
   lsDomain<double, D> newLayer(substrate);
 
   std::cout << "FastAdvecting" << std::endl;
   lsFastAdvect<NumericType, D> fastAdvectKernel(newLayer, dist);
-  fastAdvectKernel.apply();
 
-  lsToMesh<double, D>(newLayer, mesh).apply();
-  lsVTKWriter(mesh, "FastAdvect.vtk").apply();
+  {
+    auto start = std::chrono::high_resolution_clock::now();
+    fastAdvectKernel.apply();
+    auto end = std::chrono::high_resolution_clock::now();
+    auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    std::cout << "Fast Advect: " << diff << "ms" << std::endl;
+  }
+
   lsToSurfaceMesh<double, D>(newLayer, mesh).apply();
-  lsVTKWriter(mesh, "finalSurface.vtk").apply();
+  lsVTKWriter(mesh, "FastAdvect.vtk").apply();
+  // lsToSurfaceMesh<double, D>(newLayer, mesh).apply();
+  // lsVTKWriter(mesh, "finalSurface.vtk").apply();
+
+  // now rund lsAdvect for all other advection schemes
+  // last scheme is SLLFS with i == 9
+  for(unsigned i = 0; i < 10; ++i) {
+    if(i == 4){
+      continue;
+    }
+    lsAdvect<double, D> advectionKernel;
+    lsDomain<double, D> nextLayer(substrate);
+    advectionKernel.insertNextLevelSet(nextLayer);
+
+    velocityField velocities;
+    advectionKernel.setVelocityField(velocities);
+    advectionKernel.setAdvectionTime(depositionDistance);
+    advectionKernel.setIntegrationScheme(static_cast<lsIntegrationSchemeEnum>(i));
+    {
+      auto start = std::chrono::high_resolution_clock::now();
+      advectionKernel.apply();
+      auto end = std::chrono::high_resolution_clock::now();
+      auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+      std::cout << "Advect " << i << ": " << diff << "ms" << std::endl;
+    }
+
+    lsToSurfaceMesh<double, D>(nextLayer, mesh).apply();
+    lsVTKWriter(mesh, "Advect-" + std::to_string(i) + ".vtk").apply();
+  }
 
   return 0;
 }

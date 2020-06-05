@@ -174,7 +174,7 @@ public:
       // alpha calculation is always on order 1 stencil
       const hrleIndexType minIndex = -1;
       const hrleIndexType maxIndex = 1;
-      const unsigned numNeighbors = std::pow((maxIndex - minIndex), D);
+      const unsigned numNeighbors = std::pow((maxIndex - minIndex) - 1, D);
 
       hrleVectorType<hrleIndexType, D> neighborIndex(minIndex);
       for (unsigned i = 0; i < numNeighbors; ++i) {

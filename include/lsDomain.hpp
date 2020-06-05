@@ -113,8 +113,10 @@ public:
   }
 
   /// re-initalise lsDomain with the point/value pairs in pointData
+  /// This is similar to lsFromMesh with the difference that pointData
+  /// contains (INDEX, Value) pairs, while lsFromMesh expects coordinates
+  /// rather than indices
   void insertPoints(PointValueVectorType pointData, bool sort = true) {
-    lsMessage::getInstance().addWarning("lsDomain::insertPoints is deprecated! Use lsFromMesh instead.").print();
     hrleFillDomainWithSignedDistance(domain, pointData, T(NEG_VALUE),
                                      T(POS_VALUE), sort);
   }
