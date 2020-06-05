@@ -52,6 +52,12 @@ int main() {
     lsDomain<double, D> trench(bounds, boundaryCons, gridDelta);
     double minCorner[3] = {-extent - 1, -extent / 4., -15.};
     double maxCorner[3] = {extent + 1, extent / 4., 1.0};
+    if (D == 2) {
+      minCorner[0] = minCorner[1];
+      minCorner[1] = minCorner[2];
+      maxCorner[0] = maxCorner[1];
+      maxCorner[1] = maxCorner[2];
+    }
     lsMakeGeometry<double, D>(trench, lsBox<double, D>(minCorner, maxCorner))
         .apply();
 
@@ -79,8 +85,12 @@ int main() {
   // set up spherical advection dist
   // lsSphereDistribution<NumericType, D> dist(15.0);
   std::cout << "Advecting..." << std::endl;
-  lsBoxDistribution<NumericType, D> dist(
-      hrleVectorType<NumericType, D>(1.5, 1.5, 15));
+  std::array<NumericType, D> box = {2.0, 15};
+  if (D == 3) {
+    box[1] = 2.0;
+    box[2] = 15;
+  }
+  lsBoxDistribution<NumericType, D> dist(box);
   lsFastAdvect<NumericType, D>(substrate, dist).apply();
 
   std::cout << "Writing results..." << std::endl;

@@ -44,6 +44,8 @@ var classlsMesh =
     [ "serialize", "classlsMesh.html#a1fc60f4fb8abd13f7d7e11ef6a033d19", null ],
     [ "hexas", "classlsMesh.html#a7b9d9769139f94b4919f7e7291dab95c", null ],
     [ "lines", "classlsMesh.html#ae4f21eb2048430d487a3e8ba94f254e3", null ],
+    [ "maximumExtent", "classlsMesh.html#a7ce7553a2f67d2cc91b570497403b6f2", null ],
+    [ "minimumExtent", "classlsMesh.html#aba4341203e611dc211a02037b660503b", null ],
     [ "nodes", "classlsMesh.html#a25f811df701c4ba493e87fa03d1a25d1", null ],
     [ "tetras", "classlsMesh.html#aa31df26c1f5151dc476a8b3cfca98e57", null ],
     [ "triangles", "classlsMesh.html#ae8c8c64125ad519e67c5287102d34188", null ],

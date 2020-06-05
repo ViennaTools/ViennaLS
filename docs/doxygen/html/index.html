@@ -100,25 +100,25 @@ $(document).ready(function(){initNavTree('index.html','');});
 <p>* C++ Compiler with OpenMP support</p>
 <p>* <a href="https://github.com/ViennaTools/viennahrle">ViennaHRLE</a></p>
 <p>* <a href="https://vtk.org/">VTK</a> (optional)</p>
-<h3>Installing (with dependencies already installed)</h3>
+<h2>Using ViennaLS in your project</h2>
+<p>Have a look at the <a href="https://github.com/ViennaTools/viennals-example">example repo</a> for creating a project with ViennaLS as a dependency.</p>
+<h2>Installing (with dependencies already installed)</h2>
 <p>Since this is a header only project, it does not require any installation. However, we recommend the following procedure.</p>
 <p>Make sure you have <a href="https://github.com/ViennaTools/viennahrle">ViennaHRLE</a> installed on your system and run:</p>
 <div class="fragment"><div class="line">git clone github.com/ViennaTools/ViennaLS.git</div><div class="line">cd ViennaLS</div><div class="line">mkdir build &amp;&amp; cd build</div><div class="line">cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/</div><div class="line">make install</div></div><!-- fragment --><p>This will install the necessary headers and CMake files to the specified path. If DCMAKE_INSTALL_PREFIX is not specified, it will be installed to the standard path for your system, usually /usr/local/ .</p>
-<h2>Using ViennaLS in your project</h2>
-<p>Have a look at the <a href="https://github.com/ViennaTools/viennals-example">example repo</a> for creating a project with ViennaLS as a dependency.</p>
 <h2>Using the viennaLS python module</h2>
 <p>The Releases only contain the compiled library for the most common Python version per platform: * Windows: Python 3.8 * Linux: Python 3.6</p>
-<p>For all other Python versions, the library has to be compiled by hand.</p>
+<p>For all other Python versions, you have to build the library yourself (see below).</p>
 <p>In order to use ViennaLS in python, just download the python shared libraries from the <a href="https://github.com/ViennaTools/ViennaLS/releases">releases section</a> and put it in your current folder. From this folder just import the 2D or the 3D version of the library:</p>
 <div class="fragment"><div class="line">import viennaLS2d as vls</div><div class="line">levelset = vls.lsDomain(0.2) # empty level set with grid spacing 0.2</div><div class="line">sphere = vls.lsSphere((0,0,0), 5) # sphere at origin with radius 5</div><div class="line">vls.lsMakeGeometry(levelset, sphere).apply() # create sphere in level set</div></div><!-- fragment --><p>All functions which are available in C++ are also available in Python. In order to switch to three dimensions, only the import needs to be changed:</p>
-<div class="fragment"><div class="line">import viennaLS3d as vls</div></div><!-- fragment --><h3>Integration in CMake projects</h3>
+<div class="fragment"><div class="line">import viennaLS3d as vls</div></div><!-- fragment --><h3>Building the python module</h3>
+<p>In order to build the python module, set VIENNALS_BUILD_PYTHON_2_7 OR VIENNALS_BUILD_PYTHON_3_6 to ON: </p><div class="fragment"><div class="line">cmake .. -DVIENNALS_BUILD_PYTHON_3_6=ON</div><div class="line">make</div></div><!-- fragment --><p>If both options are on, only VIENNALS_BUILD_PYTHON_3_6 will be used, since only one version can be built at a time.</p>
+<h2>Integration in CMake projects</h2>
 <p>In order to use this library in your CMake project, add the following lines to the CMakeLists.txt of your project:\ (also do not forget to include ViennaHRLE)</p>
 <div class="fragment"><div class="line">set(ViennaLS_DIR &quot;/path/to/your/custom/install/&quot;)</div><div class="line">find_package(ViennaLS REQUIRED)</div><div class="line">add_executable(...)</div><div class="line">target_include_directories(${PROJECT_NAME} PUBLIC ${VIENNALS_INCLUDE_DIRS})</div><div class="line">target_link_libraries(${PROJECT_NAME} ${VIENNALS_LIBRARIES})</div></div><!-- fragment --><h3>Building examples</h3>
 <p>The examples can be built using CMake:</p>
-<div class="fragment"><div class="line">mkdir build &amp;&amp; cd build</div><div class="line">cmake .. -DVIENNALS_BUILD_EXAMPLES=ON</div><div class="line">make</div></div><!-- fragment --><h3>Building the python module</h3>
-<p>In order to build the python module, set VIENNALS_BUILD_PYTHON_2_7 OR VIENNALS_BUILD_PYTHON_3_6 to ON: </p><div class="fragment"><div class="line">cmake .. -DVIENNALS_BUILD_PYTHON_3_6=ON</div><div class="line">make</div></div><!-- fragment --><h3>Shared libraries</h3>
-<p>In order to save build time during developement, dynamically linked shared libraries can be used if ViennaLS was built with them. This is done by precompiling the most common template specialisations. In order to use this, set VIENNALS_BUILD_SHARED_LIBS=ON when building ViennaLS. If ViennaLS was build with shared libraries, CMake will automatically link them to your project. In order to build a release of your own project with better runtime performance, but longer build times, the CMake option VIENNALS_USE_SHARED_LIBS=OFF should be used.</p>
-<h2>Contributing</h2>
+<div class="fragment"><div class="line">mkdir build &amp;&amp; cd build</div><div class="line">cmake .. -DVIENNALS_BUILD_EXAMPLES=ON</div><div class="line">make</div></div><!-- fragment --><h3>Shared libraries</h3>
+<p>In order to save build time during developement, dynamically linked shared libraries can be used if ViennaLS was built with them. This is done by precompiling the most common template specialisations. In order to use shared libraries, use </p><div class="fragment"><div class="line">cmake .. -DVIENNALS_BUILD_SHARED_LIBS=ON</div></div><!-- fragment --><p> If ViennaLS was build with shared libraries and you use ViennaLS in your project (see above), CMake will automatically link them to your project. In order to build a release of your own project with better runtime performance, but longer build times, use the following CMake option when building your project: </p><div class="fragment"><div class="line">VIENNALS_USE_SHARED_LIBS=OFF</div></div><!-- fragment --><h2>Contributing</h2>
 <p>Before being able to merge your PR, make sure you have met all points on the checklist in https://github.com/ViennaTools/viennals/blob/master/CONTRIBUTING.md "CONTRIBUTING.md".</p>
 <p>If you want to contribute to ViennaLS, make sure to follow the <a href="https://llvm.org/docs/CodingStandards.html">LLVM Coding guidelines</a>. Before creating a pull request, make sure ALL files have been formatted by clang-format, which can be done using the format-project.sh script in the root directory.</p>
 <h2>Authors</h2>

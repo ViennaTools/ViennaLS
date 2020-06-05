@@ -28,6 +28,9 @@ var dir_d44c64559bbebec7f509842c48db8b23 =
     ] ],
     [ "lsFileFormats.hpp", "lsFileFormats_8hpp.html", "lsFileFormats_8hpp" ],
     [ "lsFiniteDifferences.hpp", "lsFiniteDifferences_8hpp.html", "lsFiniteDifferences_8hpp" ],
+    [ "lsFromMesh.hpp", "lsFromMesh_8hpp.html", [
+      [ "lsFromMesh", "classlsFromMesh.html", "classlsFromMesh" ]
+    ] ],
     [ "lsFromSurfaceMesh.hpp", "lsFromSurfaceMesh_8hpp.html", [
       [ "lsFromSurfaceMesh", "classlsFromSurfaceMesh.html", "classlsFromSurfaceMesh" ],
       [ "iterator", "classlsFromSurfaceMesh_1_1box_1_1iterator.html", "classlsFromSurfaceMesh_1_1box_1_1iterator" ]

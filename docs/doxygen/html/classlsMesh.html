@@ -218,6 +218,10 @@ Public Attributes</h2></td></tr>
 <tr class="separator:aa31df26c1f5151dc476a8b3cfca98e57"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7b9d9769139f94b4919f7e7291dab95c"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; unsigned, 8 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a7b9d9769139f94b4919f7e7291dab95c">hexas</a></td></tr>
 <tr class="separator:a7b9d9769139f94b4919f7e7291dab95c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aba4341203e611dc211a02037b660503b"><td class="memItemLeft" align="right" valign="top">std::array&lt; double, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#aba4341203e611dc211a02037b660503b">minimumExtent</a></td></tr>
+<tr class="separator:aba4341203e611dc211a02037b660503b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7ce7553a2f67d2cc91b570497403b6f2"><td class="memItemLeft" align="right" valign="top">std::array&lt; double, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a7ce7553a2f67d2cc91b570497403b6f2">maximumExtent</a></td></tr>
+<tr class="separator:a7ce7553a2f67d2cc91b570497403b6f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>This class holds an explicit mesh, which is always given in 3 dimensions. If it describes a 2D mesh, the third dimension is set to 0. Vertices, Lines, Triangles, Tetras &amp; Hexas are supported as geometric elements. </p>
@@ -1359,6 +1363,34 @@ template&lt;int D, typename std::enable_if&lt; D==8, int &gt;::type  = 0&gt; </d
       <table class="memname">
         <tr>
           <td class="memname">std::vector&lt;std::array&lt;unsigned, 2&gt; &gt; lsMesh::lines</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7ce7553a2f67d2cc91b570497403b6f2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7ce7553a2f67d2cc91b570497403b6f2">&#9670;&nbsp;</a></span>maximumExtent</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::array&lt;double, 3&gt; lsMesh::maximumExtent</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aba4341203e611dc211a02037b660503b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aba4341203e611dc211a02037b660503b">&#9670;&nbsp;</a></span>minimumExtent</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::array&lt;double, 3&gt; lsMesh::minimumExtent</td>
         </tr>
       </table>
 </div><div class="memdoc">

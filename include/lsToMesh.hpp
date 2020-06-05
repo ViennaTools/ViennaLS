@@ -3,7 +3,7 @@
 
 #include <lsPreCompileMacros.hpp>
 
-#include <iostream>
+#include <vector>
 
 #include <hrleSparseIterator.hpp>
 #include <lsDomain.hpp>
@@ -20,6 +20,7 @@ template <class T, int D> class lsToMesh {
   lsMesh *mesh = nullptr;
   bool onlyDefined;
   bool onlyActive;
+  static constexpr long long maxDomainExtent = 1e6;
 
 public:
   lsToMesh(){};
@@ -73,6 +74,18 @@ public:
           (onlyActive && std::abs(it.getValue()) > 0.5))
         continue;
 
+      if (!onlyDefined && !it.isDefined()) {
+        bool skipPoint = false;
+        for (unsigned i = 0; i < D; ++i) {
+          if (std::abs(it.getStartIndices(i)) > maxDomainExtent) {
+            skipPoint = true;
+          }
+        }
+        if (skipPoint) {
+          continue;
+        }
+      }
+
       // insert vertex
       std::array<unsigned, 1> vertex;
       vertex[0] = mesh->nodes.size();
@@ -88,7 +101,11 @@ public:
       mesh->insertNextNode(node);
 
       // insert LS value
-      scalarData.push_back(it.getValue());
+      if (it.isDefined()) {
+        scalarData.push_back(it.getDefinedValue());
+      } else {
+        scalarData.push_back((it.getValue() < 0) ? -1000 : 1000);
+      }
       subLS.push_back(it.getSegmentId());
     }
 

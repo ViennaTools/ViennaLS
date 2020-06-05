@@ -105,6 +105,8 @@ Inheritance diagram for lsFastAdvectDistribution&lt; T, D &gt;:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:abaec9ce97efbb089824a47f54b033036"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsFastAdvectDistribution.html#abaec9ce97efbb089824a47f54b033036">lsFastAdvectDistribution</a> ()</td></tr>
+<tr class="separator:abaec9ce97efbb089824a47f54b033036"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae2886d1ed35fa2af4b1e16ca7f5850e9"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsFastAdvectDistribution.html#ae2886d1ed35fa2af4b1e16ca7f5850e9">isInside</a> (const std::array&lt; hrleCoordType, D &gt; &amp;v, double eps=0.) const =0</td></tr>
 <tr class="memdesc:ae2886d1ed35fa2af4b1e16ca7f5850e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Quick check whether a point relative to the distributions center is inside the distribution.  <a href="#ae2886d1ed35fa2af4b1e16ca7f5850e9">More...</a><br /></td></tr>
 <tr class="separator:ae2886d1ed35fa2af4b1e16ca7f5850e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -114,13 +116,70 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ae7091ae711ae8a5ddcbb84141081f125"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsFastAdvectDistribution.html#ae7091ae711ae8a5ddcbb84141081f125">getBounds</a> (std::array&lt; hrleCoordType, 2 *D &gt; &amp;bounds) const =0</td></tr>
 <tr class="memdesc:ae7091ae711ae8a5ddcbb84141081f125"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets bounds to the bounding box of the distribution.  <a href="#ae7091ae711ae8a5ddcbb84141081f125">More...</a><br /></td></tr>
 <tr class="separator:ae7091ae711ae8a5ddcbb84141081f125"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2bfc7ac3769c10591400426831d28e2e"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsFastAdvectDistribution.html#a2bfc7ac3769c10591400426831d28e2e">~lsFastAdvectDistribution</a> ()</td></tr>
+<tr class="separator:a2bfc7ac3769c10591400426831d28e2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;class T, int D&gt;<br />
 class lsFastAdvectDistribution&lt; T, D &gt;</h3>
 
 <p>Base class for distributions used by <a class="el" href="classlsFastAdvect.html" title="This class advects the level set according to a given distribution. This distribution is overlayed at...">lsFastAdvect</a>. All functions are pure virtual and must be implemented by any advection distribution. </p>
-</div><h2 class="groupheader">Member Function Documentation</h2>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="abaec9ce97efbb089824a47f54b033036"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abaec9ce97efbb089824a47f54b033036">&#9670;&nbsp;</a></span>lsFastAdvectDistribution()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T, int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsFastAdvectDistribution.html">lsFastAdvectDistribution</a>&lt; T, D &gt;::<a class="el" href="classlsFastAdvectDistribution.html">lsFastAdvectDistribution</a> </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2bfc7ac3769c10591400426831d28e2e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2bfc7ac3769c10591400426831d28e2e">&#9670;&nbsp;</a></span>~lsFastAdvectDistribution()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T, int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="classlsFastAdvectDistribution.html">lsFastAdvectDistribution</a>&lt; T, D &gt;::~<a class="el" href="classlsFastAdvectDistribution.html">lsFastAdvectDistribution</a> </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
 <a id="ae7091ae711ae8a5ddcbb84141081f125"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae7091ae711ae8a5ddcbb84141081f125">&#9670;&nbsp;</a></span>getBounds()</h2>
 

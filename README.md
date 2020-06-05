@@ -33,7 +33,12 @@ Releases are tagged on the maser branch and available in the [releases section](
 * [VTK](https://vtk.org/) (optional)
 
 
-### Installing (with dependencies already installed)
+## Using ViennaLS in your project
+
+Have a look at the [example repo](https://github.com/ViennaTools/viennals-example) for creating a project with ViennaLS as a dependency.
+
+
+## Installing (with dependencies already installed)
 
 Since this is a header only project, it does not require any installation.
 However, we recommend the following procedure.
@@ -51,17 +56,13 @@ make install
 This will install the necessary headers and CMake files to the specified path. If DCMAKE_INSTALL_PREFIX is not specified, it will be installed to the standard path for your system, usually /usr/local/ .
 
 
-## Using ViennaLS in your project
-
-Have a look at the [example repo](https://github.com/ViennaTools/viennals-example) for creating a project with ViennaLS as a dependency.
-
 ## Using the viennaLS python module
 
 The Releases only contain the compiled library for the most common Python version per platform:
 * Windows: Python 3.8
 * Linux: Python 3.6
 
-For all other Python versions, the library has to be compiled by hand.
+For all other Python versions, you have to build the library yourself (see below).
 
 In order to use ViennaLS in python, just download the python shared libraries from the [releases section](https://github.com/ViennaTools/ViennaLS/releases) and put it in your current folder.
 From this folder just import the 2D or the 3D version of the library:
@@ -79,7 +80,18 @@ All functions which are available in C++ are also available in Python. In order 
 import viennaLS3d as vls
 ```
 
-### Integration in CMake projects
+
+### Building the python module
+
+In order to build the python module, set `VIENNALS_BUILD_PYTHON_2_7` or `VIENNALS_BUILD_PYTHON_3_6` to `ON`:
+```
+cmake .. -DVIENNALS_BUILD_PYTHON_3_6=ON
+make
+```
+
+If both options are on, only VIENNALS_BUILD_PYTHON_3_6 will be used, since only one version can be built at a time.
+
+## Integration in CMake projects
 
 In order to use this library in your CMake project, add the following lines to the CMakeLists.txt of your project:\
 (also do not forget to include ViennaHRLE)
@@ -102,20 +114,19 @@ cmake .. -DVIENNALS_BUILD_EXAMPLES=ON
 make
 ```
 
-### Building the python module
-
-In order to build the python module, set VIENNALS_BUILD_PYTHON_2_7 OR VIENNALS_BUILD_PYTHON_3_6 to ON:
-```
-cmake .. -DVIENNALS_BUILD_PYTHON_3_6=ON
-make
-```
-
 ### Shared libraries
 
 In order to save build time during developement, dynamically linked shared libraries can be used
 if ViennaLS was built with them. This is done by precompiling the most common template specialisations.
-In order to use this, set VIENNALS_BUILD_SHARED_LIBS=ON when building ViennaLS. If ViennaLS was build with shared libraries, CMake will automatically link them to your project. In order to build a release of your own project with better runtime performance, but
-longer build times, the CMake option VIENNALS_USE_SHARED_LIBS=OFF should be used.
+In order to use shared libraries, use 
+```
+cmake .. -DVIENNALS_BUILD_SHARED_LIBS=ON
+```
+If ViennaLS was build with shared libraries and you use ViennaLS in your project (see above), CMake will automatically link them to your project. In order to build a release of your own project with better runtime performance, but
+longer build times, use the following CMake option when building your project:
+```
+VIENNALS_USE_SHARED_LIBS=OFF
+```
 
 ## Contributing
 Before being able to merge your PR, make sure you have met all points on the checklist in [CONTRIBUTING.md](https://github.com/ViennaTools/viennals/blob/master/CONTRIBUTING.md).
