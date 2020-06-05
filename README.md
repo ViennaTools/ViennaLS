@@ -83,7 +83,7 @@ import viennaLS3d as vls
 
 ### Building the python module
 
-In order to build the python module, set VIENNALS_BUILD_PYTHON_2_7 OR VIENNALS_BUILD_PYTHON_3_6 to ON:
+In order to build the python module, set `VIENNALS_BUILD_PYTHON_2_7` or `VIENNALS_BUILD_PYTHON_3_6` to `ON`:
 ```
 cmake .. -DVIENNALS_BUILD_PYTHON_3_6=ON
 make
