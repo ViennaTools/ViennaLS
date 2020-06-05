@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.13"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>ViennaLS: Member List</title>
+<title>ViennaLS: include/lsFromMesh.hpp File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -62,7 +62,7 @@ $(function() {
   </div>
 </div>
 <script type="text/javascript">
-$(document).ready(function(){initNavTree('classlsFastAdvectDistribution.html','');});
+$(document).ready(function(){initNavTree('lsFromMesh_8hpp.html','');});
 </script>
 <div id="doc-content">
 <!-- window showing the filter options -->
@@ -80,23 +80,28 @@ $(document).ready(function(){initNavTree('classlsFastAdvectDistribution.html',''
 </div>
 
 <div class="header">
+  <div class="summary">
+<a href="#nested-classes">Classes</a>  </div>
   <div class="headertitle">
-<div class="title">lsFastAdvectDistribution&lt; T, D &gt; Member List</div>  </div>
+<div class="title">lsFromMesh.hpp File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-
-<p>This is the complete list of members for <a class="el" href="classlsFastAdvectDistribution.html">lsFastAdvectDistribution&lt; T, D &gt;</a>, including all inherited members.</p>
-<table class="directory">
-  <tr class="even"><td class="entry"><a class="el" href="classlsFastAdvectDistribution.html#ae7091ae711ae8a5ddcbb84141081f125">getBounds</a>(std::array&lt; hrleCoordType, 2 *D &gt; &amp;bounds) const =0</td><td class="entry"><a class="el" href="classlsFastAdvectDistribution.html">lsFastAdvectDistribution&lt; T, D &gt;</a></td><td class="entry"><span class="mlabel">pure virtual</span></td></tr>
-  <tr><td class="entry"><a class="el" href="classlsFastAdvectDistribution.html#acc15bfca0ba943228b634a2a541bd524">getSignedDistance</a>(const std::array&lt; hrleCoordType, D &gt; &amp;v) const =0</td><td class="entry"><a class="el" href="classlsFastAdvectDistribution.html">lsFastAdvectDistribution&lt; T, D &gt;</a></td><td class="entry"><span class="mlabel">pure virtual</span></td></tr>
-  <tr class="even"><td class="entry"><a class="el" href="classlsFastAdvectDistribution.html#ae2886d1ed35fa2af4b1e16ca7f5850e9">isInside</a>(const std::array&lt; hrleCoordType, D &gt; &amp;v, double eps=0.) const =0</td><td class="entry"><a class="el" href="classlsFastAdvectDistribution.html">lsFastAdvectDistribution&lt; T, D &gt;</a></td><td class="entry"><span class="mlabel">pure virtual</span></td></tr>
-  <tr><td class="entry"><a class="el" href="classlsFastAdvectDistribution.html#abaec9ce97efbb089824a47f54b033036">lsFastAdvectDistribution</a>()</td><td class="entry"><a class="el" href="classlsFastAdvectDistribution.html">lsFastAdvectDistribution&lt; T, D &gt;</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr class="even"><td class="entry"><a class="el" href="classlsFastAdvectDistribution.html#a2bfc7ac3769c10591400426831d28e2e">~lsFastAdvectDistribution</a>()</td><td class="entry"><a class="el" href="classlsFastAdvectDistribution.html">lsFastAdvectDistribution&lt; T, D &gt;</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">virtual</span></td></tr>
-</table></div><!-- contents -->
+<div class="textblock"><code>#include &lt;<a class="el" href="lsPreCompileMacros_8hpp.html">lsPreCompileMacros.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="lsDomain_8hpp.html">lsDomain.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="lsMesh_8hpp.html">lsMesh.hpp</a>&gt;</code><br />
+</div><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsFromMesh.html">lsFromMesh&lt; T, D &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Import the regular grid, on which the level set values are defined, from an explicit <a class="el" href="classlsMesh.html" title="This class holds an explicit mesh, which is always given in 3 dimensions. If it describes a 2D mesh...">lsMesh</a>. The Vertices must be defined, as well as a scalar data field "LSValues". If used for custom read-in, make sure all vertices are lexicographically sorted.  <a href="classlsFromMesh.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+</div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
+    <li class="navelem"><a class="el" href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a class="el" href="lsFromMesh_8hpp.html">lsFromMesh.hpp</a></li>
     <li class="footer">Generated by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.13 </li>

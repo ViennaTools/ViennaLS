@@ -13,7 +13,7 @@ var searchData=
   ['insertnextuniquepoint',['insertNextUniquePoint',['../classlsPointCloud.html#a15e7080f37532deb90bd6fd112c8aba8',1,'lsPointCloud']]],
   ['insertnextvectordata',['insertNextVectorData',['../classlsPointData.html#a93083e62d93688bf51ec504b967eed67',1,'lsPointData']]],
   ['insertnextvertex',['insertNextVertex',['../classlsInternal_1_1lsGraph.html#a9dce145ce183b327cce81633ed5b0e19',1,'lsInternal::lsGraph::insertNextVertex()'],['../classlsMesh.html#a1eb2540610049b7d13a6886bda7d029c',1,'lsMesh::insertNextVertex()']]],
-  ['insertpoints',['insertPoints',['../classlsDomain.html#ac5f0a15b5375a11331db810afb4d42dd',1,'lsDomain']]],
+  ['insertpoints',['insertPoints',['../classlsDomain.html#aafee5214479c6a4519c2ec2ec4e5671e',1,'lsDomain']]],
   ['is_5ffinished',['is_finished',['../classlsFromSurfaceMesh_1_1box_1_1iterator.html#a2af42d0cf34305195a68a06f3967e36f',1,'lsFromSurfaceMesh::box::iterator']]],
   ['isinside',['isInside',['../classlsFastAdvectDistribution.html#ae2886d1ed35fa2af4b1e16ca7f5850e9',1,'lsFastAdvectDistribution::isInside()'],['../classlsSphereDistribution.html#aeb282380641164e5f5a5ac9d0c00ff5b',1,'lsSphereDistribution::isInside()'],['../classlsBoxDistribution.html#aa7d537d9b4a1619eccda25984a5b73a0',1,'lsBoxDistribution::isInside()']]],
   ['iterator',['iterator',['../classlsFromSurfaceMesh_1_1box_1_1iterator.html#a1938cb8af1a7ceb59d909a4d7a829560',1,'lsFromSurfaceMesh::box::iterator']]]

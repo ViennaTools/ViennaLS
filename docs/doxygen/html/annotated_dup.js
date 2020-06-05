@@ -14,6 +14,7 @@ var annotated_dup =
     [ "lsExpand", "classlsExpand.html", "classlsExpand" ],
     [ "lsFastAdvect", "classlsFastAdvect.html", "classlsFastAdvect" ],
     [ "lsFastAdvectDistribution", "classlsFastAdvectDistribution.html", "classlsFastAdvectDistribution" ],
+    [ "lsFromMesh", "classlsFromMesh.html", "classlsFromMesh" ],
     [ "lsFromSurfaceMesh", "classlsFromSurfaceMesh.html", "classlsFromSurfaceMesh" ],
     [ "lsFromVolumeMesh", "classlsFromVolumeMesh.html", "classlsFromVolumeMesh" ],
     [ "lsMakeGeometry", "classlsMakeGeometry.html", "classlsMakeGeometry" ],

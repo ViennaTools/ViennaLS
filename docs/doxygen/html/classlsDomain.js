@@ -32,7 +32,7 @@ var classlsDomain =
     [ "getPointData", "classlsDomain.html#aae58fdb28646188fef3af91273a61a30", null ],
     [ "getVoidPointMarkers", "classlsDomain.html#a5688871f172d0b498bb4dd1eede75849", null ],
     [ "getVoidPointMarkers", "classlsDomain.html#a5e52f8287be2d7d0ab41cccf42c62502", null ],
-    [ "insertPoints", "classlsDomain.html#ac5f0a15b5375a11331db810afb4d42dd", null ],
+    [ "insertPoints", "classlsDomain.html#aafee5214479c6a4519c2ec2ec4e5671e", null ],
     [ "print", "classlsDomain.html#aadf4b2701ea2e00e344872ef85389382", null ],
     [ "serialize", "classlsDomain.html#a9dfe51a8b5d89f8da7c7f4ea68a398ea", null ],
     [ "setLevelSetWidth", "classlsDomain.html#a615d5361183773a25292ead3c3a6ef08", null ],

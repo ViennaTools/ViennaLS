@@ -17,6 +17,7 @@ var hierarchy =
     ] ],
     [ "lsFastAdvectDistribution< hrleCoordType, D >", "classlsFastAdvectDistribution.html", null ],
     [ "lsInternal::lsFiniteDifferences< T, scheme >", "classlsInternal_1_1lsFiniteDifferences.html", null ],
+    [ "lsFromMesh< T, D >", "classlsFromMesh.html", null ],
     [ "lsFromSurfaceMesh< T, D >", "classlsFromSurfaceMesh.html", null ],
     [ "lsFromVolumeMesh< T, D >", "classlsFromVolumeMesh.html", null ],
     [ "lsInternal::lsGraph", "classlsInternal_1_1lsGraph.html", null ],
@@ -42,11 +43,11 @@ var hierarchy =
     [ "lsToMesh< T, D >", "classlsToMesh.html", null ],
     [ "lsToSurfaceMesh< T, D >", "classlsToSurfaceMesh.html", null ],
     [ "lsToVoxelMesh< T, D >", "classlsToVoxelMesh.html", null ],
-    [ "lsVelocityField< T >", "classlsVelocityField.html", null ],
     [ "lsVelocityField", null, [
       [ "AirGapDeposition.velocityField", "classAirGapDeposition_1_1velocityField.html", null ],
       [ "Deposition.velocityField", "classDeposition_1_1velocityField.html", null ]
     ] ],
+    [ "lsVelocityField< T >", "classlsVelocityField.html", null ],
     [ "lsVelocityField< double >", "classlsVelocityField.html", null ],
     [ "lsVTKReader", "classlsVTKReader.html", null ],
     [ "lsVTKWriter", "classlsVTKWriter.html", null ],
