@@ -287,7 +287,9 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
           "setAdvectionDistribution",
           &lsFastAdvect<T, D>::setAdvectionDistribution,
           "Set advection distribution to use as kernel for the fast advection.")
-      .def("apply", &lsFastAdvect<T, D>::apply, "Perform advection.");
+      .def("apply", &lsFastAdvect<T, D>::apply,
+           pybind11::call_guard<pybind11::gil_scoped_release>(),
+           "Perform advection.");
 
   // lsFastAdvectDistributions
   pybind11::class_<lsFastAdvectDistribution<T, D>, PylsFastAdvectDistribution>(

@@ -52,7 +52,7 @@ int main() {
     lsDomain<double, D> trench(bounds, boundaryCons, gridDelta);
     double minCorner[3] = {-extent - 1, -extent / 4., -15.};
     double maxCorner[3] = {extent + 1, extent / 4., 1.0};
-    if(D==2) {
+    if (D == 2) {
       minCorner[0] = minCorner[1];
       minCorner[1] = minCorner[2];
       maxCorner[0] = maxCorner[1];
@@ -86,7 +86,7 @@ int main() {
   // lsSphereDistribution<NumericType, D> dist(15.0);
   std::cout << "Advecting..." << std::endl;
   std::array<NumericType, D> box = {2.0, 15};
-  if(D == 3) {
+  if (D == 3) {
     box[1] = 2.0;
     box[2] = 15;
   }

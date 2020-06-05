@@ -81,7 +81,7 @@ public:
             skipPoint = true;
           }
         }
-        if(skipPoint) {
+        if (skipPoint) {
           continue;
         }
       }
@@ -101,10 +101,10 @@ public:
       mesh->insertNextNode(node);
 
       // insert LS value
-      if(it.isDefined()) {
+      if (it.isDefined()) {
         scalarData.push_back(it.getDefinedValue());
       } else {
-        scalarData.push_back((it.getValue() < 0)?-1000:1000);
+        scalarData.push_back((it.getValue() < 0) ? -1000 : 1000);
       }
       subLS.push_back(it.getSegmentId());
     }

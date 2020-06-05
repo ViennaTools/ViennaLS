@@ -27,16 +27,14 @@ public:
     levelSet = &passedlsDomain;
   }
 
-  void setMesh(const lsMesh &passedMesh) {
-    mesh = &passedMesh;
-  }
+  void setMesh(const lsMesh &passedMesh) { mesh = &passedMesh; }
 
   void setSortPointList(bool passedSortPointList) {
     sortPointList = passedSortPointList;
   }
 
   void apply() {
-      if (levelSet == nullptr) {
+    if (levelSet == nullptr) {
       lsMessage::getInstance()
           .addWarning("No level set was passed to lsFromMesh.")
           .print();
@@ -53,13 +51,13 @@ public:
     auto &nodes = mesh->getNodes();
     auto values = mesh->getScalarData("LSValues");
 
-    if(values == nullptr) {
+    if (values == nullptr) {
       lsMessage::getInstance()
           .addWarning("Mesh does not contain level set values (\"LSValues\").")
           .print();
       return;
     }
-    
+
     domain.initialize();
 
     // if there are no points, just initialize an empty hrleDomain
@@ -71,13 +69,14 @@ public:
     const T gridDelta = grid.getGridDelta();
 
     if (hrleVectorType<T, D>(nodes.front()) != grid.getMinGridPoint()) {
-      domain.insertNextUndefinedPoint(
-          0, grid.getMinGridPoint(),
-          (values->front() < 0) ? lsDomain<T, D>::NEG_VALUE : lsDomain<T, D>::POS_VALUE);
+      domain.insertNextUndefinedPoint(0, grid.getMinGridPoint(),
+                                      (values->front() < 0)
+                                          ? lsDomain<T, D>::NEG_VALUE
+                                          : lsDomain<T, D>::POS_VALUE);
     }
 
     hrleVectorType<hrleIndexType, D> lastIndex(nodes.front());
-    for(unsigned i = 0; i < D; ++i) {
+    for (unsigned i = 0; i < D; ++i) {
       lastIndex[i] = nodes.front()[i] / gridDelta;
     }
 
@@ -92,7 +91,7 @@ public:
     while (pointDataIt != pointDataEnd && valueIt != valueEnd) {
       // only read in points within the first 5 layers, to ignore
       // undefined points
-      if(std::abs(*valueIt) > 2.5) {
+      if (std::abs(*valueIt) > 2.5) {
         ++pointDataIt;
         ++valueIt;
         continue;
@@ -101,7 +100,7 @@ public:
       bool setPoint = true;
 
       hrleVectorType<hrleIndexType, D> currentIndex;
-      for(unsigned i = 0; i < D; ++i) {
+      for (unsigned i = 0; i < D; ++i) {
         currentIndex[i] = std::round(pointDataIt->at(i) / gridDelta);
       }
 
@@ -111,15 +110,14 @@ public:
         if (grid.getBoundaryConditions(i) != hrleGrid<D>::INFINITE_BOUNDARY) {
           if (currentIndex[i] > grid.getMaxBounds(i) ||
               currentIndex[i] < grid.getMinBounds(i)) {
-                setPoint = false;
-              }
+            setPoint = false;
           }
+        }
       }
 
       if (setPoint) {
         // Add defined point as it appears in the list
-        domain.insertNextDefinedPoint(0, currentIndex,
-                                        *valueIt);
+        domain.insertNextDefinedPoint(0, currentIndex, *valueIt);
 
         // determine signs for next undefined runs
         {
@@ -144,7 +142,7 @@ public:
         nextIndex = grid.getMaxGridPoint();
         nextIndex[D - 1]++;
       } else {
-        for(unsigned i = 0; i < D; ++i) {
+        for (unsigned i = 0; i < D; ++i) {
           nextIndex[i] = std::round(pointDataIt->at(i) / gridDelta);
         }
       }
@@ -164,7 +162,8 @@ public:
           break;
 
         domain.insertNextUndefinedPoint(0, tmp,
-                                          signs[q] ? lsDomain<T, D>::NEG_VALUE : lsDomain<T, D>::POS_VALUE);
+                                        signs[q] ? lsDomain<T, D>::NEG_VALUE
+                                                 : lsDomain<T, D>::POS_VALUE);
       }
     }
 

@@ -11,11 +11,11 @@
 #include <lsMessage.hpp>
 #include <lsPreCompileMacros.hpp>
 
-#include <lsToDiskMesh.hpp>
-#include <lsFromMesh.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsFastAdvectDistributions.hpp>
+#include <lsFromMesh.hpp>
+#include <lsToDiskMesh.hpp>
 
 /// This class advects the level set according to a given distribution.
 /// This distribution is overlayed at every cell. All cells within
@@ -107,7 +107,9 @@ public:
     hrleVectorType<hrleIndexType, D> distMin, distMax;
 
     bool minPointNegative = domain.getDomainSegment(0).definedValues[0] < 0.;
-    bool maxPointNegative = domain.getDomainSegment(domain.getNumberOfSegments()-1).definedValues.back() < 0.;
+    bool maxPointNegative =
+        domain.getDomainSegment(domain.getNumberOfSegments() - 1)
+            .definedValues.back() < 0.;
 
     // find bounding box of old domain
     hrleIndexType bounds[2 * D];
@@ -122,24 +124,24 @@ public:
       // level set
       // TODO: respect periodic boundary condition
       min[i] = surfaceMesh.minimumExtent[i] / gridDelta;
-      if(grid.isNegBoundaryInfinite(i) && minPointNegative) {
+      if (grid.isNegBoundaryInfinite(i) && minPointNegative) {
         min[i] += distMax[i] - 2;
       } else {
         min[i] += distMin[i];
       }
       // if calculated index is out of bounds, set the extent
       // TODO: need to add periodic BNC handling here
-      if(min[i] < grid.getMinGridPoint(i)) {
+      if (min[i] < grid.getMinGridPoint(i)) {
         min[i] = grid.getMinGridPoint(i);
       }
 
       max[i] = surfaceMesh.maximumExtent[i] / gridDelta;
-      if(grid.isPosBoundaryInfinite(i) && maxPointNegative) {
+      if (grid.isPosBoundaryInfinite(i) && maxPointNegative) {
         max[i] += distMin[i] + 2;
       } else {
         max[i] += distMax[i];
       }
-      if(max[i] > grid.getMaxGridPoint(i)) {
+      if (max[i] > grid.getMaxGridPoint(i)) {
         max[i] = grid.getMaxGridPoint(i);
       }
     }
@@ -183,7 +185,7 @@ public:
 #endif
 
       hrleVectorType<hrleIndexType, D> startVector;
-      if(p == 0){
+      if (p == 0) {
         startVector = min;
       } else {
         startVector = segmentation[p - 1];
@@ -281,7 +283,8 @@ public:
         }
 
         if (std::abs(distance) <= cutoffValue) {
-          newPoints[p].push_back(std::make_pair(currentIndex, distance - numericEps));
+          newPoints[p].push_back(
+              std::make_pair(currentIndex, distance - numericEps));
         }
 
       } // domainBounds for
@@ -304,9 +307,9 @@ public:
     // output all points directly to mesh
     {
       std::vector<double> scalarData;
-      for(auto it = newPoints[0].begin(); it != newPoints[0].end(); ++it) {
+      for (auto it = newPoints[0].begin(); it != newPoints[0].end(); ++it) {
         std::array<double, 3> node = {};
-        for(unsigned i = 0; i < D; ++i) {
+        for (unsigned i = 0; i < D; ++i) {
           node[i] = T((it->first)[i]) * gridDelta;
         }
 

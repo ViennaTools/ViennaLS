@@ -1,5 +1,5 @@
-#include <iostream>
 #include <chrono>
+#include <iostream>
 
 #include <lsAdvect.hpp>
 #include <lsBooleanOperation.hpp>
@@ -14,8 +14,8 @@
 
 class velocityField : public lsVelocityField<double> {
   double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
-                              int /*material*/,
-                              const std::array<double, 3> & /*normalVector*/) {
+                           int /*material*/,
+                           const std::array<double, 3> & /*normalVector*/) {
     return 1;
   }
 };
@@ -38,7 +38,7 @@ int main() {
         lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   }
   boundaryCons[D - 1] =
-        lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
+      lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
   lsDomain<double, D> substrate(bounds, boundaryCons, gridDelta);
 
@@ -46,7 +46,7 @@ int main() {
   double planeNormal[3] = {0., D == 2, D == 3};
 
   lsMakeGeometry<double, D>(substrate, lsPlane<double, D>(origin, planeNormal))
-    .apply();
+      .apply();
 
   {
     std::cout << "Extracting..." << std::endl;
@@ -61,7 +61,7 @@ int main() {
     lsDomain<double, D> trench(bounds, boundaryCons, gridDelta);
     double minCorner[3] = {-extent - 1, -extent / 4., -15.};
     double maxCorner[3] = {extent + 1, extent / 4., 1.0};
-    if(D==2) {
+    if (D == 2) {
       minCorner[0] = minCorner[1];
       minCorner[1] = minCorner[2];
       maxCorner[0] = maxCorner[1];
@@ -106,7 +106,9 @@ int main() {
     auto start = std::chrono::high_resolution_clock::now();
     fastAdvectKernel.apply();
     auto end = std::chrono::high_resolution_clock::now();
-    auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    auto diff =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
+            .count();
     std::cout << "Fast Advect: " << diff << "ms" << std::endl;
   }
 
@@ -117,8 +119,8 @@ int main() {
 
   // now rund lsAdvect for all other advection schemes
   // last scheme is SLLFS with i == 9
-  for(unsigned i = 0; i < 10; ++i) {
-    if(i == 4){
+  for (unsigned i = 0; i < 10; ++i) {
+    if (i == 4) {
       continue;
     }
     lsAdvect<double, D> advectionKernel;
@@ -128,12 +130,15 @@ int main() {
     velocityField velocities;
     advectionKernel.setVelocityField(velocities);
     advectionKernel.setAdvectionTime(depositionDistance);
-    advectionKernel.setIntegrationScheme(static_cast<lsIntegrationSchemeEnum>(i));
+    advectionKernel.setIntegrationScheme(
+        static_cast<lsIntegrationSchemeEnum>(i));
     {
       auto start = std::chrono::high_resolution_clock::now();
       advectionKernel.apply();
       auto end = std::chrono::high_resolution_clock::now();
-      auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+      auto diff =
+          std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
+              .count();
       std::cout << "Advect " << i << ": " << diff << "ms" << std::endl;
     }
 

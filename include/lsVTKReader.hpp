@@ -495,17 +495,16 @@ private:
         num_cell_data = atoi(&temp[temp.find(" ") + 1]);
         break;
       }
-      
     }
     std::cout << "Read cell data: " << num_cell_data << std::endl;
 
-    while(!f.eof()) {
+    while (!f.eof()) {
       std::cout << "reading scalar data" << std::endl;
       while (std::getline(f, temp)) {
         if (temp.find("SCALARS") != std::string::npos)
           break;
       }
-      if(f.eof()) {
+      if (f.eof()) {
         break;
       }
 
@@ -514,17 +513,19 @@ private:
         int firstS = temp.find(" ") + 1;
         int secondS = temp.find(" ", firstS + 1);
         scalarDataName = temp.substr(firstS, secondS - firstS);
-      } 
+      }
       std::vector<double> scalarData;
 
       // consume one line, which defines the lookup table
       std::getline(f, temp);
-      if(temp.compare("LOOKUP_TABLE default") != 0) {
-        lsMessage::getInstance().addWarning("Wrong lookup table for VTKLegacy: " + temp).print();
+      if (temp.compare("LOOKUP_TABLE default") != 0) {
+        lsMessage::getInstance()
+            .addWarning("Wrong lookup table for VTKLegacy: " + temp)
+            .print();
       }
 
       // now read scalar values
-      for(int i = 0; i < num_cell_data; ++i) {
+      for (int i = 0; i < num_cell_data; ++i) {
         double data;
         f >> data;
         scalarData.push_back(data);

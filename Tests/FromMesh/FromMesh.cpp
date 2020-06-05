@@ -1,11 +1,10 @@
 #include <iostream>
 
+#include <lsFromMesh.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsToMesh.hpp>
-#include <lsFromMesh.hpp>
-#include <lsVTKWriter.hpp>
 #include <lsVTKReader.hpp>
-
+#include <lsVTKWriter.hpp>
 
 int main() {
   constexpr int D = 2;

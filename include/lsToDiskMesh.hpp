@@ -69,7 +69,7 @@ public:
     // save the extent of the resulting mesh
     std::array<double, 3> minimumExtent = {};
     std::array<double, 3> maximumExtent = {};
-    for(unsigned i = 0; i < D; ++i) {
+    for (unsigned i = 0; i < D; ++i) {
       minimumExtent[i] = std::numeric_limits<double>::max();
       maximumExtent[i] = std::numeric_limits<double>::lowest();
     }
@@ -101,9 +101,9 @@ public:
         node[i] = double(it.getStartIndices(i)) * gridDelta;
 
         // save extent
-        if(node[i] < minimumExtent[i]) {
+        if (node[i] < minimumExtent[i]) {
           minimumExtent[i] = node[i];
-        } else if(node[i] > maximumExtent[i]) {
+        } else if (node[i] > maximumExtent[i]) {
           maximumExtent[i] = node[i];
         }
 

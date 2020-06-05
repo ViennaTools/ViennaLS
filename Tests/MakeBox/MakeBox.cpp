@@ -39,10 +39,8 @@ int main() {
   lsDomain<double, D> levelSet(bounds, boundaryCons, gridDelta);
 
   hrleVectorType<double, D> min(-10, -10, 0);
-  hrleVectorType<double, D> max(10, 10 , 4);
-  lsMakeGeometry<double, D>(levelSet,
-                            lsBox<double, D>(min, max))
-      .apply();
+  hrleVectorType<double, D> max(10, 10, 4);
+  lsMakeGeometry<double, D>(levelSet, lsBox<double, D>(min, max)).apply();
 
   std::cout << "Number of points: " << levelSet.getDomain().getNumberOfPoints()
             << std::endl;
