@@ -74,17 +74,17 @@ public:
 
 // lsFastAdvectDistribution
 class PylsFastAdvectDistribution : public lsFastAdvectDistribution<T, D> {
-  typedef std::array<hrleCoordType, D> vectorType;
+  typedef std::array<hrleCoordType, 3> vectorType;
   typedef lsFastAdvectDistribution<T, D> ClassType;
   using lsFastAdvectDistribution<T, D>::lsFastAdvectDistribution;
 
 public:
-  bool isInside(const vectorType &v, double eps = 0.) const override {
-    PYBIND11_OVERLOAD_PURE(bool, ClassType, isInside, v, eps);
+  bool isInside(const vectorType &initial, const vectorType &candidate, double eps = 0.) const override {
+    PYBIND11_OVERLOAD_PURE(bool, ClassType, isInside, initial, candidate, eps);
   }
 
-  T getSignedDistance(const vectorType &v) const override {
-    PYBIND11_OVERLOAD_PURE(T, ClassType, getSignedDistance, v);
+  T getSignedDistance(const vectorType &initial, const vectorType &candidate) const override {
+    PYBIND11_OVERLOAD_PURE(T, ClassType, getSignedDistance, initial, candidate);
   }
 
   void getBounds(std::array<hrleCoordType, 2 * D> &bounds) const override {

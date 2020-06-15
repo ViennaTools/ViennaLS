@@ -12,13 +12,15 @@ public:
 
   /// Quick check whether a point relative to the distributions
   /// center is inside the distribution.
-  virtual bool isInside(const std::array<hrleCoordType, D> &v,
+  virtual bool isInside(const std::array<hrleCoordType, 3> &initial,
+                        const std::array<hrleCoordType, 3> &candidate,
                         double eps = 0.) const = 0;
 
   /// Returns the signed distance of a point relative to the distributions
   /// center. This is the signed manhatten distance to the nearest surface
   /// point.
-  virtual T getSignedDistance(const std::array<hrleCoordType, D> &v) const = 0;
+  virtual T getSignedDistance(const std::array<hrleCoordType, 3> &initial,
+                              const std::array<hrleCoordType, 3> &candidate) const = 0;
 
   /// Sets bounds to the bounding box of the distribution.
   virtual void getBounds(std::array<hrleCoordType, 2 * D> &bounds) const = 0;
@@ -37,10 +39,12 @@ public:
   lsSphereDistribution(T passedRadius)
       : radius(passedRadius), radius2(radius * radius) {}
 
-  bool isInside(const std::array<hrleCoordType, D> &v, double eps = 0.) const {
+  bool isInside(const std::array<hrleCoordType, 3> &initial,
+                const std::array<hrleCoordType, 3> &candidate, double eps = 0.) const {
     hrleCoordType dot = 0.;
     for (unsigned i = 0; i < D; ++i) {
-      dot += v[i] * v[i];
+      double tmp = candidate[i] - initial[i];
+      dot += tmp * tmp;
     }
 
     if (std::sqrt(dot) <= radius + eps)
@@ -49,8 +53,13 @@ public:
       return false;
   }
 
-  T getSignedDistance(const std::array<hrleCoordType, D> &v) const {
+  T getSignedDistance(const std::array<hrleCoordType, 3> &initial,
+                      const std::array<hrleCoordType, 3> &candidate) const {
     T distance = std::numeric_limits<T>::max();
+    std::array<hrleCoordType, D> v;
+    for(unsigned i = 0; i < D; ++i) {
+      v[i] = candidate[i] - initial[i];
+    }
     for (unsigned i = 0; i < D; ++i) {
       T y = (v[(i + 1) % D]);
       T z = 0;
@@ -83,19 +92,21 @@ public:
 
   lsBoxDistribution(const std::array<T, D> &halfAxes) : posExtent(halfAxes) {}
 
-  bool isInside(const std::array<hrleCoordType, D> &v, double eps = 0.) const {
+  bool isInside(const std::array<hrleCoordType, 3> &initial,
+                const std::array<hrleCoordType, 3> &candidate, double eps = 0.) const {
     for (unsigned i = 0; i < D; ++i) {
-      if (std::abs(v[i]) > (posExtent[i] + eps)) {
+      if (std::abs(candidate[i] - initial[i]) > (posExtent[i] + eps)) {
         return false;
       }
     }
     return true;
   }
 
-  T getSignedDistance(const std::array<hrleCoordType, D> &v) const {
+  T getSignedDistance(const std::array<hrleCoordType, 3> &initial,
+                      const std::array<hrleCoordType, 3> &candidate) const {
     T distance = std::numeric_limits<T>::lowest();
     for (unsigned i = 0; i < D; ++i) {
-      distance = std::max(std::abs(v[i]) - posExtent[i], distance);
+      distance = std::max(std::abs(candidate[i] - initial[i]) - posExtent[i], distance);
     }
     return distance;
   }

@@ -213,9 +213,9 @@ public:
           }
         }
 
-        hrleVectorType<hrleCoordType, D> currentCoords;
-        hrleVectorType<hrleCoordType, D> currentDistMin;
-        hrleVectorType<hrleCoordType, D> currentDistMax;
+        std::array<hrleCoordType, 3> currentCoords;
+        std::array<hrleCoordType, 3> currentDistMin;
+        std::array<hrleCoordType, 3> currentDistMax;
 
         for (unsigned i = 0; i < D; ++i) {
           currentCoords[i] = currentIndex[i] * gridDelta;
@@ -257,18 +257,13 @@ public:
             }
           }
 
-          std::array<hrleCoordType, D> localCoords;
-          for (unsigned i = 0; i < D; ++i) {
-            localCoords[i] = currentCoords[i] - currentNode[i];
-          }
-
           // TODO: does this really save time? Try without it.
-          if (!dist->isInside(localCoords, 2 * gridDelta)) {
+          if (!dist->isInside(currentNode, currentCoords, 2 * gridDelta)) {
             continue;
           }
 
           // get filling fraction from distance to dist surface
-          T tmpDistance = dist->getSignedDistance(localCoords) / gridDelta;
+          T tmpDistance = dist->getSignedDistance(currentNode, currentCoords) / gridDelta;
 
           // if cell is far within a distribution, set it filled
           if (tmpDistance <= -cutoffValue) {
