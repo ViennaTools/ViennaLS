@@ -14,6 +14,8 @@ public:
   hrleVectorType<T, D> origin = hrleVectorType<T, D>(T(0));
   T radius = 0.;
 
+  lsSphere() {}
+
   lsSphere(hrleVectorType<T, D> passedOrigin, T passedRadius)
       : origin(passedOrigin), radius(passedRadius) {}
 
@@ -32,6 +34,8 @@ template <class T, int D> class lsPlane {
 public:
   hrleVectorType<T, D> origin = hrleVectorType<T, D>(T(0));
   hrleVectorType<T, D> normal = hrleVectorType<T, D>(T(0));
+
+  lsPlane() {}
 
   lsPlane(hrleVectorType<T, D> passedOrigin, hrleVectorType<T, D> passedNormal)
       : origin(passedOrigin), normal(passedNormal) {}
@@ -53,6 +57,8 @@ template <class T, int D> class lsBox {
 public:
   hrleVectorType<T, D> minCorner = hrleVectorType<T, D>(T(0));
   hrleVectorType<T, D> maxCorner = hrleVectorType<T, D>(T(0));
+
+  lsBox() {}
 
   lsBox(hrleVectorType<T, D> passedMinCorner,
         hrleVectorType<T, D> passedMaxCorner)

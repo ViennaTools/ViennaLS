@@ -112,12 +112,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a9ddce452f9777d0ba8618c2071a87812"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMakeGeometry.html#a9ddce452f9777d0ba8618c2071a87812">setGeometry</a> (<a class="el" href="classlsSphere.html">lsSphere</a>&lt; T, D &gt; &amp;passedSphere)</td></tr>
 <tr class="memdesc:a9ddce452f9777d0ba8618c2071a87812"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set sphere as geometry to be created in the level set.  <a href="#a9ddce452f9777d0ba8618c2071a87812">More...</a><br /></td></tr>
 <tr class="separator:a9ddce452f9777d0ba8618c2071a87812"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a10e6d7214bda9d7272ab738029517f8a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMakeGeometry.html#a10e6d7214bda9d7272ab738029517f8a">setGeometry</a> (<a class="el" href="classlsPlane.html">lsPlane</a>&lt; T, D &gt; &amp;passedPlane)</td></tr>
-<tr class="memdesc:a10e6d7214bda9d7272ab738029517f8a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set a plane to be created in the level set.  <a href="#a10e6d7214bda9d7272ab738029517f8a">More...</a><br /></td></tr>
-<tr class="separator:a10e6d7214bda9d7272ab738029517f8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adb9351226a51a0ba97986c61756b92e3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMakeGeometry.html#adb9351226a51a0ba97986c61756b92e3">setGeometry</a> (<a class="el" href="classlsBox.html">lsBox</a>&lt; T, D &gt; &amp;passedBox)</td></tr>
-<tr class="memdesc:adb9351226a51a0ba97986c61756b92e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set a box to be created in the level set.  <a href="#adb9351226a51a0ba97986c61756b92e3">More...</a><br /></td></tr>
-<tr class="separator:adb9351226a51a0ba97986c61756b92e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a65151139cf7f31ff8ed0b4731ebaae16"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMakeGeometry.html#a65151139cf7f31ff8ed0b4731ebaae16">setGeometry</a> (<a class="el" href="classlsPlane.html">lsPlane</a>&lt; T, D &gt; passedPlane)</td></tr>
+<tr class="memdesc:a65151139cf7f31ff8ed0b4731ebaae16"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set a plane to be created in the level set.  <a href="#a65151139cf7f31ff8ed0b4731ebaae16">More...</a><br /></td></tr>
+<tr class="separator:a65151139cf7f31ff8ed0b4731ebaae16"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8a61370ddd9293a3e2099a1c03fd7486"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMakeGeometry.html#a8a61370ddd9293a3e2099a1c03fd7486">setGeometry</a> (<a class="el" href="classlsBox.html">lsBox</a>&lt; T, D &gt; passedBox)</td></tr>
+<tr class="memdesc:a8a61370ddd9293a3e2099a1c03fd7486"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set a box to be created in the level set.  <a href="#a8a61370ddd9293a3e2099a1c03fd7486">More...</a><br /></td></tr>
+<tr class="separator:a8a61370ddd9293a3e2099a1c03fd7486"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af31179ab77566f05dfdc3878a6b0bda8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMakeGeometry.html#af31179ab77566f05dfdc3878a6b0bda8">setGeometry</a> (<a class="el" href="classlsPointCloud.html">lsPointCloud</a>&lt; T, D &gt; &amp;passedPointCloud)</td></tr>
 <tr class="memdesc:af31179ab77566f05dfdc3878a6b0bda8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set a point cloud, which is used to create a geometry from its convex hull.  <a href="#af31179ab77566f05dfdc3878a6b0bda8">More...</a><br /></td></tr>
 <tr class="separator:af31179ab77566f05dfdc3878a6b0bda8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -131,7 +131,7 @@ Public Member Functions</h2></td></tr>
 class lsMakeGeometry&lt; T, D &gt;</h3>
 
 <p>Create level sets describing basic geometric forms. </p>
-<dl><dt><b>Examples: </b></dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#_a12">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#_a12">Deposition.cpp</a>, <a class="el" href="FastAdvection_8cpp-example.html#_a9">FastAdvection.cpp</a>, <a class="el" href="PatternedSubstrate_8cpp-example.html#_a17">PatternedSubstrate.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#_a12">PeriodicBoundary.cpp</a>, <a class="el" href="SquareEtch_8cpp-example.html#_a11">SquareEtch.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#_a12">VoidEtching.cpp</a>.</dd>
+<dl><dt><b>Examples: </b></dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#_a12">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#_a12">Deposition.cpp</a>, <a class="el" href="GeometricAdvection_8cpp-example.html#_a9">GeometricAdvection.cpp</a>, <a class="el" href="PatternedSubstrate_8cpp-example.html#_a17">PatternedSubstrate.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#_a12">PeriodicBoundary.cpp</a>, <a class="el" href="SquareEtch_8cpp-example.html#_a11">SquareEtch.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#_a12">VoidEtching.cpp</a>.</dd>
 </dl></div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ada31a7c9a98ed26b204749f86b2df79a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ada31a7c9a98ed26b204749f86b2df79a">&#9670;&nbsp;</a></span>lsMakeGeometry() <span class="overload">[1/6]</span></h2>
@@ -365,7 +365,7 @@ template&lt;class T, int D&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<dl><dt><b>Examples: </b></dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#a14">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#a14">Deposition.cpp</a>, <a class="el" href="FastAdvection_8cpp-example.html#a11">FastAdvection.cpp</a>, <a class="el" href="PatternedSubstrate_8cpp-example.html#a19">PatternedSubstrate.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#a14">PeriodicBoundary.cpp</a>, <a class="el" href="SquareEtch_8cpp-example.html#a13">SquareEtch.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#a14">VoidEtching.cpp</a>.</dd>
+<dl><dt><b>Examples: </b></dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#a14">AirGapDeposition.cpp</a>, <a class="el" href="Deposition_8cpp-example.html#a14">Deposition.cpp</a>, <a class="el" href="GeometricAdvection_8cpp-example.html#a11">GeometricAdvection.cpp</a>, <a class="el" href="PatternedSubstrate_8cpp-example.html#a19">PatternedSubstrate.cpp</a>, <a class="el" href="PeriodicBoundary_8cpp-example.html#a14">PeriodicBoundary.cpp</a>, <a class="el" href="SquareEtch_8cpp-example.html#a13">SquareEtch.cpp</a>, and <a class="el" href="VoidEtching_8cpp-example.html#a14">VoidEtching.cpp</a>.</dd>
 </dl>
 </div>
 </div>
@@ -399,8 +399,8 @@ template&lt;class T, int D&gt; </div>
 
 </div>
 </div>
-<a id="a10e6d7214bda9d7272ab738029517f8a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a10e6d7214bda9d7272ab738029517f8a">&#9670;&nbsp;</a></span>setGeometry() <span class="overload">[2/4]</span></h2>
+<a id="a65151139cf7f31ff8ed0b4731ebaae16"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a65151139cf7f31ff8ed0b4731ebaae16">&#9670;&nbsp;</a></span>setGeometry() <span class="overload">[2/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -413,7 +413,7 @@ template&lt;class T, int D&gt; </div>
         <tr>
           <td class="memname">void <a class="el" href="classlsMakeGeometry.html">lsMakeGeometry</a>&lt; T, D &gt;::setGeometry </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classlsPlane.html">lsPlane</a>&lt; T, D &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classlsPlane.html">lsPlane</a>&lt; T, D &gt;&#160;</td>
           <td class="paramname"><em>passedPlane</em></td><td>)</td>
           <td></td>
         </tr>
@@ -429,8 +429,8 @@ template&lt;class T, int D&gt; </div>
 
 </div>
 </div>
-<a id="adb9351226a51a0ba97986c61756b92e3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adb9351226a51a0ba97986c61756b92e3">&#9670;&nbsp;</a></span>setGeometry() <span class="overload">[3/4]</span></h2>
+<a id="a8a61370ddd9293a3e2099a1c03fd7486"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8a61370ddd9293a3e2099a1c03fd7486">&#9670;&nbsp;</a></span>setGeometry() <span class="overload">[3/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -443,7 +443,7 @@ template&lt;class T, int D&gt; </div>
         <tr>
           <td class="memname">void <a class="el" href="classlsMakeGeometry.html">lsMakeGeometry</a>&lt; T, D &gt;::setGeometry </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classlsBox.html">lsBox</a>&lt; T, D &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classlsBox.html">lsBox</a>&lt; T, D &gt;&#160;</td>
           <td class="paramname"><em>passedBox</em></td><td>)</td>
           <td></td>
         </tr>

@@ -30,10 +30,10 @@ template <class T, int D> class lsMakeGeometry {
 
   lsDomain<T, D> *levelSet;
   lsGeometryEnum geometry = lsGeometryEnum::SPHERE;
-  const lsSphere<T, D> *sphere = nullptr;
-  const lsPlane<T, D> *plane = nullptr;
-  const lsBox<T, D> *box = nullptr;
-  lsPointCloud<T, D> *pointCloud = nullptr;
+  lsSphere<T, D> sphere;
+  lsPlane<T, D> plane;
+  lsBox<T, D> box;
+  lsPointCloud<T, D> pointCloud;
   const double numericEps = 1e-9;
   bool ignoreBoundaryConditions = false;
 
@@ -44,24 +44,24 @@ public:
 
   lsMakeGeometry(lsDomain<T, D> &passedLevelSet,
                  const lsSphere<T, D> &passedSphere)
-      : levelSet(&passedLevelSet), sphere(&passedSphere) {
+      : levelSet(&passedLevelSet), sphere(passedSphere) {
     geometry = lsGeometryEnum::SPHERE;
   }
 
   lsMakeGeometry(lsDomain<T, D> &passedLevelSet,
                  const lsPlane<T, D> &passedPlane)
-      : levelSet(&passedLevelSet), plane(&passedPlane) {
+      : levelSet(&passedLevelSet), plane(passedPlane) {
     geometry = lsGeometryEnum::PLANE;
   }
 
   lsMakeGeometry(lsDomain<T, D> &passedLevelSet, const lsBox<T, D> &passedBox)
-      : levelSet(&passedLevelSet), box(&passedBox) {
+      : levelSet(&passedLevelSet), box(passedBox) {
     geometry = lsGeometryEnum::BOX;
   }
 
   lsMakeGeometry(lsDomain<T, D> &passedLevelSet,
                  lsPointCloud<T, D> &passedPointCloud)
-      : levelSet(&passedLevelSet), pointCloud(&passedPointCloud) {
+      : levelSet(&passedLevelSet), pointCloud(passedPointCloud) {
     geometry = lsGeometryEnum::CUSTOM;
   }
 
@@ -71,26 +71,26 @@ public:
 
   /// Set sphere as geometry to be created in the level set.
   void setGeometry(lsSphere<T, D> &passedSphere) {
-    sphere = &passedSphere;
+    sphere = passedSphere;
     geometry = lsGeometryEnum::SPHERE;
   }
 
   /// Set a plane to be created in the level set.
-  void setGeometry(lsPlane<T, D> &passedPlane) {
-    plane = &passedPlane;
+  void setGeometry(lsPlane<T, D> passedPlane) {
+    plane = passedPlane;
     geometry = lsGeometryEnum::PLANE;
   }
 
   /// Set a box to be created in the level set.
-  void setGeometry(lsBox<T, D> &passedBox) {
-    box = &passedBox;
+  void setGeometry(lsBox<T, D> passedBox) {
+    box = passedBox;
     geometry = lsGeometryEnum::BOX;
   }
 
   /// Set a point cloud, which is used to create
   /// a geometry from its convex hull.
   void setGeometry(lsPointCloud<T, D> &passedPointCloud) {
-    pointCloud = &passedPointCloud;
+    pointCloud = passedPointCloud;
     geometry = lsGeometryEnum::CUSTOM;
   }
 
@@ -101,39 +101,15 @@ public:
   void apply() {
     switch (geometry) {
     case lsGeometryEnum::SPHERE:
-      if (sphere == nullptr) {
-        lsMessage::getInstance()
-            .addWarning("No lsSphere supplied to lsMakeGeometry. Not creating "
-                        "geometry.")
-            .print();
-      }
-      makeSphere(sphere->origin, sphere->radius);
+      makeSphere(sphere.origin, sphere.radius);
       break;
     case lsGeometryEnum::PLANE:
-      if (plane == nullptr) {
-        lsMessage::getInstance()
-            .addWarning(
-                "No lsPlane supplied to lsMakeGeometry. Not creating geometry.")
-            .print();
-      }
-      makePlane(plane->origin, plane->normal);
+      makePlane(plane.origin, plane.normal);
       break;
     case lsGeometryEnum::BOX:
-      if (box == nullptr) {
-        lsMessage::getInstance()
-            .addWarning(
-                "No lsBox supplied to lsMakeGeometry. Not creating geometry.")
-            .print();
-      }
-      makeBox(box->minCorner, box->maxCorner);
+      makeBox(box.minCorner, box.maxCorner);
       break;
     case lsGeometryEnum::CUSTOM:
-      if (pointCloud == nullptr) {
-        lsMessage::getInstance()
-            .addWarning("No lsPointCloud supplied to lsMakeGeometry. Not "
-                        "creating geometry.")
-            .print();
-      }
       makeCustom(pointCloud);
       break;
     default:
@@ -149,12 +125,6 @@ private:
     if (levelSet == nullptr) {
       lsMessage::getInstance()
           .addWarning("No level set was passed to lsMakeGeometry.")
-          .print();
-      return;
-    }
-    if (sphere == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No sphere was passed to lsMakeGeometry.")
           .print();
       return;
     }
@@ -232,12 +202,6 @@ private:
     if (levelSet == nullptr) {
       lsMessage::getInstance()
           .addWarning("No level set was passed to lsMakeGeometry.")
-          .print();
-      return;
-    }
-    if (plane == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No plane was passed to lsMakeGeometry.")
           .print();
       return;
     }
@@ -358,12 +322,6 @@ private:
           .print();
       return;
     }
-    if (box == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No box was passed to lsMakeGeometry.")
-          .print();
-      return;
-    }
 
     // draw all triangles for the surface and then import from the mesh
     std::vector<std::array<double, 3>> corners;
@@ -420,10 +378,10 @@ private:
     lsFromSurfaceMesh<T, D>(*levelSet, mesh, ignoreBoundaryConditions).apply();
   }
 
-  void makeCustom(lsPointCloud<T, D> *pointCloud) {
+  void makeCustom(lsPointCloud<T, D> &pointCloud) {
     // create mesh from point cloud
     lsMesh mesh;
-    lsConvexHull<T, D>(mesh, *pointCloud).apply();
+    lsConvexHull<T, D>(mesh, pointCloud).apply();
 
     // read mesh from surface
     lsFromSurfaceMesh<T, D>(*levelSet, mesh, ignoreBoundaryConditions).apply();

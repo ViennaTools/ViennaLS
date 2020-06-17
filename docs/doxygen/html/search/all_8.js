@@ -17,6 +17,6 @@ var searchData=
   ['intersect',['INTERSECT',['../lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8a24bdbe2bcaf533b7b3f0bd58bfa7f291',1,'lsBooleanOperation.hpp']]],
   ['invert',['INVERT',['../lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8aa2727ae72447eea06d4cc0ef67187280',1,'lsBooleanOperation.hpp']]],
   ['is_5ffinished',['is_finished',['../classlsFromSurfaceMesh_1_1box_1_1iterator.html#a2af42d0cf34305195a68a06f3967e36f',1,'lsFromSurfaceMesh::box::iterator']]],
-  ['isinside',['isInside',['../classlsFastAdvectDistribution.html#ae2886d1ed35fa2af4b1e16ca7f5850e9',1,'lsFastAdvectDistribution::isInside()'],['../classlsSphereDistribution.html#aeb282380641164e5f5a5ac9d0c00ff5b',1,'lsSphereDistribution::isInside()'],['../classlsBoxDistribution.html#aa7d537d9b4a1619eccda25984a5b73a0',1,'lsBoxDistribution::isInside()']]],
+  ['isinside',['isInside',['../classlsGeometricAdvectDistribution.html#a2ba1bc31463a4dfacf98100f48e3f6a1',1,'lsGeometricAdvectDistribution::isInside()'],['../classlsSphereDistribution.html#a390706ad646864d88a8ff0346ecef343',1,'lsSphereDistribution::isInside()'],['../classlsBoxDistribution.html#a8b9ae364634afe64727c3ea20d7c3c94',1,'lsBoxDistribution::isInside()']]],
   ['iterator',['iterator',['../classlsFromSurfaceMesh_1_1box_1_1iterator.html',1,'lsFromSurfaceMesh&lt; T, D &gt;::box::iterator'],['../classlsFromSurfaceMesh_1_1box_1_1iterator.html#a1938cb8af1a7ceb59d909a4d7a829560',1,'lsFromSurfaceMesh::box::iterator::iterator()']]]
 ];
