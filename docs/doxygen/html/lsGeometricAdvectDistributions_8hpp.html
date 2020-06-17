@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.13"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>ViennaLS: Examples/FastAdvection/FastAdvection.cpp File Reference</title>
+<title>ViennaLS: include/lsGeometricAdvectDistributions.hpp File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -62,7 +62,7 @@ $(function() {
   </div>
 </div>
 <script type="text/javascript">
-$(document).ready(function(){initNavTree('FastAdvection_8cpp.html','');});
+$(document).ready(function(){initNavTree('lsGeometricAdvectDistributions_8hpp.html','');});
 </script>
 <div id="doc-content">
 <!-- window showing the filter options -->
@@ -81,52 +81,32 @@ $(document).ready(function(){initNavTree('FastAdvection_8cpp.html','');});
 
 <div class="header">
   <div class="summary">
-<a href="#func-members">Functions</a>  </div>
+<a href="#nested-classes">Classes</a>  </div>
   <div class="headertitle">
-<div class="title">FastAdvection.cpp File Reference</div>  </div>
+<div class="title">lsGeometricAdvectDistributions.hpp File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &lt;iostream&gt;</code><br />
-<code>#include &lt;<a class="el" href="lsBooleanOperation_8hpp.html">lsBooleanOperation.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="lsDomain_8hpp.html">lsDomain.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="lsExpand_8hpp.html">lsExpand.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="lsFastAdvect_8hpp.html">lsFastAdvect.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="lsMakeGeometry_8hpp.html">lsMakeGeometry.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="lsPrune_8hpp.html">lsPrune.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="lsToMesh_8hpp.html">lsToMesh.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="lsToSurfaceMesh_8hpp.html">lsToSurfaceMesh.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="lsVTKWriter_8hpp.html">lsVTKWriter.hpp</a>&gt;</code><br />
+<div class="textblock"><code>#include &lt;hrleVectorType.hpp&gt;</code><br />
+<code>#include &lt;<a class="el" href="lsMessage_8hpp.html">lsMessage.hpp</a>&gt;</code><br />
 </div><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
-Functions</h2></td></tr>
-<tr class="memitem:ae66f6b31b5ad750f1fe042a706a4e3d4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="FastAdvection_8cpp.html#ae66f6b31b5ad750f1fe042a706a4e3d4">main</a> ()</td></tr>
-<tr class="separator:ae66f6b31b5ad750f1fe042a706a4e3d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsGeometricAdvectDistribution.html">lsGeometricAdvectDistribution&lt; T, D &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Base class for distributions used by <a class="el" href="classlsGeometricAdvect.html" title="This class advects the level set according to a given distribution. This distribution is overlayed at...">lsGeometricAdvect</a>. All functions are pure virtual and must be implemented by any advection distribution.  <a href="classlsGeometricAdvectDistribution.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsSphereDistribution.html">lsSphereDistribution&lt; T, D &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Concrete implementation of <a class="el" href="classlsGeometricAdvectDistribution.html" title="Base class for distributions used by lsGeometricAdvect. All functions are pure virtual and must be im...">lsGeometricAdvectDistribution</a> for a spherical advection distribution.  <a href="classlsSphereDistribution.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsBoxDistribution.html">lsBoxDistribution&lt; T, D &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Concrete implementation of <a class="el" href="classlsGeometricAdvectDistribution.html" title="Base class for distributions used by lsGeometricAdvect. All functions are pure virtual and must be im...">lsGeometricAdvectDistribution</a> for a rectangular box distribution.  <a href="classlsBoxDistribution.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="ae66f6b31b5ad750f1fe042a706a4e3d4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae66f6b31b5ad750f1fe042a706a4e3d4">&#9670;&nbsp;</a></span>main()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int main </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<dl><dt><b>Examples: </b></dt><dd><a class="el" href="FastAdvection_8cpp-example.html#a0">FastAdvection.cpp</a>.</dd>
-</dl>
-</div>
-</div>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_03680f297d755c096b0a1ead13ee12b7.html">Examples</a></li><li class="navelem"><a class="el" href="dir_15030f3c7560f914436e45e60b5cfe7c.html">FastAdvection</a></li><li class="navelem"><a class="el" href="FastAdvection_8cpp.html">FastAdvection.cpp</a></li>
+    <li class="navelem"><a class="el" href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a class="el" href="lsGeometricAdvectDistributions_8hpp.html">lsGeometricAdvectDistributions.hpp</a></li>
     <li class="footer">Generated by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.13 </li>

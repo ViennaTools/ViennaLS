@@ -20,8 +20,9 @@ public:
   /// Returns the signed distance of a point relative to the distributions
   /// center. This is the signed manhatten distance to the nearest surface
   /// point.
-  virtual T getSignedDistance(const std::array<hrleCoordType, 3> &initial,
-                              const std::array<hrleCoordType, 3> &candidate) const = 0;
+  virtual T
+  getSignedDistance(const std::array<hrleCoordType, 3> &initial,
+                    const std::array<hrleCoordType, 3> &candidate) const = 0;
 
   /// Sets bounds to the bounding box of the distribution.
   virtual void getBounds(std::array<hrleCoordType, 6> &bounds) const = 0;
@@ -42,7 +43,8 @@ public:
       : radius(passedRadius), radius2(radius * radius), gridDelta(delta) {}
 
   bool isInside(const std::array<hrleCoordType, 3> &initial,
-                const std::array<hrleCoordType, 3> &candidate, double eps = 0.) const {
+                const std::array<hrleCoordType, 3> &candidate,
+                double eps = 0.) const {
     hrleCoordType dot = 0.;
     for (unsigned i = 0; i < D; ++i) {
       double tmp = candidate[i] - initial[i];
@@ -59,12 +61,14 @@ public:
                       const std::array<hrleCoordType, 3> &candidate) const {
     T distance = std::numeric_limits<T>::max();
     std::array<hrleCoordType, D> v;
-    for(unsigned i = 0; i < D; ++i) {
+    for (unsigned i = 0; i < D; ++i) {
       v[i] = candidate[i] - initial[i];
     }
 
-    if(std::abs(radius) <= gridDelta){
-      distance =  std::max(std::max(std::abs(v[0]), std::abs(v[1])), std::abs(v[2])) - std::abs(radius); 
+    if (std::abs(radius) <= gridDelta) {
+      distance =
+          std::max(std::max(std::abs(v[0]), std::abs(v[1])), std::abs(v[2])) -
+          std::abs(radius);
     } else {
       for (unsigned i = 0; i < D; ++i) {
         T y = (v[(i + 1) % D]);
@@ -80,7 +84,7 @@ public:
       }
     }
     // return distance;
-    if(radius < 0) {
+    if (radius < 0) {
       return -distance;
     } else {
       return distance;
@@ -103,16 +107,22 @@ public:
   const hrleVectorType<T, 3> posExtent;
   const T gridDelta;
 
-  lsBoxDistribution(const std::array<T, 3> &halfAxes, const T delta) : posExtent(halfAxes), gridDelta(delta) {
-    for(unsigned i = 0; i < D; ++i) {
-      if(posExtent[i] < gridDelta) {
-        lsMessage::getInstance().addWarning("One half-axis of lsBoxDistribution is smaller than the grid Delta! This can lead to numerical errors breaking the distribution!").print();
+  lsBoxDistribution(const std::array<T, 3> &halfAxes, const T delta)
+      : posExtent(halfAxes), gridDelta(delta) {
+    for (unsigned i = 0; i < D; ++i) {
+      if (posExtent[i] < gridDelta) {
+        lsMessage::getInstance()
+            .addWarning("One half-axis of lsBoxDistribution is smaller than "
+                        "the grid Delta! This can lead to numerical errors "
+                        "breaking the distribution!")
+            .print();
       }
     }
   }
 
   bool isInside(const std::array<hrleCoordType, 3> &initial,
-                const std::array<hrleCoordType, 3> &candidate, double eps = 0.) const {
+                const std::array<hrleCoordType, 3> &candidate,
+                double eps = 0.) const {
     for (unsigned i = 0; i < D; ++i) {
       if (std::abs(candidate[i] - initial[i]) > (posExtent[i] + eps)) {
         return false;

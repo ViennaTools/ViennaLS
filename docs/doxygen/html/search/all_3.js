@@ -9,6 +9,6 @@ var searchData=
   ['differencepositive',['differencePositive',['../classlsInternal_1_1lsFiniteDifferences.html#aee7d45bd89a59a4b42f21748f6641cdd',1,'lsInternal::lsFiniteDifferences']]],
   ['differentiationschemeenum',['DifferentiationSchemeEnum',['../namespacelsInternal.html#a1197c9bc5d272ab73e76ebc2d4ab05a7',1,'lsInternal']]],
   ['dimensions',['dimensions',['../classlsDomain.html#a05040bec206fc84f3102a4f4aee68950',1,'lsDomain']]],
-  ['dist',['dist',['../namespaceFastAdvection.html#acdc0e13fc367c1df598f4a58d86d6af3',1,'FastAdvection']]],
+  ['dist',['dist',['../namespaceGeometricAdvection.html#aa8ac5422d5dca205d8003906cf3ed2da',1,'GeometricAdvection']]],
   ['domaintype',['DomainType',['../classlsDomain.html#a7e989b2c137e03c4f8e09c181b6311af',1,'lsDomain']]]
 ];

@@ -25,11 +25,11 @@
 #include <lsConvexHull.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
-#include <lsGeometricAdvect.hpp>
-#include <lsGeometricAdvectDistributions.hpp>
 #include <lsFileFormats.hpp>
 #include <lsFromSurfaceMesh.hpp>
 #include <lsFromVolumeMesh.hpp>
+#include <lsGeometricAdvect.hpp>
+#include <lsGeometricAdvectDistributions.hpp>
 #include <lsGeometries.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsMesh.hpp>
@@ -73,17 +73,20 @@ public:
 };
 
 // lsGeometricAdvectDistribution
-class PylsGeometricAdvectDistribution : public lsGeometricAdvectDistribution<T, D> {
+class PylsGeometricAdvectDistribution
+    : public lsGeometricAdvectDistribution<T, D> {
   typedef std::array<hrleCoordType, 3> vectorType;
   typedef lsGeometricAdvectDistribution<T, D> ClassType;
   using lsGeometricAdvectDistribution<T, D>::lsGeometricAdvectDistribution;
 
 public:
-  bool isInside(const vectorType &initial, const vectorType &candidate, double eps = 0.) const override {
+  bool isInside(const vectorType &initial, const vectorType &candidate,
+                double eps = 0.) const override {
     PYBIND11_OVERLOAD_PURE(bool, ClassType, isInside, initial, candidate, eps);
   }
 
-  T getSignedDistance(const vectorType &initial, const vectorType &candidate) const override {
+  T getSignedDistance(const vectorType &initial,
+                      const vectorType &candidate) const override {
     PYBIND11_OVERLOAD_PURE(T, ClassType, getSignedDistance, initial, candidate);
   }
 
@@ -295,7 +298,8 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Perform advection.");
 
   // lsGeometricAdvectDistributions
-  pybind11::class_<lsGeometricAdvectDistribution<T, D>, PylsGeometricAdvectDistribution>(
+  pybind11::class_<lsGeometricAdvectDistribution<T, D>,
+                   PylsGeometricAdvectDistribution>(
       module, "lsGeometricAdvectDistribution")
       // constructors
       .def(pybind11::init<>())
@@ -309,8 +313,9 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("getBounds", &lsGeometricAdvectDistribution<T, D>::getBounds,
            "Get the cartesian bounds of the distribution.");
 
-  pybind11::class_<lsSphereDistribution<T, D>, lsGeometricAdvectDistribution<T, D>>(
-      module, "lsSphereDistribution")
+  pybind11::class_<lsSphereDistribution<T, D>,
+                   lsGeometricAdvectDistribution<T, D>>(module,
+                                                        "lsSphereDistribution")
       // constructors
       .def(pybind11::init<T, T>())
       // methods
@@ -322,8 +327,9 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("getBounds", &lsSphereDistribution<T, D>::getBounds,
            "Get the cartesian bounds of the distribution.");
 
-  pybind11::class_<lsBoxDistribution<T, D>, lsGeometricAdvectDistribution<T, D>>(
-      module, "lsBoxDistribution")
+  pybind11::class_<lsBoxDistribution<T, D>,
+                   lsGeometricAdvectDistribution<T, D>>(module,
+                                                        "lsBoxDistribution")
       // constructors
       .def(pybind11::init<const std::array<T, 3>, T>())
       // methods

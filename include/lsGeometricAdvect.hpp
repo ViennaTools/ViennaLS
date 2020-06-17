@@ -13,17 +13,17 @@
 
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
-#include <lsGeometricAdvectDistributions.hpp>
 #include <lsFromMesh.hpp>
+#include <lsGeometricAdvectDistributions.hpp>
 #include <lsToDiskMesh.hpp>
 
 /// This class advects the level set according to a given distribution.
-/// This distribution is overlayed at every cell. All cells within
-/// this distribution are then filled, with cells at the edge marked
-/// with the correct level set values. Therefore, the surface can
-/// be shifted long distances in one step. This algorithm is therefore
-/// preferable to normal advection if there is growth/reduction by a geometric
-/// directional distribution.
+/// This distribution is overlayed at every grid point of the old surface. All
+/// cells within this distribution are then filled, with cells at the edge
+/// marked with the correct level set values. Therefore, the surface can be
+/// shifted long distances in one step. This algorithm is therefore preferable
+/// to normal advection if there is growth/reduction by a geometric directional
+/// distribution.
 template <class T, int D> class lsGeometricAdvect {
   lsDomain<T, D> *levelSet = nullptr;
   const lsGeometricAdvectDistribution<hrleCoordType, D> *dist = nullptr;
@@ -52,23 +52,26 @@ public:
     levelSet = &passedLevelSet;
   }
 
+  /// Set which advection distribution to use. Must be derived from
+  /// lsGeometricAdvectDistribution.
   void setAdvectionDistribution(
       const lsGeometricAdvectDistribution<hrleCoordType, D> &distribution) {
     dist = &distribution;
   }
 
-  // iterate through all points of new cell set and check whether distributions
-  // on the old cell set will set the point
+  /// Perform geometrical advection.
   void apply() {
     if (levelSet == nullptr) {
       lsMessage::getInstance()
-          .addWarning("No level set passed to lsGeometricAdvect. Not Advecting.")
+          .addWarning(
+              "No level set passed to lsGeometricAdvect. Not Advecting.")
           .print();
       return;
     }
     if (dist == nullptr) {
       lsMessage::getInstance()
-          .addWarning("No lsGeometricAdvectDistribution passed to lsGeometricAdvect. Not "
+          .addWarning("No lsGeometricAdvectDistribution passed to "
+                      "lsGeometricAdvect. Not "
                       "Advecting.")
           .print();
       return;
@@ -107,9 +110,11 @@ public:
     hrleVectorType<hrleIndexType, D> min, max;
     for (unsigned i = 0; i < D; ++i) {
       // translate from coords to indices
-      distMin[i] = distBounds[2 * i] / gridDelta + ((distBounds[2 * i] < 0)?-2:2);
-      distMax[i] = distBounds[2 * i + 1] / gridDelta + ((distBounds[2 * i + 1] < 0)?-2:2);
-      if(distBounds[2 * i] >= 0) {
+      distMin[i] =
+          distBounds[2 * i] / gridDelta + ((distBounds[2 * i] < 0) ? -2 : 2);
+      distMax[i] = distBounds[2 * i + 1] / gridDelta +
+                   ((distBounds[2 * i + 1] < 0) ? -2 : 2);
+      if (distBounds[2 * i] >= 0) {
         distIsPositive = false;
       }
 
@@ -119,9 +124,9 @@ public:
       min[i] = surfaceMesh.minimumExtent[i] / gridDelta;
       // TODO also do the same thing for positive point and etching
       if (grid.isNegBoundaryInfinite(i) && minPointNegative && distMin[i] < 0) {
-        min[i] -=  2;
+        min[i] -= 2;
       } else {
-        if(distIsPositive) {
+        if (distIsPositive) {
           min[i] += distMin[i];
         } else {
           min[i] -= distMin[i];
@@ -137,7 +142,7 @@ public:
       if (grid.isPosBoundaryInfinite(i) && maxPointNegative && distMax[i] > 0) {
         max[i] += 2;
       } else {
-        if(distIsPositive) {
+        if (distIsPositive) {
           max[i] += distMax[i];
         } else {
           max[i] -= distMax[i];
@@ -179,7 +184,9 @@ public:
 
     constexpr T cutoffValue = 1.0 + numericEps;
     constexpr T skipValue = 0.5;
-    const T initialDistance = (distIsPositive)?std::numeric_limits<double>::max():std::numeric_limits<double>::lowest();
+    const T initialDistance = (distIsPositive)
+                                  ? std::numeric_limits<double>::max()
+                                  : std::numeric_limits<double>::lowest();
 
 // set up multithreading
 #pragma omp parallel num_threads(domain.getNumberOfSegments())
@@ -214,9 +221,9 @@ public:
           checkIt.goToIndicesSequential(currentIndex);
           // if run is already negative undefined, just ignore the point
           if (distIsPositive) {
-            if(checkIt.getValue() < -skipValue) {
+            if (checkIt.getValue() < -skipValue) {
               continue;
-            } 
+            }
           } else if (checkIt.getValue() > skipValue) {
             continue;
           }
@@ -272,28 +279,29 @@ public:
           }
 
           // get filling fraction from distance to dist surface
-          T tmpDistance = dist->getSignedDistance(currentNode, currentCoords) / gridDelta;
+          T tmpDistance =
+              dist->getSignedDistance(currentNode, currentCoords) / gridDelta;
 
           // if cell is far within a distribution, set it filled
-          if(distIsPositive) {
+          if (distIsPositive) {
             if (tmpDistance <= -cutoffValue) {
               distance = std::numeric_limits<T>::lowest();
               break;
             }
 
-            if(tmpDistance < distance) {
+            if (tmpDistance < distance) {
               distance = tmpDistance;
             }
           } else {
-            if(tmpDistance >= cutoffValue) {
+            if (tmpDistance >= cutoffValue) {
               distance = std::numeric_limits<T>::max();
               break;
             }
 
-            if(tmpDistance > distance) {
+            if (tmpDistance > distance) {
               distance = tmpDistance;
             }
-          }       
+          }
         }
 
         if (std::abs(distance) <= cutoffValue) {

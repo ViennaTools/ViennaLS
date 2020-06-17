@@ -37,8 +37,8 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "AirGapDeposition_8cpp-example.html",
-"classlsInternal_1_1lsLocalLaxFriedrichsAnalytical.html#a45c832e2cd7a1da1ebc094746e6ebf24",
-"functions_func_0x7e.html"
+"classlsInternal_1_1lsLocalLaxFriedrichs.html#af91d389ae8e5c3852d24c1181ad41933",
+"functions_d.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

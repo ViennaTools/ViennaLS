@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['fastadvection',['FastAdvection',['../namespaceFastAdvection.html',1,'']]]
+  ['geometricadvection',['GeometricAdvection',['../namespaceGeometricAdvection.html',1,'']]]
 ];

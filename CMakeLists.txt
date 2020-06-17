@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.4)
 
 project(
   "ViennaLS"
-  VERSION 1.1.1)
+  VERSION 1.2.0)
 
 add_definitions(-DVIENNALS_VERSION=${PROJECT_VERSION})
 

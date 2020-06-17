@@ -10,9 +10,9 @@
 #include <lsCheck.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
-#include <lsGeometricAdvect.hpp>
 #include <lsFromSurfaceMesh.hpp>
 #include <lsFromVolumeMesh.hpp>
+#include <lsGeometricAdvect.hpp>
 #include <lsGeometries.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
