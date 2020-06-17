@@ -49,7 +49,7 @@ public:
       dot += tmp * tmp;
     }
 
-    if (std::sqrt(dot) <= radius + eps)
+    if (std::sqrt(dot) <= std::abs(radius) + eps)
       return true;
     else
       return false;
@@ -63,23 +63,28 @@ public:
       v[i] = candidate[i] - initial[i];
     }
 
-    if(radius <= gridDelta){
-      return std::max(std::max(std::abs(v[0]), std::abs(v[1])), std::abs(v[2])) - radius;
+    if(std::abs(radius) <= gridDelta){
+      distance =  std::max(std::max(std::abs(v[0]), std::abs(v[1])), std::abs(v[2])) - std::abs(radius); 
+    } else {
+      for (unsigned i = 0; i < D; ++i) {
+        T y = (v[(i + 1) % D]);
+        T z = 0;
+        if (D == 3)
+          z = (v[(i + 2) % D]);
+        T x = radius2 - y * y - z * z;
+        if (x < 0.)
+          continue;
+        T dirRadius = std::abs(v[i]) - std::sqrt(x);
+        if (std::abs(dirRadius) < std::abs(distance))
+          distance = dirRadius;
+      }
     }
-
-    for (unsigned i = 0; i < D; ++i) {
-      T y = (v[(i + 1) % D]);
-      T z = 0;
-      if (D == 3)
-        z = (v[(i + 2) % D]);
-      T x = radius2 - y * y - z * z;
-      if (x < 0.)
-        continue;
-      T dirRadius = std::abs(v[i]) - std::sqrt(x);
-      if (std::abs(dirRadius) < std::abs(distance))
-        distance = dirRadius;
+    // return distance;
+    if(radius < 0) {
+      return -distance;
+    } else {
+      return distance;
     }
-    return distance;
   }
 
   void getBounds(std::array<hrleCoordType, 6> &bounds) const {

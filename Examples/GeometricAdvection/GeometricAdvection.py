@@ -44,7 +44,7 @@ velocities = velocityField()
 
 print("Advecting")
 # Advect the level set
-dist = vls.lsSphereDistribution(4.0)
+dist = vls.lsSphereDistribution(4.0, gridDelta)
 vls.lsGeometricAdvect(newLayer, dist).apply()
 
 mesh = vls.lsMesh()

@@ -87,7 +87,7 @@ public:
     PYBIND11_OVERLOAD_PURE(T, ClassType, getSignedDistance, initial, candidate);
   }
 
-  void getBounds(std::array<hrleCoordType, 2 * D> &bounds) const override {
+  void getBounds(std::array<hrleCoordType, 6> &bounds) const override {
     PYBIND11_OVERLOAD_PURE(void, ClassType, getBounds, bounds);
   }
 };
@@ -114,6 +114,9 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
 
   // set version string of python module
   module.attr("__version__") = VIENNALS_MODULE_VERSION;
+
+  // wrap omp_set_num_threads to control number of threads
+  module.def("setNumThreads", &omp_set_num_threads);
 
   // lsAdvect
   pybind11::class_<lsAdvect<T, D>>(module, "lsAdvect")
@@ -309,7 +312,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
   pybind11::class_<lsSphereDistribution<T, D>, lsGeometricAdvectDistribution<T, D>>(
       module, "lsSphereDistribution")
       // constructors
-      .def(pybind11::init<T>())
+      .def(pybind11::init<T, T>())
       // methods
       .def("isInside", &lsSphereDistribution<T, D>::isInside,
            "Check whether passed point is inside the distribution.")
@@ -322,7 +325,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
   pybind11::class_<lsBoxDistribution<T, D>, lsGeometricAdvectDistribution<T, D>>(
       module, "lsBoxDistribution")
       // constructors
-      .def(pybind11::init<const std::array<T, D>>())
+      .def(pybind11::init<const std::array<T, 3>, T>())
       // methods
       .def("isInside", &lsBoxDistribution<T, D>::isInside,
            "Check whether passed point is inside the distribution.")

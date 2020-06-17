@@ -10,7 +10,7 @@
 #include <lsVTKWriter.hpp>
 
 int main() {
-  omp_set_num_threads(4);
+  omp_set_num_threads(8);
 
   constexpr int D = 3;
   typedef double NumericType;
@@ -60,14 +60,22 @@ int main() {
   lsVTKWriter(mesh, "surface.vtk").apply();
 
   // set up spherical advection dist
-  lsSphereDistribution<double, D> dist(20.0);
+  lsSphereDistribution<double, D> dist(20.0, gridDelta);
   lsGeometricAdvect<NumericType, D>(levelSet, dist).apply();
 
   lsToMesh<NumericType, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh, "finalLS.vtk").apply();
-
+  lsVTKWriter(mesh, "afterDepoLS.vtk").apply();
   lsToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh, "finalSurface.vtk").apply();
+  lsVTKWriter(mesh, "afterDepo.vtk").apply();
+
+  // now remove the same again using spherical distribution
+  lsSphereDistribution<NumericType, D> etch(-20.0, gridDelta);
+  lsGeometricAdvect<NumericType, D>(levelSet, etch).apply();
+
+  lsToMesh<NumericType, D>(levelSet, mesh).apply();
+  lsVTKWriter(mesh, "afterEtchLS.vtk").apply();
+  lsToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
+  lsVTKWriter(mesh, "afterEtch.vtk").apply();
 
   return 0;
 }

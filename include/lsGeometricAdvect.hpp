@@ -17,9 +17,6 @@
 #include <lsFromMesh.hpp>
 #include <lsToDiskMesh.hpp>
 
-// TODO: remove
-#include <lsVTKWriter.hpp>
-
 /// This class advects the level set according to a given distribution.
 /// This distribution is overlayed at every cell. All cells within
 /// this distribution are then filled, with cells at the edge marked
@@ -102,6 +99,7 @@ public:
     bool maxPointNegative =
         domain.getDomainSegment(domain.getNumberOfSegments() - 1)
             .definedValues.back() < 0.;
+    bool distIsPositive = true;
 
     // find bounding box of old domain
     hrleIndexType bounds[6];
@@ -109,17 +107,25 @@ public:
     hrleVectorType<hrleIndexType, D> min, max;
     for (unsigned i = 0; i < D; ++i) {
       // translate from coords to indices
-      distMin[i] = distBounds[2 * i] / gridDelta - 2;
-      distMax[i] = distBounds[2 * i + 1] / gridDelta + 2;
+      distMin[i] = distBounds[2 * i] / gridDelta + ((distBounds[2 * i] < 0)?-2:2);
+      distMax[i] = distBounds[2 * i + 1] / gridDelta + ((distBounds[2 * i + 1] < 0)?-2:2);
+      if(distBounds[2 * i] >= 0) {
+        distIsPositive = false;
+      }
 
       // use the extent of the diskMesh to identify bounding box of new
       // level set
       // TODO: respect periodic boundary condition
       min[i] = surfaceMesh.minimumExtent[i] / gridDelta;
-      if (grid.isNegBoundaryInfinite(i) && minPointNegative) {
+      // TODO also do the same thing for positive point and etching
+      if (grid.isNegBoundaryInfinite(i) && minPointNegative && distMin[i] < 0) {
         min[i] -=  2;
       } else {
-        min[i] += distMin[i];
+        if(distIsPositive) {
+          min[i] += distMin[i];
+        } else {
+          min[i] -= distMin[i];
+        }
       }
       // if calculated index is out of bounds, set the extent
       // TODO: need to add periodic BNC handling here
@@ -128,15 +134,20 @@ public:
       }
 
       max[i] = surfaceMesh.maximumExtent[i] / gridDelta;
-      if (grid.isPosBoundaryInfinite(i) && maxPointNegative) {
+      if (grid.isPosBoundaryInfinite(i) && maxPointNegative && distMax[i] > 0) {
         max[i] += 2;
       } else {
-        max[i] += distMax[i];
+        if(distIsPositive) {
+          max[i] += distMax[i];
+        } else {
+          max[i] -= distMax[i];
+        }
       }
       if (max[i] > grid.getMaxGridPoint(i)) {
         max[i] = grid.getMaxGridPoint(i);
       }
     }
+
     // initialize with segmentation for whole range
     typename hrleDomain<T, D>::hrleIndexPoints segmentation;
 
@@ -167,6 +178,8 @@ public:
     newPoints.resize(domain.getNumberOfSegments());
 
     constexpr T cutoffValue = 1.0 + numericEps;
+    constexpr T skipValue = 0.5;
+    const T initialDistance = (distIsPositive)?std::numeric_limits<double>::max():std::numeric_limits<double>::lowest();
 
 // set up multithreading
 #pragma omp parallel num_threads(domain.getNumberOfSegments())
@@ -200,7 +213,11 @@ public:
         {
           checkIt.goToIndicesSequential(currentIndex);
           // if run is already negative undefined, just ignore the point
-          if (checkIt.getValue() < -0.5) {
+          if (distIsPositive) {
+            if(checkIt.getValue() < -skipValue) {
+              continue;
+            } 
+          } else if (checkIt.getValue() > skipValue) {
             continue;
           }
         }
@@ -212,20 +229,20 @@ public:
         for (unsigned i = 0; i < D; ++i) {
           currentCoords[i] = currentIndex[i] * gridDelta;
 
-          currentDistMin[i] = currentIndex[i] + distMin[i];
+          currentDistMin[i] = currentIndex[i] - std::abs(distMin[i]);
           if (currentDistMin[i] < grid.getMinGridPoint(i)) {
             currentDistMin[i] = grid.getMinGridPoint(i);
           }
           currentDistMin[i] *= gridDelta;
 
-          currentDistMax[i] = currentIndex[i] + distMax[i];
+          currentDistMax[i] = currentIndex[i] + std::abs(distMax[i]);
           if (currentDistMin[i] > grid.getMaxGridPoint(i)) {
             currentDistMin[i] = grid.getMaxGridPoint(i);
           }
           currentDistMax[i] *= gridDelta;
         }
 
-        T distance = std::numeric_limits<double>::max();
+        T distance = initialDistance;
 
         // now check which surface points contribute to currentIndex
         for (typename SurfaceNodesType::const_iterator surfIt =
@@ -258,22 +275,31 @@ public:
           T tmpDistance = dist->getSignedDistance(currentNode, currentCoords) / gridDelta;
 
           // if cell is far within a distribution, set it filled
-          if (tmpDistance <= -cutoffValue) {
-            distance = std::numeric_limits<T>::lowest();
-            break;
-          }
+          if(distIsPositive) {
+            if (tmpDistance <= -cutoffValue) {
+              distance = std::numeric_limits<T>::lowest();
+              break;
+            }
 
-          // if distance is smaller, set the new one
-          if (tmpDistance < distance) {
-            distance = tmpDistance;
-          }
+            if(tmpDistance < distance) {
+              distance = tmpDistance;
+            }
+          } else {
+            if(tmpDistance >= cutoffValue) {
+              distance = std::numeric_limits<T>::max();
+              break;
+            }
+
+            if(tmpDistance > distance) {
+              distance = tmpDistance;
+            }
+          }       
         }
 
         if (std::abs(distance) <= cutoffValue) {
           newPoints[p].push_back(
               std::make_pair(currentIndex, distance - numericEps));
         }
-
       } // domainBounds for
     }   // parallel region
 
@@ -308,9 +334,6 @@ public:
       }
       mesh.insertNextScalarData(scalarData, "LSValues");
     }
-
-    // TODO: remove
-    lsVTKWriter(mesh, "afterAdvect.vtk").apply();
 
     lsFromMesh<T, D>(*levelSet, mesh).apply();
     lsPrune<T, D>(*levelSet).apply();

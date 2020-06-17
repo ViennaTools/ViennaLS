@@ -95,7 +95,7 @@ int main() {
   double depositionDistance = 4.0;
 
   // set up spherical advection dist
-  lsSphereDistribution<NumericType, D> dist(depositionDistance);
+  lsSphereDistribution<NumericType, D> dist(depositionDistance, gridDelta);
 
   lsDomain<double, D> newLayer(substrate);
 

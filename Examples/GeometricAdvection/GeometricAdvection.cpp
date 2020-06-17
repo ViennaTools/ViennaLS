@@ -68,7 +68,7 @@ int main() {
 
   std::cout << "Advecting" << std::endl;
   // Grow the layer uniformly by 4 as in deposition example
-  lsSphereDistribution<double, D> dist(4.0);
+  lsSphereDistribution<double, D> dist(4.0, gridDelta);
   lsGeometricAdvect<double, D>(newLayer, dist).apply();
 
   lsMesh mesh;
