@@ -10,7 +10,7 @@
 #include <lsCheck.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
-#include <lsFastAdvect.hpp>
+#include <lsGeometricAdvect.hpp>
 #include <lsFromSurfaceMesh.hpp>
 #include <lsFromVolumeMesh.hpp>
 #include <lsGeometries.hpp>
@@ -31,7 +31,7 @@ PRECOMPILE_SPECIALIZE(lsCalculateNormalVectors)
 PRECOMPILE_SPECIALIZE(lsCheck)
 PRECOMPILE_SPECIALIZE(lsDomain)
 PRECOMPILE_SPECIALIZE(lsExpand)
-PRECOMPILE_SPECIALIZE(lsFastAdvect)
+PRECOMPILE_SPECIALIZE(lsGeometricAdvect)
 PRECOMPILE_SPECIALIZE(lsFromMesh)
 PRECOMPILE_SPECIALIZE(lsFromSurfaceMesh)
 PRECOMPILE_SPECIALIZE(lsFromVolumeMesh)

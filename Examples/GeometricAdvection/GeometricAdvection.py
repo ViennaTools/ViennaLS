@@ -1,6 +1,6 @@
 import viennaLS3d as vls
 
-## @example FastAdvection.py
+## @example GeometricAdvection.py
 #  3D Example showing how to use the library for topography
 # emulation, by creating a trench geometry. A uniform
 # layer of a different material is then grown on top. It is
@@ -45,7 +45,7 @@ velocities = velocityField()
 print("Advecting")
 # Advect the level set
 dist = vls.lsSphereDistribution(4.0)
-vls.lsFastAdvect(newLayer, dist).apply()
+vls.lsGeometricAdvect(newLayer, dist).apply()
 
 mesh = vls.lsMesh()
 vls.lsToSurfaceMesh(newLayer, mesh).apply()

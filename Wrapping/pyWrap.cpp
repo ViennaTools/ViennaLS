@@ -25,8 +25,8 @@
 #include <lsConvexHull.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
-#include <lsFastAdvect.hpp>
-#include <lsFastAdvectDistributions.hpp>
+#include <lsGeometricAdvect.hpp>
+#include <lsGeometricAdvectDistributions.hpp>
 #include <lsFileFormats.hpp>
 #include <lsFromSurfaceMesh.hpp>
 #include <lsFromVolumeMesh.hpp>
@@ -72,11 +72,11 @@ public:
   }
 };
 
-// lsFastAdvectDistribution
-class PylsFastAdvectDistribution : public lsFastAdvectDistribution<T, D> {
+// lsGeometricAdvectDistribution
+class PylsGeometricAdvectDistribution : public lsGeometricAdvectDistribution<T, D> {
   typedef std::array<hrleCoordType, 3> vectorType;
-  typedef lsFastAdvectDistribution<T, D> ClassType;
-  using lsFastAdvectDistribution<T, D>::lsFastAdvectDistribution;
+  typedef lsGeometricAdvectDistribution<T, D> ClassType;
+  using lsGeometricAdvectDistribution<T, D>::lsGeometricAdvectDistribution;
 
 public:
   bool isInside(const vectorType &initial, const vectorType &candidate, double eps = 0.) const override {
@@ -274,39 +274,39 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Clear all metadata stored in the level set.")
       .def("print", &lsDomain<T, D>::print, "Print level set structure.");
 
-  // lsFastAdvect
-  pybind11::class_<lsFastAdvect<T, D>>(module, "lsFastAdvect")
+  // lsGeometricAdvect
+  pybind11::class_<lsGeometricAdvect<T, D>>(module, "lsGeometricAdvect")
       // constructors
       .def(pybind11::init<>())
       .def(pybind11::init<lsDomain<T, D> &,
-                          lsFastAdvectDistribution<hrleCoordType, D> &>())
+                          lsGeometricAdvectDistribution<hrleCoordType, D> &>())
       // methods
-      .def("setLevelSet", &lsFastAdvect<T, D>::setLevelSet,
+      .def("setLevelSet", &lsGeometricAdvect<T, D>::setLevelSet,
            "Set levelset to advect.")
       .def(
           "setAdvectionDistribution",
-          &lsFastAdvect<T, D>::setAdvectionDistribution,
+          &lsGeometricAdvect<T, D>::setAdvectionDistribution,
           "Set advection distribution to use as kernel for the fast advection.")
-      .def("apply", &lsFastAdvect<T, D>::apply,
+      .def("apply", &lsGeometricAdvect<T, D>::apply,
            pybind11::call_guard<pybind11::gil_scoped_release>(),
            "Perform advection.");
 
-  // lsFastAdvectDistributions
-  pybind11::class_<lsFastAdvectDistribution<T, D>, PylsFastAdvectDistribution>(
-      module, "lsFastAdvectDistribution")
+  // lsGeometricAdvectDistributions
+  pybind11::class_<lsGeometricAdvectDistribution<T, D>, PylsGeometricAdvectDistribution>(
+      module, "lsGeometricAdvectDistribution")
       // constructors
       .def(pybind11::init<>())
       // methods
-      .def("isInside", &lsFastAdvectDistribution<T, D>::isInside,
+      .def("isInside", &lsGeometricAdvectDistribution<T, D>::isInside,
            "Check whether passed point is inside the distribution.")
       .def("getSignedDistance",
-           &lsFastAdvectDistribution<T, D>::getSignedDistance,
+           &lsGeometricAdvectDistribution<T, D>::getSignedDistance,
            "Get the signed distance of the passed point to the surface of the "
            "distribution.")
-      .def("getBounds", &lsFastAdvectDistribution<T, D>::getBounds,
+      .def("getBounds", &lsGeometricAdvectDistribution<T, D>::getBounds,
            "Get the cartesian bounds of the distribution.");
 
-  pybind11::class_<lsSphereDistribution<T, D>, lsFastAdvectDistribution<T, D>>(
+  pybind11::class_<lsSphereDistribution<T, D>, lsGeometricAdvectDistribution<T, D>>(
       module, "lsSphereDistribution")
       // constructors
       .def(pybind11::init<T>())
@@ -319,7 +319,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("getBounds", &lsSphereDistribution<T, D>::getBounds,
            "Get the cartesian bounds of the distribution.");
 
-  pybind11::class_<lsBoxDistribution<T, D>, lsFastAdvectDistribution<T, D>>(
+  pybind11::class_<lsBoxDistribution<T, D>, lsGeometricAdvectDistribution<T, D>>(
       module, "lsBoxDistribution")
       // constructors
       .def(pybind11::init<const std::array<T, D>>())

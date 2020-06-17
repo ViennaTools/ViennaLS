@@ -2,7 +2,7 @@
 
 #include <lsBooleanOperation.hpp>
 #include <lsExpand.hpp>
-#include <lsFastAdvect.hpp>
+#include <lsGeometricAdvect.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsToDiskMesh.hpp>
 #include <lsToMesh.hpp>
@@ -10,9 +10,9 @@
 #include <lsVTKWriter.hpp>
 
 int main() {
-  omp_set_num_threads(4);
+  omp_set_num_threads(12);
 
-  constexpr int D = 3;
+  constexpr int D = 2;
   typedef double NumericType;
   double gridDelta = 1.1;
 
@@ -85,13 +85,13 @@ int main() {
   // set up spherical advection dist
   // lsSphereDistribution<NumericType, D> dist(15.0);
   std::cout << "Advecting..." << std::endl;
-  std::array<NumericType, D> box = {2.0, 15};
+  std::array<NumericType, 3> box = {1.1, 15};
   if (D == 3) {
-    box[1] = 2.0;
+    box[1] = 1.1;
     box[2] = 15;
   }
-  lsBoxDistribution<NumericType, D> dist(box);
-  lsFastAdvect<NumericType, D>(substrate, dist).apply();
+  lsBoxDistribution<NumericType, D> dist(box, gridDelta);
+  lsGeometricAdvect<NumericType, D>(substrate, dist).apply();
 
   std::cout << "Writing results..." << std::endl;
   lsToMesh<NumericType, D>(substrate, mesh).apply();

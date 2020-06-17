@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.4)
 
-project("FastAdvectTrench")
+project("GeometricAdvectTrench")
 
 find_package(ViennaHRLE REQUIRED)
 find_package(ViennaLS REQUIRED)

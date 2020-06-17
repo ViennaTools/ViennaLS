@@ -4,7 +4,7 @@
 #include <lsAdvect.hpp>
 #include <lsBooleanOperation.hpp>
 #include <lsExpand.hpp>
-#include <lsFastAdvect.hpp>
+#include <lsGeometricAdvect.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsToDiskMesh.hpp>
 #include <lsToMesh.hpp>
@@ -24,7 +24,7 @@ int main() {
   constexpr int D = 3;
   typedef double NumericType;
 
-  double extent = 30;
+  double extent = 10;
   double gridDelta = 0.25;
   double bounds[2 * D] = {-extent, extent, -extent, extent};
   if (D == 3) {
@@ -59,8 +59,8 @@ int main() {
     // create layer used for booling
     std::cout << "Creating box..." << std::endl;
     lsDomain<double, D> trench(bounds, boundaryCons, gridDelta);
-    double minCorner[3] = {-extent - 1, -extent / 4., -15.};
-    double maxCorner[3] = {extent + 1, extent / 4., 1.0};
+    double minCorner[3] = {-extent - 1, -7.5, -15.};
+    double maxCorner[3] = {extent + 1, 7.5, 1.0};
     if (D == 2) {
       minCorner[0] = minCorner[1];
       minCorner[1] = minCorner[2];
@@ -99,8 +99,8 @@ int main() {
 
   lsDomain<double, D> newLayer(substrate);
 
-  std::cout << "FastAdvecting" << std::endl;
-  lsFastAdvect<NumericType, D> fastAdvectKernel(newLayer, dist);
+  std::cout << "GeometricAdvecting" << std::endl;
+  lsGeometricAdvect<NumericType, D> fastAdvectKernel(newLayer, dist);
 
   {
     auto start = std::chrono::high_resolution_clock::now();
@@ -113,7 +113,7 @@ int main() {
   }
 
   lsToSurfaceMesh<double, D>(newLayer, mesh).apply();
-  lsVTKWriter(mesh, "FastAdvect.vtk").apply();
+  lsVTKWriter(mesh, "GeometricAdvect.vtk").apply();
   // lsToSurfaceMesh<double, D>(newLayer, mesh).apply();
   // lsVTKWriter(mesh, "finalSurface.vtk").apply();
 

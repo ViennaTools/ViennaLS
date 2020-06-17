@@ -13,20 +13,23 @@
 
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
-#include <lsFastAdvectDistributions.hpp>
+#include <lsGeometricAdvectDistributions.hpp>
 #include <lsFromMesh.hpp>
 #include <lsToDiskMesh.hpp>
+
+// TODO: remove
+#include <lsVTKWriter.hpp>
 
 /// This class advects the level set according to a given distribution.
 /// This distribution is overlayed at every cell. All cells within
 /// this distribution are then filled, with cells at the edge marked
 /// with the correct level set values. Therefore, the surface can
 /// be shifted long distances in one step. This algorithm is therefore
-/// preferable to normal advection if there is growth/reduction by a geometrical
+/// preferable to normal advection if there is growth/reduction by a geometric
 /// directional distribution.
-template <class T, int D> class lsFastAdvect {
+template <class T, int D> class lsGeometricAdvect {
   lsDomain<T, D> *levelSet = nullptr;
-  const lsFastAdvectDistribution<hrleCoordType, D> *dist = nullptr;
+  const lsGeometricAdvectDistribution<hrleCoordType, D> *dist = nullptr;
   static constexpr T numericEps = 10 * std::numeric_limits<T>::epsilon();
 
   static void incrementIndices(hrleVectorType<hrleIndexType, D> &indices,
@@ -42,10 +45,10 @@ template <class T, int D> class lsFastAdvect {
   }
 
 public:
-  lsFastAdvect() {}
+  lsGeometricAdvect() {}
 
   template <class DistType>
-  lsFastAdvect(lsDomain<T, D> &passedLevelSet, DistType &passedDist)
+  lsGeometricAdvect(lsDomain<T, D> &passedLevelSet, DistType &passedDist)
       : levelSet(&passedLevelSet), dist(&passedDist) {}
 
   void setLevelSet(lsDomain<T, D> &passedLevelSet) {
@@ -53,7 +56,7 @@ public:
   }
 
   void setAdvectionDistribution(
-      const lsFastAdvectDistribution<hrleCoordType, D> &distribution) {
+      const lsGeometricAdvectDistribution<hrleCoordType, D> &distribution) {
     dist = &distribution;
   }
 
@@ -62,13 +65,13 @@ public:
   void apply() {
     if (levelSet == nullptr) {
       lsMessage::getInstance()
-          .addWarning("No level set passed to lsFastAdvect. Not Advecting.")
+          .addWarning("No level set passed to lsGeometricAdvect. Not Advecting.")
           .print();
       return;
     }
     if (dist == nullptr) {
       lsMessage::getInstance()
-          .addWarning("No lsFastAdvectDistribution passed to lsFastAdvect. Not "
+          .addWarning("No lsGeometricAdvectDistribution passed to lsGeometricAdvect. Not "
                       "Advecting.")
           .print();
       return;
@@ -89,19 +92,8 @@ public:
     auto gridDelta = grid.getGridDelta();
 
     // find bounds of distribution
-    std::array<hrleCoordType, 2 * D> distBounds;
+    std::array<hrleCoordType, 6> distBounds;
     dist->getBounds(distBounds);
-    // check bounds of distribution since they must be > gridDelta
-    for (unsigned i = 0; i < 2 * D; ++i) {
-      if (std::abs(distBounds[i]) < gridDelta) {
-        lsMessage::getInstance()
-            .addWarning(
-                "Distribution passed to lsFastAdvect is too small. It must be "
-                "> gridDelta in every direction. Not performing Advection.")
-            .print();
-        return;
-      }
-    }
 
     // TODO: need to add support for periodic boundary conditions!
     hrleVectorType<hrleIndexType, D> distMin, distMax;
@@ -112,7 +104,7 @@ public:
             .definedValues.back() < 0.;
 
     // find bounding box of old domain
-    hrleIndexType bounds[2 * D];
+    hrleIndexType bounds[6];
     domain.getDomainBounds(bounds);
     hrleVectorType<hrleIndexType, D> min, max;
     for (unsigned i = 0; i < D; ++i) {
@@ -125,7 +117,7 @@ public:
       // TODO: respect periodic boundary condition
       min[i] = surfaceMesh.minimumExtent[i] / gridDelta;
       if (grid.isNegBoundaryInfinite(i) && minPointNegative) {
-        min[i] += distMax[i] - 2;
+        min[i] -=  2;
       } else {
         min[i] += distMin[i];
       }
@@ -137,7 +129,7 @@ public:
 
       max[i] = surfaceMesh.maximumExtent[i] / gridDelta;
       if (grid.isPosBoundaryInfinite(i) && maxPointNegative) {
-        max[i] += distMin[i] + 2;
+        max[i] += 2;
       } else {
         max[i] += distMax[i];
       }
@@ -317,7 +309,11 @@ public:
       mesh.insertNextScalarData(scalarData, "LSValues");
     }
 
+    // TODO: remove
+    lsVTKWriter(mesh, "afterAdvect.vtk").apply();
+
     lsFromMesh<T, D>(*levelSet, mesh).apply();
+    lsPrune<T, D>(*levelSet).apply();
 
     levelSet->getDomain().segment();
     levelSet->finalize(1);
@@ -327,6 +323,6 @@ public:
 };
 
 // add all template specialisations for this class
-PRECOMPILE_PRECISION_DIMENSION(lsFastAdvect)
+PRECOMPILE_PRECISION_DIMENSION(lsGeometricAdvect)
 
 #endif // LS_FAST_ADVECT_HPP

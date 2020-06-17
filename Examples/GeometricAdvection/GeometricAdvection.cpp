@@ -3,7 +3,7 @@
 #include <lsBooleanOperation.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
-#include <lsFastAdvect.hpp>
+#include <lsGeometricAdvect.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
 #include <lsToMesh.hpp>
@@ -16,7 +16,7 @@
   layer of a different material is then grown on top. It is
   the same example as Deposition but emulates the deposition
   rather than simulating a slow growth.
-  \example FastAdvection.cpp
+  \example GeometricAdvection.cpp
 */
 
 int main() {
@@ -69,7 +69,7 @@ int main() {
   std::cout << "Advecting" << std::endl;
   // Grow the layer uniformly by 4 as in deposition example
   lsSphereDistribution<double, D> dist(4.0);
-  lsFastAdvect<double, D>(newLayer, dist).apply();
+  lsGeometricAdvect<double, D>(newLayer, dist).apply();
 
   lsMesh mesh;
   lsToSurfaceMesh<double, D>(newLayer, mesh).apply();

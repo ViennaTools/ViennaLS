@@ -2,13 +2,14 @@
 #define LS_FAST_ADVECT_DISTRIBUTIONS_HPP
 
 #include <hrleVectorType.hpp>
+#include <lsMessage.hpp>
 
-/// Base class for distributions used by lsFastAdvect.
+/// Base class for distributions used by lsGeometricAdvect.
 /// All functions are pure virtual and must be implemented
 /// by any advection distribution.
-template <class T, int D> class lsFastAdvectDistribution {
+template <class T, int D> class lsGeometricAdvectDistribution {
 public:
-  lsFastAdvectDistribution() {}
+  lsGeometricAdvectDistribution() {}
 
   /// Quick check whether a point relative to the distributions
   /// center is inside the distribution.
@@ -23,21 +24,22 @@ public:
                               const std::array<hrleCoordType, 3> &candidate) const = 0;
 
   /// Sets bounds to the bounding box of the distribution.
-  virtual void getBounds(std::array<hrleCoordType, 2 * D> &bounds) const = 0;
+  virtual void getBounds(std::array<hrleCoordType, 6> &bounds) const = 0;
 
-  virtual ~lsFastAdvectDistribution() {}
+  virtual ~lsGeometricAdvectDistribution() {}
 };
 
-/// Concrete implementation of lsFastAdvectDistribution for a spherical
+/// Concrete implementation of lsGeometricAdvectDistribution for a spherical
 /// advection distribution.
 template <class T, int D>
-class lsSphereDistribution : public lsFastAdvectDistribution<T, D> {
+class lsSphereDistribution : public lsGeometricAdvectDistribution<T, D> {
 public:
   const T radius = 0.;
   const T radius2;
+  const T gridDelta;
 
-  lsSphereDistribution(T passedRadius)
-      : radius(passedRadius), radius2(radius * radius) {}
+  lsSphereDistribution(const T passedRadius, const T delta)
+      : radius(passedRadius), radius2(radius * radius), gridDelta(delta) {}
 
   bool isInside(const std::array<hrleCoordType, 3> &initial,
                 const std::array<hrleCoordType, 3> &candidate, double eps = 0.) const {
@@ -60,6 +62,11 @@ public:
     for(unsigned i = 0; i < D; ++i) {
       v[i] = candidate[i] - initial[i];
     }
+
+    if(radius <= gridDelta){
+      return std::max(std::max(std::abs(v[0]), std::abs(v[1])), std::abs(v[2])) - radius;
+    }
+
     for (unsigned i = 0; i < D; ++i) {
       T y = (v[(i + 1) % D]);
       T z = 0;
@@ -75,7 +82,7 @@ public:
     return distance;
   }
 
-  void getBounds(std::array<hrleCoordType, 2 * D> &bounds) const {
+  void getBounds(std::array<hrleCoordType, 6> &bounds) const {
     for (unsigned i = 0; i < D; ++i) {
       bounds[2 * i] = -radius;
       bounds[2 * i + 1] = radius;
@@ -83,14 +90,21 @@ public:
   }
 };
 
-/// Concrete implementation of lsFastAdvectDistribution
+/// Concrete implementation of lsGeometricAdvectDistribution
 /// for a rectangular box distribution.
 template <class T, int D>
-class lsBoxDistribution : public lsFastAdvectDistribution<T, D> {
+class lsBoxDistribution : public lsGeometricAdvectDistribution<T, D> {
 public:
-  const hrleVectorType<T, D> posExtent;
+  const hrleVectorType<T, 3> posExtent;
+  const T gridDelta;
 
-  lsBoxDistribution(const std::array<T, D> &halfAxes) : posExtent(halfAxes) {}
+  lsBoxDistribution(const std::array<T, 3> &halfAxes, const T delta) : posExtent(halfAxes), gridDelta(delta) {
+    for(unsigned i = 0; i < D; ++i) {
+      if(posExtent[i] < gridDelta) {
+        lsMessage::getInstance().addWarning("One half-axis of lsBoxDistribution is smaller than the grid Delta! This can lead to numerical errors breaking the distribution!").print();
+      }
+    }
+  }
 
   bool isInside(const std::array<hrleCoordType, 3> &initial,
                 const std::array<hrleCoordType, 3> &candidate, double eps = 0.) const {
@@ -106,12 +120,13 @@ public:
                       const std::array<hrleCoordType, 3> &candidate) const {
     T distance = std::numeric_limits<T>::lowest();
     for (unsigned i = 0; i < D; ++i) {
-      distance = std::max(std::abs(candidate[i] - initial[i]) - posExtent[i], distance);
+      T vector = std::abs(candidate[i] - initial[i]);
+      distance = std::max(vector - posExtent[i], distance);
     }
     return distance;
   }
 
-  void getBounds(std::array<hrleCoordType, 2 * D> &bounds) const {
+  void getBounds(std::array<hrleCoordType, 6> &bounds) const {
     for (unsigned i = 0; i < D; ++i) {
       bounds[2 * i] = -posExtent[i];
       bounds[2 * i + 1] = posExtent[i];

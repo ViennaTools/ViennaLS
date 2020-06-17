@@ -2,7 +2,7 @@
 
 #include <lsBooleanOperation.hpp>
 #include <lsExpand.hpp>
-#include <lsFastAdvect.hpp>
+#include <lsGeometricAdvect.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsToDiskMesh.hpp>
 #include <lsToMesh.hpp>
@@ -61,7 +61,7 @@ int main() {
 
   // set up spherical advection dist
   lsSphereDistribution<double, D> dist(20.0);
-  lsFastAdvect<NumericType, D>(levelSet, dist).apply();
+  lsGeometricAdvect<NumericType, D>(levelSet, dist).apply();
 
   lsToMesh<NumericType, D>(levelSet, mesh).apply();
   lsVTKWriter(mesh, "finalLS.vtk").apply();
