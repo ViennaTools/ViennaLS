@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.4)
 
 project(ViennaLSTests)
 
-set(ViennaHRLE_DIR $ENV{VIENNAHRLE_DIR})
-
 MACRO(SUBDIRLIST result curdir)
   FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
   SET(dirlist "")
@@ -16,6 +14,12 @@ MACRO(SUBDIRLIST result curdir)
   ENDFOREACH()
   SET(${result} ${dirlist})
 ENDMACRO()
+
+if(NOT ViennaHRLE_DIR)
+  set(ViennaHRLE_DIR $ENV{VIENNAHRLE_DIR})
+endif(NOT ViennaHRLE_DIR)
+list(APPEND VIENNALS_LIBRARIES ViennaHRLE)
+find_package(ViennaHRLE REQUIRED)
 
 set(ViennaLS_DIR "${ViennaLS_BINARY_DIR}")
 set(ViennaLS_COMMON_TARGET ${PROJECT_NAME})
