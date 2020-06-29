@@ -15,7 +15,7 @@ namespace lsInternal {
 /// Slower than lsLocalLocalLaxFriedrichs or lsEngquistOsher
 /// but more reliable for complex velocity fields.
 template <class T, int D, int order> class lsLocalLaxFriedrichs {
-  lsDomain<T, D> &levelSet;
+  lsSmartPointer<lsDomain<T, D>> &levelSet;
   hrleSparseBoxIterator<hrleDomain<T, D>> neighborIterator;
   const double alphaFactor;
 
@@ -39,7 +39,7 @@ template <class T, int D, int order> class lsLocalLaxFriedrichs {
   }
 
 public:
-  static void prepareLS(lsDomain<T, D> &passedlsDomain) {
+  static void prepareLS(lsSmartPointer<lsDomain<T, D>> &passedlsDomain) {
     assert(order == 1 || order == 2);
     // at least order+1 layers since we need neighbor neighbors for
     // dissipation alpha calculation
@@ -47,14 +47,15 @@ public:
   }
 
   // neighboriterator always needs order 2 for alpha calculation
-  lsLocalLaxFriedrichs(lsDomain<T, D> &passedlsDomain, double a = 1.0)
-      : levelSet(passedlsDomain), neighborIterator(levelSet.getDomain(), 2),
+  lsLocalLaxFriedrichs(lsSmartPointer<lsDomain<T, D>> &passedlsDomain,
+                       double a = 1.0)
+      : levelSet(passedlsDomain), neighborIterator(levelSet->getDomain(), 2),
         alphaFactor(a) {}
 
   T operator()(const hrleVectorType<hrleIndexType, D> &indices,
-               lsVelocityField<T> *velocities, int material) {
+               lsSmartPointer<lsVelocityField<T>> velocities, int material) {
 
-    auto &grid = levelSet.getGrid();
+    auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
 
     hrleVectorType<T, 3> coordinate(0., 0., 0.);

@@ -10,6 +10,7 @@
 #include <hrleVectorType.hpp>
 
 #include <lsPointData.hpp>
+#include <lsSmartPointer.hpp>
 
 #define LS_DOMAIN_SERIALIZATION_VERSION 0
 
@@ -105,11 +106,11 @@ public:
   void finalize() {}
 
   /// copy all values of "passedlsDomain" to this lsDomain
-  void deepCopy(const lsDomain<T, D> &passedlsDomain) {
-    grid = passedlsDomain.grid;
-    domain.deepCopy(grid, passedlsDomain.domain);
-    levelSetWidth = passedlsDomain.levelSetWidth;
-    pointData = passedlsDomain.pointData;
+  void deepCopy(const lsSmartPointer<lsDomain<T, D>> &passedlsDomain) {
+    grid = passedlsDomain->grid;
+    domain.deepCopy(grid, passedlsDomain->domain);
+    levelSetWidth = passedlsDomain->levelSetWidth;
+    pointData = passedlsDomain->pointData;
   }
 
   /// re-initalise lsDomain with the point/value pairs in pointData

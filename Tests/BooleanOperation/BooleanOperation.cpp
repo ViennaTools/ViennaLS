@@ -32,21 +32,26 @@ int main() {
   }
   boundaryCons[D - 1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  lsDomain<double, D> sphere1(bounds, boundaryCons, gridDelta);
-  lsDomain<double, D> sphere2(bounds, boundaryCons, gridDelta);
+  auto sphere1 =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  auto sphere2 =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
 
   double origin[3] = {0., 0., 0.};
   double radius = 15.7;
 
-  lsMakeGeometry<double, D>(sphere1, lsSphere<double, D>(origin, radius))
+  lsMakeGeometry<double, D>(
+      sphere1, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
       .apply();
   origin[0] = 15.0;
   radius = 9.5;
-  lsMakeGeometry<double, D>(sphere2, lsSphere<double, D>(origin, radius))
+  lsMakeGeometry<double, D>(
+      sphere2, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
       .apply();
 
   {
-    lsMesh mesh1, mesh2;
+    auto mesh1 = lsSmartPointer<lsMesh>::New();
+    auto mesh2 = lsSmartPointer<lsMesh>::New();
 
     std::cout << "Extracting..." << std::endl;
     lsToSurfaceMesh<double, D>(sphere1, mesh1).apply();
@@ -67,10 +72,10 @@ int main() {
       .apply();
 
   std::cout << "Extracting..." << std::endl;
-  lsMesh mesh;
+  auto mesh = lsSmartPointer<lsMesh>::New();
   lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
 
-  mesh.print();
+  mesh->print();
 
   lsVTKWriter(mesh, "after.vtk").apply();
 

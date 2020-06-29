@@ -17,17 +17,17 @@
 /// Since neighbors in each cartesian direction are necessary for
 /// the calculation, the levelset width must be >=3.
 template <class T, int D> class lsCalculateNormalVectors {
-  lsDomain<T, D> *levelSet = nullptr;
+  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
   T maxValue = 0.5;
 
 public:
   lsCalculateNormalVectors() {}
 
-  lsCalculateNormalVectors(lsDomain<T, D> &passedLevelSet,
+  lsCalculateNormalVectors(lsSmartPointer<lsDomain<T, D>> &passedLevelSet,
                            T passedMaxValue = 0.5)
-      : levelSet(&passedLevelSet), maxValue(passedMaxValue) {}
+      : levelSet(passedLevelSet), maxValue(passedMaxValue) {}
 
-  void setLevelSet(lsDomain<T, D> &passedLevelSet) {
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> &passedLevelSet) {
     levelSet = &passedLevelSet;
   }
 
