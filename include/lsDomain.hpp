@@ -95,7 +95,7 @@ public:
     domain.deepCopy(grid, DomainType(grid, T(POS_VALUE)));
   }
 
-  lsDomain(const lsDomain &passedlsDomain) { deepCopy(passedlsDomain); }
+  lsDomain(const lsSmartPointer<lsDomain> &passedDomain){ deepCopy(passedDomain); }
 
   /// this function sets a new levelset width and finalizes the levelset, so it
   /// is ready for use by other algorithms

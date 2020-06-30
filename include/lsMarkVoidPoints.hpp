@@ -11,7 +11,7 @@
 /// This class is used to mark points of the level set
 /// which are enclosed in a void.
 template <class T, int D> class lsMarkVoidPoints {
-  lsDomain<T, D> *domain = nullptr;
+  lsSmartPointer<lsDomain<T, D>> domain = nullptr;
   bool reverseVoidDetection = false;
 
   // two points are connected if they have the same sign
@@ -20,12 +20,12 @@ template <class T, int D> class lsMarkVoidPoints {
   }
 
 public:
-  lsMarkVoidPoints(lsDomain<T, D> &passedlsDomain,
+  lsMarkVoidPoints(lsSmartPointer<lsDomain<T, D>> &passedlsDomain,
                    bool passedReverseVoidDetection = false)
-      : domain(&passedlsDomain),
+      : domain(passedlsDomain),
         reverseVoidDetection(passedReverseVoidDetection) {}
 
-  void setLevelSet(lsDomain<T, D> &passedlsDomain) { domain = &passedlsDomain; }
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> &passedlsDomain) { domain = passedlsDomain; }
 
   /// Set whether the "top" level set should be the most positive(default)
   /// connected chain of level set values, or the most negative.

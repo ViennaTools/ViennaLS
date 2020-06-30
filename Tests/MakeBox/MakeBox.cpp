@@ -36,15 +36,16 @@ int main() {
   }
   boundaryCons[D - 1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  lsDomain<double, D> levelSet(bounds, boundaryCons, gridDelta);
+  auto levelSet =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
 
   hrleVectorType<double, D> min(-10, -10, 0);
   hrleVectorType<double, D> max(10, 10, 4);
-  lsMakeGeometry<double, D>(levelSet, lsBox<double, D>(min, max)).apply();
+  lsMakeGeometry<double, D>(levelSet, lsSmartPointer<lsBox<double, D>>::New(min, max)).apply();
 
-  std::cout << "Number of points: " << levelSet.getDomain().getNumberOfPoints()
+  std::cout << "Number of points: " << levelSet->getDomain().getNumberOfPoints()
             << std::endl;
-  lsMesh mesh;
+  auto mesh = lsSmartPointer<lsMesh>::New();
   lsToMesh<double, D>(levelSet, mesh).apply();
   lsVTKWriter(mesh, "boxLS.vtk").apply();
   lsToSurfaceMesh<double, D>(levelSet, mesh).apply();

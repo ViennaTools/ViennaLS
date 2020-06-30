@@ -20,7 +20,7 @@ template <class T, int D> class lsToDiskMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
 
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
-  lsSmartPointer<lsMesh> *mesh = nullptr;
+  lsSmartPointer<lsMesh> mesh = nullptr;
   T maxValue = 0.5;
 
 public:
@@ -54,8 +54,8 @@ public:
 
     mesh->clear();
 
-    lsExpand<T, D>(*levelSet, (maxValue * 4) + 1).apply();
-    lsCalculateNormalVectors<T, D>(*levelSet, maxValue).apply();
+    lsExpand<T, D>(levelSet, (maxValue * 4) + 1).apply();
+    lsCalculateNormalVectors<T, D>(levelSet, maxValue).apply();
 
     const T gridDelta = levelSet->getGrid().getGridDelta();
     const auto &normalVectors = levelSet->getNormalVectors();

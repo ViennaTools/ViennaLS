@@ -25,8 +25,8 @@
 /// to normal advection if there is growth/reduction by a geometric directional
 /// distribution.
 template <class T, int D> class lsGeometricAdvect {
-  lsDomain<T, D> *levelSet = nullptr;
-  const lsGeometricAdvectDistribution<hrleCoordType, D> *dist = nullptr;
+  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
+  lsSmartPointer<const lsGeometricAdvectDistribution<hrleCoordType, D>> dist = nullptr;
   static constexpr T numericEps = 10 * std::numeric_limits<T>::epsilon();
 
   static void incrementIndices(hrleVectorType<hrleIndexType, D> &indices,
@@ -45,18 +45,21 @@ public:
   lsGeometricAdvect() {}
 
   template <class DistType>
-  lsGeometricAdvect(lsDomain<T, D> &passedLevelSet, DistType &passedDist)
-      : levelSet(&passedLevelSet), dist(&passedDist) {}
+  lsGeometricAdvect(lsSmartPointer<lsDomain<T, D>> &passedLevelSet, lsSmartPointer<DistType> &passedDist)
+      : levelSet(passedLevelSet) {
+        dist = std::dynamic_pointer_cast<lsGeometricAdvectDistribution<hrleCoordType, D>>(passedDist);
+      }
 
-  void setLevelSet(lsDomain<T, D> &passedLevelSet) {
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> &passedLevelSet) {
     levelSet = &passedLevelSet;
   }
 
   /// Set which advection distribution to use. Must be derived from
   /// lsGeometricAdvectDistribution.
+  template <class DistType>
   void setAdvectionDistribution(
-      const lsGeometricAdvectDistribution<hrleCoordType, D> &distribution) {
-    dist = &distribution;
+      lsSmartPointer<DistType> &passedDist) {
+    dist = std::dynamic_pointer_cast<lsGeometricAdvectDistribution<hrleCoordType, D>>(passedDist);
   }
 
   /// Perform geometrical advection.
@@ -81,10 +84,10 @@ public:
 
     // Extract the original surface as a point cloud of grid
     // points shifted to the surface (disk mesh)
-    lsMesh surfaceMesh;
-    lsToDiskMesh<T, D>(*levelSet, surfaceMesh).apply();
+    auto surfaceMesh = lsSmartPointer<lsMesh>::New();
+    lsToDiskMesh<T, D>(levelSet, surfaceMesh).apply();
     typedef std::vector<std::array<double, 3>> SurfaceNodesType;
-    const SurfaceNodesType &surfaceNodes = surfaceMesh.getNodes();
+    const SurfaceNodesType &surfaceNodes = surfaceMesh->getNodes();
 
     auto &domain = levelSet->getDomain();
 
@@ -121,7 +124,7 @@ public:
       // use the extent of the diskMesh to identify bounding box of new
       // level set
       // TODO: respect periodic boundary condition
-      min[i] = surfaceMesh.minimumExtent[i] / gridDelta;
+      min[i] = surfaceMesh->minimumExtent[i] / gridDelta;
       // TODO also do the same thing for positive point and etching
       if (grid.isNegBoundaryInfinite(i) && minPointNegative && distMin[i] < 0) {
         min[i] -= 2;
@@ -138,7 +141,7 @@ public:
         min[i] = grid.getMinGridPoint(i);
       }
 
-      max[i] = surfaceMesh.maximumExtent[i] / gridDelta;
+      max[i] = surfaceMesh->maximumExtent[i] / gridDelta;
       if (grid.isPosBoundaryInfinite(i) && maxPointNegative && distMax[i] > 0) {
         max[i] += 2;
       } else {
@@ -324,7 +327,7 @@ public:
       }
     }
 
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh>::New();
     // output all points directly to mesh
     {
       std::vector<double> scalarData;
@@ -334,22 +337,22 @@ public:
           node[i] = T((it->first)[i]) * gridDelta;
         }
 
-        mesh.insertNextNode(node);
+        mesh->insertNextNode(node);
         std::array<unsigned, 1> vertex;
-        vertex[0] = mesh.vertices.size();
-        mesh.insertNextVertex(vertex);
+        vertex[0] = mesh->vertices.size();
+        mesh->insertNextVertex(vertex);
         scalarData.push_back(it->second);
       }
-      mesh.insertNextScalarData(scalarData, "LSValues");
+      mesh->insertNextScalarData(scalarData, "LSValues");
     }
 
-    lsFromMesh<T, D>(*levelSet, mesh).apply();
-    lsPrune<T, D>(*levelSet).apply();
+    lsFromMesh<T, D>(levelSet, mesh).apply();
+    lsPrune<T, D>(levelSet).apply();
 
     levelSet->getDomain().segment();
     levelSet->finalize(1);
 
-    lsExpand<T, D>(*levelSet, 2).apply();
+    lsExpand<T, D>(levelSet, 2).apply();
   }
 };
 

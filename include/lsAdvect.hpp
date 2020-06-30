@@ -438,7 +438,7 @@ template <class T, int D> class lsAdvect {
     totalTempRates.resize((levelSets.back())->getNumberOfSegments());
 
     if (ignoreVoids) {
-      lsMarkVoidPoints<T, D>(*levelSets.back()).apply();
+      lsMarkVoidPoints<T, D>(levelSets.back()).apply();
     }
 
 #pragma omp parallel num_threads((levelSets.back())->getNumberOfSegments())

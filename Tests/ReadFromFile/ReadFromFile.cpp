@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  lsMesh mesh;
+  auto mesh = lsSmartPointer<lsMesh>::New();
 
   lsVTKReader(mesh, std::string(argv[1])).apply();
 

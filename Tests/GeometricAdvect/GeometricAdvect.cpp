@@ -31,28 +31,30 @@ int main() {
   boundaryCons[D - 1] =
       lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  lsDomain<NumericType, D> levelSet(bounds, boundaryCons, gridDelta);
+  auto levelSet =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
   // create a sphere in the level set
   NumericType origin[D] = {0., 0.};
   if (D == 3)
     origin[2] = 0;
   NumericType radius = 8.0;
   lsMakeGeometry<NumericType, D>(levelSet,
-                                 lsSphere<NumericType, D>(origin, radius))
+                                 lsSmartPointer<lsSphere<NumericType, D>>::New(origin, radius))
       .apply();
 
-  lsDomain<NumericType, D> sphere2(bounds, boundaryCons, gridDelta);
+  auto sphere =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
 
   origin[1] = 10.0;
-  lsMakeGeometry<NumericType, D>(sphere2,
-                                 lsSphere<NumericType, D>(origin, radius))
+  lsMakeGeometry<NumericType, D>(sphere,
+                                 lsSmartPointer<lsSphere<NumericType, D>>::New(origin, radius))
       .apply();
 
-  lsBooleanOperation<NumericType, D>(levelSet, sphere2,
+  lsBooleanOperation<NumericType, D>(levelSet, sphere,
                                      lsBooleanOperationEnum::UNION)
       .apply();
 
-  lsMesh mesh;
+  auto mesh = lsSmartPointer<lsMesh>::New();
 
   lsToMesh<NumericType, D>(levelSet, mesh).apply();
   lsVTKWriter(mesh, "points.vtk").apply();
@@ -60,7 +62,7 @@ int main() {
   lsVTKWriter(mesh, "surface.vtk").apply();
 
   // set up spherical advection dist
-  lsSphereDistribution<double, D> dist(20.0, gridDelta);
+  auto dist = lsSmartPointer<lsSphereDistribution<double, D>>::New(20.0, gridDelta);
   lsGeometricAdvect<NumericType, D>(levelSet, dist).apply();
 
   lsToMesh<NumericType, D>(levelSet, mesh).apply();
@@ -69,7 +71,7 @@ int main() {
   lsVTKWriter(mesh, "afterDepo.vtk").apply();
 
   // now remove the same again using spherical distribution
-  lsSphereDistribution<NumericType, D> etch(-20.0, gridDelta);
+  auto etch = lsSmartPointer<lsSphereDistribution<NumericType, D>>::New(-20.0, gridDelta);
   lsGeometricAdvect<NumericType, D>(levelSet, etch).apply();
 
   lsToMesh<NumericType, D>(levelSet, mesh).apply();

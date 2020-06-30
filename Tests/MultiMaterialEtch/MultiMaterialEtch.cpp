@@ -65,20 +65,22 @@ int main() {
   boundaryCons[D - 1] =
       lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  lsDomain<double, D> substrate(bounds, boundaryCons, gridDelta);
-  lsDomain<double, D> mask(bounds, boundaryCons, gridDelta);
+  auto substrate =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  auto mask =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
 
   double planeOrigin[3] = {0., 0., 0.};
   double planeNormal[3] = {0., D == 2, D == 3};
 
   lsMakeGeometry<double, D>(substrate,
-                            lsPlane<double, D>(planeOrigin, planeNormal))
+                            lsSmartPointer<lsPlane<double, D>>::New(planeOrigin, planeNormal))
       .apply();
 
   double maskOrigin[3] = {0., -10 * (D == 2), -10 * (D == 3)};
   double maskNormal[3] = {0, -(D == 2), -(D == 3)};
 
-  lsMakeGeometry<double, D>(mask, lsPlane<double, D>(maskOrigin, maskNormal))
+  lsMakeGeometry<double, D>(mask, lsSmartPointer<lsPlane<double, D>>::New(maskOrigin, maskNormal))
       .apply();
 
   lsBooleanOperation<double, D>(mask, substrate,
@@ -87,7 +89,7 @@ int main() {
 
   {
     std::cout << "Extracting..." << std::endl;
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh>::New();
     lsToSurfaceMesh<double, D>(mask, mesh).apply();
     lsVTKWriter(mesh, "maskPlane.vtk").apply();
   }
@@ -123,7 +125,7 @@ int main() {
   // }
 
   {
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh>::New();
 
     lsToMesh<NumericType, D>(substrate, mesh).apply();
     lsVTKWriter(mesh, "points.vtk").apply();
@@ -131,8 +133,8 @@ int main() {
     lsVTKWriter(mesh, "surface.vtk").apply();
   }
 
-  depositionVel depoVel;
-  etchingVel etchVel;
+  lsSmartPointer<depositionVel> depoVel;
+  lsSmartPointer<etchingVel> etchVel;
 
   std::cout << "Advecting" << std::endl;
   lsAdvect<double, D> deposition(depoVel);
@@ -146,7 +148,7 @@ int main() {
   etching.setAdvectionTime(1);
 
   {
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh>::New();
     lsToSurfaceMesh<NumericType, D>(mask, mesh).apply();
     lsVTKWriter(mesh, "mask0.vtk").apply();
     lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
@@ -166,7 +168,7 @@ int main() {
 
     deposition.apply();
 
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh>::New();
     lsToSurfaceMesh<NumericType, D>(mask, mesh).apply();
     lsVTKWriter(mesh, "mask" + std::to_string(2 * i) + ".vtk").apply();
     lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
