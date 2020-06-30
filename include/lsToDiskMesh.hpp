@@ -31,7 +31,7 @@ public:
       : levelSet(passedLevelSet), mesh(passedMesh), maxValue(passedMaxValue) {}
 
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> &passedLevelSet) {
-    levelSet = &passedLevelSet;
+    levelSet = passedLevelSet;
   }
 
   void setMesh(lsSmartPointer<lsMesh> &passedMesh) { mesh = passedMesh; }

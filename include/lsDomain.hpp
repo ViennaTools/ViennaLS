@@ -79,14 +79,16 @@ public:
     for (unsigned i = 0; i < D; ++i) {
       boundaryCons[i] = static_cast<BoundaryType>(boundaryConditions[i]);
     }
-    this->deepCopy(lsDomain<T, D>(bounds.data(), boundaryCons, gridDelta));
+    auto newDomain = lsSmartPointer<lsDomain<T, D>>::New(bounds.data(), boundaryCons, gridDelta);
+    this->deepCopy(newDomain);
   }
 
   /// initialise lsDomain with domain size "bounds", filled with point/value
   /// pairs in pointData
   lsDomain(PointValueVectorType pointData, hrleCoordType *bounds,
            BoundaryType *boundaryConditions, hrleCoordType gridDelta = 1.0) {
-    this->deepCopy(lsDomain(bounds, boundaryConditions, gridDelta));
+    auto newDomain = lsSmartPointer<lsDomain<T, D>>::New(bounds, boundaryConditions, gridDelta);
+    this->deepCopy(newDomain);
     hrleFillDomainWithSignedDistance(domain, pointData, T(NEG_VALUE),
                                      T(POS_VALUE));
   }

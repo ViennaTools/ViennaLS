@@ -35,8 +35,8 @@ enum struct lsBooleanOperationEnum : unsigned {
 ///  always return the smaller of the two values.
 template <class T, int D> class lsBooleanOperation {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
-  lsSmartPointer<lsDomain<double, D>> levelSetA = nullptr;
-  lsSmartPointer<lsDomain<double, D>> levelSetB = nullptr;
+  lsSmartPointer<lsDomain<T, D>> levelSetA = nullptr;
+  lsSmartPointer<lsDomain<T, D>> levelSetB = nullptr;
   lsBooleanOperationEnum operation = lsBooleanOperationEnum::INTERSECT;
   const T (*operationComp)(const T &, const T &) = nullptr;
 
@@ -161,26 +161,26 @@ public:
   lsBooleanOperation() {}
 
   lsBooleanOperation(
-      lsSmartPointer<lsDomain<double, D>> &passedlsDomain,
+      lsSmartPointer<lsDomain<T, D>> &passedlsDomain,
       lsBooleanOperationEnum passedOperation = lsBooleanOperationEnum::INVERT)
       : levelSetA(passedlsDomain), operation(passedOperation) {}
 
-  lsBooleanOperation(lsSmartPointer<lsDomain<double, D>> &passedlsDomainA,
-                     lsSmartPointer<lsDomain<double, D>> &passedlsDomainB,
+  lsBooleanOperation(lsSmartPointer<lsDomain<T, D>> &passedlsDomainA,
+                     lsSmartPointer<lsDomain<T, D>> &passedlsDomainB,
                      lsBooleanOperationEnum passedOperation =
                          lsBooleanOperationEnum::INTERSECT)
       : levelSetA(passedlsDomainA), levelSetB(passedlsDomainB),
         operation(passedOperation){};
 
   /// set which level set to perform the boolean operation on
-  void setLevelSet(lsSmartPointer<lsDomain<double, D>> &passedlsDomain) {
-    levelSetA = &passedlsDomain;
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> &passedlsDomain) {
+    levelSetA = passedlsDomain;
   }
 
   /// set the level set which will be used to modify the
   /// first level set
-  void setSecondLevelSet(lsSmartPointer<lsDomain<double, D>> &passedlsDomain) {
-    levelSetB = &passedlsDomain;
+  void setSecondLevelSet(lsSmartPointer<lsDomain<T, D>> &passedlsDomain) {
+    levelSetB = passedlsDomain;
   }
 
   /// set which of the operations of lsBooleanOperationEnum to perform

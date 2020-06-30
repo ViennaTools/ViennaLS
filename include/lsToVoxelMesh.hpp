@@ -16,7 +16,7 @@
 template <class T, int D> class lsToVoxelMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
 
-  std::vector<lsSmartPointer<const lsDomain<T, D>>> levelSets;
+  std::vector<lsSmartPointer<lsDomain<T, D>>> levelSets;
   lsSmartPointer<lsMesh> mesh = nullptr;
   hrleVectorType<hrleIndexType, D> minIndex, maxIndex;
 

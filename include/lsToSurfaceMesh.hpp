@@ -18,7 +18,7 @@
 template <class T, int D> class lsToSurfaceMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
 
-  const lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
+  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
   lsSmartPointer<lsMesh> mesh = nullptr;
   // std::vector<hrleIndexType> meshNodeToPointIdMapping;
   const double epsilon;

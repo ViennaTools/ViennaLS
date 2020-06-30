@@ -15,7 +15,7 @@
 /// one level set for each material will be created and stored
 /// in the supplied std::vector<lsDomain<T,D>> object.
 template <class T, int D> class lsFromVolumeMesh {
-  std::vector<lsSmartPointer<lsDomain<T, D>>> levelSets = nullptr;
+  std::vector<lsSmartPointer<lsDomain<T, D>>> levelSets;
   lsSmartPointer<lsMesh> mesh = nullptr;
   bool removeBoundaryTriangles = true;
 

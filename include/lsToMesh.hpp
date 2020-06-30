@@ -16,7 +16,7 @@
 template <class T, int D> class lsToMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
 
-  const lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
+  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
   lsSmartPointer<lsMesh> mesh = nullptr;
   bool onlyDefined;
   bool onlyActive;

@@ -28,7 +28,7 @@ public:
       : levelSet(passedLevelSet), maxValue(passedMaxValue) {}
 
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> &passedLevelSet) {
-    levelSet = &passedLevelSet;
+    levelSet = passedLevelSet;
   }
 
   void setMaxValue(const T passedMaxValue) { maxValue = passedMaxValue; }

@@ -51,7 +51,7 @@ public:
       }
 
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> &passedLevelSet) {
-    levelSet = &passedLevelSet;
+    levelSet = passedLevelSet;
   }
 
   /// Set which advection distribution to use. Must be derived from
