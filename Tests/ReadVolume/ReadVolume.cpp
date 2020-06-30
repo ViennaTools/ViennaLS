@@ -20,7 +20,8 @@ int main() {
   boundaryCons[1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
   std::vector<lsSmartPointer<lsDomain<double, D>>> levelSets(
-      5, lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta));
+      5, lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
+                                                  gridDelta));
 
   // Read mesh
   auto initialMesh = lsSmartPointer<lsMesh>::New();

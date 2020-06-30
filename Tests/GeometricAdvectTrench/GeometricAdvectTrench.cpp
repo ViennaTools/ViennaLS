@@ -37,7 +37,8 @@ int main() {
   double origin[3] = {0., 0., 0.};
   double planeNormal[3] = {0., D == 2, D == 3};
 
-  lsMakeGeometry<double, D>(substrate, lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal))
+  lsMakeGeometry<double, D>(
+      substrate, lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal))
       .apply();
 
   {
@@ -50,8 +51,8 @@ int main() {
   {
     // create layer used for booling
     std::cout << "Creating box..." << std::endl;
-    auto trench =
-      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+    auto trench = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
+                                                           gridDelta);
     double minCorner[3] = {-extent - 1, -extent / 4., -15.};
     double maxCorner[3] = {extent + 1, extent / 4., 1.0};
     if (D == 2) {
@@ -60,7 +61,8 @@ int main() {
       maxCorner[0] = maxCorner[1];
       maxCorner[1] = maxCorner[2];
     }
-    lsMakeGeometry<double, D>(trench, lsSmartPointer<lsBox<double, D>>::New(minCorner, maxCorner))
+    lsMakeGeometry<double, D>(
+        trench, lsSmartPointer<lsBox<double, D>>::New(minCorner, maxCorner))
         .apply();
 
     {
@@ -92,7 +94,8 @@ int main() {
     box[1] = 1.1;
     box[2] = 15;
   }
-  auto dist = lsSmartPointer<lsBoxDistribution<NumericType, D>>::New(box, gridDelta);
+  auto dist =
+      lsSmartPointer<lsBoxDistribution<NumericType, D>>::New(box, gridDelta);
   lsGeometricAdvect<NumericType, D>(substrate, dist).apply();
 
   std::cout << "Writing results..." << std::endl;

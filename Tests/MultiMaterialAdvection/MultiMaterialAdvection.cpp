@@ -54,11 +54,13 @@ int main() {
   double origin[3] = {5., 0., 0.};
   double radius = 9.5;
 
-  lsMakeGeometry<double, D>(sphere1, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
+  lsMakeGeometry<double, D>(
+      sphere1, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
       .apply();
   origin[0] = -5.0;
   radius = 7.3;
-  lsMakeGeometry<double, D>(sphere2, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
+  lsMakeGeometry<double, D>(
+      sphere2, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
       .apply();
 
   // Perform a boolean operation

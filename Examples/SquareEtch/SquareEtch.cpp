@@ -91,41 +91,42 @@ int main() {
     boundaryCons[i] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   boundaryCons[D - 1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  auto substrate = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  auto substrate =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
 
   double origin[3] = {0., 0., 0.};
   double planeNormal[3] = {0., 0., 1.};
-  {  
+  {
     auto plane = lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal);
-    lsMakeGeometry<double, D>(substrate, plane)
-      .apply();
+    lsMakeGeometry<double, D>(substrate, plane).apply();
   }
 
   double trenchBottom = -2.;
   {
-    auto trench = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+    auto trench = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
+                                                           gridDelta);
     // trench bottom is the initial bottom of the trench
     double minCorner[D] = {-extent / 1.5, trenchBottom};
     double maxCorner[D] = {extent / 1.5, 1.};
     auto box = lsSmartPointer<lsBox<double, D>>::New(minCorner, maxCorner);
-    lsMakeGeometry<double, D>(trench, box)
-        .apply();
+    lsMakeGeometry<double, D>(trench, box).apply();
 
     // Create trench geometry
     lsBooleanOperation<double, D>(substrate, trench,
                                   lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
         .apply();
   }
-  
 
   // in order only to etch the bottom of the trench, we need a mask layer
-  auto mask = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  auto mask =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
   // make downward facing plane to remove bottom of trench for the mask
   // layer
   // add small offset so bottom of trench is definetly gone
   origin[D - 1] = trenchBottom + 1e-9;
   planeNormal[D - 1] = -1.;
-  lsMakeGeometry<double, D>(mask, lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal))
+  lsMakeGeometry<double, D>(
+      mask, lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal))
       .apply();
   lsBooleanOperation<double, D>(mask, substrate,
                                 lsBooleanOperationEnum::INTERSECT)

@@ -41,7 +41,9 @@ int main() {
 
   hrleVectorType<double, D> min(-10, -10, 0);
   hrleVectorType<double, D> max(10, 10, 4);
-  lsMakeGeometry<double, D>(levelSet, lsSmartPointer<lsBox<double, D>>::New(min, max)).apply();
+  lsMakeGeometry<double, D>(levelSet,
+                            lsSmartPointer<lsBox<double, D>>::New(min, max))
+      .apply();
 
   std::cout << "Number of points: " << levelSet->getDomain().getNumberOfPoints()
             << std::endl;

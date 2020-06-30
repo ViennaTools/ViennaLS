@@ -64,8 +64,9 @@ public:
 
 // create a rounded cone as the primitive pattern.
 // Define a pointcloud and create a hull mesh using lsConvexHull.
-void makeRoundCone(lsSmartPointer<lsMesh> &mesh, hrleVectorType<double, 3> center,
-                   double radius, double height) {
+void makeRoundCone(lsSmartPointer<lsMesh> &mesh,
+                   hrleVectorType<double, 3> center, double radius,
+                   double height) {
   // cone is just a circle with a point above the center
   auto cloud = lsSmartPointer<lsPointCloud<double, 3>>::New();
   // frist inside top point
@@ -115,18 +116,19 @@ int main() {
   boundaryCons[1] = lsDomain<double, D>::BoundaryType::PERIODIC_BOUNDARY;
   boundaryCons[2] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  auto substrate = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  auto substrate =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
 
   {
     double origin[3] = {0., 0., 0.001};
     double planeNormal[3] = {0., 0., 1.};
     auto plane = lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal);
-    lsMakeGeometry<double, D>(substrate, plane)
-      .apply();
+    lsMakeGeometry<double, D>(substrate, plane).apply();
   }
 
   // copy the structure to add the pattern on top
-  auto pattern = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  auto pattern =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
   pattern->setLevelSetWidth(2);
 
   // Create varying cones and put them in hexagonal pattern ---------
@@ -155,7 +157,8 @@ int main() {
       // for each cone in a row
       for (unsigned i = 0; i < 6; ++i) {
         // make ls from cone mesh and add to substrate
-        auto cone = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+        auto cone = lsSmartPointer<lsDomain<double, D>>::New(
+            bounds, boundaryCons, gridDelta);
         // create cone
         lsSmartPointer<lsMesh> coneMesh;
         makeRoundCone(coneMesh, coneCenter, coneRadius * dis(gen),
@@ -208,9 +211,10 @@ int main() {
     {
       auto mesh = lsSmartPointer<lsMesh>::New();
       lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-      lsVTKWriter(mesh, "substrate-" + std::to_string(numberOfEtchSteps) + ".vtk")
+      lsVTKWriter(mesh,
+                  "substrate-" + std::to_string(numberOfEtchSteps) + ".vtk")
           .apply();
-    }    
+    }
 
     std::cout << "Time passed during directional etch: " << passedTime
               << std::endl;

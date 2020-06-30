@@ -36,7 +36,8 @@ int main() {
   const hrleVectorType<double, D> origin(0., 0., 0.);
   const hrleVectorType<double, D> normal(1., 1., 1.);
 
-  lsMakeGeometry<double, D>(levelSet, lsSmartPointer<lsPlane<double, D>>::New(origin, normal))
+  lsMakeGeometry<double, D>(
+      levelSet, lsSmartPointer<lsPlane<double, D>>::New(origin, normal))
       .apply();
 
   lsToSurfaceMesh<double, D>(levelSet, mesh).apply();

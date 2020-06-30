@@ -25,7 +25,9 @@ public:
       : domain(passedlsDomain),
         reverseVoidDetection(passedReverseVoidDetection) {}
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> &passedlsDomain) { domain = passedlsDomain; }
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> &passedlsDomain) {
+    domain = passedlsDomain;
+  }
 
   /// Set whether the "top" level set should be the most positive(default)
   /// connected chain of level set values, or the most negative.

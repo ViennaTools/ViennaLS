@@ -26,27 +26,34 @@
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsFileFormats.hpp>
+#include <lsFromMesh.hpp>
 #include <lsFromSurfaceMesh.hpp>
 #include <lsFromVolumeMesh.hpp>
 #include <lsGeometricAdvect.hpp>
 #include <lsGeometricAdvectDistributions.hpp>
 #include <lsGeometries.hpp>
 #include <lsMakeGeometry.hpp>
+#include <lsMarkVoidPoints.hpp>
 #include <lsMesh.hpp>
 #include <lsPointData.hpp>
 #include <lsPrune.hpp>
+#include <lsReader.hpp>
 #include <lsReduce.hpp>
+#include <lsSmartPointer.hpp>
 #include <lsToDiskMesh.hpp>
 #include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsToVoxelMesh.hpp>
 #include <lsVTKReader.hpp>
 #include <lsVTKWriter.hpp>
+#include <lsWriter.hpp>
 
 // always use double for python export
 typedef double T;
 // get dimension from cmake define
 constexpr int D = VIENNALS_PYTHON_DIMENSION;
+
+PYBIND11_DECLARE_HOLDER_TYPE(TemplateType, lsSmartPointer<TemplateType>);
 
 // define trampoline classes for interface functions
 // ALSO NEED TO ADD TRAMPOLINE CLASSES FOR CLASSES
@@ -122,16 +129,16 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
   module.def("setNumThreads", &omp_set_num_threads);
 
   // lsAdvect
-  pybind11::class_<lsAdvect<T, D>>(module, "lsAdvect")
+  pybind11::class_<lsAdvect<T, D>, lsSmartPointer<lsAdvect<T, D>>>(module, "lsAdvect")
       // constructors
-      .def(pybind11::init<>())
-      .def(pybind11::init<lsDomain<T, D> &>())
-      .def(pybind11::init<lsDomain<T, D> &, lsVelocityField<T> &>())
-      .def(pybind11::init<lsVelocityField<T> &>())
+      .def(pybind11::init(&lsSmartPointer<lsAdvect<T, D>>::New<>))
+      .def(pybind11::init(&lsSmartPointer<lsAdvect<T, D>>::New<lsSmartPointer<lsDomain<T, D>>&>))
+      .def(pybind11::init(&lsSmartPointer<lsAdvect<T, D>>::New<lsSmartPointer<lsVelocityField<T>>&>))
+      .def(pybind11::init(&lsSmartPointer<lsAdvect<T, D>>::New<lsSmartPointer<lsDomain<T, D>>&, lsSmartPointer<lsVelocityField<T>>&>))
       // getters and setters
       .def("insertNextLevelSet", &lsAdvect<T, D>::insertNextLevelSet,
            "Insert next level set to use for advection.")
-      .def("setVelocityField", &lsAdvect<T, D>::setVelocityField,
+      .def("setVelocityField", &lsAdvect<T, D>::setVelocityField<PylsVelocityField>,
            "Set the velocity to use for advection.")
       .def("setAdvectionTime", &lsAdvect<T, D>::setAdvectionTime,
            "Set the time until when the level set should be advected.")
@@ -188,14 +195,14 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
              lsIntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER);
 
   // lsBooleanOperation
-  pybind11::class_<lsBooleanOperation<T, D>>(module, "lsBooleanOperation")
+  pybind11::class_<lsBooleanOperation<T, D>, lsSmartPointer<lsBooleanOperation<T, D>>>(module, "lsBooleanOperation")
       // constructors
-      .def(pybind11::init<>())
-      .def(pybind11::init<lsDomain<T, D> &>())
-      .def(pybind11::init<lsDomain<T, D> &, lsBooleanOperationEnum>())
-      .def(pybind11::init<lsDomain<T, D> &, lsDomain<T, D> &>())
-      .def(pybind11::init<lsDomain<T, D> &, lsDomain<T, D> &,
-                          lsBooleanOperationEnum>())
+      .def(pybind11::init(&lsSmartPointer<lsBooleanOperation<T, D>>::New<>))
+      .def(pybind11::init(&lsSmartPointer<lsBooleanOperation<T, D>>::New<lsSmartPointer<lsDomain<T, D>> &>))
+      .def(pybind11::init(&lsSmartPointer<lsBooleanOperation<T, D>>::New<lsSmartPointer<lsDomain<T, D>> &, lsBooleanOperationEnum>))
+      .def(pybind11::init(&lsSmartPointer<lsBooleanOperation<T, D>>::New<lsSmartPointer<lsDomain<T, D>> &, lsSmartPointer<lsDomain<T, D>> &>))
+      .def(pybind11::init(&lsSmartPointer<lsBooleanOperation<T, D>>::New<lsSmartPointer<lsDomain<T, D>> &, lsSmartPointer<lsDomain<T, D>> &,
+                          lsBooleanOperationEnum>))
       // methods
       .def("setLevelset", &lsBooleanOperation<T, D>::setLevelSet,
            "Set levelset on which the boolean operation should be performed.")
@@ -291,7 +298,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Set levelset to advect.")
       .def(
           "setAdvectionDistribution",
-          &lsGeometricAdvect<T, D>::setAdvectionDistribution,
+          &lsGeometricAdvect<T, D>::setAdvectionDistribution<PylsGeometricAdvectDistribution>,
           "Set advection distribution to use as kernel for the fast advection.")
       .def("apply", &lsGeometricAdvect<T, D>::apply,
            pybind11::call_guard<pybind11::gil_scoped_release>(),
@@ -437,7 +444,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       // methods
       .def("setLevelSet", &lsMakeGeometry<T, D>::setLevelSet,
            "Set the levelset in which to create the geometry.")
-      .def("setGeometry", (void (lsMakeGeometry<T, D>::*)(lsSphere<T, D> &)) &
+      .def("setGeometry", (void (lsMakeGeometry<T, D>::*)(lsSmartPointer<lsSphere<T, D>>)) &
                               lsMakeGeometry<T, D>::setGeometry)
 
       .def("apply", &lsMakeGeometry<T, D>::apply, "Generate the geometry.");

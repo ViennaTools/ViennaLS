@@ -21,7 +21,8 @@ int main() {
   const double radius = 7.3;
   const hrleVectorType<double, D> centre(5., 0.);
 
-  lsMakeGeometry<double, 2>(levelSet, lsSmartPointer<lsSphere<double, D>>::New(centre, radius))
+  lsMakeGeometry<double, 2>(
+      levelSet, lsSmartPointer<lsSphere<double, D>>::New(centre, radius))
       .apply();
 
   lsPointData &data = levelSet->getPointData();

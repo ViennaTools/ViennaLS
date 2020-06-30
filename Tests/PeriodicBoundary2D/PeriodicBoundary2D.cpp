@@ -55,7 +55,8 @@ int main() {
   double origin[D] = {0., 0.};
   double planeNormal[D] = {0., 1.};
 
-  lsMakeGeometry<double, D>(substrate, lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal))
+  lsMakeGeometry<double, D>(
+      substrate, lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal))
       .apply();
 
   std::cout << substrate->getGrid().getMinGridPoint() << std::endl;
@@ -93,12 +94,12 @@ int main() {
   {
     // create spheres used for booling
     std::cout << "Creating pillar..." << std::endl;
-    auto pillar =
-      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+    auto pillar = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
+                                                           gridDelta);
     double lowerCorner[D] = {5, -1};
     double upperCorner[D] = {15, 10};
-    lsMakeGeometry<double, D>(pillar,
-                              lsSmartPointer<lsBox<double, D>>::New(lowerCorner, upperCorner))
+    lsMakeGeometry<double, D>(
+        pillar, lsSmartPointer<lsBox<double, D>>::New(lowerCorner, upperCorner))
         .apply();
     auto mesh = lsSmartPointer<lsMesh>::New();
     lsToSurfaceMesh<double, D>(pillar, mesh).apply();

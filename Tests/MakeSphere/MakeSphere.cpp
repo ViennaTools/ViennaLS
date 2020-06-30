@@ -23,14 +23,14 @@ int main() {
 
   omp_set_num_threads(4);
 
-  auto levelSet =
-      lsSmartPointer<lsDomain<double, D>>::New();
+  auto levelSet = lsSmartPointer<lsDomain<double, D>>::New();
   auto mesh = lsSmartPointer<lsMesh>::New();
 
   const double radius = 27.3;
   const hrleVectorType<double, D> centre(5., 0.);
 
-  lsMakeGeometry<double, 2>(levelSet, lsSmartPointer<lsSphere<double, D>>::New(centre, radius))
+  lsMakeGeometry<double, 2>(
+      levelSet, lsSmartPointer<lsSphere<double, D>>::New(centre, radius))
       .apply();
 
   std::cout << "Initial: " << std::endl;

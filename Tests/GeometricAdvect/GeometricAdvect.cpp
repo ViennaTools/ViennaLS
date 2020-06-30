@@ -38,16 +38,16 @@ int main() {
   if (D == 3)
     origin[2] = 0;
   NumericType radius = 8.0;
-  lsMakeGeometry<NumericType, D>(levelSet,
-                                 lsSmartPointer<lsSphere<NumericType, D>>::New(origin, radius))
+  lsMakeGeometry<NumericType, D>(
+      levelSet, lsSmartPointer<lsSphere<NumericType, D>>::New(origin, radius))
       .apply();
 
   auto sphere =
       lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
 
   origin[1] = 10.0;
-  lsMakeGeometry<NumericType, D>(sphere,
-                                 lsSmartPointer<lsSphere<NumericType, D>>::New(origin, radius))
+  lsMakeGeometry<NumericType, D>(
+      sphere, lsSmartPointer<lsSphere<NumericType, D>>::New(origin, radius))
       .apply();
 
   lsBooleanOperation<NumericType, D>(levelSet, sphere,
@@ -62,7 +62,8 @@ int main() {
   lsVTKWriter(mesh, "surface.vtk").apply();
 
   // set up spherical advection dist
-  auto dist = lsSmartPointer<lsSphereDistribution<double, D>>::New(20.0, gridDelta);
+  auto dist =
+      lsSmartPointer<lsSphereDistribution<double, D>>::New(20.0, gridDelta);
   lsGeometricAdvect<NumericType, D>(levelSet, dist).apply();
 
   lsToMesh<NumericType, D>(levelSet, mesh).apply();
@@ -71,7 +72,8 @@ int main() {
   lsVTKWriter(mesh, "afterDepo.vtk").apply();
 
   // now remove the same again using spherical distribution
-  auto etch = lsSmartPointer<lsSphereDistribution<NumericType, D>>::New(-20.0, gridDelta);
+  auto etch = lsSmartPointer<lsSphereDistribution<NumericType, D>>::New(
+      -20.0, gridDelta);
   lsGeometricAdvect<NumericType, D>(levelSet, etch).apply();
 
   lsToMesh<NumericType, D>(levelSet, mesh).apply();

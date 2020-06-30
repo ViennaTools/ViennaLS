@@ -54,13 +54,16 @@ int main() {
   double origin[D] = {0., 0.};
   double normal[D] = {0., 1.};
 
-  lsMakeGeometry<double, D>(substrate, lsSmartPointer<lsPlane<double, D>>::New(origin, normal))
+  lsMakeGeometry<double, D>(
+      substrate, lsSmartPointer<lsPlane<double, D>>::New(origin, normal))
       .apply();
   {
-    auto hole =
-      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+    auto hole = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
+                                                         gridDelta);
     origin[1] = -5.;
-    lsMakeGeometry<double, D>(hole, lsSmartPointer<lsSphere<double, D>>::New(origin, 3.)).apply();
+    lsMakeGeometry<double, D>(
+        hole, lsSmartPointer<lsSphere<double, D>>::New(origin, 3.))
+        .apply();
 
     lsBooleanOperation<double, D>(substrate, hole,
                                   lsBooleanOperationEnum::RELATIVE_COMPLEMENT)

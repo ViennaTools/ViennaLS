@@ -46,13 +46,15 @@ public:
 
   lsToVoxelMesh(lsSmartPointer<lsMesh> &passedMesh) : mesh(passedMesh) {}
 
-  lsToVoxelMesh(lsSmartPointer<lsDomain<T, D>> &passedLevelSet, lsSmartPointer<lsMesh> &passedMesh)
+  lsToVoxelMesh(lsSmartPointer<lsDomain<T, D>> &passedLevelSet,
+                lsSmartPointer<lsMesh> &passedMesh)
       : mesh(passedMesh) {
     levelSets.push_back(passedLevelSet);
   }
 
-  lsToVoxelMesh(const std::vector<lsSmartPointer<lsDomain<T, D>>> &passedLevelSets,
-                lsSmartPointer<lsMesh> &passedMesh)
+  lsToVoxelMesh(
+      const std::vector<lsSmartPointer<lsDomain<T, D>>> &passedLevelSets,
+      lsSmartPointer<lsMesh> &passedMesh)
       : mesh(passedMesh) {
     levelSets = passedLevelSets;
   }

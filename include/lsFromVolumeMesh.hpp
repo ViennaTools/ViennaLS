@@ -28,7 +28,8 @@ public:
       : levelSets(passedLevelSets), mesh(passedMesh),
         removeBoundaryTriangles(passedRemoveBoundaryTriangles) {}
 
-  void setLevelSets(std::vector<lsSmartPointer<lsDomain<T, D>>> &passedLevelSets) {
+  void
+  setLevelSets(std::vector<lsSmartPointer<lsDomain<T, D>>> &passedLevelSets) {
     levelSets = passedLevelSets;
   }
 

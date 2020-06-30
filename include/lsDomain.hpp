@@ -79,7 +79,8 @@ public:
     for (unsigned i = 0; i < D; ++i) {
       boundaryCons[i] = static_cast<BoundaryType>(boundaryConditions[i]);
     }
-    auto newDomain = lsSmartPointer<lsDomain<T, D>>::New(bounds.data(), boundaryCons, gridDelta);
+    auto newDomain = lsSmartPointer<lsDomain<T, D>>::New(
+        bounds.data(), boundaryCons, gridDelta);
     this->deepCopy(newDomain);
   }
 
@@ -87,7 +88,8 @@ public:
   /// pairs in pointData
   lsDomain(PointValueVectorType pointData, hrleCoordType *bounds,
            BoundaryType *boundaryConditions, hrleCoordType gridDelta = 1.0) {
-    auto newDomain = lsSmartPointer<lsDomain<T, D>>::New(bounds, boundaryConditions, gridDelta);
+    auto newDomain = lsSmartPointer<lsDomain<T, D>>::New(
+        bounds, boundaryConditions, gridDelta);
     this->deepCopy(newDomain);
     hrleFillDomainWithSignedDistance(domain, pointData, T(NEG_VALUE),
                                      T(POS_VALUE));
@@ -97,7 +99,9 @@ public:
     domain.deepCopy(grid, DomainType(grid, T(POS_VALUE)));
   }
 
-  lsDomain(const lsSmartPointer<lsDomain> &passedDomain){ deepCopy(passedDomain); }
+  lsDomain(const lsSmartPointer<lsDomain> &passedDomain) {
+    deepCopy(passedDomain);
+  }
 
   /// this function sets a new levelset width and finalizes the levelset, so it
   /// is ready for use by other algorithms

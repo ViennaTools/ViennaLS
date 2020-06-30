@@ -48,17 +48,16 @@ int main() {
   boundaryCons[0] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   boundaryCons[1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  auto substrate = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  auto substrate =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
 
   double origin[2] = {0., 0.};
   double planeNormal[2] = {0., 1.};
 
   {
     auto plane = lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal);
-    lsMakeGeometry<double, D>(substrate, plane)
-      .apply();
+    lsMakeGeometry<double, D>(substrate, plane).apply();
   }
-  
 
   {
     std::cout << "Extracting..." << std::endl;
@@ -70,12 +69,12 @@ int main() {
   {
     // create layer used for booling
     std::cout << "Creating box..." << std::endl;
-    auto trench = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+    auto trench = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
+                                                           gridDelta);
     double minCorner[D] = {-extent / 6., -25.};
     double maxCorner[D] = {extent / 6., 1.};
     auto box = lsSmartPointer<lsBox<double, D>>::New(minCorner, maxCorner);
-    lsMakeGeometry<double, D>(trench, box)
-        .apply();
+    lsMakeGeometry<double, D>(trench, box).apply();
 
     {
       std::cout << "Extracting..." << std::endl;

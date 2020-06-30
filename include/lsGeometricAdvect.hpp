@@ -26,7 +26,8 @@
 /// distribution.
 template <class T, int D> class lsGeometricAdvect {
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
-  lsSmartPointer<const lsGeometricAdvectDistribution<hrleCoordType, D>> dist = nullptr;
+  lsSmartPointer<const lsGeometricAdvectDistribution<hrleCoordType, D>> dist =
+      nullptr;
   static constexpr T numericEps = 10 * std::numeric_limits<T>::epsilon();
 
   static void incrementIndices(hrleVectorType<hrleIndexType, D> &indices,
@@ -45,10 +46,12 @@ public:
   lsGeometricAdvect() {}
 
   template <class DistType>
-  lsGeometricAdvect(lsSmartPointer<lsDomain<T, D>> &passedLevelSet, lsSmartPointer<DistType> &passedDist)
+  lsGeometricAdvect(lsSmartPointer<lsDomain<T, D>> &passedLevelSet,
+                    lsSmartPointer<DistType> &passedDist)
       : levelSet(passedLevelSet) {
-        dist = std::dynamic_pointer_cast<lsGeometricAdvectDistribution<hrleCoordType, D>>(passedDist);
-      }
+    dist = std::dynamic_pointer_cast<
+        lsGeometricAdvectDistribution<hrleCoordType, D>>(passedDist);
+  }
 
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> &passedLevelSet) {
     levelSet = passedLevelSet;
@@ -57,9 +60,9 @@ public:
   /// Set which advection distribution to use. Must be derived from
   /// lsGeometricAdvectDistribution.
   template <class DistType>
-  void setAdvectionDistribution(
-      lsSmartPointer<DistType> &passedDist) {
-    dist = std::dynamic_pointer_cast<lsGeometricAdvectDistribution<hrleCoordType, D>>(passedDist);
+  void setAdvectionDistribution(lsSmartPointer<DistType> &passedDist) {
+    dist = std::dynamic_pointer_cast<
+        lsGeometricAdvectDistribution<hrleCoordType, D>>(passedDist);
   }
 
   /// Perform geometrical advection.

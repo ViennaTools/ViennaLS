@@ -49,25 +49,25 @@ int main() {
   boundaryCons[1] = lsDomain<double, D>::BoundaryType::PERIODIC_BOUNDARY;
   boundaryCons[2] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  auto substrate = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  auto substrate =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
 
   {
     double origin[3] = {0., 0., 0.};
     double planeNormal[3] = {0., 0., 1.};
     auto plane = lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal);
-    lsMakeGeometry<double, D>(substrate, plane)
-      .apply();
+    lsMakeGeometry<double, D>(substrate, plane).apply();
   }
 
   {
     // create spheres used for booling
     std::cout << "Creating pillar..." << std::endl;
-    auto pillar = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+    auto pillar = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
+                                                           gridDelta);
     double lowerCorner[D] = {15, 15, -1};
     double upperCorner[D] = {25, 25, 10};
     auto box = lsSmartPointer<lsBox<double, D>>::New(lowerCorner, upperCorner);
-      lsMakeGeometry<double, D>(pillar, box)
-          .apply();
+    lsMakeGeometry<double, D>(pillar, box).apply();
     auto mesh = lsSmartPointer<lsMesh>::New();
     lsToSurfaceMesh<double, D>(pillar, mesh).apply();
     lsVTKWriter(mesh, "pillar.vtk").apply();

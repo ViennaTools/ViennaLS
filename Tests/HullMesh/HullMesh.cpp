@@ -1,8 +1,8 @@
 #include <iostream>
 
-#include <lsSmartPointer.hpp>
 #include <lsConvexHull.hpp>
 #include <lsGeometries.hpp>
+#include <lsSmartPointer.hpp>
 #include <lsVTKWriter.hpp>
 
 int main() {

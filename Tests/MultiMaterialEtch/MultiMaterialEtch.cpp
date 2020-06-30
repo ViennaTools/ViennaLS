@@ -73,14 +73,15 @@ int main() {
   double planeOrigin[3] = {0., 0., 0.};
   double planeNormal[3] = {0., D == 2, D == 3};
 
-  lsMakeGeometry<double, D>(substrate,
-                            lsSmartPointer<lsPlane<double, D>>::New(planeOrigin, planeNormal))
+  lsMakeGeometry<double, D>(substrate, lsSmartPointer<lsPlane<double, D>>::New(
+                                           planeOrigin, planeNormal))
       .apply();
 
   double maskOrigin[3] = {0., -10 * (D == 2), -10 * (D == 3)};
   double maskNormal[3] = {0, -(D == 2), -(D == 3)};
 
-  lsMakeGeometry<double, D>(mask, lsSmartPointer<lsPlane<double, D>>::New(maskOrigin, maskNormal))
+  lsMakeGeometry<double, D>(
+      mask, lsSmartPointer<lsPlane<double, D>>::New(maskOrigin, maskNormal))
       .apply();
 
   lsBooleanOperation<double, D>(mask, substrate,

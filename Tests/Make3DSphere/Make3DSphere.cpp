@@ -24,16 +24,20 @@ int main() {
 
   double gridDelta = 0.4;
 
-  auto sphere1 = lsSmartPointer<lsDomain<double, D>>::New(gridDelta); //, boundaryCons);
+  auto sphere1 =
+      lsSmartPointer<lsDomain<double, D>>::New(gridDelta); //, boundaryCons);
 
-  auto sphere2 = lsSmartPointer<lsDomain<double, D>>::New(gridDelta); //, boundaryCons);
+  auto sphere2 =
+      lsSmartPointer<lsDomain<double, D>>::New(gridDelta); //, boundaryCons);
   double origin[3] = {5., 0., 0.};
   double radius = 7.3;
 
-  lsMakeGeometry<double, D>(sphere1, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
+  lsMakeGeometry<double, D>(
+      sphere1, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
       .apply();
   origin[0] = -5.;
-  lsMakeGeometry<double, D>(sphere2, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
+  lsMakeGeometry<double, D>(
+      sphere2, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
       .apply();
 
   std::cout << "Number of points: " << sphere1->getDomain().getNumberOfPoints()

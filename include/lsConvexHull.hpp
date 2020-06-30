@@ -11,6 +11,7 @@
 #include <lsGeometries.hpp>
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
+#include <lsSmartPointer.hpp>
 
 /// This algorithm creates a convex hull mesh from a
 /// point cloud. This is done using the gift wrapping approach.
@@ -414,5 +415,8 @@ public:
     }
   }
 };
+
+// add all template specialisations for this class
+PRECOMPILE_PRECISION_DIMENSION(lsConvexHull)
 
 #endif // LS_CONVEX_HULL_HPP
