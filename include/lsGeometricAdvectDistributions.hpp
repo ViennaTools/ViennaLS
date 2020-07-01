@@ -25,7 +25,7 @@ public:
                     const std::array<hrleCoordType, 3> &candidate) const = 0;
 
   /// Sets bounds to the bounding box of the distribution.
-  virtual void getBounds(std::array<hrleCoordType, 6> &bounds) const = 0;
+  virtual std::array<hrleCoordType, 6> getBounds() const = 0;
 
   virtual ~lsGeometricAdvectDistribution() {}
 };
@@ -91,11 +91,13 @@ public:
     }
   }
 
-  void getBounds(std::array<hrleCoordType, 6> &bounds) const {
+  std::array<hrleCoordType, 6> getBounds() const {
+    std::array<hrleCoordType, 6> bounds = {};
     for (unsigned i = 0; i < D; ++i) {
       bounds[2 * i] = -radius;
       bounds[2 * i + 1] = radius;
     }
+    return bounds;
   }
 };
 
@@ -141,11 +143,13 @@ public:
     return distance;
   }
 
-  void getBounds(std::array<hrleCoordType, 6> &bounds) const {
+  std::array<hrleCoordType, 6> getBounds() const {
+    std::array<hrleCoordType, 6> bounds = {};
     for (unsigned i = 0; i < D; ++i) {
       bounds[2 * i] = -posExtent[i];
       bounds[2 * i + 1] = posExtent[i];
     }
+    return bounds;
   }
 };
 

@@ -98,8 +98,7 @@ public:
     auto gridDelta = grid.getGridDelta();
 
     // find bounds of distribution
-    std::array<hrleCoordType, 6> distBounds;
-    dist->getBounds(distBounds);
+    auto distBounds = dist->getBounds();
 
     // TODO: need to add support for periodic boundary conditions!
     hrleVectorType<hrleIndexType, D> distMin, distMax;

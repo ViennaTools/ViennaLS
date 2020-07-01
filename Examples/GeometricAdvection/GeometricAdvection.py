@@ -33,6 +33,10 @@ vls.lsMakeGeometry(trench, vls.lsBox(minCorner, maxCorner)).apply()
 print("Booling trench")
 vls.lsBooleanOperation(substrate, trench, vls.lsBooleanOperationEnum.RELATIVE_COMPLEMENT).apply()
 
+mesh = vls.lsMesh()
+vls.lsToSurfaceMesh(substrate, mesh).apply()
+vls.lsVTKWriter(mesh, "trench-initial.vtk").apply()
+
 # Now grow new material
 
 # create new levelset for new material, which will be grown
@@ -40,13 +44,10 @@ vls.lsBooleanOperation(substrate, trench, vls.lsBooleanOperationEnum.RELATIVE_CO
 print("Creating new layer...")
 newLayer = vls.lsDomain(substrate)
 
-velocities = velocityField()
-
 print("Advecting")
 # Advect the level set
 dist = vls.lsSphereDistribution(4.0, gridDelta)
 vls.lsGeometricAdvect(newLayer, dist).apply()
 
-mesh = vls.lsMesh()
 vls.lsToSurfaceMesh(newLayer, mesh).apply()
 vls.lsVTKWriter(mesh, "trench-final.vtk").apply()
