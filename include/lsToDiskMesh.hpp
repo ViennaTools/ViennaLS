@@ -26,15 +26,15 @@ template <class T, int D> class lsToDiskMesh {
 public:
   lsToDiskMesh() {}
 
-  lsToDiskMesh(lsSmartPointer<lsDomain<T, D>> &passedLevelSet,
-               lsSmartPointer<lsMesh> &passedMesh, T passedMaxValue = 0.5)
+  lsToDiskMesh(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+               lsSmartPointer<lsMesh> passedMesh, T passedMaxValue = 0.5)
       : levelSet(passedLevelSet), mesh(passedMesh), maxValue(passedMaxValue) {}
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> &passedLevelSet) {
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
   }
 
-  void setMesh(lsSmartPointer<lsMesh> &passedMesh) { mesh = passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh> passedMesh) { mesh = passedMesh; }
 
   void setMaxValue(const T passedMaxValue) { maxValue = passedMaxValue; }
 
@@ -58,7 +58,7 @@ public:
     lsCalculateNormalVectors<T, D>(levelSet, maxValue).apply();
 
     const T gridDelta = levelSet->getGrid().getGridDelta();
-    const auto &normalVectors = levelSet->getNormalVectors();
+    const auto &normalVectors = *(levelSet->getPointData().getVectorData("Normals"));
 
     // set up data arrays
     std::vector<double> values;

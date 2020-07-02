@@ -13,14 +13,14 @@ template <class T, int D> class lsWriter {
 public:
   lsWriter() {}
 
-  lsWriter(lsSmartPointer<lsDomain<T, D>> &passedLevelSet)
+  lsWriter(lsSmartPointer<lsDomain<T, D>> passedLevelSet)
       : levelSet(passedLevelSet) {}
 
-  lsWriter(lsSmartPointer<lsDomain<T, D>> &passedLevelSet,
+  lsWriter(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
            std::string passedFileName)
       : levelSet(passedLevelSet), fileName(passedFileName) {}
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> &passedLevelSet) {
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
   }
 

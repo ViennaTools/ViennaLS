@@ -97,7 +97,7 @@ int main() {
   std::cout << "Creating new layer..." << std::endl;
   auto newLayer = lsSmartPointer<lsDomain<double, D>>::New(substrate);
 
-  lsSmartPointer<velocityField> velocities;
+  auto velocities = lsSmartPointer<velocityField>::New();
 
   std::cout << "Advecting" << std::endl;
   lsAdvect<double, D> advectionKernel;

@@ -151,7 +151,7 @@ int main() {
   }
 
   // START ADVECTION
-  lsSmartPointer<velocityField> velocities;
+  auto velocities = lsSmartPointer<velocityField>::New();
   lsSmartPointer<analyticalField> analyticalVelocities;
 
   std::cout << "Advecting" << std::endl;

@@ -22,18 +22,18 @@ template <class T, int D> class lsFromVolumeMesh {
 public:
   lsFromVolumeMesh() {}
 
-  lsFromVolumeMesh(std::vector<lsSmartPointer<lsDomain<T, D>>> &passedLevelSets,
-                   lsSmartPointer<lsMesh> &passedMesh,
+  lsFromVolumeMesh(std::vector<lsSmartPointer<lsDomain<T, D>>> passedLevelSets,
+                   lsSmartPointer<lsMesh> passedMesh,
                    bool passedRemoveBoundaryTriangles = true)
       : levelSets(passedLevelSets), mesh(passedMesh),
         removeBoundaryTriangles(passedRemoveBoundaryTriangles) {}
 
   void
-  setLevelSets(std::vector<lsSmartPointer<lsDomain<T, D>>> &passedLevelSets) {
+  setLevelSets(std::vector<lsSmartPointer<lsDomain<T, D>>> passedLevelSets) {
     levelSets = passedLevelSets;
   }
 
-  void setMesh(lsSmartPointer<lsMesh> &passedMesh) { mesh = passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh> passedMesh) { mesh = passedMesh; }
 
   void setRemoveBoundaryTriangles(bool passedRemoveBoundaryTriangles) {
     removeBoundaryTriangles = passedRemoveBoundaryTriangles;

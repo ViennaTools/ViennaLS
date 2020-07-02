@@ -134,8 +134,8 @@ int main() {
     lsVTKWriter(mesh, "surface.vtk").apply();
   }
 
-  lsSmartPointer<depositionVel> depoVel;
-  lsSmartPointer<etchingVel> etchVel;
+  auto depoVel = lsSmartPointer<depositionVel>::New();
+  auto etchVel = lsSmartPointer<etchingVel>::New();
 
   std::cout << "Advecting" << std::endl;
   lsAdvect<double, D> deposition(depoVel);

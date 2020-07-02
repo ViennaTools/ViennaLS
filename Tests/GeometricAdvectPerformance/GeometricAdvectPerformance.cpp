@@ -132,7 +132,7 @@ int main() {
     auto nextLayer = lsSmartPointer<lsDomain<double, D>>::New(substrate);
     advectionKernel.insertNextLevelSet(nextLayer);
 
-    lsSmartPointer<velocityField> velocities;
+    auto velocities = lsSmartPointer<velocityField>::New();
     advectionKernel.setVelocityField(velocities);
     advectionKernel.setAdvectionTime(depositionDistance);
     advectionKernel.setIntegrationScheme(

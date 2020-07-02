@@ -473,7 +473,7 @@ template <class T, int D> class lsAdvect {
       }
 
       IntegrationSchemeType scheme(IntegrationScheme);
-      auto &voidPoints = levelSets.back()->getVoidPointMarkers();
+      auto &voidPoints = *(levelSets.back()->getPointData().getScalarData("VoidPointMarkers"));
 
       for (hrleSparseIterator<typename lsDomain<T, D>::DomainType> it(
                topDomain, startVector);
@@ -645,27 +645,27 @@ template <class T, int D> class lsAdvect {
 public:
   lsAdvect() {}
 
-  lsAdvect(lsSmartPointer<lsDomain<T, D>> &passedlsDomain) {
+  lsAdvect(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     levelSets.push_back(passedlsDomain);
   }
 
   template <class VelocityField>
-  lsAdvect(lsSmartPointer<lsDomain<T, D>> &passedlsDomain,
-           lsSmartPointer<VelocityField> &passedVelocities) {
+  lsAdvect(lsSmartPointer<lsDomain<T, D>> passedlsDomain,
+           lsSmartPointer<VelocityField> passedVelocities) {
     levelSets.push_back(passedlsDomain);
     velocities =
         std::dynamic_pointer_cast<lsVelocityField<T>>(passedVelocities);
   }
 
   template <class VelocityField>
-  lsAdvect(lsSmartPointer<VelocityField> &passedVelocities) {
+  lsAdvect(lsSmartPointer<VelocityField> passedVelocities) {
     velocities =
         std::dynamic_pointer_cast<lsVelocityField<T>>(passedVelocities);
   }
 
   template <class VelocityField>
-  lsAdvect(std::vector<lsSmartPointer<lsDomain<T, D>>> &passedlsDomains,
-           lsSmartPointer<VelocityField> &passedVelocities)
+  lsAdvect(std::vector<lsSmartPointer<lsDomain<T, D>>> passedlsDomains,
+           lsSmartPointer<VelocityField> passedVelocities)
       : levelSets(passedlsDomains) {
     velocities =
         std::dynamic_pointer_cast<lsVelocityField<T>>(passedVelocities);
@@ -673,14 +673,14 @@ public:
 
   /// Pushes the passed level set to the back of the list of level sets
   /// used for advection.
-  void insertNextLevelSet(lsSmartPointer<lsDomain<T, D>> &passedlsDomain) {
+  void insertNextLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     levelSets.push_back(passedlsDomain);
   }
 
   /// Set the velocity field used for advection. This should be a concrete
   /// implementation of lsVelocityField
   template <class VelocityField>
-  void setVelocityField(lsSmartPointer<VelocityField> &passedVelocities) {
+  void setVelocityField(lsSmartPointer<VelocityField> passedVelocities) {
     velocities =
         std::dynamic_pointer_cast<lsVelocityField<T>>(passedVelocities);
   }

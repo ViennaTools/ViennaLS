@@ -105,7 +105,7 @@ int main() {
   }
 
   // Now etch the substrate isotropically
-  lsSmartPointer<velocityField> velocities;
+  auto velocities = lsSmartPointer<velocityField>::New();
 
   std::cout << "Advecting" << std::endl;
 

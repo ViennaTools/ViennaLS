@@ -20,10 +20,10 @@ template <class T, int D> class lsPrune {
 public:
   lsPrune() {}
 
-  lsPrune(lsSmartPointer<lsDomain<T, D>> &passedlsDomain)
+  lsPrune(lsSmartPointer<lsDomain<T, D>> passedlsDomain)
       : levelSet(passedlsDomain){};
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> &passedlsDomain) {
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     levelSet = passedlsDomain;
   }
 

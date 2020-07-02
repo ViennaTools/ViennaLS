@@ -26,15 +26,15 @@ template <class T, int D> class lsToSurfaceMesh {
 public:
   lsToSurfaceMesh(double eps = 1e-12) : epsilon(eps) {}
 
-  lsToSurfaceMesh(const lsSmartPointer<lsDomain<T, D>> &passedLevelSet,
-                  lsSmartPointer<lsMesh> &passedMesh, double eps = 1e-12)
+  lsToSurfaceMesh(const lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+                  lsSmartPointer<lsMesh> passedMesh, double eps = 1e-12)
       : levelSet(passedLevelSet), mesh(passedMesh), epsilon(eps) {}
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> &passedlsDomain) {
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     levelSet = passedlsDomain;
   }
 
-  void setMesh(lsSmartPointer<lsMesh> &passedMesh) { mesh = passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh> passedMesh) { mesh = passedMesh; }
 
   void apply() {
     if (levelSet == nullptr) {

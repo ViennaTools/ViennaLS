@@ -14,19 +14,19 @@ namespace lsInternal {
 /// upwind integration scheme. Offers high performance
 /// but lower accuracy for complex velocity fields.
 template <class T, int D, int order> class lsEnquistOsher {
-  lsSmartPointer<lsDomain<T, D>> &levelSet;
+  lsSmartPointer<lsDomain<T, D>> levelSet;
   hrleSparseStarIterator<hrleDomain<T, D>> neighborIterator;
   bool calculateNormalVectors = true;
 
   static T pow2(const T &value) { return value * value; }
 
 public:
-  static void prepareLS(lsSmartPointer<lsDomain<T, D>> &passedlsDomain) {
+  static void prepareLS(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     assert(order == 1 || order == 2);
     lsExpand<T, D>(passedlsDomain, 2 * order + 1).apply();
   }
 
-  lsEnquistOsher(lsSmartPointer<lsDomain<T, D>> &passedlsDomain,
+  lsEnquistOsher(lsSmartPointer<lsDomain<T, D>> passedlsDomain,
                  bool calcNormal = true)
       : levelSet(passedlsDomain),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>>(

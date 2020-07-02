@@ -69,7 +69,7 @@ int main() {
     mesh->print();
   }
 
-  lsSmartPointer<velocityField> velocities;
+  auto velocities = lsSmartPointer<velocityField>::New();
 
   std::cout << "number of Points: " << plane->getNumberOfPoints() << std::endl;
 

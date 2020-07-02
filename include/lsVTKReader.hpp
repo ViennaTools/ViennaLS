@@ -30,17 +30,17 @@ class lsVTKReader {
 public:
   lsVTKReader() {}
 
-  lsVTKReader(lsSmartPointer<lsMesh> &passedMesh) : mesh(passedMesh) {}
+  lsVTKReader(lsSmartPointer<lsMesh> passedMesh) : mesh(passedMesh) {}
 
-  lsVTKReader(lsSmartPointer<lsMesh> &passedMesh, std::string passedFileName)
+  lsVTKReader(lsSmartPointer<lsMesh> passedMesh, std::string passedFileName)
       : mesh(passedMesh), fileName(passedFileName) {}
 
-  lsVTKReader(lsSmartPointer<lsMesh> &passedMesh, lsFileFormatEnum passedFormat,
+  lsVTKReader(lsSmartPointer<lsMesh> passedMesh, lsFileFormatEnum passedFormat,
               std::string passedFileName)
       : mesh(passedMesh), fileFormat(passedFormat), fileName(passedFileName) {}
 
   /// set the mesh the file should be read into
-  void setMesh(lsSmartPointer<lsMesh> &passedMesh) { mesh = passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh> passedMesh) { mesh = passedMesh; }
 
   /// set file format for file to read. Defaults to VTK_LEGACY.
   void setFileFormat(lsFileFormatEnum passedFormat) {

@@ -3,13 +3,5 @@ The general design rationale is:
 - Make each algorithm as general as possible, so its use is versatile
 - Each algorithm holds references to objects it needs, so a pipeline execution is possible
 - Each algorithm is executed with a call to apply()
-
-TODO:
-- Introduce lsSmartPointer, e.g.: auto domain = lsSmartPointer<lsDomain<double, 3>::New(arg1, arg2);
-- Wrap constructors in Python, so they return smart pointers, e.g.: 
-.def(py::init<double, double>([]() {
-    return lsSmartPointer<lsDomain<double, 3>::New(arg1, arg2);
-}))
-
---> In python the use is then simple: domain = lsDomain()
+- Naming conventions: Data-storing classes are labeled as nouns, algorithm classes as verbs to emphasise them doing somehting.
 

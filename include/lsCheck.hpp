@@ -25,10 +25,10 @@ template <class T, int D> class lsCheck {
 public:
   lsCheck() {}
 
-  lsCheck(const lsSmartPointer<lsDomain<T, D>> &passedLevelSet)
+  lsCheck(const lsSmartPointer<lsDomain<T, D>> passedLevelSet)
       : levelSet(passedLevelSet) {}
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> &passedLevelSet) {
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
   }
 

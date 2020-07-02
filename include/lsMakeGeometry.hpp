@@ -40,34 +40,34 @@ template <class T, int D> class lsMakeGeometry {
 public:
   lsMakeGeometry() {}
 
-  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> &passedLevelSet)
+  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> passedLevelSet)
       : levelSet(passedLevelSet) {}
 
-  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> &passedLevelSet,
+  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
                  lsSmartPointer<lsSphere<T, D>> passedSphere)
       : levelSet(passedLevelSet), sphere(passedSphere) {
     geometry = lsGeometryEnum::SPHERE;
   }
 
-  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> &passedLevelSet,
+  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
                  lsSmartPointer<lsPlane<T, D>> passedPlane)
       : levelSet(passedLevelSet), plane(passedPlane) {
     geometry = lsGeometryEnum::PLANE;
   }
 
-  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> &passedLevelSet,
+  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
                  lsSmartPointer<lsBox<T, D>> passedBox)
       : levelSet(passedLevelSet), box(passedBox) {
     geometry = lsGeometryEnum::BOX;
   }
 
-  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> &passedLevelSet,
+  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
                  lsSmartPointer<lsPointCloud<T, D>> passedPointCloud)
       : levelSet(passedLevelSet), pointCloud(passedPointCloud) {
     geometry = lsGeometryEnum::CUSTOM;
   }
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> &passedlsDomain) {
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     levelSet = passedlsDomain;
   }
 
@@ -380,7 +380,7 @@ private:
     lsFromSurfaceMesh<T, D>(levelSet, mesh, ignoreBoundaryConditions).apply();
   }
 
-  void makeCustom(lsSmartPointer<lsPointCloud<T, D>> &pointCloud) {
+  void makeCustom(lsSmartPointer<lsPointCloud<T, D>> pointCloud) {
     // create mesh from point cloud
     auto mesh = lsSmartPointer<lsMesh>::New();
     lsConvexHull<T, D>(mesh, pointCloud).apply();

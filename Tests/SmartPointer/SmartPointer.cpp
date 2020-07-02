@@ -2,9 +2,10 @@
 #include <lsDomain.hpp>
 #include <lsSmartPointer.hpp>
 
+constexpr int D = 3;
+typedef double NumericType;
+
 auto makeLSDomain() {
-  constexpr int D = 3;
-  typedef double NumericType;
   double gridDelta = 1.1;
 
   double extent = 50;
@@ -26,8 +27,16 @@ auto makeLSDomain() {
                                                   gridDelta);
 }
 
+unsigned long getNumberOfPoints(lsSmartPointer<const lsDomain<NumericType, D>> domain) {
+  return domain->getNumberOfPoints();
+}
+
 int main() {
   auto domain = makeLSDomain();
+
+  // lsSmartPointer<const lsDomain<NumericType, D>> constDomain = domain;
+
+  std::cout << getNumberOfPoints(domain) << std::endl;
 
   std::cout << "Number of Points: " << domain->getNumberOfPoints() << std::endl;
   std::cout << "Number of references to lsDomain: " << domain.use_count()

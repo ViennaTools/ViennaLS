@@ -46,21 +46,21 @@ public:
   lsGeometricAdvect() {}
 
   template <class DistType>
-  lsGeometricAdvect(lsSmartPointer<lsDomain<T, D>> &passedLevelSet,
-                    lsSmartPointer<DistType> &passedDist)
+  lsGeometricAdvect(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+                    lsSmartPointer<DistType> passedDist)
       : levelSet(passedLevelSet) {
     dist = std::dynamic_pointer_cast<
         lsGeometricAdvectDistribution<hrleCoordType, D>>(passedDist);
   }
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> &passedLevelSet) {
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
   }
 
   /// Set which advection distribution to use. Must be derived from
   /// lsGeometricAdvectDistribution.
   template <class DistType>
-  void setAdvectionDistribution(lsSmartPointer<DistType> &passedDist) {
+  void setAdvectionDistribution(lsSmartPointer<DistType> passedDist) {
     dist = std::dynamic_pointer_cast<
         lsGeometricAdvectDistribution<hrleCoordType, D>>(passedDist);
   }

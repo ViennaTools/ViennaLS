@@ -212,17 +212,17 @@ template <class T, int D> class lsFromSurfaceMesh {
 public:
   lsFromSurfaceMesh() {}
 
-  lsFromSurfaceMesh(lsSmartPointer<lsDomain<T, D>> &passedLevelSet,
-                    lsSmartPointer<lsMesh> &passedMesh,
+  lsFromSurfaceMesh(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+                    lsSmartPointer<lsMesh> passedMesh,
                     bool passedRemoveBoundaryTriangles = true)
       : levelSet(passedLevelSet), mesh(passedMesh),
         removeBoundaryTriangles(passedRemoveBoundaryTriangles) {}
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> &passedLevelSet) {
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
   }
 
-  void setMesh(lsSmartPointer<lsMesh> &passedMesh) { mesh = passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh> passedMesh) { mesh = passedMesh; }
 
   /// Set whether all triangles outside of the domain should be ignored (=true)
   /// or whether boundary conditions should be applied correctly to such

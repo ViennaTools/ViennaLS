@@ -20,15 +20,15 @@ template <class T, int D> class lsFromMesh {
 public:
   lsFromMesh(){};
 
-  lsFromMesh(lsSmartPointer<lsDomain<T, D>> &passedLevelSet,
-             const lsSmartPointer<lsMesh> &passedMesh)
+  lsFromMesh(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+             const lsSmartPointer<lsMesh> passedMesh)
       : levelSet(passedLevelSet), mesh(passedMesh) {}
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> &passedlsDomain) {
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     levelSet = passedlsDomain;
   }
 
-  void setMesh(const lsSmartPointer<lsMesh> &passedMesh) { mesh = passedMesh; }
+  void setMesh(const lsSmartPointer<lsMesh> passedMesh) { mesh = passedMesh; }
 
   void setSortPointList(bool passedSortPointList) {
     sortPointList = passedSortPointList;

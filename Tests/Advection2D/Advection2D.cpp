@@ -70,7 +70,7 @@ int main() {
   }
 
   // Advect the sphere
-  lsSmartPointer<velocityField> velocities;
+  auto velocities = lsSmartPointer<velocityField>::New();
 
   std::cout << "Number of points: " << sphere1->getDomain().getNumberOfPoints()
             << std::endl;

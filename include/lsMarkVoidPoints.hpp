@@ -20,12 +20,12 @@ template <class T, int D> class lsMarkVoidPoints {
   }
 
 public:
-  lsMarkVoidPoints(lsSmartPointer<lsDomain<T, D>> &passedlsDomain,
+  lsMarkVoidPoints(lsSmartPointer<lsDomain<T, D>> passedlsDomain,
                    bool passedReverseVoidDetection = false)
       : domain(passedlsDomain),
         reverseVoidDetection(passedReverseVoidDetection) {}
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> &passedlsDomain) {
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     domain = passedlsDomain;
   }
 
@@ -118,7 +118,7 @@ public:
     int topComponent =
         (reverseVoidDetection) ? components[0] : components.back();
 
-    std::vector<bool> &voidPointMarkers = domain->getVoidPointMarkers();
+    std::vector<double> voidPointMarkers;
     voidPointMarkers.resize(domain->getNumberOfPoints());
 
     // cycle through again to set correct voidPointMarkers
@@ -150,6 +150,15 @@ public:
         }
         voidPointMarkers[center.getPointId()] = (k == 2 * D);
       }
+    }
+
+    auto &pointData = domain->getPointData();
+    auto voidMarkersPointer = pointData.getScalarData("VoidPointMarkers");
+    // if vector data does not exist
+    if(voidMarkersPointer == nullptr) {
+      pointData.insertNextScalarData(voidPointMarkers, "VoidPointMarkers");
+    } else {
+      *voidMarkersPointer = std::move(voidPointMarkers);
     }
   }
 };

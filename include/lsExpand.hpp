@@ -19,13 +19,13 @@ template <class T, int D> class lsExpand {
 public:
   lsExpand() {}
 
-  lsExpand(lsSmartPointer<lsDomain<T, D>> &passedlsDomain)
+  lsExpand(lsSmartPointer<lsDomain<T, D>> passedlsDomain)
       : levelSet(passedlsDomain) {}
 
-  lsExpand(lsSmartPointer<lsDomain<T, D>> &passedlsDomain, int passedWidth)
+  lsExpand(lsSmartPointer<lsDomain<T, D>> passedlsDomain, int passedWidth)
       : levelSet(passedlsDomain), width(passedWidth) {}
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> &passedlsDomain) {
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     levelSet = passedlsDomain;
   }
 

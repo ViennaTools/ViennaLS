@@ -64,7 +64,7 @@ public:
 
 // create a rounded cone as the primitive pattern.
 // Define a pointcloud and create a hull mesh using lsConvexHull.
-void makeRoundCone(lsSmartPointer<lsMesh> &mesh,
+void makeRoundCone(lsSmartPointer<lsMesh> mesh,
                    hrleVectorType<double, 3> center, double radius,
                    double height) {
   // cone is just a circle with a point above the center
@@ -189,7 +189,7 @@ int main() {
   advectionKernel.insertNextLevelSet(pattern);
   advectionKernel.insertNextLevelSet(substrate);
   {
-    lsSmartPointer<directionalEtch> velocities;
+    auto velocities = lsSmartPointer<directionalEtch>::New();
     advectionKernel.setVelocityField(velocities);
 
     // Now advect the level set, outputting every
@@ -231,7 +231,7 @@ int main() {
   // new level set for new layer
   auto fillLayer = lsSmartPointer<lsDomain<double, D>>::New(substrate);
   {
-    lsSmartPointer<isotropicDepo> velocities;
+    auto velocities = lsSmartPointer<isotropicDepo>::New();
     advectionKernel.setVelocityField(velocities);
 
     advectionKernel.insertNextLevelSet(fillLayer);

@@ -85,24 +85,11 @@ int main() {
     std::cout << "Extracting..." << std::endl;
     auto mesh = lsSmartPointer<lsMesh>::New();
     lsToMesh<double, D>(substrate, mesh).apply();
-
-    auto voidPointMarkers = substrate->getVoidPointMarkers();
-    std::vector<double> isVoid(
-        voidPointMarkers.size()); // 0 = not void, 1 = void
-    for (unsigned i = 0; i < isVoid.size(); ++i) {
-      isVoid[i] = (voidPointMarkers[i]) ? 1. : 0.;
-    }
-
-    std::cout << "Points: " << substrate->getNumberOfPoints() << std::endl;
-    std::cout << "Markers: " << isVoid.size() << std::endl;
-
-    mesh->insertNextScalarData(isVoid, "voidMarkers");
-
     lsVTKWriter(mesh, "after.vtk").apply();
   }
 
   // Advection
-  lsSmartPointer<velocityField> velocities;
+  auto velocities = lsSmartPointer<velocityField>::New();
   lsAdvect<double, D> advectionKernel(substrate, velocities);
   advectionKernel.setIgnoreVoids(true);
   for (unsigned i = 0; i < 30; ++i) {
@@ -112,14 +99,7 @@ int main() {
       lsVTKWriter(mesh, "out-" + std::to_string(i) + ".vtk").apply();
 
       lsMarkVoidPoints<double, D>(substrate).apply();
-      auto voidPointMarkers = substrate->getVoidPointMarkers();
-      std::vector<double> isVoid(
-          voidPointMarkers.size()); // 0 = not void, 1 = void
-      for (unsigned i = 0; i < isVoid.size(); ++i) {
-        isVoid[i] = (voidPointMarkers[i]) ? 1. : 0.;
-      }
       lsToMesh<double, D>(substrate, mesh).apply();
-      mesh->insertNextScalarData(isVoid, "voidMarkers");
 
       lsVTKWriter(mesh, "ls-out-" + std::to_string(i) + ".vtk").apply();
     }

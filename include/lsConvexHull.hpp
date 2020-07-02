@@ -267,13 +267,13 @@ template <class T, int D> class lsConvexHull {
 public:
   lsConvexHull() {}
 
-  lsConvexHull(lsSmartPointer<lsMesh> &passedMesh,
-               lsSmartPointer<lsPointCloud<T, D>> &passedPointCloud)
+  lsConvexHull(lsSmartPointer<lsMesh> passedMesh,
+               lsSmartPointer<lsPointCloud<T, D>> passedPointCloud)
       : mesh(passedMesh), pointCloud(passedPointCloud) {}
 
-  void setMesh(lsSmartPointer<lsMesh> &passedMesh) { mesh = passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh> passedMesh) { mesh = passedMesh; }
 
-  void setPointCloud(lsSmartPointer<lsPointCloud<T, D>> &passedPointCloud) {
+  void setPointCloud(lsSmartPointer<lsPointCloud<T, D>> passedPointCloud) {
     pointCloud = passedPointCloud;
   }
 

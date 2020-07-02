@@ -161,25 +161,25 @@ public:
   lsBooleanOperation() {}
 
   lsBooleanOperation(
-      lsSmartPointer<lsDomain<T, D>> &passedlsDomain,
+      lsSmartPointer<lsDomain<T, D>> passedlsDomain,
       lsBooleanOperationEnum passedOperation = lsBooleanOperationEnum::INVERT)
       : levelSetA(passedlsDomain), operation(passedOperation) {}
 
-  lsBooleanOperation(lsSmartPointer<lsDomain<T, D>> &passedlsDomainA,
-                     lsSmartPointer<lsDomain<T, D>> &passedlsDomainB,
+  lsBooleanOperation(lsSmartPointer<lsDomain<T, D>> passedlsDomainA,
+                     lsSmartPointer<lsDomain<T, D>> passedlsDomainB,
                      lsBooleanOperationEnum passedOperation =
                          lsBooleanOperationEnum::INTERSECT)
       : levelSetA(passedlsDomainA), levelSetB(passedlsDomainB),
         operation(passedOperation){};
 
   /// set which level set to perform the boolean operation on
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> &passedlsDomain) {
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     levelSetA = passedlsDomain;
   }
 
   /// set the level set which will be used to modify the
   /// first level set
-  void setSecondLevelSet(lsSmartPointer<lsDomain<T, D>> &passedlsDomain) {
+  void setSecondLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     levelSetB = passedlsDomain;
   }
 

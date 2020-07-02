@@ -34,7 +34,6 @@ private:
   GridType grid;
   DomainType domain;
   int levelSetWidth = 1;
-  NormalVectorType normalVectors;
   PointDataType pointData;
   VoidPointMarkersType voidPointMarkers;
 
@@ -99,7 +98,7 @@ public:
     domain.deepCopy(grid, DomainType(grid, T(POS_VALUE)));
   }
 
-  lsDomain(lsSmartPointer<lsDomain> &passedDomain) { deepCopy(passedDomain); }
+  lsDomain(lsSmartPointer<lsDomain> passedDomain) { deepCopy(passedDomain); }
 
   /// this function sets a new levelset width and finalizes the levelset, so it
   /// is ready for use by other algorithms
@@ -110,7 +109,7 @@ public:
   void finalize() {}
 
   /// copy all values of "passedlsDomain" to this lsDomain
-  void deepCopy(const lsSmartPointer<lsDomain<T, D>> &passedlsDomain) {
+  void deepCopy(const lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     grid = passedlsDomain->grid;
     domain.deepCopy(grid, passedlsDomain->domain);
     levelSetWidth = passedlsDomain->levelSetWidth;
@@ -150,15 +149,8 @@ public:
 
   // clear all additional data
   void clearMetaData() {
-    normalVectors.clear();
     pointData.clear();
-    voidPointMarkers.clear();
   }
-
-  /// get reference to the normalVectors of all points
-  NormalVectorType &getNormalVectors() { return normalVectors; }
-
-  const NormalVectorType &getNormalVectors() const { return normalVectors; }
 
   /// get reference to point data saved in the level set
   PointDataType &getPointData() { return pointData; }

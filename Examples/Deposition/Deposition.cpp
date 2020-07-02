@@ -93,7 +93,7 @@ int main() {
   // since it has to wrap around the substrate, just copy it
   auto newLayer = lsSmartPointer<lsDomain<double, D>>::New(substrate);
 
-  lsSmartPointer<velocityField> velocities;
+  auto velocities = lsSmartPointer<velocityField>::New();
 
   std::cout << "Advecting" << std::endl;
   lsAdvect<double, D> advectionKernel;

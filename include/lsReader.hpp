@@ -13,14 +13,14 @@ template <class T, int D> class lsReader {
 public:
   lsReader() {}
 
-  lsReader(lsSmartPointer<lsDomain<T, D>> &passedLevelSet)
+  lsReader(lsSmartPointer<lsDomain<T, D>> passedLevelSet)
       : levelSet(passedLevelSet) {}
 
-  lsReader(lsSmartPointer<lsDomain<T, D>> &passedLevelSet,
+  lsReader(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
            std::string passedFileName)
       : levelSet(passedLevelSet), fileName(passedFileName) {}
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> &passedLevelSet) {
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
   }
 

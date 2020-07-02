@@ -13,19 +13,19 @@ namespace lsInternal {
 /// point for alpha calculation. Faster than lsLocalLaxFriedrichs but
 /// not as accurate.
 template <class T, int D, int order> class lsLocalLocalLaxFriedrichs {
-  lsSmartPointer<lsDomain<T, D>> &levelSet;
+  lsSmartPointer<lsDomain<T, D>> levelSet;
   hrleSparseStarIterator<hrleDomain<T, D>> neighborIterator;
   const double alphaFactor;
 
   static T pow2(const T &value) { return value * value; }
 
 public:
-  static void prepareLS(lsSmartPointer<lsDomain<T, D>> &passedlsDomain) {
+  static void prepareLS(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     assert(order == 1 || order == 2);
     lsExpand<T, D>(passedlsDomain, 2 * order + 1).apply();
   }
 
-  lsLocalLocalLaxFriedrichs(lsSmartPointer<lsDomain<T, D>> &passedlsDomain,
+  lsLocalLocalLaxFriedrichs(lsSmartPointer<lsDomain<T, D>> passedlsDomain,
                             double a = 1.0)
       : levelSet(passedlsDomain),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>>(

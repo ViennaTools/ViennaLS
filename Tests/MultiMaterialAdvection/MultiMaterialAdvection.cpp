@@ -87,7 +87,7 @@ int main() {
   lsDomains.push_back(sphere1);
   lsDomains.push_back(sphere2);
 
-  lsSmartPointer<velocityField> velocities;
+  auto velocities = lsSmartPointer<velocityField>::New();
 
   std::cout << "Advecting" << std::endl;
   lsAdvect<double, D> advection(lsDomains, velocities);

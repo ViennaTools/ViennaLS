@@ -15,7 +15,7 @@ namespace lsInternal {
 /// and the alpha values, this integration scheme should be used and never
 /// otherwise.
 template <class T, int D, int order> class lsLocalLaxFriedrichsAnalytical {
-  lsSmartPointer<lsDomain<T, D>> &levelSet;
+  lsSmartPointer<lsDomain<T, D>> levelSet;
   hrleSparseBoxIterator<hrleDomain<T, D>> neighborIterator;
 
   static T pow2(const T &value) { return value * value; }
@@ -38,7 +38,7 @@ template <class T, int D, int order> class lsLocalLaxFriedrichsAnalytical {
   }
 
 public:
-  static void prepareLS(lsSmartPointer<lsDomain<T, D>> &passedlsDomain) {
+  static void prepareLS(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     assert(order == 1 || order == 2);
     // at least order+1 layers since we need neighbor neighbors for
     // dissipation alpha calculation
@@ -46,7 +46,7 @@ public:
   }
 
   // neighboriterator always needs order 2 for alpha calculation
-  lsLocalLaxFriedrichsAnalytical(lsSmartPointer<lsDomain<T, D>> &passedlsDomain)
+  lsLocalLaxFriedrichsAnalytical(lsSmartPointer<lsDomain<T, D>> passedlsDomain)
       : levelSet(passedlsDomain), neighborIterator(levelSet->getDomain(), 2) {}
 
   T operator()(const hrleVectorType<hrleIndexType, D> &indices,

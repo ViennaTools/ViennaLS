@@ -25,17 +25,17 @@ template <class T, int D> class lsToMesh {
 public:
   lsToMesh(){};
 
-  lsToMesh(const lsSmartPointer<lsDomain<T, D>> &passedLevelSet,
-           lsSmartPointer<lsMesh> &passedMesh, bool passedOnlyDefined = true,
+  lsToMesh(const lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+           lsSmartPointer<lsMesh> passedMesh, bool passedOnlyDefined = true,
            bool passedOnlyActive = false)
       : levelSet(passedLevelSet), mesh(passedMesh),
         onlyDefined(passedOnlyDefined), onlyActive(passedOnlyActive) {}
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> &passedlsDomain) {
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     levelSet = passedlsDomain;
   }
 
-  void setMesh(lsSmartPointer<lsMesh> &passedMesh) { mesh = passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh> passedMesh) { mesh = passedMesh; }
 
   void setOnlyDefined(bool passedOnlyDefined) {
     onlyDefined = passedOnlyDefined;

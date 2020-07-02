@@ -58,7 +58,7 @@ int main() {
   // normal vectors are only valid as long as the underlying
   // level set does not change
   lsCalculateNormalVectors<double, 3>(sphere1).apply();
-  auto &normalVectors = sphere1->getNormalVectors();
+  auto &normalVectors = *(sphere1->getPointData().getVectorData("Normals"));
 
   auto mesh = lsSmartPointer<lsMesh>::New();
   lsToMesh<double, 3>(sphere1, mesh, true, true).apply();

@@ -17,7 +17,7 @@ namespace lsInternal {
 /// see Toifl et al., 2019. ISBN: 978-1-7281-0938-1;
 /// DOI: 10.1109/SISPAD.2019.8870443
 template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
-  lsSmartPointer<lsDomain<T, D>> &levelSet;
+  lsSmartPointer<lsDomain<T, D>> levelSet;
   const DifferentiationSchemeEnum finiteDifferenceScheme =
       DifferentiationSchemeEnum::FIRST_ORDER;
   hrleSparseBoxIterator<hrleDomain<T, D>> neighborIterator;
@@ -124,14 +124,14 @@ template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
 public:
   const hrleVectorType<T, 3> &getFinalAlphas() const { return finalAlphas; }
 
-  static void prepareLS(lsSmartPointer<lsDomain<T, D>> &passedlsDomain) {
+  static void prepareLS(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     // Expansion of sparse field must depend on spatial derivative order
     // AND  slf stencil order! --> currently assume scheme = 3rd order always
     lsExpand<T, D>(passedlsDomain, 2 * (order + 1) + 4).apply();
   }
 
   lsStencilLocalLaxFriedrichsScalar(
-      lsSmartPointer<lsDomain<T, D>> &passedlsDomain, double a = 1.0,
+      lsSmartPointer<lsDomain<T, D>> passedlsDomain, double a = 1.0,
       DifferentiationSchemeEnum scheme = DifferentiationSchemeEnum::FIRST_ORDER)
       : levelSet(passedlsDomain), finiteDifferenceScheme(scheme),
         neighborIterator(hrleSparseBoxIterator<hrleDomain<T, D>>(
