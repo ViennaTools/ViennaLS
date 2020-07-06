@@ -19,7 +19,6 @@ var hierarchy =
       [ "lsBoxDistribution< T, D >", "classlsBoxDistribution.html", null ],
       [ "lsSphereDistribution< T, D >", "classlsSphereDistribution.html", null ]
     ] ],
-    [ "lsGeometricAdvectDistribution< hrleCoordType, D >", "classlsGeometricAdvectDistribution.html", null ],
     [ "lsInternal::lsGraph", "classlsInternal_1_1lsGraph.html", null ],
     [ "lsInternal::lsLaxFriedrichs< T, D, order >", "classlsInternal_1_1lsLaxFriedrichs.html", null ],
     [ "lsInternal::lsLocalLaxFriedrichs< T, D, order >", "classlsInternal_1_1lsLocalLaxFriedrichs.html", null ],
@@ -51,5 +50,16 @@ var hierarchy =
     [ "lsVelocityField< double >", "classlsVelocityField.html", null ],
     [ "lsVTKReader", "classlsVTKReader.html", null ],
     [ "lsVTKWriter", "classlsVTKWriter.html", null ],
-    [ "lsWriter< T, D >", "classlsWriter.html", null ]
+    [ "lsWriter< T, D >", "classlsWriter.html", null ],
+    [ "shared_ptr", null, [
+      [ "lsSmartPointer< T >", "classlsSmartPointer.html", null ],
+      [ "lsSmartPointer< const lsGeometricAdvectDistribution< hrleCoordType, D > >", "classlsSmartPointer.html", null ],
+      [ "lsSmartPointer< lsBox< T, D > >", "classlsSmartPointer.html", null ],
+      [ "lsSmartPointer< lsDomain< T, D > >", "classlsSmartPointer.html", null ],
+      [ "lsSmartPointer< lsMesh >", "classlsSmartPointer.html", null ],
+      [ "lsSmartPointer< lsPlane< T, D > >", "classlsSmartPointer.html", null ],
+      [ "lsSmartPointer< lsPointCloud< T, D > >", "classlsSmartPointer.html", null ],
+      [ "lsSmartPointer< lsSphere< T, D > >", "classlsSmartPointer.html", null ],
+      [ "lsSmartPointer< lsVelocityField< T > >", "classlsSmartPointer.html", null ]
+    ] ]
 ];

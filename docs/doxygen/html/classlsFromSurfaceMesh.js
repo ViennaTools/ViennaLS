@@ -1,9 +1,9 @@
 var classlsFromSurfaceMesh =
 [
     [ "lsFromSurfaceMesh", "classlsFromSurfaceMesh.html#a63380e5acb9d12c82ae9df19ab83d989", null ],
-    [ "lsFromSurfaceMesh", "classlsFromSurfaceMesh.html#aa40ed1e7463db836daf1a5cdbf9f86ef", null ],
+    [ "lsFromSurfaceMesh", "classlsFromSurfaceMesh.html#adc3ee878c92c7a1bdf525748a10828b4", null ],
     [ "apply", "classlsFromSurfaceMesh.html#a76fce6385cab0be5293718be04979086", null ],
-    [ "setLevelSet", "classlsFromSurfaceMesh.html#af9dbd3eca41983608f58e42d6492f3f6", null ],
-    [ "setMesh", "classlsFromSurfaceMesh.html#a8a9aa6576d7c62289a8f01022e8da7eb", null ],
+    [ "setLevelSet", "classlsFromSurfaceMesh.html#a96a1bae302cfbe0e7cb0bfab97e268b4", null ],
+    [ "setMesh", "classlsFromSurfaceMesh.html#aa88e32902eb9c7edb560b8801af8fa97", null ],
     [ "setRemoveBoundaryTriangles", "classlsFromSurfaceMesh.html#a88a91f1e8e9e872236654eb370b0f8c1", null ]
 ];

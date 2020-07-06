@@ -96,15 +96,15 @@ $(document).ready(function(){initNavTree('classlsInternal_1_1lsEnquistOsher.html
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a6ca276bf68a08ad031803f4586f2fa66"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsEnquistOsher.html#a6ca276bf68a08ad031803f4586f2fa66">lsEnquistOsher</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedlsDomain, bool calcNormal=true)</td></tr>
-<tr class="separator:a6ca276bf68a08ad031803f4586f2fa66"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae6dd5db6e4c7375ac3bb316fbe36e0c4"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsEnquistOsher.html#ae6dd5db6e4c7375ac3bb316fbe36e0c4">operator()</a> (const hrleVectorType&lt; hrleIndexType, D &gt; &amp;indices, <a class="el" href="classlsVelocityField.html">lsVelocityField</a>&lt; T &gt; *velocities, int material)</td></tr>
-<tr class="separator:ae6dd5db6e4c7375ac3bb316fbe36e0c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2f593bb0e61e46db631ba2477a50afd9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsEnquistOsher.html#a2f593bb0e61e46db631ba2477a50afd9">lsEnquistOsher</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedlsDomain, bool calcNormal=true)</td></tr>
+<tr class="separator:a2f593bb0e61e46db631ba2477a50afd9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7191d3501c9ff703bcc3923c7e772dd1"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsEnquistOsher.html#a7191d3501c9ff703bcc3923c7e772dd1">operator()</a> (const hrleVectorType&lt; hrleIndexType, D &gt; &amp;indices, <a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsVelocityField.html">lsVelocityField</a>&lt; T &gt;&gt; velocities, int material)</td></tr>
+<tr class="separator:a7191d3501c9ff703bcc3923c7e772dd1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:a5363b69b228d8228ca0c7a7676b354d4"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsEnquistOsher.html#a5363b69b228d8228ca0c7a7676b354d4">prepareLS</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedlsDomain)</td></tr>
-<tr class="separator:a5363b69b228d8228ca0c7a7676b354d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a052567b036eedcd600126f1ee3eb3223"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsEnquistOsher.html#a052567b036eedcd600126f1ee3eb3223">prepareLS</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedlsDomain)</td></tr>
+<tr class="separator:a052567b036eedcd600126f1ee3eb3223"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;class T, int D, int order&gt;<br />
@@ -112,8 +112,8 @@ class lsInternal::lsEnquistOsher&lt; T, D, order &gt;</h3>
 
 <p>Engquist osher integration scheme based on the upwind integration scheme. Offers high performance but lower accuracy for complex velocity fields. </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a6ca276bf68a08ad031803f4586f2fa66"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6ca276bf68a08ad031803f4586f2fa66">&#9670;&nbsp;</a></span>lsEnquistOsher()</h2>
+<a id="a2f593bb0e61e46db631ba2477a50afd9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f593bb0e61e46db631ba2477a50afd9">&#9670;&nbsp;</a></span>lsEnquistOsher()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -126,7 +126,7 @@ template&lt;class T , int D, int order&gt; </div>
         <tr>
           <td class="memname"><a class="el" href="classlsInternal_1_1lsEnquistOsher.html">lsInternal::lsEnquistOsher</a>&lt; T, D, order &gt;::<a class="el" href="classlsInternal_1_1lsEnquistOsher.html">lsEnquistOsher</a> </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
           <td class="paramname"><em>passedlsDomain</em>, </td>
         </tr>
         <tr>
@@ -151,8 +151,8 @@ template&lt;class T , int D, int order&gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ae6dd5db6e4c7375ac3bb316fbe36e0c4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae6dd5db6e4c7375ac3bb316fbe36e0c4">&#9670;&nbsp;</a></span>operator()()</h2>
+<a id="a7191d3501c9ff703bcc3923c7e772dd1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7191d3501c9ff703bcc3923c7e772dd1">&#9670;&nbsp;</a></span>operator()()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -171,7 +171,7 @@ template&lt;class T , int D, int order&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classlsVelocityField.html">lsVelocityField</a>&lt; T &gt; *&#160;</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsVelocityField.html">lsVelocityField</a>&lt; T &gt;&gt;&#160;</td>
           <td class="paramname"><em>velocities</em>, </td>
         </tr>
         <tr>
@@ -195,8 +195,8 @@ template&lt;class T , int D, int order&gt; </div>
 
 </div>
 </div>
-<a id="a5363b69b228d8228ca0c7a7676b354d4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5363b69b228d8228ca0c7a7676b354d4">&#9670;&nbsp;</a></span>prepareLS()</h2>
+<a id="a052567b036eedcd600126f1ee3eb3223"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a052567b036eedcd600126f1ee3eb3223">&#9670;&nbsp;</a></span>prepareLS()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -209,7 +209,7 @@ template&lt;class T , int D, int order&gt; </div>
         <tr>
           <td class="memname">static void <a class="el" href="classlsInternal_1_1lsEnquistOsher.html">lsInternal::lsEnquistOsher</a>&lt; T, D, order &gt;::prepareLS </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
           <td class="paramname"><em>passedlsDomain</em></td><td>)</td>
           <td></td>
         </tr>

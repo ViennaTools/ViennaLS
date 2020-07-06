@@ -1,8 +1,8 @@
 var classlsConvexHull =
 [
     [ "lsConvexHull", "classlsConvexHull.html#a08cf7b9bf7a6ecceb0f61ccdd4c632f7", null ],
-    [ "lsConvexHull", "classlsConvexHull.html#af403f9abbfa2247949a51a6245bb98dd", null ],
+    [ "lsConvexHull", "classlsConvexHull.html#a70cea9437ad1f974c8638f596d744aba", null ],
     [ "apply", "classlsConvexHull.html#a241c5e598fa84f5a393ad28a42d67fb8", null ],
-    [ "setMesh", "classlsConvexHull.html#ad3f138d134cd72b6031325148d91ce44", null ],
-    [ "setPointCloud", "classlsConvexHull.html#acca009f72f0ddf517a7c400f73c91085", null ]
+    [ "setMesh", "classlsConvexHull.html#a9d6a6aae6762268d143185f83b1b9b88", null ],
+    [ "setPointCloud", "classlsConvexHull.html#af54ffca2b377246e85b367ef9269a150", null ]
 ];

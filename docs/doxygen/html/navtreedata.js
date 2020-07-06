@@ -37,7 +37,7 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "AirGapDeposition_8cpp-example.html",
-"classlsInternal_1_1lsLocalLaxFriedrichs.html#af91d389ae8e5c3852d24c1181ad41933",
+"classlsInternal_1_1lsLocalLaxFriedrichsAnalytical.html#a96d8a84cc14d05635290e40d44ce024c",
 "functions_d.html"
 ];
 
