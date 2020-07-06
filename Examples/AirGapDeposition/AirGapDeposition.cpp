@@ -61,7 +61,7 @@ int main() {
 
   {
     std::cout << "Extracting..." << std::endl;
-    lsSmartPointer<lsMesh> mesh;
+    auto mesh = lsSmartPointer<lsMesh>::New();
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
     lsVTKWriter(mesh, "plane.vtk").apply();
   }
@@ -78,7 +78,7 @@ int main() {
 
     {
       std::cout << "Extracting..." << std::endl;
-      lsSmartPointer<lsMesh> mesh;
+      auto mesh = lsSmartPointer<lsMesh>::New();
       lsToMesh<double, D>(trench, mesh).apply();
       lsVTKWriter(mesh, "box.vtk").apply();
     }
@@ -121,7 +121,7 @@ int main() {
 
     std::cout << "\rAdvection step " + std::to_string(i) + " / "
               << numberOfSteps << std::flush;
-    lsSmartPointer<lsMesh> mesh;
+    auto mesh = lsSmartPointer<lsMesh>::New();
     lsToSurfaceMesh<double, D>(newLayer, mesh).apply();
     lsVTKWriter(mesh, "trench" + std::to_string(i) + ".vtk").apply();
   }

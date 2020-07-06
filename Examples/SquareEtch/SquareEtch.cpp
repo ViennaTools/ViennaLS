@@ -95,7 +95,7 @@ int main() {
       lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
 
   double origin[3] = {0., 0., 0.};
-  double planeNormal[3] = {0., 0., 1.};
+  double planeNormal[3] = {0., D == 2, D == 3};
   {
     auto plane = lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal);
     lsMakeGeometry<double, D>(substrate, plane).apply();

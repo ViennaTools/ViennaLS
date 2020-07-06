@@ -82,7 +82,7 @@ int main() {
 
   {
     std::cout << "Extracting..." << std::endl;
-    lsSmartPointer<lsMesh> mesh;
+    auto mesh = lsSmartPointer<lsMesh>::New();
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
     lsVTKWriter(mesh, "trench-0.vtk").apply();
   }
@@ -109,7 +109,7 @@ int main() {
   for (double time = 0; time < 4.; time += advectionKernel.getAdvectedTime()) {
     advectionKernel.apply();
 
-    lsSmartPointer<lsMesh> mesh;
+    auto mesh = lsSmartPointer<lsMesh>::New();
     lsToSurfaceMesh<double, D>(newLayer, mesh).apply();
     lsVTKWriter(mesh, "trench-" + std::to_string(counter) + ".vtk").apply();
 

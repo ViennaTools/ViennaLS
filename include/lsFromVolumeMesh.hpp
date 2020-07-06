@@ -176,7 +176,7 @@ public:
     auto levelSetIterator = levelSets.begin();
     for (auto matIt = materialInts.begin(); matIt != materialInts.end();
          ++matIt) {
-      lsSmartPointer<lsMesh> currentSurface;
+      auto currentSurface = lsSmartPointer<lsMesh>::New();
       auto &meshElements = currentSurface->getElements<D>();
       for (auto it = surfaceElements.begin(); it != surfaceElements.end();
            ++it) {

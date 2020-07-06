@@ -8,6 +8,7 @@
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
+#include <lsSmartPointer.hpp>
 #include <lsToDiskMesh.hpp>
 #include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
@@ -160,7 +161,7 @@ int main() {
         auto cone = lsSmartPointer<lsDomain<double, D>>::New(
             bounds, boundaryCons, gridDelta);
         // create cone
-        lsSmartPointer<lsMesh> coneMesh;
+        auto coneMesh = lsSmartPointer<lsMesh>::New();
         makeRoundCone(coneMesh, coneCenter, coneRadius * dis(gen),
                       coneHeight * dis(gen));
 
@@ -224,7 +225,7 @@ int main() {
   {
     auto mesh = lsSmartPointer<lsMesh>::New();
     lsToDiskMesh<double, 3>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "diskMesh.vtk").apply();
+    lsVTKWriter(mesh, lsFileFormatEnum::VTP, "diskMesh.vtp").apply();
   }
 
   // Deposit new layer ----------------------------------------------

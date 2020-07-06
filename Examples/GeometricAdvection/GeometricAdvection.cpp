@@ -77,7 +77,7 @@ int main() {
   lsGeometricAdvect<double, D>(newLayer, dist).apply();
 
   {
-    lsSmartPointer<lsMesh> mesh;
+    auto mesh = lsSmartPointer<lsMesh>::New();
     lsToSurfaceMesh<double, D>(newLayer, mesh).apply();
     lsVTKWriter(mesh, "trench-final.vtk").apply();
   }
