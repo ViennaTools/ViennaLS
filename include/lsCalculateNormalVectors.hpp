@@ -12,10 +12,11 @@
 #include <lsMessage.hpp>
 
 /// This algorithm is used to compute the normal vectors for all points
-/// with level set values <= 0.5. The result is saved in the lsPointData of the lsDomain and
-/// can be retrieved with lsDomain.getPointData().getVectorData("Normals").
-/// Since neighbors in each cartesian direction are necessary for
-/// the calculation, the levelset width must be >=3.
+/// with level set values <= 0.5. The result is saved in the lsPointData of the
+/// lsDomain and can be retrieved with
+/// lsDomain.getPointData().getVectorData("Normals"). Since neighbors in each
+/// cartesian direction are necessary for the calculation, the levelset width
+/// must be >=3.
 template <class T, int D> class lsCalculateNormalVectors {
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
   T maxValue = 0.5;
@@ -48,7 +49,7 @@ public:
           .print();
     }
 
-    std::vector<std::vector<std::array<T, 3>>> normalVectorsVector(
+    std::vector<std::vector<std::array<double, 3>>> normalVectorsVector(
         levelSet->getNumberOfSegments());
     double pointsPerSegment =
         double(2 * levelSet->getDomain().getNumberOfPoints()) /
@@ -64,7 +65,7 @@ public:
       p = omp_get_thread_num();
 #endif
 
-      std::vector<std::array<T, 3>> &normalVectors = normalVectorsVector[p];
+      auto &normalVectors = normalVectorsVector[p];
       normalVectors.reserve(pointsPerSegment);
 
       hrleVectorType<hrleIndexType, D> startVector =
@@ -85,12 +86,12 @@ public:
           continue;
         } else if (std::abs(center.getValue()) > maxValue) {
           // push an empty vector to keep ordering correct
-          std::array<T, 3> tmp = {};
+          std::array<double, 3> tmp = {};
           normalVectors.push_back(tmp);
           continue;
         }
 
-        std::array<T, 3> n;
+        std::array<double, 3> n;
 
         T denominator = 0;
         for (int i = 0; i < D; i++) {
@@ -122,15 +123,16 @@ public:
     normalVectorsVector[0].reserve(numberOfNormals);
 
     for (unsigned i = 1; i < levelSet->getNumberOfSegments(); ++i) {
-      normalVectorsVector[0].insert(normalVectorsVector[0].end(), normalVectorsVector[i].begin(),
-                     normalVectorsVector[i].end());
+      normalVectorsVector[0].insert(normalVectorsVector[0].end(),
+                                    normalVectorsVector[i].begin(),
+                                    normalVectorsVector[i].end());
     }
 
     // insert into pointData of levelSet
     auto &pointData = levelSet->getPointData();
     auto vectorDataPointer = pointData.getVectorData("Normals");
     // if it does not exist, insert new normals vector
-    if(vectorDataPointer == nullptr) {
+    if (vectorDataPointer == nullptr) {
       pointData.insertNextVectorData(normalVectorsVector[0], "Normals");
     } else {
       // if it does exist, just swap the old with the new values

@@ -155,7 +155,7 @@ public:
     auto &pointData = domain->getPointData();
     auto voidMarkersPointer = pointData.getScalarData("VoidPointMarkers");
     // if vector data does not exist
-    if(voidMarkersPointer == nullptr) {
+    if (voidMarkersPointer == nullptr) {
       pointData.insertNextScalarData(voidPointMarkers, "VoidPointMarkers");
     } else {
       *voidMarkersPointer = std::move(voidPointMarkers);

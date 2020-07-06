@@ -58,7 +58,8 @@ public:
     lsCalculateNormalVectors<T, D>(levelSet, maxValue).apply();
 
     const T gridDelta = levelSet->getGrid().getGridDelta();
-    const auto &normalVectors = *(levelSet->getPointData().getVectorData("Normals"));
+    const auto &normalVectors =
+        *(levelSet->getPointData().getVectorData("Normals"));
 
     // set up data arrays
     std::vector<double> values;

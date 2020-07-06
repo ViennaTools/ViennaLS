@@ -148,9 +148,7 @@ public:
   void setLevelSetWidth(int width) { levelSetWidth = width; }
 
   // clear all additional data
-  void clearMetaData() {
-    pointData.clear();
-  }
+  void clearMetaData() { pointData.clear(); }
 
   /// get reference to point data saved in the level set
   PointDataType &getPointData() { return pointData; }

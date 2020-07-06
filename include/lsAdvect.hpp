@@ -473,7 +473,8 @@ template <class T, int D> class lsAdvect {
       }
 
       IntegrationSchemeType scheme(IntegrationScheme);
-      auto &voidPoints = *(levelSets.back()->getPointData().getScalarData("VoidPointMarkers"));
+      auto &voidPoints =
+          *(levelSets.back()->getPointData().getScalarData("VoidPointMarkers"));
 
       for (hrleSparseIterator<typename lsDomain<T, D>::DomainType> it(
                topDomain, startVector);

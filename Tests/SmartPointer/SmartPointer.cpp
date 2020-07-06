@@ -27,7 +27,8 @@ auto makeLSDomain() {
                                                   gridDelta);
 }
 
-unsigned long getNumberOfPoints(lsSmartPointer<const lsDomain<NumericType, D>> domain) {
+unsigned long
+getNumberOfPoints(lsSmartPointer<const lsDomain<NumericType, D>> domain) {
   return domain->getNumberOfPoints();
 }
 
