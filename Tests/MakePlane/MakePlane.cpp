@@ -20,6 +20,7 @@
 int main() {
   constexpr int D = 3;
   double extent = 15.7;
+  double gridDelta = 0.7;
 
   double bounds[2 * D] = {-extent, extent, -extent, extent, -extent, extent};
   lsDomain<double, D>::BoundaryType boundaryCons[3];
@@ -28,13 +29,15 @@ int main() {
 
   boundaryCons[2] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  lsDomain<double, D> levelSet(bounds, boundaryCons, 0.7);
-  lsMesh mesh;
+  auto levelSet =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  auto mesh = lsSmartPointer<lsMesh>::New();
 
   const hrleVectorType<double, D> origin(0., 0., 0.);
   const hrleVectorType<double, D> normal(1., 1., 1.);
 
-  lsMakeGeometry<double, D>(levelSet, lsPlane<double, D>(origin, normal))
+  lsMakeGeometry<double, D>(
+      levelSet, lsSmartPointer<lsPlane<double, D>>::New(origin, normal))
       .apply();
 
   lsToSurfaceMesh<double, D>(levelSet, mesh).apply();

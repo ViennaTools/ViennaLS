@@ -13,19 +13,20 @@
 /// Returns the number of added points
 template <class T, int D> class lsExpand {
   typedef typename lsDomain<T, D>::GridType GridType;
-  lsDomain<T, D> *levelSet = nullptr;
+  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
   int width = 0;
 
 public:
   lsExpand() {}
 
-  lsExpand(lsDomain<T, D> &passedlsDomain) : levelSet(&passedlsDomain) {}
+  lsExpand(lsSmartPointer<lsDomain<T, D>> passedlsDomain)
+      : levelSet(passedlsDomain) {}
 
-  lsExpand(lsDomain<T, D> &passedlsDomain, int passedWidth)
-      : levelSet(&passedlsDomain), width(passedWidth) {}
+  lsExpand(lsSmartPointer<lsDomain<T, D>> passedlsDomain, int passedWidth)
+      : levelSet(passedlsDomain), width(passedWidth) {}
 
-  void setLevelSet(lsDomain<T, D> &passedlsDomain) {
-    levelSet = &passedlsDomain;
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+    levelSet = passedlsDomain;
   }
 
   /// Set how far the level set should be extended. Points
@@ -55,8 +56,8 @@ public:
       const T limit = (startWidth + currentCycle + 1) * T(0.5);
 
       auto &grid = levelSet->getGrid();
-      lsDomain<T, D> newlsDomain(grid);
-      typename lsDomain<T, D>::DomainType &newDomain = newlsDomain.getDomain();
+      auto newlsDomain = lsSmartPointer<lsDomain<T, D>>::New(grid);
+      typename lsDomain<T, D>::DomainType &newDomain = newlsDomain->getDomain();
       typename lsDomain<T, D>::DomainType &domain = levelSet->getDomain();
 
       newDomain.initialize(domain.getNewSegmentation(),

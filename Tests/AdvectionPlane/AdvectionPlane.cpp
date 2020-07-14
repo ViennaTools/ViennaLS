@@ -46,36 +46,35 @@ int main() {
   lsDomain<double, D>::BoundaryType boundaryCons[D];
   boundaryCons[0] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   boundaryCons[1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
-  lsDomain<double, D> plane(bounds, boundaryCons, gridDelta);
+
+  auto plane =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
 
   double origin[D] = {0., 0.};
   double normal[D] = {2., 1.};
 
-  lsMakeGeometry<double, D>(plane, lsPlane<double, D>(origin, normal)).apply();
+  lsMakeGeometry<double, D>(
+      plane, lsSmartPointer<lsPlane<double, D>>::New(origin, normal))
+      .apply();
   {
-    lsMesh mesh;
-    lsMesh explMesh;
+    auto mesh = lsSmartPointer<lsMesh>::New();
 
     std::cout << "Extracting..." << std::endl;
-    lsToSurfaceMesh<double, D>(plane, explMesh).apply();
-    lsToMesh<double, D>(plane, mesh).apply();
+    lsToSurfaceMesh<double, D>(plane, mesh).apply();
+    lsVTKWriter(mesh, "before.vtk").apply();
 
-    mesh.print();
-    lsVTKWriter(explMesh, "before.vtk").apply();
+    lsToMesh<double, D>(plane, mesh).apply();
     lsVTKWriter(mesh, "beforeLS.vtk").apply();
+
+    mesh->print();
   }
 
-  // fill vector with lsDomain pointers
-  std::vector<lsDomain<double, D> *> lsDomains;
-  lsDomains.push_back(&plane);
+  auto velocities = lsSmartPointer<velocityField>::New();
 
-  velocityField velocities;
-
-  std::cout << "number of Points: " << plane.getDomain().getNumberOfPoints()
-            << std::endl;
+  std::cout << "number of Points: " << plane->getNumberOfPoints() << std::endl;
 
   std::cout << "Advecting" << std::endl;
-  lsAdvect<double, D> advectionKernel(lsDomains, velocities);
+  lsAdvect<double, D> advectionKernel(plane, velocities);
   advectionKernel.apply();
   double advectionTime = advectionKernel.getAdvectedTime();
   std::cout << "Time difference: " << advectionTime << std::endl;
@@ -84,7 +83,7 @@ int main() {
   lsExpand<double, D>(plane, 2).apply();
 
   std::cout << "Extracting..." << std::endl;
-  lsMesh mesh;
+  auto mesh = lsSmartPointer<lsMesh>::New();
   lsToSurfaceMesh<double, D>(plane, mesh).apply();
 
   // mesh.print();

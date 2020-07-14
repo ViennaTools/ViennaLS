@@ -5,6 +5,7 @@
 
 #include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
+
 #include <lsDomain.hpp>
 
 /// Removes all level set points, which do not have
@@ -13,16 +14,17 @@
 /// Afterwards the level set will occupy the least memory
 /// possible.
 template <class T, int D> class lsPrune {
-  lsDomain<T, D> *levelSet = nullptr;
+  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
   const double numericEps = 1e-9;
 
 public:
   lsPrune() {}
 
-  lsPrune(lsDomain<T, D> &passedlsDomain) : levelSet(&passedlsDomain){};
+  lsPrune(lsSmartPointer<lsDomain<T, D>> passedlsDomain)
+      : levelSet(passedlsDomain){};
 
-  void setLevelSet(lsDomain<T, D> &passedlsDomain) {
-    levelSet = &passedlsDomain;
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+    levelSet = passedlsDomain;
   }
 
   /// removes all grid points, which do not have at least one opposite signed
@@ -37,8 +39,8 @@ public:
     }
 
     auto &grid = levelSet->getGrid();
-    lsDomain<T, D> newlsDomain(grid);
-    typename lsDomain<T, D>::DomainType &newDomain = newlsDomain.getDomain();
+    auto newlsDomain = lsSmartPointer<lsDomain<T, D>>::New(grid);
+    typename lsDomain<T, D>::DomainType &newDomain = newlsDomain->getDomain();
     typename lsDomain<T, D>::DomainType &domain = levelSet->getDomain();
 
     newDomain.initialize(domain.getNewSegmentation(), domain.getAllocation());

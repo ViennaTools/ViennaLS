@@ -28,68 +28,70 @@ template <class T, int D> class lsMakeGeometry {
     CUSTOM = 3
   };
 
-  lsDomain<T, D> *levelSet;
+  lsSmartPointer<lsDomain<T, D>> levelSet;
   lsGeometryEnum geometry = lsGeometryEnum::SPHERE;
-  lsSphere<T, D> sphere;
-  lsPlane<T, D> plane;
-  lsBox<T, D> box;
-  lsPointCloud<T, D> pointCloud;
+  lsSmartPointer<lsSphere<T, D>> sphere;
+  lsSmartPointer<lsPlane<T, D>> plane;
+  lsSmartPointer<lsBox<T, D>> box;
+  lsSmartPointer<lsPointCloud<T, D>> pointCloud;
   const double numericEps = 1e-9;
   bool ignoreBoundaryConditions = false;
 
 public:
   lsMakeGeometry() {}
 
-  lsMakeGeometry(lsDomain<T, D> &passedLevelSet) : levelSet(&passedLevelSet) {}
+  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> passedLevelSet)
+      : levelSet(passedLevelSet) {}
 
-  lsMakeGeometry(lsDomain<T, D> &passedLevelSet,
-                 const lsSphere<T, D> &passedSphere)
-      : levelSet(&passedLevelSet), sphere(passedSphere) {
+  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+                 lsSmartPointer<lsSphere<T, D>> passedSphere)
+      : levelSet(passedLevelSet), sphere(passedSphere) {
     geometry = lsGeometryEnum::SPHERE;
   }
 
-  lsMakeGeometry(lsDomain<T, D> &passedLevelSet,
-                 const lsPlane<T, D> &passedPlane)
-      : levelSet(&passedLevelSet), plane(passedPlane) {
+  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+                 lsSmartPointer<lsPlane<T, D>> passedPlane)
+      : levelSet(passedLevelSet), plane(passedPlane) {
     geometry = lsGeometryEnum::PLANE;
   }
 
-  lsMakeGeometry(lsDomain<T, D> &passedLevelSet, const lsBox<T, D> &passedBox)
-      : levelSet(&passedLevelSet), box(passedBox) {
+  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+                 lsSmartPointer<lsBox<T, D>> passedBox)
+      : levelSet(passedLevelSet), box(passedBox) {
     geometry = lsGeometryEnum::BOX;
   }
 
-  lsMakeGeometry(lsDomain<T, D> &passedLevelSet,
-                 lsPointCloud<T, D> &passedPointCloud)
-      : levelSet(&passedLevelSet), pointCloud(passedPointCloud) {
+  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+                 lsSmartPointer<lsPointCloud<T, D>> passedPointCloud)
+      : levelSet(passedLevelSet), pointCloud(passedPointCloud) {
     geometry = lsGeometryEnum::CUSTOM;
   }
 
-  void setLevelSet(lsDomain<T, D> &passedlsDomain) {
-    levelSet = &passedlsDomain;
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+    levelSet = passedlsDomain;
   }
 
   /// Set sphere as geometry to be created in the level set.
-  void setGeometry(lsSphere<T, D> &passedSphere) {
+  void setGeometry(lsSmartPointer<lsSphere<T, D>> passedSphere) {
     sphere = passedSphere;
     geometry = lsGeometryEnum::SPHERE;
   }
 
   /// Set a plane to be created in the level set.
-  void setGeometry(lsPlane<T, D> passedPlane) {
+  void setGeometry(lsSmartPointer<lsPlane<T, D>> passedPlane) {
     plane = passedPlane;
     geometry = lsGeometryEnum::PLANE;
   }
 
   /// Set a box to be created in the level set.
-  void setGeometry(lsBox<T, D> passedBox) {
+  void setGeometry(lsSmartPointer<lsBox<T, D>> passedBox) {
     box = passedBox;
     geometry = lsGeometryEnum::BOX;
   }
 
   /// Set a point cloud, which is used to create
   /// a geometry from its convex hull.
-  void setGeometry(lsPointCloud<T, D> &passedPointCloud) {
+  void setGeometry(lsSmartPointer<lsPointCloud<T, D>> passedPointCloud) {
     pointCloud = passedPointCloud;
     geometry = lsGeometryEnum::CUSTOM;
   }
@@ -101,13 +103,13 @@ public:
   void apply() {
     switch (geometry) {
     case lsGeometryEnum::SPHERE:
-      makeSphere(sphere.origin, sphere.radius);
+      makeSphere(sphere->origin, sphere->radius);
       break;
     case lsGeometryEnum::PLANE:
-      makePlane(plane.origin, plane.normal);
+      makePlane(plane->origin, plane->normal);
       break;
     case lsGeometryEnum::BOX:
-      makeBox(box.minCorner, box.maxCorner);
+      makeBox(box->minCorner, box->maxCorner);
       break;
     case lsGeometryEnum::CUSTOM:
       makeCustom(pointCloud);
@@ -283,7 +285,7 @@ private:
     }
 
     // now find i coordinate of points
-    lsMesh mesh;
+    lsSmartPointer<lsMesh> mesh = lsSmartPointer<lsMesh>::New();
 
     for (unsigned n = 0; n < cornerPoints.size(); ++n) {
       double numerator = (cornerPoints[n][j] - origin[j]) * normal[j];
@@ -292,26 +294,26 @@ private:
       else
         cornerPoints[n][2] = 0.;
       cornerPoints[n][i] = origin[i] - numerator / normal[i];
-      mesh.insertNextNode(cornerPoints[n]);
+      mesh->insertNextNode(cornerPoints[n]);
     }
 
     if (D == 2) {
       std::array<unsigned, 2> line = {0, 1};
       if (normal[i] < 0.)
         std::swap(line[0], line[1]);
-      mesh.insertNextLine(line);
+      mesh->insertNextLine(line);
     } else {
       std::array<unsigned, 3> triangle = {0, 1, 2};
       if (normal[i] < 0.)
         std::swap(triangle[0], triangle[1]);
-      mesh.insertNextTriangle(triangle);
+      mesh->insertNextTriangle(triangle);
       triangle = {0, 3, 1};
       if (normal[i] < 0.)
         std::swap(triangle[0], triangle[1]);
-      mesh.insertNextTriangle(triangle);
+      mesh->insertNextTriangle(triangle);
     }
     // now convert mesh to levelset
-    lsFromSurfaceMesh<T, D>(*levelSet, mesh).apply();
+    lsFromSurfaceMesh<T, D>(levelSet, mesh).apply();
   }
 
   // This function creates a box starting in minCorner spanning to maxCorner
@@ -357,34 +359,34 @@ private:
     }
 
     // now add all corners to mesh
-    lsMesh mesh;
+    lsSmartPointer<lsMesh> mesh = lsSmartPointer<lsMesh>::New();
     for (unsigned i = 0; i < corners.size(); ++i) {
-      mesh.insertNextNode(corners[i]);
+      mesh->insertNextNode(corners[i]);
     }
 
     if (D == 2) {
       std::array<unsigned, 2> lines[4] = {{0, 2}, {2, 3}, {3, 1}, {1, 0}};
       for (unsigned i = 0; i < 4; ++i)
-        mesh.insertNextLine(lines[i]);
+        mesh->insertNextLine(lines[i]);
     } else {
       std::array<unsigned, 3> triangles[12] = {
           {0, 3, 1}, {0, 2, 3}, {0, 1, 5}, {0, 5, 4}, {0, 4, 2}, {4, 6, 2},
           {7, 6, 4}, {7, 4, 5}, {7, 2, 6}, {7, 3, 2}, {1, 3, 5}, {3, 7, 5}};
       for (unsigned i = 0; i < 12; ++i)
-        mesh.insertNextTriangle(triangles[i]);
+        mesh->insertNextTriangle(triangles[i]);
     }
 
     // now convert mesh to levelset
-    lsFromSurfaceMesh<T, D>(*levelSet, mesh, ignoreBoundaryConditions).apply();
+    lsFromSurfaceMesh<T, D>(levelSet, mesh, ignoreBoundaryConditions).apply();
   }
 
-  void makeCustom(lsPointCloud<T, D> &pointCloud) {
+  void makeCustom(lsSmartPointer<lsPointCloud<T, D>> pointCloud) {
     // create mesh from point cloud
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh>::New();
     lsConvexHull<T, D>(mesh, pointCloud).apply();
 
     // read mesh from surface
-    lsFromSurfaceMesh<T, D>(*levelSet, mesh, ignoreBoundaryConditions).apply();
+    lsFromSurfaceMesh<T, D>(levelSet, mesh, ignoreBoundaryConditions).apply();
   }
 };
 

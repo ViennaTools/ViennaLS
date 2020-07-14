@@ -28,7 +28,7 @@ int main() {
   std::mt19937 gen(rd());
   std::uniform_real_distribution<> dis(0., 1.);
 
-  lsPointCloud<double, D> cloud;
+  auto cloud = lsSmartPointer<lsPointCloud<double, D>>::New();
 
   // generate a circle of points
   int numberOfPoints = 10000;
@@ -39,7 +39,7 @@ int main() {
 
     double x = r * cos(angle);
     double y = r * sin(angle);
-    cloud.insertNextPoint(hrleVectorType<double, D>(x, y));
+    cloud->insertNextPoint(hrleVectorType<double, D>(x, y));
   }
   // cloud.insertNextPoint(hrleVectorType<double, D>(-1, 0));
   // cloud.insertNextPoint(hrleVectorType<double, D>(1, 0));
@@ -51,25 +51,25 @@ int main() {
   // cloud.insertNextPoint(hrleVectorType<double, D>(0.1, 0.5));
   // cloud.insertNextPoint(hrleVectorType<double, D>(-1, 0.2));
 
-  lsMesh pointMesh;
-  for (unsigned i = 0; i < cloud.points.size(); ++i) {
-    pointMesh.nodes.push_back(
-        std::array<double, 3>{cloud.points[i][0], cloud.points[i][1], 0.});
-    pointMesh.vertices.push_back(std::array<unsigned, 1>{i});
+  auto pointMesh = lsSmartPointer<lsMesh>::New();
+  for (unsigned i = 0; i < cloud->points.size(); ++i) {
+    pointMesh->nodes.push_back(
+        std::array<double, 3>{cloud->points[i][0], cloud->points[i][1], 0.});
+    pointMesh->vertices.push_back(std::array<unsigned, 1>{i});
   }
   lsVTKWriter(pointMesh, lsFileFormatEnum::VTP, "points.vtp").apply();
 
   lsMakeGeometry<double, D> geom;
-  lsDomain<double, D> levelSet;
+  auto levelSet = lsSmartPointer<lsDomain<double, D>>::New();
   geom.setLevelSet(levelSet);
   geom.setGeometry(cloud);
   geom.apply();
 
   {
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh>::New();
     std::cout << "Extracting..." << std::endl;
     lsToSurfaceMesh<double, D>(levelSet, mesh).apply();
-    mesh.print();
+    mesh->print();
     lsVTKWriter(mesh, "LSMesh.vtk").apply();
   }
 

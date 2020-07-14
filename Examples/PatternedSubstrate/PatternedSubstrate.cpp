@@ -8,6 +8,7 @@
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
+#include <lsSmartPointer.hpp>
 #include <lsToDiskMesh.hpp>
 #include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
@@ -64,15 +65,16 @@ public:
 
 // create a rounded cone as the primitive pattern.
 // Define a pointcloud and create a hull mesh using lsConvexHull.
-void makeRoundCone(lsMesh &mesh, hrleVectorType<double, 3> center,
-                   double radius, double height) {
+void makeRoundCone(lsSmartPointer<lsMesh> mesh,
+                   hrleVectorType<double, 3> center, double radius,
+                   double height) {
   // cone is just a circle with a point above the center
-  lsPointCloud<double, 3> cloud;
+  auto cloud = lsSmartPointer<lsPointCloud<double, 3>>::New();
   // frist inside top point
   {
     hrleVectorType<double, 3> topPoint = center;
     topPoint[2] += height;
-    cloud.insertNextPoint(topPoint);
+    cloud->insertNextPoint(topPoint);
   }
 
   // now create all points of the base
@@ -87,7 +89,7 @@ void makeRoundCone(lsMesh &mesh, hrleVectorType<double, 3> center,
                            height;
       double x = center[0] + distance * cos(angle);
       double y = center[1] + distance * sin(angle);
-      cloud.insertNextPoint(
+      cloud->insertNextPoint(
           hrleVectorType<double, 3>(x, y, center[2] + pointHeight));
     }
   }
@@ -115,17 +117,20 @@ int main() {
   boundaryCons[1] = lsDomain<double, D>::BoundaryType::PERIODIC_BOUNDARY;
   boundaryCons[2] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  lsDomain<double, D> substrate(bounds, boundaryCons, gridDelta);
+  auto substrate =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
 
-  double origin[D] = {0., 0., 0.001};
-  double planeNormal[D] = {0., 0., 1.};
-
-  lsMakeGeometry<double, D>(substrate, lsPlane<double, D>(origin, planeNormal))
-      .apply();
+  {
+    double origin[3] = {0., 0., 0.001};
+    double planeNormal[3] = {0., 0., 1.};
+    auto plane = lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal);
+    lsMakeGeometry<double, D>(substrate, plane).apply();
+  }
 
   // copy the structure to add the pattern on top
-  lsDomain<double, D> pattern(bounds, boundaryCons, gridDelta);
-  pattern.setLevelSetWidth(2);
+  auto pattern =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  pattern->setLevelSetWidth(2);
 
   // Create varying cones and put them in hexagonal pattern ---------
   {
@@ -153,9 +158,10 @@ int main() {
       // for each cone in a row
       for (unsigned i = 0; i < 6; ++i) {
         // make ls from cone mesh and add to substrate
-        lsDomain<double, D> cone(bounds, boundaryCons, gridDelta);
+        auto cone = lsSmartPointer<lsDomain<double, D>>::New(
+            bounds, boundaryCons, gridDelta);
         // create cone
-        lsMesh coneMesh;
+        auto coneMesh = lsSmartPointer<lsMesh>::New();
         makeRoundCone(coneMesh, coneCenter, coneRadius * dis(gen),
                       coneHeight * dis(gen));
 
@@ -184,7 +190,7 @@ int main() {
   advectionKernel.insertNextLevelSet(pattern);
   advectionKernel.insertNextLevelSet(substrate);
   {
-    directionalEtch velocities;
+    auto velocities = lsSmartPointer<directionalEtch>::New();
     advectionKernel.setVelocityField(velocities);
 
     // Now advect the level set, outputting every
@@ -194,7 +200,7 @@ int main() {
     for (unsigned i = 0; i < numberOfEtchSteps; ++i) {
       std::cout << "\rEtch step " + std::to_string(i) + " / "
                 << numberOfEtchSteps << std::flush;
-      lsMesh mesh;
+      auto mesh = lsSmartPointer<lsMesh>::New();
       lsToSurfaceMesh<double, D>(substrate, mesh).apply();
       lsVTKWriter(mesh, "substrate-" + std::to_string(i) + ".vtk").apply();
 
@@ -203,10 +209,13 @@ int main() {
     }
     std::cout << std::endl;
 
-    lsMesh mesh;
-    lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "substrate-" + std::to_string(numberOfEtchSteps) + ".vtk")
-        .apply();
+    {
+      auto mesh = lsSmartPointer<lsMesh>::New();
+      lsToSurfaceMesh<double, D>(substrate, mesh).apply();
+      lsVTKWriter(mesh,
+                  "substrate-" + std::to_string(numberOfEtchSteps) + ".vtk")
+          .apply();
+    }
 
     std::cout << "Time passed during directional etch: " << passedTime
               << std::endl;
@@ -214,16 +223,16 @@ int main() {
 
   // make disk mesh and output
   {
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh>::New();
     lsToDiskMesh<double, 3>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "diskMesh.vtk").apply();
+    lsVTKWriter(mesh, lsFileFormatEnum::VTP, "diskMesh.vtp").apply();
   }
 
   // Deposit new layer ----------------------------------------------
   // new level set for new layer
-  lsDomain<double, D> fillLayer(substrate);
+  auto fillLayer = lsSmartPointer<lsDomain<double, D>>::New(substrate);
   {
-    isotropicDepo velocities;
+    auto velocities = lsSmartPointer<isotropicDepo>::New();
     advectionKernel.setVelocityField(velocities);
 
     advectionKernel.insertNextLevelSet(fillLayer);
@@ -236,7 +245,7 @@ int main() {
     for (unsigned i = 0; i < numberOfDepoSteps; ++i) {
       std::cout << "\rDepo step " + std::to_string(i) + " / "
                 << numberOfDepoSteps << std::flush;
-      lsMesh mesh;
+      auto mesh = lsSmartPointer<lsMesh>::New();
       lsToSurfaceMesh<double, D>(fillLayer, mesh).apply();
       lsVTKWriter(mesh, "fillLayer-" +
                             std::to_string(numberOfEtchSteps + 1 + i) + ".vtk")
@@ -247,13 +256,15 @@ int main() {
     }
     std::cout << std::endl;
 
-    lsMesh mesh;
-    lsToSurfaceMesh<double, D>(fillLayer, mesh).apply();
-    lsVTKWriter(mesh,
-                "fillLayer-" +
-                    std::to_string(numberOfEtchSteps + numberOfDepoSteps) +
-                    ".vtk")
-        .apply();
+    {
+      auto mesh = lsSmartPointer<lsMesh>::New();
+      lsToSurfaceMesh<double, D>(fillLayer, mesh).apply();
+      lsVTKWriter(mesh,
+                  "fillLayer-" +
+                      std::to_string(numberOfEtchSteps + numberOfDepoSteps) +
+                      ".vtk")
+          .apply();
+    }
 
     std::cout << "Time passed during isotropic deposition: " << passedTime
               << std::endl;
@@ -261,7 +272,7 @@ int main() {
 
   // now output the final level sets
   {
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh>::New();
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
     lsVTKWriter(mesh, "final-substrate.vtk").apply();
 

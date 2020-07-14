@@ -87,6 +87,9 @@ var dir_d44c64559bbebec7f509842c48db8b23 =
     [ "lsReduce.hpp", "lsReduce_8hpp.html", [
       [ "lsReduce", "classlsReduce.html", "classlsReduce" ]
     ] ],
+    [ "lsSmartPointer.hpp", "lsSmartPointer_8hpp.html", [
+      [ "lsSmartPointer", "classlsSmartPointer.html", "classlsSmartPointer" ]
+    ] ],
     [ "lsStencilLocalLaxFriedrichsScalar.hpp", "lsStencilLocalLaxFriedrichsScalar_8hpp.html", [
       [ "lsStencilLocalLaxFriedrichsScalar", "classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar.html", "classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar" ]
     ] ],

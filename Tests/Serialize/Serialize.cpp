@@ -15,19 +15,20 @@ int main() {
 
   omp_set_num_threads(4);
 
-  lsDomain<double, D> levelSet;
-  lsMesh mesh;
+  auto levelSet = lsSmartPointer<lsDomain<double, D>>::New();
+  auto mesh = lsSmartPointer<lsMesh>::New();
 
   const double radius = 7.3;
   const hrleVectorType<double, D> centre(5., 0.);
 
-  lsMakeGeometry<double, 2>(levelSet, lsSphere<double, D>(centre, radius))
+  lsMakeGeometry<double, 2>(
+      levelSet, lsSmartPointer<lsSphere<double, D>>::New(centre, radius))
       .apply();
 
-  lsPointData &data = levelSet.getPointData();
+  lsPointData &data = levelSet->getPointData();
   typename lsPointData::ScalarDataType scalars;
   typename lsPointData::VectorDataType vectors;
-  for (unsigned i = 0; i < levelSet.getNumberOfPoints(); ++i) {
+  for (unsigned i = 0; i < levelSet->getNumberOfPoints(); ++i) {
     scalars.push_back(i);
     vectors.push_back(
         typename lsPointData::VectorDataType::value_type({double(i)}));
@@ -38,15 +39,15 @@ int main() {
 
   {
     std::ofstream fout("test.lvst", std::ofstream::binary);
-    levelSet.serialize(fout);
+    levelSet->serialize(fout);
     fout.close();
   }
 
   {
-    lsDomain<double, D> newLevelSet;
+    auto newLevelSet = lsSmartPointer<lsDomain<double, D>>::New();
     std::ifstream fin("test.lvst", std::ofstream::binary);
-    newLevelSet.deserialize(fin);
-    lsPointData &newData = newLevelSet.getPointData();
+    newLevelSet->deserialize(fin);
+    lsPointData &newData = newLevelSet->getPointData();
     std::cout << newData.getScalarDataSize() << std::endl;
     auto newScalars = newData.getScalarData(0);
     std::cout << newData.getScalarDataLabel(0) << std::endl;

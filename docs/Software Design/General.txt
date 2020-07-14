@@ -1,0 +1,7 @@
+The general design rationale is:
+- Split each algorithm to a separate header
+- Make each algorithm as general as possible, so its use is versatile
+- Each algorithm holds references to objects it needs, so a pipeline execution is possible
+- Each algorithm is executed with a call to apply()
+- Naming conventions: Data-storing classes are labeled as nouns, algorithm classes as verbs to emphasise them doing somehting.
+

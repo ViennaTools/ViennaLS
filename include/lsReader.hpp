@@ -7,19 +7,21 @@
 #include <lsPreCompileMacros.hpp>
 
 template <class T, int D> class lsReader {
-  lsDomain<T, D> *levelSet = nullptr;
+  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
   std::string fileName;
 
 public:
   lsReader() {}
 
-  lsReader(lsDomain<T, D> &passedLevelSet) : levelSet(&passedLevelSet) {}
+  lsReader(lsSmartPointer<lsDomain<T, D>> passedLevelSet)
+      : levelSet(passedLevelSet) {}
 
-  lsReader(lsDomain<T, D> &passedLevelSet, std::string passedFileName)
-      : levelSet(&passedLevelSet), fileName(passedFileName) {}
+  lsReader(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+           std::string passedFileName)
+      : levelSet(passedLevelSet), fileName(passedFileName) {}
 
-  void setLevelSet(lsDomain<T, D> &passedLevelSet) {
-    levelSet = &passedLevelSet;
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
+    levelSet = passedLevelSet;
   }
 
   /// set file name for file to write

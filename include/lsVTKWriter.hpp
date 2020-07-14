@@ -23,23 +23,23 @@
 
 /// Class handling the output of an lsMesh to VTK file types.
 class lsVTKWriter {
-  const lsMesh *mesh = nullptr;
+  lsSmartPointer<lsMesh> mesh = nullptr;
   lsFileFormatEnum fileFormat = lsFileFormatEnum::VTK_LEGACY;
   std::string fileName;
 
 public:
   lsVTKWriter() {}
 
-  lsVTKWriter(lsMesh &passedMesh) : mesh(&passedMesh) {}
+  lsVTKWriter(lsSmartPointer<lsMesh> passedMesh) : mesh(passedMesh) {}
 
-  lsVTKWriter(lsMesh &passedMesh, std::string passedFileName)
-      : mesh(&passedMesh), fileName(passedFileName) {}
+  lsVTKWriter(lsSmartPointer<lsMesh> passedMesh, std::string passedFileName)
+      : mesh(passedMesh), fileName(passedFileName) {}
 
-  lsVTKWriter(lsMesh &passedMesh, lsFileFormatEnum passedFormat,
+  lsVTKWriter(lsSmartPointer<lsMesh> passedMesh, lsFileFormatEnum passedFormat,
               std::string passedFileName)
-      : mesh(&passedMesh), fileFormat(passedFormat), fileName(passedFileName) {}
+      : mesh(passedMesh), fileFormat(passedFormat), fileName(passedFileName) {}
 
-  void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh> passedMesh) { mesh = passedMesh; }
 
   /// set file format for file to write. Defaults to VTK_LEGACY.
   void setFileFormat(lsFileFormatEnum passedFormat) {

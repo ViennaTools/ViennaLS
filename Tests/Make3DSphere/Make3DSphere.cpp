@@ -24,21 +24,25 @@ int main() {
 
   double gridDelta = 0.4;
 
-  lsDomain<double, D> sphere1(gridDelta); //, boundaryCons);
+  auto sphere1 =
+      lsSmartPointer<lsDomain<double, D>>::New(gridDelta); //, boundaryCons);
 
-  lsDomain<double, D> sphere2(gridDelta); //, boundaryCons);
+  auto sphere2 =
+      lsSmartPointer<lsDomain<double, D>>::New(gridDelta); //, boundaryCons);
   double origin[3] = {5., 0., 0.};
   double radius = 7.3;
 
-  lsMakeGeometry<double, D>(sphere1, lsSphere<double, D>(origin, radius))
+  lsMakeGeometry<double, D>(
+      sphere1, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
       .apply();
   origin[0] = -5.;
-  lsMakeGeometry<double, D>(sphere2, lsSphere<double, D>(origin, radius))
+  lsMakeGeometry<double, D>(
+      sphere2, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
       .apply();
 
-  std::cout << "Number of points: " << sphere1.getDomain().getNumberOfPoints()
+  std::cout << "Number of points: " << sphere1->getDomain().getNumberOfPoints()
             << std::endl;
-  lsMesh mesh;
+  auto mesh = lsSmartPointer<lsMesh>::New();
 
   std::cout << "Expanding..." << std::endl;
   lsExpand<double, D>(sphere1, 2).apply();
@@ -51,13 +55,13 @@ int main() {
   std::cout << "Extracting..." << std::endl;
   lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
 
-  mesh.print();
+  mesh->print();
 
   lsVTKWriter(mesh, "test-" + std::to_string(radius) + ".vtk").apply();
 
   // write voxelised volume mesh
   {
-    lsMesh voxelMesh;
+    auto voxelMesh = lsSmartPointer<lsMesh>::New();
     auto voxelMesher = lsToVoxelMesh<double, D>(voxelMesh);
 
     voxelMesher.insertNextLevelSet(sphere2);
@@ -73,7 +77,7 @@ int main() {
               << "s" << std::endl;
 
     std::cout << "voxelMesh: " << std::endl;
-    voxelMesh.print();
+    voxelMesh->print();
 
     lsVTKWriter(voxelMesh, lsFileFormatEnum::VTU, "voxelMesh.vtu").apply();
   }

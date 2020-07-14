@@ -48,17 +48,20 @@ int main() {
   boundaryCons[0] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   boundaryCons[1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  lsDomain<double, D> substrate(bounds, boundaryCons, gridDelta);
+  auto substrate =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
 
   double origin[2] = {0., 0.};
   double planeNormal[2] = {0., 1.};
 
-  lsMakeGeometry<double, D>(substrate, lsPlane<double, D>(origin, planeNormal))
-      .apply();
+  {
+    auto plane = lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal);
+    lsMakeGeometry<double, D>(substrate, plane).apply();
+  }
 
   {
     std::cout << "Extracting..." << std::endl;
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh>::New();
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
     lsVTKWriter(mesh, "plane.vtk").apply();
   }
@@ -66,15 +69,16 @@ int main() {
   {
     // create layer used for booling
     std::cout << "Creating box..." << std::endl;
-    lsDomain<double, D> trench(bounds, boundaryCons, gridDelta);
+    auto trench = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
+                                                           gridDelta);
     double minCorner[D] = {-extent / 6., -25.};
     double maxCorner[D] = {extent / 6., 1.};
-    lsMakeGeometry<double, D>(trench, lsBox<double, D>(minCorner, maxCorner))
-        .apply();
+    auto box = lsSmartPointer<lsBox<double, D>>::New(minCorner, maxCorner);
+    lsMakeGeometry<double, D>(trench, box).apply();
 
     {
       std::cout << "Extracting..." << std::endl;
-      lsMesh mesh;
+      auto mesh = lsSmartPointer<lsMesh>::New();
       lsToMesh<double, D>(trench, mesh).apply();
       lsVTKWriter(mesh, "box.vtk").apply();
     }
@@ -91,9 +95,9 @@ int main() {
   // create new levelset for new material, which will be grown
   // since it has to wrap around the substrate, just copy it
   std::cout << "Creating new layer..." << std::endl;
-  lsDomain<double, D> newLayer(substrate);
+  auto newLayer = lsSmartPointer<lsDomain<double, D>>::New(substrate);
 
-  velocityField velocities;
+  auto velocities = lsSmartPointer<velocityField>::New();
 
   std::cout << "Advecting" << std::endl;
   lsAdvect<double, D> advectionKernel;
@@ -117,7 +121,7 @@ int main() {
 
     std::cout << "\rAdvection step " + std::to_string(i) + " / "
               << numberOfSteps << std::flush;
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh>::New();
     lsToSurfaceMesh<double, D>(newLayer, mesh).apply();
     lsVTKWriter(mesh, "trench" + std::to_string(i) + ".vtk").apply();
   }

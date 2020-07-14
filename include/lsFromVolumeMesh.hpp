@@ -15,31 +15,32 @@
 /// one level set for each material will be created and stored
 /// in the supplied std::vector<lsDomain<T,D>> object.
 template <class T, int D> class lsFromVolumeMesh {
-  std::vector<lsDomain<T, D>> *levelSets = nullptr;
-  lsMesh *mesh = nullptr;
+  std::vector<lsSmartPointer<lsDomain<T, D>>> levelSets;
+  lsSmartPointer<lsMesh> mesh = nullptr;
   bool removeBoundaryTriangles = true;
 
 public:
   lsFromVolumeMesh() {}
 
-  lsFromVolumeMesh(std::vector<lsDomain<T, D>> &passedLevelSets,
-                   lsMesh &passedMesh,
+  lsFromVolumeMesh(std::vector<lsSmartPointer<lsDomain<T, D>>> passedLevelSets,
+                   lsSmartPointer<lsMesh> passedMesh,
                    bool passedRemoveBoundaryTriangles = true)
-      : levelSets(&passedLevelSets), mesh(&passedMesh),
+      : levelSets(passedLevelSets), mesh(passedMesh),
         removeBoundaryTriangles(passedRemoveBoundaryTriangles) {}
 
-  void setLevelSets(std::vector<lsDomain<T, D>> &passedLevelSets) {
-    levelSets = &passedLevelSets;
+  void
+  setLevelSets(std::vector<lsSmartPointer<lsDomain<T, D>>> passedLevelSets) {
+    levelSets = passedLevelSets;
   }
 
-  void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh> passedMesh) { mesh = passedMesh; }
 
   void setRemoveBoundaryTriangles(bool passedRemoveBoundaryTriangles) {
     removeBoundaryTriangles = passedRemoveBoundaryTriangles;
   }
 
   void apply() {
-    if (levelSets == nullptr) {
+    if (levelSets.empty()) {
       lsMessage::getInstance()
           .addWarning("No level set vector was passed to lsFromVolumeMesh.")
           .print();
@@ -171,12 +172,12 @@ public:
     }
 
     // for all materials/for each surface
-    levelSets->resize(materialInts.size());
-    auto levelSetIterator = levelSets->begin();
+    levelSets.resize(materialInts.size());
+    auto levelSetIterator = levelSets.begin();
     for (auto matIt = materialInts.begin(); matIt != materialInts.end();
          ++matIt) {
-      lsMesh currentSurface;
-      auto &meshElements = currentSurface.getElements<D>();
+      auto currentSurface = lsSmartPointer<lsMesh>::New();
+      auto &meshElements = currentSurface->getElements<D>();
       for (auto it = surfaceElements.begin(); it != surfaceElements.end();
            ++it) {
         if (((*matIt) >= it->second.first) && ((*matIt) < it->second.second)) {
@@ -206,7 +207,7 @@ public:
           unsigned int origin_node = meshElements[k][h];
           if (nodeReplacements[origin_node] == undefined_node) {
             nodeReplacements[origin_node] = NodeCounter++;
-            currentSurface.nodes.push_back(mesh->nodes[origin_node]);
+            currentSurface->nodes.push_back(mesh->nodes[origin_node]);
           }
           meshElements[k][h] = nodeReplacements[origin_node];
         }

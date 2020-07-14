@@ -16,8 +16,8 @@
 template <class T, int D> class lsToMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
 
-  const lsDomain<T, D> *levelSet = nullptr;
-  lsMesh *mesh = nullptr;
+  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
+  lsSmartPointer<lsMesh> mesh = nullptr;
   bool onlyDefined;
   bool onlyActive;
   static constexpr long long maxDomainExtent = 1e6;
@@ -25,16 +25,17 @@ template <class T, int D> class lsToMesh {
 public:
   lsToMesh(){};
 
-  lsToMesh(const lsDomain<T, D> &passedLevelSet, lsMesh &passedMesh,
-           bool passedOnlyDefined = true, bool passedOnlyActive = false)
-      : levelSet(&passedLevelSet), mesh(&passedMesh),
+  lsToMesh(const lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+           lsSmartPointer<lsMesh> passedMesh, bool passedOnlyDefined = true,
+           bool passedOnlyActive = false)
+      : levelSet(passedLevelSet), mesh(passedMesh),
         onlyDefined(passedOnlyDefined), onlyActive(passedOnlyActive) {}
 
-  void setLevelSet(lsDomain<T, D> &passedlsDomain) {
-    levelSet = &passedlsDomain;
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+    levelSet = passedlsDomain;
   }
 
-  void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh> passedMesh) { mesh = passedMesh; }
 
   void setOnlyDefined(bool passedOnlyDefined) {
     onlyDefined = passedOnlyDefined;

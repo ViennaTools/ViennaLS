@@ -1,7 +1,7 @@
 var searchData=
 [
   ['getadvectedtime',['getAdvectedTime',['../classlsAdvect.html#ab3aa1882d86169065989b55c839f061a',1,'lsAdvect']]],
-  ['getbounds',['getBounds',['../classlsGeometricAdvectDistribution.html#a5d7b6b318aea40b1abddee31621295eb',1,'lsGeometricAdvectDistribution::getBounds()'],['../classlsSphereDistribution.html#a13d7eee2ea2efd2684e652b4e96587a8',1,'lsSphereDistribution::getBounds()'],['../classlsBoxDistribution.html#aa220b493e742c1b75dea7c52d701b818',1,'lsBoxDistribution::getBounds()']]],
+  ['getbounds',['getBounds',['../classlsGeometricAdvectDistribution.html#a12803831ab6cbb55b21dccdb068a41ce',1,'lsGeometricAdvectDistribution::getBounds()'],['../classlsSphereDistribution.html#a4ec5f7a7c26b1c926d6cb650b945ccfe',1,'lsSphereDistribution::getBounds()'],['../classlsBoxDistribution.html#a6b94262175496526ce68c0e5db092ba0',1,'lsBoxDistribution::getBounds()']]],
   ['getcalculatenormalvectors',['getCalculateNormalVectors',['../classlsAdvect.html#a8a9e64c2f053d28d459d5742f18f424b',1,'lsAdvect']]],
   ['getconnectedcomponents',['getConnectedComponents',['../classlsInternal_1_1lsGraph.html#acbdc024c1136a1f6bc23cafa15899f88',1,'lsInternal::lsGraph']]],
   ['getdissipationalpha',['getDissipationAlpha',['../classlsVelocityField.html#a9e95150133beb47249897d05d2c4d9da',1,'lsVelocityField']]],
@@ -12,7 +12,6 @@ var searchData=
   ['getinstance',['getInstance',['../classlsMessage.html#a26184786db860c2f8ae7f4dc00efe9d5',1,'lsMessage']]],
   ['getlevelsetwidth',['getLevelSetWidth',['../classlsDomain.html#a7c41c369debd2f5eeddfc7d4586d7116',1,'lsDomain']]],
   ['getnodes',['getNodes',['../classlsMesh.html#a7533a162ade9e6955e90462240989301',1,'lsMesh::getNodes() const'],['../classlsMesh.html#a77b4f087640c3c0fdf66c9ce6c6ae1f7',1,'lsMesh::getNodes()']]],
-  ['getnormalvectors',['getNormalVectors',['../classlsDomain.html#a50df1038d697f24ae4d4dba6540ce802',1,'lsDomain::getNormalVectors()'],['../classlsDomain.html#adac4b93758441a5a79fced6afa82bd84',1,'lsDomain::getNormalVectors() const']]],
   ['getnumberofpoints',['getNumberOfPoints',['../classlsDomain.html#aeaedf9b83e01197f5e1ccf744364f25e',1,'lsDomain']]],
   ['getnumberofsegments',['getNumberOfSegments',['../classlsDomain.html#a392c3fcfc0a5c09d19cc1c319c49e49d',1,'lsDomain']]],
   ['getnumberoftimesteps',['getNumberOfTimeSteps',['../classlsAdvect.html#a77a15f986e3037afa870d4a5aab5162b',1,'lsAdvect']]],

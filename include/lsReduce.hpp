@@ -12,22 +12,23 @@
 /// are removed, reducing the memory footprint of the lsDomain.
 template <class T, int D> class lsReduce {
   typedef typename lsDomain<T, D>::GridType GridType;
-  lsDomain<T, D> *levelSet = nullptr;
+  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
   int width = 0;
   bool noNewSegment = false;
 
 public:
   lsReduce() {}
 
-  lsReduce(lsDomain<T, D> &passedlsDomain) : levelSet(&passedlsDomain){};
+  lsReduce(lsSmartPointer<lsDomain<T, D>> passedlsDomain)
+      : levelSet(passedlsDomain){};
 
-  lsReduce(lsDomain<T, D> &passedlsDomain, int passedWidth,
+  lsReduce(lsSmartPointer<lsDomain<T, D>> passedlsDomain, int passedWidth,
            bool passedNoNewSegment = false)
-      : levelSet(&passedlsDomain), width(passedWidth),
+      : levelSet(passedlsDomain), width(passedWidth),
         noNewSegment(passedNoNewSegment){};
 
-  void setLevelSet(lsDomain<T, D> &passedlsDomain) {
-    levelSet = &passedlsDomain;
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+    levelSet = passedlsDomain;
   }
 
   /// Set which level set points should be kept.
@@ -59,8 +60,8 @@ public:
     const T valueLimit = width * 0.5;
 
     auto &grid = levelSet->getGrid();
-    lsDomain<T, D> newlsDomain(levelSet->getGrid());
-    typename lsDomain<T, D>::DomainType &newDomain = newlsDomain.getDomain();
+    auto newlsDomain = lsSmartPointer<lsDomain<T, D>>::New(levelSet->getGrid());
+    typename lsDomain<T, D>::DomainType &newDomain = newlsDomain->getDomain();
     typename lsDomain<T, D>::DomainType &domain = levelSet->getDomain();
 
     newDomain.initialize(domain.getNewSegmentation(), domain.getAllocation());

@@ -27,23 +27,25 @@ int main() {
   lsDomain<double, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D; ++i)
     boundaryCons[i] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
-  lsDomain<double, D> sphere1(bounds, boundaryCons, gridDelta);
-  // lsDomain<double, D> sphere2(bounds, gridDelta, boundaryCons);
+
+  auto sphere1 =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
 
   double origin[D] = {5., 0.};
   double radius = 7.3;
 
-  lsMakeGeometry<double, D>(sphere1, lsSphere<double, D>(origin, radius))
+  lsMakeGeometry<double, D>(
+      sphere1, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
       .apply();
 
   {
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh>::New();
     lsToMesh<double, D>(sphere1, mesh).apply();
     lsVTKWriter(mesh, "sphere.vtk").apply();
   }
 
   {
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh>::New();
     lsExpand<double, D>(sphere1, 5).apply();
     lsToMesh<double, D>(sphere1, mesh).apply();
     lsVTKWriter(mesh, "sphereExpanded.vtk").apply();

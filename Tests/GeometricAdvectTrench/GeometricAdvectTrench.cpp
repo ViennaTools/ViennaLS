@@ -31,17 +31,19 @@ int main() {
   boundaryCons[D - 1] =
       lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  lsDomain<double, D> substrate(bounds, boundaryCons, gridDelta);
+  auto substrate =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
 
   double origin[3] = {0., 0., 0.};
   double planeNormal[3] = {0., D == 2, D == 3};
 
-  lsMakeGeometry<double, D>(substrate, lsPlane<double, D>(origin, planeNormal))
+  lsMakeGeometry<double, D>(
+      substrate, lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal))
       .apply();
 
   {
     std::cout << "Extracting..." << std::endl;
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh>::New();
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
     lsVTKWriter(mesh, "plane.vtk").apply();
   }
@@ -49,7 +51,8 @@ int main() {
   {
     // create layer used for booling
     std::cout << "Creating box..." << std::endl;
-    lsDomain<double, D> trench(bounds, boundaryCons, gridDelta);
+    auto trench = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
+                                                           gridDelta);
     double minCorner[3] = {-extent - 1, -extent / 4., -15.};
     double maxCorner[3] = {extent + 1, extent / 4., 1.0};
     if (D == 2) {
@@ -58,12 +61,13 @@ int main() {
       maxCorner[0] = maxCorner[1];
       maxCorner[1] = maxCorner[2];
     }
-    lsMakeGeometry<double, D>(trench, lsBox<double, D>(minCorner, maxCorner))
+    lsMakeGeometry<double, D>(
+        trench, lsSmartPointer<lsBox<double, D>>::New(minCorner, maxCorner))
         .apply();
 
     {
       std::cout << "Extracting..." << std::endl;
-      lsMesh mesh;
+      auto mesh = lsSmartPointer<lsMesh>::New();
       lsToMesh<double, D>(trench, mesh).apply();
       lsVTKWriter(mesh, "box.vtk").apply();
     }
@@ -75,7 +79,7 @@ int main() {
         .apply();
   }
 
-  lsMesh mesh;
+  auto mesh = lsSmartPointer<lsMesh>::New();
 
   lsToMesh<NumericType, D>(substrate, mesh).apply();
   lsVTKWriter(mesh, "points.vtk").apply();
@@ -90,7 +94,8 @@ int main() {
     box[1] = 1.1;
     box[2] = 15;
   }
-  lsBoxDistribution<NumericType, D> dist(box, gridDelta);
+  auto dist =
+      lsSmartPointer<lsBoxDistribution<NumericType, D>>::New(box, gridDelta);
   lsGeometricAdvect<NumericType, D>(substrate, dist).apply();
 
   std::cout << "Writing results..." << std::endl;

@@ -96,15 +96,15 @@ $(document).ready(function(){initNavTree('classlsInternal_1_1lsLocalLaxFriedrich
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a45c832e2cd7a1da1ebc094746e6ebf24"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsLocalLaxFriedrichsAnalytical.html#a45c832e2cd7a1da1ebc094746e6ebf24">lsLocalLaxFriedrichsAnalytical</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedlsDomain)</td></tr>
-<tr class="separator:a45c832e2cd7a1da1ebc094746e6ebf24"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6e867109d3d598642390cbdaa2662bef"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsLocalLaxFriedrichsAnalytical.html#a6e867109d3d598642390cbdaa2662bef">operator()</a> (const hrleVectorType&lt; hrleIndexType, D &gt; &amp;indices, <a class="el" href="classlsVelocityField.html">lsVelocityField</a>&lt; T &gt; *velocities, int material)</td></tr>
-<tr class="separator:a6e867109d3d598642390cbdaa2662bef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a96d8a84cc14d05635290e40d44ce024c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsLocalLaxFriedrichsAnalytical.html#a96d8a84cc14d05635290e40d44ce024c">lsLocalLaxFriedrichsAnalytical</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedlsDomain)</td></tr>
+<tr class="separator:a96d8a84cc14d05635290e40d44ce024c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af5948015a5c32aa27b683499bf01c677"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsLocalLaxFriedrichsAnalytical.html#af5948015a5c32aa27b683499bf01c677">operator()</a> (const hrleVectorType&lt; hrleIndexType, D &gt; &amp;indices, <a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsVelocityField.html">lsVelocityField</a>&lt; T &gt;&gt; velocities, int material)</td></tr>
+<tr class="separator:af5948015a5c32aa27b683499bf01c677"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:abb399eb14df132e6f801a71705ee1199"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsLocalLaxFriedrichsAnalytical.html#abb399eb14df132e6f801a71705ee1199">prepareLS</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedlsDomain)</td></tr>
-<tr class="separator:abb399eb14df132e6f801a71705ee1199"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a845ae6cf5665d378ce0c559db5760b5f"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsLocalLaxFriedrichsAnalytical.html#a845ae6cf5665d378ce0c559db5760b5f">prepareLS</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedlsDomain)</td></tr>
+<tr class="separator:a845ae6cf5665d378ce0c559db5760b5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;class T, int D, int order&gt;<br />
@@ -112,8 +112,8 @@ class lsInternal::lsLocalLaxFriedrichsAnalytical&lt; T, D, order &gt;</h3>
 
 <p>Lax Friedrichs integration scheme, which uses alpha values provided by the user in getDissipationAlphas in <a class="el" href="classlsVelocityField.html" title="Abstract class defining the interface for the velocity field used during advection using lsAdvect...">lsVelocityField</a>. If it is possible to derive analytical solutions for the velocityField and the alpha values, this integration scheme should be used and never otherwise. </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a45c832e2cd7a1da1ebc094746e6ebf24"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a45c832e2cd7a1da1ebc094746e6ebf24">&#9670;&nbsp;</a></span>lsLocalLaxFriedrichsAnalytical()</h2>
+<a id="a96d8a84cc14d05635290e40d44ce024c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a96d8a84cc14d05635290e40d44ce024c">&#9670;&nbsp;</a></span>lsLocalLaxFriedrichsAnalytical()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -126,7 +126,7 @@ template&lt;class T , int D, int order&gt; </div>
         <tr>
           <td class="memname"><a class="el" href="classlsInternal_1_1lsLocalLaxFriedrichsAnalytical.html">lsInternal::lsLocalLaxFriedrichsAnalytical</a>&lt; T, D, order &gt;::<a class="el" href="classlsInternal_1_1lsLocalLaxFriedrichsAnalytical.html">lsLocalLaxFriedrichsAnalytical</a> </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
           <td class="paramname"><em>passedlsDomain</em></td><td>)</td>
           <td></td>
         </tr>
@@ -141,8 +141,8 @@ template&lt;class T , int D, int order&gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a6e867109d3d598642390cbdaa2662bef"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6e867109d3d598642390cbdaa2662bef">&#9670;&nbsp;</a></span>operator()()</h2>
+<a id="af5948015a5c32aa27b683499bf01c677"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af5948015a5c32aa27b683499bf01c677">&#9670;&nbsp;</a></span>operator()()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -161,7 +161,7 @@ template&lt;class T , int D, int order&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classlsVelocityField.html">lsVelocityField</a>&lt; T &gt; *&#160;</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsVelocityField.html">lsVelocityField</a>&lt; T &gt;&gt;&#160;</td>
           <td class="paramname"><em>velocities</em>, </td>
         </tr>
         <tr>
@@ -185,8 +185,8 @@ template&lt;class T , int D, int order&gt; </div>
 
 </div>
 </div>
-<a id="abb399eb14df132e6f801a71705ee1199"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abb399eb14df132e6f801a71705ee1199">&#9670;&nbsp;</a></span>prepareLS()</h2>
+<a id="a845ae6cf5665d378ce0c559db5760b5f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a845ae6cf5665d378ce0c559db5760b5f">&#9670;&nbsp;</a></span>prepareLS()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -199,7 +199,7 @@ template&lt;class T , int D, int order&gt; </div>
         <tr>
           <td class="memname">static void <a class="el" href="classlsInternal_1_1lsLocalLaxFriedrichsAnalytical.html">lsInternal::lsLocalLaxFriedrichsAnalytical</a>&lt; T, D, order &gt;::prepareLS </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
           <td class="paramname"><em>passedlsDomain</em></td><td>)</td>
           <td></td>
         </tr>

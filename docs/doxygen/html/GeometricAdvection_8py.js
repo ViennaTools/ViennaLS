@@ -12,6 +12,5 @@ var GeometricAdvection_8py =
     [ "origin", "GeometricAdvection_8py.html#a24e2a92a06eed3283575cc671a99680f", null ],
     [ "planeNormal", "GeometricAdvection_8py.html#a08c9c6b2be2e81901d5bef9dbb609f2d", null ],
     [ "substrate", "GeometricAdvection_8py.html#a6847ded4385aaab7eb500e36ca0f3f7c", null ],
-    [ "trench", "GeometricAdvection_8py.html#abcb12fafe44f5af6a80265bf54d9d628", null ],
-    [ "velocities", "GeometricAdvection_8py.html#a9ce18655d9f6cd5be8994eaf235e68d8", null ]
+    [ "trench", "GeometricAdvection_8py.html#abcb12fafe44f5af6a80265bf54d9d628", null ]
 ];

@@ -18,23 +18,23 @@
 template <class T, int D> class lsToSurfaceMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
 
-  const lsDomain<T, D> *levelSet = nullptr;
-  lsMesh *mesh = nullptr;
+  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
+  lsSmartPointer<lsMesh> mesh = nullptr;
   // std::vector<hrleIndexType> meshNodeToPointIdMapping;
   const double epsilon;
 
 public:
   lsToSurfaceMesh(double eps = 1e-12) : epsilon(eps) {}
 
-  lsToSurfaceMesh(const lsDomain<T, D> &passedLevelSet, lsMesh &passedMesh,
-                  double eps = 1e-12)
-      : levelSet(&passedLevelSet), mesh(&passedMesh), epsilon(eps) {}
+  lsToSurfaceMesh(const lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+                  lsSmartPointer<lsMesh> passedMesh, double eps = 1e-12)
+      : levelSet(passedLevelSet), mesh(passedMesh), epsilon(eps) {}
 
-  void setLevelSet(lsDomain<T, D> &passedlsDomain) {
-    levelSet = &passedlsDomain;
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+    levelSet = passedlsDomain;
   }
 
-  void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh> passedMesh) { mesh = passedMesh; }
 
   void apply() {
     if (levelSet == nullptr) {

@@ -47,17 +47,21 @@ int main() {
 
   double bounds[2 * D] = {-extent, extent, -extent, extent};
   lsDomain<double, D>::BoundaryType boundaryCons[D];
-  for (unsigned i = 0; i < D; ++i)
+  for (unsigned i = 0; i < D; ++i) {
     boundaryCons[i] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
-  lsDomain<double, D> sphere1(bounds, boundaryCons, gridDelta);
+  }
+
+  auto sphere1 =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
 
   double origin[D] = {5., 0.};
   double radius = 7.3;
 
-  lsMakeGeometry<double, D>(sphere1, lsSphere<double, D>(origin, radius))
+  lsMakeGeometry<double, D>(
+      sphere1, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
       .apply();
   {
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh>::New();
     lsToMesh<double, D>(sphere1, mesh).apply();
     lsVTKWriter(mesh, "sphere.vtk").apply();
 
@@ -66,8 +70,9 @@ int main() {
   }
 
   // Advect the sphere
-  velocityField velocities;
-  std::cout << "Number of points: " << sphere1.getDomain().getNumberOfPoints()
+  auto velocities = lsSmartPointer<velocityField>::New();
+
+  std::cout << "Number of points: " << sphere1->getDomain().getNumberOfPoints()
             << std::endl;
 
   std::cout << "Advecting" << std::endl;
@@ -91,10 +96,10 @@ int main() {
   lsExpand<double, D>(sphere1, 2).apply();
 
   {
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh>::New();
     std::cout << "Extracting..." << std::endl;
     lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
-    mesh.print();
+    mesh->print();
     lsVTKWriter(mesh, "after2D.vtk").apply();
   }
 

@@ -31,6 +31,7 @@ var searchData=
   ['lsprune_2ehpp',['lsPrune.hpp',['../lsPrune_8hpp.html',1,'']]],
   ['lsreader_2ehpp',['lsReader.hpp',['../lsReader_8hpp.html',1,'']]],
   ['lsreduce_2ehpp',['lsReduce.hpp',['../lsReduce_8hpp.html',1,'']]],
+  ['lssmartpointer_2ehpp',['lsSmartPointer.hpp',['../lsSmartPointer_8hpp.html',1,'']]],
   ['lsstencillocallaxfriedrichsscalar_2ehpp',['lsStencilLocalLaxFriedrichsScalar.hpp',['../lsStencilLocalLaxFriedrichsScalar_8hpp.html',1,'']]],
   ['lstodiskmesh_2ehpp',['lsToDiskMesh.hpp',['../lsToDiskMesh_8hpp.html',1,'']]],
   ['lstomesh_2ehpp',['lsToMesh.hpp',['../lsToMesh_8hpp.html',1,'']]],

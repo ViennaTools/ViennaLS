@@ -19,23 +19,22 @@
 template <class T, int D> class lsToDiskMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
 
-  lsDomain<T, D> *levelSet = nullptr;
-  lsMesh *mesh = nullptr;
+  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
+  lsSmartPointer<lsMesh> mesh = nullptr;
   T maxValue = 0.5;
 
 public:
   lsToDiskMesh() {}
 
-  lsToDiskMesh(lsDomain<T, D> &passedLevelSet, lsMesh &passedMesh,
-               T passedMaxValue = 0.5)
-      : levelSet(&passedLevelSet), mesh(&passedMesh), maxValue(passedMaxValue) {
+  lsToDiskMesh(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+               lsSmartPointer<lsMesh> passedMesh, T passedMaxValue = 0.5)
+      : levelSet(passedLevelSet), mesh(passedMesh), maxValue(passedMaxValue) {}
+
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
+    levelSet = passedLevelSet;
   }
 
-  void setLevelSet(lsDomain<T, D> &passedLevelSet) {
-    levelSet = &passedLevelSet;
-  }
-
-  void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh> passedMesh) { mesh = passedMesh; }
 
   void setMaxValue(const T passedMaxValue) { maxValue = passedMaxValue; }
 
@@ -55,11 +54,12 @@ public:
 
     mesh->clear();
 
-    lsExpand<T, D>(*levelSet, (maxValue * 4) + 1).apply();
-    lsCalculateNormalVectors<T, D>(*levelSet, maxValue).apply();
+    lsExpand<T, D>(levelSet, (maxValue * 4) + 1).apply();
+    lsCalculateNormalVectors<T, D>(levelSet, maxValue).apply();
 
     const T gridDelta = levelSet->getGrid().getGridDelta();
-    const auto &normalVectors = levelSet->getNormalVectors();
+    const auto &normalVectors =
+        *(levelSet->getPointData().getVectorData("Normals"));
 
     // set up data arrays
     std::vector<double> values;

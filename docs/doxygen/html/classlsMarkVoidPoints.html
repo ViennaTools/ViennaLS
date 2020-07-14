@@ -95,10 +95,10 @@ $(document).ready(function(){initNavTree('classlsMarkVoidPoints.html','');});
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a06d0d3fa00c22f0c88f7fa21c7327a92"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMarkVoidPoints.html#a06d0d3fa00c22f0c88f7fa21c7327a92">lsMarkVoidPoints</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedlsDomain, bool passedReverseVoidDetection=false)</td></tr>
-<tr class="separator:a06d0d3fa00c22f0c88f7fa21c7327a92"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2164df1f893340b925b95cd967241a80"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMarkVoidPoints.html#a2164df1f893340b925b95cd967241a80">setLevelSet</a> (<a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;passedlsDomain)</td></tr>
-<tr class="separator:a2164df1f893340b925b95cd967241a80"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a112ce489073235e836dcfe0ee732b4e5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMarkVoidPoints.html#a112ce489073235e836dcfe0ee732b4e5">lsMarkVoidPoints</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedlsDomain, bool passedReverseVoidDetection=false)</td></tr>
+<tr class="separator:a112ce489073235e836dcfe0ee732b4e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb5168d13e0eb31836de939226fedba1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMarkVoidPoints.html#aeb5168d13e0eb31836de939226fedba1">setLevelSet</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedlsDomain)</td></tr>
+<tr class="separator:aeb5168d13e0eb31836de939226fedba1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a74b6de628e2bbcfa932b43085955492f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMarkVoidPoints.html#a74b6de628e2bbcfa932b43085955492f">setReverseVoidDetection</a> (bool passedReverseVoidDetection)</td></tr>
 <tr class="memdesc:a74b6de628e2bbcfa932b43085955492f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set whether the "top" level set should be the most positive(default) connected chain of level set values, or the most negative. Most positive/negative refers to the location in the lowest dimension with INFINITE boundary conditions.  <a href="#a74b6de628e2bbcfa932b43085955492f">More...</a><br /></td></tr>
 <tr class="separator:a74b6de628e2bbcfa932b43085955492f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -111,8 +111,8 @@ class lsMarkVoidPoints&lt; T, D &gt;</h3>
 
 <p>This class is used to mark points of the level set which are enclosed in a void. </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a06d0d3fa00c22f0c88f7fa21c7327a92"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a06d0d3fa00c22f0c88f7fa21c7327a92">&#9670;&nbsp;</a></span>lsMarkVoidPoints()</h2>
+<a id="a112ce489073235e836dcfe0ee732b4e5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a112ce489073235e836dcfe0ee732b4e5">&#9670;&nbsp;</a></span>lsMarkVoidPoints()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -125,7 +125,7 @@ template&lt;class T , int D&gt; </div>
         <tr>
           <td class="memname"><a class="el" href="classlsMarkVoidPoints.html">lsMarkVoidPoints</a>&lt; T, D &gt;::<a class="el" href="classlsMarkVoidPoints.html">lsMarkVoidPoints</a> </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
           <td class="paramname"><em>passedlsDomain</em>, </td>
         </tr>
         <tr>
@@ -177,8 +177,8 @@ template&lt;class T , int D&gt; </div>
 
 </div>
 </div>
-<a id="a2164df1f893340b925b95cd967241a80"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2164df1f893340b925b95cd967241a80">&#9670;&nbsp;</a></span>setLevelSet()</h2>
+<a id="aeb5168d13e0eb31836de939226fedba1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeb5168d13e0eb31836de939226fedba1">&#9670;&nbsp;</a></span>setLevelSet()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -191,7 +191,7 @@ template&lt;class T , int D&gt; </div>
         <tr>
           <td class="memname">void <a class="el" href="classlsMarkVoidPoints.html">lsMarkVoidPoints</a>&lt; T, D &gt;::setLevelSet </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
           <td class="paramname"><em>passedlsDomain</em></td><td>)</td>
           <td></td>
         </tr>

@@ -13,28 +13,29 @@ namespace lsInternal {
 /// point for alpha calculation. Faster than lsLocalLaxFriedrichs but
 /// not as accurate.
 template <class T, int D, int order> class lsLocalLocalLaxFriedrichs {
-  lsDomain<T, D> &levelSet;
+  lsSmartPointer<lsDomain<T, D>> levelSet;
   hrleSparseStarIterator<hrleDomain<T, D>> neighborIterator;
   const double alphaFactor;
 
   static T pow2(const T &value) { return value * value; }
 
 public:
-  static void prepareLS(lsDomain<T, D> &passedlsDomain) {
+  static void prepareLS(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     assert(order == 1 || order == 2);
     lsExpand<T, D>(passedlsDomain, 2 * order + 1).apply();
   }
 
-  lsLocalLocalLaxFriedrichs(lsDomain<T, D> &passedlsDomain, double a = 1.0)
+  lsLocalLocalLaxFriedrichs(lsSmartPointer<lsDomain<T, D>> passedlsDomain,
+                            double a = 1.0)
       : levelSet(passedlsDomain),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>>(
-            levelSet.getDomain(), order)),
+            levelSet->getDomain(), order)),
         alphaFactor(a) {}
 
   T operator()(const hrleVectorType<hrleIndexType, D> &indices,
-               lsVelocityField<T> *velocities, int material) {
+               lsSmartPointer<lsVelocityField<T>> velocities, int material) {
 
-    auto &grid = levelSet.getGrid();
+    auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
 
     hrleVectorType<T, 3> coordinate(0., 0., 0.);

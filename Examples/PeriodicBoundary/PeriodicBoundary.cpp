@@ -49,24 +49,26 @@ int main() {
   boundaryCons[1] = lsDomain<double, D>::BoundaryType::PERIODIC_BOUNDARY;
   boundaryCons[2] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  lsDomain<double, D> substrate(bounds, boundaryCons, gridDelta);
+  auto substrate =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
 
-  double origin[D] = {0., 0., 0.};
-  double planeNormal[D] = {0., 0., 1.};
-
-  lsMakeGeometry<double, D>(substrate, lsPlane<double, D>(origin, planeNormal))
-      .apply();
+  {
+    double origin[3] = {0., 0., 0.};
+    double planeNormal[3] = {0., 0., 1.};
+    auto plane = lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal);
+    lsMakeGeometry<double, D>(substrate, plane).apply();
+  }
 
   {
     // create spheres used for booling
     std::cout << "Creating pillar..." << std::endl;
-    lsDomain<double, D> pillar(bounds, boundaryCons, gridDelta);
+    auto pillar = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
+                                                           gridDelta);
     double lowerCorner[D] = {15, 15, -1};
     double upperCorner[D] = {25, 25, 10};
-    lsMakeGeometry<double, D>(pillar,
-                              lsBox<double, D>(lowerCorner, upperCorner))
-        .apply();
-    lsMesh mesh;
+    auto box = lsSmartPointer<lsBox<double, D>>::New(lowerCorner, upperCorner);
+    lsMakeGeometry<double, D>(pillar, box).apply();
+    auto mesh = lsSmartPointer<lsMesh>::New();
     lsToSurfaceMesh<double, D>(pillar, mesh).apply();
     lsVTKWriter(mesh, "pillar.vtk").apply();
     lsBooleanOperation<double, D> boolOp(substrate, pillar,
@@ -75,7 +77,7 @@ int main() {
   }
 
   // Now etch the substrate isotropically
-  velocityField velocities;
+  auto velocities = lsSmartPointer<velocityField>::New();
 
   std::cout << "Advecting" << std::endl;
 
@@ -93,7 +95,7 @@ int main() {
   for (unsigned i = 0; i < numberOfSteps; ++i) {
     std::cout << "\rAdvection step " + std::to_string(i) + " / "
               << numberOfSteps << std::flush;
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh>::New();
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
     lsVTKWriter(mesh, "pillar-" + std::to_string(i) + ".vtk").apply();
 

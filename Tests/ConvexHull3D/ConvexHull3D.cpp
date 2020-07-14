@@ -32,7 +32,7 @@ int main() {
   // std::cout << seed << std::endl;
   // std::srand(seed);
 
-  lsPointCloud<double, D> cloud;
+  auto cloud = lsSmartPointer<lsPointCloud<double, D>>::New();
 
   // generate a circle of points ----------------------------------------------
   // std::random_device rd;
@@ -94,18 +94,18 @@ int main() {
 
     double x = radius * cos(angle);
     double y = radius * sin(angle);
-    cloud.insertNextPoint(hrleVectorType<double, D>(x, y, -height));
-    cloud.insertNextPoint(hrleVectorType<double, D>(x, y, height));
+    cloud->insertNextPoint(hrleVectorType<double, D>(x, y, -height));
+    cloud->insertNextPoint(hrleVectorType<double, D>(x, y, height));
   }
 
-  lsMesh mesh;
+  auto mesh = lsSmartPointer<lsMesh>::New();
   lsConvexHull<double, D>(mesh, cloud).apply();
 
-  lsMesh pointMesh;
-  for (unsigned i = 0; i < cloud.points.size(); ++i) {
-    pointMesh.nodes.push_back(std::array<double, 3>{
-        cloud.points[i][0], cloud.points[i][1], cloud.points[i][2]});
-    pointMesh.vertices.push_back(std::array<unsigned, 1>{i});
+  auto pointMesh = lsSmartPointer<lsMesh>::New();
+  for (unsigned i = 0; i < cloud->points.size(); ++i) {
+    pointMesh->nodes.push_back(std::array<double, 3>{
+        cloud->points[i][0], cloud->points[i][1], cloud->points[i][2]});
+    pointMesh->vertices.push_back(std::array<unsigned, 1>{i});
   }
   std::cout << "Output point cloud" << std::endl;
   lsVTKWriter(pointMesh, lsFileFormatEnum::VTP, "points.vtp").apply();
@@ -115,7 +115,7 @@ int main() {
   // lsVTKWriter(mesh, lsFileFormatEnum::VTP, "hull.vtp").apply();
 
   std::cout << "create level set" << std::endl;
-  lsDomain<double, D> levelSet(0.18);
+  auto levelSet = lsSmartPointer<lsDomain<double, D>>::New(0.18);
   lsMakeGeometry<double, D> geom;
   geom.setLevelSet(levelSet);
   geom.setGeometry(cloud);
@@ -125,7 +125,7 @@ int main() {
   // lsDomain<double, D> levelSet(0.3);
   // lsFromSurfaceMesh<double, D>(levelSet, mesh).apply();
 
-  lsMesh LSMesh;
+  auto LSMesh = lsSmartPointer<lsMesh>::New();
   std::cout << "Output level set grid" << std::endl;
   lsToMesh<double, D>(levelSet, LSMesh).apply();
   lsVTKWriter(LSMesh, lsFileFormatEnum::VTP, "LS.vtp").apply();

@@ -14,27 +14,28 @@ namespace lsInternal {
 /// upwind integration scheme. Offers high performance
 /// but lower accuracy for complex velocity fields.
 template <class T, int D, int order> class lsEnquistOsher {
-  lsDomain<T, D> &levelSet;
+  lsSmartPointer<lsDomain<T, D>> levelSet;
   hrleSparseStarIterator<hrleDomain<T, D>> neighborIterator;
   bool calculateNormalVectors = true;
 
   static T pow2(const T &value) { return value * value; }
 
 public:
-  static void prepareLS(lsDomain<T, D> &passedlsDomain) {
+  static void prepareLS(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     assert(order == 1 || order == 2);
     lsExpand<T, D>(passedlsDomain, 2 * order + 1).apply();
   }
 
-  lsEnquistOsher(lsDomain<T, D> &passedlsDomain, bool calcNormal = true)
+  lsEnquistOsher(lsSmartPointer<lsDomain<T, D>> passedlsDomain,
+                 bool calcNormal = true)
       : levelSet(passedlsDomain),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>>(
-            levelSet.getDomain(), order)),
+            levelSet->getDomain(), order)),
         calculateNormalVectors(calcNormal) {}
 
   T operator()(const hrleVectorType<hrleIndexType, D> &indices,
-               lsVelocityField<T> *velocities, int material) {
-    auto &grid = levelSet.getGrid();
+               lsSmartPointer<lsVelocityField<T>> velocities, int material) {
+    auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
 
     hrleVectorType<T, 3> coordinate(0., 0., 0.);

@@ -11,6 +11,7 @@
 #include <lsGeometries.hpp>
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
+#include <lsSmartPointer.hpp>
 
 /// This algorithm creates a convex hull mesh from a
 /// point cloud. This is done using the gift wrapping approach.
@@ -18,8 +19,8 @@
 template <class T, int D> class lsConvexHull {
   typedef hrleVectorType<unsigned, D - 1> EdgeType;
 
-  lsMesh *mesh = nullptr;
-  lsPointCloud<T, D> *pointCloud = nullptr;
+  lsSmartPointer<lsMesh> mesh = nullptr;
+  lsSmartPointer<lsPointCloud<T, D>> pointCloud = nullptr;
   std::vector<EdgeType> visitedEdges;
   std::vector<hrleVectorType<unsigned, D>> hullElements;
   std::list<EdgeType> remainingEdges;
@@ -266,13 +267,14 @@ template <class T, int D> class lsConvexHull {
 public:
   lsConvexHull() {}
 
-  lsConvexHull(lsMesh &passedMesh, lsPointCloud<T, D> &passedPointCloud)
-      : mesh(&passedMesh), pointCloud(&passedPointCloud) {}
+  lsConvexHull(lsSmartPointer<lsMesh> passedMesh,
+               lsSmartPointer<lsPointCloud<T, D>> passedPointCloud)
+      : mesh(passedMesh), pointCloud(passedPointCloud) {}
 
-  void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh> passedMesh) { mesh = passedMesh; }
 
-  void setPointCloud(lsPointCloud<T, D> &passedPointCloud) {
-    pointCloud = &passedPointCloud;
+  void setPointCloud(lsSmartPointer<lsPointCloud<T, D>> passedPointCloud) {
+    pointCloud = passedPointCloud;
   }
 
   void apply() {
@@ -413,5 +415,8 @@ public:
     }
   }
 };
+
+// add all template specialisations for this class
+PRECOMPILE_PRECISION_DIMENSION(lsConvexHull)
 
 #endif // LS_CONVEX_HULL_HPP

@@ -16,8 +16,8 @@
 template <class T, int D> class lsToVoxelMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
 
-  std::vector<const lsDomain<T, D> *> levelSets;
-  lsMesh *mesh = nullptr;
+  std::vector<lsSmartPointer<lsDomain<T, D>>> levelSets;
+  lsSmartPointer<lsMesh> mesh = nullptr;
   hrleVectorType<hrleIndexType, D> minIndex, maxIndex;
 
   void calculateBounds() {
@@ -44,16 +44,18 @@ template <class T, int D> class lsToVoxelMesh {
 public:
   lsToVoxelMesh() {}
 
-  lsToVoxelMesh(lsMesh &passedMesh) : mesh(&passedMesh) {}
+  lsToVoxelMesh(lsSmartPointer<lsMesh> passedMesh) : mesh(passedMesh) {}
 
-  lsToVoxelMesh(const lsDomain<T, D> &passedLevelSet, lsMesh &passedMesh)
-      : mesh(&passedMesh) {
-    levelSets.push_back(&passedLevelSet);
+  lsToVoxelMesh(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+                lsSmartPointer<lsMesh> passedMesh)
+      : mesh(passedMesh) {
+    levelSets.push_back(passedLevelSet);
   }
 
-  lsToVoxelMesh(const std::vector<const lsDomain<T, D> *> &passedLevelSets,
-                lsMesh &passedMesh)
-      : mesh(&passedMesh) {
+  lsToVoxelMesh(
+      const std::vector<lsSmartPointer<lsDomain<T, D>>> passedLevelSets,
+      lsSmartPointer<lsMesh> passedMesh)
+      : mesh(passedMesh) {
     levelSets = passedLevelSets;
   }
 
@@ -61,11 +63,11 @@ public:
   /// If more than one are specified, the voxels will be marked
   /// using a material number for each level set and output into
   /// a single mesh.
-  void insertNextLevelSet(const lsDomain<T, D> &passedLevelSet) {
-    levelSets.push_back(&passedLevelSet);
+  void insertNextLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
+    levelSets.push_back(passedLevelSet);
   }
 
-  void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh> passedMesh) { mesh = passedMesh; }
 
   void apply() {
     if (levelSets.size() < 1) {
