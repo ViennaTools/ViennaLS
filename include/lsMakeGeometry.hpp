@@ -96,11 +96,18 @@ public:
     geometry = lsGeometryEnum::CUSTOM;
   }
 
-  void setIgnoreBoundaryConditions(bool &passedIgnoreBoundaryConditions) {
+  void setIgnoreBoundaryConditions(bool passedIgnoreBoundaryConditions) {
     ignoreBoundaryConditions = passedIgnoreBoundaryConditions;
   }
 
   void apply() {
+    if (levelSet == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No level set was passed to lsMakeGeometry.")
+          .print();
+      return;
+    }
+
     switch (geometry) {
     case lsGeometryEnum::SPHERE:
       makeSphere(sphere->origin, sphere->radius);
