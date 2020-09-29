@@ -12,7 +12,7 @@
 int main() {
   omp_set_num_threads(1);
 
-  constexpr int D = 2;
+  constexpr int D = 3;
   typedef double NumericType;
 
   double gridDelta = 1.0;
@@ -52,14 +52,25 @@ int main() {
       lsSmartPointer<lsSphere<NumericType, D>>::New(origin, radius))
       .apply();
 
+  lsBooleanOperation<NumericType, D>(substrate, secondSphere,
+                                     lsBooleanOperationEnum::UNION)
+      .apply();
+
   lsExpand<NumericType, D>(substrate, 3).apply();
   lsExpand<NumericType, D>(secondSphere, 3).apply();
+
+  auto mesh = lsSmartPointer<lsMesh>::New();
+  lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
+  lsVTKWriter(mesh, "surface_1.vtk").apply();
+  lsToSurfaceMesh<NumericType, D>(secondSphere, mesh).apply();
+  lsVTKWriter(mesh, "surface_2.vtk").apply();
 
   auto visualizeMesh =
       lsSmartPointer<lsWriteVisualizationMesh<NumericType, D>>::New();
   visualizeMesh->insertNextLevelSet(secondSphere);
   visualizeMesh->insertNextLevelSet(substrate);
-  
+  visualizeMesh->setExtractHullMesh(true);
+  visualizeMesh->setFileName("myFile");
 
   visualizeMesh->apply();
 

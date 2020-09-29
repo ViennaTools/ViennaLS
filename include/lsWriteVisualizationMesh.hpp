@@ -24,19 +24,27 @@
 #include <lsDomain.hpp>
 #include <lsMessage.hpp>
 
-//#define DEBUGOUTPUT
+//#define LS_TO_VISUALIZATION_DEBUG
 #ifdef LS_TO_VISUALIZATION_DEBUG
 #include <vtkXMLRectilinearGridWriter.h>
 #include <vtkXMLUnstructuredGridWriter.h>
 #endif
 
+/// This algorithm is used to extract tetrahedral volume meshes and triangle
+/// hull meshes with material numbers sorted by order of input of level sets. It
+/// should ONLY BE USED FOR VISUALIZATION because the algorithm does not
+/// guarantee manifold meshes, which should not be a problem for visualization.
+/// In order to obtain a hull triangle mesh from the outline of each material,
+/// use setExtractHull(true).
 template <class T, int D> class lsWriteVisualizationMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
   using LevelSetsType = std::vector<lsSmartPointer<lsDomain<T, D>>>;
   LevelSetsType levelSets;
+  std::string fileName;
   bool extractVolumeMesh = true;
   bool extractHullMesh = false;
   bool bottomRemoved = false;
+  static constexpr double LSEpsilon = 1e-2;
 
   /// This function removes duplicate points and agjusts the pointIDs in the
   /// cells
@@ -220,7 +228,7 @@ template <class T, int D> class lsWriteVisualizationMesh {
     auto &grid = levelSet->getGrid();
     auto &domain = levelSet->getDomain();
     double gridDelta = grid.getGridDelta();
-    unsigned numLayers = levelSet->getLevelSetWidth();
+    int numLayers = levelSet->getLevelSetWidth();
 
     vtkSmartPointer<vtkFloatArray>
         coords[3]; // needs to be 3 because vtk only knows 3D
@@ -308,12 +316,12 @@ template <class T, int D> class lsWriteVisualizationMesh {
             signedDistances->GetDataTypeValueMax());
       } else {
         // if inside domain just write the correct value
-        value = (it.isFinished()) ? (lsDomain<T, D>::POS_VALUE)
-                                  : it.getValue() + LSOffset;
-        if (value == lsDomain<T, D>::POS_VALUE) {
+        if (it.getValue() == lsDomain<T, D>::POS_VALUE || it.isFinished()) {
           value = numLayers;
-        } else if (value == lsDomain<T, D>::NEG_VALUE) {
+        } else if (it.getValue() == lsDomain<T, D>::NEG_VALUE) {
           value = -numLayers;
+        } else {
+          value = it.getValue() + LSOffset;
         }
 
         if (removeBottom) {
@@ -406,14 +414,21 @@ public:
     levelSets.push_back(levelSet);
   }
 
+  /// Level sets wrapping other level sets have to be inserted last.
   void insertNextLevelSet(lsSmartPointer<lsDomain<T, D>> levelSet) {
     levelSets.push_back(levelSet);
   }
 
+  /// Set the name of the file to export. For volume meshes "_volume.vtu" will
+  /// be appended, for hull meshes "_hull.vtp".
+  void setFileName(std::string passedFileName) { fileName = passedFileName; }
+
+  /// Whether to extract a hull mesh. Defaults to false
   void setExtractHullMesh(bool passedExtractHullMesh) {
     extractHullMesh = passedExtractHullMesh;
   }
 
+  /// Whether to extract a tetra volume mesh. Defaults to true.
   void setExtractVolumeMesh(bool passedExtractVolumeMesh) {
     extractVolumeMesh = passedExtractVolumeMesh;
   }
@@ -457,18 +472,50 @@ public:
     // Use vtkClipDataSet to slice the grid
     vtkSmartPointer<vtkTableBasedClipDataSet> clipper =
         vtkSmartPointer<vtkTableBasedClipDataSet>::New();
+    auto topGrid = vtkSmartPointer<vtkRectilinearGrid>::New();
     if (bottomRemoved) {
-      clipper->SetInputData(LS2RectiLinearGrid<true>(
-          *(levelSets.rbegin()), 0, totalMinimum, totalMaximum));
+      topGrid = LS2RectiLinearGrid<true>(levelSets.back(), 0, totalMinimum,
+                                         totalMaximum);
     } else {
-      clipper->SetInputData(LS2RectiLinearGrid<false>(
-          *(levelSets.rbegin()), 0, totalMinimum, totalMaximum));
+      topGrid = LS2RectiLinearGrid<false>(levelSets.back(), 0, totalMinimum,
+                                          totalMaximum);
     }
+#ifdef LS_TO_VISUALIZATION_DEBUG
+    {
+      auto gwriter = vtkSmartPointer<vtkXMLRectilinearGridWriter>::New();
+      gwriter->SetFileName("./grid_0.vtr");
+      gwriter->SetInputData(topGrid);
+      gwriter->Write();
+      std::cout << "Wrote grid 0" << std::endl;
+    }
+#endif
+    clipper->SetInputData(topGrid);
     clipper->InsideOutOn();
+    clipper->SetValue(0.0);
+    clipper->GenerateClippedOutputOn(); // TODO remove
     clipper->Update();
+
+#ifdef LS_TO_VISUALIZATION_DEBUG
+    {
+      auto gwriter = vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
+      gwriter->SetFileName("./clipped.vtu");
+      gwriter->SetInputData(clipper->GetClippedOutput());
+      gwriter->Write();
+      std::cout << "Wrote clipped" << std::endl;
+    }
+#endif
 
     materialMeshes.push_back(clipper->GetOutput());
     materialIds.push_back(0);
+
+#ifdef LS_TO_VISUALIZATION_DEBUG
+    {
+      auto gwriter = vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
+      gwriter->SetFileName("./probed_0.vtu");
+      gwriter->SetInputData(materialMeshes.front());
+      gwriter->Write();
+    }
+#endif
 
     unsigned counter = 1;
 
@@ -486,11 +533,11 @@ public:
       vtkSmartPointer<vtkRectilinearGrid> rgrid =
           vtkSmartPointer<vtkRectilinearGrid>::New();
       if (bottomRemoved) {
-        rgrid = LS2RectiLinearGrid<true, 1>(*it, -1e-4 * counter, totalMinimum,
-                                            totalMaximum);
+        rgrid = LS2RectiLinearGrid<true, 1>(*it, -LSEpsilon * counter,
+                                            totalMinimum, totalMaximum);
       } else {
-        rgrid = LS2RectiLinearGrid<false, 1>(*it, -1e-4 * counter, totalMinimum,
-                                             totalMaximum);
+        rgrid = LS2RectiLinearGrid<false, 1>(*it, -LSEpsilon * counter,
+                                             totalMinimum, totalMaximum);
       }
 
 #ifdef LS_TO_VISUALIZATION_DEBUG
@@ -508,7 +555,7 @@ public:
       // now transfer implicit values to mesh points
       vtkSmartPointer<vtkProbeFilter> probeFilter =
           vtkSmartPointer<vtkProbeFilter>::New();
-      probeFilter->SetInputData(*(materialMeshes.rbegin())); // last element
+      probeFilter->SetInputData(materialMeshes.back()); // last element
       probeFilter->SetSourceData(rgrid);
       probeFilter->Update();
 
@@ -637,7 +684,7 @@ public:
       removeDegenerateTetras(volumeVTK);
 
       auto writer = vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
-      writer->SetFileName("test.vtu");
+      writer->SetFileName((fileName + "_volume.vtu").c_str());
       writer->SetInputData(volumeVTK);
       writer->Write();
     }
@@ -657,7 +704,7 @@ public:
       hullVTK = hullTriangleFilter->GetOutput();
 
       auto writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
-      writer->SetFileName("test.vtp");
+      writer->SetFileName((fileName + "_hull.vtp").c_str());
       writer->SetInputData(hullVTK);
       writer->Write();
     }
