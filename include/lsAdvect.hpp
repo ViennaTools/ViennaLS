@@ -64,6 +64,7 @@ template <class T, int D> class lsAdvect {
   double advectedTime = 0.;
   unsigned numberOfTimeSteps = 0;
   bool saveAdvectionVelocities = false;
+  static constexpr double wrappingLayerEpsilon = 1e-4;
 
   // SFINAE functions needed for StencilLocalLaxFriedrichs
   template <
@@ -503,7 +504,7 @@ template <class T, int D> class lsAdvect {
 
               // if the lower surface is actually outside, i.e. its LS value is
               // lower or equal
-              if (iterators[lowerLevelSetId].getValue() <= value + 1e-9) {
+              if (iterators[lowerLevelSetId].getValue() <= value + wrappingLayerEpsilon) {
                 velocity =
                     scheme(it.getStartIndices(), velocities, lowerLevelSetId);
                 break;
