@@ -46,6 +46,7 @@
 #include <lsToVoxelMesh.hpp>
 #include <lsVTKReader.hpp>
 #include <lsVTKWriter.hpp>
+#include <lsWriteVisualizationMesh.hpp>
 #include <lsWriter.hpp>
 
 // always use double for python export
@@ -829,4 +830,29 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("setFileName", &lsWriter<T, D>::setFileName,
            "Set the filename for the output file.")
       .def("apply", &lsWriter<T, D>::apply, "Write to file.");
+
+  // lsWriteVisualizationMesh
+  pybind11::class_<lsWriteVisualizationMesh<T, D>,
+                   lsSmartPointer<lsWriteVisualizationMesh<T, D>>>(
+      module, "lsWriteVisualizationMesh")
+      // constructors
+      .def(pybind11::init(
+          &lsSmartPointer<lsWriteVisualizationMesh<T, D>>::New<>))
+      .def(pybind11::init(&lsSmartPointer<lsWriteVisualizationMesh<T, D>>::New<
+                          lsSmartPointer<lsDomain<T, D>> &>))
+      // methods
+      .def("insertNextLevelSet",
+           &lsWriteVisualizationMesh<T, D>::insertNextLevelSet,
+           "Insert next level set to convert. Bigger level sets wrapping "
+           "smaller ones, should be inserted last.")
+      .def("setFileName", &lsWriteVisualizationMesh<T, D>::setFileName,
+           "Set Name of File to write.")
+      .def("setExtractHullMesh",
+           &lsWriteVisualizationMesh<T, D>::setExtractHullMesh,
+           "Whether to extract a hull mesh. Defaults to false.")
+      .def("setExtractVolumeMesh",
+           &lsWriteVisualizationMesh<T, D>::setExtractVolumeMesh,
+           " Whether to extract a tetra volume mesh. Defaults to true.")
+      .def("apply", &lsWriteVisualizationMesh<T, D>::apply,
+           "Make and write mesh.");
 }

@@ -7,10 +7,10 @@ var classlsMakeGeometry =
     [ "lsMakeGeometry", "classlsMakeGeometry.html#ad2b2c2016a25e7262a97e6976666e830", null ],
     [ "lsMakeGeometry", "classlsMakeGeometry.html#aa1c8c04abc0b70e706b3aec32147f929", null ],
     [ "apply", "classlsMakeGeometry.html#a3256e05d1dec7d632f0ea1edef69f7b5", null ],
-    [ "setGeometry", "classlsMakeGeometry.html#ae8577b91c8f137e21bcd794dfda76b15", null ],
-    [ "setGeometry", "classlsMakeGeometry.html#a6d81982e885c5c29abdb490b39e85efb", null ],
     [ "setGeometry", "classlsMakeGeometry.html#a98ff25a424649dabde3d19d8fac3782d", null ],
+    [ "setGeometry", "classlsMakeGeometry.html#a6d81982e885c5c29abdb490b39e85efb", null ],
     [ "setGeometry", "classlsMakeGeometry.html#a5a47a33971f2679155076ceb1c861d7b", null ],
-    [ "setIgnoreBoundaryConditions", "classlsMakeGeometry.html#afeef5677702fcd84172a586da19f49c8", null ],
+    [ "setGeometry", "classlsMakeGeometry.html#ae8577b91c8f137e21bcd794dfda76b15", null ],
+    [ "setIgnoreBoundaryConditions", "classlsMakeGeometry.html#a33c32a76da73eb4bb4a8bee39695c680", null ],
     [ "setLevelSet", "classlsMakeGeometry.html#a2fa82849d0c90c231cab6edfc8fe60cc", null ]
 ];

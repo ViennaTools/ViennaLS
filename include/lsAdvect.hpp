@@ -504,7 +504,8 @@ template <class T, int D> class lsAdvect {
 
               // if the lower surface is actually outside, i.e. its LS value is
               // lower or equal
-              if (iterators[lowerLevelSetId].getValue() <= value + wrappingLayerEpsilon) {
+              if (iterators[lowerLevelSetId].getValue() <=
+                  value + wrappingLayerEpsilon) {
                 velocity =
                     scheme(it.getStartIndices(), velocities, lowerLevelSetId);
                 break;

@@ -18,6 +18,8 @@
 #include <vtkTableBasedClipDataSet.h>
 #include <vtkTriangleFilter.h>
 #include <vtkUnstructuredGrid.h>
+#include <vtkXMLPolyDataWriter.h>
+#include <vtkXMLUnstructuredGridWriter.h>
 
 #include <hrleDenseIterator.hpp>
 
@@ -27,7 +29,6 @@
 //#define LS_TO_VISUALIZATION_DEBUG
 #ifdef LS_TO_VISUALIZATION_DEBUG
 #include <vtkXMLRectilinearGridWriter.h>
-#include <vtkXMLUnstructuredGridWriter.h>
 #endif
 
 /// This algorithm is used to extract tetrahedral volume meshes and triangle
@@ -143,7 +144,7 @@ template <class T, int D> class lsWriteVisualizationMesh {
 
     // go through all cells and change point ids to match the new ids
     for (vtkIdType cellId = 0; cellId < ugrid->GetNumberOfCells(); ++cellId) {
-      vtkIdList *cellPoints = vtkIdList::New();
+      vtkSmartPointer<vtkIdList> cellPoints = vtkSmartPointer<vtkIdList>::New();
       ugrid->GetCellPoints(cellId, cellPoints);
       for (vtkIdType pointId = 0; pointId < cellPoints->GetNumberOfIds();
            ++pointId) {
@@ -183,7 +184,7 @@ template <class T, int D> class lsWriteVisualizationMesh {
 
     // go through all cells and delete those with duplicate entries
     for (vtkIdType cellId = 0; cellId < ugrid->GetNumberOfCells(); ++cellId) {
-      vtkIdList *cellPoints = vtkIdList::New();
+      vtkSmartPointer<vtkIdList> cellPoints = vtkSmartPointer<vtkIdList>::New();
       ugrid->GetCellPoints(cellId, cellPoints);
       bool isDuplicate = false;
       for (vtkIdType pointId = 0; pointId < cellPoints->GetNumberOfIds();
@@ -436,11 +437,11 @@ public:
   void apply() {
     // check if level sets have enough layers
     for (unsigned i = 0; i < levelSets.size(); ++i) {
-      if (levelSets[i]->getLevelSetWidth() < 3) {
+      if (levelSets[i]->getLevelSetWidth() < 2) {
         lsMessage::getInstance()
-            .addWarning("lsWriteVisualizationMesh: Level Set " +
-                        std::to_string(i) +
-                        " should have a width greater than 2! Conversion might fail!")
+            .addWarning(
+                "lsWriteVisualizationMesh: Level Set " + std::to_string(i) +
+                " should have a width greater than 1! Conversion might fail!")
             .print();
       }
     }
@@ -707,6 +708,9 @@ public:
     }
   }
 };
+
+// add all template specialisations for this class
+PRECOMPILE_PRECISION_DIMENSION(lsWriteVisualizationMesh)
 
 #endif // LS_TO_VISUALIZATION_MESH_HPP
 #endif // VIENNALS_USE_VTK
