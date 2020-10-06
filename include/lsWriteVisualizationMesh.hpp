@@ -440,7 +440,7 @@ public:
         lsMessage::getInstance()
             .addWarning("lsWriteVisualizationMesh: Level Set " +
                         std::to_string(i) +
-                        " must have a width greater than 2! Not converting!")
+                        " should have a width greater than 2! Conversion might fail!")
             .print();
       }
     }
@@ -525,9 +525,6 @@ public:
          it != levelSets.rend(); ++it) {
       if (it->get()->getNumberOfPoints() == 0)
         continue; // ignore empty levelSets
-
-      assert(it->get()->getLevelSetWidth() >=
-             numLayers); // check if enough information
 
       // create grid of next LS with slight offset and project into current mesh
       vtkSmartPointer<vtkRectilinearGrid> rgrid =
