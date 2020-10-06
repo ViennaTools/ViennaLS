@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['_7elsgeometricadvectdistribution_560',['~lsGeometricAdvectDistribution',['../classlsGeometricAdvectDistribution.html#af1cac2fe8eb887b30165fe636b719d67',1,'lsGeometricAdvectDistribution']]],
-  ['_7elsvelocityfield_561',['~lsVelocityField',['../classlsVelocityField.html#a584c90d1d3e35d43e657a57ecaa12d45',1,'lsVelocityField']]]
+  ['_7elsgeometricadvectdistribution_567',['~lsGeometricAdvectDistribution',['../classlsGeometricAdvectDistribution.html#af1cac2fe8eb887b30165fe636b719d67',1,'lsGeometricAdvectDistribution']]],
+  ['_7elsvelocityfield_568',['~lsVelocityField',['../classlsVelocityField.html#a584c90d1d3e35d43e657a57ecaa12d45',1,'lsVelocityField']]]
 ];

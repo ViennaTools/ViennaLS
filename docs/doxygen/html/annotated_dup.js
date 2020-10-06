@@ -37,5 +37,6 @@ var annotated_dup =
     [ "lsVelocityField", "classlsVelocityField.html", "classlsVelocityField" ],
     [ "lsVTKReader", "classlsVTKReader.html", "classlsVTKReader" ],
     [ "lsVTKWriter", "classlsVTKWriter.html", "classlsVTKWriter" ],
-    [ "lsWriter", "classlsWriter.html", "classlsWriter" ]
+    [ "lsWriter", "classlsWriter.html", "classlsWriter" ],
+    [ "lsWriteVisualizationMesh", "classlsWriteVisualizationMesh.html", "classlsWriteVisualizationMesh" ]
 ];

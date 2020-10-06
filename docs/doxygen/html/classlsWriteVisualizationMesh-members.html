@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.16"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>ViennaLS: include/lsWriteVisualizationMesh.hpp File Reference</title>
+<title>ViennaLS: Member List</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -67,7 +67,7 @@ $(function() {
 </div>
 <script type="text/javascript">
 /* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
-$(document).ready(function(){initNavTree('lsWriteVisualizationMesh_8hpp.html','');});
+$(document).ready(function(){initNavTree('classlsWriteVisualizationMesh.html','');});
 /* @license-end */
 </script>
 <div id="doc-content">
@@ -86,45 +86,25 @@ $(document).ready(function(){initNavTree('lsWriteVisualizationMesh_8hpp.html',''
 </div>
 
 <div class="header">
-  <div class="summary">
-<a href="#nested-classes">Classes</a>  </div>
   <div class="headertitle">
-<div class="title">lsWriteVisualizationMesh.hpp File Reference</div>  </div>
+<div class="title">lsWriteVisualizationMesh&lt; T, D &gt; Member List</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &lt;vtkAppendFilter.h&gt;</code><br />
-<code>#include &lt;vtkAppendPolyData.h&gt;</code><br />
-<code>#include &lt;vtkCellData.h&gt;</code><br />
-<code>#include &lt;vtkDataSetTriangleFilter.h&gt;</code><br />
-<code>#include &lt;vtkFloatArray.h&gt;</code><br />
-<code>#include &lt;vtkGeometryFilter.h&gt;</code><br />
-<code>#include &lt;vtkIncrementalOctreePointLocator.h&gt;</code><br />
-<code>#include &lt;vtkIntArray.h&gt;</code><br />
-<code>#include &lt;vtkPointData.h&gt;</code><br />
-<code>#include &lt;vtkProbeFilter.h&gt;</code><br />
-<code>#include &lt;vtkRectilinearGrid.h&gt;</code><br />
-<code>#include &lt;vtkSmartPointer.h&gt;</code><br />
-<code>#include &lt;vtkTableBasedClipDataSet.h&gt;</code><br />
-<code>#include &lt;vtkTriangleFilter.h&gt;</code><br />
-<code>#include &lt;vtkUnstructuredGrid.h&gt;</code><br />
-<code>#include &lt;vtkXMLPolyDataWriter.h&gt;</code><br />
-<code>#include &lt;vtkXMLUnstructuredGridWriter.h&gt;</code><br />
-<code>#include &lt;hrleDenseIterator.hpp&gt;</code><br />
-<code>#include &lt;<a class="el" href="lsDomain_8hpp.html">lsDomain.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="lsMessage_8hpp.html">lsMessage.hpp</a>&gt;</code><br />
-</div><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
-Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsWriteVisualizationMesh.html">lsWriteVisualizationMesh&lt; T, D &gt;</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This algorithm is used to extract tetrahedral volume meshes and triangle hull meshes with material numbers sorted by order of input of level sets. It should ONLY BE USED FOR VISUALIZATION because the algorithm does not guarantee manifold meshes, which should not be a problem for visualization. In order to obtain a hull triangle mesh from the outline of each material, use setExtractHull(true).  <a href="classlsWriteVisualizationMesh.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table>
-</div><!-- contents -->
+
+<p>This is the complete list of members for <a class="el" href="classlsWriteVisualizationMesh.html">lsWriteVisualizationMesh&lt; T, D &gt;</a>, including all inherited members.</p>
+<table class="directory">
+  <tr class="even"><td class="entry"><a class="el" href="classlsWriteVisualizationMesh.html#ae1674518ec3ce27c909ca832c68c38e7">apply</a>()</td><td class="entry"><a class="el" href="classlsWriteVisualizationMesh.html">lsWriteVisualizationMesh&lt; T, D &gt;</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr><td class="entry"><a class="el" href="classlsWriteVisualizationMesh.html#afe742c6069ef467a7c3c90f8fd1b1425">insertNextLevelSet</a>(lsSmartPointer&lt; lsDomain&lt; T, D &gt;&gt; levelSet)</td><td class="entry"><a class="el" href="classlsWriteVisualizationMesh.html">lsWriteVisualizationMesh&lt; T, D &gt;</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classlsWriteVisualizationMesh.html#ae94323fb9a6461cc62d1d6f566eb1a05">lsWriteVisualizationMesh</a>()</td><td class="entry"><a class="el" href="classlsWriteVisualizationMesh.html">lsWriteVisualizationMesh&lt; T, D &gt;</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr><td class="entry"><a class="el" href="classlsWriteVisualizationMesh.html#a3d05328ba2720fa4d5c6f067e7dbb395">lsWriteVisualizationMesh</a>(lsSmartPointer&lt; lsDomain&lt; T, D &gt;&gt; levelSet)</td><td class="entry"><a class="el" href="classlsWriteVisualizationMesh.html">lsWriteVisualizationMesh&lt; T, D &gt;</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classlsWriteVisualizationMesh.html#a4e7c4966242b49a485339c033bfee7c6">setExtractHullMesh</a>(bool passedExtractHullMesh)</td><td class="entry"><a class="el" href="classlsWriteVisualizationMesh.html">lsWriteVisualizationMesh&lt; T, D &gt;</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr><td class="entry"><a class="el" href="classlsWriteVisualizationMesh.html#a6e9ff4fb3603a1f0f43c71b85a972997">setExtractVolumeMesh</a>(bool passedExtractVolumeMesh)</td><td class="entry"><a class="el" href="classlsWriteVisualizationMesh.html">lsWriteVisualizationMesh&lt; T, D &gt;</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classlsWriteVisualizationMesh.html#adf13ee153843fdc4336a2209a0167ad6">setFileName</a>(std::string passedFileName)</td><td class="entry"><a class="el" href="classlsWriteVisualizationMesh.html">lsWriteVisualizationMesh&lt; T, D &gt;</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+</table></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a class="el" href="lsWriteVisualizationMesh_8hpp.html">lsWriteVisualizationMesh.hpp</a></li>
     <li class="footer">Generated by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.16 </li>

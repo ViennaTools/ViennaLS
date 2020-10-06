@@ -42,15 +42,16 @@ var hierarchy =
     [ "lsToMesh< T, D >", "classlsToMesh.html", null ],
     [ "lsToSurfaceMesh< T, D >", "classlsToSurfaceMesh.html", null ],
     [ "lsToVoxelMesh< T, D >", "classlsToVoxelMesh.html", null ],
+    [ "lsVelocityField< T >", "classlsVelocityField.html", null ],
     [ "lsVelocityField", null, [
       [ "AirGapDeposition.velocityField", "classAirGapDeposition_1_1velocityField.html", null ],
       [ "Deposition.velocityField", "classDeposition_1_1velocityField.html", null ]
     ] ],
-    [ "lsVelocityField< T >", "classlsVelocityField.html", null ],
     [ "lsVelocityField< double >", "classlsVelocityField.html", null ],
     [ "lsVTKReader", "classlsVTKReader.html", null ],
     [ "lsVTKWriter", "classlsVTKWriter.html", null ],
     [ "lsWriter< T, D >", "classlsWriter.html", null ],
+    [ "lsWriteVisualizationMesh< T, D >", "classlsWriteVisualizationMesh.html", null ],
     [ "shared_ptr", null, [
       [ "lsSmartPointer< T >", "classlsSmartPointer.html", null ],
       [ "lsSmartPointer< const lsGeometricAdvectDistribution< hrleCoordType, D > >", "classlsSmartPointer.html", null ],
