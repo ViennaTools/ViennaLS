@@ -65,57 +65,57 @@ public:
     return hexas;
   }
 
-  unsigned insertNextNode(std::array<double, 3> &node) {
+  unsigned insertNextNode(const std::array<double, 3> &node) {
     nodes.push_back(node);
     return nodes.size() - 1;
   }
 
-  unsigned insertNextVertex(std::array<unsigned, 1> &vertex) {
+  unsigned insertNextVertex(const std::array<unsigned, 1> &vertex) {
     vertices.push_back(vertex);
     return vertices.size() - 1;
   }
 
-  unsigned insertNextLine(std::array<unsigned, 2> &line) {
+  unsigned insertNextLine(const std::array<unsigned, 2> &line) {
     lines.push_back(line);
     return lines.size() - 1;
   }
 
-  unsigned insertNextTriangle(std::array<unsigned, 3> &triangle) {
+  unsigned insertNextTriangle(const std::array<unsigned, 3> &triangle) {
     triangles.push_back(triangle);
     return triangles.size() - 1;
   }
 
-  unsigned insertNextTetra(std::array<unsigned, 4> &tetra) {
+  unsigned insertNextTetra(const std::array<unsigned, 4> &tetra) {
     tetras.push_back(tetra);
     return tetras.size() - 1;
   }
 
-  unsigned insertNextHexa(std::array<unsigned, 8> &hexa) {
+  unsigned insertNextHexa(const std::array<unsigned, 8> &hexa) {
     hexas.push_back(hexa);
     return hexas.size();
   }
 
-  unsigned insertNextElement(std::array<unsigned, 1> &vertex) {
+  unsigned insertNextElement(const std::array<unsigned, 1> &vertex) {
     vertices.push_back(vertex);
     return vertices.size() - 1;
   }
 
-  unsigned insertNextElement(std::array<unsigned, 2> &line) {
+  unsigned insertNextElement(const std::array<unsigned, 2> &line) {
     lines.push_back(line);
     return lines.size() - 1;
   }
 
-  unsigned insertNextElement(std::array<unsigned, 3> &triangle) {
+  unsigned insertNextElement(const std::array<unsigned, 3> &triangle) {
     triangles.push_back(triangle);
     return triangles.size() - 1;
   }
 
-  unsigned insertNextElement(std::array<unsigned, 4> &tetra) {
+  unsigned insertNextElement(const std::array<unsigned, 4> &tetra) {
     tetras.push_back(tetra);
     return tetras.size() - 1;
   }
 
-  unsigned insertNextElement(std::array<unsigned, 8> &hexa) {
+  unsigned insertNextElement(const std::array<unsigned, 8> &hexa) {
     hexas.push_back(hexa);
     return hexas.size();
   }
