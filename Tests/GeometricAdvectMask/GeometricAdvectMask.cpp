@@ -12,7 +12,7 @@
 int main() {
   omp_set_num_threads(4);
 
-  constexpr int D = 3;
+  constexpr int D = 2;
   typedef double NumericType;
   double gridDelta = 1.0;
 
@@ -70,7 +70,8 @@ int main() {
 
 //   set up spherical advection dist
   auto dist =
-      lsSmartPointer<lsSphereDistribution<double, D>>::New(15.0, gridDelta);
+    //   lsSmartPointer<lsSphereDistribution<double, D>>::New(15.0, gridDelta);
+      lsSmartPointer<lsBoxDistribution<NumericType, D>>::New(std::array<NumericType, 3>({gridDelta, 15.0, 0.}), gridDelta);
   lsGeometricAdvect<NumericType, D>(levelSet, dist, mask).apply();
 
   lsToMesh<NumericType, D>(levelSet, mesh).apply();
