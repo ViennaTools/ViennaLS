@@ -112,7 +112,7 @@ public:
   lsBoxDistribution(const std::array<T, 3> &halfAxes, const T delta)
       : posExtent(halfAxes), gridDelta(delta) {
     for (unsigned i = 0; i < D; ++i) {
-      if (posExtent[i] < gridDelta) {
+      if (std::abs(posExtent[i]) < gridDelta) {
         lsMessage::getInstance()
             .addWarning("One half-axis of lsBoxDistribution is smaller than "
                         "the grid Delta! This can lead to numerical errors "

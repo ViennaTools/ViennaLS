@@ -11,6 +11,7 @@
 #include <lsMessage.hpp>
 #include <lsPreCompileMacros.hpp>
 
+#include <lsBooleanOperation.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsFromMesh.hpp>
@@ -112,59 +113,6 @@ public:
     // points shifted to the surface (disk mesh)
     auto surfaceMesh = lsSmartPointer<lsMesh>::New();
     lsToDiskMesh<T, D>(levelSet, surfaceMesh).apply();
-    
-    // set to check for mask points
-    std::unordered_map<hrleVectorType<hrleIndexType, D>, T, typename hrleVectorType<hrleIndexType, D>::hash> maskMap;
-    // If a mask is supplied, remove all contribute points which
-    // lie on (or inside) the mask
-    if(maskLevelSet != nullptr) {
-      std::cout << "Removing mask points" << std::endl;
-      // Go over all contribute points and see if they are on the mask surface
-      auto &maskDomain = maskLevelSet->getDomain();
-      auto values = surfaceMesh->getScalarData("LSValues");
-      auto valueIt = values->begin();
-
-      auto newSurfaceMesh = lsSmartPointer<lsMesh>::New();
-      typename lsPointData::ScalarDataType newValues;
-      hrleConstSparseIterator<DomainType> maskIt(maskDomain);
-      for(auto &node : surfaceMesh->getNodes()) {
-        hrleVectorType<hrleIndexType, D> index;
-        for(unsigned i = 0; i < D; ++i) {
-          index[i] = std::round(node[i] / gridDelta);
-        }
-        // can do sequential, because surfaceNodes are lexicographically sorted
-        // from lsToDiskMesh
-        maskIt.goToIndicesSequential(index);
-        // if it is a mask point, simply add to new mesh
-        if(maskIt.getValue() < *valueIt + 1e-5) {
-            if(maskIt.getValue() < 0.5){
-              // newPoints[0].push_back(
-              // std::make_pair(index, *valueIt));
-              maskMap.insert({index, maskIt.getValue()});
-            }
-        } else { // if not, use node as contribute point
-          newSurfaceMesh->insertNextNode(node);
-          newValues.push_back(*valueIt);
-          // insert vertex
-          std::array<unsigned, 1> vertex;
-          vertex[0] = newSurfaceMesh->nodes.size();
-          newSurfaceMesh->insertNextVertex(vertex);
-        }
-        ++valueIt;
-      }
-      newSurfaceMesh->insertNextScalarData(newValues, "LSValues");
-      // use new mesh as surfaceMesh
-      newSurfaceMesh->minimumExtent = surfaceMesh->minimumExtent;
-      newSurfaceMesh->maximumExtent = surfaceMesh->maximumExtent;
-      surfaceMesh = newSurfaceMesh;
-
-      #ifndef NDEBUG // if in debug build
-      lsVTKWriter(surfaceMesh, "DEBUG_lsGeomAdvectMesh_contributewoMask.vtk").apply();
-      #endif
-    }
-
-    typedef std::vector<std::array<double, 3>> SurfaceNodesType;
-    const SurfaceNodesType &surfaceNodes = surfaceMesh->getNodes();
 
     // find bounds of distribution
     auto distBounds = dist->getBounds();
@@ -227,6 +175,63 @@ public:
       }
     }
 
+    // Remove contribute points if they are part of the mask
+    // If a mask is supplied, remove all contribute points which
+    // lie on (or inside) the mask
+    std::cout << "DistPositive: " << distIsPositive << std::endl;
+    if(maskLevelSet != nullptr) {
+      std::cout << "Using Mask" << std::endl;
+      if(!distIsPositive) {
+        lsBooleanOperation<T, D>(levelSet, maskLevelSet, lsBooleanOperationEnum::RELATIVE_COMPLEMENT).apply();
+      }
+      // Go over all contribute points and see if they are on the mask surface
+      auto &maskDomain = maskLevelSet->getDomain();
+      auto values = surfaceMesh->getScalarData("LSValues");
+      auto valueIt = values->begin();
+
+      auto newSurfaceMesh = lsSmartPointer<lsMesh>::New();
+      typename lsPointData::ScalarDataType newValues;
+      hrleConstSparseIterator<DomainType> maskIt(maskDomain);
+      for(auto &node : surfaceMesh->getNodes()) {
+        hrleVectorType<hrleIndexType, D> index;
+        for(unsigned i = 0; i < D; ++i) {
+          index[i] = std::round(node[i] / gridDelta);
+        }
+        // can do sequential, because surfaceNodes are lexicographically sorted
+        // from lsToDiskMesh
+        maskIt.goToIndicesSequential(index);
+        // if it is a mask point, mark it to maybe use it in new level set
+        // if(maskIt.isDefined() && maskIt.getValue() < *valueIt + 1e-5) {
+          // if(distIsPositive) {
+          //   if(maskIt.getValue() < 0.5){
+          //     maskMap.insert({index, maskIt.getValue()});
+          //   }
+          // }
+        if(!maskIt.isDefined() || !(maskIt.getValue() < *valueIt + 1e-5)) {
+        // } else { // if not, use node as contribute point
+          newSurfaceMesh->insertNextNode(node);
+          newValues.push_back(*valueIt);
+          // insert vertex
+          std::array<unsigned, 1> vertex;
+          vertex[0] = newSurfaceMesh->nodes.size();
+          newSurfaceMesh->insertNextVertex(vertex);
+        }
+        ++valueIt;
+      }
+      newSurfaceMesh->insertNextScalarData(newValues, "LSValues");
+      // use new mesh as surfaceMesh
+      newSurfaceMesh->minimumExtent = surfaceMesh->minimumExtent;
+      newSurfaceMesh->maximumExtent = surfaceMesh->maximumExtent;
+      surfaceMesh = newSurfaceMesh;
+
+      #ifndef NDEBUG // if in debug build
+      lsVTKWriter(surfaceMesh, "DEBUG_lsGeomAdvectMesh_contributewoMask.vtk").apply();
+      #endif
+    }
+
+    typedef std::vector<std::array<double, 3>> SurfaceNodesType;
+    const SurfaceNodesType &surfaceNodes = surfaceMesh->getNodes();
+
     // initialize with segmentation for whole range
     typename hrleDomain<T, D>::hrleIndexPoints segmentation;
 
@@ -285,6 +290,12 @@ public:
 
       hrleConstSparseIterator<DomainType> checkIt(levelSet->getDomain(),
                                                   startVector);
+
+      // Mask It
+      lsSmartPointer<hrleConstSparseIterator<DomainType>> maskIt = nullptr;
+      if(maskLevelSet != nullptr) {
+        maskIt = lsSmartPointer<hrleConstSparseIterator<DomainType>>::New(maskLevelSet->getDomain(), startVector);
+      }
 
       // Iterate through the bounds of new lsDomain lexicographically
       for (hrleVectorType<hrleIndexType, D> currentIndex = startVector;
@@ -378,13 +389,25 @@ public:
           }
         }
 
-        // if point is part of the mask, keep old value
+        // if point is part of the mask, keep smaller value
         if(maskLevelSet != nullptr) {
-          auto maskPointIt = maskMap.find(currentIndex);
-          if(maskPointIt != maskMap.end()) {
-            distance = std::min(maskPointIt->second, distance);
+          maskIt->goToIndicesSequential(currentIndex);
+          if(maskIt->isDefined()) {
+            if(distIsPositive) {
+              distance = std::min(maskIt->getDefinedValue(), distance);
+            } else {
+              distance = std::max(-maskIt->getDefinedValue(), distance);
+            }
           }
-        
+
+          // auto maskPointIt = maskMap.find(currentIndex);
+          // if(maskPointIt != maskMap.end()) {
+          //   // if(distIsPositive) {
+          //     distance = std::min(maskPointIt->second, distance);
+          //   // } else {
+          //   //   distance = std::max(maskPointIt->second, distance);
+          //   // }
+          // }
         }
 
         if (std::abs(distance) <= cutoffValue) {
