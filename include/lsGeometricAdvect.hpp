@@ -178,9 +178,7 @@ public:
     // Remove contribute points if they are part of the mask
     // If a mask is supplied, remove all contribute points which
     // lie on (or inside) the mask
-    std::cout << "DistPositive: " << distIsPositive << std::endl;
     if(maskLevelSet != nullptr) {
-      std::cout << "Using Mask" << std::endl;
       if(!distIsPositive) {
         lsBooleanOperation<T, D>(levelSet, maskLevelSet, lsBooleanOperationEnum::RELATIVE_COMPLEMENT).apply();
       }

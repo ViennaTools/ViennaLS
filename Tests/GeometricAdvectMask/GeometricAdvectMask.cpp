@@ -72,7 +72,7 @@ int main() {
   auto dist =
       // lsSmartPointer<lsSphereDistribution<double, D>>::New(-15.0, gridDelta);
       lsSmartPointer<lsBoxDistribution<NumericType, D>>::New(std::array<NumericType, 3>({-gridDelta, -15.0, -gridDelta}), gridDelta);
-  lsGeometricAdvect<NumericType, D>(levelSet, dist).apply();
+  lsGeometricAdvect<NumericType, D>(levelSet, dist, mask).apply();
 
   lsToMesh<NumericType, D>(levelSet, mesh).apply();
   lsVTKWriter(mesh, "afterDepoLS.vtk").apply();
