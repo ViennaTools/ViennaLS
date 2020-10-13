@@ -37,6 +37,9 @@ public:
           .print();
       return;
     }
+    if(levelSet->getNumberOfPoints() == 0) {
+      return;
+    }
 
     auto &grid = levelSet->getGrid();
     auto newlsDomain = lsSmartPointer<lsDomain<T, D>>::New(grid);

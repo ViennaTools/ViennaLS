@@ -112,7 +112,7 @@ public:
   lsBoxDistribution(const std::array<T, 3> &halfAxes, const T delta)
       : posExtent(halfAxes), gridDelta(delta) {
     for (unsigned i = 0; i < D; ++i) {
-      if (posExtent[i] < gridDelta) {
+      if (std::abs(posExtent[i]) < gridDelta) {
         lsMessage::getInstance()
             .addWarning("One half-axis of lsBoxDistribution is smaller than "
                         "the grid Delta! This can lead to numerical errors "
@@ -126,7 +126,7 @@ public:
                 const std::array<hrleCoordType, 3> &candidate,
                 double eps = 0.) const {
     for (unsigned i = 0; i < D; ++i) {
-      if (std::abs(candidate[i] - initial[i]) > (posExtent[i] + eps)) {
+      if (std::abs(candidate[i] - initial[i]) > (std::abs(posExtent[i]) + eps)) {
         return false;
       }
     }
@@ -138,9 +138,9 @@ public:
     T distance = std::numeric_limits<T>::lowest();
     for (unsigned i = 0; i < D; ++i) {
       T vector = std::abs(candidate[i] - initial[i]);
-      distance = std::max(vector - posExtent[i], distance);
+      distance = std::max(vector - std::abs(posExtent[i]), distance);
     }
-    return distance;
+    return (posExtent[0]<0)?-distance:distance;
   }
 
   std::array<hrleCoordType, 6> getBounds() const {

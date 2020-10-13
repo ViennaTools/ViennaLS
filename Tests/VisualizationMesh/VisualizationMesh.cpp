@@ -10,7 +10,7 @@
 #include <lsWriteVisualizationMesh.hpp>
 
 int main() {
-  omp_set_num_threads(1);
+  omp_set_num_threads(4);
 
   constexpr int D = 3;
   typedef double NumericType;

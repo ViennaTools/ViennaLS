@@ -44,6 +44,10 @@ public:
           .print();
     }
 
+    if(levelSet->getNumberOfPoints() == 0) {
+      return;
+    }
+
     const T totalLimit = width * 0.5;
     const int startWidth = levelSet->getLevelSetWidth();
     const int numberOfRequiredCycles = width - startWidth;
