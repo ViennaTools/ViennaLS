@@ -98,16 +98,11 @@ public:
     }
 
     typedef typename lsDomain<T, D>::DomainType DomainType;
-    // typedef std::vector<std::pair<hrleVectorType<hrleIndexType, D>, T>>
-    //     PointValueVector;
 
     auto &domain = levelSet->getDomain();
 
     auto &grid = levelSet->getGrid();
     auto gridDelta = grid.getGridDelta();
-
-    // std::vector<PointValueVector> newPoints;
-    // newPoints.resize(domain.getNumberOfSegments());
 
     // Extract the original surface as a point cloud of grid
     // points shifted to the surface (disk mesh)
@@ -199,14 +194,7 @@ public:
         // from lsToDiskMesh
         maskIt.goToIndicesSequential(index);
         // if it is a mask point, mark it to maybe use it in new level set
-        // if(maskIt.isDefined() && maskIt.getValue() < *valueIt + 1e-5) {
-          // if(distIsPositive) {
-          //   if(maskIt.getValue() < 0.5){
-          //     maskMap.insert({index, maskIt.getValue()});
-          //   }
-          // }
         if(!maskIt.isDefined() || !(maskIt.getValue() < *valueIt + 1e-5)) {
-        // } else { // if not, use node as contribute point
           newSurfaceMesh->insertNextNode(node);
           newValues.push_back(*valueIt);
           // insert vertex
@@ -289,7 +277,7 @@ public:
       hrleConstSparseIterator<DomainType> checkIt(levelSet->getDomain(),
                                                   startVector);
 
-      // Mask It
+      // Mask iterator for checking whether inside mask or not
       lsSmartPointer<hrleConstSparseIterator<DomainType>> maskIt = nullptr;
       if(maskLevelSet != nullptr) {
         maskIt = lsSmartPointer<hrleConstSparseIterator<DomainType>>::New(maskLevelSet->getDomain(), startVector);
@@ -397,15 +385,6 @@ public:
               distance = std::max(-maskIt->getDefinedValue(), distance);
             }
           }
-
-          // auto maskPointIt = maskMap.find(currentIndex);
-          // if(maskPointIt != maskMap.end()) {
-          //   // if(distIsPositive) {
-          //     distance = std::min(maskPointIt->second, distance);
-          //   // } else {
-          //   //   distance = std::max(maskPointIt->second, distance);
-          //   // }
-          // }
         }
 
         if (std::abs(distance) <= cutoffValue) {
