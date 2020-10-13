@@ -15,7 +15,6 @@
 /// possible.
 template <class T, int D> class lsPrune {
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
-  const double numericEps = 1e-9;
 
 public:
   lsPrune() {}
@@ -70,12 +69,14 @@ public:
                neighborIt(domain, startVector);
            neighborIt.getIndices() < endVector; neighborIt.next()) {
         auto &centerIt = neighborIt.getCenter();
-        bool centerSign = centerIt.getValue() < 0;
+        bool centerSign = std::signbit(centerIt.getValue());
         if (centerIt.isDefined()) {
           int i = 0;
           for (; i < 2 * D; i++) {
-            if ((neighborIt.getNeighbor(i).getValue() < 0 + numericEps) !=
-                centerSign)
+            // Use signbit here instead of numericEps because it makes a clearer cut
+            // between negative and positive numbers. Eps resulted in problems with
+            // exact 0.0 LS values.
+            if(std::signbit(neighborIt.getNeighbor(i).getValue()) != centerSign)
               break;
           }
           if (i != 2 * D) {
