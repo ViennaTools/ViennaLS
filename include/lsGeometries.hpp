@@ -76,6 +76,38 @@ public:
       : minCorner(passedMinCorner), maxCorner(passedMaxCorner) {}
 };
 
+/// Class describing a square box from one coordinate to another.
+template <class T, int D> class lsCylinder {
+public:
+/// This is the location of the center of the base of the cylinder
+  hrleVectorType<T, D> origin = hrleVectorType<T, D>(T(0));
+  /// This vector will be the axis of the cylinder
+  hrleVectorType<T, D> axisDirection = hrleVectorType<T, D>(T(0));
+  /// height of the cylinder
+  T height = 0.;
+  /// radius of the base of the cylinder
+  T radius = 0.;
+
+  lsCylinder() {}
+
+  lsCylinder(hrleVectorType<T, D> passedOrigin, 
+        hrleVectorType<T, D> passedAxisDirection, T passedHeight, T passedRadius)
+      : origin(passedOrigin), axisDirection(passedAxisDirection), height(passedHeight), radius(passedRadius) {}
+
+  lsCylinder(T* passedOrigin, 
+    T* passedAxisDirection, T passedHeight, T passedRadius)
+  : height(passedHeight), radius(passedRadius) {
+    for(unsigned i = 0; i < D; ++i) {
+      origin[i] = passedOrigin[i];
+      axisDirection[i] = passedAxisDirection[i];
+    }
+  }
+
+  lsCylinder(std::vector<T> passedOrigin, 
+        std::vector<T> passedAxisDirection, T passedHeight, T passedRadius)
+      : origin(passedOrigin), axisDirection(passedAxisDirection), height(passedHeight), radius(passedRadius) {}
+};
+
 /// Class describing a point cloud, which can be used to
 /// create geometries from its convex hull mesh.
 template <class T, int D> class lsPointCloud {

@@ -17,6 +17,7 @@
 #include <lsSmartPointer.hpp>
 
 // Integration schemes
+#include <lsConcepts.hpp>
 #include <lsEnquistOsher.hpp>
 #include <lsLaxFriedrichs.hpp>
 #include <lsLocalLaxFriedrichs.hpp>
@@ -66,21 +67,17 @@ template <class T, int D> class lsAdvect {
   bool saveAdvectionVelocities = false;
   static constexpr double wrappingLayerEpsilon = 1e-4;
 
-  // SFINAE functions needed for StencilLocalLaxFriedrichs
-  template <
-      class IntegrationSchemeType,
-      typename std::enable_if<
-          !std::is_same<lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>,
-                        IntegrationSchemeType>::value,
-          std::nullptr_t>::type = nullptr>
+  template <class IntegrationSchemeType,
+            lsConcepts::IsNotSame<
+                IntegrationSchemeType,
+                lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>> =
+                lsConcepts::assignable>
   void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &, double &) {}
 
-  template <
-      class IntegrationSchemeType,
-      typename std::enable_if<
-          std::is_same<lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>,
-                       IntegrationSchemeType>::value,
-          std::nullptr_t>::type = nullptr>
+  template <class IntegrationSchemeType,
+            lsConcepts::IsSame<IntegrationSchemeType,
+                                lsInternal::lsStencilLocalLaxFriedrichsScalar<
+                                    T, D, 1>> = lsConcepts::assignable>
   void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &scheme,
                                     double &MaxTimeStep) {
     const double alpha_maxCFL = 1.0;
@@ -660,13 +657,17 @@ public:
         std::dynamic_pointer_cast<lsVelocityField<T>>(passedVelocities);
   }
 
-  template <class VelocityField>
+  template <class VelocityField,
+            lsConcepts::IsBaseOf<lsVelocityField<T>, VelocityField> =
+                lsConcepts::assignable>
   lsAdvect(lsSmartPointer<VelocityField> passedVelocities) {
     velocities =
         std::dynamic_pointer_cast<lsVelocityField<T>>(passedVelocities);
   }
 
-  template <class VelocityField>
+  template <class VelocityField,
+            lsConcepts::IsBaseOf<lsVelocityField<T>, VelocityField> =
+                lsConcepts::assignable>
   lsAdvect(std::vector<lsSmartPointer<lsDomain<T, D>>> passedlsDomains,
            lsSmartPointer<VelocityField> passedVelocities)
       : levelSets(passedlsDomains) {
@@ -682,7 +683,9 @@ public:
 
   /// Set the velocity field used for advection. This should be a concrete
   /// implementation of lsVelocityField
-  template <class VelocityField>
+  template <class VelocityField,
+            lsConcepts::IsBaseOf<lsVelocityField<T>, VelocityField> =
+                lsConcepts::assignable>
   void setVelocityField(lsSmartPointer<VelocityField> passedVelocities) {
     velocities =
         std::dynamic_pointer_cast<lsVelocityField<T>>(passedVelocities);

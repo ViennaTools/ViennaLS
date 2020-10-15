@@ -12,6 +12,7 @@
 #include <lsPreCompileMacros.hpp>
 
 #include <lsBooleanOperation.hpp>
+#include <lsConcepts.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsFromMesh.hpp>
@@ -27,8 +28,8 @@
 /// cells within this distribution are then filled, with cells at the edge
 /// marked with the correct level set values. Therefore, the surface can be
 /// shifted long distances in one step. This algorithm is therefore preferable
-/// to normal advection if there is growth/reduction by a purely geometric directional
-/// distribution.
+/// to normal advection if there is growth/reduction by a purely geometric
+/// directional distribution.
 template <class T, int D> class lsGeometricAdvect {
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
   lsSmartPointer<lsDomain<T, D>> maskLevelSet = nullptr;
@@ -51,9 +52,12 @@ template <class T, int D> class lsGeometricAdvect {
 public:
   lsGeometricAdvect() {}
 
-  template <class DistType>
+  template <class DistType,
+            lsConcepts::IsBaseOf<lsGeometricAdvectDistribution<T, D>,
+                                   DistType> = lsConcepts::assignable>
   lsGeometricAdvect(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-                    lsSmartPointer<DistType> passedDist, lsSmartPointer<lsDomain<T, D>> passedMaskLevelSet = nullptr)
+                    lsSmartPointer<DistType> passedDist,
+                    lsSmartPointer<lsDomain<T, D>> passedMaskLevelSet = nullptr)
       : levelSet(passedLevelSet), maskLevelSet(passedMaskLevelSet) {
     dist = std::dynamic_pointer_cast<
         lsGeometricAdvectDistribution<hrleCoordType, D>>(passedDist);
@@ -66,10 +70,12 @@ public:
 
   /// Set which advection distribution to use. Must be derived from
   /// lsGeometricAdvectDistribution.
-  template <class DistType>
+  template <class DistType,
+            lsConcepts::IsBaseOf<lsGeometricAdvectDistribution<T, D>,
+                                   DistType> = lsConcepts::assignable>
   void setAdvectionDistribution(lsSmartPointer<DistType> passedDist) {
-    dist = std::dynamic_pointer_cast<
-        lsGeometricAdvectDistribution<hrleCoordType, D>>(passedDist);
+    dist = std::dynamic_pointer_cast<lsGeometricAdvectDistribution<T, D>>(
+        passedDist);
   }
 
   /// Set the levelset, which should be used as a mask. This level set
@@ -173,9 +179,11 @@ public:
     // Remove contribute points if they are part of the mask
     // If a mask is supplied, remove all contribute points which
     // lie on (or inside) the mask
-    if(maskLevelSet != nullptr) {
-      if(!distIsPositive) {
-        lsBooleanOperation<T, D>(levelSet, maskLevelSet, lsBooleanOperationEnum::RELATIVE_COMPLEMENT).apply();
+    if (maskLevelSet != nullptr) {
+      if (!distIsPositive) {
+        lsBooleanOperation<T, D>(levelSet, maskLevelSet,
+                                 lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
+            .apply();
       }
       // Go over all contribute points and see if they are on the mask surface
       auto &maskDomain = maskLevelSet->getDomain();
@@ -185,16 +193,16 @@ public:
       auto newSurfaceMesh = lsSmartPointer<lsMesh>::New();
       typename lsPointData::ScalarDataType newValues;
       hrleConstSparseIterator<DomainType> maskIt(maskDomain);
-      for(auto &node : surfaceMesh->getNodes()) {
+      for (auto &node : surfaceMesh->getNodes()) {
         hrleVectorType<hrleIndexType, D> index;
-        for(unsigned i = 0; i < D; ++i) {
+        for (unsigned i = 0; i < D; ++i) {
           index[i] = std::round(node[i] / gridDelta);
         }
         // can do sequential, because surfaceNodes are lexicographically sorted
         // from lsToDiskMesh
         maskIt.goToIndicesSequential(index);
         // if it is a mask point, mark it to maybe use it in new level set
-        if(!maskIt.isDefined() || !(maskIt.getValue() < *valueIt + 1e-5)) {
+        if (!maskIt.isDefined() || !(maskIt.getValue() < *valueIt + 1e-5)) {
           newSurfaceMesh->insertNextNode(node);
           newValues.push_back(*valueIt);
           // insert vertex
@@ -210,9 +218,10 @@ public:
       newSurfaceMesh->maximumExtent = surfaceMesh->maximumExtent;
       surfaceMesh = newSurfaceMesh;
 
-      #ifndef NDEBUG // if in debug build
-      lsVTKWriter(surfaceMesh, "DEBUG_lsGeomAdvectMesh_contributewoMask.vtk").apply();
-      #endif
+#ifndef NDEBUG // if in debug build
+      lsVTKWriter(surfaceMesh, "DEBUG_lsGeomAdvectMesh_contributewoMask.vtk")
+          .apply();
+#endif
     }
 
     typedef std::vector<std::array<double, 3>> SurfaceNodesType;
@@ -279,8 +288,9 @@ public:
 
       // Mask iterator for checking whether inside mask or not
       lsSmartPointer<hrleConstSparseIterator<DomainType>> maskIt = nullptr;
-      if(maskLevelSet != nullptr) {
-        maskIt = lsSmartPointer<hrleConstSparseIterator<DomainType>>::New(maskLevelSet->getDomain(), startVector);
+      if (maskLevelSet != nullptr) {
+        maskIt = lsSmartPointer<hrleConstSparseIterator<DomainType>>::New(
+            maskLevelSet->getDomain(), startVector);
       }
 
       // Iterate through the bounds of new lsDomain lexicographically
@@ -376,10 +386,10 @@ public:
         }
 
         // if point is part of the mask, keep smaller value
-        if(maskLevelSet != nullptr) {
+        if (maskLevelSet != nullptr) {
           maskIt->goToIndicesSequential(currentIndex);
-          if(maskIt->isDefined()) {
-            if(distIsPositive) {
+          if (maskIt->isDefined()) {
+            if (distIsPositive) {
               distance = std::min(maskIt->getDefinedValue(), distance);
             } else {
               distance = std::max(-maskIt->getDefinedValue(), distance);
@@ -426,9 +436,9 @@ public:
       mesh->insertNextScalarData(scalarData, "LSValues");
     }
 
-    #ifndef NDEBUG // if in debug build
-      lsVTKWriter(mesh, "DEBUG_lsGeomAdvectMesh_final.vtk").apply();
-    #endif
+#ifndef NDEBUG // if in debug build
+    lsVTKWriter(mesh, "DEBUG_lsGeomAdvectMesh_final.vtk").apply();
+#endif
 
     lsFromMesh<T, D>(levelSet, mesh).apply();
     lsPrune<T, D>(levelSet).apply();
