@@ -14,7 +14,7 @@
 #include <lsGeometries.hpp>
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
-
+#include <lsTransformMesh.hpp>
 #include <lsVTKWriter.hpp>
 
 /// Create level sets describing basic geometric forms.
@@ -413,6 +413,7 @@ private:
     }
     // generate the points on the edges of the cylinders and then
     // run the convex hull algorithm to create the cylinder
+    // cylinder axis will be (0,0,1)
     auto gridDelta = levelSet->getGrid().getGridDelta();
 
     auto points = lsSmartPointer<lsPointCloud<T, D>>::New();
@@ -441,6 +442,21 @@ private:
     lsConvexHull<T, D>(mesh, points).apply();
 
     lsVTKWriter(mesh, "makeCylinder.vtk").apply();
+
+    // rotate mesh
+    // normalise axis vector
+    T dot = DotProduct(cylinder->axisDirection, cylinder->axisDirection);
+    hrleVectorType<T, 3> cylinderAxis = cylinder->axisDirection / std::sqrt(dot);
+    // get rotation axis via cross product of (0,0,1) and axis of cylinder
+    hrleVectorType<T, 3> rotAxis(-cylinderAxis[1], cylinderAxis[0], 0.0);
+    // angle is acos of dot product
+    T rotationAngle = std::acos(cylinderAxis[2]);
+
+    // rotate mesh
+    lsTransformMesh(mesh, lsTransformEnum::ROTATION, rotAxis, rotationAngle).apply();
+
+    // translate mesh
+    lsTransformMesh(mesh, lsTransformEnum::TRANSLATION, cylinder->origin).apply();
     
     // read mesh from surface
     lsFromSurfaceMesh<T, D>(levelSet, mesh, ignoreBoundaryConditions).apply();

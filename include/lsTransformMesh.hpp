@@ -3,6 +3,8 @@
 
 #include <cmath>
 
+#include <hrleVectorType.hpp>
+
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
 #include <lsSmartPointer.hpp>
@@ -18,10 +20,24 @@ enum struct lsTransformEnum : unsigned {
 class lsTransformMesh {
     lsSmartPointer<lsMesh> mesh = nullptr;
     lsTransformEnum transform = lsTransformEnum::TRANSLATION;
-    std::array<double, 3> transformVector{};
+    hrleVectorType<double, 3> transformVector{};
     double angle = 0.0;
+    double numericEps = 1e-6;
+
+    // check vector for all zeros
+    bool isValidVector() {
+        if(DotProduct(transformVector, transformVector) < numericEps) {
+            return false;
+        } else {
+            return true;
+        }
+    }
 
     void translateMesh() {
+        // if vector is 0, just dont do anything
+        if(!isValidVector()) {
+            return;
+        }
         for(auto &node : mesh->nodes) {
             for(unsigned i = 0; i < 3; ++i) {
                 node[i] += transformVector[i];
@@ -29,7 +45,15 @@ class lsTransformMesh {
         }
     }
 
+    // rotation of mesh around the vector transform vector by the angle
     void rotateMesh() {
+        // if invalid input, dont do anything
+        if(!isValidVector()) {
+            return;
+        }
+        if(std::abs(angle) < numericEps) {
+            return;
+        }
         const double norm = std::sqrt(transformVector[0] * transformVector[0] + transformVector[1] * transformVector[1] + transformVector[2] * transformVector[2]);
         for(unsigned i = 0; i < 3; ++i) {
             transformVector[i] /= norm;
@@ -52,6 +76,10 @@ class lsTransformMesh {
     }
 
     void scaleMesh() {
+        if(!isValidVector()) {
+            lsMessage::getInstance().addWarning("lsTransformMesh: TransformVector is not valid!").print();
+            return;
+        }
         for(auto &node : mesh->nodes) {
             for(unsigned i = 0; i < 3; ++i) {
                 node[i] *= transformVector[i];
@@ -61,6 +89,8 @@ class lsTransformMesh {
 
     public:
     lsTransformMesh(lsSmartPointer<lsMesh> passedMesh, lsTransformEnum passedTransform = lsTransformEnum::TRANSLATION, std::array<double, 3> passedTransformVector = {}, double passedAngle = 0.0) : mesh(passedMesh), transform(passedTransform), transformVector(passedTransformVector), angle(passedAngle) {}
+
+    lsTransformMesh(lsSmartPointer<lsMesh> passedMesh, lsTransformEnum passedTransform = lsTransformEnum::TRANSLATION, hrleVectorType<double, 3> passedTransformVector = {}, double passedAngle = 0.0) : mesh(passedMesh), transform(passedTransform), transformVector(passedTransformVector), angle(passedAngle) {}
 
     void apply() {
         if(mesh == nullptr) {
