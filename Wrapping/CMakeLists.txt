@@ -8,8 +8,7 @@ project("ViennaLSPython"
 set(ViennaHRLE_DIR $ENV{VIENNAHRLE_DIR})
 set(ViennaLS_DIR "${ViennaLS_BINARY_DIR}")
 set(ViennaLS_COMMON_TARGET ${PROJECT_NAME})
-find_package(ViennaHRLE REQUIRED)
-find_package(ViennaLS REQUIRED)
+
 
 option(VIENNALS_BUILD_PYTHON_2_7 "Build for python2.x." OFF)
 option(VIENNALS_BUILD_PYTHON_3_6 "Build for python3.x. Trumps python2.x build." OFF)
@@ -25,6 +24,8 @@ endif(NOT pybind11_DIR)
 if(VIENNALS_BUILD_PYTHON_3_6)
   set(PYBIND11_PYTHON_VERSION 3.6 CACHE STRING "Python version")
 
+  find_package(ViennaHRLE REQUIRED)
+  find_package(ViennaLS REQUIRED)
   find_package(pybind11)
 
   #make 3.6 python module
@@ -50,6 +51,8 @@ endif()
 if(VIENNALS_BUILD_PYTHON_2_7 AND NOT VIENNALS_BUILD_PYTHON_3_6)
   set(PYBIND11_PYTHON_VERSION 2.7 CACHE STRING "Python version")
 
+  find_package(ViennaHRLE REQUIRED)
+  find_package(ViennaLS REQUIRED)
   find_package(pybind11)
 
   #make 2.7 python module
