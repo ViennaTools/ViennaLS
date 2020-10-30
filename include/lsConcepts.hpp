@@ -10,9 +10,8 @@ using AssignType = std::nullptr_t;
 constexpr AssignType assignable{};
 
 template <class Base, class Derived>
-using IsBaseOf =
-    typename std::enable_if<std::is_base_of<Base, Derived>::value,
-                            AssignType>::type;
+using IsBaseOf = typename std::enable_if<std::is_base_of<Base, Derived>::value,
+                                         AssignType>::type;
 
 template <class A, class B>
 using IsSame =

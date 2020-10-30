@@ -23,7 +23,8 @@ int main() {
   const NumericType radius = 7.3;
   const hrleVectorType<NumericType, D> min(-50, -25., -25.);
   const hrleVectorType<NumericType, D> max(0., 0., 0.);
-  lsMakeGeometry<NumericType, D>(levelSet, lsSmartPointer<lsBox<double, D>>::New(min, max))
+  lsMakeGeometry<NumericType, D>(
+      levelSet, lsSmartPointer<lsBox<double, D>>::New(min, max))
       .apply();
 
   // const hrleVectorType<NumericType, D> centre(5., 10., 0.);
@@ -38,7 +39,8 @@ int main() {
   // auto mesh = lsSmartPointer<lsMesh>::New();
   // mesh->insertNextNode({1., 0., 1.});
 
-  lsTransformMesh(mesh, lsTransformEnum::ROTATION, {0., 1., 1.}, M_PI_4).apply();
+  lsTransformMesh(mesh, lsTransformEnum::ROTATION, {0., 1., 1.}, M_PI_4)
+      .apply();
 
   lsVTKWriter(mesh, "Rotated.vtk").apply();
 

@@ -68,16 +68,15 @@ template <class T, int D> class lsAdvect {
   static constexpr double wrappingLayerEpsilon = 1e-4;
 
   template <class IntegrationSchemeType,
-            lsConcepts::IsNotSame<
-                IntegrationSchemeType,
-                lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>> =
-                lsConcepts::assignable>
+            lsConcepts::IsNotSame<IntegrationSchemeType,
+                                  lsInternal::lsStencilLocalLaxFriedrichsScalar<
+                                      T, D, 1>> = lsConcepts::assignable>
   void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &, double &) {}
 
   template <class IntegrationSchemeType,
             lsConcepts::IsSame<IntegrationSchemeType,
-                                lsInternal::lsStencilLocalLaxFriedrichsScalar<
-                                    T, D, 1>> = lsConcepts::assignable>
+                               lsInternal::lsStencilLocalLaxFriedrichsScalar<
+                                   T, D, 1>> = lsConcepts::assignable>
   void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &scheme,
                                     double &MaxTimeStep) {
     const double alpha_maxCFL = 1.0;

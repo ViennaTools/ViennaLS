@@ -79,7 +79,7 @@ public:
 /// Class describing a square box from one coordinate to another.
 template <class T, int D> class lsCylinder {
 public:
-/// This is the location of the center of the base of the cylinder
+  /// This is the location of the center of the base of the cylinder
   hrleVectorType<T, 3> origin = hrleVectorType<T, D>(T(0));
   /// This vector will be the main axis of the cylinder
   hrleVectorType<T, 3> axisDirection = hrleVectorType<T, D>(T(0));
@@ -90,22 +90,25 @@ public:
 
   lsCylinder() {}
 
-  lsCylinder(hrleVectorType<T, D> passedOrigin, 
-        hrleVectorType<T, D> passedAxisDirection, T passedHeight, T passedRadius)
-      : origin(passedOrigin), axisDirection(passedAxisDirection), height(passedHeight), radius(passedRadius) {}
+  lsCylinder(hrleVectorType<T, D> passedOrigin,
+             hrleVectorType<T, D> passedAxisDirection, T passedHeight,
+             T passedRadius)
+      : origin(passedOrigin), axisDirection(passedAxisDirection),
+        height(passedHeight), radius(passedRadius) {}
 
-  lsCylinder(T* passedOrigin, 
-    T* passedAxisDirection, T passedHeight, T passedRadius)
-  : height(passedHeight), radius(passedRadius) {
-    for(unsigned i = 0; i < D; ++i) {
+  lsCylinder(T *passedOrigin, T *passedAxisDirection, T passedHeight,
+             T passedRadius)
+      : height(passedHeight), radius(passedRadius) {
+    for (unsigned i = 0; i < D; ++i) {
       origin[i] = passedOrigin[i];
       axisDirection[i] = passedAxisDirection[i];
     }
   }
 
-  lsCylinder(std::vector<T> passedOrigin, 
-        std::vector<T> passedAxisDirection, T passedHeight, T passedRadius)
-      : origin(passedOrigin), axisDirection(passedAxisDirection), height(passedHeight), radius(passedRadius) {}
+  lsCylinder(std::vector<T> passedOrigin, std::vector<T> passedAxisDirection,
+             T passedHeight, T passedRadius)
+      : origin(passedOrigin), axisDirection(passedAxisDirection),
+        height(passedHeight), radius(passedRadius) {}
 };
 
 /// Class describing a point cloud, which can be used to
@@ -133,6 +136,11 @@ public:
   void insertNextPoint(T *newPoint) {
     hrleVectorType<T, D> point(newPoint);
     points.push_back(point);
+  }
+
+  void insertNextPoint(const std::array<T, D> newPoint) {
+    hrleVectorType<T, D> point(newPoint);
+    points.push_back(std::move(point));
   }
 
   void insertNextPoint(const std::vector<T> &newPoint) {

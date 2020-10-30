@@ -15,7 +15,7 @@
 
 /// This algorithm creates a convex hull mesh from a
 /// point cloud. This is done using the gift wrapping approach.
-/// The points in the point cloud must be unique.
+/// The points in the point cloud MUST be unique, otherwise this will fail.
 template <class T, int D> class lsConvexHull {
   typedef hrleVectorType<unsigned, D - 1> EdgeType;
 
@@ -47,7 +47,6 @@ template <class T, int D> class lsConvexHull {
       // surface element normal and distance to point i
       hrleVectorType<T, D> normal;
       hrleVectorType<T, D> distance = points[i] - points[currentEdge[0]];
-      hrleVectorType<T, D> edgeVector;
       // create surface element and check if all points are to its right
       if (D == 2) {
         // in 2D normal is a 90 degree rotation
@@ -60,7 +59,6 @@ template <class T, int D> class lsConvexHull {
         auto v1 = points[currentEdge[1]] - points[currentEdge[0]];
         auto v2 = points[nextIndex] - points[currentEdge[0]];
         normal = calculateNormal(v1, v2);
-        edgeVector = v1;
       }
 
       auto product = DotProduct(distance, normal);
@@ -74,8 +72,9 @@ template <class T, int D> class lsConvexHull {
         triangle[0] = currentEdge[0];
         triangle[1] = currentEdge[1];
         triangle[2] = i;
-        if (doesTriangleClip(triangle))
+        if (doesTriangleClip(triangle)) {
           continue;
+        }
 
         EdgeType edges[2];
         edges[0][0] = currentEdge[0];
@@ -196,7 +195,7 @@ template <class T, int D> class lsConvexHull {
         }
       }
     }
-    // if no other node was ever within two edges, the triangle do not clip
+    // if no other node was ever within two edges, the triangles do not clip
     return false;
   }
 

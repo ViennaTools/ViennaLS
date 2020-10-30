@@ -407,8 +407,10 @@ private:
   }
 
   void makeCylinder(lsSmartPointer<lsCylinder<T, D>> cylinder) {
-    if(D != 3) {
-      lsMessage::getInstance().addWarning("lsMakeGeometry: Cylinder can only be created in 3D!").print();
+    if (D != 3) {
+      lsMessage::getInstance()
+          .addWarning("lsMakeGeometry: Cylinder can only be created in 3D!")
+          .print();
       return;
     }
     // generate the points on the edges of the cylinders and then
@@ -420,14 +422,26 @@ private:
     unsigned numPoints = std::ceil(2 * M_PI * cylinder->radius / gridDelta);
     double smallAngle = 2.0 * M_PI / double(numPoints);
 
-    for(double angle = 0.0; angle < M_PI; angle+=smallAngle) {
-      hrleVectorType<T, D> posPoint;
-      hrleVectorType<T, D> negPoint;
+    // insert first point, which is asymmetrical
+    {
+      std::array<T, D> point;
+      point[0] = cylinder->radius * std::cos(0.);
+      point[1] = cylinder->radius * std::sin(0.);
+      point[2] = 0.0;
+      points->insertNextPoint(point);
+      point[2] = cylinder->height;
+      points->insertNextPoint(point);
+    }
+    // insert all other points
+    constexpr double limit = M_PI - 1e-6;
+    for (double angle = smallAngle; angle < limit; angle += smallAngle) {
+      std::array<T, D> posPoint;
+      std::array<T, D> negPoint;
       posPoint[0] = cylinder->radius * std::cos(angle);
       posPoint[1] = cylinder->radius * std::sin(angle);
       posPoint[2] = 0.0;
       negPoint = posPoint;
-      negPoint[1] = - negPoint[1];
+      negPoint[1] = -negPoint[1];
       // insert points at base
       points->insertNextPoint(posPoint);
       points->insertNextPoint(negPoint);
@@ -446,18 +460,21 @@ private:
     // rotate mesh
     // normalise axis vector
     T dot = DotProduct(cylinder->axisDirection, cylinder->axisDirection);
-    hrleVectorType<T, 3> cylinderAxis = cylinder->axisDirection / std::sqrt(dot);
+    hrleVectorType<T, 3> cylinderAxis =
+        cylinder->axisDirection / std::sqrt(dot);
     // get rotation axis via cross product of (0,0,1) and axis of cylinder
     hrleVectorType<T, 3> rotAxis(-cylinderAxis[1], cylinderAxis[0], 0.0);
     // angle is acos of dot product
     T rotationAngle = std::acos(cylinderAxis[2]);
 
     // rotate mesh
-    lsTransformMesh(mesh, lsTransformEnum::ROTATION, rotAxis, rotationAngle).apply();
+    lsTransformMesh(mesh, lsTransformEnum::ROTATION, rotAxis, rotationAngle)
+        .apply();
 
     // translate mesh
-    lsTransformMesh(mesh, lsTransformEnum::TRANSLATION, cylinder->origin).apply();
-    
+    lsTransformMesh(mesh, lsTransformEnum::TRANSLATION, cylinder->origin)
+        .apply();
+
     // read mesh from surface
     lsFromSurfaceMesh<T, D>(levelSet, mesh, ignoreBoundaryConditions).apply();
   }

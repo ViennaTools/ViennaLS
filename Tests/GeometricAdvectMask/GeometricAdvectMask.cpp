@@ -36,51 +36,65 @@ int main() {
 
   // // make cylinder for hole in the middle
   // {
-  //   auto maskHole = lsSmartPointer<lsDomain<NumericType, D>>::New(bounds, boundaryCons, gridDelta);
-  //   double origin[3] = {0., 15., 0.};
-  //   double axis[3] = {1.0, 1.0, 1.0};
-  //   lsMakeGeometry<NumericType, D>(mask, lsSmartPointer<lsCylinder<NumericType, D>>::New(origin, axis, 20.0, 10.)).apply();
+  //   auto maskHole = lsSmartPointer<lsDomain<NumericType, D>>::New(bounds,
+  //   boundaryCons, gridDelta); double origin[3] = {0., 15., 0.}; double
+  //   axis[3] = {1.0, 1.0, 1.0}; lsMakeGeometry<NumericType, D>(mask,
+  //   lsSmartPointer<lsCylinder<NumericType, D>>::New(origin,
+  //   axis, 20.0, 10.)).apply();
   // }
 
   // double origin[3] = {0., 15., 0.};
   // double axis[3] = {1.0, 1.0, 1.0};
-  // lsMakeGeometry<NumericType, D>(mask, lsSmartPointer<lsCylinder<NumericType, D>>::New(origin, axis, 20.0, 10.)).apply();
+  // lsMakeGeometry<NumericType, D>(mask, lsSmartPointer<lsCylinder<NumericType,
+  // D>>::New(origin, axis, 20.0, 10.)).apply();
 
   // create mask
   {
     NumericType normal[3] = {0., (D == 2) ? 1. : 0., (D == 3) ? 1. : 0.};
     NumericType origin[3] = {};
-    lsMakeGeometry<NumericType, D>(mask, 
-          lsSmartPointer<lsPlane<NumericType, D>>::New(origin, normal)).apply();
-    normal[D-1] = -1.0;
-    origin[D-1] = -extent / 5.0;
+    lsMakeGeometry<NumericType, D>(
+        mask, lsSmartPointer<lsPlane<NumericType, D>>::New(origin, normal))
+        .apply();
+    normal[D - 1] = -1.0;
+    origin[D - 1] = -extent / 5.0;
     auto maskBottom = lsSmartPointer<lsDomain<NumericType, D>>::New(
-      bounds, boundaryCons, gridDelta);
-    lsMakeGeometry<NumericType, D>(maskBottom, 
-          lsSmartPointer<lsPlane<NumericType, D>>::New(origin, normal)).apply();
-    lsBooleanOperation<NumericType, D>(mask, maskBottom, lsBooleanOperationEnum::INTERSECT).apply();
+        bounds, boundaryCons, gridDelta);
+    lsMakeGeometry<NumericType, D>(
+        maskBottom,
+        lsSmartPointer<lsPlane<NumericType, D>>::New(origin, normal))
+        .apply();
+    lsBooleanOperation<NumericType, D>(mask, maskBottom,
+                                       lsBooleanOperationEnum::INTERSECT)
+        .apply();
 
     auto mesh = lsSmartPointer<lsMesh>::New();
-  lsToMesh<NumericType, D>(mask, mesh).apply();
-  lsVTKWriter(mesh, "Plane.vtk").apply();
+    lsToMesh<NumericType, D>(mask, mesh).apply();
+    lsVTKWriter(mesh, "Plane.vtk").apply();
 
     auto maskHole = lsSmartPointer<lsDomain<NumericType, D>>::New(
-      bounds, boundaryCons, gridDelta);
+        bounds, boundaryCons, gridDelta);
 
-    double holeOrigin[3] = {0., 0., origin[D-1] - 2*gridDelta};
+    double holeOrigin[3] = {0., 0., origin[D - 1] - 2 * gridDelta};
     double axis[3] = {0.0, 0.0, 1.0};
-    lsMakeGeometry<NumericType, D>(maskHole, lsSmartPointer<lsCylinder<NumericType, D>>::New(holeOrigin, axis,  + 4*gridDelta - origin[D-1], extent / 1.5)).apply();
+    lsMakeGeometry<NumericType, D>(
+        maskHole,
+        lsSmartPointer<lsCylinder<NumericType, D>>::New(
+            holeOrigin, axis, +4 * gridDelta - origin[D - 1], extent / 1.5))
+        .apply();
 
-    lsBooleanOperation<NumericType, D>(mask, maskHole, lsBooleanOperationEnum::RELATIVE_COMPLEMENT).apply();
+    lsBooleanOperation<NumericType, D>(
+        mask, maskHole, lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
+        .apply();
   }
 
   auto mesh = lsSmartPointer<lsMesh>::New();
   lsToSurfaceMesh<NumericType, D>(mask, mesh).apply();
   lsVTKWriter(mesh, "Mask.vtk").apply();
 
-// oooooooooooooooooooooold stuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuff
+  // oooooooooooooooooooooold stuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuff
   // auto levelSet =
-  //     lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  //     lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
+  //     gridDelta);
   // // create a sphere in the level set
   // NumericType normal[3] = {0., (D == 2) ? 1. : 0., (D == 3) ? 1. : 0.};
   // NumericType origin[3] = {};
@@ -89,7 +103,8 @@ int main() {
   //     .apply();
 
   // auto mask =
-  //     lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  //     lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
+  //     gridDelta);
 
   // {
   //   NumericType extent4 = extent / 4.0;
@@ -104,11 +119,8 @@ int main() {
   // lsBooleanOperation<NumericType, D>(levelSet, mask,
   //                                    lsBooleanOperationEnum::UNION)
   //     .apply();
-// ooooooooooooooooooold stuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuff end
-  
-  
-  
-  
+  // ooooooooooooooooooold stuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuff end
+
   // auto mesh = lsSmartPointer<lsMesh>::New();
 
   // lsToMesh<NumericType, D>(levelSet, mesh).apply();
@@ -122,8 +134,8 @@ int main() {
 
   // //   set up spherical advection dist
   // auto dist =
-  //     // lsSmartPointer<lsSphereDistribution<double, D>>::New(-15.0, gridDelta);
-  //     lsSmartPointer<lsBoxDistribution<NumericType, D>>::New(
+  //     // lsSmartPointer<lsSphereDistribution<double, D>>::New(-15.0,
+  //     gridDelta); lsSmartPointer<lsBoxDistribution<NumericType, D>>::New(
   //         std::array<NumericType, 3>({-gridDelta, -15.0, -gridDelta}),
   //         gridDelta);
 

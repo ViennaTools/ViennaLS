@@ -54,7 +54,7 @@ public:
 
   template <class DistType,
             lsConcepts::IsBaseOf<lsGeometricAdvectDistribution<T, D>,
-                                   DistType> = lsConcepts::assignable>
+                                 DistType> = lsConcepts::assignable>
   lsGeometricAdvect(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
                     lsSmartPointer<DistType> passedDist,
                     lsSmartPointer<lsDomain<T, D>> passedMaskLevelSet = nullptr)
@@ -72,7 +72,7 @@ public:
   /// lsGeometricAdvectDistribution.
   template <class DistType,
             lsConcepts::IsBaseOf<lsGeometricAdvectDistribution<T, D>,
-                                   DistType> = lsConcepts::assignable>
+                                 DistType> = lsConcepts::assignable>
   void setAdvectionDistribution(lsSmartPointer<DistType> passedDist) {
     dist = std::dynamic_pointer_cast<lsGeometricAdvectDistribution<T, D>>(
         passedDist);
