@@ -187,11 +187,6 @@ public:
     // If a mask is supplied, remove all contribute points which
     // lie on (or inside) the mask
     if (maskLevelSet != nullptr) {
-      // if (!distIsPositive) {
-      //   lsBooleanOperation<T, D>(levelSet, maskLevelSet,
-      //                            lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
-      //       .apply();
-      // }
       // Go over all contribute points and see if they are on the mask surface
       auto &maskDomain = maskLevelSet->getDomain();
       auto values = surfaceMesh->getScalarData("LSValues");
@@ -264,7 +259,6 @@ public:
     newPoints.resize(domain.getNumberOfSegments());
 
     constexpr T cutoffValue = 1.0 + numericEps;
-    // constexpr T skipValue = 0.5;
     const T initialDistance = (distIsPositive)
                                   ? std::numeric_limits<double>::max()
                                   : std::numeric_limits<double>::lowest();
@@ -418,18 +412,6 @@ public:
               distance = maskIt->getValue();
             }
           }
-
-          // if (distance != initialDistance) {
-          //   if(checkIt.getValue() == maskIt->getValue()) {
-          //     distance = checkIt.getValue();
-          //   } else {
-          //     distance = std::min(maskIt->getValue(), distance);
-          //   }
-          // } else {
-          //   if(checkIt.getValue() >= 0.) {
-          //     distance = maskIt->getValue();
-          //   }
-          // }
         }
 
         if (std::abs(distance) <= cutoffValue) {
