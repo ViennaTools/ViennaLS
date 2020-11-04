@@ -315,7 +315,7 @@ public:
           }
         }
 
-        // if(currentIndex[1] == -1) {
+        // if(currentIndex[1] == 1) {
         //   std::cout << currentIndex[0] << "=> " << checkIt.getValue() << std::endl;
         //   //"; mask: " << maskIt->getDefinedValue() << std::endl;
         // }
@@ -395,7 +395,7 @@ public:
           }
         }
 
-        // if(currentIndex[1] == -4) {
+        // if(currentIndex[1] == -3) {
         //   std::cout << currentIndex[0] << ": " << checkIt.getValue() << "; distance: " << distance << std::endl;
         //   //"; mask: " << maskIt->getDefinedValue() << std::endl;
         // }
@@ -403,8 +403,11 @@ public:
         // if point is part of the mask, keep smaller value
         if (maskLevelSet != nullptr) {
           maskIt->goToIndicesSequential(currentIndex);
-          if(checkIt.getValue() == maskIt->getValue()) {
-            distance = checkIt.getValue();
+
+          // if dist is positive, flip logic of comparison
+          if(distIsPositive ^ (checkIt.getValue() == maskIt->getValue())) {
+            if(!distIsPositive)
+              distance = checkIt.getValue();
           } else {
             if (distance != initialDistance) {
               distance = std::min(maskIt->getValue(), distance);

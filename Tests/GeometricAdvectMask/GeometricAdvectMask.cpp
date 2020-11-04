@@ -103,10 +103,10 @@ int main() {
 
   //   set up spherical advection dist
   auto dist =
-      lsSmartPointer<lsSphereDistribution<double, D>>::New(-15.0,gridDelta);
-    //   lsSmartPointer<lsBoxDistribution<NumericType, D>>::New(
-    //       std::array<NumericType, 3>({-gridDelta, -15.0, -gridDelta}),
-    //       gridDelta);
+      // lsSmartPointer<lsSphereDistribution<double, D>>::New(15.0,gridDelta);
+      lsSmartPointer<lsBoxDistribution<NumericType, D>>::New(
+          std::array<NumericType, 3>({gridDelta, 15.0, gridDelta}),
+          gridDelta);
 
   lsGeometricAdvect<NumericType, D>(levelSet, dist, mask).apply();
 
