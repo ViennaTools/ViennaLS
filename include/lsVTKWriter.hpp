@@ -398,7 +398,7 @@ private:
         f << "SCALARS " << mesh->getScalarDataLabel(i) << " float" << std::endl;
         f << "LOOKUP_TABLE default" << std::endl;
         for (unsigned j = 0; j < scalars.size(); ++j) {
-          f << scalars[j] << std::endl;
+          f << ((std::abs(scalars[j]) < 1e-6) ? 0.0 : scalars[j]) << std::endl;
         }
       }
     }

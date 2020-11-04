@@ -126,7 +126,8 @@ public:
                 const std::array<hrleCoordType, 3> &candidate,
                 double eps = 0.) const {
     for (unsigned i = 0; i < D; ++i) {
-      if (std::abs(candidate[i] - initial[i]) > (std::abs(posExtent[i]) + eps)) {
+      if (std::abs(candidate[i] - initial[i]) >
+          (std::abs(posExtent[i]) + eps)) {
         return false;
       }
     }
@@ -140,7 +141,7 @@ public:
       T vector = std::abs(candidate[i] - initial[i]);
       distance = std::max(vector - std::abs(posExtent[i]), distance);
     }
-    return (posExtent[0]<0)?-distance:distance;
+    return (posExtent[0] < 0) ? -distance : distance;
   }
 
   std::array<hrleCoordType, 6> getBounds() const {

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['boundarytype_603',['BoundaryType',['../classlsDomain.html#a5f260245949e4b99d9402eb9716f0089',1,'lsDomain']]]
+  ['assigntype_633',['AssignType',['../namespacelsConcepts.html#acd3e2089a3dd4d5d808dadf5dda9676b',1,'lsConcepts']]]
 ];

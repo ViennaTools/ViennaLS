@@ -14,6 +14,8 @@
 #include <lsGeometries.hpp>
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
+#include <lsTransformMesh.hpp>
+#include <lsVTKWriter.hpp>
 
 /// Create level sets describing basic geometric forms.
 template <class T, int D> class lsMakeGeometry {
@@ -25,7 +27,8 @@ template <class T, int D> class lsMakeGeometry {
     SPHERE = 0,
     PLANE = 1,
     BOX = 2,
-    CUSTOM = 3
+    CUSTOM = 3,
+    CYLINDER = 4
   };
 
   lsSmartPointer<lsDomain<T, D>> levelSet;
@@ -33,6 +36,7 @@ template <class T, int D> class lsMakeGeometry {
   lsSmartPointer<lsSphere<T, D>> sphere;
   lsSmartPointer<lsPlane<T, D>> plane;
   lsSmartPointer<lsBox<T, D>> box;
+  lsSmartPointer<lsCylinder<T, D>> cylinder;
   lsSmartPointer<lsPointCloud<T, D>> pointCloud;
   const double numericEps = 1e-9;
   bool ignoreBoundaryConditions = false;
@@ -59,6 +63,12 @@ public:
                  lsSmartPointer<lsBox<T, D>> passedBox)
       : levelSet(passedLevelSet), box(passedBox) {
     geometry = lsGeometryEnum::BOX;
+  }
+
+  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+                 lsSmartPointer<lsCylinder<T, D>> passedCylinder)
+      : levelSet(passedLevelSet), cylinder(passedCylinder) {
+    geometry = lsGeometryEnum::CYLINDER;
   }
 
   lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
@@ -89,6 +99,12 @@ public:
     geometry = lsGeometryEnum::BOX;
   }
 
+  /// Set a cylinder to be created in the level set.
+  void setGeometry(lsSmartPointer<lsCylinder<T, D>> passedCylinder) {
+    cylinder = passedCylinder;
+    geometry = lsGeometryEnum::CYLINDER;
+  }
+
   /// Set a point cloud, which is used to create
   /// a geometry from its convex hull.
   void setGeometry(lsSmartPointer<lsPointCloud<T, D>> passedPointCloud) {
@@ -117,6 +133,9 @@ public:
       break;
     case lsGeometryEnum::BOX:
       makeBox(box->minCorner, box->maxCorner);
+      break;
+    case lsGeometryEnum::CYLINDER:
+      makeCylinder(cylinder);
       break;
     case lsGeometryEnum::CUSTOM:
       makeCustom(pointCloud);
@@ -384,6 +403,77 @@ private:
     }
 
     // now convert mesh to levelset
+    lsFromSurfaceMesh<T, D>(levelSet, mesh, ignoreBoundaryConditions).apply();
+  }
+
+  void makeCylinder(lsSmartPointer<lsCylinder<T, D>> cylinder) {
+    if (D != 3) {
+      lsMessage::getInstance()
+          .addWarning("lsMakeGeometry: Cylinder can only be created in 3D!")
+          .print();
+      return;
+    }
+    // generate the points on the edges of the cylinders and then
+    // run the convex hull algorithm to create the cylinder
+    // cylinder axis will be (0,0,1)
+    auto gridDelta = levelSet->getGrid().getGridDelta();
+
+    auto points = lsSmartPointer<lsPointCloud<T, D>>::New();
+    unsigned numPoints = std::ceil(2 * M_PI * cylinder->radius / gridDelta);
+    double smallAngle = 2.0 * M_PI / double(numPoints);
+
+    // insert first point, which is asymmetrical
+    {
+      std::array<T, D> point;
+      point[0] = cylinder->radius * std::cos(0.);
+      point[1] = cylinder->radius * std::sin(0.);
+      point[2] = 0.0;
+      points->insertNextPoint(point);
+      point[2] = cylinder->height;
+      points->insertNextPoint(point);
+    }
+    // insert all other points
+    constexpr double limit = M_PI - 1e-6;
+    for (double angle = smallAngle; angle < limit; angle += smallAngle) {
+      std::array<T, D> posPoint;
+      std::array<T, D> negPoint;
+      posPoint[0] = cylinder->radius * std::cos(angle);
+      posPoint[1] = cylinder->radius * std::sin(angle);
+      posPoint[2] = 0.0;
+      negPoint = posPoint;
+      negPoint[1] = -negPoint[1];
+      // insert points at base
+      points->insertNextPoint(posPoint);
+      points->insertNextPoint(negPoint);
+      // insert points at top
+      posPoint[2] = cylinder->height;
+      negPoint[2] = cylinder->height;
+      points->insertNextPoint(posPoint);
+      points->insertNextPoint(negPoint);
+    }
+
+    auto mesh = lsSmartPointer<lsMesh>::New();
+    lsConvexHull<T, D>(mesh, points).apply();
+
+    // rotate mesh
+    // normalise axis vector
+    T dot = DotProduct(cylinder->axisDirection, cylinder->axisDirection);
+    hrleVectorType<T, 3> cylinderAxis =
+        cylinder->axisDirection / std::sqrt(dot);
+    // get rotation axis via cross product of (0,0,1) and axis of cylinder
+    hrleVectorType<T, 3> rotAxis(-cylinderAxis[1], cylinderAxis[0], 0.0);
+    // angle is acos of dot product
+    T rotationAngle = std::acos(cylinderAxis[2]);
+
+    // rotate mesh
+    lsTransformMesh(mesh, lsTransformEnum::ROTATION, rotAxis, rotationAngle)
+        .apply();
+
+    // translate mesh
+    lsTransformMesh(mesh, lsTransformEnum::TRANSLATION, cylinder->origin)
+        .apply();
+
+    // read mesh from surface
     lsFromSurfaceMesh<T, D>(levelSet, mesh, ignoreBoundaryConditions).apply();
   }
 

@@ -7,6 +7,7 @@ var hierarchy =
     [ "lsCalculateNormalVectors< T, D >", "classlsCalculateNormalVectors.html", null ],
     [ "lsCheck< T, D >", "classlsCheck.html", null ],
     [ "lsConvexHull< T, D >", "classlsConvexHull.html", null ],
+    [ "lsCylinder< T, D >", "classlsCylinder.html", null ],
     [ "lsDomain< T, D >", "classlsDomain.html", null ],
     [ "lsInternal::lsEnquistOsher< T, D, order >", "classlsInternal_1_1lsEnquistOsher.html", null ],
     [ "lsExpand< T, D >", "classlsExpand.html", null ],
@@ -42,6 +43,7 @@ var hierarchy =
     [ "lsToMesh< T, D >", "classlsToMesh.html", null ],
     [ "lsToSurfaceMesh< T, D >", "classlsToSurfaceMesh.html", null ],
     [ "lsToVoxelMesh< T, D >", "classlsToVoxelMesh.html", null ],
+    [ "lsTransformMesh", "classlsTransformMesh.html", null ],
     [ "lsVelocityField< T >", "classlsVelocityField.html", null ],
     [ "lsVelocityField", null, [
       [ "AirGapDeposition.velocityField", "classAirGapDeposition_1_1velocityField.html", null ],
@@ -56,6 +58,7 @@ var hierarchy =
       [ "lsSmartPointer< T >", "classlsSmartPointer.html", null ],
       [ "lsSmartPointer< const lsGeometricAdvectDistribution< hrleCoordType, D > >", "classlsSmartPointer.html", null ],
       [ "lsSmartPointer< lsBox< T, D > >", "classlsSmartPointer.html", null ],
+      [ "lsSmartPointer< lsCylinder< T, D > >", "classlsSmartPointer.html", null ],
       [ "lsSmartPointer< lsDomain< T, D > >", "classlsSmartPointer.html", null ],
       [ "lsSmartPointer< lsMesh >", "classlsSmartPointer.html", null ],
       [ "lsSmartPointer< lsPlane< T, D > >", "classlsSmartPointer.html", null ],

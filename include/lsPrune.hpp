@@ -36,7 +36,7 @@ public:
           .print();
       return;
     }
-    if(levelSet->getNumberOfPoints() == 0) {
+    if (levelSet->getNumberOfPoints() == 0) {
       return;
     }
 
@@ -73,10 +73,11 @@ public:
         if (centerIt.isDefined()) {
           int i = 0;
           for (; i < 2 * D; i++) {
-            // Use signbit here instead of numericEps because it makes a clearer cut
-            // between negative and positive numbers. Eps resulted in problems with
-            // exact 0.0 LS values.
-            if(std::signbit(neighborIt.getNeighbor(i).getValue()) != centerSign)
+            // Use signbit here instead of numericEps because it makes a clearer
+            // cut between negative and positive numbers. Eps resulted in
+            // problems with exact 0.0 LS values.
+            if (std::signbit(neighborIt.getNeighbor(i).getValue()) !=
+                centerSign)
               break;
           }
           if (i != 2 * D) {

@@ -47,6 +47,7 @@ var NAVTREE =
       [ "Namespace Members", "namespacemembers.html", [
         [ "All", "namespacemembers.html", null ],
         [ "Variables", "namespacemembers_vars.html", null ],
+        [ "Typedefs", "namespacemembers_type.html", null ],
         [ "Enumerations", "namespacemembers_enum.html", null ]
       ] ]
     ] ],
@@ -77,8 +78,8 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "AirGapDeposition_8cpp-example.html",
-"classlsInternal_1_1lsLocalLaxFriedrichsAnalytical.html#a96d8a84cc14d05635290e40d44ce024c",
-"dir_d44c64559bbebec7f509842c48db8b23.html"
+"classlsInternal_1_1lsLaxFriedrichs.html",
+"classlsWriter.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

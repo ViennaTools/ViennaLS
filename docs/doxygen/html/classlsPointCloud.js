@@ -5,6 +5,7 @@ var classlsPointCloud =
     [ "lsPointCloud", "classlsPointCloud.html#a28cf2f47ab13b6786f42e0b538b64d14", null ],
     [ "begin", "classlsPointCloud.html#a1fd3b15dcfc6960e9bbf143716b0133e", null ],
     [ "end", "classlsPointCloud.html#af15ffa623e300f5ced6cc418e0efb7fd", null ],
+    [ "insertNextPoint", "classlsPointCloud.html#a2cf5f098f6c488b4674f331510e62dac", null ],
     [ "insertNextPoint", "classlsPointCloud.html#a98602a8018f9325b574a0b0220fb9d1f", null ],
     [ "insertNextPoint", "classlsPointCloud.html#aa4a02b2fc568419e193e9cc28b356386", null ],
     [ "insertNextPoint", "classlsPointCloud.html#ae04ce0224a95b6e243094775d3e59f7c", null ],

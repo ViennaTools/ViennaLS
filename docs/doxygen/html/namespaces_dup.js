@@ -4,5 +4,6 @@ var namespaces_dup =
     [ "AirGapDeposition", "namespaceAirGapDeposition.html", null ],
     [ "Deposition", "namespaceDeposition.html", null ],
     [ "GeometricAdvection", "namespaceGeometricAdvection.html", null ],
+    [ "lsConcepts", "namespacelsConcepts.html", null ],
     [ "lsInternal", "namespacelsInternal.html", null ]
 ];
