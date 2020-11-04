@@ -307,18 +307,9 @@ public:
               continue;
             }
           } else if (checkIt.getValue() > cutoffValue) {
-            // if(currentIndex[1] == -4) {
-            //   std::cout << "discarding: " << currentIndex[0] << "; " << checkIt.getValue() << checkIt.getStartIndices() << " <-> " << checkIt.getEndIndices() << std::endl;
-            //   //"; mask: " << maskIt->getDefinedValue() << std::endl;
-            // }
             continue;
           }
         }
-
-        // if(currentIndex[1] == 1) {
-        //   std::cout << currentIndex[0] << "=> " << checkIt.getValue() << std::endl;
-        //   //"; mask: " << maskIt->getDefinedValue() << std::endl;
-        // }
 
         std::array<hrleCoordType, 3> currentCoords;
         std::array<hrleCoordType, 3> currentDistMin;
@@ -395,11 +386,8 @@ public:
           }
         }
 
-        // if(currentIndex[1] == -3) {
-        //   std::cout << currentIndex[0] << ": " << checkIt.getValue() << "; distance: " << distance << std::endl;
-        //   //"; mask: " << maskIt->getDefinedValue() << std::endl;
-        // }
-
+        // TODO: There are still issues with positive box distributions
+        // if there is a mask used!
         // if point is part of the mask, keep smaller value
         if (maskLevelSet != nullptr) {
           maskIt->goToIndicesSequential(currentIndex);
@@ -410,8 +398,8 @@ public:
               distance = checkIt.getValue();
           } else {
             if (distance != initialDistance) {
-              distance = std::max(-maskIt->getValue(), distance);
-            } else if (checkIt.getValue() >= 0.) {
+              distance = std::min(maskIt->getValue(), distance);
+            } else if (distIsPositive || checkIt.getValue() >= 0.) {
               distance = maskIt->getValue();
             }
           }
