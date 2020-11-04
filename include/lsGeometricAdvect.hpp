@@ -410,7 +410,7 @@ public:
               distance = checkIt.getValue();
           } else {
             if (distance != initialDistance) {
-              distance = std::min(maskIt->getValue(), distance);
+              distance = std::max(-maskIt->getValue(), distance);
             } else if (checkIt.getValue() >= 0.) {
               distance = maskIt->getValue();
             }
