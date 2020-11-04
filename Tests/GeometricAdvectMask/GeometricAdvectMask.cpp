@@ -35,7 +35,8 @@ int main() {
       bounds, boundaryCons, gridDelta);
 
   auto levelSet = lsSmartPointer<lsDomain<NumericType, D>>::New(
-      bounds, boundaryCons, gridDelta);;
+      bounds, boundaryCons, gridDelta);
+  ;
 
   // create mask
   {
@@ -70,12 +71,13 @@ int main() {
         lsSmartPointer<lsCylinder<NumericType, D>>::New(
             holeOrigin, axis, 4 * gridDelta - origin[D - 1], extent / 1.5))
         .apply();
-    
+
     // double minScalar = origin[D-1] - 2 * gridDelta;
     // double maxScalar = extent/5 * 2 * gridDelta;
     // double min[3] = {minScalar, minScalar, minScalar};
     // double max[3] = {maxScalar, maxScalar, maxScalar};
-    // lsMakeGeometry<NumericType, D>(maskHole, lsSmartPointer<lsBox<NumericType, D>>::New(min, max)).apply();
+    // lsMakeGeometry<NumericType, D>(maskHole,
+    // lsSmartPointer<lsBox<NumericType, D>>::New(min, max)).apply();
 
     lsBooleanOperation<NumericType, D>(
         mask, maskHole, lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
@@ -85,9 +87,13 @@ int main() {
     lsVTKWriter(mesh, "Mask.vtk").apply();
 
     // make substrate
-    lsBooleanOperation<NumericType, D>(maskBottom, lsBooleanOperationEnum::INVERT).apply();
+    lsBooleanOperation<NumericType, D>(maskBottom,
+                                       lsBooleanOperationEnum::INVERT)
+        .apply();
     levelSet->deepCopy(maskBottom);
-    lsBooleanOperation<NumericType, D>(levelSet, mask, lsBooleanOperationEnum::UNION).apply();
+    lsBooleanOperation<NumericType, D>(levelSet, mask,
+                                       lsBooleanOperationEnum::UNION)
+        .apply();
   }
 
   auto mesh = lsSmartPointer<lsMesh>::New();

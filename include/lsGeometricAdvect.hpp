@@ -106,7 +106,7 @@ public:
     // levelSet must have at least a width of 3
     lsExpand<T, D>(levelSet, 3).apply();
 
-    if(maskLevelSet != nullptr) {
+    if (maskLevelSet != nullptr) {
       lsExpand<T, D>(maskLevelSet, 3).apply();
     }
 
@@ -393,8 +393,8 @@ public:
           maskIt->goToIndicesSequential(currentIndex);
 
           // if dist is positive, flip logic of comparison
-          if(distIsPositive ^ (checkIt.getValue() == maskIt->getValue())) {
-            if(!distIsPositive)
+          if (distIsPositive ^ (checkIt.getValue() == maskIt->getValue())) {
+            if (!distIsPositive)
               distance = checkIt.getValue();
           } else {
             if (distance != initialDistance) {

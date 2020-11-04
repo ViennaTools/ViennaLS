@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['domaintype_604',['DomainType',['../classlsDomain.html#a7e989b2c137e03c4f8e09c181b6311af',1,'lsDomain']]]
+  ['boundarytype_634',['BoundaryType',['../classlsDomain.html#a5f260245949e4b99d9402eb9716f0089',1,'lsDomain']]]
 ];

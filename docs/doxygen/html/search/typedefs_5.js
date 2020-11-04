@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['scalardatatype_609',['ScalarDataType',['../classlsPointData.html#a4a7e6df1e02124bf6aeb8eea86266183',1,'lsPointData']]]
+  ['normalvectortype_640',['NormalVectorType',['../classlsDomain.html#a1b5387cd91551921f8f4b034aef54c80',1,'lsDomain']]]
 ];
