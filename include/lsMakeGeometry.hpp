@@ -455,8 +455,6 @@ private:
     auto mesh = lsSmartPointer<lsMesh>::New();
     lsConvexHull<T, D>(mesh, points).apply();
 
-    lsVTKWriter(mesh, "makeCylinder.vtk").apply();
-
     // rotate mesh
     // normalise axis vector
     T dot = DotProduct(cylinder->axisDirection, cylinder->axisDirection);

@@ -10,11 +10,11 @@
 #include <lsVTKWriter.hpp>
 
 int main() {
-  omp_set_num_threads(4);
+  omp_set_num_threads(1);
 
-  constexpr int D = 3;
+  constexpr int D = 2;
   typedef double NumericType;
-  double gridDelta = 1.0;
+  double gridDelta = 2.0;
 
   double extent = 50;
   double bounds[2 * D] = {-extent, extent, -extent, extent};
@@ -34,19 +34,8 @@ int main() {
   auto mask = lsSmartPointer<lsDomain<NumericType, D>>::New(
       bounds, boundaryCons, gridDelta);
 
-  // // make cylinder for hole in the middle
-  // {
-  //   auto maskHole = lsSmartPointer<lsDomain<NumericType, D>>::New(bounds,
-  //   boundaryCons, gridDelta); double origin[3] = {0., 15., 0.}; double
-  //   axis[3] = {1.0, 1.0, 1.0}; lsMakeGeometry<NumericType, D>(mask,
-  //   lsSmartPointer<lsCylinder<NumericType, D>>::New(origin,
-  //   axis, 20.0, 10.)).apply();
-  // }
-
-  // double origin[3] = {0., 15., 0.};
-  // double axis[3] = {1.0, 1.0, 1.0};
-  // lsMakeGeometry<NumericType, D>(mask, lsSmartPointer<lsCylinder<NumericType,
-  // D>>::New(origin, axis, 20.0, 10.)).apply();
+  auto levelSet = lsSmartPointer<lsDomain<NumericType, D>>::New(
+      bounds, boundaryCons, gridDelta);;
 
   // create mask
   {
@@ -74,77 +63,57 @@ int main() {
     auto maskHole = lsSmartPointer<lsDomain<NumericType, D>>::New(
         bounds, boundaryCons, gridDelta);
 
-    double holeOrigin[3] = {0., 0., origin[D - 1] - 2 * gridDelta};
-    double axis[3] = {0.0, 0.0, 1.0};
-    lsMakeGeometry<NumericType, D>(
-        maskHole,
-        lsSmartPointer<lsCylinder<NumericType, D>>::New(
-            holeOrigin, axis, +4 * gridDelta - origin[D - 1], extent / 1.5))
-        .apply();
+    // double holeOrigin[3] = {0., 0., origin[D - 1] - 2 * gridDelta};
+    // double axis[3] = {0.0, 0.0, 1.0};
+    // lsMakeGeometry<NumericType, D>(
+    //     maskHole,
+    //     lsSmartPointer<lsCylinder<NumericType, D>>::New(
+    //         holeOrigin, axis, 4 * gridDelta - origin[D - 1], extent / 1.5))
+    //     .apply();
+    
+    double minScalar = origin[D-1] - 2 * gridDelta;
+    double maxScalar = extent/5 * 2 * gridDelta;
+    double min[3] = {minScalar, minScalar, minScalar};
+    double max[3] = {maxScalar, maxScalar, maxScalar};
+    lsMakeGeometry<NumericType, D>(maskHole, lsSmartPointer<lsBox<NumericType, D>>::New(min, max)).apply();
 
     lsBooleanOperation<NumericType, D>(
         mask, maskHole, lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
         .apply();
+
+    lsToSurfaceMesh<NumericType, D>(mask, mesh).apply();
+    lsVTKWriter(mesh, "Mask.vtk").apply();
+
+    // make substrate
+    lsBooleanOperation<NumericType, D>(maskBottom, lsBooleanOperationEnum::INVERT).apply();
+    levelSet->deepCopy(maskBottom);
+    lsBooleanOperation<NumericType, D>(levelSet, mask, lsBooleanOperationEnum::UNION).apply();
   }
 
   auto mesh = lsSmartPointer<lsMesh>::New();
+
+  lsToMesh<NumericType, D>(levelSet, mesh).apply();
+  lsVTKWriter(mesh, "Surface_i_p.vtk").apply();
+  lsToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
+  lsVTKWriter(mesh, "Surface_i.vtk").apply();
+  lsToMesh<NumericType, D>(mask, mesh).apply();
+  lsVTKWriter(mesh, "Surface_m_p.vtk").apply();
   lsToSurfaceMesh<NumericType, D>(mask, mesh).apply();
-  lsVTKWriter(mesh, "Mask.vtk").apply();
+  lsVTKWriter(mesh, "Surface_m.vtk").apply();
 
-  // oooooooooooooooooooooold stuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuff
-  // auto levelSet =
-  //     lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
-  //     gridDelta);
-  // // create a sphere in the level set
-  // NumericType normal[3] = {0., (D == 2) ? 1. : 0., (D == 3) ? 1. : 0.};
-  // NumericType origin[3] = {};
-  // lsMakeGeometry<NumericType, D>(
-  //     levelSet, lsSmartPointer<lsPlane<NumericType, D>>::New(origin, normal))
-  //     .apply();
+  //   set up spherical advection dist
+  auto dist =
+      lsSmartPointer<lsSphereDistribution<double, D>>::New(-15.0,gridDelta);
+    //   lsSmartPointer<lsBoxDistribution<NumericType, D>>::New(
+    //       std::array<NumericType, 3>({-gridDelta, -15.0, -gridDelta}),
+    //       gridDelta);
 
-  // auto mask =
-  //     lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
-  //     gridDelta);
+  lsGeometricAdvect<NumericType, D>(levelSet, dist, mask).apply();
 
-  // {
-  //   NumericType extent4 = extent / 4.0;
-  //   NumericType min[3] = {-extent4, -extent4, -extent4};
-  //   NumericType max[3] = {extent4, extent4, extent4};
-
-  //   lsMakeGeometry<NumericType, D>(
-  //       mask, lsSmartPointer<lsBox<NumericType, D>>::New(min, max))
-  //       .apply();
-  // }
-
-  // lsBooleanOperation<NumericType, D>(levelSet, mask,
-  //                                    lsBooleanOperationEnum::UNION)
-  //     .apply();
-  // ooooooooooooooooooold stuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuff end
-
-  // auto mesh = lsSmartPointer<lsMesh>::New();
-
-  // lsToMesh<NumericType, D>(levelSet, mesh).apply();
-  // lsVTKWriter(mesh, "Surface_i_p.vtk").apply();
-  // lsToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
-  // lsVTKWriter(mesh, "Surface_i.vtk").apply();
-  // lsToMesh<NumericType, D>(mask, mesh).apply();
-  // lsVTKWriter(mesh, "Surface_m_p.vtk").apply();
-  // lsToSurfaceMesh<NumericType, D>(mask, mesh).apply();
-  // lsVTKWriter(mesh, "Surface_m.vtk").apply();
-
-  // //   set up spherical advection dist
-  // auto dist =
-  //     // lsSmartPointer<lsSphereDistribution<double, D>>::New(-15.0,
-  //     gridDelta); lsSmartPointer<lsBoxDistribution<NumericType, D>>::New(
-  //         std::array<NumericType, 3>({-gridDelta, -15.0, -gridDelta}),
-  //         gridDelta);
-
-  // lsGeometricAdvect<NumericType, D>(levelSet, dist, mask).apply();
-
-  // lsToMesh<NumericType, D>(levelSet, mesh).apply();
-  // lsVTKWriter(mesh, "afterDepoLS.vtk").apply();
-  // lsToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
-  // lsVTKWriter(mesh, "afterDepo.vtk").apply();
+  lsToMesh<NumericType, D>(levelSet, mesh).apply();
+  lsVTKWriter(mesh, "afterDepoLS.vtk").apply();
+  lsToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
+  lsVTKWriter(mesh, "afterDepo.vtk").apply();
 
   return 0;
 }

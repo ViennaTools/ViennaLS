@@ -103,6 +103,13 @@ public:
       return;
     }
 
+    // levelSet must have at least a width of 3
+    lsExpand<T, D>(levelSet, 3).apply();
+
+    if(maskLevelSet != nullptr) {
+      lsExpand<T, D>(maskLevelSet, 3).apply();
+    }
+
     typedef typename lsDomain<T, D>::DomainType DomainType;
 
     auto &domain = levelSet->getDomain();
@@ -180,11 +187,11 @@ public:
     // If a mask is supplied, remove all contribute points which
     // lie on (or inside) the mask
     if (maskLevelSet != nullptr) {
-      if (!distIsPositive) {
-        lsBooleanOperation<T, D>(levelSet, maskLevelSet,
-                                 lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
-            .apply();
-      }
+      // if (!distIsPositive) {
+      //   lsBooleanOperation<T, D>(levelSet, maskLevelSet,
+      //                            lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
+      //       .apply();
+      // }
       // Go over all contribute points and see if they are on the mask surface
       auto &maskDomain = maskLevelSet->getDomain();
       auto values = surfaceMesh->getScalarData("LSValues");
@@ -257,7 +264,7 @@ public:
     newPoints.resize(domain.getNumberOfSegments());
 
     constexpr T cutoffValue = 1.0 + numericEps;
-    constexpr T skipValue = 0.5;
+    // constexpr T skipValue = 0.5;
     const T initialDistance = (distIsPositive)
                                   ? std::numeric_limits<double>::max()
                                   : std::numeric_limits<double>::lowest();
@@ -302,13 +309,22 @@ public:
           checkIt.goToIndicesSequential(currentIndex);
           // if run is already negative undefined, just ignore the point
           if (distIsPositive) {
-            if (checkIt.getValue() < -skipValue) {
+            if (checkIt.getValue() < -cutoffValue) {
               continue;
             }
-          } else if (checkIt.getValue() > skipValue) {
+          } else if (checkIt.getValue() > cutoffValue) {
+            // if(currentIndex[1] == -4) {
+            //   std::cout << "discarding: " << currentIndex[0] << "; " << checkIt.getValue() << checkIt.getStartIndices() << " <-> " << checkIt.getEndIndices() << std::endl;
+            //   //"; mask: " << maskIt->getDefinedValue() << std::endl;
+            // }
             continue;
           }
         }
+
+        // if(currentIndex[1] == -1) {
+        //   std::cout << currentIndex[0] << "=> " << checkIt.getValue() << std::endl;
+        //   //"; mask: " << maskIt->getDefinedValue() << std::endl;
+        // }
 
         std::array<hrleCoordType, 3> currentCoords;
         std::array<hrleCoordType, 3> currentDistMin;
@@ -385,16 +401,35 @@ public:
           }
         }
 
+        // if(currentIndex[1] == -4) {
+        //   std::cout << currentIndex[0] << ": " << checkIt.getValue() << "; distance: " << distance << std::endl;
+        //   //"; mask: " << maskIt->getDefinedValue() << std::endl;
+        // }
+
         // if point is part of the mask, keep smaller value
         if (maskLevelSet != nullptr) {
           maskIt->goToIndicesSequential(currentIndex);
-          if (maskIt->isDefined()) {
-            if (distIsPositive) {
-              distance = std::min(maskIt->getDefinedValue(), distance);
-            } else {
-              distance = std::max(-maskIt->getDefinedValue(), distance);
+          if(checkIt.getValue() == maskIt->getValue()) {
+            distance = checkIt.getValue();
+          } else {
+            if (distance != initialDistance) {
+              distance = std::min(maskIt->getValue(), distance);
+            } else if (checkIt.getValue() >= 0.) {
+              distance = maskIt->getValue();
             }
           }
+
+          // if (distance != initialDistance) {
+          //   if(checkIt.getValue() == maskIt->getValue()) {
+          //     distance = checkIt.getValue();
+          //   } else {
+          //     distance = std::min(maskIt->getValue(), distance);
+          //   }
+          // } else {
+          //   if(checkIt.getValue() >= 0.) {
+          //     distance = maskIt->getValue();
+          //   }
+          // }
         }
 
         if (std::abs(distance) <= cutoffValue) {
