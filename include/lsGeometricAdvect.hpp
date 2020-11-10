@@ -277,7 +277,7 @@ public:
     #ifndef NDEBUG
     {
       std::ostringstream oss;
-      oss << "Min: " << min << ", Max: " << max << std::endl;
+      oss << "GeomAdvect: Min: " << min << ", Max: " << max << std::endl;
       lsMessage::getInstance().addDebug(oss.str()).print();
     }
     #endif
@@ -325,7 +325,6 @@ public:
             continue;
           }
         } else if (oldValue > cutoffValue) {
-          // std::cout << "inside levelset" << std::endl;
           continue;
         }
 
