@@ -224,17 +224,23 @@ public:
 
 #ifndef NDEBUG // if in debug build
     {
-      lsMessage::getInstance().addDebug("GeomAdvect: Writing debug meshes").print();
-      lsVTKWriter(surfaceMesh, lsFileFormatEnum::VTP, "DEBUG_lsGeomAdvectMesh_contributewoMask.vtp")
+      lsMessage::getInstance()
+          .addDebug("GeomAdvect: Writing debug meshes")
+          .print();
+      lsVTKWriter(surfaceMesh, lsFileFormatEnum::VTP,
+                  "DEBUG_lsGeomAdvectMesh_contributewoMask.vtp")
           .apply();
       auto mesh = lsSmartPointer<lsMesh>::New();
       lsToMesh<T, D>(maskLevelSet, mesh).apply();
-      lsVTKWriter(mesh, lsFileFormatEnum::VTP, "DEBUG_lsGeomAdvectMesh_mask.vtp")
+      lsVTKWriter(mesh, lsFileFormatEnum::VTP,
+                  "DEBUG_lsGeomAdvectMesh_mask.vtp")
           .apply();
       lsToMesh<T, D>(levelSet, mesh).apply();
-      lsVTKWriter(mesh, lsFileFormatEnum::VTP, "DEBUG_lsGeomAdvectMesh_initial.vtp").apply();
+      lsVTKWriter(mesh, lsFileFormatEnum::VTP,
+                  "DEBUG_lsGeomAdvectMesh_initial.vtp")
+          .apply();
     }
-    
+
 #endif
 
     typedef std::vector<std::array<double, 3>> SurfaceNodesType;
@@ -274,13 +280,13 @@ public:
                                   ? std::numeric_limits<double>::max()
                                   : std::numeric_limits<double>::lowest();
 
-    #ifndef NDEBUG
+#ifndef NDEBUG
     {
       std::ostringstream oss;
       oss << "GeomAdvect: Min: " << min << ", Max: " << max << std::endl;
       lsMessage::getInstance().addDebug(oss.str()).print();
     }
-    #endif
+#endif
 // set up multithreading
 #pragma omp parallel num_threads(domain.getNumberOfSegments())
     {
@@ -410,18 +416,17 @@ public:
           maskIt->goToIndicesSequential(currentIndex);
 
           // if dist is positive, flip logic of comparison
-          if (distIsPositive ^ (std::abs(oldValue - maskIt->getValue()) < 1e-6)) {
+          if (distIsPositive ^
+              (std::abs(oldValue - maskIt->getValue()) < 1e-6)) {
             if (!distIsPositive && std::abs(oldValue) <= cutoffValue) {
-              newPoints[p].push_back(
-              std::make_pair(currentIndex, oldValue));
+              newPoints[p].push_back(std::make_pair(currentIndex, oldValue));
               continue;
             }
           } else {
             if (distance != initialDistance) {
               distance = std::min(maskIt->getValue(), distance);
             } else if (distIsPositive || oldValue >= 0.) {
-              newPoints[p].push_back(
-              std::make_pair(currentIndex, oldValue));
+              newPoints[p].push_back(std::make_pair(currentIndex, oldValue));
               continue;
             }
           }
@@ -429,19 +434,18 @@ public:
 
         if (std::abs(distance) <= cutoffValue) {
           // avoid using distribution in wrong direction
-          if(distIsPositive && oldValue >= 0.) {
+          if (distIsPositive && oldValue >= 0.) {
             newPoints[p].push_back(
-              std::make_pair(currentIndex, distance - numericEps));
-          } else if(!distIsPositive && oldValue <= 0.) {
+                std::make_pair(currentIndex, distance - numericEps));
+          } else if (!distIsPositive && oldValue <= 0.) {
             // if we are etching, need to make sure, we are not inside mask
-            if(maskIt == nullptr || maskIt->getValue() > -cutoffValue) {
+            if (maskIt == nullptr || maskIt->getValue() > -cutoffValue) {
               newPoints[p].push_back(
-              std::make_pair(currentIndex, distance - numericEps));
+                  std::make_pair(currentIndex, distance - numericEps));
             }
           } else {
             // this only happens if distribution is very small, < 2 * gridDelta
-            newPoints[p].push_back(
-              std::make_pair(currentIndex, oldValue));
+            newPoints[p].push_back(std::make_pair(currentIndex, oldValue));
           }
         }
       } // domainBounds for
@@ -480,8 +484,11 @@ public:
     }
 
 #ifndef NDEBUG // if in debug build
-    lsMessage::getInstance().addDebug("GeomAdvect: Writing final mesh...").print();
-    lsVTKWriter(mesh, lsFileFormatEnum::VTP, "DEBUG_lsGeomAdvectMesh_final.vtp").apply();
+    lsMessage::getInstance()
+        .addDebug("GeomAdvect: Writing final mesh...")
+        .print();
+    lsVTKWriter(mesh, lsFileFormatEnum::VTP, "DEBUG_lsGeomAdvectMesh_final.vtp")
+        .apply();
 #endif
 
     lsFromMesh<T, D>(levelSet, mesh).apply();

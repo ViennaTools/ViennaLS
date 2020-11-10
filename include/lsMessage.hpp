@@ -46,10 +46,8 @@ public:
   }
 
   lsMessage &addDebug(std::string s) {
-    #pragma omp critical
-    {
-      message += std::string(tabWidth, ' ') + "DEBUG: " + s + "\n";
-    }
+#pragma omp critical
+    { message += std::string(tabWidth, ' ') + "DEBUG: " + s + "\n"; }
     return *this;
   }
 

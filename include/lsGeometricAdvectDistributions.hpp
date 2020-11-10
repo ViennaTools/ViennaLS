@@ -17,7 +17,9 @@ public:
   /// return true or do not overload this function.
   virtual bool isInside(const std::array<hrleCoordType, 3> &initial,
                         const std::array<hrleCoordType, 3> &candidate,
-                        double eps = 0.) const { return true; }
+                        double eps = 0.) const {
+    return true;
+  }
 
   /// Returns the signed distance of a point relative to the distributions
   /// center. This is the signed manhatten distance to the nearest surface
