@@ -109,9 +109,9 @@ Inheritance diagram for lsGeometricAdvectDistribution&lt; T, D &gt;:</div>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:acba0b149a25e30d4e8d8c8dd02fa063c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsGeometricAdvectDistribution.html#acba0b149a25e30d4e8d8c8dd02fa063c">lsGeometricAdvectDistribution</a> ()</td></tr>
 <tr class="separator:acba0b149a25e30d4e8d8c8dd02fa063c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2ba1bc31463a4dfacf98100f48e3f6a1"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsGeometricAdvectDistribution.html#a2ba1bc31463a4dfacf98100f48e3f6a1">isInside</a> (const std::array&lt; hrleCoordType, 3 &gt; &amp;initial, const std::array&lt; hrleCoordType, 3 &gt; &amp;candidate, double eps=0.) const =0</td></tr>
-<tr class="memdesc:a2ba1bc31463a4dfacf98100f48e3f6a1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Quick check whether a point relative to the distributions center is inside the distribution.  <a href="classlsGeometricAdvectDistribution.html#a2ba1bc31463a4dfacf98100f48e3f6a1">More...</a><br /></td></tr>
-<tr class="separator:a2ba1bc31463a4dfacf98100f48e3f6a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a100184ca8c5fd3e7b53f1328e5aa5b30"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsGeometricAdvectDistribution.html#a100184ca8c5fd3e7b53f1328e5aa5b30">isInside</a> (const std::array&lt; hrleCoordType, 3 &gt; &amp;initial, const std::array&lt; hrleCoordType, 3 &gt; &amp;candidate, double eps=0.) const</td></tr>
+<tr class="memdesc:a100184ca8c5fd3e7b53f1328e5aa5b30"><td class="mdescLeft">&#160;</td><td class="mdescRight">Quick check whether a point relative to the distributions center is inside the distribution. If there is no quick check due to the complexity of the distribution, always return true or do not overload this function.  <a href="classlsGeometricAdvectDistribution.html#a100184ca8c5fd3e7b53f1328e5aa5b30">More...</a><br /></td></tr>
+<tr class="separator:a100184ca8c5fd3e7b53f1328e5aa5b30"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad7fb15005eaf5a3743b6a90121c11364"><td class="memItemLeft" align="right" valign="top">virtual T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsGeometricAdvectDistribution.html#ad7fb15005eaf5a3743b6a90121c11364">getSignedDistance</a> (const std::array&lt; hrleCoordType, 3 &gt; &amp;initial, const std::array&lt; hrleCoordType, 3 &gt; &amp;candidate) const =0</td></tr>
 <tr class="memdesc:ad7fb15005eaf5a3743b6a90121c11364"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the signed distance of a point relative to the distributions center. This is the signed manhatten distance to the nearest surface point.  <a href="classlsGeometricAdvectDistribution.html#ad7fb15005eaf5a3743b6a90121c11364">More...</a><br /></td></tr>
 <tr class="separator:ad7fb15005eaf5a3743b6a90121c11364"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -255,8 +255,8 @@ template&lt;class T , int D&gt; </div>
 
 </div>
 </div>
-<a id="a2ba1bc31463a4dfacf98100f48e3f6a1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2ba1bc31463a4dfacf98100f48e3f6a1">&#9670;&nbsp;</a></span>isInside()</h2>
+<a id="a100184ca8c5fd3e7b53f1328e5aa5b30"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a100184ca8c5fd3e7b53f1328e5aa5b30">&#9670;&nbsp;</a></span>isInside()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -292,14 +292,14 @@ template&lt;class T , int D&gt; </div>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p>Quick check whether a point relative to the distributions center is inside the distribution. </p>
+<p>Quick check whether a point relative to the distributions center is inside the distribution. If there is no quick check due to the complexity of the distribution, always return true or do not overload this function. </p>
 
-<p>Implemented in <a class="el" href="classlsBoxDistribution.html#a8b9ae364634afe64727c3ea20d7c3c94">lsBoxDistribution&lt; T, D &gt;</a>, and <a class="el" href="classlsSphereDistribution.html#a390706ad646864d88a8ff0346ecef343">lsSphereDistribution&lt; T, D &gt;</a>.</p>
+<p>Reimplemented in <a class="el" href="classlsBoxDistribution.html#a8b9ae364634afe64727c3ea20d7c3c94">lsBoxDistribution&lt; T, D &gt;</a>, and <a class="el" href="classlsSphereDistribution.html#a390706ad646864d88a8ff0346ecef343">lsSphereDistribution&lt; T, D &gt;</a>.</p>
 
 </div>
 </div>

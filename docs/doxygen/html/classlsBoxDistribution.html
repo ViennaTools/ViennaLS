@@ -110,7 +110,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a137264971002f2feb6bfc044e3b8e4ab"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsBoxDistribution.html#a137264971002f2feb6bfc044e3b8e4ab">lsBoxDistribution</a> (const std::array&lt; T, 3 &gt; &amp;halfAxes, const T delta)</td></tr>
 <tr class="separator:a137264971002f2feb6bfc044e3b8e4ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b9ae364634afe64727c3ea20d7c3c94"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsBoxDistribution.html#a8b9ae364634afe64727c3ea20d7c3c94">isInside</a> (const std::array&lt; hrleCoordType, 3 &gt; &amp;initial, const std::array&lt; hrleCoordType, 3 &gt; &amp;candidate, double eps=0.) const</td></tr>
-<tr class="memdesc:a8b9ae364634afe64727c3ea20d7c3c94"><td class="mdescLeft">&#160;</td><td class="mdescRight">Quick check whether a point relative to the distributions center is inside the distribution.  <a href="classlsBoxDistribution.html#a8b9ae364634afe64727c3ea20d7c3c94">More...</a><br /></td></tr>
+<tr class="memdesc:a8b9ae364634afe64727c3ea20d7c3c94"><td class="mdescLeft">&#160;</td><td class="mdescRight">Quick check whether a point relative to the distributions center is inside the distribution. If there is no quick check due to the complexity of the distribution, always return true or do not overload this function.  <a href="classlsBoxDistribution.html#a8b9ae364634afe64727c3ea20d7c3c94">More...</a><br /></td></tr>
 <tr class="separator:a8b9ae364634afe64727c3ea20d7c3c94"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3bacbfa62fd08656edacf8b902db97b2"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsBoxDistribution.html#a3bacbfa62fd08656edacf8b902db97b2">getSignedDistance</a> (const std::array&lt; hrleCoordType, 3 &gt; &amp;initial, const std::array&lt; hrleCoordType, 3 &gt; &amp;candidate) const</td></tr>
 <tr class="memdesc:a3bacbfa62fd08656edacf8b902db97b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the signed distance of a point relative to the distributions center. This is the signed manhatten distance to the nearest surface point.  <a href="classlsBoxDistribution.html#a3bacbfa62fd08656edacf8b902db97b2">More...</a><br /></td></tr>
@@ -286,9 +286,9 @@ template&lt;class T , int D&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>Quick check whether a point relative to the distributions center is inside the distribution. </p>
+<p>Quick check whether a point relative to the distributions center is inside the distribution. If there is no quick check due to the complexity of the distribution, always return true or do not overload this function. </p>
 
-<p>Implements <a class="el" href="classlsGeometricAdvectDistribution.html#a2ba1bc31463a4dfacf98100f48e3f6a1">lsGeometricAdvectDistribution&lt; T, D &gt;</a>.</p>
+<p>Reimplemented from <a class="el" href="classlsGeometricAdvectDistribution.html#a100184ca8c5fd3e7b53f1328e5aa5b30">lsGeometricAdvectDistribution&lt; T, D &gt;</a>.</p>
 
 </div>
 </div>

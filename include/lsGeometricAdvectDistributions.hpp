@@ -12,10 +12,14 @@ public:
   lsGeometricAdvectDistribution() {}
 
   /// Quick check whether a point relative to the distributions
-  /// center is inside the distribution.
+  /// center is inside the distribution. If there is no quick
+  /// check due to the complexity of the distribution, always
+  /// return true or do not overload this function.
   virtual bool isInside(const std::array<hrleCoordType, 3> &initial,
                         const std::array<hrleCoordType, 3> &candidate,
-                        double eps = 0.) const = 0;
+                        double eps = 0.) const {
+    return true;
+  }
 
   /// Returns the signed distance of a point relative to the distributions
   /// center. This is the signed manhatten distance to the nearest surface

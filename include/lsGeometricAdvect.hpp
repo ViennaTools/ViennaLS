@@ -20,6 +20,7 @@
 #include <lsToDiskMesh.hpp>
 
 #ifndef NDEBUG // if in debug build
+#include <lsToMesh.hpp>
 #include <lsVTKWriter.hpp>
 #endif
 
@@ -219,12 +220,28 @@ public:
       newSurfaceMesh->minimumExtent = surfaceMesh->minimumExtent;
       newSurfaceMesh->maximumExtent = surfaceMesh->maximumExtent;
       surfaceMesh = newSurfaceMesh;
+    }
 
 #ifndef NDEBUG // if in debug build
-      lsVTKWriter(surfaceMesh, "DEBUG_lsGeomAdvectMesh_contributewoMask.vtk")
+    {
+      lsMessage::getInstance()
+          .addDebug("GeomAdvect: Writing debug meshes")
+          .print();
+      lsVTKWriter(surfaceMesh, lsFileFormatEnum::VTP,
+                  "DEBUG_lsGeomAdvectMesh_contributewoMask.vtp")
           .apply();
-#endif
+      auto mesh = lsSmartPointer<lsMesh>::New();
+      lsToMesh<T, D>(maskLevelSet, mesh).apply();
+      lsVTKWriter(mesh, lsFileFormatEnum::VTP,
+                  "DEBUG_lsGeomAdvectMesh_mask.vtp")
+          .apply();
+      lsToMesh<T, D>(levelSet, mesh).apply();
+      lsVTKWriter(mesh, lsFileFormatEnum::VTP,
+                  "DEBUG_lsGeomAdvectMesh_initial.vtp")
+          .apply();
     }
+
+#endif
 
     typedef std::vector<std::array<double, 3>> SurfaceNodesType;
     const SurfaceNodesType &surfaceNodes = surfaceMesh->getNodes();
@@ -263,6 +280,13 @@ public:
                                   ? std::numeric_limits<double>::max()
                                   : std::numeric_limits<double>::lowest();
 
+#ifndef NDEBUG
+    {
+      std::ostringstream oss;
+      oss << "GeomAdvect: Min: " << min << ", Max: " << max << std::endl;
+      lsMessage::getInstance().addDebug(oss.str()).print();
+    }
+#endif
 // set up multithreading
 #pragma omp parallel num_threads(domain.getNumberOfSegments())
     {
@@ -299,21 +323,20 @@ public:
            currentIndex <= endVector;
            incrementIndices(currentIndex, min, max)) {
         // if point is already full in old level set, skip it
-        {
-          checkIt.goToIndicesSequential(currentIndex);
-          // if run is already negative undefined, just ignore the point
-          if (distIsPositive) {
-            if (checkIt.getValue() < -cutoffValue) {
-              continue;
-            }
-          } else if (checkIt.getValue() > cutoffValue) {
+        checkIt.goToIndicesSequential(currentIndex);
+        T oldValue = checkIt.getValue();
+        // if run is already negative undefined, just ignore the point
+        if (distIsPositive) {
+          if (oldValue < -cutoffValue) {
             continue;
           }
+        } else if (oldValue > cutoffValue) {
+          continue;
         }
 
-        std::array<hrleCoordType, 3> currentCoords;
-        std::array<hrleCoordType, 3> currentDistMin;
-        std::array<hrleCoordType, 3> currentDistMax;
+        std::array<hrleCoordType, 3> currentCoords{};
+        std::array<hrleCoordType, 3> currentDistMin{};
+        std::array<hrleCoordType, 3> currentDistMax{};
 
         for (unsigned i = 0; i < D; ++i) {
           currentCoords[i] = currentIndex[i] * gridDelta;
@@ -393,21 +416,37 @@ public:
           maskIt->goToIndicesSequential(currentIndex);
 
           // if dist is positive, flip logic of comparison
-          if (distIsPositive ^ (checkIt.getValue() == maskIt->getValue())) {
-            if (!distIsPositive)
-              distance = checkIt.getValue();
+          if (distIsPositive ^
+              (std::abs(oldValue - maskIt->getValue()) < 1e-6)) {
+            if (!distIsPositive && std::abs(oldValue) <= cutoffValue) {
+              newPoints[p].push_back(std::make_pair(currentIndex, oldValue));
+              continue;
+            }
           } else {
             if (distance != initialDistance) {
               distance = std::min(maskIt->getValue(), distance);
-            } else if (distIsPositive || checkIt.getValue() >= 0.) {
-              distance = maskIt->getValue();
+            } else if (distIsPositive || oldValue >= 0.) {
+              newPoints[p].push_back(std::make_pair(currentIndex, oldValue));
+              continue;
             }
           }
         }
 
         if (std::abs(distance) <= cutoffValue) {
-          newPoints[p].push_back(
-              std::make_pair(currentIndex, distance - numericEps));
+          // avoid using distribution in wrong direction
+          if (distIsPositive && oldValue >= 0.) {
+            newPoints[p].push_back(
+                std::make_pair(currentIndex, distance - numericEps));
+          } else if (!distIsPositive && oldValue <= 0.) {
+            // if we are etching, need to make sure, we are not inside mask
+            if (maskIt == nullptr || maskIt->getValue() > -cutoffValue) {
+              newPoints[p].push_back(
+                  std::make_pair(currentIndex, distance - numericEps));
+            }
+          } else {
+            // this only happens if distribution is very small, < 2 * gridDelta
+            newPoints[p].push_back(std::make_pair(currentIndex, oldValue));
+          }
         }
       } // domainBounds for
     }   // parallel region
@@ -445,7 +484,11 @@ public:
     }
 
 #ifndef NDEBUG // if in debug build
-    lsVTKWriter(mesh, "DEBUG_lsGeomAdvectMesh_final.vtk").apply();
+    lsMessage::getInstance()
+        .addDebug("GeomAdvect: Writing final mesh...")
+        .print();
+    lsVTKWriter(mesh, lsFileFormatEnum::VTP, "DEBUG_lsGeomAdvectMesh_final.vtp")
+        .apply();
 #endif
 
     lsFromMesh<T, D>(levelSet, mesh).apply();

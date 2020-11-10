@@ -457,11 +457,14 @@ private:
 
     // rotate mesh
     // normalise axis vector
-    T dot = DotProduct(cylinder->axisDirection, cylinder->axisDirection);
-    hrleVectorType<T, 3> cylinderAxis =
-        cylinder->axisDirection / std::sqrt(dot);
+    T unit =
+        std::sqrt(DotProduct(cylinder->axisDirection, cylinder->axisDirection));
+    hrleVectorType<double, 3> cylinderAxis;
+    for (unsigned i = 0; i < 3; ++i) {
+      cylinderAxis[i] = cylinder->axisDirection[i] / unit;
+    }
     // get rotation axis via cross product of (0,0,1) and axis of cylinder
-    hrleVectorType<T, 3> rotAxis(-cylinderAxis[1], cylinderAxis[0], 0.0);
+    hrleVectorType<double, 3> rotAxis(-cylinderAxis[1], cylinderAxis[0], 0.0);
     // angle is acos of dot product
     T rotationAngle = std::acos(cylinderAxis[2]);
 
@@ -470,7 +473,11 @@ private:
         .apply();
 
     // translate mesh
-    lsTransformMesh(mesh, lsTransformEnum::TRANSLATION, cylinder->origin)
+    hrleVectorType<double, 3> translationVector;
+    for (unsigned i = 0; i < 3; ++i) {
+      translationVector[i] = cylinder->origin[i];
+    }
+    lsTransformMesh(mesh, lsTransformEnum::TRANSLATION, translationVector)
         .apply();
 
     // read mesh from surface

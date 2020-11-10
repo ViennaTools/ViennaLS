@@ -80,9 +80,9 @@ public:
 template <class T, int D> class lsCylinder {
 public:
   /// This is the location of the center of the base of the cylinder
-  hrleVectorType<T, 3> origin = hrleVectorType<T, D>(T(0));
+  hrleVectorType<T, 3> origin = hrleVectorType<T, 3>(T(0));
   /// This vector will be the main axis of the cylinder
-  hrleVectorType<T, 3> axisDirection = hrleVectorType<T, D>(T(0));
+  hrleVectorType<T, 3> axisDirection = hrleVectorType<T, 3>(T(0));
   /// height of the cylinder
   T height = 0.;
   /// radius of the base of the cylinder

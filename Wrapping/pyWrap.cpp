@@ -91,7 +91,7 @@ class PylsGeometricAdvectDistribution
 public:
   bool isInside(const vectorType &initial, const vectorType &candidate,
                 double eps = 0.) const override {
-    PYBIND11_OVERLOAD_PURE(bool, ClassType, isInside, initial, candidate, eps);
+    PYBIND11_OVERLOAD(bool, ClassType, isInside, initial, candidate, eps);
   }
 
   T getSignedDistance(const vectorType &initial,
