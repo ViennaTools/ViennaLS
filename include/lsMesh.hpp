@@ -23,6 +23,20 @@ public:
   std::array<double, 3> maximumExtent;
 
 private:
+  // iterator typedef
+  using VectorIt = lsPointData::VectorDataType::iterator;
+  // find function to avoid including the whole algorithm header
+  VectorIt find(VectorIt first, VectorIt last, const std::array<double, 3>& value)
+  {
+      for (; first != last; ++first) {
+          if (*first == value) {
+              return first;
+          }
+      }
+      return last;
+  }
+
+
   // helper function for duplicate removal
   template <class ElementType>
   void replaceNode(ElementType &elements, std::pair<unsigned, unsigned> node) {
@@ -129,7 +143,7 @@ public:
     std::vector<std::pair<unsigned, unsigned>> duplicates;
     bool adjusted = false;
     for (unsigned i = 1; i < nodes.size(); ++i) {
-      auto it = std::find(newNodes.begin(), newNodes.end(), nodes[i]);
+      auto it = find(newNodes.begin(), newNodes.end(), nodes[i]);
       if (it != newNodes.end()) {
         adjusted = true;
         // if duplicate point, save it to be replaced
