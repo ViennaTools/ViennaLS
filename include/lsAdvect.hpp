@@ -758,6 +758,7 @@ public:
         currentTime += advect(advectionTime - currentTime);
         ++numberOfTimeSteps;
       }
+      advectedTime = currentTime;
     }
   }
 };
