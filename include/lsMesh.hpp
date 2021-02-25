@@ -26,16 +26,15 @@ private:
   // iterator typedef
   using VectorIt = lsPointData::VectorDataType::iterator;
   // find function to avoid including the whole algorithm header
-  VectorIt find(VectorIt first, VectorIt last, const std::array<double, 3>& value)
-  {
-      for (; first != last; ++first) {
-          if (*first == value) {
-              return first;
-          }
+  VectorIt find(VectorIt first, VectorIt last,
+                const std::array<double, 3> &value) {
+    for (; first != last; ++first) {
+      if (*first == value) {
+        return first;
       }
-      return last;
+    }
+    return last;
   }
-
 
   // helper function for duplicate removal
   template <class ElementType>

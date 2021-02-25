@@ -122,7 +122,12 @@ public:
 
 // module specification
 PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
-  module.doc() = "ViennaLS python module.";
+  module.doc() =
+      "ViennaLS is a header-only C++ level set library developed for high "
+      "performance topography simulations. The main design goals are "
+      "simplicity and efficiency, tailored towards scientific simulations. "
+      "ViennaLS can also be used for visualisation applications, although this "
+      "is not the main design target.";
 
   // set version string of python module
   module.attr("__version__") = VIENNALS_MODULE_VERSION;
@@ -831,7 +836,8 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Set the filename for the output file.")
       .def("apply", &lsWriter<T, D>::apply, "Write to file.");
 
-  // lsWriteVisualizationMesh
+// lsWriteVisualizationMesh
+#ifdef VIENNALS_USE_VTK
   pybind11::class_<lsWriteVisualizationMesh<T, D>,
                    lsSmartPointer<lsWriteVisualizationMesh<T, D>>>(
       module, "lsWriteVisualizationMesh")
@@ -855,4 +861,5 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            " Whether to extract a tetra volume mesh. Defaults to true.")
       .def("apply", &lsWriteVisualizationMesh<T, D>::apply,
            "Make and write mesh.");
+#endif
 }
