@@ -4,6 +4,11 @@
 #include <lsDomain.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPointData.hpp>
+#include <lsToSurfaceMesh.hpp>
+#include <lsToMesh.hpp>
+#include <lsVTKWriter.hpp>
+#include <lsReader.hpp>
+#include <lsWriter.hpp>
 
 /**
   Minimal example showing how to serialize an lsDomain and deserialize.
@@ -37,16 +42,18 @@ int main() {
   data.insertNextScalarData(scalars, "myScalars");
   data.insertNextVectorData(vectors, "myVectors");
 
-  {
-    std::ofstream fout("test.lvst", std::ofstream::binary);
-    levelSet->serialize(fout);
-    fout.close();
-  }
+  // {
+  //   std::ofstream fout("test.lvst", std::ofstream::binary);
+  //   levelSet->serialize(fout);
+  //   fout.close();
+  // }
+  lsWriter<double, D>(levelSet, "test.lvst").apply();
 
   {
     auto newLevelSet = lsSmartPointer<lsDomain<double, D>>::New();
-    std::ifstream fin("test.lvst", std::ofstream::binary);
-    newLevelSet->deserialize(fin);
+    // std::ifstream fin("test.lvst", std::ofstream::binary);
+    lsReader<double, D>(newLevelSet, "test.lvst").apply();
+    // newLevelSet->deserialize(fin);
     lsPointData &newData = newLevelSet->getPointData();
     std::cout << newData.getScalarDataSize() << std::endl;
     auto newScalars = newData.getScalarData(0);
@@ -59,8 +66,14 @@ int main() {
     for (auto i : *newVectors) {
       std::cout << i[0] << ", " << i[1] << ", " << i[2] << std::endl;
     }
-    fin.close();
+    // fin.close();
+
+    auto mesh = lsSmartPointer<lsMesh>::New();
+    lsToMesh<double, D>(newLevelSet, mesh).apply();
+    lsVTKWriter(mesh, "test.vtk").apply();
   }
+
+  
 
   return 0;
 }
