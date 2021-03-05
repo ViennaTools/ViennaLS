@@ -149,7 +149,7 @@ public:
   }
 
 private:
-  void makeSphere(hrleVectorType<T, D> origin, T radius, int width = 2) {
+  void makeSphere(hrleVectorType<T, D> origin, T radius, int width = 3) {
     if (levelSet == nullptr) {
       lsMessage::getInstance()
           .addWarning("No level set was passed to lsMakeGeometry.")

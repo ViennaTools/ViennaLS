@@ -103,6 +103,9 @@ public:
 
         denominator = std::sqrt(denominator);
         if (std::abs(denominator) < 1e-12) {
+          std::ostringstream oss;
+          oss << "lsCalculateNormalVectors: Vector of length 0 at " << neighborIt.getIndices();
+          lsMessage::getInstance().addWarning(oss.str()).print();
           for (unsigned i = 0; i < D; ++i)
             n[i] = 0.;
         } else {
