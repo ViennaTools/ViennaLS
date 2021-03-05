@@ -22,22 +22,20 @@ using NumericType = float;
 // implement own velocity field
 class velocityField : public lsVelocityField<NumericType> {
 public:
-  NumericType
-  getScalarVelocity(const std::array<NumericType, 3> & /*coordinate*/,
-                    int /*material*/,
-                    const std::array<NumericType, 3>
-                        & /*normalVector = hrleVectorType<NumericType, 3>(0.)*/) {
+  NumericType getScalarVelocity(
+      const std::array<NumericType, 3> & /*coordinate*/, int /*material*/,
+      const std::array<NumericType, 3>
+          & /*normalVector = hrleVectorType<NumericType, 3>(0.)*/) {
     // Some arbitrary velocity function of your liking
     // (try changing it and see what happens :)
     NumericType velocity = 1.;
     return velocity;
   }
 
-  std::array<NumericType, 3>
-  getVectorVelocity(const std::array<NumericType, 3> & /*coordinate*/,
-                    int /*material*/,
-                    const std::array<NumericType, 3>
-                        & /*normalVector = hrleVectorType<NumericType, 3>(0.)*/) {
+  std::array<NumericType, 3> getVectorVelocity(
+      const std::array<NumericType, 3> & /*coordinate*/, int /*material*/,
+      const std::array<NumericType, 3>
+          & /*normalVector = hrleVectorType<NumericType, 3>(0.)*/) {
     return std::array<NumericType, 3>({}); // initialise to zero
   }
 };
@@ -53,23 +51,25 @@ int main() {
   double bounds[2 * D] = {-extent, extent, -extent, extent, -extent, extent};
   lsDomain<NumericType, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D - 1; ++i)
-    boundaryCons[i] = lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+    boundaryCons[i] =
+        lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   boundaryCons[2] = lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  auto substrate =
-      lsSmartPointer<lsDomain<NumericType, D>>::New(bounds, boundaryCons, gridDelta);
+  auto substrate = lsSmartPointer<lsDomain<NumericType, D>>::New(
+      bounds, boundaryCons, gridDelta);
 
   NumericType origin[3] = {0., 0., 0.};
   NumericType planeNormal[3] = {0., 0., 1.};
 
   {
-    auto plane = lsSmartPointer<lsPlane<NumericType, D>>::New(origin, planeNormal);
+    auto plane =
+        lsSmartPointer<lsPlane<NumericType, D>>::New(origin, planeNormal);
     lsMakeGeometry<NumericType, D>(substrate, plane).apply();
   }
 
   {
-    auto trench = lsSmartPointer<lsDomain<NumericType, D>>::New(bounds, boundaryCons,
-                                                           gridDelta);
+    auto trench = lsSmartPointer<lsDomain<NumericType, D>>::New(
+        bounds, boundaryCons, gridDelta);
     // make -x and +x greater than domain for numerical stability
     NumericType ylimit = extent / 4.;
     NumericType minCorner[D] = {-extent - 1, -ylimit, -15.};
@@ -78,8 +78,8 @@ int main() {
     lsMakeGeometry<NumericType, D>(trench, box).apply();
 
     // Create trench geometry
-    lsBooleanOperation<NumericType, D>(substrate, trench,
-                                  lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
+    lsBooleanOperation<NumericType, D>(
+        substrate, trench, lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
         .apply();
   }
 
@@ -109,15 +109,18 @@ int main() {
   advectionKernel.setVelocityField(velocities);
   // advectionKernel.setAdvectionTime(4.);
   unsigned counter = 1;
-  for (NumericType time = 0; time < 4.; time += advectionKernel.getAdvectedTime()) {
+  for (NumericType time = 0; time < 4.;
+       time += advectionKernel.getAdvectedTime()) {
     advectionKernel.apply();
 
     auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
     lsToSurfaceMesh<NumericType, D>(newLayer, mesh).apply();
-    lsVTKWriter<NumericType>(mesh, "trench-" + std::to_string(counter) + ".vtk").apply();
+    lsVTKWriter<NumericType>(mesh, "trench-" + std::to_string(counter) + ".vtk")
+        .apply();
 
     lsToMesh<NumericType, D>(newLayer, mesh).apply();
-    lsVTKWriter<NumericType>(mesh, "LS-" + std::to_string(counter) + ".vtk").apply();
+    lsVTKWriter<NumericType>(mesh, "LS-" + std::to_string(counter) + ".vtk")
+        .apply();
 
     ++counter;
   }

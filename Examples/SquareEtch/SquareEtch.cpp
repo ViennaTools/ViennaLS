@@ -193,7 +193,8 @@ int main() {
 
     auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter<double>(mesh, fileName + std::to_string(counter) + ".vtk").apply();
+    lsVTKWriter<double>(mesh, fileName + std::to_string(counter) + ".vtk")
+        .apply();
     ++counter;
   }
   std::cout << std::endl;

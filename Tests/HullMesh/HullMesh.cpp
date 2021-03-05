@@ -23,7 +23,8 @@ int main() {
 
   auto hull = lsSmartPointer<lsMesh<>>::New();
   lsConvexHull<double, D>(hull, cloud).apply();
-  lsVTKWriter<double>(hull, lsFileFormatEnum::VTP, "hull_" + std::to_string(1) + ".vtp")
+  lsVTKWriter<double>(hull, lsFileFormatEnum::VTP,
+                      "hull_" + std::to_string(1) + ".vtp")
       .apply();
 
   return 0;

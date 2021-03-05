@@ -32,22 +32,24 @@ int main() {
   double bounds[2 * D] = {-extent, extent, -extent, extent, -extent, extent};
   lsDomain<NumericType, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D - 1; ++i)
-    boundaryCons[i] = lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+    boundaryCons[i] =
+        lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   boundaryCons[2] = lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  auto substrate =
-      lsSmartPointer<lsDomain<NumericType, D>>::New(bounds, boundaryCons, gridDelta);
+  auto substrate = lsSmartPointer<lsDomain<NumericType, D>>::New(
+      bounds, boundaryCons, gridDelta);
 
   {
     NumericType origin[3] = {0., 0., 0.};
     NumericType planeNormal[3] = {0., 0., 1.};
-    auto plane = lsSmartPointer<lsPlane<NumericType, D>>::New(origin, planeNormal);
+    auto plane =
+        lsSmartPointer<lsPlane<NumericType, D>>::New(origin, planeNormal);
     lsMakeGeometry<NumericType, D>(substrate, plane).apply();
   }
 
   {
-    auto trench = lsSmartPointer<lsDomain<NumericType, D>>::New(bounds, boundaryCons,
-                                                           gridDelta);
+    auto trench = lsSmartPointer<lsDomain<NumericType, D>>::New(
+        bounds, boundaryCons, gridDelta);
     // make -x and +x greater than domain for numerical stability
     NumericType ylimit = extent / 4.;
     NumericType minCorner[D] = {-extent - 1, -ylimit, -15.};
@@ -55,8 +57,8 @@ int main() {
     auto box = lsSmartPointer<lsBox<NumericType, D>>::New(minCorner, maxCorner);
     lsMakeGeometry<NumericType, D>(trench, box).apply();
     // Create trench geometry
-    lsBooleanOperation<NumericType, D>(substrate, trench,
-                                  lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
+    lsBooleanOperation<NumericType, D>(
+        substrate, trench, lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
         .apply();
   }
 
@@ -75,8 +77,8 @@ int main() {
 
   std::cout << "Advecting" << std::endl;
   // Grow the layer uniformly by 4 as in deposition example
-  auto dist =
-      lsSmartPointer<lsSphereDistribution<hrleCoordType, D>>::New(4.0, gridDelta);
+  auto dist = lsSmartPointer<lsSphereDistribution<hrleCoordType, D>>::New(
+      4.0, gridDelta);
   lsGeometricAdvect<NumericType, D>(newLayer, dist).apply();
 
   {

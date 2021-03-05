@@ -11,8 +11,7 @@
 /// If it describes a 2D mesh, the third dimension is set to 0.
 /// Vertices, Lines, Triangles, Tetras & Hexas are supported as geometric
 /// elements.
-template<class T = double>
-class lsMesh : public lsPointData<T> {
+template <class T = double> class lsMesh : public lsPointData<T> {
 public:
   std::vector<std::array<T, 3>> nodes;
   std::vector<std::array<unsigned, 1>> vertices;
@@ -27,8 +26,7 @@ private:
   // iterator typedef
   using VectorIt = typename lsPointData<T>::VectorDataType::iterator;
   // find function to avoid including the whole algorithm header
-  VectorIt find(VectorIt first, VectorIt last,
-                const std::array<T, 3> &value) {
+  VectorIt find(VectorIt first, VectorIt last, const std::array<T, 3> &value) {
     for (; first != last; ++first) {
       if (*first == value) {
         return first;
@@ -262,15 +260,17 @@ public:
     if (lsPointData<T>::getScalarDataSize() > 0) {
       std::cout << "Scalar data:" << std::endl;
       for (unsigned i = 0; i < lsPointData<T>::getScalarDataSize(); ++i) {
-        std::cout << "  \"" << lsPointData<T>::getScalarDataLabel(i) << "\" of size "
-                  << lsPointData<T>::getScalarData(i)->size() << std::endl;
+        std::cout << "  \"" << lsPointData<T>::getScalarDataLabel(i)
+                  << "\" of size " << lsPointData<T>::getScalarData(i)->size()
+                  << std::endl;
       }
     }
     if (lsPointData<T>::getVectorDataSize() > 0) {
       std::cout << "Vector data:" << std::endl;
       for (unsigned i = 0; i < lsPointData<T>::getVectorDataSize(); ++i) {
-        std::cout << "  \"" << lsPointData<T>::getVectorDataLabel(i) << "\" of size "
-                  << lsPointData<T>::getVectorData(i)->size() << std::endl;
+        std::cout << "  \"" << lsPointData<T>::getVectorDataLabel(i)
+                  << "\" of size " << lsPointData<T>::getVectorData(i)->size()
+                  << std::endl;
       }
     }
   }

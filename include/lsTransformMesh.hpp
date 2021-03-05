@@ -17,8 +17,7 @@ enum struct lsTransformEnum : unsigned {
   SCALE = 2
 };
 
-template<class T>
-class lsTransformMesh {
+template <class T> class lsTransformMesh {
   lsSmartPointer<lsMesh<T>> mesh = nullptr;
   lsTransformEnum transform = lsTransformEnum::TRANSLATION;
   hrleVectorType<double, 3> transformVector{};

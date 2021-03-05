@@ -28,7 +28,9 @@ public:
     levelSet = passedlsDomain;
   }
 
-  void setMesh(const lsSmartPointer<lsMesh<T>> passedMesh) { mesh = passedMesh; }
+  void setMesh(const lsSmartPointer<lsMesh<T>> passedMesh) {
+    mesh = passedMesh;
+  }
 
   void setSortPointList(bool passedSortPointList) {
     sortPointList = passedSortPointList;

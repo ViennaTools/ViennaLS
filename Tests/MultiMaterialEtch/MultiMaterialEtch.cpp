@@ -173,16 +173,19 @@ int main() {
     lsToSurfaceMesh<NumericType, D>(mask, mesh).apply();
     lsVTKWriter<double>(mesh, "mask" + std::to_string(2 * i) + ".vtk").apply();
     lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-    lsVTKWriter<double>(mesh, "surface" + std::to_string(2 * i) + ".vtk").apply();
+    lsVTKWriter<double>(mesh, "surface" + std::to_string(2 * i) + ".vtk")
+        .apply();
     std::cout << "DepoSteps: " << deposition.getNumberOfTimeSteps()
               << std::endl;
 
     etching.apply();
 
     lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-    lsVTKWriter<double>(mesh, "surface" + std::to_string(2 * i + 1) + ".vtk").apply();
+    lsVTKWriter<double>(mesh, "surface" + std::to_string(2 * i + 1) + ".vtk")
+        .apply();
     lsToSurfaceMesh<NumericType, D>(mask, mesh).apply();
-    lsVTKWriter<double>(mesh, "mask" + std::to_string(2 * i + 1) + ".vtk").apply();
+    lsVTKWriter<double>(mesh, "mask" + std::to_string(2 * i + 1) + ".vtk")
+        .apply();
     std::cout << "EtchSteps: " << etching.getNumberOfTimeSteps() << std::endl;
   }
 

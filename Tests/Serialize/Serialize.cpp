@@ -4,10 +4,10 @@
 #include <lsDomain.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPointData.hpp>
-#include <lsToSurfaceMesh.hpp>
-#include <lsToMesh.hpp>
-#include <lsVTKWriter.hpp>
 #include <lsReader.hpp>
+#include <lsToMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
+#include <lsVTKWriter.hpp>
 #include <lsWriter.hpp>
 
 /**
@@ -72,8 +72,6 @@ int main() {
     lsToMesh<double, D>(newLevelSet, mesh).apply();
     lsVTKWriter<double>(mesh, "test.vtk").apply();
   }
-
-  
 
   return 0;
 }

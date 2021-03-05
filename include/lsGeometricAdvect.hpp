@@ -53,9 +53,9 @@ template <class T, int D> class lsGeometricAdvect {
 public:
   lsGeometricAdvect() {}
 
-  template <class DistType,
-            lsConcepts::IsBaseOf<lsGeometricAdvectDistribution<hrleCoordType, D>,
-                                 DistType> = lsConcepts::assignable>
+  template <class DistType, lsConcepts::IsBaseOf<
+                                lsGeometricAdvectDistribution<hrleCoordType, D>,
+                                DistType> = lsConcepts::assignable>
   lsGeometricAdvect(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
                     lsSmartPointer<DistType> passedDist,
                     lsSmartPointer<lsDomain<T, D>> passedMaskLevelSet = nullptr)
@@ -71,12 +71,12 @@ public:
 
   /// Set which advection distribution to use. Must be derived from
   /// lsGeometricAdvectDistribution.
-  template <class DistType,
-            lsConcepts::IsBaseOf<lsGeometricAdvectDistribution<hrleCoordType, D>,
-                                 DistType> = lsConcepts::assignable>
+  template <class DistType, lsConcepts::IsBaseOf<
+                                lsGeometricAdvectDistribution<hrleCoordType, D>,
+                                DistType> = lsConcepts::assignable>
   void setAdvectionDistribution(lsSmartPointer<DistType> passedDist) {
-    dist = std::dynamic_pointer_cast<lsGeometricAdvectDistribution<hrleCoordType, D>>(
-        passedDist);
+    dist = std::dynamic_pointer_cast<
+        lsGeometricAdvectDistribution<hrleCoordType, D>>(passedDist);
   }
 
   /// Set the levelset, which should be used as a mask. This level set
@@ -228,16 +228,16 @@ public:
           .addDebug("GeomAdvect: Writing debug meshes")
           .print();
       lsVTKWriter<double>(surfaceMesh, lsFileFormatEnum::VTP,
-                  "DEBUG_lsGeomAdvectMesh_contributewoMask.vtp")
+                          "DEBUG_lsGeomAdvectMesh_contributewoMask.vtp")
           .apply();
       auto mesh = lsSmartPointer<lsMesh<>>::New();
       lsToMesh<T, D>(maskLevelSet, mesh).apply();
       lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP,
-                  "DEBUG_lsGeomAdvectMesh_mask.vtp")
+                          "DEBUG_lsGeomAdvectMesh_mask.vtp")
           .apply();
       lsToMesh<T, D>(levelSet, mesh).apply();
       lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP,
-                  "DEBUG_lsGeomAdvectMesh_initial.vtp")
+                          "DEBUG_lsGeomAdvectMesh_initial.vtp")
           .apply();
     }
 
@@ -487,7 +487,8 @@ public:
     lsMessage::getInstance()
         .addDebug("GeomAdvect: Writing final mesh...")
         .print();
-    lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP, "DEBUG_lsGeomAdvectMesh_final.vtp")
+    lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP,
+                        "DEBUG_lsGeomAdvectMesh_final.vtp")
         .apply();
 #endif
 

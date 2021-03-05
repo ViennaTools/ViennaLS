@@ -19,8 +19,7 @@
 #endif // VIENNALS_USE_VTK
 
 /// Class handling the import of VTK file types.
-template<class T = double>
-class lsVTKReader {
+template <class T = double> class lsVTKReader {
   lsSmartPointer<lsMesh<T>> mesh = nullptr;
   lsFileFormatEnum fileFormat = lsFileFormatEnum::VTK_LEGACY;
   std::string fileName;
@@ -36,8 +35,8 @@ public:
   lsVTKReader(lsSmartPointer<lsMesh<T>> passedMesh, std::string passedFileName)
       : mesh(passedMesh), fileName(passedFileName) {}
 
-  lsVTKReader(lsSmartPointer<lsMesh<>> passedMesh, lsFileFormatEnum passedFormat,
-              std::string passedFileName)
+  lsVTKReader(lsSmartPointer<lsMesh<>> passedMesh,
+              lsFileFormatEnum passedFormat, std::string passedFileName)
       : mesh(passedMesh), fileFormat(passedFormat), fileName(passedFileName) {}
 
   /// set the mesh the file should be read into

@@ -130,12 +130,12 @@ int main() {
       auto mesh = lsSmartPointer<lsMesh<>>::New();
       lsToSurfaceMesh<double, D>(substrate, mesh).apply();
       lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP,
-                  "pillar-" + std::to_string(i) + ".vtp")
+                          "pillar-" + std::to_string(i) + ".vtp")
           .apply();
 
       lsToMesh<double, D>(substrate, mesh).apply();
       lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP,
-                  "LS-" + std::to_string(i) + ".vtp")
+                          "LS-" + std::to_string(i) + ".vtp")
           .apply();
     }
 

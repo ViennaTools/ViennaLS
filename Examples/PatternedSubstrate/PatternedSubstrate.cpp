@@ -202,7 +202,8 @@ int main() {
                 << numberOfEtchSteps << std::flush;
       auto mesh = lsSmartPointer<lsMesh<>>::New();
       lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-      lsVTKWriter<double>(mesh, "substrate-" + std::to_string(i) + ".vtk").apply();
+      lsVTKWriter<double>(mesh, "substrate-" + std::to_string(i) + ".vtk")
+          .apply();
 
       advectionKernel.apply();
       passedTime += advectionKernel.getAdvectedTime();
@@ -212,8 +213,8 @@ int main() {
     {
       auto mesh = lsSmartPointer<lsMesh<>>::New();
       lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-      lsVTKWriter<double>(mesh,
-                  "substrate-" + std::to_string(numberOfEtchSteps) + ".vtk")
+      lsVTKWriter<double>(mesh, "substrate-" +
+                                    std::to_string(numberOfEtchSteps) + ".vtk")
           .apply();
     }
 
@@ -248,7 +249,8 @@ int main() {
       auto mesh = lsSmartPointer<lsMesh<>>::New();
       lsToSurfaceMesh<double, D>(fillLayer, mesh).apply();
       lsVTKWriter<double>(mesh, "fillLayer-" +
-                            std::to_string(numberOfEtchSteps + 1 + i) + ".vtk")
+                                    std::to_string(numberOfEtchSteps + 1 + i) +
+                                    ".vtk")
           .apply();
 
       advectionKernel.apply();
@@ -259,10 +261,10 @@ int main() {
     {
       auto mesh = lsSmartPointer<lsMesh<>>::New();
       lsToSurfaceMesh<double, D>(fillLayer, mesh).apply();
-      lsVTKWriter<double>(mesh,
-                  "fillLayer-" +
-                      std::to_string(numberOfEtchSteps + numberOfDepoSteps) +
-                      ".vtk")
+      lsVTKWriter<double>(
+          mesh, "fillLayer-" +
+                    std::to_string(numberOfEtchSteps + numberOfDepoSteps) +
+                    ".vtk")
           .apply();
     }
 

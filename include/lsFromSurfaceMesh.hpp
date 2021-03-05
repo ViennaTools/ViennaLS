@@ -273,7 +273,8 @@ public:
       }
 
       // for each surface element do
-      std::vector<std::array<unsigned, D>> &elements = mesh->template getElements<D>();
+      std::vector<std::array<unsigned, D>> &elements =
+          mesh->template getElements<D>();
 
       for (unsigned currentElement = 0; currentElement < elements.size();
            currentElement++) {

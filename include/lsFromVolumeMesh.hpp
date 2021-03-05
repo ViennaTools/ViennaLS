@@ -118,7 +118,8 @@ public:
 
         // get the other point of the element as well
         currentElementPoints[D] =
-            mesh->nodes[mesh->template getElements<D + 1>()[i][(j + D) % (D + 1)]];
+            mesh->nodes[mesh->template getElements<D + 1>()[i]
+                                                           [(j + D) % (D + 1)]];
 
         typename triangleMapType::iterator it =
             surfaceElements.lower_bound(currentSurfaceElement);

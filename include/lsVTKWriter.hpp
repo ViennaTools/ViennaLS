@@ -22,8 +22,7 @@
 #endif // VIENNALS_USE_VTK
 
 /// Class handling the output of an lsMesh<> to VTK file types.
-template<class T>
-class lsVTKWriter {
+template <class T> class lsVTKWriter {
   lsSmartPointer<lsMesh<T>> mesh = nullptr;
   lsFileFormatEnum fileFormat = lsFileFormatEnum::VTK_LEGACY;
   std::string fileName;
@@ -36,8 +35,8 @@ public:
   lsVTKWriter(lsSmartPointer<lsMesh<T>> passedMesh, std::string passedFileName)
       : mesh(passedMesh), fileName(passedFileName) {}
 
-  lsVTKWriter(lsSmartPointer<lsMesh<T>> passedMesh, lsFileFormatEnum passedFormat,
-              std::string passedFileName)
+  lsVTKWriter(lsSmartPointer<lsMesh<T>> passedMesh,
+              lsFileFormatEnum passedFormat, std::string passedFileName)
       : mesh(passedMesh), fileFormat(passedFormat), fileName(passedFileName) {}
 
   void setMesh(lsSmartPointer<lsMesh<T>> passedMesh) { mesh = passedMesh; }

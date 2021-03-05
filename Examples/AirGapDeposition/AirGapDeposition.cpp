@@ -21,11 +21,13 @@ using NumericType = float;
 // implement own velocity field
 class velocityField : public lsVelocityField<NumericType> {
 public:
-  NumericType getScalarVelocity(const std::array<NumericType, 3> & /*coordinate*/,
-                           int /*material*/,
-                           const std::array<NumericType, 3> &normalVector) {
+  NumericType
+  getScalarVelocity(const std::array<NumericType, 3> & /*coordinate*/,
+                    int /*material*/,
+                    const std::array<NumericType, 3> &normalVector) {
     // velocity is proportional to the normal vector
-    NumericType velocity = std::abs(normalVector[0]) + std::abs(normalVector[1]);
+    NumericType velocity =
+        std::abs(normalVector[0]) + std::abs(normalVector[1]);
     return velocity;
   }
 
@@ -45,21 +47,20 @@ int main() {
   NumericType extent = 30;
   NumericType gridDelta = 0.5;
 
-  
-
   hrleCoordType bounds[2 * D] = {-extent, extent, -extent, extent};
   lsDomain<NumericType, D>::BoundaryType boundaryCons[D];
   boundaryCons[0] = lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   boundaryCons[1] = lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  auto substrate =
-      lsSmartPointer<lsDomain<NumericType, D>>::New(bounds, boundaryCons, gridDelta);
+  auto substrate = lsSmartPointer<lsDomain<NumericType, D>>::New(
+      bounds, boundaryCons, gridDelta);
 
   NumericType origin[2] = {0., 0.};
   NumericType planeNormal[2] = {0., 1.};
 
   {
-    auto plane = lsSmartPointer<lsPlane<NumericType, D>>::New(origin, planeNormal);
+    auto plane =
+        lsSmartPointer<lsPlane<NumericType, D>>::New(origin, planeNormal);
     lsMakeGeometry<NumericType, D>(substrate, plane).apply();
   }
 
@@ -73,8 +74,8 @@ int main() {
   {
     // create layer used for booling
     std::cout << "Creating box..." << std::endl;
-    auto trench = lsSmartPointer<lsDomain<NumericType, D>>::New(bounds, boundaryCons,
-                                                           gridDelta);
+    auto trench = lsSmartPointer<lsDomain<NumericType, D>>::New(
+        bounds, boundaryCons, gridDelta);
     NumericType xlimit = extent / 6.;
     NumericType minCorner[D] = {-xlimit, -25.};
     NumericType maxCorner[D] = {xlimit, 1.};
@@ -90,8 +91,8 @@ int main() {
 
     // Create trench geometry
     std::cout << "Booling trench..." << std::endl;
-    lsBooleanOperation<NumericType, D>(substrate, trench,
-                                  lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
+    lsBooleanOperation<NumericType, D>(
+        substrate, trench, lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
         .apply();
   }
 
@@ -128,7 +129,8 @@ int main() {
               << numberOfSteps << std::flush;
     auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
     lsToSurfaceMesh<NumericType, D>(newLayer, mesh).apply();
-    lsVTKWriter<NumericType>(mesh, "trench" + std::to_string(i) + ".vtk").apply();
+    lsVTKWriter<NumericType>(mesh, "trench" + std::to_string(i) + ".vtk")
+        .apply();
   }
   std::cout << std::endl;
   std::cout << "Time passed during advection: " << passedTime << std::endl;

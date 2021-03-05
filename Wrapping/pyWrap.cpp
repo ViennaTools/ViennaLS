@@ -279,9 +279,9 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       module, "lsConvexHull")
       // constructors
       .def(pybind11::init(&lsSmartPointer<lsConvexHull<T, D>>::New<>))
-      .def(pybind11::init(
-          &lsSmartPointer<lsConvexHull<T, D>>::New<
-              lsSmartPointer<lsMesh<T>> &, lsSmartPointer<lsPointCloud<T, D>> &>))
+      .def(pybind11::init(&lsSmartPointer<lsConvexHull<T, D>>::New<
+                          lsSmartPointer<lsMesh<T>> &,
+                          lsSmartPointer<lsPointCloud<T, D>> &>))
       // methods
       .def("setMesh", &lsConvexHull<T, D>::setMesh,
            "Set mesh object where the generated mesh should be stored.")
@@ -550,19 +550,19 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("apply", &lsMakeGeometry<T, D>::apply, "Generate the geometry.");
 
   // lsPointData
-  pybind11::class_<lsPointData<T>, lsSmartPointer<lsPointData<T>>>(module,
-                                                             "lsPointData")
+  pybind11::class_<lsPointData<T>, lsSmartPointer<lsPointData<T>>>(
+      module, "lsPointData")
       // constructors
       .def(pybind11::init(&lsSmartPointer<lsPointData<T>>::New<>))
       // methods
       .def("insertNextScalarData",
            (void (lsPointData<T>::*)(const lsPointData<T>::ScalarDataType &,
-                                  std::string)) &
+                                     std::string)) &
                lsPointData<T>::insertNextScalarData,
            pybind11::arg("scalars"), pybind11::arg("label") = "Scalars")
       .def("insertNextVectorData",
            (void (lsPointData<T>::*)(const lsPointData<T>::VectorDataType &,
-                                  std::string)) &
+                                     std::string)) &
                lsPointData<T>::insertNextVectorData,
            pybind11::arg("vectors"), pybind11::arg("label") = "Vectors")
       .def("getScalarDataSize", &lsPointData<T>::getScalarDataSize)
@@ -583,8 +583,8 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("getVectorDataLabel", &lsPointData<T>::getVectorDataLabel);
 
   // lsMesh<T>
-  pybind11::class_<lsMesh<T>, lsSmartPointer<lsMesh<T>>, lsPointData<T>>(module,
-                                                                "lsMesh")
+  pybind11::class_<lsMesh<T>, lsSmartPointer<lsMesh<T>>, lsPointData<T>>(
+      module, "lsMesh")
       // constructors
       .def(pybind11::init(&lsSmartPointer<lsMesh<T>>::New<>))
       // methods
@@ -629,7 +629,8 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("removeDuplicateNodes", &lsMesh<T>::removeDuplicateNodes,
            "Remove nodes which occur twice in the mesh, and replace their IDs "
            "in the mesh elements.")
-      .def("print", &lsMesh<T>::print, "Print basic information about the mesh.");
+      .def("print", &lsMesh<T>::print,
+           "Print basic information about the mesh.");
 
   // lsPrune
   pybind11::class_<lsPrune<T, D>, lsSmartPointer<lsPrune<T, D>>>(module,
@@ -706,11 +707,12 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
                                                lsSmartPointer<lsMesh<T>> &>))
       .def(pybind11::init(
           &lsSmartPointer<lsToMesh<T, D>>::New<lsSmartPointer<lsDomain<T, D>> &,
-                                               lsSmartPointer<lsMesh<T>> &, bool>))
+                                               lsSmartPointer<lsMesh<T>> &,
+                                               bool>))
       .def(pybind11::init(
           &lsSmartPointer<lsToMesh<T, D>>::New<lsSmartPointer<lsDomain<T, D>> &,
-                                               lsSmartPointer<lsMesh<T>> &, bool,
-                                               bool>))
+                                               lsSmartPointer<lsMesh<T>> &,
+                                               bool, bool>))
       // methods
       .def("setLevelSet", &lsToMesh<T, D>::setLevelSet, "Set levelset to mesh.")
       .def("setMesh", &lsToMesh<T, D>::setMesh, "Set the mesh to generate.")
@@ -743,8 +745,8 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       module, "lsToVoxelMesh")
       // constructors
       .def(pybind11::init(&lsSmartPointer<lsToVoxelMesh<T, D>>::New<>))
-      .def(pybind11::init(
-          &lsSmartPointer<lsToVoxelMesh<T, D>>::New<lsSmartPointer<lsMesh<T>> &>))
+      .def(pybind11::init(&lsSmartPointer<lsToVoxelMesh<T, D>>::New<
+                          lsSmartPointer<lsMesh<T>> &>))
       .def(pybind11::init(
           &lsSmartPointer<lsToVoxelMesh<T, D>>::New<
               lsSmartPointer<lsDomain<T, D>> &, lsSmartPointer<lsMesh<T>> &>))
@@ -776,15 +778,15 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "lsLocalLaxFriedrichsAnalytical scheme is used for advection.");
 
   // lsVTKReader
-  pybind11::class_<lsVTKReader<T>, lsSmartPointer<lsVTKReader<T>>>(module,
-                                                             "lsVTKReader")
+  pybind11::class_<lsVTKReader<T>, lsSmartPointer<lsVTKReader<T>>>(
+      module, "lsVTKReader")
       // constructors
       .def(pybind11::init(&lsSmartPointer<lsVTKReader<T>>::New<>))
       .def(pybind11::init(
           &lsSmartPointer<lsVTKReader<T>>::New<lsSmartPointer<lsMesh<T>> &>))
       .def(pybind11::init(
           &lsSmartPointer<lsVTKReader<T>>::New<lsSmartPointer<lsMesh<T>> &,
-                                            std::string>))
+                                               std::string>))
       .def(pybind11::init([](lsSmartPointer<lsMesh<T>> &mesh,
                              lsFileFormatEnum format, std::string s) {
         return lsSmartPointer<lsVTKReader<T>>::New(mesh, format, s);
@@ -798,15 +800,15 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("apply", &lsVTKReader<T>::apply, "Read the mesh.");
 
   // lsVTKWriter
-  pybind11::class_<lsVTKWriter<T>, lsSmartPointer<lsVTKWriter<T>>>(module,
-                                                             "lsVTKWriter")
+  pybind11::class_<lsVTKWriter<T>, lsSmartPointer<lsVTKWriter<T>>>(
+      module, "lsVTKWriter")
       // constructors
       .def(pybind11::init(&lsSmartPointer<lsVTKWriter<T>>::New<>))
       .def(pybind11::init(
           &lsSmartPointer<lsVTKWriter<T>>::New<lsSmartPointer<lsMesh<T>> &>))
       .def(pybind11::init(
           &lsSmartPointer<lsVTKWriter<T>>::New<lsSmartPointer<lsMesh<T>> &,
-                                            std::string>))
+                                               std::string>))
       .def(pybind11::init([](lsSmartPointer<lsMesh<T>> &mesh,
                              lsFileFormatEnum format, std::string s) {
         return lsSmartPointer<lsVTKWriter<T>>::New(mesh, format, s);

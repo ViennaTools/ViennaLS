@@ -6,8 +6,8 @@
 #include <lsExpand.hpp>
 #include <lsFromSurfaceMesh.hpp>
 #include <lsMakeGeometry.hpp>
-#include <lsToSurfaceMesh.hpp>
 #include <lsToDiskMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
 /**
@@ -61,7 +61,8 @@ int main() {
   lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
   std::cout << "Surface mesh:" << std::endl;
   mesh->print();
-  lsVTKWriter<double>(mesh, "surface-" + std::to_string(radius) + ".vtk").apply();
+  lsVTKWriter<double>(mesh, "surface-" + std::to_string(radius) + ".vtk")
+      .apply();
 
   return 0;
 }

@@ -79,7 +79,8 @@ int main() {
     std::cout << "voxelMesh: " << std::endl;
     voxelMesh->print();
 
-    lsVTKWriter<double>(voxelMesh, lsFileFormatEnum::VTU, "voxelMesh.vtu").apply();
+    lsVTKWriter<double>(voxelMesh, lsFileFormatEnum::VTU, "voxelMesh.vtu")
+        .apply();
   }
 
   return 0;
