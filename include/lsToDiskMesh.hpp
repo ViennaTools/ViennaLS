@@ -63,7 +63,6 @@ public:
 
     // set up data arrays
     std::vector<N> values;
-    std::vector<N> gridSpacing;
     std::vector<std::array<N, 3>> normals;
 
     // save the extent of the resulting mesh
@@ -75,7 +74,6 @@ public:
     }
 
     values.reserve(normalVectors.size());
-    gridSpacing.reserve(normalVectors.size());
     normals.reserve(normalVectors.size());
 
     for (hrleConstSparseIterator<hrleDomainType> it(levelSet->getDomain());
@@ -131,11 +129,9 @@ public:
 
       normals.push_back(normal);
       values.push_back(it.getValue());
-      gridSpacing.push_back(gridDelta);
     }
 
     mesh->insertNextScalarData(values, "LSValues");
-    mesh->insertNextScalarData(gridSpacing, "gridSpacing");
     mesh->insertNextVectorData(normals, "Normals");
     mesh->minimumExtent = minimumExtent;
     mesh->maximumExtent = maximumExtent;
