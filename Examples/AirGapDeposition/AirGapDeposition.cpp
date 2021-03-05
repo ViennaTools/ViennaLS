@@ -16,22 +16,24 @@
   then grown directionally on top. \example AirGapDeposition.cpp
 */
 
+using NumericType = float;
+
 // implement own velocity field
-class velocityField : public lsVelocityField<double> {
+class velocityField : public lsVelocityField<NumericType> {
 public:
-  double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
+  NumericType getScalarVelocity(const std::array<NumericType, 3> & /*coordinate*/,
                            int /*material*/,
-                           const std::array<double, 3> &normalVector) {
+                           const std::array<NumericType, 3> &normalVector) {
     // velocity is proportional to the normal vector
-    double velocity = std::abs(normalVector[0]) + std::abs(normalVector[1]);
+    NumericType velocity = std::abs(normalVector[0]) + std::abs(normalVector[1]);
     return velocity;
   }
 
-  std::array<double, 3>
-  getVectorVelocity(const std::array<double, 3> & /*coordinate*/,
+  std::array<NumericType, 3>
+  getVectorVelocity(const std::array<NumericType, 3> & /*coordinate*/,
                     int /*material*/,
-                    const std::array<double, 3> & /*normalVector*/) {
-    return std::array<double, 3>({});
+                    const std::array<NumericType, 3> & /*normalVector*/) {
+    return std::array<NumericType, 3>({});
   }
 };
 
@@ -40,52 +42,55 @@ int main() {
   constexpr int D = 2;
   omp_set_num_threads(2);
 
-  double extent = 30;
-  double gridDelta = 0.5;
+  NumericType extent = 30;
+  NumericType gridDelta = 0.5;
 
-  double bounds[2 * D] = {-extent, extent, -extent, extent};
-  lsDomain<double, D>::BoundaryType boundaryCons[D];
-  boundaryCons[0] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
-  boundaryCons[1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
+  
+
+  hrleCoordType bounds[2 * D] = {-extent, extent, -extent, extent};
+  lsDomain<NumericType, D>::BoundaryType boundaryCons[D];
+  boundaryCons[0] = lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+  boundaryCons[1] = lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
   auto substrate =
-      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+      lsSmartPointer<lsDomain<NumericType, D>>::New(bounds, boundaryCons, gridDelta);
 
-  double origin[2] = {0., 0.};
-  double planeNormal[2] = {0., 1.};
+  NumericType origin[2] = {0., 0.};
+  NumericType planeNormal[2] = {0., 1.};
 
   {
-    auto plane = lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal);
-    lsMakeGeometry<double, D>(substrate, plane).apply();
+    auto plane = lsSmartPointer<lsPlane<NumericType, D>>::New(origin, planeNormal);
+    lsMakeGeometry<NumericType, D>(substrate, plane).apply();
   }
 
   {
     std::cout << "Extracting..." << std::endl;
-    auto mesh = lsSmartPointer<lsMesh>::New();
-    lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "plane.vtk").apply();
+    auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
+    lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
+    lsVTKWriter<NumericType>(mesh, "plane.vtk").apply();
   }
 
   {
     // create layer used for booling
     std::cout << "Creating box..." << std::endl;
-    auto trench = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
+    auto trench = lsSmartPointer<lsDomain<NumericType, D>>::New(bounds, boundaryCons,
                                                            gridDelta);
-    double minCorner[D] = {-extent / 6., -25.};
-    double maxCorner[D] = {extent / 6., 1.};
-    auto box = lsSmartPointer<lsBox<double, D>>::New(minCorner, maxCorner);
-    lsMakeGeometry<double, D>(trench, box).apply();
+    NumericType xlimit = extent / 6.;
+    NumericType minCorner[D] = {-xlimit, -25.};
+    NumericType maxCorner[D] = {xlimit, 1.};
+    auto box = lsSmartPointer<lsBox<NumericType, D>>::New(minCorner, maxCorner);
+    lsMakeGeometry<NumericType, D>(trench, box).apply();
 
     {
       std::cout << "Extracting..." << std::endl;
-      auto mesh = lsSmartPointer<lsMesh>::New();
-      lsToMesh<double, D>(trench, mesh).apply();
-      lsVTKWriter(mesh, "box.vtk").apply();
+      auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
+      lsToMesh<NumericType, D>(trench, mesh).apply();
+      lsVTKWriter<NumericType>(mesh, "box.vtk").apply();
     }
 
     // Create trench geometry
     std::cout << "Booling trench..." << std::endl;
-    lsBooleanOperation<double, D>(substrate, trench,
+    lsBooleanOperation<NumericType, D>(substrate, trench,
                                   lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
         .apply();
   }
@@ -95,12 +100,12 @@ int main() {
   // create new levelset for new material, which will be grown
   // since it has to wrap around the substrate, just copy it
   std::cout << "Creating new layer..." << std::endl;
-  auto newLayer = lsSmartPointer<lsDomain<double, D>>::New(substrate);
+  auto newLayer = lsSmartPointer<lsDomain<NumericType, D>>::New(substrate);
 
   auto velocities = lsSmartPointer<velocityField>::New();
 
   std::cout << "Advecting" << std::endl;
-  lsAdvect<double, D> advectionKernel;
+  lsAdvect<NumericType, D> advectionKernel;
 
   // the level set to be advected has to be inserted last
   // the other could be taken as a mask layer for advection
@@ -113,7 +118,7 @@ int main() {
   // Now advect the level set 50 times, outputting every
   // advection step. Save the physical time that
   // passed during the advection.
-  double passedTime = 0.;
+  NumericType passedTime = 0.;
   unsigned numberOfSteps = 60;
   for (unsigned i = 0; i < numberOfSteps; ++i) {
     advectionKernel.apply();
@@ -121,9 +126,9 @@ int main() {
 
     std::cout << "\rAdvection step " + std::to_string(i) + " / "
               << numberOfSteps << std::flush;
-    auto mesh = lsSmartPointer<lsMesh>::New();
-    lsToSurfaceMesh<double, D>(newLayer, mesh).apply();
-    lsVTKWriter(mesh, "trench" + std::to_string(i) + ".vtk").apply();
+    auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
+    lsToSurfaceMesh<NumericType, D>(newLayer, mesh).apply();
+    lsVTKWriter<NumericType>(mesh, "trench" + std::to_string(i) + ".vtk").apply();
   }
   std::cout << std::endl;
   std::cout << "Time passed during advection: " << passedTime << std::endl;

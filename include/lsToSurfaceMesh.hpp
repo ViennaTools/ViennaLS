@@ -19,22 +19,22 @@ template <class T, int D> class lsToSurfaceMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
 
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
-  lsSmartPointer<lsMesh> mesh = nullptr;
+  lsSmartPointer<lsMesh<T>> mesh = nullptr;
   // std::vector<hrleIndexType> meshNodeToPointIdMapping;
-  const double epsilon;
+  const T epsilon;
 
 public:
   lsToSurfaceMesh(double eps = 1e-12) : epsilon(eps) {}
 
   lsToSurfaceMesh(const lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-                  lsSmartPointer<lsMesh> passedMesh, double eps = 1e-12)
+                  lsSmartPointer<lsMesh<T>> passedMesh, double eps = 1e-12)
       : levelSet(passedLevelSet), mesh(passedMesh), epsilon(eps) {}
 
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     levelSet = passedlsDomain;
   }
 
-  void setMesh(lsSmartPointer<lsMesh> passedMesh) { mesh = passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh<T>> passedMesh) { mesh = passedMesh; }
 
   void apply() {
     if (levelSet == nullptr) {
@@ -127,7 +127,7 @@ public:
           } else { // if node does not exist yet
 
             // calculate coordinate of new node
-            std::array<double, 3> cc{}; // initialise with zeros
+            std::array<T, 3> cc{}; // initialise with zeros
             for (int z = 0; z < D; z++) {
               if (z != dir) {
                 // TODO might not need BitMaskToVector here, just check if z bit

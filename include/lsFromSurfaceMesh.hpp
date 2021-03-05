@@ -95,7 +95,7 @@ template <class T, int D> class lsFromSurfaceMesh {
 
   lsSmartPointer<lsDomain<T, D>> levelSet =
       lsSmartPointer<lsDomain<T, D>>::New();
-  lsSmartPointer<lsMesh> mesh = lsSmartPointer<lsMesh>::New();
+  lsSmartPointer<lsMesh<T>> mesh = lsSmartPointer<lsMesh<T>>::New();
   bool removeBoundaryTriangles = true;
   T boundaryEps = 1e-5;
   T distanceEps = 1e-4;
@@ -213,7 +213,7 @@ public:
   lsFromSurfaceMesh() {}
 
   lsFromSurfaceMesh(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-                    lsSmartPointer<lsMesh> passedMesh,
+                    lsSmartPointer<lsMesh<T>> passedMesh,
                     bool passedRemoveBoundaryTriangles = true)
       : levelSet(passedLevelSet), mesh(passedMesh),
         removeBoundaryTriangles(passedRemoveBoundaryTriangles) {}
@@ -222,7 +222,7 @@ public:
     levelSet = passedLevelSet;
   }
 
-  void setMesh(lsSmartPointer<lsMesh> passedMesh) { mesh = passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh<T>> passedMesh) { mesh = passedMesh; }
 
   /// Set whether all triangles outside of the domain should be ignored (=true)
   /// or whether boundary conditions should be applied correctly to such
@@ -273,7 +273,7 @@ public:
       }
 
       // for each surface element do
-      std::vector<std::array<unsigned, D>> &elements = mesh->getElements<D>();
+      std::vector<std::array<unsigned, D>> &elements = mesh->template getElements<D>();
 
       for (unsigned currentElement = 0; currentElement < elements.size();
            currentElement++) {

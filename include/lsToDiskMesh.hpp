@@ -20,21 +20,21 @@ template <class T, int D> class lsToDiskMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
 
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
-  lsSmartPointer<lsMesh> mesh = nullptr;
+  lsSmartPointer<lsMesh<T>> mesh = nullptr;
   T maxValue = 0.5;
 
 public:
   lsToDiskMesh() {}
 
   lsToDiskMesh(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-               lsSmartPointer<lsMesh> passedMesh, T passedMaxValue = 0.5)
+               lsSmartPointer<lsMesh<T>> passedMesh, T passedMaxValue = 0.5)
       : levelSet(passedLevelSet), mesh(passedMesh), maxValue(passedMaxValue) {}
 
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
   }
 
-  void setMesh(lsSmartPointer<lsMesh> passedMesh) { mesh = passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh<T>> passedMesh) { mesh = passedMesh; }
 
   void setMaxValue(const T passedMaxValue) { maxValue = passedMaxValue; }
 

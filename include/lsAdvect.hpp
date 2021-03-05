@@ -264,7 +264,7 @@ template <class T, int D> class lsAdvect {
       for (unsigned scalarId = 0; scalarId < pointData.getScalarDataSize();
            ++scalarId) {
         newPointData.insertNextScalarData(
-            lsPointData::ScalarDataType(),
+            typename lsPointData<T>::ScalarDataType(),
             pointData.getScalarDataLabel(scalarId));
         auto &newScalars = *(newPointData.getScalarData(scalarId));
         auto &scalars = *(pointData.getScalarData(scalarId));
@@ -279,7 +279,7 @@ template <class T, int D> class lsAdvect {
       for (unsigned vectorId = 0; vectorId < pointData.getVectorDataSize();
            ++vectorId) {
         newPointData.insertNextVectorData(
-            lsPointData::VectorDataType(),
+            typename lsPointData<T>::VectorDataType(),
             pointData.getVectorDataLabel(vectorId));
         auto &newVectors = *(newPointData.getVectorData(vectorId));
         auto &vectors = *(pointData.getVectorData(vectorId));
@@ -628,7 +628,7 @@ template <class T, int D> class lsAdvect {
     }
 
     if (saveVelocities) {
-      typename lsPointData::ScalarDataType pointData;
+      typename lsPointData<T>::ScalarDataType pointData;
       for (unsigned i = 0; i < velocityVectors.size(); ++i) {
         pointData.insert(pointData.end(),
                          std::make_move_iterator(velocityVectors[i].begin()),

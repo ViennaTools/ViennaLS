@@ -120,7 +120,7 @@ public:
 
     // Extract the original surface as a point cloud of grid
     // points shifted to the surface (disk mesh)
-    auto surfaceMesh = lsSmartPointer<lsMesh>::New();
+    auto surfaceMesh = lsSmartPointer<lsMesh<T>>::New();
     lsToDiskMesh<T, D>(levelSet, surfaceMesh).apply();
 
     // find bounds of distribution
@@ -193,8 +193,8 @@ public:
       auto values = surfaceMesh->getScalarData("LSValues");
       auto valueIt = values->begin();
 
-      auto newSurfaceMesh = lsSmartPointer<lsMesh>::New();
-      typename lsPointData::ScalarDataType newValues;
+      auto newSurfaceMesh = lsSmartPointer<lsMesh<T>>::New();
+      typename lsPointData<T>::ScalarDataType newValues;
       hrleConstSparseIterator<DomainType> maskIt(maskDomain);
       for (auto &node : surfaceMesh->getNodes()) {
         hrleVectorType<hrleIndexType, D> index;
@@ -243,7 +243,7 @@ public:
 
 #endif
 
-    typedef std::vector<std::array<double, 3>> SurfaceNodesType;
+    typedef std::vector<std::array<T, 3>> SurfaceNodesType;
     const SurfaceNodesType &surfaceNodes = surfaceMesh->getNodes();
 
     // initialize with segmentation for whole range
@@ -464,7 +464,7 @@ public:
       }
     }
 
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<T>>::New();
     // output all points directly to mesh
     {
       std::vector<double> scalarData;

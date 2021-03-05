@@ -277,7 +277,7 @@ private:
 
     // find minimum and maximum points in infinite direction
     // there are 2*(D-1) points in the corners of the simulation domain
-    std::vector<std::array<double, 3>> cornerPoints;
+    std::vector<std::array<T, 3>> cornerPoints;
     cornerPoints.resize(2 * (D - 1));
 
     // cyclic permutations
@@ -311,7 +311,7 @@ private:
     }
 
     // now find i coordinate of points
-    lsSmartPointer<lsMesh> mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<T>>::New();
 
     for (unsigned n = 0; n < cornerPoints.size(); ++n) {
       double numerator = (cornerPoints[n][j] - origin[j]) * normal[j];
@@ -352,7 +352,7 @@ private:
     }
 
     // draw all triangles for the surface and then import from the mesh
-    std::vector<std::array<double, 3>> corners;
+    std::vector<std::array<T, 3>> corners;
     corners.resize(std::pow(2, D), {0, 0, 0});
 
     // first corner is the minCorner
@@ -385,7 +385,7 @@ private:
     }
 
     // now add all corners to mesh
-    lsSmartPointer<lsMesh> mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<T>>::New();
     for (unsigned i = 0; i < corners.size(); ++i) {
       mesh->insertNextNode(corners[i]);
     }
@@ -452,7 +452,7 @@ private:
       points->insertNextPoint(negPoint);
     }
 
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<T>>::New();
     lsConvexHull<T, D>(mesh, points).apply();
 
     // rotate mesh
@@ -469,7 +469,7 @@ private:
     T rotationAngle = std::acos(cylinderAxis[2]);
 
     // rotate mesh
-    lsTransformMesh(mesh, lsTransformEnum::ROTATION, rotAxis, rotationAngle)
+    lsTransformMesh<T>(mesh, lsTransformEnum::ROTATION, rotAxis, rotationAngle)
         .apply();
 
     // translate mesh
@@ -477,7 +477,7 @@ private:
     for (unsigned i = 0; i < 3; ++i) {
       translationVector[i] = cylinder->origin[i];
     }
-    lsTransformMesh(mesh, lsTransformEnum::TRANSLATION, translationVector)
+    lsTransformMesh<T>(mesh, lsTransformEnum::TRANSLATION, translationVector)
         .apply();
 
     // read mesh from surface
@@ -486,7 +486,7 @@ private:
 
   void makeCustom(lsSmartPointer<lsPointCloud<T, D>> pointCloud) {
     // create mesh from point cloud
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<T>>::New();
     lsConvexHull<T, D>(mesh, pointCloud).apply();
 
     // read mesh from surface

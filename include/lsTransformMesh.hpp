@@ -17,8 +17,9 @@ enum struct lsTransformEnum : unsigned {
   SCALE = 2
 };
 
+template<class T>
 class lsTransformMesh {
-  lsSmartPointer<lsMesh> mesh = nullptr;
+  lsSmartPointer<lsMesh<T>> mesh = nullptr;
   lsTransformEnum transform = lsTransformEnum::TRANSLATION;
   hrleVectorType<double, 3> transformVector{};
   double angle = 0.0;
@@ -93,7 +94,7 @@ class lsTransformMesh {
 
 public:
   lsTransformMesh(
-      lsSmartPointer<lsMesh> passedMesh,
+      lsSmartPointer<lsMesh<T>> passedMesh,
       lsTransformEnum passedTransform = lsTransformEnum::TRANSLATION,
       std::array<double, 3> passedTransformVector = {},
       double passedAngle = 0.0)
@@ -101,7 +102,7 @@ public:
         transformVector(passedTransformVector), angle(passedAngle) {}
 
   lsTransformMesh(
-      lsSmartPointer<lsMesh> passedMesh,
+      lsSmartPointer<lsMesh<T>> passedMesh,
       lsTransformEnum passedTransform = lsTransformEnum::TRANSLATION,
       hrleVectorType<double, 3> passedTransformVector = {},
       double passedAngle = 0.0)

@@ -19,7 +19,7 @@
 template <class T, int D> class lsConvexHull {
   typedef hrleVectorType<unsigned, D - 1> EdgeType;
 
-  lsSmartPointer<lsMesh> mesh = nullptr;
+  lsSmartPointer<lsMesh<T>> mesh = nullptr;
   lsSmartPointer<lsPointCloud<T, D>> pointCloud = nullptr;
   std::vector<EdgeType> visitedEdges;
   std::vector<hrleVectorType<unsigned, D>> hullElements;
@@ -266,11 +266,11 @@ template <class T, int D> class lsConvexHull {
 public:
   lsConvexHull() {}
 
-  lsConvexHull(lsSmartPointer<lsMesh> passedMesh,
+  lsConvexHull(lsSmartPointer<lsMesh<T>> passedMesh,
                lsSmartPointer<lsPointCloud<T, D>> passedPointCloud)
       : mesh(passedMesh), pointCloud(passedPointCloud) {}
 
-  void setMesh(lsSmartPointer<lsMesh> passedMesh) { mesh = passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh<T>> passedMesh) { mesh = passedMesh; }
 
   void setPointCloud(lsSmartPointer<lsPointCloud<T, D>> passedPointCloud) {
     pointCloud = passedPointCloud;
@@ -390,7 +390,7 @@ public:
     }
 
     // now make the mesh
-    auto &elements = mesh->getElements<D>();
+    auto &elements = mesh->template getElements<D>();
     std::unordered_map<unsigned, unsigned> oldToNewNodes;
     for (unsigned i = 0; i < hullElements.size(); ++i) {
       // here add translation of old index to new index for new points
@@ -401,9 +401,9 @@ public:
 
         // if insertion took place, add the point to the nodes
         if (insertion.second) {
-          std::array<double, 3> node{
+          std::array<T, 3> node{
               points[hullElements[i][j]][0], points[hullElements[i][j]][1],
-              (D == 2) ? 0. : points[hullElements[i][j]][2]};
+              (D == 2) ? T(0.) : points[hullElements[i][j]][2]};
           mesh->nodes.push_back(node);
         }
 

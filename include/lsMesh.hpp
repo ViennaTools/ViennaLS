@@ -11,23 +11,24 @@
 /// If it describes a 2D mesh, the third dimension is set to 0.
 /// Vertices, Lines, Triangles, Tetras & Hexas are supported as geometric
 /// elements.
-class lsMesh : public lsPointData {
+template<class T>
+class lsMesh : public lsPointData<T> {
 public:
-  std::vector<std::array<double, 3>> nodes;
+  std::vector<std::array<T, 3>> nodes;
   std::vector<std::array<unsigned, 1>> vertices;
   std::vector<std::array<unsigned, 2>> lines;
   std::vector<std::array<unsigned, 3>> triangles;
   std::vector<std::array<unsigned, 4>> tetras;
   std::vector<std::array<unsigned, 8>> hexas;
-  std::array<double, 3> minimumExtent;
-  std::array<double, 3> maximumExtent;
+  std::array<T, 3> minimumExtent;
+  std::array<T, 3> maximumExtent;
 
 private:
   // iterator typedef
-  using VectorIt = lsPointData::VectorDataType::iterator;
+  using VectorIt = typename lsPointData<T>::VectorDataType::iterator;
   // find function to avoid including the whole algorithm header
   VectorIt find(VectorIt first, VectorIt last,
-                const std::array<double, 3> &value) {
+                const std::array<T, 3> &value) {
     for (; first != last; ++first) {
       if (*first == value) {
         return first;
@@ -49,9 +50,9 @@ private:
   };
 
 public:
-  const std::vector<std::array<double, 3>> &getNodes() const { return nodes; }
+  const std::vector<std::array<T, 3>> &getNodes() const { return nodes; }
 
-  std::vector<std::array<double, 3>> &getNodes() { return nodes; }
+  std::vector<std::array<T, 3>> &getNodes() { return nodes; }
 
   template <int D, typename std::enable_if<D == 1, int>::type = 0>
   std::vector<std::array<unsigned, D>> &getElements() {
@@ -78,7 +79,7 @@ public:
     return hexas;
   }
 
-  unsigned insertNextNode(const std::array<double, 3> &node) {
+  unsigned insertNextNode(const std::array<T, 3> &node) {
     nodes.push_back(node);
     return nodes.size() - 1;
   }
@@ -134,7 +135,7 @@ public:
   }
 
   void removeDuplicateNodes() {
-    std::vector<std::array<double, 3>> newNodes;
+    std::vector<std::array<T, 3>> newNodes;
     // can just push first point since it cannot be duplicate
     newNodes.push_back(nodes[0]);
     // now check for duplicates
@@ -223,14 +224,14 @@ public:
     // Append data
     // TODO need to adjust lsVTKWriter to deal with different data correctly
     // currently this only works for vertex only meshes
-    lsPointData::append(passedMesh);
+    lsPointData<T>::append(passedMesh);
 
-    // if(lsPointData::scalarData.size() < nodes.size())
-    for (unsigned i = 0; i < lsPointData::getScalarDataSize(); ++i) {
-      lsPointData::getScalarData(i)->resize(vertices.size());
+    // if(lsPointData<T>::scalarData.size() < nodes.size())
+    for (unsigned i = 0; i < lsPointData<T>::getScalarDataSize(); ++i) {
+      lsPointData<T>::getScalarData(i)->resize(vertices.size());
     }
-    for (unsigned i = 0; i < lsPointData::getVectorDataSize(); ++i) {
-      lsPointData::getVectorData(i)->resize(vertices.size());
+    for (unsigned i = 0; i < lsPointData<T>::getVectorDataSize(); ++i) {
+      lsPointData<T>::getVectorData(i)->resize(vertices.size());
     }
   }
 
@@ -241,7 +242,7 @@ public:
     triangles.clear();
     tetras.clear();
     hexas.clear();
-    lsPointData::clear();
+    lsPointData<T>::clear();
   }
 
   void print() {
@@ -258,18 +259,18 @@ public:
     if (hexas.size() > 0)
       std::cout << "Number of Hexas: " << hexas.size() << std::endl;
     // data
-    if (getScalarDataSize() > 0) {
+    if (lsPointData<T>::getScalarDataSize() > 0) {
       std::cout << "Scalar data:" << std::endl;
-      for (unsigned i = 0; i < getScalarDataSize(); ++i) {
-        std::cout << "  \"" << getScalarDataLabel(i) << "\" of size "
-                  << getScalarData(i)->size() << std::endl;
+      for (unsigned i = 0; i < lsPointData<T>::getScalarDataSize(); ++i) {
+        std::cout << "  \"" << lsPointData<T>::getScalarDataLabel(i) << "\" of size "
+                  << lsPointData<T>::getScalarData(i)->size() << std::endl;
       }
     }
-    if (getVectorDataSize() > 0) {
+    if (lsPointData<T>::getVectorDataSize() > 0) {
       std::cout << "Vector data:" << std::endl;
-      for (unsigned i = 0; i < getVectorDataSize(); ++i) {
-        std::cout << "  \"" << getVectorDataLabel(i) << "\" of size "
-                  << getVectorData(i)->size() << std::endl;
+      for (unsigned i = 0; i < lsPointData<T>::getVectorDataSize(); ++i) {
+        std::cout << "  \"" << lsPointData<T>::getVectorDataLabel(i) << "\" of size "
+                  << lsPointData<T>::getVectorData(i)->size() << std::endl;
       }
     }
   }

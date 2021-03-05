@@ -17,26 +17,28 @@
   \example Deposition.cpp
 */
 
+using NumericType = float;
+
 // implement own velocity field
-class velocityField : public lsVelocityField<double> {
+class velocityField : public lsVelocityField<NumericType> {
 public:
-  double
-  getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
+  NumericType
+  getScalarVelocity(const std::array<NumericType, 3> & /*coordinate*/,
                     int /*material*/,
-                    const std::array<double, 3>
-                        & /*normalVector = hrleVectorType<double, 3>(0.)*/) {
+                    const std::array<NumericType, 3>
+                        & /*normalVector = hrleVectorType<NumericType, 3>(0.)*/) {
     // Some arbitrary velocity function of your liking
     // (try changing it and see what happens :)
-    double velocity = 1.;
+    NumericType velocity = 1.;
     return velocity;
   }
 
-  std::array<double, 3>
-  getVectorVelocity(const std::array<double, 3> & /*coordinate*/,
+  std::array<NumericType, 3>
+  getVectorVelocity(const std::array<NumericType, 3> & /*coordinate*/,
                     int /*material*/,
-                    const std::array<double, 3>
-                        & /*normalVector = hrleVectorType<double, 3>(0.)*/) {
-    return std::array<double, 3>({}); // initialise to zero
+                    const std::array<NumericType, 3>
+                        & /*normalVector = hrleVectorType<NumericType, 3>(0.)*/) {
+    return std::array<NumericType, 3>({}); // initialise to zero
   }
 };
 
@@ -45,58 +47,59 @@ int main() {
   constexpr int D = 3;
   omp_set_num_threads(4);
 
-  double extent = 30;
-  double gridDelta = 0.5;
+  NumericType extent = 30;
+  NumericType gridDelta = 0.5;
 
   double bounds[2 * D] = {-extent, extent, -extent, extent, -extent, extent};
-  lsDomain<double, D>::BoundaryType boundaryCons[D];
+  lsDomain<NumericType, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D - 1; ++i)
-    boundaryCons[i] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
-  boundaryCons[2] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
+    boundaryCons[i] = lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+  boundaryCons[2] = lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
   auto substrate =
-      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+      lsSmartPointer<lsDomain<NumericType, D>>::New(bounds, boundaryCons, gridDelta);
 
-  double origin[3] = {0., 0., 0.};
-  double planeNormal[3] = {0., 0., 1.};
+  NumericType origin[3] = {0., 0., 0.};
+  NumericType planeNormal[3] = {0., 0., 1.};
 
   {
-    auto plane = lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal);
-    lsMakeGeometry<double, D>(substrate, plane).apply();
+    auto plane = lsSmartPointer<lsPlane<NumericType, D>>::New(origin, planeNormal);
+    lsMakeGeometry<NumericType, D>(substrate, plane).apply();
   }
 
   {
-    auto trench = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
+    auto trench = lsSmartPointer<lsDomain<NumericType, D>>::New(bounds, boundaryCons,
                                                            gridDelta);
     // make -x and +x greater than domain for numerical stability
-    double minCorner[D] = {-extent - 1, -extent / 4., -15.};
-    double maxCorner[D] = {extent + 1, extent / 4., 1.};
-    auto box = lsSmartPointer<lsBox<double, D>>::New(minCorner, maxCorner);
-    lsMakeGeometry<double, D>(trench, box).apply();
+    NumericType ylimit = extent / 4.;
+    NumericType minCorner[D] = {-extent - 1, -ylimit, -15.};
+    NumericType maxCorner[D] = {extent + 1, ylimit, 1.};
+    auto box = lsSmartPointer<lsBox<NumericType, D>>::New(minCorner, maxCorner);
+    lsMakeGeometry<NumericType, D>(trench, box).apply();
 
     // Create trench geometry
-    lsBooleanOperation<double, D>(substrate, trench,
+    lsBooleanOperation<NumericType, D>(substrate, trench,
                                   lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
         .apply();
   }
 
   {
     std::cout << "Extracting..." << std::endl;
-    auto mesh = lsSmartPointer<lsMesh>::New();
-    lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "trench-0.vtk").apply();
+    auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
+    lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
+    lsVTKWriter<NumericType>(mesh, "trench-0.vtk").apply();
   }
 
   // Now grow new material isotropically
 
   // create new levelset for new material, which will be grown
   // since it has to wrap around the substrate, just copy it
-  auto newLayer = lsSmartPointer<lsDomain<double, D>>::New(substrate);
+  auto newLayer = lsSmartPointer<lsDomain<NumericType, D>>::New(substrate);
 
   auto velocities = lsSmartPointer<velocityField>::New();
 
   std::cout << "Advecting" << std::endl;
-  lsAdvect<double, D> advectionKernel;
+  lsAdvect<NumericType, D> advectionKernel;
 
   // the level set to be advected has to be inserted last
   // the other could be taken as a mask layer for advection
@@ -106,20 +109,20 @@ int main() {
   advectionKernel.setVelocityField(velocities);
   // advectionKernel.setAdvectionTime(4.);
   unsigned counter = 1;
-  for (double time = 0; time < 4.; time += advectionKernel.getAdvectedTime()) {
+  for (NumericType time = 0; time < 4.; time += advectionKernel.getAdvectedTime()) {
     advectionKernel.apply();
 
-    auto mesh = lsSmartPointer<lsMesh>::New();
-    lsToSurfaceMesh<double, D>(newLayer, mesh).apply();
-    lsVTKWriter(mesh, "trench-" + std::to_string(counter) + ".vtk").apply();
+    auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
+    lsToSurfaceMesh<NumericType, D>(newLayer, mesh).apply();
+    lsVTKWriter<NumericType>(mesh, "trench-" + std::to_string(counter) + ".vtk").apply();
 
-    lsToMesh<double, D>(newLayer, mesh).apply();
-    lsVTKWriter(mesh, "LS-" + std::to_string(counter) + ".vtk").apply();
+    lsToMesh<NumericType, D>(newLayer, mesh).apply();
+    lsVTKWriter<NumericType>(mesh, "LS-" + std::to_string(counter) + ".vtk").apply();
 
     ++counter;
   }
 
-  // double advectionSteps = advectionKernel.getNumberOfTimeSteps();
+  // NumericType advectionSteps = advectionKernel.getNumberOfTimeSteps();
   // std::cout << "Number of Advection steps taken: " << advectionSteps
   // << std::endl;
 
