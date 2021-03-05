@@ -61,12 +61,12 @@ int main() {
       sphere1, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
       .apply();
   {
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter(mesh, "sphere.vtk").apply();
+    lsVTKWriter<double>(mesh, "sphere.vtk").apply();
 
     lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter(mesh, "before2D.vtk").apply();
+    lsVTKWriter<double>(mesh, "before2D.vtk").apply();
   }
 
   // Advect the sphere
@@ -96,11 +96,11 @@ int main() {
   lsExpand<double, D>(sphere1, 2).apply();
 
   {
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     std::cout << "Extracting..." << std::endl;
     lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
     mesh->print();
-    lsVTKWriter(mesh, "after2D.vtk").apply();
+    lsVTKWriter<double>(mesh, "after2D.vtk").apply();
   }
 
   return 0;

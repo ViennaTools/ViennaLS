@@ -60,7 +60,7 @@ int main() {
   lsCalculateNormalVectors<double, 3>(sphere1).apply();
   auto &normalVectors = *(sphere1->getPointData().getVectorData("Normals"));
 
-  auto mesh = lsSmartPointer<lsMesh>::New();
+  auto mesh = lsSmartPointer<lsMesh<>>::New();
   lsToMesh<double, 3>(sphere1, mesh, true, true).apply();
 
   // also output LS values as scalar data
@@ -80,7 +80,7 @@ int main() {
   // set normal vectors as vectordata to mesh
   mesh->insertNextVectorData(vectors, "Normals");
 
-  auto writer = lsVTKWriter();
+  auto writer = lsVTKWriter<double>();
   writer.setMesh(mesh);
   writer.setFileName("explicit.vtk");
   writer.apply();

@@ -57,9 +57,9 @@ int main() {
                                        lsBooleanOperationEnum::INTERSECT)
         .apply();
 
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToMesh<NumericType, D>(mask, mesh).apply();
-    lsVTKWriter(mesh, "Plane.vtk").apply();
+    lsVTKWriter<double>(mesh, "Plane.vtk").apply();
 
     auto maskHole = lsSmartPointer<lsDomain<NumericType, D>>::New(
         bounds, boundaryCons, gridDelta);
@@ -84,7 +84,7 @@ int main() {
         .apply();
 
     lsToSurfaceMesh<NumericType, D>(mask, mesh).apply();
-    lsVTKWriter(mesh, "Mask.vtk").apply();
+    lsVTKWriter<double>(mesh, "Mask.vtk").apply();
 
     // make substrate
     lsBooleanOperation<NumericType, D>(maskBottom,
@@ -96,16 +96,16 @@ int main() {
         .apply();
   }
 
-  auto mesh = lsSmartPointer<lsMesh>::New();
+  auto mesh = lsSmartPointer<lsMesh<>>::New();
 
   lsToMesh<NumericType, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh, "Surface_i_p.vtk").apply();
+  lsVTKWriter<double>(mesh, "Surface_i_p.vtk").apply();
   lsToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh, "Surface_i.vtk").apply();
+  lsVTKWriter<double>(mesh, "Surface_i.vtk").apply();
   lsToMesh<NumericType, D>(mask, mesh).apply();
-  lsVTKWriter(mesh, "Surface_m_p.vtk").apply();
+  lsVTKWriter<double>(mesh, "Surface_m_p.vtk").apply();
   lsToSurfaceMesh<NumericType, D>(mask, mesh).apply();
-  lsVTKWriter(mesh, "Surface_m.vtk").apply();
+  lsVTKWriter<double>(mesh, "Surface_m.vtk").apply();
 
   //   set up spherical advection dist
   auto dist =
@@ -117,9 +117,9 @@ int main() {
   lsGeometricAdvect<NumericType, D>(levelSet, dist, mask).apply();
 
   lsToMesh<NumericType, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh, "afterDepoLS.vtk").apply();
+  lsVTKWriter<double>(mesh, "afterDepoLS.vtk").apply();
   lsToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh, "afterDepo.vtk").apply();
+  lsVTKWriter<double>(mesh, "afterDepo.vtk").apply();
 
   return 0;
 }

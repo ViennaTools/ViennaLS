@@ -78,17 +78,17 @@ int main() {
   //   std::endl;
   // }
 
-  auto mesh = lsSmartPointer<lsMesh>::New();
+  auto mesh = lsSmartPointer<lsMesh<>>::New();
   lsToMesh<double, D>(substrate, mesh).apply();
-  lsVTKWriter(mesh, lsFileFormatEnum::VTP, "normal.vtp").apply();
+  lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP, "normal.vtp").apply();
 
   // lsExpand<double, D>(substrate, 4).apply();
   // lsToMesh<double, D>(substrate, mesh).apply();
-  // lsVTKWriter(mesh, lsFileFormatEnum::VTP, "expanded.vtp").apply();
+  // lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP, "expanded.vtp").apply();
 
   // lsPrune<double, D>(substrate).apply();
   // lsToMesh<double, D>(substrate, mesh).apply();
-  // lsVTKWriter(mesh, lsFileFormatEnum::VTP, "pruned.vtp").apply();
+  // lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP, "pruned.vtp").apply();
   // -----------------------------------------------------
 
   {
@@ -101,9 +101,9 @@ int main() {
     lsMakeGeometry<double, D>(
         pillar, lsSmartPointer<lsBox<double, D>>::New(lowerCorner, upperCorner))
         .apply();
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(pillar, mesh).apply();
-    lsVTKWriter(mesh, lsFileFormatEnum::VTP, "pillar.vtp").apply();
+    lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP, "pillar.vtp").apply();
     lsBooleanOperation<double, D> boolOp(substrate, pillar,
                                          lsBooleanOperationEnum::UNION);
     boolOp.apply();
@@ -127,14 +127,14 @@ int main() {
     if (true) {
       std::cout << "\rAdvection step " + std::to_string(i) + " / "
                 << numberOfSteps << std::flush;
-      auto mesh = lsSmartPointer<lsMesh>::New();
+      auto mesh = lsSmartPointer<lsMesh<>>::New();
       lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-      lsVTKWriter(mesh, lsFileFormatEnum::VTP,
+      lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP,
                   "pillar-" + std::to_string(i) + ".vtp")
           .apply();
 
       lsToMesh<double, D>(substrate, mesh).apply();
-      lsVTKWriter(mesh, lsFileFormatEnum::VTP,
+      lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP,
                   "LS-" + std::to_string(i) + ".vtp")
           .apply();
     }

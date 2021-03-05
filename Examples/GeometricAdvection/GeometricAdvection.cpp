@@ -76,7 +76,7 @@ int main() {
   std::cout << "Advecting" << std::endl;
   // Grow the layer uniformly by 4 as in deposition example
   auto dist =
-      lsSmartPointer<lsSphereDistribution<NumericType, D>>::New(4.0, gridDelta);
+      lsSmartPointer<lsSphereDistribution<hrleCoordType, D>>::New(4.0, gridDelta);
   lsGeometricAdvect<NumericType, D>(newLayer, dist).apply();
 
   {

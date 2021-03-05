@@ -11,7 +11,7 @@
 /// If it describes a 2D mesh, the third dimension is set to 0.
 /// Vertices, Lines, Triangles, Tetras & Hexas are supported as geometric
 /// elements.
-template<class T>
+template<class T = double>
 class lsMesh : public lsPointData<T> {
 public:
   std::vector<std::array<T, 3>> nodes;
@@ -168,7 +168,7 @@ public:
     }
   }
 
-  void append(const lsMesh &passedMesh) {
+  void append(const lsMesh<> &passedMesh) {
     const unsigned numberOfOldNodes = nodes.size();
 
     // append new nodes

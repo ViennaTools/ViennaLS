@@ -47,11 +47,11 @@ int main() {
 
   std::cout << "Number of points: " << levelSet->getDomain().getNumberOfPoints()
             << std::endl;
-  auto mesh = lsSmartPointer<lsMesh>::New();
+  auto mesh = lsSmartPointer<lsMesh<>>::New();
   lsToMesh<double, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh, "boxLS.vtk").apply();
+  lsVTKWriter<double>(mesh, "boxLS.vtk").apply();
   lsToSurfaceMesh<double, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh, "box.vtk").apply();
+  lsVTKWriter<double>(mesh, "box.vtk").apply();
 
   return 0;
 }

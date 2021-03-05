@@ -42,7 +42,7 @@ int main() {
 
   std::cout << "Number of points: " << sphere1->getDomain().getNumberOfPoints()
             << std::endl;
-  auto mesh = lsSmartPointer<lsMesh>::New();
+  auto mesh = lsSmartPointer<lsMesh<>>::New();
 
   std::cout << "Expanding..." << std::endl;
   lsExpand<double, D>(sphere1, 2).apply();
@@ -56,12 +56,12 @@ int main() {
   lsToDiskMesh<double, D>(sphere1, mesh).apply();
   std::cout << "Disk mesh:" << std::endl;
   mesh->print();
-  lsVTKWriter(mesh, "disks-" + std::to_string(radius) + ".vtk").apply();
+  lsVTKWriter<double>(mesh, "disks-" + std::to_string(radius) + ".vtk").apply();
 
   lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
   std::cout << "Surface mesh:" << std::endl;
   mesh->print();
-  lsVTKWriter(mesh, "surface-" + std::to_string(radius) + ".vtk").apply();
+  lsVTKWriter<double>(mesh, "surface-" + std::to_string(radius) + ".vtk").apply();
 
   return 0;
 }

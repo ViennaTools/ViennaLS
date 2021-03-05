@@ -21,7 +21,7 @@ int main() {
   omp_set_num_threads(4);
 
   auto levelSet = lsSmartPointer<lsDomain<double, D>>::New();
-  auto mesh = lsSmartPointer<lsMesh>::New();
+  auto mesh = lsSmartPointer<lsMesh<>>::New();
 
   const double radius = 7.3;
   const hrleVectorType<double, D> centre(5., 0.);
@@ -30,13 +30,13 @@ int main() {
       levelSet, lsSmartPointer<lsSphere<double, D>>::New(centre, radius))
       .apply();
 
-  lsPointData &data = levelSet->getPointData();
-  typename lsPointData::ScalarDataType scalars;
-  typename lsPointData::VectorDataType vectors;
+  lsPointData<double> &data = levelSet->getPointData();
+  typename lsPointData<double>::ScalarDataType scalars;
+  typename lsPointData<double>::VectorDataType vectors;
   for (unsigned i = 0; i < levelSet->getNumberOfPoints(); ++i) {
     scalars.push_back(i);
     vectors.push_back(
-        typename lsPointData::VectorDataType::value_type({double(i)}));
+        typename lsPointData<double>::VectorDataType::value_type({double(i)}));
   }
 
   data.insertNextScalarData(scalars, "myScalars");
@@ -54,7 +54,7 @@ int main() {
     // std::ifstream fin("test.lvst", std::ofstream::binary);
     lsReader<double, D>(newLevelSet, "test.lvst").apply();
     // newLevelSet->deserialize(fin);
-    lsPointData &newData = newLevelSet->getPointData();
+    lsPointData<double> &newData = newLevelSet->getPointData();
     std::cout << newData.getScalarDataSize() << std::endl;
     auto newScalars = newData.getScalarData(0);
     std::cout << newData.getScalarDataLabel(0) << std::endl;
@@ -68,9 +68,9 @@ int main() {
     }
     // fin.close();
 
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToMesh<double, D>(newLevelSet, mesh).apply();
-    lsVTKWriter(mesh, "test.vtk").apply();
+    lsVTKWriter<double>(mesh, "test.vtk").apply();
   }
 
   

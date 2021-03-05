@@ -51,13 +51,13 @@ int main() {
   // cloud.insertNextPoint(hrleVectorType<double, D>(0.1, 0.5));
   // cloud.insertNextPoint(hrleVectorType<double, D>(-1, 0.2));
 
-  auto pointMesh = lsSmartPointer<lsMesh>::New();
+  auto pointMesh = lsSmartPointer<lsMesh<>>::New();
   for (unsigned i = 0; i < cloud->points.size(); ++i) {
     pointMesh->nodes.push_back(
         std::array<double, 3>{cloud->points[i][0], cloud->points[i][1], 0.});
     pointMesh->vertices.push_back(std::array<unsigned, 1>{i});
   }
-  lsVTKWriter(pointMesh, lsFileFormatEnum::VTP, "points.vtp").apply();
+  lsVTKWriter<double>(pointMesh, lsFileFormatEnum::VTP, "points.vtp").apply();
 
   lsMakeGeometry<double, D> geom;
   auto levelSet = lsSmartPointer<lsDomain<double, D>>::New();
@@ -66,11 +66,11 @@ int main() {
   geom.apply();
 
   {
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     std::cout << "Extracting..." << std::endl;
     lsToSurfaceMesh<double, D>(levelSet, mesh).apply();
     mesh->print();
-    lsVTKWriter(mesh, "LSMesh.vtk").apply();
+    lsVTKWriter<double>(mesh, "LSMesh.vtk").apply();
   }
 
   return 0;

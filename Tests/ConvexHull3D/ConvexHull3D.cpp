@@ -98,21 +98,21 @@ int main() {
     cloud->insertNextPoint(hrleVectorType<double, D>(x, y, height));
   }
 
-  auto mesh = lsSmartPointer<lsMesh>::New();
+  auto mesh = lsSmartPointer<lsMesh<>>::New();
   lsConvexHull<double, D>(mesh, cloud).apply();
 
-  auto pointMesh = lsSmartPointer<lsMesh>::New();
+  auto pointMesh = lsSmartPointer<lsMesh<>>::New();
   for (unsigned i = 0; i < cloud->points.size(); ++i) {
     pointMesh->nodes.push_back(std::array<double, 3>{
         cloud->points[i][0], cloud->points[i][1], cloud->points[i][2]});
     pointMesh->vertices.push_back(std::array<unsigned, 1>{i});
   }
   std::cout << "Output point cloud" << std::endl;
-  lsVTKWriter(pointMesh, lsFileFormatEnum::VTP, "points.vtp").apply();
+  lsVTKWriter<double>(pointMesh, lsFileFormatEnum::VTP, "points.vtp").apply();
 
   // std::cout << "Output surface mesh" << std::endl;
   // mesh.print();
-  // lsVTKWriter(mesh, lsFileFormatEnum::VTP, "hull.vtp").apply();
+  // lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP, "hull.vtp").apply();
 
   std::cout << "create level set" << std::endl;
   auto levelSet = lsSmartPointer<lsDomain<double, D>>::New(0.18);
@@ -125,21 +125,21 @@ int main() {
   // lsDomain<double, D> levelSet(0.3);
   // lsFromSurfaceMesh<double, D>(levelSet, mesh).apply();
 
-  auto LSMesh = lsSmartPointer<lsMesh>::New();
+  auto LSMesh = lsSmartPointer<lsMesh<>>::New();
   std::cout << "Output level set grid" << std::endl;
   lsToMesh<double, D>(levelSet, LSMesh).apply();
-  lsVTKWriter(LSMesh, lsFileFormatEnum::VTP, "LS.vtp").apply();
+  lsVTKWriter<double>(LSMesh, lsFileFormatEnum::VTP, "LS.vtp").apply();
 
   std::cout << "Output level set surface" << std::endl;
   lsToSurfaceMesh<double, D>(levelSet, LSMesh).apply();
-  lsVTKWriter(LSMesh, lsFileFormatEnum::VTP, "LSmesh.vtp").apply();
+  lsVTKWriter<double>(LSMesh, lsFileFormatEnum::VTP, "LSmesh.vtp").apply();
 
   // {
-  //   lsMesh mesh;
+  //   lsMesh<> mesh;
   //   std::cout << "Extracting..." << std::endl;
   //   lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
   //   mesh.print();
-  //   lsVTKWriter(mesh, "after2D.vtk").apply();
+  //   lsVTKWriter<double>(mesh, "after2D.vtk").apply();
   // }
 
   return 0;

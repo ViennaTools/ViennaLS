@@ -54,12 +54,12 @@ int main() {
                                      lsBooleanOperationEnum::UNION)
       .apply();
 
-  auto mesh = lsSmartPointer<lsMesh>::New();
+  auto mesh = lsSmartPointer<lsMesh<>>::New();
 
   lsToMesh<NumericType, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh, "points.vtk").apply();
+  lsVTKWriter<double>(mesh, "points.vtk").apply();
   lsToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh, "surface.vtk").apply();
+  lsVTKWriter<double>(mesh, "surface.vtk").apply();
 
   // set up spherical advection dist
   auto dist =
@@ -67,9 +67,9 @@ int main() {
   lsGeometricAdvect<NumericType, D>(levelSet, dist).apply();
 
   lsToMesh<NumericType, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh, "afterDepoLS.vtk").apply();
+  lsVTKWriter<double>(mesh, "afterDepoLS.vtk").apply();
   lsToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh, "afterDepo.vtk").apply();
+  lsVTKWriter<double>(mesh, "afterDepo.vtk").apply();
 
   // now remove the same again using spherical distribution
   auto etch = lsSmartPointer<lsSphereDistribution<NumericType, D>>::New(
@@ -77,9 +77,9 @@ int main() {
   lsGeometricAdvect<NumericType, D>(levelSet, etch).apply();
 
   lsToMesh<NumericType, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh, "afterEtchLS.vtk").apply();
+  lsVTKWriter<double>(mesh, "afterEtchLS.vtk").apply();
   lsToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh, "afterEtch.vtk").apply();
+  lsVTKWriter<double>(mesh, "afterEtch.vtk").apply();
 
   return 0;
 }

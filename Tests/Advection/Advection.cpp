@@ -53,9 +53,9 @@ int main() {
 
   {
     std::cout << "Extracting..." << std::endl;
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter(mesh, "before.vtk").apply();
+    lsVTKWriter<double>(mesh, "before.vtk").apply();
   }
 
   // instantiate velocities
@@ -80,10 +80,10 @@ int main() {
 
   {
     std::cout << "Extracting..." << std::endl;
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
     mesh->print();
-    lsVTKWriter(mesh, "after.vtk").apply();
+    lsVTKWriter<double>(mesh, "after.vtk").apply();
   }
 
   return 0;

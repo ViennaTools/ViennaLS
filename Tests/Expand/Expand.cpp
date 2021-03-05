@@ -39,20 +39,20 @@ int main() {
       .apply();
 
   {
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter(mesh, "sphere.vtk").apply();
+    lsVTKWriter<double>(mesh, "sphere.vtk").apply();
   }
 
   {
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsExpand<double, D>(sphere1, 5).apply();
     lsToMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter(mesh, "sphereExpanded.vtk").apply();
+    lsVTKWriter<double>(mesh, "sphereExpanded.vtk").apply();
 
     lsReduce<double, D>(sphere1, 1).apply();
     lsToMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter(mesh, "sphereReduced.vtk").apply();
+    lsVTKWriter<double>(mesh, "sphereReduced.vtk").apply();
   }
 
   return 0;

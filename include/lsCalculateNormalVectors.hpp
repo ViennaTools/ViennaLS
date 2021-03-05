@@ -49,7 +49,7 @@ public:
           .print();
     }
 
-    std::vector<std::vector<std::array<double, 3>>> normalVectorsVector(
+    std::vector<std::vector<std::array<T, 3>>> normalVectorsVector(
         levelSet->getNumberOfSegments());
     double pointsPerSegment =
         double(2 * levelSet->getDomain().getNumberOfPoints()) /
@@ -86,12 +86,12 @@ public:
           continue;
         } else if (std::abs(center.getValue()) > maxValue) {
           // push an empty vector to keep ordering correct
-          std::array<double, 3> tmp = {};
+          std::array<T, 3> tmp = {};
           normalVectors.push_back(tmp);
           continue;
         }
 
-        std::array<double, 3> n;
+        std::array<T, 3> n;
 
         T denominator = 0;
         for (int i = 0; i < D; i++) {

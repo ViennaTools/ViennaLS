@@ -13,7 +13,7 @@ int main() {
   omp_set_num_threads(4);
 
   constexpr int D = 3;
-  typedef double NumericType;
+  typedef float NumericType;
 
   double gridDelta = 1.0;
 
@@ -59,11 +59,11 @@ int main() {
   lsExpand<NumericType, D>(substrate, 3).apply();
   lsExpand<NumericType, D>(secondSphere, 3).apply();
 
-  auto mesh = lsSmartPointer<lsMesh>::New();
+  auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
   lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-  lsVTKWriter(mesh, "surface_1.vtk").apply();
+  lsVTKWriter<NumericType>(mesh, "surface_1.vtk").apply();
   lsToSurfaceMesh<NumericType, D>(secondSphere, mesh).apply();
-  lsVTKWriter(mesh, "surface_2.vtk").apply();
+  lsVTKWriter<NumericType>(mesh, "surface_2.vtk").apply();
 
   auto visualizeMesh =
       lsSmartPointer<lsWriteVisualizationMesh<NumericType, D>>::New();
@@ -78,9 +78,9 @@ int main() {
   //                                      lsBooleanOperationEnum::UNION)
   //       .apply();
 
-  //   auto mesh = lsSmartPointer<lsMesh>::New();
+  //   auto mesh = lsSmartPointer<lsMesh<>>::New();
   //   lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-  //   lsVTKWriter(mesh, "twoSpheres.vtk").apply();
+  //   lsVTKWriter<double>(mesh, "twoSpheres.vtk").apply();
 
   //   substrate->getDomain().print();
 

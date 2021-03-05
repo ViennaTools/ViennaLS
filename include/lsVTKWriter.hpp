@@ -21,7 +21,7 @@
 #include <vtkXMLUnstructuredGridWriter.h>
 #endif // VIENNALS_USE_VTK
 
-/// Class handling the output of an lsMesh to VTK file types.
+/// Class handling the output of an lsMesh<> to VTK file types.
 template<class T>
 class lsVTKWriter {
   lsSmartPointer<lsMesh<T>> mesh = nullptr;

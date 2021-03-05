@@ -31,7 +31,7 @@ int main() {
 
   auto levelSet =
       lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
-  auto mesh = lsSmartPointer<lsMesh>::New();
+  auto mesh = lsSmartPointer<lsMesh<>>::New();
 
   const hrleVectorType<double, D> origin(0., 0., 0.);
   const hrleVectorType<double, D> normal(1., 1., 1.);
@@ -41,10 +41,10 @@ int main() {
       .apply();
 
   lsToSurfaceMesh<double, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh, "Plane.vtk").apply();
+  lsVTKWriter<double>(mesh, "Plane.vtk").apply();
 
   lsToMesh<double, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh, "PlanePoints.vtk").apply();
+  lsVTKWriter<double>(mesh, "PlanePoints.vtk").apply();
 
   return 0;
 }

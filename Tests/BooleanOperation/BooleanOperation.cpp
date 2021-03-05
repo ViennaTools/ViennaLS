@@ -50,21 +50,21 @@ int main() {
       .apply();
 
   {
-    auto mesh1 = lsSmartPointer<lsMesh>::New();
-    auto mesh2 = lsSmartPointer<lsMesh>::New();
+    auto mesh1 = lsSmartPointer<lsMesh<>>::New();
+    auto mesh2 = lsSmartPointer<lsMesh<>>::New();
 
     std::cout << "Extracting..." << std::endl;
     lsToSurfaceMesh<double, D>(sphere1, mesh1).apply();
     lsToSurfaceMesh<double, D>(sphere2, mesh2).apply();
 
-    lsVTKWriter(mesh1, "sphere1.vtk").apply();
-    lsVTKWriter(mesh2, "sphere2.vtk").apply();
+    lsVTKWriter<double>(mesh1, "sphere1.vtk").apply();
+    lsVTKWriter<double>(mesh2, "sphere2.vtk").apply();
 
     lsToMesh<double, D>(sphere1, mesh1).apply();
     lsToMesh<double, D>(sphere2, mesh2).apply();
 
-    lsVTKWriter(mesh1, "LS1.vtk").apply();
-    lsVTKWriter(mesh2, "LS2.vtk").apply();
+    lsVTKWriter<double>(mesh1, "LS1.vtk").apply();
+    lsVTKWriter<double>(mesh2, "LS2.vtk").apply();
   }
 
   // Perform a boolean operation
@@ -72,12 +72,12 @@ int main() {
       .apply();
 
   std::cout << "Extracting..." << std::endl;
-  auto mesh = lsSmartPointer<lsMesh>::New();
+  auto mesh = lsSmartPointer<lsMesh<>>::New();
   lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
 
   mesh->print();
 
-  lsVTKWriter(mesh, "after.vtk").apply();
+  lsVTKWriter<double>(mesh, "after.vtk").apply();
 
   return 0;
 }

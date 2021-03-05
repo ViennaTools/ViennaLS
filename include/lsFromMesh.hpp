@@ -7,7 +7,7 @@
 #include <lsMesh.hpp>
 
 /// Import the regular grid, on which the level set values are
-/// defined, from an explicit lsMesh. The Vertices must be defined,
+/// defined, from an explicit lsMesh<>. The Vertices must be defined,
 /// as well as a scalar data field "LSValues". If used for custom
 /// read-in, make sure all vertices are lexicographically sorted.
 template <class T, int D> class lsFromMesh {
@@ -43,7 +43,7 @@ public:
     }
     if (mesh == nullptr) {
       lsMessage::getInstance()
-          .addWarning("No lsMesh was supplied to lsFromMesh.")
+          .addWarning("No lsMesh<> was supplied to lsFromMesh.")
           .print();
       return;
     }

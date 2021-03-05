@@ -16,14 +16,14 @@
 /// in the supplied std::vector<lsDomain<T,D>> object.
 template <class T, int D> class lsFromVolumeMesh {
   std::vector<lsSmartPointer<lsDomain<T, D>>> levelSets;
-  lsSmartPointer<lsMesh> mesh = nullptr;
+  lsSmartPointer<lsMesh<T>> mesh = nullptr;
   bool removeBoundaryTriangles = true;
 
 public:
   lsFromVolumeMesh() {}
 
   lsFromVolumeMesh(std::vector<lsSmartPointer<lsDomain<T, D>>> passedLevelSets,
-                   lsSmartPointer<lsMesh> passedMesh,
+                   lsSmartPointer<lsMesh<T>> passedMesh,
                    bool passedRemoveBoundaryTriangles = true)
       : levelSets(passedLevelSets), mesh(passedMesh),
         removeBoundaryTriangles(passedRemoveBoundaryTriangles) {}
@@ -33,7 +33,7 @@ public:
     levelSets = passedLevelSets;
   }
 
-  void setMesh(lsSmartPointer<lsMesh> passedMesh) { mesh = passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh<T>> passedMesh) { mesh = passedMesh; }
 
   void setRemoveBoundaryTriangles(bool passedRemoveBoundaryTriangles) {
     removeBoundaryTriangles = passedRemoveBoundaryTriangles;
@@ -55,7 +55,7 @@ public:
 
     // get the unique material numbers for explicit booling
     std::vector<int> materialInts;
-    typename lsPointData::ScalarDataType *materialData =
+    typename lsPointData<T>::ScalarDataType *materialData =
         mesh->getScalarData("Material");
     if (materialData != nullptr) {
       // make unique list of materialIds
@@ -81,7 +81,7 @@ public:
         hrleVectorType<unsigned int, D> currentSurfaceElement;
         for (int k = 0; k < D; k++) {
           currentSurfaceElement[k] =
-              mesh->getElements<D + 1>()[i][(j + k) % (D + 1)];
+              mesh->template getElements<D + 1>()[i][(j + k) % (D + 1)];
         }
 
         // std::bitset<2 * D> flags;
@@ -118,7 +118,7 @@ public:
 
         // get the other point of the element as well
         currentElementPoints[D] =
-            mesh->nodes[mesh->getElements<D + 1>()[i][(j + D) % (D + 1)]];
+            mesh->nodes[mesh->template getElements<D + 1>()[i][(j + D) % (D + 1)]];
 
         typename triangleMapType::iterator it =
             surfaceElements.lower_bound(currentSurfaceElement);
@@ -176,8 +176,8 @@ public:
     auto levelSetIterator = levelSets.begin();
     for (auto matIt = materialInts.begin(); matIt != materialInts.end();
          ++matIt) {
-      auto currentSurface = lsSmartPointer<lsMesh>::New();
-      auto &meshElements = currentSurface->getElements<D>();
+      auto currentSurface = lsSmartPointer<lsMesh<T>>::New();
+      auto &meshElements = currentSurface->template getElements<D>();
       for (auto it = surfaceElements.begin(); it != surfaceElements.end();
            ++it) {
         if (((*matIt) >= it->second.first) && ((*matIt) < it->second.second)) {

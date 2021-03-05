@@ -65,7 +65,7 @@ public:
 
 // create a rounded cone as the primitive pattern.
 // Define a pointcloud and create a hull mesh using lsConvexHull.
-void makeRoundCone(lsSmartPointer<lsMesh> mesh,
+void makeRoundCone(lsSmartPointer<lsMesh<>> mesh,
                    hrleVectorType<double, 3> center, double radius,
                    double height) {
   // cone is just a circle with a point above the center
@@ -161,7 +161,7 @@ int main() {
         auto cone = lsSmartPointer<lsDomain<double, D>>::New(
             bounds, boundaryCons, gridDelta);
         // create cone
-        auto coneMesh = lsSmartPointer<lsMesh>::New();
+        auto coneMesh = lsSmartPointer<lsMesh<>>::New();
         makeRoundCone(coneMesh, coneCenter, coneRadius * dis(gen),
                       coneHeight * dis(gen));
 
@@ -200,9 +200,9 @@ int main() {
     for (unsigned i = 0; i < numberOfEtchSteps; ++i) {
       std::cout << "\rEtch step " + std::to_string(i) + " / "
                 << numberOfEtchSteps << std::flush;
-      auto mesh = lsSmartPointer<lsMesh>::New();
+      auto mesh = lsSmartPointer<lsMesh<>>::New();
       lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-      lsVTKWriter(mesh, "substrate-" + std::to_string(i) + ".vtk").apply();
+      lsVTKWriter<double>(mesh, "substrate-" + std::to_string(i) + ".vtk").apply();
 
       advectionKernel.apply();
       passedTime += advectionKernel.getAdvectedTime();
@@ -210,9 +210,9 @@ int main() {
     std::cout << std::endl;
 
     {
-      auto mesh = lsSmartPointer<lsMesh>::New();
+      auto mesh = lsSmartPointer<lsMesh<>>::New();
       lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-      lsVTKWriter(mesh,
+      lsVTKWriter<double>(mesh,
                   "substrate-" + std::to_string(numberOfEtchSteps) + ".vtk")
           .apply();
     }
@@ -223,9 +223,9 @@ int main() {
 
   // make disk mesh and output
   {
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToDiskMesh<double, 3>(substrate, mesh).apply();
-    lsVTKWriter(mesh, lsFileFormatEnum::VTP, "diskMesh.vtp").apply();
+    lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP, "diskMesh.vtp").apply();
   }
 
   // Deposit new layer ----------------------------------------------
@@ -245,9 +245,9 @@ int main() {
     for (unsigned i = 0; i < numberOfDepoSteps; ++i) {
       std::cout << "\rDepo step " + std::to_string(i) + " / "
                 << numberOfDepoSteps << std::flush;
-      auto mesh = lsSmartPointer<lsMesh>::New();
+      auto mesh = lsSmartPointer<lsMesh<>>::New();
       lsToSurfaceMesh<double, D>(fillLayer, mesh).apply();
-      lsVTKWriter(mesh, "fillLayer-" +
+      lsVTKWriter<double>(mesh, "fillLayer-" +
                             std::to_string(numberOfEtchSteps + 1 + i) + ".vtk")
           .apply();
 
@@ -257,9 +257,9 @@ int main() {
     std::cout << std::endl;
 
     {
-      auto mesh = lsSmartPointer<lsMesh>::New();
+      auto mesh = lsSmartPointer<lsMesh<>>::New();
       lsToSurfaceMesh<double, D>(fillLayer, mesh).apply();
-      lsVTKWriter(mesh,
+      lsVTKWriter<double>(mesh,
                   "fillLayer-" +
                       std::to_string(numberOfEtchSteps + numberOfDepoSteps) +
                       ".vtk")
@@ -272,12 +272,12 @@ int main() {
 
   // now output the final level sets
   {
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "final-substrate.vtk").apply();
+    lsVTKWriter<double>(mesh, "final-substrate.vtk").apply();
 
     lsToSurfaceMesh<double, D>(fillLayer, mesh).apply();
-    lsVTKWriter(mesh, "final-fillLayer.vtk").apply();
+    lsVTKWriter<double>(mesh, "final-fillLayer.vtk").apply();
   }
 
   return 0;

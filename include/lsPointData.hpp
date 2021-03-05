@@ -8,7 +8,7 @@
 #include <lsConcepts.hpp>
 
 /// This class holds data associated with points in space.
-template<class T, lsConcepts::IsFloatingPoint<T> = lsConcepts::assignable>
+template<class T = double, lsConcepts::IsFloatingPoint<T> = lsConcepts::assignable>
 class lsPointData {
 public:
   typedef std::vector<T> ScalarDataType;
