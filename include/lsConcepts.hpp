@@ -21,6 +21,10 @@ template <class A, class B>
 using IsNotSame =
     typename std::enable_if<!std::is_same<A, B>::value, AssignType>::type;
 
+template <class T>
+using IsFloatingPoint =
+    typename std::enable_if<std::is_floating_point<T>::value, AssignType>::type;
+
 } // namespace lsConcepts
 
 #endif // LS_CONCEPTS_HPP

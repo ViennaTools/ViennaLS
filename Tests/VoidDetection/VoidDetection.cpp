@@ -71,21 +71,21 @@ int main() {
   }
 
   {
-    auto explMesh = lsSmartPointer<lsMesh>::New();
+    auto explMesh = lsSmartPointer<lsMesh<>>::New();
 
     std::cout << "Extracting..." << std::endl;
     lsToSurfaceMesh<double, D>(substrate, explMesh).apply();
 
-    lsVTKWriter(explMesh, "before.vtk").apply();
+    lsVTKWriter<double>(explMesh, "before.vtk").apply();
   }
 
   lsMarkVoidPoints<double, D>(substrate).apply();
 
   {
     std::cout << "Extracting..." << std::endl;
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "after.vtk").apply();
+    lsVTKWriter<double>(mesh, "after.vtk").apply();
   }
 
   // Advection
@@ -94,14 +94,14 @@ int main() {
   advectionKernel.setIgnoreVoids(true);
   for (unsigned i = 0; i < 30; ++i) {
     {
-      auto mesh = lsSmartPointer<lsMesh>::New();
+      auto mesh = lsSmartPointer<lsMesh<>>::New();
       lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-      lsVTKWriter(mesh, "out-" + std::to_string(i) + ".vtk").apply();
+      lsVTKWriter<double>(mesh, "out-" + std::to_string(i) + ".vtk").apply();
 
       lsMarkVoidPoints<double, D>(substrate).apply();
       lsToMesh<double, D>(substrate, mesh).apply();
 
-      lsVTKWriter(mesh, "ls-out-" + std::to_string(i) + ".vtk").apply();
+      lsVTKWriter<double>(mesh, "ls-out-" + std::to_string(i) + ".vtk").apply();
     }
     advectionKernel.apply();
   }

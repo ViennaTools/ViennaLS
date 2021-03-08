@@ -4,7 +4,7 @@ var classlsDomain =
     [ "DomainType", "classlsDomain.html#a7e989b2c137e03c4f8e09c181b6311af", null ],
     [ "GridType", "classlsDomain.html#acd1ed71ed408b19ab82f4b33db28a20d", null ],
     [ "NormalVectorType", "classlsDomain.html#a1b5387cd91551921f8f4b034aef54c80", null ],
-    [ "PointDataType", "classlsDomain.html#adc45dd6438d2b1f8cb62afb1cdaeaf67", null ],
+    [ "PointDataType", "classlsDomain.html#a60bb8552260d6497f645bb4eb0f9af87", null ],
     [ "PointValueVectorType", "classlsDomain.html#a81a5c708142e9a0b5bcf2a537934cf7f", null ],
     [ "ValueType", "classlsDomain.html#a0fd2ecbf57e7608ab81b6a38342f9e6f", null ],
     [ "VoidPointMarkersType", "classlsDomain.html#a6432176faa114eee197c3f70c3e6f775", null ],

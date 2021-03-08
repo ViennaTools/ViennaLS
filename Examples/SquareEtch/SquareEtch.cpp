@@ -141,13 +141,13 @@ int main() {
     std::cout << "Extracting..." << std::endl;
     // output substrate layer (which wraps around mask layer)
     // wrapping is necessary for stable advection
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, fileName + "0.vtk").apply();
+    lsVTKWriter<double>(mesh, fileName + "0.vtk").apply();
 
     // output mask layer
     lsToSurfaceMesh<double, D>(mask, mesh).apply();
-    lsVTKWriter(mesh, "mask.vtk").apply();
+    lsVTKWriter<double>(mesh, "mask.vtk").apply();
   }
 
   // START ADVECTION
@@ -191,17 +191,18 @@ int main() {
     std::cout << "Advection step: " << counter
               << ", time: " << advectionKernel.getAdvectedTime() << std::endl;
 
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, fileName + std::to_string(counter) + ".vtk").apply();
+    lsVTKWriter<double>(mesh, fileName + std::to_string(counter) + ".vtk")
+        .apply();
     ++counter;
   }
   std::cout << std::endl;
   std::cout << "Number of Advection steps taken: " << counter << std::endl;
 
-  auto mesh = lsSmartPointer<lsMesh>::New();
+  auto mesh = lsSmartPointer<lsMesh<>>::New();
   lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-  lsVTKWriter(mesh, "final.vtk").apply();
+  lsVTKWriter<double>(mesh, "final.vtk").apply();
 
   return 0;
 }

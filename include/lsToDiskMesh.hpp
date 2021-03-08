@@ -16,25 +16,25 @@
 /// direction of their normal vector by grid delta * LS value.
 /// Grid delta and the origin grid point are saved for each point.
 /// This allows for a simple setup of disks for ray tracing.
-template <class T, int D> class lsToDiskMesh {
+template <class T, int D, class N = T> class lsToDiskMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
 
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
-  lsSmartPointer<lsMesh> mesh = nullptr;
+  lsSmartPointer<lsMesh<N>> mesh = nullptr;
   T maxValue = 0.5;
 
 public:
   lsToDiskMesh() {}
 
   lsToDiskMesh(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-               lsSmartPointer<lsMesh> passedMesh, T passedMaxValue = 0.5)
+               lsSmartPointer<lsMesh<N>> passedMesh, T passedMaxValue = 0.5)
       : levelSet(passedLevelSet), mesh(passedMesh), maxValue(passedMaxValue) {}
 
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
   }
 
-  void setMesh(lsSmartPointer<lsMesh> passedMesh) { mesh = passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh<N>> passedMesh) { mesh = passedMesh; }
 
   void setMaxValue(const T passedMaxValue) { maxValue = passedMaxValue; }
 
@@ -62,20 +62,18 @@ public:
         *(levelSet->getPointData().getVectorData("Normals"));
 
     // set up data arrays
-    std::vector<double> values;
-    std::vector<double> gridSpacing;
-    std::vector<std::array<double, 3>> normals;
+    std::vector<N> values;
+    std::vector<std::array<N, 3>> normals;
 
     // save the extent of the resulting mesh
-    std::array<double, 3> minimumExtent = {};
-    std::array<double, 3> maximumExtent = {};
+    std::array<N, 3> minimumExtent = {};
+    std::array<N, 3> maximumExtent = {};
     for (unsigned i = 0; i < D; ++i) {
-      minimumExtent[i] = std::numeric_limits<double>::max();
-      maximumExtent[i] = std::numeric_limits<double>::lowest();
+      minimumExtent[i] = std::numeric_limits<T>::max();
+      maximumExtent[i] = std::numeric_limits<T>::lowest();
     }
 
     values.reserve(normalVectors.size());
-    gridSpacing.reserve(normalVectors.size());
     normals.reserve(normalVectors.size());
 
     for (hrleConstSparseIterator<hrleDomainType> it(levelSet->getDomain());
@@ -93,7 +91,7 @@ public:
 
       // insert corresponding node shifted by ls value in direction of the
       // normal vector
-      std::array<double, 3> node;
+      std::array<N, 3> node;
       node[2] = 0.;
       double max = 0.;
       for (unsigned i = 0; i < D; ++i) {
@@ -122,7 +120,7 @@ public:
 
       // add data into mesh
       // copy normal
-      std::array<double, 3> normal;
+      std::array<N, 3> normal;
       if (D == 2)
         normal[2] = 0.;
       for (unsigned i = 0; i < D; ++i) {
@@ -131,11 +129,9 @@ public:
 
       normals.push_back(normal);
       values.push_back(it.getValue());
-      gridSpacing.push_back(gridDelta);
     }
 
     mesh->insertNextScalarData(values, "LSValues");
-    mesh->insertNextScalarData(gridSpacing, "gridSpacing");
     mesh->insertNextVectorData(normals, "Normals");
     mesh->minimumExtent = minimumExtent;
     mesh->maximumExtent = maximumExtent;

@@ -19,67 +19,72 @@
   \example GeometricAdvection.cpp
 */
 
+using NumericType = float;
+
 int main() {
 
   constexpr int D = 3;
   omp_set_num_threads(4);
 
-  double extent = 30;
-  double gridDelta = 0.5;
+  NumericType extent = 30;
+  NumericType gridDelta = 0.5;
 
   double bounds[2 * D] = {-extent, extent, -extent, extent, -extent, extent};
-  lsDomain<double, D>::BoundaryType boundaryCons[D];
+  lsDomain<NumericType, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D - 1; ++i)
-    boundaryCons[i] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
-  boundaryCons[2] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
+    boundaryCons[i] =
+        lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+  boundaryCons[2] = lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  auto substrate =
-      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  auto substrate = lsSmartPointer<lsDomain<NumericType, D>>::New(
+      bounds, boundaryCons, gridDelta);
 
   {
-    double origin[3] = {0., 0., 0.};
-    double planeNormal[3] = {0., 0., 1.};
-    auto plane = lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal);
-    lsMakeGeometry<double, D>(substrate, plane).apply();
+    NumericType origin[3] = {0., 0., 0.};
+    NumericType planeNormal[3] = {0., 0., 1.};
+    auto plane =
+        lsSmartPointer<lsPlane<NumericType, D>>::New(origin, planeNormal);
+    lsMakeGeometry<NumericType, D>(substrate, plane).apply();
   }
 
   {
-    auto trench = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
-                                                           gridDelta);
+    auto trench = lsSmartPointer<lsDomain<NumericType, D>>::New(
+        bounds, boundaryCons, gridDelta);
     // make -x and +x greater than domain for numerical stability
-    double minCorner[D] = {-extent - 1, -extent / 4., -15.};
-    double maxCorner[D] = {extent + 1, extent / 4., 1.};
-    auto box = lsSmartPointer<lsBox<double, D>>::New(minCorner, maxCorner);
-    lsMakeGeometry<double, D>(trench, box).apply();
+    NumericType ylimit = extent / 4.;
+    NumericType minCorner[D] = {-extent - 1, -ylimit, -15.};
+    NumericType maxCorner[D] = {extent + 1, ylimit, 1.};
+    auto box = lsSmartPointer<lsBox<NumericType, D>>::New(minCorner, maxCorner);
+    lsMakeGeometry<NumericType, D>(trench, box).apply();
     // Create trench geometry
-    lsBooleanOperation<double, D>(substrate, trench,
-                                  lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
+    lsBooleanOperation<NumericType, D>(
+        substrate, trench, lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
         .apply();
   }
 
   {
     std::cout << "Extracting..." << std::endl;
-    auto mesh = lsSmartPointer<lsMesh>::New();
-    lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "trench-0.vtk").apply();
+    auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
+    lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
+    lsVTKWriter<NumericType>(mesh, "trench-0.vtk").apply();
   }
 
   // Now grow new material isotropically
 
   // create new levelset for new material, which will be grown
   // since it has to wrap around the substrate, just copy it
-  auto newLayer = lsSmartPointer<lsDomain<double, D>>::New(substrate);
+  auto newLayer = lsSmartPointer<lsDomain<NumericType, D>>::New(substrate);
 
   std::cout << "Advecting" << std::endl;
   // Grow the layer uniformly by 4 as in deposition example
-  auto dist =
-      lsSmartPointer<lsSphereDistribution<double, D>>::New(4.0, gridDelta);
-  lsGeometricAdvect<double, D>(newLayer, dist).apply();
+  auto dist = lsSmartPointer<lsSphereDistribution<hrleCoordType, D>>::New(
+      4.0, gridDelta);
+  lsGeometricAdvect<NumericType, D>(newLayer, dist).apply();
 
   {
-    auto mesh = lsSmartPointer<lsMesh>::New();
-    lsToSurfaceMesh<double, D>(newLayer, mesh).apply();
-    lsVTKWriter(mesh, "trench-final.vtk").apply();
+    auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
+    lsToSurfaceMesh<NumericType, D>(newLayer, mesh).apply();
+    lsVTKWriter<NumericType>(mesh, "trench-final.vtk").apply();
   }
 
   return 0;

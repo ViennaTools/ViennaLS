@@ -24,7 +24,7 @@ int main() {
   omp_set_num_threads(4);
 
   auto levelSet = lsSmartPointer<lsDomain<double, D>>::New();
-  auto mesh = lsSmartPointer<lsMesh>::New();
+  auto mesh = lsSmartPointer<lsMesh<>>::New();
 
   const double radius = 27.3;
   const hrleVectorType<double, D> centre(5., 0.);
@@ -38,7 +38,7 @@ int main() {
             << std::endl;
 
   lsToMesh<double, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh, "initial.vtk").apply();
+  lsVTKWriter<double>(mesh, "initial.vtk").apply();
 
   lsPrune<double, D>(levelSet).apply();
   std::cout << "After prune: " << std::endl;
@@ -47,7 +47,7 @@ int main() {
   std::cout << "Width: " << levelSet->getLevelSetWidth() << std::endl;
 
   lsToMesh<double, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh, "after_prune.vtk").apply();
+  lsVTKWriter<double>(mesh, "after_prune.vtk").apply();
 
   lsExpand<double, D>(levelSet, 4).apply();
   std::cout << "After Expand: " << std::endl;
@@ -56,7 +56,7 @@ int main() {
   std::cout << "Width: " << levelSet->getLevelSetWidth() << std::endl;
 
   lsToMesh<double, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh, "after_expand.vtk").apply();
+  lsVTKWriter<double>(mesh, "after_expand.vtk").apply();
 
   lsReduce<double, D>(levelSet, 2).apply();
   std::cout << "After Reduce: " << std::endl;
@@ -65,14 +65,14 @@ int main() {
   std::cout << "Width: " << levelSet->getLevelSetWidth() << std::endl;
 
   lsToSurfaceMesh<double, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh, "Sphere2D.vtk").apply();
+  lsVTKWriter<double>(mesh, "Sphere2D.vtk").apply();
 
   lsToMesh<double, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh, "after_reduce.vtk").apply();
+  lsVTKWriter<double>(mesh, "after_reduce.vtk").apply();
 
   lsToVoxelMesh<double, D>(levelSet, mesh).apply();
   mesh->print();
-  lsVTKWriter(mesh, lsFileFormatEnum::VTU, "Sphere.vtu").apply();
+  lsVTKWriter<double>(mesh, lsFileFormatEnum::VTU, "Sphere.vtu").apply();
 
   return 0;
 }

@@ -31,27 +31,30 @@ var hierarchy =
     [ "lsMessage", "classlsMessage.html", null ],
     [ "lsPlane< T, D >", "classlsPlane.html", null ],
     [ "lsPointCloud< T, D >", "classlsPointCloud.html", null ],
-    [ "lsPointData", "classlsPointData.html", [
-      [ "lsMesh", "classlsMesh.html", null ]
+    [ "lsPointData< T, >", "classlsPointData.html", null ],
+    [ "lsPointData< double >", "classlsPointData.html", [
+      [ "lsMesh< T >", "classlsMesh.html", null ]
     ] ],
+    [ "lsPointData< T >", "classlsPointData.html", null ],
     [ "lsPrune< T, D >", "classlsPrune.html", null ],
     [ "lsReader< T, D >", "classlsReader.html", null ],
     [ "lsReduce< T, D >", "classlsReduce.html", null ],
     [ "lsSphere< T, D >", "classlsSphere.html", null ],
     [ "lsInternal::lsStencilLocalLaxFriedrichsScalar< T, D, order >", "classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar.html", null ],
-    [ "lsToDiskMesh< T, D >", "classlsToDiskMesh.html", null ],
+    [ "lsToDiskMesh< T, D, N >", "classlsToDiskMesh.html", null ],
     [ "lsToMesh< T, D >", "classlsToMesh.html", null ],
     [ "lsToSurfaceMesh< T, D >", "classlsToSurfaceMesh.html", null ],
     [ "lsToVoxelMesh< T, D >", "classlsToVoxelMesh.html", null ],
-    [ "lsTransformMesh", "classlsTransformMesh.html", null ],
-    [ "lsVelocityField< T >", "classlsVelocityField.html", null ],
+    [ "lsTransformMesh< T >", "classlsTransformMesh.html", null ],
     [ "lsVelocityField", null, [
       [ "AirGapDeposition.velocityField", "classAirGapDeposition_1_1velocityField.html", null ],
       [ "Deposition.velocityField", "classDeposition_1_1velocityField.html", null ]
     ] ],
+    [ "lsVelocityField< T >", "classlsVelocityField.html", null ],
     [ "lsVelocityField< double >", "classlsVelocityField.html", null ],
-    [ "lsVTKReader", "classlsVTKReader.html", null ],
-    [ "lsVTKWriter", "classlsVTKWriter.html", null ],
+    [ "lsVelocityField< NumericType >", "classlsVelocityField.html", null ],
+    [ "lsVTKReader< T >", "classlsVTKReader.html", null ],
+    [ "lsVTKWriter< T >", "classlsVTKWriter.html", null ],
     [ "lsWriter< T, D >", "classlsWriter.html", null ],
     [ "lsWriteVisualizationMesh< T, D >", "classlsWriteVisualizationMesh.html", null ],
     [ "shared_ptr", null, [
@@ -60,7 +63,8 @@ var hierarchy =
       [ "lsSmartPointer< lsBox< T, D > >", "classlsSmartPointer.html", null ],
       [ "lsSmartPointer< lsCylinder< T, D > >", "classlsSmartPointer.html", null ],
       [ "lsSmartPointer< lsDomain< T, D > >", "classlsSmartPointer.html", null ],
-      [ "lsSmartPointer< lsMesh >", "classlsSmartPointer.html", null ],
+      [ "lsSmartPointer< lsMesh< double > >", "classlsSmartPointer.html", null ],
+      [ "lsSmartPointer< lsMesh< T > >", "classlsSmartPointer.html", null ],
       [ "lsSmartPointer< lsPlane< T, D > >", "classlsSmartPointer.html", null ],
       [ "lsSmartPointer< lsPointCloud< T, D > >", "classlsSmartPointer.html", null ],
       [ "lsSmartPointer< lsSphere< T, D > >", "classlsSmartPointer.html", null ],

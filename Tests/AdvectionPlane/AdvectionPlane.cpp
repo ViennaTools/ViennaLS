@@ -57,14 +57,14 @@ int main() {
       plane, lsSmartPointer<lsPlane<double, D>>::New(origin, normal))
       .apply();
   {
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
 
     std::cout << "Extracting..." << std::endl;
     lsToSurfaceMesh<double, D>(plane, mesh).apply();
-    lsVTKWriter(mesh, "before.vtk").apply();
+    lsVTKWriter<double>(mesh, "before.vtk").apply();
 
     lsToMesh<double, D>(plane, mesh).apply();
-    lsVTKWriter(mesh, "beforeLS.vtk").apply();
+    lsVTKWriter<double>(mesh, "beforeLS.vtk").apply();
 
     mesh->print();
   }
@@ -83,12 +83,12 @@ int main() {
   lsExpand<double, D>(plane, 2).apply();
 
   std::cout << "Extracting..." << std::endl;
-  auto mesh = lsSmartPointer<lsMesh>::New();
+  auto mesh = lsSmartPointer<lsMesh<>>::New();
   lsToSurfaceMesh<double, D>(plane, mesh).apply();
 
   // mesh.print();
 
-  lsVTKWriter(mesh, "after.vtk").apply();
+  lsVTKWriter<double>(mesh, "after.vtk").apply();
 
   return 0;
 }

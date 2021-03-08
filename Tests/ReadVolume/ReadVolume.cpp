@@ -24,16 +24,17 @@ int main() {
                                                   gridDelta));
 
   // Read mesh
-  auto initialMesh = lsSmartPointer<lsMesh>::New();
-  lsVTKReader(initialMesh, "initial.vtk").apply();
+  auto initialMesh = lsSmartPointer<lsMesh<>>::New();
+  lsVTKReader<double>(initialMesh, "initial.vtk").apply();
   initialMesh->print();
 
   lsFromVolumeMesh<double, D>(levelSets, initialMesh).apply();
 
   for (unsigned i = 0; i < levelSets.size(); ++i) {
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(levelSets[i], mesh).apply();
-    lsVTKWriter(mesh, "LSsurface-" + std::to_string(i) + ".vtk").apply();
+    lsVTKWriter<double>(mesh, "LSsurface-" + std::to_string(i) + ".vtk")
+        .apply();
   }
 
   return 0;

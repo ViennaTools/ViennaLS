@@ -68,9 +68,9 @@ int main() {
     double upperCorner[D] = {25, 25, 10};
     auto box = lsSmartPointer<lsBox<double, D>>::New(lowerCorner, upperCorner);
     lsMakeGeometry<double, D>(pillar, box).apply();
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(pillar, mesh).apply();
-    lsVTKWriter(mesh, "pillar.vtk").apply();
+    lsVTKWriter<double>(mesh, "pillar.vtk").apply();
     lsBooleanOperation<double, D> boolOp(substrate, pillar,
                                          lsBooleanOperationEnum::UNION);
     boolOp.apply();
@@ -95,9 +95,9 @@ int main() {
   for (unsigned i = 0; i < numberOfSteps; ++i) {
     std::cout << "\rAdvection step " + std::to_string(i) + " / "
               << numberOfSteps << std::flush;
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "pillar-" + std::to_string(i) + ".vtk").apply();
+    lsVTKWriter<double>(mesh, "pillar-" + std::to_string(i) + ".vtk").apply();
 
     advectionKernel.apply();
     passedTime += advectionKernel.getAdvectedTime();

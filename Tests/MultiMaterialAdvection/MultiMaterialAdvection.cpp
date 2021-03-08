@@ -73,12 +73,12 @@ int main() {
 
   {
     std::cout << "Extracting..." << std::endl;
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter(mesh, "lower_0.vtk").apply();
+    lsVTKWriter<double>(mesh, "lower_0.vtk").apply();
 
     lsToSurfaceMesh<double, D>(sphere2, mesh).apply();
-    lsVTKWriter(mesh, "union_0.vtk").apply();
+    lsVTKWriter<double>(mesh, "union_0.vtk").apply();
   }
 
   // ADVECTION
@@ -103,13 +103,13 @@ int main() {
   // Output result
   {
     std::cout << "Extracting..." << std::endl;
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter(mesh, "lower_1.vtk").apply();
+    lsVTKWriter<double>(mesh, "lower_1.vtk").apply();
 
     lsToSurfaceMesh<double, D>(sphere2, mesh).apply();
     mesh->print();
-    lsVTKWriter(mesh, "union_1.vtk").apply();
+    lsVTKWriter<double>(mesh, "union_1.vtk").apply();
   }
 
   return 0;

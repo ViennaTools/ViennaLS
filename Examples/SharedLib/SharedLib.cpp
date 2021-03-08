@@ -49,15 +49,15 @@ int main() {
   }
 
   {
-    auto mesh1 = lsSmartPointer<lsMesh>::New();
-    auto mesh2 = lsSmartPointer<lsMesh>::New();
+    auto mesh1 = lsSmartPointer<lsMesh<float>>::New();
+    auto mesh2 = lsSmartPointer<lsMesh<float>>::New();
 
     std::cout << "Extracting..." << std::endl;
     lsToSurfaceMesh_float_3(sphere1, mesh1).apply();
     lsToSurfaceMesh_float_3(sphere2, mesh2).apply();
 
-    lsVTKWriter(mesh1, "sphere1.vtk").apply();
-    lsVTKWriter(mesh2, "sphere2.vtk").apply();
+    lsVTKWriter<float>(mesh1, "sphere1.vtk").apply();
+    lsVTKWriter<float>(mesh2, "sphere2.vtk").apply();
   }
 
   // Perform a boolean operation
@@ -66,12 +66,12 @@ int main() {
       .apply();
 
   std::cout << "Extracting..." << std::endl;
-  auto mesh = lsSmartPointer<lsMesh>::New();
+  auto mesh = lsSmartPointer<lsMesh<float>>::New();
   lsToSurfaceMesh_float_3(sphere1, mesh).apply();
 
   mesh->print();
 
-  lsVTKWriter(mesh, "after.vtk").apply();
+  lsVTKWriter<float>(mesh, "after.vtk").apply();
 
   return 0;
 }

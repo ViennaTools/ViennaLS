@@ -111,8 +111,8 @@ Public Types</h2></td></tr>
 <tr class="separator:a81a5c708142e9a0b5bcf2a537934cf7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1b5387cd91551921f8f4b034aef54c80"><td class="memItemLeft" align="right" valign="top">typedef std::vector&lt; std::array&lt; T, D &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a1b5387cd91551921f8f4b034aef54c80">NormalVectorType</a></td></tr>
 <tr class="separator:a1b5387cd91551921f8f4b034aef54c80"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adc45dd6438d2b1f8cb62afb1cdaeaf67"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classlsPointData.html">lsPointData</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#adc45dd6438d2b1f8cb62afb1cdaeaf67">PointDataType</a></td></tr>
-<tr class="separator:adc45dd6438d2b1f8cb62afb1cdaeaf67"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a60bb8552260d6497f645bb4eb0f9af87"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classlsPointData.html">lsPointData</a>&lt; T &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a60bb8552260d6497f645bb4eb0f9af87">PointDataType</a></td></tr>
+<tr class="separator:a60bb8552260d6497f645bb4eb0f9af87"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6432176faa114eee197c3f70c3e6f775"><td class="memItemLeft" align="right" valign="top">typedef std::vector&lt; bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a6432176faa114eee197c3f70c3e6f775">VoidPointMarkersType</a></td></tr>
 <tr class="separator:a6432176faa114eee197c3f70c3e6f775"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -142,7 +142,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a8f855d161aa1b576e1464797bb833b82"><td class="mdescLeft">&#160;</td><td class="mdescRight">copy all values of "passedlsDomain" to this <a class="el" href="classlsDomain.html" title="Class containing all information about the level set, including the dimensions of the domain,...">lsDomain</a>  <a href="classlsDomain.html#a8f855d161aa1b576e1464797bb833b82">More...</a><br /></td></tr>
 <tr class="separator:a8f855d161aa1b576e1464797bb833b82"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aafee5214479c6a4519c2ec2ec4e5671e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#aafee5214479c6a4519c2ec2ec4e5671e">insertPoints</a> (<a class="el" href="classlsDomain.html#a81a5c708142e9a0b5bcf2a537934cf7f">PointValueVectorType</a> pointData, bool sort=true)</td></tr>
-<tr class="memdesc:aafee5214479c6a4519c2ec2ec4e5671e"><td class="mdescLeft">&#160;</td><td class="mdescRight">re-initalise <a class="el" href="classlsDomain.html" title="Class containing all information about the level set, including the dimensions of the domain,...">lsDomain</a> with the point/value pairs in pointData This is similar to <a class="el" href="classlsFromMesh.html" title="Import the regular grid, on which the level set values are defined, from an explicit lsMesh....">lsFromMesh</a> with the difference that pointData contains (INDEX, Value) pairs, while <a class="el" href="classlsFromMesh.html" title="Import the regular grid, on which the level set values are defined, from an explicit lsMesh....">lsFromMesh</a> expects coordinates rather than indices  <a href="classlsDomain.html#aafee5214479c6a4519c2ec2ec4e5671e">More...</a><br /></td></tr>
+<tr class="memdesc:aafee5214479c6a4519c2ec2ec4e5671e"><td class="mdescLeft">&#160;</td><td class="mdescRight">re-initalise <a class="el" href="classlsDomain.html" title="Class containing all information about the level set, including the dimensions of the domain,...">lsDomain</a> with the point/value pairs in pointData This is similar to <a class="el" href="classlsFromMesh.html" title="Import the regular grid, on which the level set values are defined, from an explicit lsMesh&lt;&gt;....">lsFromMesh</a> with the difference that pointData contains (INDEX, Value) pairs, while <a class="el" href="classlsFromMesh.html" title="Import the regular grid, on which the level set values are defined, from an explicit lsMesh&lt;&gt;....">lsFromMesh</a> expects coordinates rather than indices  <a href="classlsDomain.html#aafee5214479c6a4519c2ec2ec4e5671e">More...</a><br /></td></tr>
 <tr class="separator:aafee5214479c6a4519c2ec2ec4e5671e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1b8d18c724f766b6d89b421c130544a3"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classlsDomain.html#acd1ed71ed408b19ab82f4b33db28a20d">GridType</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a1b8d18c724f766b6d89b421c130544a3">getGrid</a> () const</td></tr>
 <tr class="memdesc:a1b8d18c724f766b6d89b421c130544a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">get reference to the grid on which the levelset is defined  <a href="classlsDomain.html#a1b8d18c724f766b6d89b421c130544a3">More...</a><br /></td></tr>
@@ -167,10 +167,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a615d5361183773a25292ead3c3a6ef08"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a335f146054c0610326fc51436ae620bc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a335f146054c0610326fc51436ae620bc">clearMetaData</a> ()</td></tr>
 <tr class="separator:a335f146054c0610326fc51436ae620bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a927530a0e159079db3f61fe8bce8f25a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classlsDomain.html#adc45dd6438d2b1f8cb62afb1cdaeaf67">PointDataType</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a927530a0e159079db3f61fe8bce8f25a">getPointData</a> ()</td></tr>
+<tr class="memitem:a927530a0e159079db3f61fe8bce8f25a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classlsDomain.html#a60bb8552260d6497f645bb4eb0f9af87">PointDataType</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a927530a0e159079db3f61fe8bce8f25a">getPointData</a> ()</td></tr>
 <tr class="memdesc:a927530a0e159079db3f61fe8bce8f25a"><td class="mdescLeft">&#160;</td><td class="mdescRight">get reference to point data saved in the level set  <a href="classlsDomain.html#a927530a0e159079db3f61fe8bce8f25a">More...</a><br /></td></tr>
 <tr class="separator:a927530a0e159079db3f61fe8bce8f25a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aae58fdb28646188fef3af91273a61a30"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classlsDomain.html#adc45dd6438d2b1f8cb62afb1cdaeaf67">PointDataType</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#aae58fdb28646188fef3af91273a61a30">getPointData</a> () const</td></tr>
+<tr class="memitem:aae58fdb28646188fef3af91273a61a30"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classlsDomain.html#a60bb8552260d6497f645bb4eb0f9af87">PointDataType</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#aae58fdb28646188fef3af91273a61a30">getPointData</a> () const</td></tr>
 <tr class="separator:aae58fdb28646188fef3af91273a61a30"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5688871f172d0b498bb4dd1eede75849"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classlsDomain.html#a6432176faa114eee197c3f70c3e6f775">VoidPointMarkersType</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsDomain.html#a5688871f172d0b498bb4dd1eede75849">getVoidPointMarkers</a> ()</td></tr>
 <tr class="memdesc:a5688871f172d0b498bb4dd1eede75849"><td class="mdescLeft">&#160;</td><td class="mdescRight">get reference to the voidPoints markers for all points  <a href="classlsDomain.html#a5688871f172d0b498bb4dd1eede75849">More...</a><br /></td></tr>
@@ -268,8 +268,8 @@ template&lt;class T , int D&gt; </div>
 
 </div>
 </div>
-<a id="adc45dd6438d2b1f8cb62afb1cdaeaf67"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adc45dd6438d2b1f8cb62afb1cdaeaf67">&#9670;&nbsp;</a></span>PointDataType</h2>
+<a id="a60bb8552260d6497f645bb4eb0f9af87"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a60bb8552260d6497f645bb4eb0f9af87">&#9670;&nbsp;</a></span>PointDataType</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -277,7 +277,7 @@ template&lt;class T , int D&gt; </div>
 template&lt;class T , int D&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">typedef <a class="el" href="classlsPointData.html">lsPointData</a> <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;::<a class="el" href="classlsDomain.html#adc45dd6438d2b1f8cb62afb1cdaeaf67">PointDataType</a></td>
+          <td class="memname">typedef <a class="el" href="classlsPointData.html">lsPointData</a>&lt;T&gt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;::<a class="el" href="classlsDomain.html#a60bb8552260d6497f645bb4eb0f9af87">PointDataType</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -917,7 +917,7 @@ template&lt;class T , int D&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classlsDomain.html#adc45dd6438d2b1f8cb62afb1cdaeaf67">PointDataType</a>&amp; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;::getPointData </td>
+          <td class="memname"><a class="el" href="classlsDomain.html#a60bb8552260d6497f645bb4eb0f9af87">PointDataType</a>&amp; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;::getPointData </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -946,7 +946,7 @@ template&lt;class T , int D&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="classlsDomain.html#adc45dd6438d2b1f8cb62afb1cdaeaf67">PointDataType</a>&amp; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;::getPointData </td>
+          <td class="memname">const <a class="el" href="classlsDomain.html#a60bb8552260d6497f645bb4eb0f9af87">PointDataType</a>&amp; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;::getPointData </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -1053,7 +1053,7 @@ template&lt;class T , int D&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>re-initalise <a class="el" href="classlsDomain.html" title="Class containing all information about the level set, including the dimensions of the domain,...">lsDomain</a> with the point/value pairs in pointData This is similar to <a class="el" href="classlsFromMesh.html" title="Import the regular grid, on which the level set values are defined, from an explicit lsMesh....">lsFromMesh</a> with the difference that pointData contains (INDEX, Value) pairs, while <a class="el" href="classlsFromMesh.html" title="Import the regular grid, on which the level set values are defined, from an explicit lsMesh....">lsFromMesh</a> expects coordinates rather than indices </p>
+<p>re-initalise <a class="el" href="classlsDomain.html" title="Class containing all information about the level set, including the dimensions of the domain,...">lsDomain</a> with the point/value pairs in pointData This is similar to <a class="el" href="classlsFromMesh.html" title="Import the regular grid, on which the level set values are defined, from an explicit lsMesh&lt;&gt;....">lsFromMesh</a> with the difference that pointData contains (INDEX, Value) pairs, while <a class="el" href="classlsFromMesh.html" title="Import the regular grid, on which the level set values are defined, from an explicit lsMesh&lt;&gt;....">lsFromMesh</a> expects coordinates rather than indices </p>
 
 </div>
 </div>

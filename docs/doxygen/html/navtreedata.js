@@ -67,6 +67,7 @@ var NAVTREE =
       [ "File Members", "globals.html", [
         [ "All", "globals.html", null ],
         [ "Functions", "globals_func.html", null ],
+        [ "Typedefs", "globals_type.html", null ],
         [ "Enumerations", "globals_enum.html", null ],
         [ "Macros", "globals_defs.html", null ]
       ] ]
@@ -78,8 +79,8 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "AirGapDeposition_8cpp-example.html",
-"classlsInternal_1_1lsLaxFriedrichs.html",
-"classlsWriteVisualizationMesh.html#afe742c6069ef467a7c3c90f8fd1b1425"
+"classlsInternal_1_1lsGraph.html#aa641503c10309eed575c0a0a354f65ff",
+"classlsWriteVisualizationMesh.html#adf13ee153843fdc4336a2209a0167ad6"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

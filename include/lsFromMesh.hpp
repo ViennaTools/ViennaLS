@@ -7,28 +7,30 @@
 #include <lsMesh.hpp>
 
 /// Import the regular grid, on which the level set values are
-/// defined, from an explicit lsMesh. The Vertices must be defined,
+/// defined, from an explicit lsMesh<>. The Vertices must be defined,
 /// as well as a scalar data field "LSValues". If used for custom
 /// read-in, make sure all vertices are lexicographically sorted.
 template <class T, int D> class lsFromMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
 
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
-  lsSmartPointer<lsMesh> mesh = nullptr;
+  lsSmartPointer<lsMesh<T>> mesh = nullptr;
   bool sortPointList = true;
 
 public:
   lsFromMesh(){};
 
   lsFromMesh(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-             const lsSmartPointer<lsMesh> passedMesh)
+             const lsSmartPointer<lsMesh<T>> passedMesh)
       : levelSet(passedLevelSet), mesh(passedMesh) {}
 
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     levelSet = passedlsDomain;
   }
 
-  void setMesh(const lsSmartPointer<lsMesh> passedMesh) { mesh = passedMesh; }
+  void setMesh(const lsSmartPointer<lsMesh<T>> passedMesh) {
+    mesh = passedMesh;
+  }
 
   void setSortPointList(bool passedSortPointList) {
     sortPointList = passedSortPointList;
@@ -43,7 +45,7 @@ public:
     }
     if (mesh == nullptr) {
       lsMessage::getInstance()
-          .addWarning("No lsMesh was supplied to lsFromMesh.")
+          .addWarning("No lsMesh<> was supplied to lsFromMesh.")
           .print();
       return;
     }

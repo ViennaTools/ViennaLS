@@ -43,9 +43,9 @@ int main() {
 
   {
     std::cout << "Extracting..." << std::endl;
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "plane.vtk").apply();
+    lsVTKWriter<double>(mesh, "plane.vtk").apply();
   }
 
   {
@@ -67,9 +67,9 @@ int main() {
 
     {
       std::cout << "Extracting..." << std::endl;
-      auto mesh = lsSmartPointer<lsMesh>::New();
+      auto mesh = lsSmartPointer<lsMesh<>>::New();
       lsToMesh<double, D>(trench, mesh).apply();
-      lsVTKWriter(mesh, "box.vtk").apply();
+      lsVTKWriter<double>(mesh, "box.vtk").apply();
     }
 
     // Create trench geometry
@@ -79,12 +79,12 @@ int main() {
         .apply();
   }
 
-  auto mesh = lsSmartPointer<lsMesh>::New();
+  auto mesh = lsSmartPointer<lsMesh<>>::New();
 
   lsToMesh<NumericType, D>(substrate, mesh).apply();
-  lsVTKWriter(mesh, "points.vtk").apply();
+  lsVTKWriter<double>(mesh, "points.vtk").apply();
   lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-  lsVTKWriter(mesh, "surface.vtk").apply();
+  lsVTKWriter<double>(mesh, "surface.vtk").apply();
 
   // set up spherical advection dist
   // lsSphereDistribution<NumericType, D> dist(15.0);
@@ -100,10 +100,10 @@ int main() {
 
   std::cout << "Writing results..." << std::endl;
   lsToMesh<NumericType, D>(substrate, mesh).apply();
-  lsVTKWriter(mesh, "finalLS.vtk").apply();
+  lsVTKWriter<double>(mesh, "finalLS.vtk").apply();
 
   lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-  lsVTKWriter(mesh, "finalSurface.vtk").apply();
+  lsVTKWriter<double>(mesh, "finalSurface.vtk").apply();
 
   std::cout << "Done" << std::endl;
 

@@ -40,9 +40,9 @@ int main() {
 
   {
     std::cout << "Extracting..." << std::endl;
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(levelSet, mesh).apply();
-    lsVTKWriter(mesh, "plane.vtk").apply();
+    lsVTKWriter<double>(mesh, "plane.vtk").apply();
   }
 
   return 0;

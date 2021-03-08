@@ -4,13 +4,16 @@
 #include <array>
 #include <vector>
 
+#include <lsConcepts.hpp>
 #include <lsMessage.hpp>
 
 /// This class holds data associated with points in space.
+template <class T = double,
+          lsConcepts::IsFloatingPoint<T> = lsConcepts::assignable>
 class lsPointData {
 public:
-  typedef std::vector<double> ScalarDataType;
-  typedef std::vector<std::array<double, 3>> VectorDataType;
+  typedef std::vector<T> ScalarDataType;
+  typedef std::vector<std::array<T, 3>> VectorDataType;
 
 private:
   std::vector<ScalarDataType> scalarData;

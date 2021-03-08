@@ -7,7 +7,7 @@
 #include <lsVTKWriter.hpp>
 
 /**
-  Minimal example showing how to rotate an lsMesh
+  Minimal example showing how to rotate an lsMesh<>
   \example RotateMesh.cpp
 */
 
@@ -18,7 +18,7 @@ int main() {
   omp_set_num_threads(4);
 
   auto levelSet = lsSmartPointer<lsDomain<NumericType, D>>::New();
-  auto mesh = lsSmartPointer<lsMesh>::New();
+  auto mesh = lsSmartPointer<lsMesh<>>::New();
 
   const NumericType radius = 7.3;
   const hrleVectorType<NumericType, D> min(-50, -25., -25.);
@@ -34,15 +34,15 @@ int main() {
 
   lsToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
 
-  lsVTKWriter(mesh, "Initial.vtk").apply();
+  lsVTKWriter<double>(mesh, "Initial.vtk").apply();
 
-  // auto mesh = lsSmartPointer<lsMesh>::New();
+  // auto mesh = lsSmartPointer<lsMesh<>>::New();
   // mesh->insertNextNode({1., 0., 1.});
-
-  lsTransformMesh(mesh, lsTransformEnum::ROTATION, {0., 1., 1.}, M_PI_4)
+  hrleVectorType<hrleCoordType, 3> rotAxis{0., 1., 1.};
+  lsTransformMesh<double>(mesh, lsTransformEnum::ROTATION, rotAxis, M_PI_4)
       .apply();
 
-  lsVTKWriter(mesh, "Rotated.vtk").apply();
+  lsVTKWriter<double>(mesh, "Rotated.vtk").apply();
 
   return 0;
 }

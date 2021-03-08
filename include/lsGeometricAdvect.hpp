@@ -53,9 +53,9 @@ template <class T, int D> class lsGeometricAdvect {
 public:
   lsGeometricAdvect() {}
 
-  template <class DistType,
-            lsConcepts::IsBaseOf<lsGeometricAdvectDistribution<T, D>,
-                                 DistType> = lsConcepts::assignable>
+  template <class DistType, lsConcepts::IsBaseOf<
+                                lsGeometricAdvectDistribution<hrleCoordType, D>,
+                                DistType> = lsConcepts::assignable>
   lsGeometricAdvect(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
                     lsSmartPointer<DistType> passedDist,
                     lsSmartPointer<lsDomain<T, D>> passedMaskLevelSet = nullptr)
@@ -71,12 +71,12 @@ public:
 
   /// Set which advection distribution to use. Must be derived from
   /// lsGeometricAdvectDistribution.
-  template <class DistType,
-            lsConcepts::IsBaseOf<lsGeometricAdvectDistribution<T, D>,
-                                 DistType> = lsConcepts::assignable>
+  template <class DistType, lsConcepts::IsBaseOf<
+                                lsGeometricAdvectDistribution<hrleCoordType, D>,
+                                DistType> = lsConcepts::assignable>
   void setAdvectionDistribution(lsSmartPointer<DistType> passedDist) {
-    dist = std::dynamic_pointer_cast<lsGeometricAdvectDistribution<T, D>>(
-        passedDist);
+    dist = std::dynamic_pointer_cast<
+        lsGeometricAdvectDistribution<hrleCoordType, D>>(passedDist);
   }
 
   /// Set the levelset, which should be used as a mask. This level set
@@ -120,8 +120,8 @@ public:
 
     // Extract the original surface as a point cloud of grid
     // points shifted to the surface (disk mesh)
-    auto surfaceMesh = lsSmartPointer<lsMesh>::New();
-    lsToDiskMesh<T, D>(levelSet, surfaceMesh).apply();
+    auto surfaceMesh = lsSmartPointer<lsMesh<hrleCoordType>>::New();
+    lsToDiskMesh<T, D, hrleCoordType>(levelSet, surfaceMesh).apply();
 
     // find bounds of distribution
     auto distBounds = dist->getBounds();
@@ -193,8 +193,8 @@ public:
       auto values = surfaceMesh->getScalarData("LSValues");
       auto valueIt = values->begin();
 
-      auto newSurfaceMesh = lsSmartPointer<lsMesh>::New();
-      typename lsPointData::ScalarDataType newValues;
+      auto newSurfaceMesh = lsSmartPointer<lsMesh<hrleCoordType>>::New();
+      typename lsPointData<hrleCoordType>::ScalarDataType newValues;
       hrleConstSparseIterator<DomainType> maskIt(maskDomain);
       for (auto &node : surfaceMesh->getNodes()) {
         hrleVectorType<hrleIndexType, D> index;
@@ -227,23 +227,23 @@ public:
       lsMessage::getInstance()
           .addDebug("GeomAdvect: Writing debug meshes")
           .print();
-      lsVTKWriter(surfaceMesh, lsFileFormatEnum::VTP,
-                  "DEBUG_lsGeomAdvectMesh_contributewoMask.vtp")
+      lsVTKWriter<double>(surfaceMesh, lsFileFormatEnum::VTP,
+                          "DEBUG_lsGeomAdvectMesh_contributewoMask.vtp")
           .apply();
-      auto mesh = lsSmartPointer<lsMesh>::New();
+      auto mesh = lsSmartPointer<lsMesh<>>::New();
       lsToMesh<T, D>(maskLevelSet, mesh).apply();
-      lsVTKWriter(mesh, lsFileFormatEnum::VTP,
-                  "DEBUG_lsGeomAdvectMesh_mask.vtp")
+      lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP,
+                          "DEBUG_lsGeomAdvectMesh_mask.vtp")
           .apply();
       lsToMesh<T, D>(levelSet, mesh).apply();
-      lsVTKWriter(mesh, lsFileFormatEnum::VTP,
-                  "DEBUG_lsGeomAdvectMesh_initial.vtp")
+      lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP,
+                          "DEBUG_lsGeomAdvectMesh_initial.vtp")
           .apply();
     }
 
 #endif
 
-    typedef std::vector<std::array<double, 3>> SurfaceNodesType;
+    typedef std::vector<std::array<hrleCoordType, 3>> SurfaceNodesType;
     const SurfaceNodesType &surfaceNodes = surfaceMesh->getNodes();
 
     // initialize with segmentation for whole range
@@ -464,12 +464,12 @@ public:
       }
     }
 
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<T>>::New();
     // output all points directly to mesh
     {
-      std::vector<double> scalarData;
+      std::vector<T> scalarData;
       for (auto it = newPoints[0].begin(); it != newPoints[0].end(); ++it) {
-        std::array<double, 3> node = {};
+        std::array<T, 3> node = {};
         for (unsigned i = 0; i < D; ++i) {
           node[i] = T((it->first)[i]) * gridDelta;
         }
@@ -487,7 +487,8 @@ public:
     lsMessage::getInstance()
         .addDebug("GeomAdvect: Writing final mesh...")
         .print();
-    lsVTKWriter(mesh, lsFileFormatEnum::VTP, "DEBUG_lsGeomAdvectMesh_final.vtp")
+    lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP,
+                        "DEBUG_lsGeomAdvectMesh_final.vtp")
         .apply();
 #endif
 

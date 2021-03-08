@@ -54,9 +54,9 @@ int main() {
                                      lsBooleanOperationEnum::UNION)
       .apply();
 
-  auto mesh = lsSmartPointer<lsMesh>::New();
+  auto mesh = lsSmartPointer<lsMesh<>>::New();
   lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-  lsVTKWriter(mesh, "twoSpheres.vtk").apply();
+  lsVTKWriter<double>(mesh, "twoSpheres.vtk").apply();
 
   substrate->getDomain().print();
 

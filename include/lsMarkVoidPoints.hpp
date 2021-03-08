@@ -118,7 +118,7 @@ public:
     int topComponent =
         (reverseVoidDetection) ? components[0] : components.back();
 
-    std::vector<double> voidPointMarkers;
+    std::vector<T> voidPointMarkers;
     voidPointMarkers.resize(domain->getNumberOfPoints());
 
     // cycle through again to set correct voidPointMarkers

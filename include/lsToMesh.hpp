@@ -10,14 +10,14 @@
 #include <lsMesh.hpp>
 
 /// Extract the regular grid, on which the level set values are
-/// defined, to an explicit lsMesh. The Vertices will contain
+/// defined, to an explicit lsMesh<>. The Vertices will contain
 /// the level set value stored at its location. (This is very useful
 /// for debugging)
 template <class T, int D> class lsToMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
 
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
-  lsSmartPointer<lsMesh> mesh = nullptr;
+  lsSmartPointer<lsMesh<T>> mesh = nullptr;
   bool onlyDefined;
   bool onlyActive;
   static constexpr long long maxDomainExtent = 1e6;
@@ -26,7 +26,7 @@ public:
   lsToMesh(){};
 
   lsToMesh(const lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-           lsSmartPointer<lsMesh> passedMesh, bool passedOnlyDefined = true,
+           lsSmartPointer<lsMesh<T>> passedMesh, bool passedOnlyDefined = true,
            bool passedOnlyActive = false)
       : levelSet(passedLevelSet), mesh(passedMesh),
         onlyDefined(passedOnlyDefined), onlyActive(passedOnlyActive) {}
@@ -35,7 +35,7 @@ public:
     levelSet = passedlsDomain;
   }
 
-  void setMesh(lsSmartPointer<lsMesh> passedMesh) { mesh = passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh<T>> passedMesh) { mesh = passedMesh; }
 
   void setOnlyDefined(bool passedOnlyDefined) {
     onlyDefined = passedOnlyDefined;
@@ -64,8 +64,8 @@ public:
       return;
     }
 
-    std::vector<double> scalarData;
-    std::vector<double> subLS;
+    std::vector<T> scalarData;
+    std::vector<T> subLS;
 
     const T gridDelta = levelSet->getGrid().getGridDelta();
 
@@ -93,11 +93,11 @@ public:
       mesh->insertNextVertex(vertex);
 
       // insert corresponding node
-      std::array<double, 3> node;
+      std::array<T, 3> node;
       if (D == 2)
         node[2] = 0.;
       for (unsigned i = 0; i < D; ++i) {
-        node[i] = double(it.getStartIndices(i)) * gridDelta;
+        node[i] = T(it.getStartIndices(i)) * gridDelta;
       }
       mesh->insertNextNode(node);
 
@@ -114,7 +114,7 @@ public:
     mesh->insertNextScalarData(subLS, "SegmentID");
     if (levelSet->getPointData().getScalarDataSize() > 0 ||
         levelSet->getPointData().getVectorDataSize() > 0) {
-      mesh->lsPointData::append(levelSet->getPointData());
+      mesh->lsPointData<T>::append(levelSet->getPointData());
     }
   }
 };

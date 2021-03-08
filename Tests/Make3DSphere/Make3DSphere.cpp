@@ -42,7 +42,7 @@ int main() {
 
   std::cout << "Number of points: " << sphere1->getDomain().getNumberOfPoints()
             << std::endl;
-  auto mesh = lsSmartPointer<lsMesh>::New();
+  auto mesh = lsSmartPointer<lsMesh<>>::New();
 
   std::cout << "Expanding..." << std::endl;
   lsExpand<double, D>(sphere1, 2).apply();
@@ -57,11 +57,11 @@ int main() {
 
   mesh->print();
 
-  lsVTKWriter(mesh, "test-" + std::to_string(radius) + ".vtk").apply();
+  lsVTKWriter<double>(mesh, "test-" + std::to_string(radius) + ".vtk").apply();
 
   // write voxelised volume mesh
   {
-    auto voxelMesh = lsSmartPointer<lsMesh>::New();
+    auto voxelMesh = lsSmartPointer<lsMesh<>>::New();
     auto voxelMesher = lsToVoxelMesh<double, D>(voxelMesh);
 
     voxelMesher.insertNextLevelSet(sphere2);
@@ -79,7 +79,8 @@ int main() {
     std::cout << "voxelMesh: " << std::endl;
     voxelMesh->print();
 
-    lsVTKWriter(voxelMesh, lsFileFormatEnum::VTU, "voxelMesh.vtu").apply();
+    lsVTKWriter<double>(voxelMesh, lsFileFormatEnum::VTU, "voxelMesh.vtu")
+        .apply();
   }
 
   return 0;

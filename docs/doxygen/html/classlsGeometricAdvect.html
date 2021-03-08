@@ -99,13 +99,13 @@ $(document).ready(function(){initNavTree('classlsGeometricAdvect.html',''); init
 Public Member Functions</h2></td></tr>
 <tr class="memitem:afa114754eb0c48733246affa17c3d5ef"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsGeometricAdvect.html#afa114754eb0c48733246affa17c3d5ef">lsGeometricAdvect</a> ()</td></tr>
 <tr class="separator:afa114754eb0c48733246affa17c3d5ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adaf3544a1cf577038076ac7e8cbb8cfb"><td class="memTemplParams" colspan="2">template&lt;class DistType , lsConcepts::IsBaseOf&lt; lsGeometricAdvectDistribution&lt; T, D &gt;, DistType &gt;  = lsConcepts::assignable&gt; </td></tr>
+<tr class="memitem:adaf3544a1cf577038076ac7e8cbb8cfb"><td class="memTemplParams" colspan="2">template&lt;class DistType , lsConcepts::IsBaseOf&lt; lsGeometricAdvectDistribution&lt; hrleCoordType, D &gt;, DistType &gt;  = lsConcepts::assignable&gt; </td></tr>
 <tr class="memitem:adaf3544a1cf577038076ac7e8cbb8cfb"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classlsGeometricAdvect.html#adaf3544a1cf577038076ac7e8cbb8cfb">lsGeometricAdvect</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedLevelSet, <a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; DistType &gt; passedDist, <a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedMaskLevelSet=nullptr)</td></tr>
 <tr class="separator:adaf3544a1cf577038076ac7e8cbb8cfb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a32ffd580185a1f8d48ebe4e85a4247d5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsGeometricAdvect.html#a32ffd580185a1f8d48ebe4e85a4247d5">setLevelSet</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedLevelSet)</td></tr>
 <tr class="memdesc:a32ffd580185a1f8d48ebe4e85a4247d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the levelset which should be advected.  <a href="classlsGeometricAdvect.html#a32ffd580185a1f8d48ebe4e85a4247d5">More...</a><br /></td></tr>
 <tr class="separator:a32ffd580185a1f8d48ebe4e85a4247d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acc5c5433a88b82065b3c7d8f54240461"><td class="memTemplParams" colspan="2">template&lt;class DistType , lsConcepts::IsBaseOf&lt; lsGeometricAdvectDistribution&lt; T, D &gt;, DistType &gt;  = lsConcepts::assignable&gt; </td></tr>
+<tr class="memitem:acc5c5433a88b82065b3c7d8f54240461"><td class="memTemplParams" colspan="2">template&lt;class DistType , lsConcepts::IsBaseOf&lt; lsGeometricAdvectDistribution&lt; hrleCoordType, D &gt;, DistType &gt;  = lsConcepts::assignable&gt; </td></tr>
 <tr class="memitem:acc5c5433a88b82065b3c7d8f54240461"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classlsGeometricAdvect.html#acc5c5433a88b82065b3c7d8f54240461">setAdvectionDistribution</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; DistType &gt; passedDist)</td></tr>
 <tr class="memdesc:acc5c5433a88b82065b3c7d8f54240461"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set which advection distribution to use. Must be derived from <a class="el" href="classlsGeometricAdvectDistribution.html" title="Base class for distributions used by lsGeometricAdvect. All functions are pure virtual and must be im...">lsGeometricAdvectDistribution</a>.  <a href="classlsGeometricAdvect.html#acc5c5433a88b82065b3c7d8f54240461">More...</a><br /></td></tr>
 <tr class="separator:acc5c5433a88b82065b3c7d8f54240461"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -121,7 +121,7 @@ Public Member Functions</h2></td></tr>
 class lsGeometricAdvect&lt; T, D &gt;</h3>
 
 <p>This class advects the level set according to a given distribution. This distribution is overlayed at every grid point of the old surface. All cells within this distribution are then filled, with cells at the edge marked with the correct level set values. Therefore, the surface can be shifted long distances in one step. This algorithm is therefore preferable to normal advection if there is growth/reduction by a purely geometric directional distribution. </p>
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="GeometricAdvection_8cpp-example.html#_a26">GeometricAdvection.cpp</a>.</dd>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="GeometricAdvection_8cpp-example.html#_a25">GeometricAdvection.cpp</a>.</dd>
 </dl>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="afa114754eb0c48733246affa17c3d5ef"></a>
@@ -159,7 +159,7 @@ template&lt;class T , int D&gt; </div>
 <div class="memtemplate">
 template&lt;class T , int D&gt; </div>
 <div class="memtemplate">
-template&lt;class DistType , lsConcepts::IsBaseOf&lt; lsGeometricAdvectDistribution&lt; T, D &gt;, DistType &gt;  = lsConcepts::assignable&gt; </div>
+template&lt;class DistType , lsConcepts::IsBaseOf&lt; lsGeometricAdvectDistribution&lt; hrleCoordType, D &gt;, DistType &gt;  = lsConcepts::assignable&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -224,7 +224,7 @@ template&lt;class T , int D&gt; </div>
 </div><div class="memdoc">
 
 <p>Perform geometrical advection. </p>
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="GeometricAdvection_8cpp-example.html#a27">GeometricAdvection.cpp</a>.</dd>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="GeometricAdvection_8cpp-example.html#a26">GeometricAdvection.cpp</a>.</dd>
 </dl>
 
 </div>
@@ -237,7 +237,7 @@ template&lt;class T , int D&gt; </div>
 <div class="memtemplate">
 template&lt;class T , int D&gt; </div>
 <div class="memtemplate">
-template&lt;class DistType , lsConcepts::IsBaseOf&lt; lsGeometricAdvectDistribution&lt; T, D &gt;, DistType &gt;  = lsConcepts::assignable&gt; </div>
+template&lt;class DistType , lsConcepts::IsBaseOf&lt; lsGeometricAdvectDistribution&lt; hrleCoordType, D &gt;, DistType &gt;  = lsConcepts::assignable&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">

@@ -31,23 +31,23 @@ int main() {
 
   std::cout << "Writing" << std::endl;
   {
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter(mesh, "sphere.vtk").apply();
+    lsVTKWriter<double>(mesh, "sphere.vtk").apply();
   }
 
   std::cout << "Reading" << std::endl;
   {
-    auto mesh = lsSmartPointer<lsMesh>::New();
-    lsVTKReader(mesh, "sphere.vtk").apply();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
+    lsVTKReader<double>(mesh, "sphere.vtk").apply();
     auto newLS = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
                                                           gridDelta);
     lsFromMesh<double, D>(newLS, mesh).apply();
 
     std::cout << "Writing new" << std::endl;
-    auto newMesh = lsSmartPointer<lsMesh>::New();
+    auto newMesh = lsSmartPointer<lsMesh<>>::New();
     lsToMesh<double, D>(newLS, newMesh).apply();
-    lsVTKWriter(mesh, "newMesh.vtk").apply();
+    lsVTKWriter<double>(mesh, "newMesh.vtk").apply();
   }
 
   return 0;

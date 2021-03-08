@@ -52,9 +52,9 @@ int main() {
 
   {
     std::cout << "Extracting..." << std::endl;
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "plane.vtk").apply();
+    lsVTKWriter<double>(mesh, "plane.vtk").apply();
   }
 
   {
@@ -76,9 +76,9 @@ int main() {
 
     {
       std::cout << "Extracting..." << std::endl;
-      auto mesh = lsSmartPointer<lsMesh>::New();
+      auto mesh = lsSmartPointer<lsMesh<>>::New();
       lsToMesh<double, D>(trench, mesh).apply();
-      lsVTKWriter(mesh, "box.vtk").apply();
+      lsVTKWriter<double>(mesh, "box.vtk").apply();
     }
 
     // Create trench geometry
@@ -88,12 +88,12 @@ int main() {
         .apply();
   }
 
-  auto mesh = lsSmartPointer<lsMesh>::New();
+  auto mesh = lsSmartPointer<lsMesh<>>::New();
 
   lsToMesh<NumericType, D>(substrate, mesh).apply();
-  lsVTKWriter(mesh, "points.vtk").apply();
+  lsVTKWriter<double>(mesh, "points.vtk").apply();
   lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-  lsVTKWriter(mesh, "surface.vtk").apply();
+  lsVTKWriter<double>(mesh, "surface.vtk").apply();
 
   // Distance to advect to
   double depositionDistance = 4.0;
@@ -118,9 +118,9 @@ int main() {
   }
 
   lsToSurfaceMesh<double, D>(newLayer, mesh).apply();
-  lsVTKWriter(mesh, "GeometricAdvect.vtk").apply();
+  lsVTKWriter<double>(mesh, "GeometricAdvect.vtk").apply();
   // lsToSurfaceMesh<double, D>(newLayer, mesh).apply();
-  // lsVTKWriter(mesh, "finalSurface.vtk").apply();
+  // lsVTKWriter<double>(mesh, "finalSurface.vtk").apply();
 
   // now rund lsAdvect for all other advection schemes
   // last scheme is SLLFS with i == 9
@@ -148,7 +148,7 @@ int main() {
     }
 
     lsToSurfaceMesh<double, D>(nextLayer, mesh).apply();
-    lsVTKWriter(mesh, "Advect-" + std::to_string(i) + ".vtk").apply();
+    lsVTKWriter<double>(mesh, "Advect-" + std::to_string(i) + ".vtk").apply();
   }
 
   return 0;

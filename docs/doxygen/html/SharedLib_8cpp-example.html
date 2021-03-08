@@ -127,29 +127,29 @@ $(document).ready(function(){initNavTree('SharedLib_8cpp-example.html',''); init
 <div class="line">  }</div>
 <div class="line"> </div>
 <div class="line">  {</div>
-<div class="line">    <span class="keyword">auto</span> mesh1 = <a class="code" href="classlsSmartPointer.html#ae58c9ee92c03b933f07228fd4e79b849">lsSmartPointer&lt;lsMesh&gt;::New</a>();</div>
-<div class="line">    <span class="keyword">auto</span> mesh2 = <a class="code" href="classlsSmartPointer.html#ae58c9ee92c03b933f07228fd4e79b849">lsSmartPointer&lt;lsMesh&gt;::New</a>();</div>
+<div class="line">    <span class="keyword">auto</span> mesh1 = <a name="_a4"></a><a class="code" href="classlsSmartPointer.html">lsSmartPointer&lt;lsMesh&lt;float&gt;</a>&gt;::New();</div>
+<div class="line">    <span class="keyword">auto</span> mesh2 = <a class="code" href="classlsSmartPointer.html">lsSmartPointer&lt;lsMesh&lt;float&gt;</a>&gt;::New();</div>
 <div class="line"> </div>
 <div class="line">    std::cout &lt;&lt; <span class="stringliteral">&quot;Extracting...&quot;</span> &lt;&lt; std::endl;</div>
 <div class="line">    lsToSurfaceMesh_float_3(sphere1, mesh1).apply();</div>
 <div class="line">    lsToSurfaceMesh_float_3(sphere2, mesh2).apply();</div>
 <div class="line"> </div>
-<div class="line">    <a name="_a4"></a><a class="code" href="classlsVTKWriter.html">lsVTKWriter</a>(mesh1, <span class="stringliteral">&quot;sphere1.vtk&quot;</span>).<a name="a5"></a><a class="code" href="classlsVTKWriter.html#a63e512ace7385b50be6f505221c6eb28">apply</a>();</div>
-<div class="line">    <a class="code" href="classlsVTKWriter.html">lsVTKWriter</a>(mesh2, <span class="stringliteral">&quot;sphere2.vtk&quot;</span>).<a class="code" href="classlsVTKWriter.html#a63e512ace7385b50be6f505221c6eb28">apply</a>();</div>
+<div class="line">    <a name="_a5"></a><a class="code" href="classlsVTKWriter.html">lsVTKWriter&lt;float&gt;</a>(mesh1, <span class="stringliteral">&quot;sphere1.vtk&quot;</span>).<a name="a6"></a><a class="code" href="classlsVTKWriter.html#a905f6ada26f0e2eda0229a8549b8d763">apply</a>();</div>
+<div class="line">    <a class="code" href="classlsVTKWriter.html">lsVTKWriter&lt;float&gt;</a>(mesh2, <span class="stringliteral">&quot;sphere2.vtk&quot;</span>).<a class="code" href="classlsVTKWriter.html#a905f6ada26f0e2eda0229a8549b8d763">apply</a>();</div>
 <div class="line">  }</div>
 <div class="line"> </div>
 <div class="line">  <span class="comment">// Perform a boolean operation</span></div>
 <div class="line">  lsBooleanOperation_float_3(sphere1, sphere2,</div>
-<div class="line">                             <a name="a6"></a><a class="code" href="lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8ac50397eae12f3694f170c9aaaa57c042">lsBooleanOperationEnum::RELATIVE_COMPLEMENT</a>)</div>
+<div class="line">                             <a name="a7"></a><a class="code" href="lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8ac50397eae12f3694f170c9aaaa57c042">lsBooleanOperationEnum::RELATIVE_COMPLEMENT</a>)</div>
 <div class="line">      .apply();</div>
 <div class="line"> </div>
 <div class="line">  std::cout &lt;&lt; <span class="stringliteral">&quot;Extracting...&quot;</span> &lt;&lt; std::endl;</div>
-<div class="line">  <span class="keyword">auto</span> <a name="a7"></a><a class="code" href="namespaceAirGapDeposition.html#ab170b9d309c41a6a8f385caf53068bfa">mesh</a> = <a class="code" href="classlsSmartPointer.html#ae58c9ee92c03b933f07228fd4e79b849">lsSmartPointer&lt;lsMesh&gt;::New</a>();</div>
+<div class="line">  <span class="keyword">auto</span> <a name="a8"></a><a class="code" href="namespaceAirGapDeposition.html#ab170b9d309c41a6a8f385caf53068bfa">mesh</a> = <a class="code" href="classlsSmartPointer.html">lsSmartPointer&lt;lsMesh&lt;float&gt;</a>&gt;::New();</div>
 <div class="line">  lsToSurfaceMesh_float_3(sphere1, <a class="code" href="namespaceAirGapDeposition.html#ab170b9d309c41a6a8f385caf53068bfa">mesh</a>).apply();</div>
 <div class="line"> </div>
 <div class="line">  <a class="code" href="namespaceAirGapDeposition.html#ab170b9d309c41a6a8f385caf53068bfa">mesh</a>-&gt;print();</div>
 <div class="line"> </div>
-<div class="line">  <a class="code" href="classlsVTKWriter.html">lsVTKWriter</a>(<a class="code" href="namespaceAirGapDeposition.html#ab170b9d309c41a6a8f385caf53068bfa">mesh</a>, <span class="stringliteral">&quot;after.vtk&quot;</span>).<a class="code" href="classlsVTKWriter.html#a63e512ace7385b50be6f505221c6eb28">apply</a>();</div>
+<div class="line">  <a class="code" href="classlsVTKWriter.html">lsVTKWriter&lt;float&gt;</a>(<a class="code" href="namespaceAirGapDeposition.html#ab170b9d309c41a6a8f385caf53068bfa">mesh</a>, <span class="stringliteral">&quot;after.vtk&quot;</span>).<a class="code" href="classlsVTKWriter.html#a905f6ada26f0e2eda0229a8549b8d763">apply</a>();</div>
 <div class="line"> </div>
 <div class="line">  <span class="keywordflow">return</span> 0;</div>
 <div class="line">}</div>
@@ -158,9 +158,9 @@ $(document).ready(function(){initNavTree('SharedLib_8cpp-example.html',''); init
 <div class="ttc" id="alsBooleanOperation_8hpp_html"><div class="ttname"><a href="lsBooleanOperation_8hpp.html">lsBooleanOperation.hpp</a></div></div>
 <div class="ttc" id="alsPrune_8hpp_html"><div class="ttname"><a href="lsPrune_8hpp.html">lsPrune.hpp</a></div></div>
 <div class="ttc" id="anamespaceAirGapDeposition_html_a2298757d8b928ab18a132ed7e268679b"><div class="ttname"><a href="namespaceAirGapDeposition.html#a2298757d8b928ab18a132ed7e268679b">AirGapDeposition.gridDelta</a></div><div class="ttdeci">float gridDelta</div><div class="ttdef"><b>Definition:</b> AirGapDeposition.py:19</div></div>
+<div class="ttc" id="aclasslsVTKWriter_html_a905f6ada26f0e2eda0229a8549b8d763"><div class="ttname"><a href="classlsVTKWriter.html#a905f6ada26f0e2eda0229a8549b8d763">lsVTKWriter::apply</a></div><div class="ttdeci">void apply()</div><div class="ttdef"><b>Definition:</b> lsVTKWriter.hpp:52</div></div>
 <div class="ttc" id="anamespaceAirGapDeposition_html_ab170b9d309c41a6a8f385caf53068bfa"><div class="ttname"><a href="namespaceAirGapDeposition.html#ab170b9d309c41a6a8f385caf53068bfa">AirGapDeposition.mesh</a></div><div class="ttdeci">mesh</div><div class="ttdef"><b>Definition:</b> AirGapDeposition.py:34</div></div>
-<div class="ttc" id="aclasslsVTKWriter_html"><div class="ttname"><a href="classlsVTKWriter.html">lsVTKWriter</a></div><div class="ttdoc">Class handling the output of an lsMesh to VTK file types.</div><div class="ttdef"><b>Definition:</b> lsVTKWriter.hpp:25</div></div>
-<div class="ttc" id="aclasslsVTKWriter_html_a63e512ace7385b50be6f505221c6eb28"><div class="ttname"><a href="classlsVTKWriter.html#a63e512ace7385b50be6f505221c6eb28">lsVTKWriter::apply</a></div><div class="ttdeci">void apply()</div><div class="ttdef"><b>Definition:</b> lsVTKWriter.hpp:52</div></div>
+<div class="ttc" id="aclasslsVTKWriter_html"><div class="ttname"><a href="classlsVTKWriter.html">lsVTKWriter</a></div><div class="ttdoc">Class handling the output of an lsMesh&lt;&gt; to VTK file types.</div><div class="ttdef"><b>Definition:</b> lsVTKWriter.hpp:25</div></div>
 <div class="ttc" id="alsExpand_8hpp_html"><div class="ttname"><a href="lsExpand_8hpp.html">lsExpand.hpp</a></div></div>
 <div class="ttc" id="aclasslsSmartPointer_html_ae58c9ee92c03b933f07228fd4e79b849"><div class="ttname"><a href="classlsSmartPointer.html#ae58c9ee92c03b933f07228fd4e79b849">lsSmartPointer::New</a></div><div class="ttdeci">static lsSmartPointer New(TArgs &amp;&amp;... targs)</div><div class="ttdoc">Use this function to create new objects when using ViennaLS.</div><div class="ttdef"><b>Definition:</b> lsSmartPointer.hpp:21</div></div>
 <div class="ttc" id="alsVTKWriter_8hpp_html"><div class="ttname"><a href="lsVTKWriter_8hpp.html">lsVTKWriter.hpp</a></div></div>
@@ -168,6 +168,7 @@ $(document).ready(function(){initNavTree('SharedLib_8cpp-example.html',''); init
 <div class="ttc" id="anamespaceAirGapDeposition_html_ae54fe602ea6ed9d4d67fc74791f536c5"><div class="ttname"><a href="namespaceAirGapDeposition.html#ae54fe602ea6ed9d4d67fc74791f536c5">AirGapDeposition.origin</a></div><div class="ttdeci">tuple origin</div><div class="ttdef"><b>Definition:</b> AirGapDeposition.py:28</div></div>
 <div class="ttc" id="alsBooleanOperation_8hpp_html_a8b5747a2da7e017486ffceefca67d6d8ac50397eae12f3694f170c9aaaa57c042"><div class="ttname"><a href="lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8ac50397eae12f3694f170c9aaaa57c042">lsBooleanOperationEnum::RELATIVE_COMPLEMENT</a></div><div class="ttdeci">@ RELATIVE_COMPLEMENT</div></div>
 <div class="ttc" id="aSharedLib_8cpp_html_ae66f6b31b5ad750f1fe042a706a4e3d4"><div class="ttname"><a href="SharedLib_8cpp.html#ae66f6b31b5ad750f1fe042a706a4e3d4">main</a></div><div class="ttdeci">int main()</div><div class="ttdef"><b>Definition:</b> SharedLib.cpp:22</div></div>
+<div class="ttc" id="aclasslsSmartPointer_html"><div class="ttname"><a href="classlsSmartPointer.html">lsSmartPointer</a></div><div class="ttdoc">std::shared_ptr wrapper for use with ViennaLS. lsSmartPointers should be created using the function :...</div><div class="ttdef"><b>Definition:</b> lsSmartPointer.hpp:9</div></div>
 <div class="ttc" id="alsDomain_8hpp_html"><div class="ttname"><a href="lsDomain_8hpp.html">lsDomain.hpp</a></div></div>
 <div class="ttc" id="alsToSurfaceMesh_8hpp_html"><div class="ttname"><a href="lsToSurfaceMesh_8hpp.html">lsToSurfaceMesh.hpp</a></div></div>
 <!-- start footer part -->

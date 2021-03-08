@@ -90,9 +90,9 @@ int main() {
 
   {
     std::cout << "Extracting..." << std::endl;
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(mask, mesh).apply();
-    lsVTKWriter(mesh, "maskPlane.vtk").apply();
+    lsVTKWriter<double>(mesh, "maskPlane.vtk").apply();
   }
 
   // {
@@ -106,9 +106,9 @@ int main() {
 
   //   {
   //     std::cout << "Extracting..." << std::endl;
-  //     lsMesh mesh;
+  //     lsMesh<> mesh;
   //     lsToMesh<double, D>(trench, mesh).apply();
-  //     lsVTKWriter(mesh, "box.vtk").apply();
+  //     lsVTKWriter<double>(mesh, "box.vtk").apply();
   //   }
 
   //   // Create trench geometry
@@ -119,19 +119,19 @@ int main() {
 
   //   {
   //     std::cout << "Extracting..." << std::endl;
-  //     lsMesh mesh;
+  //     lsMesh<> mesh;
   //     lsToMesh<double, D>(mask, mesh).apply();
-  //     lsVTKWriter(mesh, "mask.vtk").apply();
+  //     lsVTKWriter<double>(mesh, "mask.vtk").apply();
   //   }
   // }
 
   {
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
 
     lsToMesh<NumericType, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "points.vtk").apply();
+    lsVTKWriter<double>(mesh, "points.vtk").apply();
     lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "surface.vtk").apply();
+    lsVTKWriter<double>(mesh, "surface.vtk").apply();
   }
 
   auto depoVel = lsSmartPointer<depositionVel>::New();
@@ -149,11 +149,11 @@ int main() {
   etching.setAdvectionTime(1);
 
   {
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<NumericType, D>(mask, mesh).apply();
-    lsVTKWriter(mesh, "mask0.vtk").apply();
+    lsVTKWriter<double>(mesh, "mask0.vtk").apply();
     lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "surface0.vtk").apply();
+    lsVTKWriter<double>(mesh, "surface0.vtk").apply();
   }
 
   for (unsigned i = 1; i < 10; ++i) {
@@ -169,20 +169,23 @@ int main() {
 
     deposition.apply();
 
-    auto mesh = lsSmartPointer<lsMesh>::New();
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<NumericType, D>(mask, mesh).apply();
-    lsVTKWriter(mesh, "mask" + std::to_string(2 * i) + ".vtk").apply();
+    lsVTKWriter<double>(mesh, "mask" + std::to_string(2 * i) + ".vtk").apply();
     lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "surface" + std::to_string(2 * i) + ".vtk").apply();
+    lsVTKWriter<double>(mesh, "surface" + std::to_string(2 * i) + ".vtk")
+        .apply();
     std::cout << "DepoSteps: " << deposition.getNumberOfTimeSteps()
               << std::endl;
 
     etching.apply();
 
     lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "surface" + std::to_string(2 * i + 1) + ".vtk").apply();
+    lsVTKWriter<double>(mesh, "surface" + std::to_string(2 * i + 1) + ".vtk")
+        .apply();
     lsToSurfaceMesh<NumericType, D>(mask, mesh).apply();
-    lsVTKWriter(mesh, "mask" + std::to_string(2 * i + 1) + ".vtk").apply();
+    lsVTKWriter<double>(mesh, "mask" + std::to_string(2 * i + 1) + ".vtk")
+        .apply();
     std::cout << "EtchSteps: " << etching.getNumberOfTimeSteps() << std::endl;
   }
 
