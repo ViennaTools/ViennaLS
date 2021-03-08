@@ -90,7 +90,7 @@ $(document).ready(function(){initNavTree('classlsToMesh.html',''); initResizable
 </div><!--header-->
 <div class="contents">
 
-<p>Extract the regular grid, on which the level set values are defined, to an explicit <a class="el" href="classlsMesh.html" title="This class holds an explicit mesh, which is always given in 3 dimensions. If it describes a 2D mesh,...">lsMesh</a>. The Vertices will contain the level set value stored at its location. (This is very useful for debugging)  
+<p>Extract the regular grid, on which the level set values are defined, to an explicit lsMesh&lt;&gt;. The Vertices will contain the level set value stored at its location. (This is very useful for debugging)  
  <a href="classlsToMesh.html#details">More...</a></p>
 
 <p><code>#include &lt;lsToMesh.hpp&gt;</code></p>
@@ -99,12 +99,12 @@ $(document).ready(function(){initNavTree('classlsToMesh.html',''); initResizable
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a13ff52503ffe9a602d41c8ce4925653f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToMesh.html#a13ff52503ffe9a602d41c8ce4925653f">lsToMesh</a> ()</td></tr>
 <tr class="separator:a13ff52503ffe9a602d41c8ce4925653f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaf6d59ee7e105755a88404043cc2f11b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToMesh.html#aaf6d59ee7e105755a88404043cc2f11b">lsToMesh</a> (const <a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedLevelSet, <a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a> &gt; passedMesh, bool passedOnlyDefined=true, bool passedOnlyActive=false)</td></tr>
-<tr class="separator:aaf6d59ee7e105755a88404043cc2f11b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a344e795ea77b9d65e93881c3ec3f747f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToMesh.html#a344e795ea77b9d65e93881c3ec3f747f">lsToMesh</a> (const <a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedLevelSet, <a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;&gt; passedMesh, bool passedOnlyDefined=true, bool passedOnlyActive=false)</td></tr>
+<tr class="separator:a344e795ea77b9d65e93881c3ec3f747f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afd28480d6de8b52b76ec8a3912482aff"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToMesh.html#afd28480d6de8b52b76ec8a3912482aff">setLevelSet</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedlsDomain)</td></tr>
 <tr class="separator:afd28480d6de8b52b76ec8a3912482aff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac49a0040c727c7b07c92b753197caae3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToMesh.html#ac49a0040c727c7b07c92b753197caae3">setMesh</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a> &gt; passedMesh)</td></tr>
-<tr class="separator:ac49a0040c727c7b07c92b753197caae3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab85b83205e4c0d4079cc5429952e483b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToMesh.html#ab85b83205e4c0d4079cc5429952e483b">setMesh</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;&gt; passedMesh)</td></tr>
+<tr class="separator:ab85b83205e4c0d4079cc5429952e483b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e06030e5a2d621398d3104092cff1cb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToMesh.html#a2e06030e5a2d621398d3104092cff1cb">setOnlyDefined</a> (bool passedOnlyDefined)</td></tr>
 <tr class="separator:a2e06030e5a2d621398d3104092cff1cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acae91b8a8f912523b36bd7a4980d7cbb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToMesh.html#acae91b8a8f912523b36bd7a4980d7cbb">setOnlyActive</a> (bool passedOnlyActive)</td></tr>
@@ -116,8 +116,8 @@ Public Member Functions</h2></td></tr>
 <div class="textblock"><h3>template&lt;class T, int D&gt;<br />
 class lsToMesh&lt; T, D &gt;</h3>
 
-<p>Extract the regular grid, on which the level set values are defined, to an explicit <a class="el" href="classlsMesh.html" title="This class holds an explicit mesh, which is always given in 3 dimensions. If it describes a 2D mesh,...">lsMesh</a>. The Vertices will contain the level set value stored at its location. (This is very useful for debugging) </p>
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#_a24">AirGapDeposition.cpp</a>, and <a class="el" href="Deposition_8cpp-example.html#_a32">Deposition.cpp</a>.</dd>
+<p>Extract the regular grid, on which the level set values are defined, to an explicit lsMesh&lt;&gt;. The Vertices will contain the level set value stored at its location. (This is very useful for debugging) </p>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#_a23">AirGapDeposition.cpp</a>, and <a class="el" href="Deposition_8cpp-example.html#_a32">Deposition.cpp</a>.</dd>
 </dl>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a13ff52503ffe9a602d41c8ce4925653f"></a>
@@ -147,8 +147,8 @@ template&lt;class T , int D&gt; </div>
 
 </div>
 </div>
-<a id="aaf6d59ee7e105755a88404043cc2f11b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaf6d59ee7e105755a88404043cc2f11b">&#9670;&nbsp;</a></span>lsToMesh() <span class="overload">[2/2]</span></h2>
+<a id="a344e795ea77b9d65e93881c3ec3f747f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a344e795ea77b9d65e93881c3ec3f747f">&#9670;&nbsp;</a></span>lsToMesh() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -167,7 +167,7 @@ template&lt;class T , int D&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a> &gt;&#160;</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;&gt;&#160;</td>
           <td class="paramname"><em>passedMesh</em>, </td>
         </tr>
         <tr>
@@ -222,7 +222,7 @@ template&lt;class T , int D&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#a25">AirGapDeposition.cpp</a>, and <a class="el" href="Deposition_8cpp-example.html#a33">Deposition.cpp</a>.</dd>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="AirGapDeposition_8cpp-example.html#a24">AirGapDeposition.cpp</a>, and <a class="el" href="Deposition_8cpp-example.html#a33">Deposition.cpp</a>.</dd>
 </dl>
 
 </div>
@@ -255,8 +255,8 @@ template&lt;class T , int D&gt; </div>
 
 </div>
 </div>
-<a id="ac49a0040c727c7b07c92b753197caae3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac49a0040c727c7b07c92b753197caae3">&#9670;&nbsp;</a></span>setMesh()</h2>
+<a id="ab85b83205e4c0d4079cc5429952e483b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab85b83205e4c0d4079cc5429952e483b">&#9670;&nbsp;</a></span>setMesh()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -269,7 +269,7 @@ template&lt;class T , int D&gt; </div>
         <tr>
           <td class="memname">void <a class="el" href="classlsToMesh.html">lsToMesh</a>&lt; T, D &gt;::setMesh </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a> &gt;&#160;</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;&gt;&#160;</td>
           <td class="paramname"><em>passedMesh</em></td><td>)</td>
           <td></td>
         </tr>

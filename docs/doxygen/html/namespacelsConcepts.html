@@ -103,6 +103,9 @@ Typedefs</h2></td></tr>
 <tr class="memitem:a481ff09f6f53f81fa914524e68f96e59"><td class="memTemplParams" colspan="2">template&lt;class A , class B &gt; </td></tr>
 <tr class="memitem:a481ff09f6f53f81fa914524e68f96e59"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacelsConcepts.html#a481ff09f6f53f81fa914524e68f96e59">IsNotSame</a> = typename std::enable_if&lt;!std::is_same&lt; A, B &gt;::value, <a class="el" href="namespacelsConcepts.html#acd3e2089a3dd4d5d808dadf5dda9676b">AssignType</a> &gt;::type</td></tr>
 <tr class="separator:a481ff09f6f53f81fa914524e68f96e59"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0851dd907d86048b78719f8399f895d4"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
+<tr class="memitem:a0851dd907d86048b78719f8399f895d4"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacelsConcepts.html#a0851dd907d86048b78719f8399f895d4">IsFloatingPoint</a> = typename std::enable_if&lt; std::is_floating_point&lt; T &gt;::value, <a class="el" href="namespacelsConcepts.html#acd3e2089a3dd4d5d808dadf5dda9676b">AssignType</a> &gt;::type</td></tr>
+<tr class="separator:a0851dd907d86048b78719f8399f895d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
@@ -134,6 +137,22 @@ template&lt;class Base , class Derived &gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">using <a class="el" href="namespacelsConcepts.html#aee5684586e27c425abf23f5685e498a4">lsConcepts::IsBaseOf</a> = typedef typename std::enable_if&lt;std::is_base_of&lt;Base, Derived&gt;::value, <a class="el" href="namespacelsConcepts.html#acd3e2089a3dd4d5d808dadf5dda9676b">AssignType</a>&gt;::type</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a0851dd907d86048b78719f8399f895d4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0851dd907d86048b78719f8399f895d4">&#9670;&nbsp;</a></span>IsFloatingPoint</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="namespacelsConcepts.html#a0851dd907d86048b78719f8399f895d4">lsConcepts::IsFloatingPoint</a> = typedef typename std::enable_if&lt;std::is_floating_point&lt;T&gt;::value, <a class="el" href="namespacelsConcepts.html#acd3e2089a3dd4d5d808dadf5dda9676b">AssignType</a>&gt;::type</td>
         </tr>
       </table>
 </div><div class="memdoc">

@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.17"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>ViennaLS: lsVTKReader Class Reference</title>
+<title>ViennaLS: lsVTKReader&lt; T &gt; Class Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -86,7 +86,7 @@ $(document).ready(function(){initNavTree('classlsVTKReader.html',''); initResiza
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="classlsVTKReader-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">lsVTKReader Class Reference</div>  </div>
+<div class="title">lsVTKReader&lt; T &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
@@ -97,40 +97,45 @@ $(document).ready(function(){initNavTree('classlsVTKReader.html',''); initResiza
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a19094d779f5cd93ecfb2ea6dac1bdd31"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVTKReader.html#a19094d779f5cd93ecfb2ea6dac1bdd31">lsVTKReader</a> ()</td></tr>
-<tr class="separator:a19094d779f5cd93ecfb2ea6dac1bdd31"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3b348e2da98f10fbcf7a878ecc6adb59"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVTKReader.html#a3b348e2da98f10fbcf7a878ecc6adb59">lsVTKReader</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a> &gt; passedMesh)</td></tr>
-<tr class="separator:a3b348e2da98f10fbcf7a878ecc6adb59"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afe741a0e012a8dc1acd159377bc7ce4a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVTKReader.html#afe741a0e012a8dc1acd159377bc7ce4a">lsVTKReader</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a> &gt; passedMesh, std::string passedFileName)</td></tr>
-<tr class="separator:afe741a0e012a8dc1acd159377bc7ce4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7f51f551ac9fc11d74b8c96a388ee437"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVTKReader.html#a7f51f551ac9fc11d74b8c96a388ee437">lsVTKReader</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a> &gt; passedMesh, <a class="el" href="lsFileFormats_8hpp.html#ab14b0589117b7e039d94cc26402fa964">lsFileFormatEnum</a> passedFormat, std::string passedFileName)</td></tr>
-<tr class="separator:a7f51f551ac9fc11d74b8c96a388ee437"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a72b36d3c90ba926617a1c71c2658d297"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVTKReader.html#a72b36d3c90ba926617a1c71c2658d297">setMesh</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a> &gt; passedMesh)</td></tr>
-<tr class="memdesc:a72b36d3c90ba926617a1c71c2658d297"><td class="mdescLeft">&#160;</td><td class="mdescRight">set the mesh the file should be read into  <a href="classlsVTKReader.html#a72b36d3c90ba926617a1c71c2658d297">More...</a><br /></td></tr>
-<tr class="separator:a72b36d3c90ba926617a1c71c2658d297"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5274cb55ddb94e5934aec8f481baac10"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVTKReader.html#a5274cb55ddb94e5934aec8f481baac10">setFileFormat</a> (<a class="el" href="lsFileFormats_8hpp.html#ab14b0589117b7e039d94cc26402fa964">lsFileFormatEnum</a> passedFormat)</td></tr>
-<tr class="memdesc:a5274cb55ddb94e5934aec8f481baac10"><td class="mdescLeft">&#160;</td><td class="mdescRight">set file format for file to read. Defaults to VTK_LEGACY.  <a href="classlsVTKReader.html#a5274cb55ddb94e5934aec8f481baac10">More...</a><br /></td></tr>
-<tr class="separator:a5274cb55ddb94e5934aec8f481baac10"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a967df3baad33dd06c3233be34a8af181"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVTKReader.html#a967df3baad33dd06c3233be34a8af181">setFileName</a> (std::string passedFileName)</td></tr>
-<tr class="memdesc:a967df3baad33dd06c3233be34a8af181"><td class="mdescLeft">&#160;</td><td class="mdescRight">set file name for file to read  <a href="classlsVTKReader.html#a967df3baad33dd06c3233be34a8af181">More...</a><br /></td></tr>
-<tr class="separator:a967df3baad33dd06c3233be34a8af181"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2cb5e28e3bf8bfd11739148c00fe26c1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVTKReader.html#a2cb5e28e3bf8bfd11739148c00fe26c1">apply</a> ()</td></tr>
-<tr class="separator:a2cb5e28e3bf8bfd11739148c00fe26c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6072c9029878869db0a02295566087e8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVTKReader.html#a6072c9029878869db0a02295566087e8">lsVTKReader</a> ()</td></tr>
+<tr class="separator:a6072c9029878869db0a02295566087e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a718fdec236821b30c7d56145517a96d6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVTKReader.html#a718fdec236821b30c7d56145517a96d6">lsVTKReader</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;&gt; passedMesh)</td></tr>
+<tr class="separator:a718fdec236821b30c7d56145517a96d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9b8e12e10e939805bae35d423340506f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVTKReader.html#a9b8e12e10e939805bae35d423340506f">lsVTKReader</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;&gt; passedMesh, std::string passedFileName)</td></tr>
+<tr class="separator:a9b8e12e10e939805bae35d423340506f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a887843f84cd96ad3032b2b95365ede7d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVTKReader.html#a887843f84cd96ad3032b2b95365ede7d">lsVTKReader</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt;&gt;&gt; passedMesh, <a class="el" href="lsFileFormats_8hpp.html#ab14b0589117b7e039d94cc26402fa964">lsFileFormatEnum</a> passedFormat, std::string passedFileName)</td></tr>
+<tr class="separator:a887843f84cd96ad3032b2b95365ede7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a662c2bcf1fc1e3ef63758931c23d4862"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVTKReader.html#a662c2bcf1fc1e3ef63758931c23d4862">setMesh</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt;&gt;&gt; passedMesh)</td></tr>
+<tr class="memdesc:a662c2bcf1fc1e3ef63758931c23d4862"><td class="mdescLeft">&#160;</td><td class="mdescRight">set the mesh the file should be read into  <a href="classlsVTKReader.html#a662c2bcf1fc1e3ef63758931c23d4862">More...</a><br /></td></tr>
+<tr class="separator:a662c2bcf1fc1e3ef63758931c23d4862"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4eb7135b138c7cc8ae7f8699b3955792"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVTKReader.html#a4eb7135b138c7cc8ae7f8699b3955792">setFileFormat</a> (<a class="el" href="lsFileFormats_8hpp.html#ab14b0589117b7e039d94cc26402fa964">lsFileFormatEnum</a> passedFormat)</td></tr>
+<tr class="memdesc:a4eb7135b138c7cc8ae7f8699b3955792"><td class="mdescLeft">&#160;</td><td class="mdescRight">set file format for file to read. Defaults to VTK_LEGACY.  <a href="classlsVTKReader.html#a4eb7135b138c7cc8ae7f8699b3955792">More...</a><br /></td></tr>
+<tr class="separator:a4eb7135b138c7cc8ae7f8699b3955792"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af94bb5b08cee78c16cb059381241872f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVTKReader.html#af94bb5b08cee78c16cb059381241872f">setFileName</a> (std::string passedFileName)</td></tr>
+<tr class="memdesc:af94bb5b08cee78c16cb059381241872f"><td class="mdescLeft">&#160;</td><td class="mdescRight">set file name for file to read  <a href="classlsVTKReader.html#af94bb5b08cee78c16cb059381241872f">More...</a><br /></td></tr>
+<tr class="separator:af94bb5b08cee78c16cb059381241872f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aefb14ecf00954c0f8aa90a934eec4eb2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVTKReader.html#aefb14ecf00954c0f8aa90a934eec4eb2">apply</a> ()</td></tr>
+<tr class="separator:aefb14ecf00954c0f8aa90a934eec4eb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Class handling the import of VTK file types. </p>
+<div class="textblock"><h3>template&lt;class T = double&gt;<br />
+class lsVTKReader&lt; T &gt;</h3>
+
+<p>Class handling the import of VTK file types. </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a19094d779f5cd93ecfb2ea6dac1bdd31"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a19094d779f5cd93ecfb2ea6dac1bdd31">&#9670;&nbsp;</a></span>lsVTKReader() <span class="overload">[1/4]</span></h2>
+<a id="a6072c9029878869db0a02295566087e8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6072c9029878869db0a02295566087e8">&#9670;&nbsp;</a></span>lsVTKReader() <span class="overload">[1/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">lsVTKReader::lsVTKReader </td>
+          <td class="memname"><a class="el" href="classlsVTKReader.html">lsVTKReader</a>&lt; T &gt;::<a class="el" href="classlsVTKReader.html">lsVTKReader</a> </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -145,19 +150,21 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a3b348e2da98f10fbcf7a878ecc6adb59"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3b348e2da98f10fbcf7a878ecc6adb59">&#9670;&nbsp;</a></span>lsVTKReader() <span class="overload">[2/4]</span></h2>
+<a id="a718fdec236821b30c7d56145517a96d6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a718fdec236821b30c7d56145517a96d6">&#9670;&nbsp;</a></span>lsVTKReader() <span class="overload">[2/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">lsVTKReader::lsVTKReader </td>
+          <td class="memname"><a class="el" href="classlsVTKReader.html">lsVTKReader</a>&lt; T &gt;::<a class="el" href="classlsVTKReader.html">lsVTKReader</a> </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a> &gt;&#160;</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;&gt;&#160;</td>
           <td class="paramname"><em>passedMesh</em></td><td>)</td>
           <td></td>
         </tr>
@@ -171,19 +178,21 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="afe741a0e012a8dc1acd159377bc7ce4a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afe741a0e012a8dc1acd159377bc7ce4a">&#9670;&nbsp;</a></span>lsVTKReader() <span class="overload">[3/4]</span></h2>
+<a id="a9b8e12e10e939805bae35d423340506f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9b8e12e10e939805bae35d423340506f">&#9670;&nbsp;</a></span>lsVTKReader() <span class="overload">[3/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">lsVTKReader::lsVTKReader </td>
+          <td class="memname"><a class="el" href="classlsVTKReader.html">lsVTKReader</a>&lt; T &gt;::<a class="el" href="classlsVTKReader.html">lsVTKReader</a> </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a> &gt;&#160;</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;&gt;&#160;</td>
           <td class="paramname"><em>passedMesh</em>, </td>
         </tr>
         <tr>
@@ -207,19 +216,21 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a7f51f551ac9fc11d74b8c96a388ee437"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7f51f551ac9fc11d74b8c96a388ee437">&#9670;&nbsp;</a></span>lsVTKReader() <span class="overload">[4/4]</span></h2>
+<a id="a887843f84cd96ad3032b2b95365ede7d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a887843f84cd96ad3032b2b95365ede7d">&#9670;&nbsp;</a></span>lsVTKReader() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">lsVTKReader::lsVTKReader </td>
+          <td class="memname"><a class="el" href="classlsVTKReader.html">lsVTKReader</a>&lt; T &gt;::<a class="el" href="classlsVTKReader.html">lsVTKReader</a> </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a> &gt;&#160;</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt;&gt;&gt;&#160;</td>
           <td class="paramname"><em>passedMesh</em>, </td>
         </tr>
         <tr>
@@ -250,17 +261,19 @@ Public Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a2cb5e28e3bf8bfd11739148c00fe26c1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2cb5e28e3bf8bfd11739148c00fe26c1">&#9670;&nbsp;</a></span>apply()</h2>
+<a id="aefb14ecf00954c0f8aa90a934eec4eb2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aefb14ecf00954c0f8aa90a934eec4eb2">&#9670;&nbsp;</a></span>apply()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void lsVTKReader::apply </td>
+          <td class="memname">void <a class="el" href="classlsVTKReader.html">lsVTKReader</a>&lt; T &gt;::apply </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -275,17 +288,19 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a5274cb55ddb94e5934aec8f481baac10"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5274cb55ddb94e5934aec8f481baac10">&#9670;&nbsp;</a></span>setFileFormat()</h2>
+<a id="a4eb7135b138c7cc8ae7f8699b3955792"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4eb7135b138c7cc8ae7f8699b3955792">&#9670;&nbsp;</a></span>setFileFormat()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void lsVTKReader::setFileFormat </td>
+          <td class="memname">void <a class="el" href="classlsVTKReader.html">lsVTKReader</a>&lt; T &gt;::setFileFormat </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="lsFileFormats_8hpp.html#ab14b0589117b7e039d94cc26402fa964">lsFileFormatEnum</a>&#160;</td>
           <td class="paramname"><em>passedFormat</em></td><td>)</td>
@@ -303,17 +318,19 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a967df3baad33dd06c3233be34a8af181"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a967df3baad33dd06c3233be34a8af181">&#9670;&nbsp;</a></span>setFileName()</h2>
+<a id="af94bb5b08cee78c16cb059381241872f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af94bb5b08cee78c16cb059381241872f">&#9670;&nbsp;</a></span>setFileName()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void lsVTKReader::setFileName </td>
+          <td class="memname">void <a class="el" href="classlsVTKReader.html">lsVTKReader</a>&lt; T &gt;::setFileName </td>
           <td>(</td>
           <td class="paramtype">std::string&#160;</td>
           <td class="paramname"><em>passedFileName</em></td><td>)</td>
@@ -331,19 +348,21 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a72b36d3c90ba926617a1c71c2658d297"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a72b36d3c90ba926617a1c71c2658d297">&#9670;&nbsp;</a></span>setMesh()</h2>
+<a id="a662c2bcf1fc1e3ef63758931c23d4862"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a662c2bcf1fc1e3ef63758931c23d4862">&#9670;&nbsp;</a></span>setMesh()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void lsVTKReader::setMesh </td>
+          <td class="memname">void <a class="el" href="classlsVTKReader.html">lsVTKReader</a>&lt; T &gt;::setMesh </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a> &gt;&#160;</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt;&gt;&gt;&#160;</td>
           <td class="paramname"><em>passedMesh</em></td><td>)</td>
           <td></td>
         </tr>
