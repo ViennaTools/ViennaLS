@@ -15,6 +15,7 @@ namespace lsInternal {
 /// but lower accuracy for complex velocity fields.
 template <class T, int D, int order> class lsEnquistOsher {
   lsSmartPointer<lsDomain<T, D>> levelSet;
+  lsSmartPointer<lsVelocityField<T>> velocities;
   hrleSparseStarIterator<hrleDomain<T, D>> neighborIterator;
   bool calculateNormalVectors = true;
 
@@ -26,15 +27,15 @@ public:
     lsExpand<T, D>(passedlsDomain, 2 * order + 1).apply();
   }
 
-  lsEnquistOsher(lsSmartPointer<lsDomain<T, D>> passedlsDomain,
+  lsEnquistOsher(lsSmartPointer<lsDomain<T, D>> passedlsDomain, lsSmartPointer<lsVelocityField<T>> vel,
                  bool calcNormal = true)
-      : levelSet(passedlsDomain),
+      : levelSet(passedlsDomain), velocities(vel),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>>(
             levelSet->getDomain(), order)),
         calculateNormalVectors(calcNormal) {}
 
   T operator()(const hrleVectorType<hrleIndexType, D> &indices,
-               lsSmartPointer<lsVelocityField<T>> velocities, int material) {
+               int material) {
     auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
 

@@ -18,6 +18,7 @@ namespace lsInternal {
 /// DOI: 10.1109/SISPAD.2019.8870443
 template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
   lsSmartPointer<lsDomain<T, D>> levelSet;
+  lsSmartPointer<lsVelocityField<T>> velocities;
   const DifferentiationSchemeEnum finiteDifferenceScheme =
       DifferentiationSchemeEnum::FIRST_ORDER;
   hrleSparseBoxIterator<hrleDomain<T, D>> neighborIterator;
@@ -131,9 +132,9 @@ public:
   }
 
   lsStencilLocalLaxFriedrichsScalar(
-      lsSmartPointer<lsDomain<T, D>> passedlsDomain, double a = 1.0,
+      lsSmartPointer<lsDomain<T, D>> passedlsDomain, lsSmartPointer<lsVelocityField<T>> vel, double a = 1.0,
       DifferentiationSchemeEnum scheme = DifferentiationSchemeEnum::FIRST_ORDER)
-      : levelSet(passedlsDomain), finiteDifferenceScheme(scheme),
+      : levelSet(passedlsDomain), velocities(vel), finiteDifferenceScheme(scheme),
         neighborIterator(hrleSparseBoxIterator<hrleDomain<T, D>>(
             levelSet->getDomain(), static_cast<unsigned>(scheme) + 1 + order)),
         alphaFactor(a), numStencilPoints(std::pow(2 * order + 1, D)) {
@@ -143,8 +144,7 @@ public:
     }
   }
 
-  T operator()(const hrleVectorType<hrleIndexType, D> &indices,
-               lsSmartPointer<lsVelocityField<T>> velocities, int material) {
+  T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {
     auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
 

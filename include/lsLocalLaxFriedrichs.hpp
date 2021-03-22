@@ -16,6 +16,7 @@ namespace lsInternal {
 /// but more reliable for complex velocity fields.
 template <class T, int D, int order> class lsLocalLaxFriedrichs {
   lsSmartPointer<lsDomain<T, D>> levelSet;
+  lsSmartPointer<lsVelocityField<T>> velocities;
   hrleSparseBoxIterator<hrleDomain<T, D>> neighborIterator;
   const double alphaFactor;
 
@@ -47,13 +48,12 @@ public:
   }
 
   // neighboriterator always needs order 2 for alpha calculation
-  lsLocalLaxFriedrichs(lsSmartPointer<lsDomain<T, D>> passedlsDomain,
+  lsLocalLaxFriedrichs(lsSmartPointer<lsDomain<T, D>> passedlsDomain, lsSmartPointer<lsVelocityField<T>> vel,
                        double a = 1.0)
-      : levelSet(passedlsDomain), neighborIterator(levelSet->getDomain(), 2),
+      : levelSet(passedlsDomain), velocities(vel), neighborIterator(levelSet->getDomain(), 2),
         alphaFactor(a) {}
 
-  T operator()(const hrleVectorType<hrleIndexType, D> &indices,
-               lsSmartPointer<lsVelocityField<T>> velocities, int material) {
+  T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {
 
     auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
