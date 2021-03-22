@@ -24,14 +24,14 @@ class velocityField : public lsVelocityField<double> {
 public:
   double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
                            int /*material*/,
-                           const std::array<double, 3> & /*normalVector*/) {
+                           const std::array<double, 3> & /*normalVector*/,  unsigned long /*pointId*/) {
     return 1.;
   }
 
   std::array<double, 3>
   getVectorVelocity(const std::array<double, 3> & /*coordinate*/,
                     int /*material*/,
-                    const std::array<double, 3> & /*normalVector*/) {
+                    const std::array<double, 3> & /*normalVector*/,  unsigned long /*pointId*/) {
     return std::array<double, 3>({});
   }
 };

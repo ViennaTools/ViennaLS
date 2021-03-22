@@ -126,9 +126,9 @@ public:
 
     // Get velocities
     double scalarVelocity =
-        velocities->getScalarVelocity(coordArray, material, normalVector);
+        velocities->getScalarVelocity(coordArray, material, normalVector,  neighborIterator.getCenter().getPointId());
     std::array<T, 3> vectorVelocity =
-        velocities->getVectorVelocity(coordArray, material, normalVector);
+        velocities->getVectorVelocity(coordArray, material, normalVector,  neighborIterator.getCenter().getPointId());
 
     // calculate hamiltonian
     T totalGrad = 0.;

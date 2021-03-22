@@ -22,7 +22,7 @@ class depositionVel : public lsVelocityField<double> {
 public:
   double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
                            int /*material*/,
-                           const std::array<double, 3> & /*normalVector*/) {
+                           const std::array<double, 3> & /*normalVector*/,  unsigned long /*pointId*/) {
     return 0.1;
   }
 };
@@ -31,14 +31,14 @@ class etchingVel : public lsVelocityField<double> {
 public:
   double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
                            int material,
-                           const std::array<double, 3> & /*normalVector*/) {
+                           const std::array<double, 3> & /*normalVector*/,  unsigned long /*pointId*/) {
     return (material == 1) ? -0.3 : 0;
   }
 
   // std::array<double, 3>
   // getVectorVelocity(const std::array<double, 3> & /*coordinate*/,
   //                   int /*material*/,
-  //                   const std::array<double, 3> & /*normalVector*/) {
+  //                   const std::array<double, 3> & /*normalVector*/,  unsigned long /*pointId*/) {
   //   return std::array<double, 3>({});
   // }
 };

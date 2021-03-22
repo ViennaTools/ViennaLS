@@ -24,7 +24,7 @@ public:
   NumericType
   getScalarVelocity(const std::array<NumericType, 3> & /*coordinate*/,
                     int /*material*/,
-                    const std::array<NumericType, 3> &normalVector) {
+                    const std::array<NumericType, 3> &normalVector,  unsigned long /*pointId*/) {
     // velocity is proportional to the normal vector
     NumericType velocity =
         std::abs(normalVector[0]) + std::abs(normalVector[1]);
@@ -34,7 +34,7 @@ public:
   std::array<NumericType, 3>
   getVectorVelocity(const std::array<NumericType, 3> & /*coordinate*/,
                     int /*material*/,
-                    const std::array<NumericType, 3> & /*normalVector*/) {
+                    const std::array<NumericType, 3> & /*normalVector*/,  unsigned long /*pointId*/) {
     return std::array<NumericType, 3>({});
   }
 };

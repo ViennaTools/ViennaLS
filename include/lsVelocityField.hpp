@@ -13,7 +13,7 @@ public:
   /// for a point of material with the given normalVector.
   virtual T getScalarVelocity(const std::array<T, 3> & /*coordinate*/,
                               int /*material*/,
-                              const std::array<T, 3> & /*normalVector*/) {
+                              const std::array<T, 3> & /*normalVector*/, unsigned long /*pointId*/) {
     return 0;
   }
 
@@ -21,7 +21,7 @@ public:
   /// cartesian direction.
   virtual std::array<T, 3>
   getVectorVelocity(const std::array<T, 3> & /*coordinate*/, int /*material*/,
-                    const std::array<T, 3> & /*normalVector*/) {
+                    const std::array<T, 3> & /*normalVector*/,  unsigned long /*pointId*/) {
     return {0, 0, 0};
   }
 

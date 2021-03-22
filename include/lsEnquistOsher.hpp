@@ -137,9 +137,9 @@ public:
     std::array<T, 3> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
 
     double scalarVelocity =
-        velocities->getScalarVelocity(coordArray, material, normalVector);
+        velocities->getScalarVelocity(coordArray, material, normalVector,  neighborIterator.getCenter().getPointId());
     std::array<T, 3> vectorVelocity =
-        velocities->getVectorVelocity(coordArray, material, normalVector);
+        velocities->getVectorVelocity(coordArray, material, normalVector,  neighborIterator.getCenter().getPointId());
 
     if (scalarVelocity > 0) {
       vel_grad += std::sqrt(gradPosTotal) * scalarVelocity;
