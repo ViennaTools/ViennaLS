@@ -98,10 +98,10 @@ $(document).ready(function(){initNavTree('classlsInternal_1_1lsLaxFriedrichs.htm
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a9c606c3ca0642f9b70ff583ef8bade01"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsLaxFriedrichs.html#a9c606c3ca0642f9b70ff583ef8bade01">lsLaxFriedrichs</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedlsDomain, bool calcNormal=true, double a=1.0)</td></tr>
-<tr class="separator:a9c606c3ca0642f9b70ff583ef8bade01"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac68803ca32b5164540ac4ae7cfb21f0d"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsLaxFriedrichs.html#ac68803ca32b5164540ac4ae7cfb21f0d">operator()</a> (const hrleVectorType&lt; hrleIndexType, D &gt; &amp;indices, <a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsVelocityField.html">lsVelocityField</a>&lt; T &gt;&gt; velocities, int material)</td></tr>
-<tr class="separator:ac68803ca32b5164540ac4ae7cfb21f0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adba207405a3994cd2e6b3756d8ad1b51"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsLaxFriedrichs.html#adba207405a3994cd2e6b3756d8ad1b51">lsLaxFriedrichs</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedlsDomain, <a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsVelocityField.html">lsVelocityField</a>&lt; T &gt;&gt; vel, bool calcNormal=true, double a=1.0)</td></tr>
+<tr class="separator:adba207405a3994cd2e6b3756d8ad1b51"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aac3ab80f2383064aad4d9846f2dc777f"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsLaxFriedrichs.html#aac3ab80f2383064aad4d9846f2dc777f">operator()</a> (const hrleVectorType&lt; hrleIndexType, D &gt; &amp;indices, int material)</td></tr>
+<tr class="separator:aac3ab80f2383064aad4d9846f2dc777f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -114,8 +114,8 @@ class lsInternal::lsLaxFriedrichs&lt; T, D, order &gt;</h3>
 
 <p>Lax Friedrichs integration scheme with constant alpha value for dissipation. This alpha value should be fitted based on the results of the advection and passed to the advection Kernel. </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a9c606c3ca0642f9b70ff583ef8bade01"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9c606c3ca0642f9b70ff583ef8bade01">&#9670;&nbsp;</a></span>lsLaxFriedrichs()</h2>
+<a id="adba207405a3994cd2e6b3756d8ad1b51"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adba207405a3994cd2e6b3756d8ad1b51">&#9670;&nbsp;</a></span>lsLaxFriedrichs()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -130,6 +130,12 @@ template&lt;class T , int D, int order&gt; </div>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
           <td class="paramname"><em>passedlsDomain</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsVelocityField.html">lsVelocityField</a>&lt; T &gt;&gt;&#160;</td>
+          <td class="paramname"><em>vel</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -159,8 +165,8 @@ template&lt;class T , int D, int order&gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ac68803ca32b5164540ac4ae7cfb21f0d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac68803ca32b5164540ac4ae7cfb21f0d">&#9670;&nbsp;</a></span>operator()()</h2>
+<a id="aac3ab80f2383064aad4d9846f2dc777f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aac3ab80f2383064aad4d9846f2dc777f">&#9670;&nbsp;</a></span>operator()()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -175,12 +181,6 @@ template&lt;class T , int D, int order&gt; </div>
           <td>(</td>
           <td class="paramtype">const hrleVectorType&lt; hrleIndexType, D &gt; &amp;&#160;</td>
           <td class="paramname"><em>indices</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsVelocityField.html">lsVelocityField</a>&lt; T &gt;&gt;&#160;</td>
-          <td class="paramname"><em>velocities</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>

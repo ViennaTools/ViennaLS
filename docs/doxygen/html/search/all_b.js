@@ -1,7 +1,7 @@
 var searchData=
 [
   ['neg_5fvalue_228',['NEG_VALUE',['../classlsDomain.html#a0788661d06a9643ba83d2b5f8e7aa828',1,'lsDomain']]],
-  ['new_229',['New',['../classlsSmartPointer.html#ae58c9ee92c03b933f07228fd4e79b849',1,'lsSmartPointer']]],
+  ['new_229',['New',['../classlsSmartPointer.html#abc42fbab727d1b3ff0a04ae68a3e5f7a',1,'lsSmartPointer']]],
   ['newlayer_230',['newLayer',['../namespaceAirGapDeposition.html#ae4c15d7b109cfa0500c2e84e79c19ef6',1,'AirGapDeposition.newLayer()'],['../namespaceDeposition.html#a448222c801fb513e47426d6adcbadcbd',1,'Deposition.newLayer()'],['../namespaceGeometricAdvection.html#abd9a032068d19a191bc00596224a23fe',1,'GeometricAdvection.newLayer()']]],
   ['nodes_231',['nodes',['../classlsMesh.html#a1263c627ad297bdb55490f2e9693619a',1,'lsMesh']]],
   ['normal_232',['normal',['../classlsPlane.html#a7aad4d0e5e2d3721ac5f0abded344a0c',1,'lsPlane']]],

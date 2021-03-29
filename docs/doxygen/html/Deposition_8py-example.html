@@ -95,13 +95,13 @@ $(document).ready(function(){initNavTree('Deposition_8py-example.html',''); init
 <div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;  <span class="comment"># coord and normalVec are lists with 3 elements</span></div>
 <div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;  <span class="comment"># in 2D coord[2] and normalVec[2] are zero</span></div>
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;  <span class="comment"># getScalarVelocity must return a scalar</span></div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;  <span class="keyword">def </span>getScalarVelocity(self, coord, material, normal):</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;  <span class="keyword">def </span>getScalarVelocity(self, coord, material, normal,  pointId):</div>
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <span class="comment"># some arbitrary velocity function of your liking</span></div>
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <span class="comment"># (try changing it and see what happens :)</span></div>
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    velocity = 1</div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    <span class="keywordflow">return</span> velocity</div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160; </div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;  <span class="keyword">def </span>getVectorVelocity(self, coord, material, normal):</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;  <span class="keyword">def </span>getVectorVelocity(self, coord, material, normal,  pointId):</div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="keywordflow">return</span> (0,0,0)</div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160; </div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;extent = 30</div>

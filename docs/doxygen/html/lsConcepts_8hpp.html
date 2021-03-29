@@ -91,6 +91,7 @@ $(document).ready(function(){initNavTree('lsConcepts_8hpp.html',''); initResizab
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &lt;cstddef&gt;</code><br />
+<code>#include &lt;type_traits&gt;</code><br />
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
@@ -101,18 +102,18 @@ Namespaces</h2></td></tr>
 Typedefs</h2></td></tr>
 <tr class="memitem:acd3e2089a3dd4d5d808dadf5dda9676b"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacelsConcepts.html#acd3e2089a3dd4d5d808dadf5dda9676b">lsConcepts::AssignType</a> = std::nullptr_t</td></tr>
 <tr class="separator:acd3e2089a3dd4d5d808dadf5dda9676b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aee5684586e27c425abf23f5685e498a4"><td class="memTemplParams" colspan="2">template&lt;class Base , class Derived &gt; </td></tr>
-<tr class="memitem:aee5684586e27c425abf23f5685e498a4"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacelsConcepts.html#aee5684586e27c425abf23f5685e498a4">lsConcepts::IsBaseOf</a> = typename std::enable_if&lt; std::is_base_of&lt; Base, Derived &gt;::value, AssignType &gt;::type</td></tr>
-<tr class="separator:aee5684586e27c425abf23f5685e498a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2bb023b7d89833d76f08606c0b588aa4"><td class="memTemplParams" colspan="2">template&lt;class A , class B &gt; </td></tr>
-<tr class="memitem:a2bb023b7d89833d76f08606c0b588aa4"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacelsConcepts.html#a2bb023b7d89833d76f08606c0b588aa4">lsConcepts::IsSame</a> = typename std::enable_if&lt; std::is_same&lt; A, B &gt;::value, AssignType &gt;::type</td></tr>
-<tr class="separator:a2bb023b7d89833d76f08606c0b588aa4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a481ff09f6f53f81fa914524e68f96e59"><td class="memTemplParams" colspan="2">template&lt;class A , class B &gt; </td></tr>
-<tr class="memitem:a481ff09f6f53f81fa914524e68f96e59"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacelsConcepts.html#a481ff09f6f53f81fa914524e68f96e59">lsConcepts::IsNotSame</a> = typename std::enable_if&lt;!std::is_same&lt; A, B &gt;::value, AssignType &gt;::type</td></tr>
-<tr class="separator:a481ff09f6f53f81fa914524e68f96e59"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0851dd907d86048b78719f8399f895d4"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
-<tr class="memitem:a0851dd907d86048b78719f8399f895d4"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacelsConcepts.html#a0851dd907d86048b78719f8399f895d4">lsConcepts::IsFloatingPoint</a> = typename std::enable_if&lt; std::is_floating_point&lt; T &gt;::value, AssignType &gt;::type</td></tr>
-<tr class="separator:a0851dd907d86048b78719f8399f895d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a90d0ed377343607596475f042f71ae47"><td class="memTemplParams" colspan="2">template&lt;class Base , class Derived &gt; </td></tr>
+<tr class="memitem:a90d0ed377343607596475f042f71ae47"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacelsConcepts.html#a90d0ed377343607596475f042f71ae47">lsConcepts::IsBaseOf</a> = std::enable_if_t&lt; std::is_base_of&lt; Base, Derived &gt;::value, AssignType &gt;</td></tr>
+<tr class="separator:a90d0ed377343607596475f042f71ae47"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a32ef11830a21da629bcaec40843917b5"><td class="memTemplParams" colspan="2">template&lt;class A , class B &gt; </td></tr>
+<tr class="memitem:a32ef11830a21da629bcaec40843917b5"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacelsConcepts.html#a32ef11830a21da629bcaec40843917b5">lsConcepts::IsSame</a> = std::enable_if_t&lt; std::is_same&lt; A, B &gt;::value, AssignType &gt;</td></tr>
+<tr class="separator:a32ef11830a21da629bcaec40843917b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afe02d602414323eb189f366b54dd86bc"><td class="memTemplParams" colspan="2">template&lt;class A , class B &gt; </td></tr>
+<tr class="memitem:afe02d602414323eb189f366b54dd86bc"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacelsConcepts.html#afe02d602414323eb189f366b54dd86bc">lsConcepts::IsNotSame</a> = std::enable_if_t&lt;!std::is_same&lt; A, B &gt;::value, AssignType &gt;</td></tr>
+<tr class="separator:afe02d602414323eb189f366b54dd86bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab6faf524889c50de47df4a7cbf15a028"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
+<tr class="memitem:ab6faf524889c50de47df4a7cbf15a028"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacelsConcepts.html#ab6faf524889c50de47df4a7cbf15a028">lsConcepts::IsFloatingPoint</a> = std::enable_if_t&lt; std::is_floating_point&lt; T &gt;::value, AssignType &gt;</td></tr>
+<tr class="separator:ab6faf524889c50de47df4a7cbf15a028"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>

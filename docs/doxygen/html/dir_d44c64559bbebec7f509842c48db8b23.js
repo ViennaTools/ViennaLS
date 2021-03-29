@@ -70,15 +70,11 @@ var dir_d44c64559bbebec7f509842c48db8b23 =
     [ "lsMarkVoidPoints.hpp", "lsMarkVoidPoints_8hpp.html", [
       [ "lsMarkVoidPoints", "classlsMarkVoidPoints.html", "classlsMarkVoidPoints" ]
     ] ],
-    [ "lsMesh.hpp", "lsMesh_8hpp.html", [
-      [ "lsMesh", "classlsMesh.html", "classlsMesh" ]
-    ] ],
+    [ "lsMesh.hpp", "lsMesh_8hpp.html", "lsMesh_8hpp" ],
     [ "lsMessage.hpp", "lsMessage_8hpp.html", [
       [ "lsMessage", "classlsMessage.html", "classlsMessage" ]
     ] ],
-    [ "lsPointData.hpp", "lsPointData_8hpp.html", [
-      [ "lsPointData", "classlsPointData.html", "classlsPointData" ]
-    ] ],
+    [ "lsPointData.hpp", "lsPointData_8hpp.html", "lsPointData_8hpp" ],
     [ "lsPreCompileMacros.hpp", "lsPreCompileMacros_8hpp.html", "lsPreCompileMacros_8hpp" ],
     [ "lsPrune.hpp", "lsPrune_8hpp.html", [
       [ "lsPrune", "classlsPrune.html", "classlsPrune" ]
