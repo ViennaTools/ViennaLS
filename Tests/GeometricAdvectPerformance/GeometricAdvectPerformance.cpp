@@ -15,7 +15,8 @@
 class velocityField : public lsVelocityField<double> {
   double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
                            int /*material*/,
-                           const std::array<double, 3> & /*normalVector*/,  unsigned long /*pointId*/) {
+                           const std::array<double, 3> & /*normalVector*/,
+                           unsigned long /*pointId*/) {
     return 1;
   }
 };

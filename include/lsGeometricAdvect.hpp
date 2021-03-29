@@ -228,16 +228,16 @@ public:
           .addDebug("GeomAdvect: Writing debug meshes")
           .print();
       lsVTKWriter<hrleCoordType>(surfaceMesh, lsFileFormatEnum::VTP,
-                          "DEBUG_lsGeomAdvectMesh_contributewoMask.vtp")
+                                 "DEBUG_lsGeomAdvectMesh_contributewoMask.vtp")
           .apply();
       auto mesh = lsSmartPointer<lsMesh<T>>::New();
       lsToMesh<T, D>(maskLevelSet, mesh).apply();
       lsVTKWriter<T>(mesh, lsFileFormatEnum::VTP,
-                          "DEBUG_lsGeomAdvectMesh_mask.vtp")
+                     "DEBUG_lsGeomAdvectMesh_mask.vtp")
           .apply();
       lsToMesh<T, D>(levelSet, mesh).apply();
       lsVTKWriter<T>(mesh, lsFileFormatEnum::VTP,
-                          "DEBUG_lsGeomAdvectMesh_initial.vtp")
+                     "DEBUG_lsGeomAdvectMesh_initial.vtp")
           .apply();
     }
 
@@ -488,7 +488,7 @@ public:
         .addDebug("GeomAdvect: Writing final mesh...")
         .print();
     lsVTKWriter<T>(mesh, lsFileFormatEnum::VTP,
-                        "DEBUG_lsGeomAdvectMesh_final.vtp")
+                   "DEBUG_lsGeomAdvectMesh_final.vtp")
         .apply();
 #endif
 

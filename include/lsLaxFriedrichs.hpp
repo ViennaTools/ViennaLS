@@ -28,7 +28,8 @@ public:
     lsExpand<T, D>(passedlsDomain, 2 * order + 1).apply();
   }
 
-  lsLaxFriedrichs(lsSmartPointer<lsDomain<T, D>> passedlsDomain, lsSmartPointer<lsVelocityField<T>> vel,
+  lsLaxFriedrichs(lsSmartPointer<lsDomain<T, D>> passedlsDomain,
+                  lsSmartPointer<lsVelocityField<T>> vel,
                   bool calcNormal = true, double a = 1.0)
       : levelSet(passedlsDomain), velocities(vel),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>>(
@@ -131,10 +132,12 @@ public:
     // convert coordinate to std array for interface
     std::array<T, 3> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
 
-    double scalarVelocity =
-        velocities->getScalarVelocity(coordArray, material, normalVector,  neighborIterator.getCenter().getPointId());
-    std::array<T, 3> vectorVelocity =
-        velocities->getVectorVelocity(coordArray, material, normalVector,  neighborIterator.getCenter().getPointId());
+    double scalarVelocity = velocities->getScalarVelocity(
+        coordArray, material, normalVector,
+        neighborIterator.getCenter().getPointId());
+    std::array<T, 3> vectorVelocity = velocities->getVectorVelocity(
+        coordArray, material, normalVector,
+        neighborIterator.getCenter().getPointId());
 
     T totalGrad = 0.;
     if (scalarVelocity != 0.) {

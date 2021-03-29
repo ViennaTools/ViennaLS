@@ -13,7 +13,7 @@
   extern template class className<float, 2>;                                   \
   extern template class className<float, 3>;
 
-  #define PRECOMPILE_PRECISION(className)                                      \
+#define PRECOMPILE_PRECISION(className)                                        \
   typedef className<double> className##_double;                                \
   typedef className<float> className##_float;                                  \
   extern template class className<double>;                                     \
@@ -43,7 +43,5 @@
 #define PRECOMPILE_SPECIALIZE_PRECISION(className)                             \
   template class className<double>;                                            \
   template class className<float>;
-
-
 
 #endif // LS_PRE_COMPILE_MACROS_HPP

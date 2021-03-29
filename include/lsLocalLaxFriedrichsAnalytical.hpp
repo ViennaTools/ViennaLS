@@ -47,8 +47,10 @@ public:
   }
 
   // neighboriterator always needs order 2 for alpha calculation
-  lsLocalLaxFriedrichsAnalytical(lsSmartPointer<lsDomain<T, D>> passedlsDomain, lsSmartPointer<lsVelocityField<T>> vel)
-      : levelSet(passedlsDomain), velocities(vel), neighborIterator(levelSet->getDomain(), 2) {}
+  lsLocalLaxFriedrichsAnalytical(lsSmartPointer<lsDomain<T, D>> passedlsDomain,
+                                 lsSmartPointer<lsVelocityField<T>> vel)
+      : levelSet(passedlsDomain), velocities(vel),
+        neighborIterator(levelSet->getDomain(), 2) {}
 
   T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {
 
@@ -147,10 +149,12 @@ public:
     }
 
     // Get velocities
-    double scalarVelocity =
-        velocities->getScalarVelocity(coordArray, material, normalVector,  neighborIterator.getCenter().getPointId());
-    std::array<T, 3> vectorVelocity =
-        velocities->getVectorVelocity(coordArray, material, normalVector,  neighborIterator.getCenter().getPointId());
+    double scalarVelocity = velocities->getScalarVelocity(
+        coordArray, material, normalVector,
+        neighborIterator.getCenter().getPointId());
+    std::array<T, 3> vectorVelocity = velocities->getVectorVelocity(
+        coordArray, material, normalVector,
+        neighborIterator.getCenter().getPointId());
 
     // calculate hamiltonian
     T totalGrad = 0.;

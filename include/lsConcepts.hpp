@@ -11,16 +11,14 @@ using AssignType = std::nullptr_t;
 inline constexpr AssignType assignable = AssignType();
 
 template <class Base, class Derived>
-using IsBaseOf = std::enable_if_t<std::is_base_of<Base, Derived>::value,
-                                         AssignType>;
+using IsBaseOf =
+    std::enable_if_t<std::is_base_of<Base, Derived>::value, AssignType>;
 
 template <class A, class B>
-using IsSame =
-    std::enable_if_t<std::is_same<A, B>::value, AssignType>;
+using IsSame = std::enable_if_t<std::is_same<A, B>::value, AssignType>;
 
 template <class A, class B>
-using IsNotSame =
-    std::enable_if_t<!std::is_same<A, B>::value, AssignType>;
+using IsNotSame = std::enable_if_t<!std::is_same<A, B>::value, AssignType>;
 
 template <class T>
 using IsFloatingPoint =

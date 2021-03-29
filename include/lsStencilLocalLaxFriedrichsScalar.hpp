@@ -132,9 +132,11 @@ public:
   }
 
   lsStencilLocalLaxFriedrichsScalar(
-      lsSmartPointer<lsDomain<T, D>> passedlsDomain, lsSmartPointer<lsVelocityField<T>> vel, double a = 1.0,
+      lsSmartPointer<lsDomain<T, D>> passedlsDomain,
+      lsSmartPointer<lsVelocityField<T>> vel, double a = 1.0,
       DifferentiationSchemeEnum scheme = DifferentiationSchemeEnum::FIRST_ORDER)
-      : levelSet(passedlsDomain), velocities(vel), finiteDifferenceScheme(scheme),
+      : levelSet(passedlsDomain), velocities(vel),
+        finiteDifferenceScheme(scheme),
         neighborIterator(hrleSparseBoxIterator<hrleDomain<T, D>>(
             levelSet->getDomain(), static_cast<unsigned>(scheme) + 1 + order)),
         alphaFactor(a), numStencilPoints(std::pow(2 * order + 1, D)) {
@@ -182,10 +184,12 @@ public:
       normalVector[i] /= denominator;
     }
 
-    double scalarVelocity =
-        velocities->getScalarVelocity(coordArray, material, normalVector,  neighborIterator.getCenter().getPointId());
-    std::array<T, 3> vectorVelocity =
-        velocities->getVectorVelocity(coordArray, material, normalVector,  neighborIterator.getCenter().getPointId());
+    double scalarVelocity = velocities->getScalarVelocity(
+        coordArray, material, normalVector,
+        neighborIterator.getCenter().getPointId());
+    std::array<T, 3> vectorVelocity = velocities->getVectorVelocity(
+        coordArray, material, normalVector,
+        neighborIterator.getCenter().getPointId());
 
     // now calculate scalar product of normal vector with velocity
     for (unsigned i = 0; i < D; ++i) {
@@ -231,10 +235,12 @@ public:
         for (unsigned dir = 0; dir < D; ++dir)
           localCoordArray[dir] += currentIndex[dir];
 
-        T localScalarVelocity =
-            velocities->getScalarVelocity(localCoordArray, material, normal_p,  neighborIterator.getCenter().getPointId());
-        std::array<T, 3> localVectorVelocity =
-            velocities->getVectorVelocity(localCoordArray, material, normal_p,  neighborIterator.getCenter().getPointId());
+        T localScalarVelocity = velocities->getScalarVelocity(
+            localCoordArray, material, normal_p,
+            neighborIterator.getCenter().getPointId());
+        std::array<T, 3> localVectorVelocity = velocities->getVectorVelocity(
+            localCoordArray, material, normal_p,
+            neighborIterator.getCenter().getPointId());
         // now calculate scalar product of normal vector with velocity
         for (unsigned i = 0; i < D; ++i) {
           localScalarVelocity += localVectorVelocity[i] * normal[i];
@@ -247,10 +253,12 @@ public:
           normal_p[k] -= DN; // p=previous
           normal_n[k] += DN; // n==next
 
-          T vp = velocities->getScalarVelocity(localCoordArray, material,
-                                               normal_p,  neighborIterator.getCenter().getPointId());
-          T vn = velocities->getScalarVelocity(localCoordArray, material,
-                                               normal_n,  neighborIterator.getCenter().getPointId());
+          T vp = velocities->getScalarVelocity(
+              localCoordArray, material, normal_p,
+              neighborIterator.getCenter().getPointId());
+          T vn = velocities->getScalarVelocity(
+              localCoordArray, material, normal_n,
+              neighborIterator.getCenter().getPointId());
           // central difference
           velocityDelta[k] = (vn - vp) / (2.0 * DN);
 

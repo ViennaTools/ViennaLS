@@ -68,13 +68,15 @@ class PylsVelocityField : public lsVelocityField<T> {
 
 public:
   T getScalarVelocity(const vectorType &coordinate, int material,
-                      const vectorType &normalVector,  unsigned long pointId) override {
+                      const vectorType &normalVector,
+                      unsigned long pointId) override {
     PYBIND11_OVERLOAD(T, lsVelocityField<T>, getScalarVelocity, coordinate,
                       material, normalVector, pointId);
   }
 
   vectorType getVectorVelocity(const vectorType &coordinate, int material,
-                               const vectorType &normalVector,  unsigned long pointId) override {
+                               const vectorType &normalVector,
+                               unsigned long pointId) override {
     PYBIND11_OVERLOAD(vectorType, lsVelocityField<T>, getVectorVelocity,
                       coordinate, material, normalVector, pointId);
   }

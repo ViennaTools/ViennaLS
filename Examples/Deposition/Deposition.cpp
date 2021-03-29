@@ -22,20 +22,22 @@ using NumericType = float;
 // implement own velocity field
 class velocityField : public lsVelocityField<NumericType> {
 public:
-  NumericType getScalarVelocity(
-      const std::array<NumericType, 3> & /*coordinate*/, int /*material*/,
-      const std::array<NumericType, 3>
-          & /*normalVector*/,  unsigned long /*pointId*/) {
+  NumericType
+  getScalarVelocity(const std::array<NumericType, 3> & /*coordinate*/,
+                    int /*material*/,
+                    const std::array<NumericType, 3> & /*normalVector*/,
+                    unsigned long /*pointId*/) {
     // Some arbitrary velocity function of your liking
     // (try changing it and see what happens :)
     NumericType velocity = 1.;
     return velocity;
   }
 
-  std::array<NumericType, 3> getVectorVelocity(
-      const std::array<NumericType, 3> & /*coordinate*/, int /*material*/,
-      const std::array<NumericType, 3>
-          & /*normalVector*/,  unsigned long /*pointId*/) {
+  std::array<NumericType, 3>
+  getVectorVelocity(const std::array<NumericType, 3> & /*coordinate*/,
+                    int /*material*/,
+                    const std::array<NumericType, 3> & /*normalVector*/,
+                    unsigned long /*pointId*/) {
     return std::array<NumericType, 3>({}); // initialise to zero
   }
 };

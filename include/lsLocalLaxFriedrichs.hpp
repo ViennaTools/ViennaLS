@@ -48,10 +48,10 @@ public:
   }
 
   // neighboriterator always needs order 2 for alpha calculation
-  lsLocalLaxFriedrichs(lsSmartPointer<lsDomain<T, D>> passedlsDomain, lsSmartPointer<lsVelocityField<T>> vel,
-                       double a = 1.0)
-      : levelSet(passedlsDomain), velocities(vel), neighborIterator(levelSet->getDomain(), 2),
-        alphaFactor(a) {}
+  lsLocalLaxFriedrichs(lsSmartPointer<lsDomain<T, D>> passedlsDomain,
+                       lsSmartPointer<lsVelocityField<T>> vel, double a = 1.0)
+      : levelSet(passedlsDomain), velocities(vel),
+        neighborIterator(levelSet->getDomain(), 2), alphaFactor(a) {}
 
   T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {
 
@@ -150,10 +150,12 @@ public:
     }
 
     // Get velocities
-    double scalarVelocity =
-        velocities->getScalarVelocity(coordArray, material, normalVector,  neighborIterator.getCenter().getPointId());
-    std::array<T, 3> vectorVelocity =
-        velocities->getVectorVelocity(coordArray, material, normalVector,  neighborIterator.getCenter().getPointId());
+    double scalarVelocity = velocities->getScalarVelocity(
+        coordArray, material, normalVector,
+        neighborIterator.getCenter().getPointId());
+    std::array<T, 3> vectorVelocity = velocities->getVectorVelocity(
+        coordArray, material, normalVector,
+        neighborIterator.getCenter().getPointId());
 
     // calculate hamiltonian
     T totalGrad = 0.;
@@ -198,8 +200,12 @@ public:
         }
         normalModulus = std::sqrt(normalModulus);
 
-        T scaVel = velocities->getScalarVelocity(coords, material, normal,  neighborIterator.getCenter().getPointId());
-        auto vecVel = velocities->getVectorVelocity(coords, material, normal,  neighborIterator.getCenter().getPointId());
+        T scaVel = velocities->getScalarVelocity(
+            coords, material, normal,
+            neighborIterator.getCenter().getPointId());
+        auto vecVel = velocities->getVectorVelocity(
+            coords, material, normal,
+            neighborIterator.getCenter().getPointId());
 
         for (unsigned dir = 0; dir < D; ++dir) {
           // normalise normal vector
