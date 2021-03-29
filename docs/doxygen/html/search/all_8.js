@@ -17,10 +17,10 @@ var searchData=
   ['intersect_92',['INTERSECT',['../lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8a24bdbe2bcaf533b7b3f0bd58bfa7f291',1,'lsBooleanOperation.hpp']]],
   ['invert_93',['INVERT',['../lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8aa2727ae72447eea06d4cc0ef67187280',1,'lsBooleanOperation.hpp']]],
   ['is_5ffinished_94',['is_finished',['../classlsFromSurfaceMesh_1_1box_1_1iterator.html#a2af42d0cf34305195a68a06f3967e36f',1,'lsFromSurfaceMesh::box::iterator']]],
-  ['isbaseof_95',['IsBaseOf',['../namespacelsConcepts.html#aee5684586e27c425abf23f5685e498a4',1,'lsConcepts']]],
-  ['isfloatingpoint_96',['IsFloatingPoint',['../namespacelsConcepts.html#a0851dd907d86048b78719f8399f895d4',1,'lsConcepts']]],
+  ['isbaseof_95',['IsBaseOf',['../namespacelsConcepts.html#a90d0ed377343607596475f042f71ae47',1,'lsConcepts']]],
+  ['isfloatingpoint_96',['IsFloatingPoint',['../namespacelsConcepts.html#ab6faf524889c50de47df4a7cbf15a028',1,'lsConcepts']]],
   ['isinside_97',['isInside',['../classlsGeometricAdvectDistribution.html#a100184ca8c5fd3e7b53f1328e5aa5b30',1,'lsGeometricAdvectDistribution::isInside()'],['../classlsSphereDistribution.html#a390706ad646864d88a8ff0346ecef343',1,'lsSphereDistribution::isInside()'],['../classlsBoxDistribution.html#a8b9ae364634afe64727c3ea20d7c3c94',1,'lsBoxDistribution::isInside()']]],
-  ['isnotsame_98',['IsNotSame',['../namespacelsConcepts.html#a481ff09f6f53f81fa914524e68f96e59',1,'lsConcepts']]],
-  ['issame_99',['IsSame',['../namespacelsConcepts.html#a2bb023b7d89833d76f08606c0b588aa4',1,'lsConcepts']]],
+  ['isnotsame_98',['IsNotSame',['../namespacelsConcepts.html#afe02d602414323eb189f366b54dd86bc',1,'lsConcepts']]],
+  ['issame_99',['IsSame',['../namespacelsConcepts.html#a32ef11830a21da629bcaec40843917b5',1,'lsConcepts']]],
   ['iterator_100',['iterator',['../classlsFromSurfaceMesh_1_1box_1_1iterator.html',1,'lsFromSurfaceMesh&lt; T, D &gt;::box::iterator'],['../classlsFromSurfaceMesh_1_1box_1_1iterator.html#a1938cb8af1a7ceb59d909a4d7a829560',1,'lsFromSurfaceMesh::box::iterator::iterator()']]]
 ];

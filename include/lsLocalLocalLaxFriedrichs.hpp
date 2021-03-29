@@ -14,6 +14,7 @@ namespace lsInternal {
 /// not as accurate.
 template <class T, int D, int order> class lsLocalLocalLaxFriedrichs {
   lsSmartPointer<lsDomain<T, D>> levelSet;
+  lsSmartPointer<lsVelocityField<T>> velocities;
   hrleSparseStarIterator<hrleDomain<T, D>> neighborIterator;
   const double alphaFactor;
 
@@ -26,14 +27,14 @@ public:
   }
 
   lsLocalLocalLaxFriedrichs(lsSmartPointer<lsDomain<T, D>> passedlsDomain,
+                            lsSmartPointer<lsVelocityField<T>> vel,
                             double a = 1.0)
-      : levelSet(passedlsDomain),
+      : levelSet(passedlsDomain), velocities(vel),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>>(
             levelSet->getDomain(), order)),
         alphaFactor(a) {}
 
-  T operator()(const hrleVectorType<hrleIndexType, D> &indices,
-               lsSmartPointer<lsVelocityField<T>> velocities, int material) {
+  T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {
 
     auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
@@ -125,10 +126,12 @@ public:
     }
 
     // Get velocities
-    double scalarVelocity =
-        velocities->getScalarVelocity(coordArray, material, normalVector);
-    std::array<T, 3> vectorVelocity =
-        velocities->getVectorVelocity(coordArray, material, normalVector);
+    double scalarVelocity = velocities->getScalarVelocity(
+        coordArray, material, normalVector,
+        neighborIterator.getCenter().getPointId());
+    std::array<T, 3> vectorVelocity = velocities->getVectorVelocity(
+        coordArray, material, normalVector,
+        neighborIterator.getCenter().getPointId());
 
     // calculate hamiltonian
     T totalGrad = 0.;

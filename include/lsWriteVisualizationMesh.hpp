@@ -602,8 +602,7 @@ public:
            j <
            materialMeshes[materialMeshes.size() - 1 - i]->GetNumberOfCells();
            ++j) {
-        materialNumberArray->InsertNextValue(
-            materialIds[i]);
+        materialNumberArray->InsertNextValue(materialIds[i]);
       }
       materialMeshes[materialMeshes.size() - 1 - i]->GetCellData()->SetScalars(
           materialNumberArray);

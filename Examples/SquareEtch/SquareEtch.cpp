@@ -24,7 +24,8 @@ class velocityField : public lsVelocityField<double> {
 public:
   double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
                            int material,
-                           const std::array<double, 3> &normalVector) {
+                           const std::array<double, 3> &normalVector,
+                           unsigned long /*pointId*/) {
     // if the surface of material 1 is facing upwards, etch it anisotropically
     if (material == 1 && normalVector[1] > 0.) {
       return -std::abs(normalVector[1]);
@@ -44,7 +45,8 @@ class analyticalField : public lsVelocityField<double> {
 public:
   double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
                            int material,
-                           const std::array<double, 3> &normalVector) {
+                           const std::array<double, 3> &normalVector,
+                           unsigned long /*pointId*/) {
     if (material != 1)
       return 0.;
 

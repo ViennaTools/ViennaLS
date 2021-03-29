@@ -1,9 +1,9 @@
 var lsConcepts_8hpp =
 [
     [ "AssignType", "lsConcepts_8hpp.html#acd3e2089a3dd4d5d808dadf5dda9676b", null ],
-    [ "IsBaseOf", "lsConcepts_8hpp.html#aee5684586e27c425abf23f5685e498a4", null ],
-    [ "IsFloatingPoint", "lsConcepts_8hpp.html#a0851dd907d86048b78719f8399f895d4", null ],
-    [ "IsNotSame", "lsConcepts_8hpp.html#a481ff09f6f53f81fa914524e68f96e59", null ],
-    [ "IsSame", "lsConcepts_8hpp.html#a2bb023b7d89833d76f08606c0b588aa4", null ],
+    [ "IsBaseOf", "lsConcepts_8hpp.html#a90d0ed377343607596475f042f71ae47", null ],
+    [ "IsFloatingPoint", "lsConcepts_8hpp.html#ab6faf524889c50de47df4a7cbf15a028", null ],
+    [ "IsNotSame", "lsConcepts_8hpp.html#afe02d602414323eb189f366b54dd86bc", null ],
+    [ "IsSame", "lsConcepts_8hpp.html#a32ef11830a21da629bcaec40843917b5", null ],
     [ "assignable", "lsConcepts_8hpp.html#a4549b1a6ade0c70ac801ebd5971fe489", null ]
 ];

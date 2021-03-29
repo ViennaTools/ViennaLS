@@ -1,6 +1,6 @@
 var classlsInternal_1_1lsLaxFriedrichs =
 [
-    [ "lsLaxFriedrichs", "classlsInternal_1_1lsLaxFriedrichs.html#a9c606c3ca0642f9b70ff583ef8bade01", null ],
-    [ "operator()", "classlsInternal_1_1lsLaxFriedrichs.html#ac68803ca32b5164540ac4ae7cfb21f0d", null ],
+    [ "lsLaxFriedrichs", "classlsInternal_1_1lsLaxFriedrichs.html#adba207405a3994cd2e6b3756d8ad1b51", null ],
+    [ "operator()", "classlsInternal_1_1lsLaxFriedrichs.html#aac3ab80f2383064aad4d9846f2dc777f", null ],
     [ "prepareLS", "classlsInternal_1_1lsLaxFriedrichs.html#a3af8d6594db73e41299a60c6ee6c9a2c", null ]
 ];

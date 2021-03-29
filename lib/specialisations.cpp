@@ -26,6 +26,8 @@
 #include <lsWriter.hpp>
 
 // now call the specialize macro to precompile them
+PRECOMPILE_SPECIALIZE_PRECISION(lsPointData)
+PRECOMPILE_SPECIALIZE_PRECISION(lsMesh)
 PRECOMPILE_SPECIALIZE(lsAdvect)
 PRECOMPILE_SPECIALIZE(lsBooleanOperation)
 PRECOMPILE_SPECIALIZE(lsCalculateNormalVectors)

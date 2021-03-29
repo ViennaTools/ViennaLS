@@ -16,6 +16,7 @@ namespace lsInternal {
 /// but more reliable for complex velocity fields.
 template <class T, int D, int order> class lsLocalLaxFriedrichs {
   lsSmartPointer<lsDomain<T, D>> levelSet;
+  lsSmartPointer<lsVelocityField<T>> velocities;
   hrleSparseBoxIterator<hrleDomain<T, D>> neighborIterator;
   const double alphaFactor;
 
@@ -48,12 +49,11 @@ public:
 
   // neighboriterator always needs order 2 for alpha calculation
   lsLocalLaxFriedrichs(lsSmartPointer<lsDomain<T, D>> passedlsDomain,
-                       double a = 1.0)
-      : levelSet(passedlsDomain), neighborIterator(levelSet->getDomain(), 2),
-        alphaFactor(a) {}
+                       lsSmartPointer<lsVelocityField<T>> vel, double a = 1.0)
+      : levelSet(passedlsDomain), velocities(vel),
+        neighborIterator(levelSet->getDomain(), 2), alphaFactor(a) {}
 
-  T operator()(const hrleVectorType<hrleIndexType, D> &indices,
-               lsSmartPointer<lsVelocityField<T>> velocities, int material) {
+  T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {
 
     auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
@@ -150,10 +150,12 @@ public:
     }
 
     // Get velocities
-    double scalarVelocity =
-        velocities->getScalarVelocity(coordArray, material, normalVector);
-    std::array<T, 3> vectorVelocity =
-        velocities->getVectorVelocity(coordArray, material, normalVector);
+    double scalarVelocity = velocities->getScalarVelocity(
+        coordArray, material, normalVector,
+        neighborIterator.getCenter().getPointId());
+    std::array<T, 3> vectorVelocity = velocities->getVectorVelocity(
+        coordArray, material, normalVector,
+        neighborIterator.getCenter().getPointId());
 
     // calculate hamiltonian
     T totalGrad = 0.;
@@ -198,8 +200,12 @@ public:
         }
         normalModulus = std::sqrt(normalModulus);
 
-        T scaVel = velocities->getScalarVelocity(coords, material, normal);
-        auto vecVel = velocities->getVectorVelocity(coords, material, normal);
+        T scaVel = velocities->getScalarVelocity(
+            coords, material, normal,
+            neighborIterator.getCenter().getPointId());
+        auto vecVel = velocities->getVectorVelocity(
+            coords, material, normal,
+            neighborIterator.getCenter().getPointId());
 
         for (unsigned dir = 0; dir < D; ++dir) {
           // normalise normal vector

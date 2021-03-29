@@ -15,6 +15,7 @@ namespace lsInternal {
 /// but lower accuracy for complex velocity fields.
 template <class T, int D, int order> class lsEnquistOsher {
   lsSmartPointer<lsDomain<T, D>> levelSet;
+  lsSmartPointer<lsVelocityField<T>> velocities;
   hrleSparseStarIterator<hrleDomain<T, D>> neighborIterator;
   bool calculateNormalVectors = true;
 
@@ -27,14 +28,13 @@ public:
   }
 
   lsEnquistOsher(lsSmartPointer<lsDomain<T, D>> passedlsDomain,
-                 bool calcNormal = true)
-      : levelSet(passedlsDomain),
+                 lsSmartPointer<lsVelocityField<T>> vel, bool calcNormal = true)
+      : levelSet(passedlsDomain), velocities(vel),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>>(
             levelSet->getDomain(), order)),
         calculateNormalVectors(calcNormal) {}
 
-  T operator()(const hrleVectorType<hrleIndexType, D> &indices,
-               lsSmartPointer<lsVelocityField<T>> velocities, int material) {
+  T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {
     auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
 
@@ -135,10 +135,12 @@ public:
     // convert coordinate to std array for interface
     std::array<T, 3> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
 
-    double scalarVelocity =
-        velocities->getScalarVelocity(coordArray, material, normalVector);
-    std::array<T, 3> vectorVelocity =
-        velocities->getVectorVelocity(coordArray, material, normalVector);
+    double scalarVelocity = velocities->getScalarVelocity(
+        coordArray, material, normalVector,
+        neighborIterator.getCenter().getPointId());
+    std::array<T, 3> vectorVelocity = velocities->getVectorVelocity(
+        coordArray, material, normalVector,
+        neighborIterator.getCenter().getPointId());
 
     if (scalarVelocity > 0) {
       vel_grad += std::sqrt(gradPosTotal) * scalarVelocity;

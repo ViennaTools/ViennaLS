@@ -1,5 +1,5 @@
 var classAirGapDeposition_1_1velocityField =
 [
-    [ "getScalarVelocity", "classAirGapDeposition_1_1velocityField.html#a55ae70d62a7226528458f7b3e4137119", null ],
-    [ "getVectorVelocity", "classAirGapDeposition_1_1velocityField.html#a582f06fb1eb28c8432f5fee54d980835", null ]
+    [ "getScalarVelocity", "classAirGapDeposition_1_1velocityField.html#a813cdcf72647f935971d8f464880bddc", null ],
+    [ "getVectorVelocity", "classAirGapDeposition_1_1velocityField.html#af34c19141117f6019e4d473de45347eb", null ]
 ];

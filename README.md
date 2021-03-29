@@ -26,7 +26,7 @@ Releases are tagged on the maser branch and available in the [releases section](
 
 ### System Requirements
 
-* C++ Compiler with OpenMP support
+* C++17 Compiler with OpenMP support
 
 * [ViennaHRLE](https://github.com/ViennaTools/viennahrle)
 

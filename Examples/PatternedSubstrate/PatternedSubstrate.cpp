@@ -28,7 +28,8 @@ class directionalEtch : public lsVelocityField<double> {
 public:
   double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
                            int material,
-                           const std::array<double, 3> &normalVector) {
+                           const std::array<double, 3> &normalVector,
+                           unsigned long /*pointId*/) {
     // etch directionally
     if (material > 0) {
       return (normalVector[2] > 0.) ? -normalVector[2] : 0;
@@ -40,7 +41,8 @@ public:
   std::array<double, 3>
   getVectorVelocity(const std::array<double, 3> & /*coordinate*/,
                     int /*material*/,
-                    const std::array<double, 3> & /*normalVector*/) {
+                    const std::array<double, 3> & /*normalVector*/,
+                    unsigned long /*pointId*/) {
     return std::array<double, 3>({});
   }
 };
@@ -50,7 +52,8 @@ class isotropicDepo : public lsVelocityField<double> {
 public:
   double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
                            int /*material*/,
-                           const std::array<double, 3> & /*normalVector*/) {
+                           const std::array<double, 3> & /*normalVector*/,
+                           unsigned long /*pointId*/) {
     // deposit isotropically everywhere
     return 1;
   }
@@ -58,7 +61,8 @@ public:
   std::array<double, 3>
   getVectorVelocity(const std::array<double, 3> & /*coordinate*/,
                     int /*material*/,
-                    const std::array<double, 3> & /*normalVector*/) {
+                    const std::array<double, 3> & /*normalVector*/,
+                    unsigned long /*pointId*/) {
     return std::array<double, 3>({});
   }
 };

@@ -166,7 +166,7 @@ public:
     }
   }
 
-  void append(const lsMesh<> &passedMesh) {
+  void append(const lsMesh<T> &passedMesh) {
     const unsigned numberOfOldNodes = nodes.size();
 
     // append new nodes
@@ -277,3 +277,6 @@ public:
 };
 
 #endif // LS_MESH_HPP
+
+// add all template specialisations for this class
+PRECOMPILE_PRECISION(lsMesh);
