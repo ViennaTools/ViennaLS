@@ -15,7 +15,7 @@
 */
 
 // implement own velocity field
-class velocityField {
+class velocityField : public lsVelocityField<double> {
   std::vector<double>& data_;
 public:
   velocityField(std::vector<double>& data) : data_(data) {}
@@ -84,7 +84,7 @@ int main() {
 
     levelSet->getDomain().segment();
 
-    lsAdvect<double, D, velocityField> advectionKernel;
+    lsAdvect<double, D> advectionKernel;
     advectionKernel.insertNextLevelSet(levelSet);
     advectionKernel.setVelocityField(velocities);
 

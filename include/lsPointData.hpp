@@ -250,4 +250,7 @@ public:
   }
 };
 
+// add all template specialisations for this class
+PRECOMPILE_PRECISION(lsPointData);
+
 #endif // LS_POINT_DATA_HPP

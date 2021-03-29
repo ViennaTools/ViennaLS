@@ -8,11 +8,8 @@ add_definitions(-DVIENNALS_VERSION=${PROJECT_VERSION})
 
 include(GNUInstallDirs)
 
-# needed because g++ optimizes away the T(constexpr)
-# workaround for passing references
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-  SET(CMAKE_CXX_STANDARD "17")
-endif()
+# c++17 for inlince constexpr variables
+SET(CMAKE_CXX_STANDARD "17")
 
 # set default build type
 SET(DEFAULT_BUILD_TYPE "Release")
