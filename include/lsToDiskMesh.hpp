@@ -1,6 +1,3 @@
-#ifndef LS_TO_DISK_MESH_HPP
-#define LS_TO_DISK_MESH_HPP
-
 #include <lsPreCompileMacros.hpp>
 
 #include <hrleSparseIterator.hpp>
@@ -9,6 +6,7 @@
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsMesh.hpp>
+#include <unordered_map>
 
 /// This class creates a mesh from the level set
 /// with all grid points with a level set value <= 0.5.
@@ -18,10 +16,13 @@
 /// This allows for a simple setup of disks for ray tracing.
 template <class T, int D, class N = T> class lsToDiskMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
+  typedef std::unordered_map<unsigned long, unsigned long> TranslatorTpye;
 
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
   lsSmartPointer<lsMesh<N>> mesh = nullptr;
+  lsSmartPointer<TranslatorType> translator = nullptr;
   T maxValue = 0.5;
+  bool buildTranslator = false;
 
 public:
   lsToDiskMesh() {}
@@ -30,11 +31,25 @@ public:
                lsSmartPointer<lsMesh<N>> passedMesh, T passedMaxValue = 0.5)
       : levelSet(passedLevelSet), mesh(passedMesh), maxValue(passedMaxValue) {}
 
+  lsToDiskMesh(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+               lsSmartPointer<lsMesh<N>> passedMesh,
+               lsSmartPointer<TranslatorType> passedTranslator,
+               T passedMaxValue = 0.5)
+      : levelSet(passedLevelSet), mesh(passedMesh),
+        translator(passedTranslator), maxValue(passedMaxValue) {
+    buildTranslator = true;
+  }
+
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
   }
 
   void setMesh(lsSmartPointer<lsMesh<N>> passedMesh) { mesh = passedMesh; }
+
+  void setTranslator(lsSmartPointer<TranslatorType> passedTranslator) {
+    translator = passedTranslator;
+    buildTranslator = true;
+  }
 
   void setMaxValue(const T passedMaxValue) { maxValue = passedMaxValue; }
 
@@ -76,6 +91,12 @@ public:
     values.reserve(normalVectors.size());
     normals.reserve(normalVectors.size());
 
+    const bool buildTranslatorFlag = buildTranslator;
+    unsigned long counter = 0;
+    if (buildTranslatorFlag) {
+      translator->reserve(normalVectors.size());
+    }
+
     for (hrleConstSparseIterator<hrleDomainType> it(levelSet->getDomain());
          !it.isFinished(); ++it) {
       if (!it.isDefined() || std::abs(it.getValue()) > maxValue) {
@@ -83,6 +104,10 @@ public:
       }
 
       unsigned pointId = it.getPointId();
+
+      if (buildTranslatorFlag) {
+        translator->insert({pointId, counter++});
+      }
 
       // insert vertex
       std::array<unsigned, 1> vertex;
