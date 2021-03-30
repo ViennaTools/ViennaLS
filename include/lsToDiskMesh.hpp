@@ -1,3 +1,6 @@
+#ifndef LS_TO_DISK_MESH_HPP
+#define LS_TO_DISK_MESH_HPP
+
 #include <lsPreCompileMacros.hpp>
 
 #include <hrleSparseIterator.hpp>
@@ -16,7 +19,7 @@
 /// This allows for a simple setup of disks for ray tracing.
 template <class T, int D, class N = T> class lsToDiskMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
-  typedef std::unordered_map<unsigned long, unsigned long> TranslatorTpye;
+  typedef std::unordered_map<unsigned long, unsigned long> TranslatorType;
 
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
   lsSmartPointer<lsMesh<N>> mesh = nullptr;
