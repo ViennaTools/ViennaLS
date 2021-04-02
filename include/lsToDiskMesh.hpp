@@ -19,11 +19,11 @@
 /// This allows for a simple setup of disks for ray tracing.
 template <class T, int D, class N = T> class lsToDiskMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
-  typedef std::unordered_map<unsigned long, unsigned long> TranslatorType;
+  typedef std::unordered_map<unsigned long, unsigned long> translatorType;
 
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
   lsSmartPointer<lsMesh<N>> mesh = nullptr;
-  lsSmartPointer<TranslatorType> translator = nullptr;
+  lsSmartPointer<translatorType> translator = nullptr;
   T maxValue = 0.5;
   bool buildTranslator = false;
 
@@ -36,7 +36,7 @@ public:
 
   lsToDiskMesh(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
                lsSmartPointer<lsMesh<N>> passedMesh,
-               lsSmartPointer<TranslatorType> passedTranslator,
+               lsSmartPointer<translatorType> passedTranslator,
                T passedMaxValue = 0.5)
       : levelSet(passedLevelSet), mesh(passedMesh),
         translator(passedTranslator), maxValue(passedMaxValue) {
@@ -49,7 +49,7 @@ public:
 
   void setMesh(lsSmartPointer<lsMesh<N>> passedMesh) { mesh = passedMesh; }
 
-  void setTranslator(lsSmartPointer<TranslatorType> passedTranslator) {
+  void setTranslator(lsSmartPointer<translatorType> passedTranslator) {
     translator = passedTranslator;
     buildTranslator = true;
   }
@@ -68,6 +68,11 @@ public:
           .addWarning("No mesh was passed to lsToDiskMesh.")
           .print();
       return;
+    }
+    if (buildTranslator && translator == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No translator was passed to lsToDiskMesh.")
+          .print();
     }
 
     mesh->clear();
@@ -108,6 +113,7 @@ public:
 
       unsigned pointId = it.getPointId();
 
+      // insert pointId-counter pair in translator
       if (buildTranslatorFlag) {
         translator->insert({pointId, counter++});
       }
