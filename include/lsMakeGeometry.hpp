@@ -39,7 +39,8 @@ template <class T, int D> class lsMakeGeometry {
   lsSmartPointer<lsCylinder<T, D>> cylinder;
   lsSmartPointer<lsPointCloud<T, D>> pointCloud;
   const double numericEps = 1e-9;
-  bool ignoreBoundaryConditions = false;
+  // bool ignoreBoundaryConditions = false;
+  std::array<bool, 3> ignoreBoundaryConditions{ false, false, false };
 
 public:
   lsMakeGeometry() {}
@@ -112,8 +113,22 @@ public:
     geometry = lsGeometryEnum::CUSTOM;
   }
 
+  /// Ignore boundary conditions, meaning the parts of the generated
+  /// geometry which are outside of the domain boundaries are ignored.
   void setIgnoreBoundaryConditions(bool passedIgnoreBoundaryConditions) {
-    ignoreBoundaryConditions = passedIgnoreBoundaryConditions;
+    for(unsigned i = 0; i < D; ++i) {
+      ignoreBoundaryConditions[i] = passedIgnoreBoundaryConditions;
+    }
+  }
+
+  /// Ignore boundary conditions, meaning the parts of the generated
+  /// geometry which are outside of the domain boundaries are ignored.
+  /// Set it for each direction separately.
+  template<std::size_t N>
+  void setIgnoreBoundaryConditions(std::array<bool, N> passedIgnoreBoundaryConditions) {
+    for(unsigned i = 0; i < D && i < N; ++i) {
+      ignoreBoundaryConditions[i] = passedIgnoreBoundaryConditions[i];
+    }
   }
 
   void apply() {
@@ -207,13 +222,11 @@ private:
 
     // Mirror indices correctly into domain, unless boundary conditions
     // are ignored
-    if (!ignoreBoundaryConditions) {
-      for (unsigned i = 0; i < pointData.size(); ++i) {
-        for (unsigned j = 0; j < D; ++j) {
-          if (grid.isBoundaryPeriodic(j)) {
-            pointData[i].first[j] =
-                grid.globalIndex2LocalIndex(j, pointData[i].first[j]);
-          }
+    for (unsigned i = 0; i < pointData.size(); ++i) {
+      for (unsigned j = 0; j < D; ++j) {
+        if (!ignoreBoundaryConditions[i] && grid.isBoundaryPeriodic(j)) {
+          pointData[i].first[j] =
+              grid.globalIndex2LocalIndex(j, pointData[i].first[j]);
         }
       }
     }
@@ -293,7 +306,7 @@ private:
     // tilted planes in lsFromSurfaceMesh later on.
     for (unsigned n = 0; n < D - 1; ++n) {
       minCoord[n] = gridDelta * (grid.getMinIndex((i + n + 1) % D));
-      maxCoord[n] = gridDelta * (grid.getMaxIndex((i + n + 1) % D));
+      maxCoord[n] = gridDelta * (grid.getMaxGridPoint((i + n + 1) % D)) + 1;
     }
 
     // set corner points
@@ -403,7 +416,9 @@ private:
     }
 
     // now convert mesh to levelset
-    lsFromSurfaceMesh<T, D>(levelSet, mesh, ignoreBoundaryConditions).apply();
+    lsFromSurfaceMesh<T, D> mesher(levelSet, mesh);
+    mesher.setRemoveBoundaryTriangles(ignoreBoundaryConditions);
+    mesher.apply();
   }
 
   void makeCylinder(lsSmartPointer<lsCylinder<T, D>> cylinder) {
@@ -481,7 +496,9 @@ private:
         .apply();
 
     // read mesh from surface
-    lsFromSurfaceMesh<T, D>(levelSet, mesh, ignoreBoundaryConditions).apply();
+    lsFromSurfaceMesh<T, D> mesher(levelSet, mesh);
+    mesher.setRemoveBoundaryTriangles(ignoreBoundaryConditions);
+    mesher.apply();
   }
 
   void makeCustom(lsSmartPointer<lsPointCloud<T, D>> pointCloud) {
@@ -490,7 +507,9 @@ private:
     lsConvexHull<T, D>(mesh, pointCloud).apply();
 
     // read mesh from surface
-    lsFromSurfaceMesh<T, D>(levelSet, mesh, ignoreBoundaryConditions).apply();
+    lsFromSurfaceMesh<T, D> mesher(levelSet, mesh);
+    mesher.setRemoveBoundaryTriangles(ignoreBoundaryConditions);
+    mesher.apply();
   }
 };
 

@@ -41,7 +41,6 @@ public:
     }
 
     std::ostringstream oss;
-    oss << "Report from lsCheck: " << std::endl;
 
     for (hrleConstSparseStarIterator<hrleDomain<T, D>> it(
              levelSet->getDomain());
@@ -97,7 +96,10 @@ public:
     }
 
     // output any faults as error
-    lsMessage::getInstance().addError(oss.str());
+    if(std::string s = oss.str(); !s.empty()) {
+      std::string message = "Report from lsCheck:\n" + s;
+      lsMessage::getInstance().addError(s);
+    }
   }
 };
 

@@ -96,7 +96,8 @@ template <class T, int D> class lsFromSurfaceMesh {
   lsSmartPointer<lsDomain<T, D>> levelSet =
       lsSmartPointer<lsDomain<T, D>>::New();
   lsSmartPointer<lsMesh<T>> mesh = lsSmartPointer<lsMesh<T>>::New();
-  bool removeBoundaryTriangles = true;
+  // bool removeBoundaryTriangles = true;
+  std::array<bool, 3> removeBoundaryTriangles{true, true, true};
   T boundaryEps = 1e-5;
   T distanceEps = 1e-4;
   T signEps = 1e-6;
@@ -216,7 +217,7 @@ public:
                     lsSmartPointer<lsMesh<T>> passedMesh,
                     bool passedRemoveBoundaryTriangles = true)
       : levelSet(passedLevelSet), mesh(passedMesh),
-        removeBoundaryTriangles(passedRemoveBoundaryTriangles) {}
+        removeBoundaryTriangles{passedRemoveBoundaryTriangles, passedRemoveBoundaryTriangles, passedRemoveBoundaryTriangles} {}
 
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
@@ -228,7 +229,17 @@ public:
   /// or whether boundary conditions should be applied correctly to such
   /// triangles(=false). Defaults to true.
   void setRemoveBoundaryTriangles(bool passedRemoveBoundaryTriangles) {
-    removeBoundaryTriangles = passedRemoveBoundaryTriangles;
+    removeBoundaryTriangles.fill(passedRemoveBoundaryTriangles);
+  }
+
+  /// Set whether all triangles outside of the domain should be ignored (=true)
+  /// or whether boundary conditions should be applied correctly to such
+  /// triangles(=false), for each direction. Defaults to true for all directions.
+  template<std::size_t N>
+  void setRemoveBoundaryTriangles(std::array<bool, N> passedRemoveBoundaryTriangles) {
+    for(unsigned i = 0; i < D && i < N; ++i) {
+      removeBoundaryTriangles[i] = passedRemoveBoundaryTriangles[i];
+    }
   }
 
   void apply() {
@@ -248,7 +259,7 @@ public:
     // caluclate which directions should apply removeBoundaryTriangles
     bool removeBoundaries[D];
     for (unsigned i = 0; i < D; ++i) {
-      if (!removeBoundaryTriangles &&
+      if (!removeBoundaryTriangles[i] &&
           levelSet->getGrid().isBoundaryPeriodic(i)) {
         removeBoundaries[i] = false;
       } else {

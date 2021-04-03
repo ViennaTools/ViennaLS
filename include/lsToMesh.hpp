@@ -18,8 +18,8 @@ template <class T, int D> class lsToMesh {
 
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
   lsSmartPointer<lsMesh<T>> mesh = nullptr;
-  bool onlyDefined;
-  bool onlyActive;
+  bool onlyDefined = true;
+  bool onlyActive = false;
   static constexpr long long maxDomainExtent = 1e6;
 
 public:
