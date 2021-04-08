@@ -15,7 +15,10 @@
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
 #include <lsTransformMesh.hpp>
+
+#ifndef NDEBUG
 #include <lsVTKWriter.hpp>
+#endif
 
 /// Create level sets describing basic geometric forms.
 template <class T, int D> class lsMakeGeometry {
@@ -305,8 +308,8 @@ private:
     // the correct boundary conditions will add stray points for
     // tilted planes in lsFromSurfaceMesh later on.
     for (unsigned n = 0; n < D - 1; ++n) {
-      minCoord[n] = gridDelta * (grid.getMinIndex((i + n + 1) % D));
-      maxCoord[n] = gridDelta * (grid.getMaxGridPoint((i + n + 1) % D)) + 1;
+      minCoord[n] = gridDelta * (grid.getMinIndex((i + n + 1) % D) - 1);
+      maxCoord[n] = gridDelta * (grid.getMaxIndex((i + n + 1) % D) + 1);
     }
 
     // set corner points
@@ -351,6 +354,12 @@ private:
         std::swap(triangle[0], triangle[1]);
       mesh->insertNextTriangle(triangle);
     }
+
+#ifndef NDEBUG
+    static unsigned planeCounter = 0;
+    lsVTKWriter<T>(mesh, "plane" + std::to_string(planeCounter++) + ".vtk").apply();
+#endif
+
     // now convert mesh to levelset
     lsFromSurfaceMesh<T, D>(levelSet, mesh).apply();
   }

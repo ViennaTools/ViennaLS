@@ -446,7 +446,11 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("setMesh", &lsFromSurfaceMesh<T, D>::setMesh,
            "Set the mesh to read from.")
       .def("setRemoveBoundaryTriangles",
-           &lsFromSurfaceMesh<T, D>::setRemoveBoundaryTriangles,
+           static_cast<void (lsFromSurfaceMesh<T, D>::*)(bool)>(&lsFromSurfaceMesh<T, D>::setRemoveBoundaryTriangles),
+           "Set whether to include mesh elements outside of the simulation "
+           "domain.")
+      .def("setRemoveBoundaryTriangles",
+           static_cast<void (lsFromSurfaceMesh<T, D>::*)(std::array<bool, 3>)>(&lsFromSurfaceMesh<T, D>::setRemoveBoundaryTriangles),
            "Set whether to include mesh elements outside of the simulation "
            "domain.")
       .def("apply", &lsFromSurfaceMesh<T, D>::apply,

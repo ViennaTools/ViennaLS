@@ -8,19 +8,23 @@ SET(CMAKE_CXX_STANDARD "17")
 ###############################################
 if(OMP_PARALLELIZE)
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp=libomp")
+    #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp=libomp")
   elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+    #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
     # disable-new-dtags sets RPATH which searches for libs recursively, instead
     # of RUNPATH which does not
     # needed for g++ to link correctly
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--disable-new-dtags")
   elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qopenmp")
+    #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qopenmp")
   elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp /wd\"4267\" /wd\"4244\"")
+    #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp /wd\"4267\" /wd\"4244\"")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd\"4267\" /wd\"4244\"")
   endif()
 endif()
+
+find_package(OpenMP REQUIRED)
+list(APPEND VIENNALS_LIBRARIES OpenMP::OpenMP_CXX)
 
 if(ViennaLS_COMMON_TARGET)
   SET(VIENNALS_INCLUDE_DIRS "${VIENNAHRLE_INCLUDE_DIRS}" "@VIENNALS_BUILD_INCLUDE_DIRS@")

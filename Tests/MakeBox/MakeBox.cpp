@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include <lsBooleanOperation.hpp>
+#include <lsTestAsserts.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsFromSurfaceMesh.hpp>
@@ -32,26 +33,28 @@ int main() {
 
   typename lsDomain<double, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D - 1; ++i) {
-    boundaryCons[i] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+    boundaryCons[i] = lsDomain<double, D>::BoundaryType::PERIODIC_BOUNDARY;
   }
   boundaryCons[D - 1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
   auto levelSet =
       lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
 
-  hrleVectorType<double, D> min(-10, -10, 0);
-  hrleVectorType<double, D> max(10, 10, 4);
+  hrleVectorType<double, D> min(bounds[0] + 10, bounds[2] + extent, 0);
+  hrleVectorType<double, D> max(bounds[1] - 10, bounds[3] + extent / 2., 4);
   lsMakeGeometry<double, D>(levelSet,
                             lsSmartPointer<lsBox<double, D>>::New(min, max))
       .apply();
 
-  std::cout << "Number of points: " << levelSet->getDomain().getNumberOfPoints()
-            << std::endl;
-  auto mesh = lsSmartPointer<lsMesh<>>::New();
-  lsToMesh<double, D>(levelSet, mesh).apply();
-  lsVTKWriter<double>(mesh, "boxLS.vtk").apply();
-  lsToSurfaceMesh<double, D>(levelSet, mesh).apply();
-  lsVTKWriter<double>(mesh, "box.vtk").apply();
+  LSTEST_ASSERT_VALID_LS(levelSet, double, D)
+
+  // std::cout << "Number of points: " << levelSet->getDomain().getNumberOfPoints()
+  //           << std::endl;
+  // auto mesh = lsSmartPointer<lsMesh<>>::New();
+  // lsToMesh<double, D>(levelSet, mesh).apply();
+  // lsVTKWriter<double>(mesh, "boxLS.vtk").apply();
+  // lsToSurfaceMesh<double, D>(levelSet, mesh).apply();
+  // lsVTKWriter<double>(mesh, "box.vtk").apply();
 
   return 0;
 }
