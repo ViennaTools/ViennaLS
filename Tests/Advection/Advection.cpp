@@ -55,17 +55,17 @@ int main() {
       sphere1, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
       .apply();
 
-  {
-    std::cout << "Extracting..." << std::endl;
-    auto mesh = lsSmartPointer<lsMesh<>>::New();
-    lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter<double>(mesh, "before.vtk").apply();
-  }
+  // {
+  //   std::cout << "Extracting..." << std::endl;
+  //   auto mesh = lsSmartPointer<lsMesh<>>::New();
+  //   lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
+  //   lsVTKWriter<double>(mesh, "before.vtk").apply();
+  // }
 
   // instantiate velocities
   auto velocities = lsSmartPointer<velocityField>::New();
 
-  std::cout << "Advecting" << std::endl;
+  // std::cout << "Advecting" << std::endl;
 
   lsAdvect<double, D> advectionKernel;
   advectionKernel.insertNextLevelSet(sphere1);
