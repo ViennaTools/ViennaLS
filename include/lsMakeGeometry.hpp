@@ -167,7 +167,7 @@ public:
   }
 
 private:
-  void makeSphere(hrleVectorType<T, D> origin, T radius, int width = 3) {
+  void makeSphere(hrleVectorType<T, D> origin, T radius) {
     if (levelSet == nullptr) {
       lsMessage::getInstance()
           .addWarning("No level set was passed to lsMakeGeometry.")
@@ -188,7 +188,8 @@ private:
       endIndex[i] = (origin[i] + radius) / gridDelta + 1;
     }
 
-    const T valueLimit = width * 0.5 * gridDelta;
+    const double initialWidth = 2.;
+    const T valueLimit = initialWidth * 0.5 * gridDelta + 1e-5;
     const T radius2 = radius * radius;
 
     pointDataType pointData;
@@ -211,7 +212,7 @@ private:
           distance = dirRadius;
       }
 
-      if (std::abs(distance) <= valueLimit + 1e-10) {
+      if (std::abs(distance) <= valueLimit) {
         pointData.push_back(std::make_pair(index, distance / gridDelta));
       }
       int dim = 0;
@@ -227,7 +228,7 @@ private:
     // are ignored
     for (unsigned i = 0; i < pointData.size(); ++i) {
       for (unsigned j = 0; j < D; ++j) {
-        if (!ignoreBoundaryConditions[i] && grid.isBoundaryPeriodic(j)) {
+        if (!ignoreBoundaryConditions[j] && grid.isBoundaryPeriodic(j)) {
           pointData[i].first[j] =
               grid.globalIndex2LocalIndex(j, pointData[i].first[j]);
         }
@@ -236,7 +237,7 @@ private:
 
     levelSet->insertPoints(pointData);
     levelSet->getDomain().segment();
-    levelSet->finalize(width);
+    levelSet->finalize(initialWidth);
   }
 
   /// Creates a plane containing the point origin, with

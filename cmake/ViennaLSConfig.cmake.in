@@ -7,6 +7,9 @@ SET(CMAKE_CXX_STANDARD "17")
 #  compiler dependent settings for ViennaLS
 ###############################################
 if(OMP_PARALLELIZE)
+  find_package(OpenMP REQUIRED)
+  list(APPEND VIENNALS_LIBRARIES OpenMP::OpenMP_CXX)
+
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp=libomp")
   elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -22,9 +25,6 @@ if(OMP_PARALLELIZE)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd\"4267\" /wd\"4244\"")
   endif()
 endif()
-
-find_package(OpenMP REQUIRED)
-list(APPEND VIENNALS_LIBRARIES OpenMP::OpenMP_CXX)
 
 if(ViennaLS_COMMON_TARGET)
   SET(VIENNALS_INCLUDE_DIRS "${VIENNAHRLE_INCLUDE_DIRS}" "@VIENNALS_BUILD_INCLUDE_DIRS@")

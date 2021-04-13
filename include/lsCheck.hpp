@@ -19,7 +19,7 @@ enum struct lsCheckStatusEnum : unsigned {
 template <class T, int D> class lsCheck {
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
   lsCheckStatusEnum status = lsCheckStatusEnum::UNCHECKED;
-  std::string errors = "";
+  std::string errors = "Level Set has not been checked yet!";
   bool printMessage = false;
 
   int GetStatusFromDistance(T value) {
@@ -129,6 +129,7 @@ public:
       }
     } else {
       status = lsCheckStatusEnum::SUCCESS;
+      errors = "";
     }
   }
 };
