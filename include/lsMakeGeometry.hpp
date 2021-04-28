@@ -14,6 +14,8 @@
 #include <lsGeometries.hpp>
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
+#include <lsTransformMesh.hpp>
+#include <lsVTKWriter.hpp>
 
 /// Create level sets describing basic geometric forms.
 template <class T, int D> class lsMakeGeometry {
@@ -25,115 +27,117 @@ template <class T, int D> class lsMakeGeometry {
     SPHERE = 0,
     PLANE = 1,
     BOX = 2,
-    CUSTOM = 3
+    CUSTOM = 3,
+    CYLINDER = 4
   };
 
-  lsDomain<T, D> *levelSet;
+  lsSmartPointer<lsDomain<T, D>> levelSet;
   lsGeometryEnum geometry = lsGeometryEnum::SPHERE;
-  const lsSphere<T, D> *sphere = nullptr;
-  const lsPlane<T, D> *plane = nullptr;
-  const lsBox<T, D> *box = nullptr;
-  lsPointCloud<T, D> *pointCloud = nullptr;
+  lsSmartPointer<lsSphere<T, D>> sphere;
+  lsSmartPointer<lsPlane<T, D>> plane;
+  lsSmartPointer<lsBox<T, D>> box;
+  lsSmartPointer<lsCylinder<T, D>> cylinder;
+  lsSmartPointer<lsPointCloud<T, D>> pointCloud;
   const double numericEps = 1e-9;
   bool ignoreBoundaryConditions = false;
 
 public:
   lsMakeGeometry() {}
 
-  lsMakeGeometry(lsDomain<T, D> &passedLevelSet) : levelSet(&passedLevelSet) {}
+  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> passedLevelSet)
+      : levelSet(passedLevelSet) {}
 
-  lsMakeGeometry(lsDomain<T, D> &passedLevelSet,
-                 const lsSphere<T, D> &passedSphere)
-      : levelSet(&passedLevelSet), sphere(&passedSphere) {
+  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+                 lsSmartPointer<lsSphere<T, D>> passedSphere)
+      : levelSet(passedLevelSet), sphere(passedSphere) {
     geometry = lsGeometryEnum::SPHERE;
   }
 
-  lsMakeGeometry(lsDomain<T, D> &passedLevelSet,
-                 const lsPlane<T, D> &passedPlane)
-      : levelSet(&passedLevelSet), plane(&passedPlane) {
+  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+                 lsSmartPointer<lsPlane<T, D>> passedPlane)
+      : levelSet(passedLevelSet), plane(passedPlane) {
     geometry = lsGeometryEnum::PLANE;
   }
 
-  lsMakeGeometry(lsDomain<T, D> &passedLevelSet, const lsBox<T, D> &passedBox)
-      : levelSet(&passedLevelSet), box(&passedBox) {
+  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+                 lsSmartPointer<lsBox<T, D>> passedBox)
+      : levelSet(passedLevelSet), box(passedBox) {
     geometry = lsGeometryEnum::BOX;
   }
 
-  lsMakeGeometry(lsDomain<T, D> &passedLevelSet,
-                 lsPointCloud<T, D> &passedPointCloud)
-      : levelSet(&passedLevelSet), pointCloud(&passedPointCloud) {
+  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+                 lsSmartPointer<lsCylinder<T, D>> passedCylinder)
+      : levelSet(passedLevelSet), cylinder(passedCylinder) {
+    geometry = lsGeometryEnum::CYLINDER;
+  }
+
+  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+                 lsSmartPointer<lsPointCloud<T, D>> passedPointCloud)
+      : levelSet(passedLevelSet), pointCloud(passedPointCloud) {
     geometry = lsGeometryEnum::CUSTOM;
   }
 
-  void setLevelSet(lsDomain<T, D> &passedlsDomain) {
-    levelSet = &passedlsDomain;
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+    levelSet = passedlsDomain;
   }
 
   /// Set sphere as geometry to be created in the level set.
-  void setGeometry(lsSphere<T, D> &passedSphere) {
-    sphere = &passedSphere;
+  void setGeometry(lsSmartPointer<lsSphere<T, D>> passedSphere) {
+    sphere = passedSphere;
     geometry = lsGeometryEnum::SPHERE;
   }
 
   /// Set a plane to be created in the level set.
-  void setGeometry(lsPlane<T, D> &passedPlane) {
-    plane = &passedPlane;
+  void setGeometry(lsSmartPointer<lsPlane<T, D>> passedPlane) {
+    plane = passedPlane;
     geometry = lsGeometryEnum::PLANE;
   }
 
   /// Set a box to be created in the level set.
-  void setGeometry(lsBox<T, D> &passedBox) {
-    box = &passedBox;
+  void setGeometry(lsSmartPointer<lsBox<T, D>> passedBox) {
+    box = passedBox;
     geometry = lsGeometryEnum::BOX;
+  }
+
+  /// Set a cylinder to be created in the level set.
+  void setGeometry(lsSmartPointer<lsCylinder<T, D>> passedCylinder) {
+    cylinder = passedCylinder;
+    geometry = lsGeometryEnum::CYLINDER;
   }
 
   /// Set a point cloud, which is used to create
   /// a geometry from its convex hull.
-  void setGeometry(lsPointCloud<T, D> &passedPointCloud) {
-    pointCloud = &passedPointCloud;
+  void setGeometry(lsSmartPointer<lsPointCloud<T, D>> passedPointCloud) {
+    pointCloud = passedPointCloud;
     geometry = lsGeometryEnum::CUSTOM;
   }
 
-  void setIgnoreBoundaryConditions(bool &passedIgnoreBoundaryConditions) {
+  void setIgnoreBoundaryConditions(bool passedIgnoreBoundaryConditions) {
     ignoreBoundaryConditions = passedIgnoreBoundaryConditions;
   }
 
   void apply() {
+    if (levelSet == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No level set was passed to lsMakeGeometry.")
+          .print();
+      return;
+    }
+
     switch (geometry) {
     case lsGeometryEnum::SPHERE:
-      if (sphere == nullptr) {
-        lsMessage::getInstance()
-            .addWarning("No lsSphere supplied to lsMakeGeometry. Not creating "
-                        "geometry.")
-            .print();
-      }
       makeSphere(sphere->origin, sphere->radius);
       break;
     case lsGeometryEnum::PLANE:
-      if (plane == nullptr) {
-        lsMessage::getInstance()
-            .addWarning(
-                "No lsPlane supplied to lsMakeGeometry. Not creating geometry.")
-            .print();
-      }
       makePlane(plane->origin, plane->normal);
       break;
     case lsGeometryEnum::BOX:
-      if (box == nullptr) {
-        lsMessage::getInstance()
-            .addWarning(
-                "No lsBox supplied to lsMakeGeometry. Not creating geometry.")
-            .print();
-      }
       makeBox(box->minCorner, box->maxCorner);
       break;
+    case lsGeometryEnum::CYLINDER:
+      makeCylinder(cylinder);
+      break;
     case lsGeometryEnum::CUSTOM:
-      if (pointCloud == nullptr) {
-        lsMessage::getInstance()
-            .addWarning("No lsPointCloud supplied to lsMakeGeometry. Not "
-                        "creating geometry.")
-            .print();
-      }
       makeCustom(pointCloud);
       break;
     default:
@@ -145,16 +149,10 @@ public:
   }
 
 private:
-  void makeSphere(hrleVectorType<T, D> origin, T radius, int width = 2) {
+  void makeSphere(hrleVectorType<T, D> origin, T radius, int width = 3) {
     if (levelSet == nullptr) {
       lsMessage::getInstance()
           .addWarning("No level set was passed to lsMakeGeometry.")
-          .print();
-      return;
-    }
-    if (sphere == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No sphere was passed to lsMakeGeometry.")
           .print();
       return;
     }
@@ -235,12 +233,6 @@ private:
           .print();
       return;
     }
-    if (plane == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No plane was passed to lsMakeGeometry.")
-          .print();
-      return;
-    }
 
     auto &grid = levelSet->getGrid();
     hrleCoordType gridDelta = grid.getGridDelta();
@@ -285,7 +277,7 @@ private:
 
     // find minimum and maximum points in infinite direction
     // there are 2*(D-1) points in the corners of the simulation domain
-    std::vector<std::array<double, 3>> cornerPoints;
+    std::vector<std::array<T, 3>> cornerPoints;
     cornerPoints.resize(2 * (D - 1));
 
     // cyclic permutations
@@ -319,7 +311,7 @@ private:
     }
 
     // now find i coordinate of points
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh<T>>::New();
 
     for (unsigned n = 0; n < cornerPoints.size(); ++n) {
       double numerator = (cornerPoints[n][j] - origin[j]) * normal[j];
@@ -328,26 +320,26 @@ private:
       else
         cornerPoints[n][2] = 0.;
       cornerPoints[n][i] = origin[i] - numerator / normal[i];
-      mesh.insertNextNode(cornerPoints[n]);
+      mesh->insertNextNode(cornerPoints[n]);
     }
 
     if (D == 2) {
       std::array<unsigned, 2> line = {0, 1};
       if (normal[i] < 0.)
         std::swap(line[0], line[1]);
-      mesh.insertNextLine(line);
+      mesh->insertNextLine(line);
     } else {
       std::array<unsigned, 3> triangle = {0, 1, 2};
       if (normal[i] < 0.)
         std::swap(triangle[0], triangle[1]);
-      mesh.insertNextTriangle(triangle);
+      mesh->insertNextTriangle(triangle);
       triangle = {0, 3, 1};
       if (normal[i] < 0.)
         std::swap(triangle[0], triangle[1]);
-      mesh.insertNextTriangle(triangle);
+      mesh->insertNextTriangle(triangle);
     }
     // now convert mesh to levelset
-    lsFromSurfaceMesh<T, D>(*levelSet, mesh).apply();
+    lsFromSurfaceMesh<T, D>(levelSet, mesh).apply();
   }
 
   // This function creates a box starting in minCorner spanning to maxCorner
@@ -358,15 +350,9 @@ private:
           .print();
       return;
     }
-    if (box == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No box was passed to lsMakeGeometry.")
-          .print();
-      return;
-    }
 
     // draw all triangles for the surface and then import from the mesh
-    std::vector<std::array<double, 3>> corners;
+    std::vector<std::array<T, 3>> corners;
     corners.resize(std::pow(2, D), {0, 0, 0});
 
     // first corner is the minCorner
@@ -399,34 +385,112 @@ private:
     }
 
     // now add all corners to mesh
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh<T>>::New();
     for (unsigned i = 0; i < corners.size(); ++i) {
-      mesh.insertNextNode(corners[i]);
+      mesh->insertNextNode(corners[i]);
     }
 
     if (D == 2) {
       std::array<unsigned, 2> lines[4] = {{0, 2}, {2, 3}, {3, 1}, {1, 0}};
       for (unsigned i = 0; i < 4; ++i)
-        mesh.insertNextLine(lines[i]);
+        mesh->insertNextLine(lines[i]);
     } else {
       std::array<unsigned, 3> triangles[12] = {
           {0, 3, 1}, {0, 2, 3}, {0, 1, 5}, {0, 5, 4}, {0, 4, 2}, {4, 6, 2},
           {7, 6, 4}, {7, 4, 5}, {7, 2, 6}, {7, 3, 2}, {1, 3, 5}, {3, 7, 5}};
       for (unsigned i = 0; i < 12; ++i)
-        mesh.insertNextTriangle(triangles[i]);
+        mesh->insertNextTriangle(triangles[i]);
     }
 
     // now convert mesh to levelset
-    lsFromSurfaceMesh<T, D>(*levelSet, mesh, ignoreBoundaryConditions).apply();
+    lsFromSurfaceMesh<T, D>(levelSet, mesh, ignoreBoundaryConditions).apply();
   }
 
-  void makeCustom(lsPointCloud<T, D> *pointCloud) {
-    // create mesh from point cloud
-    lsMesh mesh;
-    lsConvexHull<T, D>(mesh, *pointCloud).apply();
+  void makeCylinder(lsSmartPointer<lsCylinder<T, D>> cylinder) {
+    if (D != 3) {
+      lsMessage::getInstance()
+          .addWarning("lsMakeGeometry: Cylinder can only be created in 3D!")
+          .print();
+      return;
+    }
+    // generate the points on the edges of the cylinders and then
+    // run the convex hull algorithm to create the cylinder
+    // cylinder axis will be (0,0,1)
+    auto gridDelta = levelSet->getGrid().getGridDelta();
+
+    auto points = lsSmartPointer<lsPointCloud<T, D>>::New();
+    unsigned numPoints = std::ceil(2 * M_PI * cylinder->radius / gridDelta);
+    double smallAngle = 2.0 * M_PI / double(numPoints);
+
+    // insert first point, which is asymmetrical
+    {
+      std::array<T, D> point;
+      point[0] = cylinder->radius * std::cos(0.);
+      point[1] = cylinder->radius * std::sin(0.);
+      point[2] = 0.0;
+      points->insertNextPoint(point);
+      point[2] = cylinder->height;
+      points->insertNextPoint(point);
+    }
+    // insert all other points
+    constexpr double limit = M_PI - 1e-6;
+    for (double angle = smallAngle; angle < limit; angle += smallAngle) {
+      std::array<T, D> posPoint;
+      std::array<T, D> negPoint;
+      posPoint[0] = cylinder->radius * std::cos(angle);
+      posPoint[1] = cylinder->radius * std::sin(angle);
+      posPoint[2] = 0.0;
+      negPoint = posPoint;
+      negPoint[1] = -negPoint[1];
+      // insert points at base
+      points->insertNextPoint(posPoint);
+      points->insertNextPoint(negPoint);
+      // insert points at top
+      posPoint[2] = cylinder->height;
+      negPoint[2] = cylinder->height;
+      points->insertNextPoint(posPoint);
+      points->insertNextPoint(negPoint);
+    }
+
+    auto mesh = lsSmartPointer<lsMesh<T>>::New();
+    lsConvexHull<T, D>(mesh, points).apply();
+
+    // rotate mesh
+    // normalise axis vector
+    T unit =
+        std::sqrt(DotProduct(cylinder->axisDirection, cylinder->axisDirection));
+    hrleVectorType<double, 3> cylinderAxis;
+    for (unsigned i = 0; i < 3; ++i) {
+      cylinderAxis[i] = cylinder->axisDirection[i] / unit;
+    }
+    // get rotation axis via cross product of (0,0,1) and axis of cylinder
+    hrleVectorType<double, 3> rotAxis(-cylinderAxis[1], cylinderAxis[0], 0.0);
+    // angle is acos of dot product
+    T rotationAngle = std::acos(cylinderAxis[2]);
+
+    // rotate mesh
+    lsTransformMesh<T>(mesh, lsTransformEnum::ROTATION, rotAxis, rotationAngle)
+        .apply();
+
+    // translate mesh
+    hrleVectorType<double, 3> translationVector;
+    for (unsigned i = 0; i < 3; ++i) {
+      translationVector[i] = cylinder->origin[i];
+    }
+    lsTransformMesh<T>(mesh, lsTransformEnum::TRANSLATION, translationVector)
+        .apply();
 
     // read mesh from surface
-    lsFromSurfaceMesh<T, D>(*levelSet, mesh, ignoreBoundaryConditions).apply();
+    lsFromSurfaceMesh<T, D>(levelSet, mesh, ignoreBoundaryConditions).apply();
+  }
+
+  void makeCustom(lsSmartPointer<lsPointCloud<T, D>> pointCloud) {
+    // create mesh from point cloud
+    auto mesh = lsSmartPointer<lsMesh<T>>::New();
+    lsConvexHull<T, D>(mesh, pointCloud).apply();
+
+    // read mesh from surface
+    lsFromSurfaceMesh<T, D>(levelSet, mesh, ignoreBoundaryConditions).apply();
   }
 };
 

@@ -11,16 +11,30 @@
 /// If it describes a 2D mesh, the third dimension is set to 0.
 /// Vertices, Lines, Triangles, Tetras & Hexas are supported as geometric
 /// elements.
-class lsMesh : public lsPointData {
+template <class T = double> class lsMesh : public lsPointData<T> {
 public:
-  std::vector<std::array<double, 3>> nodes;
+  std::vector<std::array<T, 3>> nodes;
   std::vector<std::array<unsigned, 1>> vertices;
   std::vector<std::array<unsigned, 2>> lines;
   std::vector<std::array<unsigned, 3>> triangles;
   std::vector<std::array<unsigned, 4>> tetras;
   std::vector<std::array<unsigned, 8>> hexas;
+  std::array<T, 3> minimumExtent;
+  std::array<T, 3> maximumExtent;
 
 private:
+  // iterator typedef
+  using VectorIt = typename lsPointData<T>::VectorDataType::iterator;
+  // find function to avoid including the whole algorithm header
+  VectorIt find(VectorIt first, VectorIt last, const std::array<T, 3> &value) {
+    for (; first != last; ++first) {
+      if (*first == value) {
+        return first;
+      }
+    }
+    return last;
+  }
+
   // helper function for duplicate removal
   template <class ElementType>
   void replaceNode(ElementType &elements, std::pair<unsigned, unsigned> node) {
@@ -34,9 +48,9 @@ private:
   };
 
 public:
-  const std::vector<std::array<double, 3>> &getNodes() const { return nodes; }
+  const std::vector<std::array<T, 3>> &getNodes() const { return nodes; }
 
-  std::vector<std::array<double, 3>> &getNodes() { return nodes; }
+  std::vector<std::array<T, 3>> &getNodes() { return nodes; }
 
   template <int D, typename std::enable_if<D == 1, int>::type = 0>
   std::vector<std::array<unsigned, D>> &getElements() {
@@ -63,63 +77,63 @@ public:
     return hexas;
   }
 
-  unsigned insertNextNode(std::array<double, 3> &node) {
+  unsigned insertNextNode(const std::array<T, 3> &node) {
     nodes.push_back(node);
     return nodes.size() - 1;
   }
 
-  unsigned insertNextVertex(std::array<unsigned, 1> &vertex) {
+  unsigned insertNextVertex(const std::array<unsigned, 1> &vertex) {
     vertices.push_back(vertex);
     return vertices.size() - 1;
   }
 
-  unsigned insertNextLine(std::array<unsigned, 2> &line) {
+  unsigned insertNextLine(const std::array<unsigned, 2> &line) {
     lines.push_back(line);
     return lines.size() - 1;
   }
 
-  unsigned insertNextTriangle(std::array<unsigned, 3> &triangle) {
+  unsigned insertNextTriangle(const std::array<unsigned, 3> &triangle) {
     triangles.push_back(triangle);
     return triangles.size() - 1;
   }
 
-  unsigned insertNextTetra(std::array<unsigned, 4> &tetra) {
+  unsigned insertNextTetra(const std::array<unsigned, 4> &tetra) {
     tetras.push_back(tetra);
     return tetras.size() - 1;
   }
 
-  unsigned insertNextHexa(std::array<unsigned, 8> &hexa) {
+  unsigned insertNextHexa(const std::array<unsigned, 8> &hexa) {
     hexas.push_back(hexa);
     return hexas.size();
   }
 
-  unsigned insertNextElement(std::array<unsigned, 1> &vertex) {
+  unsigned insertNextElement(const std::array<unsigned, 1> &vertex) {
     vertices.push_back(vertex);
     return vertices.size() - 1;
   }
 
-  unsigned insertNextElement(std::array<unsigned, 2> &line) {
+  unsigned insertNextElement(const std::array<unsigned, 2> &line) {
     lines.push_back(line);
     return lines.size() - 1;
   }
 
-  unsigned insertNextElement(std::array<unsigned, 3> &triangle) {
+  unsigned insertNextElement(const std::array<unsigned, 3> &triangle) {
     triangles.push_back(triangle);
     return triangles.size() - 1;
   }
 
-  unsigned insertNextElement(std::array<unsigned, 4> &tetra) {
+  unsigned insertNextElement(const std::array<unsigned, 4> &tetra) {
     tetras.push_back(tetra);
     return tetras.size() - 1;
   }
 
-  unsigned insertNextElement(std::array<unsigned, 8> &hexa) {
+  unsigned insertNextElement(const std::array<unsigned, 8> &hexa) {
     hexas.push_back(hexa);
     return hexas.size();
   }
 
   void removeDuplicateNodes() {
-    std::vector<std::array<double, 3>> newNodes;
+    std::vector<std::array<T, 3>> newNodes;
     // can just push first point since it cannot be duplicate
     newNodes.push_back(nodes[0]);
     // now check for duplicates
@@ -127,7 +141,7 @@ public:
     std::vector<std::pair<unsigned, unsigned>> duplicates;
     bool adjusted = false;
     for (unsigned i = 1; i < nodes.size(); ++i) {
-      auto it = std::find(newNodes.begin(), newNodes.end(), nodes[i]);
+      auto it = find(newNodes.begin(), newNodes.end(), nodes[i]);
       if (it != newNodes.end()) {
         adjusted = true;
         // if duplicate point, save it to be replaced
@@ -152,7 +166,7 @@ public:
     }
   }
 
-  void append(const lsMesh &passedMesh) {
+  void append(const lsMesh<T> &passedMesh) {
     const unsigned numberOfOldNodes = nodes.size();
 
     // append new nodes
@@ -208,14 +222,14 @@ public:
     // Append data
     // TODO need to adjust lsVTKWriter to deal with different data correctly
     // currently this only works for vertex only meshes
-    lsPointData::append(passedMesh);
+    lsPointData<T>::append(passedMesh);
 
-    // if(lsPointData::scalarData.size() < nodes.size())
-    for (unsigned i = 0; i < lsPointData::getScalarDataSize(); ++i) {
-      lsPointData::getScalarData(i)->resize(vertices.size());
+    // if(lsPointData<T>::scalarData.size() < nodes.size())
+    for (unsigned i = 0; i < lsPointData<T>::getScalarDataSize(); ++i) {
+      lsPointData<T>::getScalarData(i)->resize(vertices.size());
     }
-    for (unsigned i = 0; i < lsPointData::getVectorDataSize(); ++i) {
-      lsPointData::getVectorData(i)->resize(vertices.size());
+    for (unsigned i = 0; i < lsPointData<T>::getVectorDataSize(); ++i) {
+      lsPointData<T>::getVectorData(i)->resize(vertices.size());
     }
   }
 
@@ -226,7 +240,7 @@ public:
     triangles.clear();
     tetras.clear();
     hexas.clear();
-    lsPointData::clear();
+    lsPointData<T>::clear();
   }
 
   void print() {
@@ -243,21 +257,26 @@ public:
     if (hexas.size() > 0)
       std::cout << "Number of Hexas: " << hexas.size() << std::endl;
     // data
-    if (getScalarDataSize() > 0) {
+    if (lsPointData<T>::getScalarDataSize() > 0) {
       std::cout << "Scalar data:" << std::endl;
-      for (unsigned i = 0; i < getScalarDataSize(); ++i) {
-        std::cout << "  \"" << getScalarDataLabel(i) << "\" of size "
-                  << getScalarData(i)->size() << std::endl;
+      for (unsigned i = 0; i < lsPointData<T>::getScalarDataSize(); ++i) {
+        std::cout << "  \"" << lsPointData<T>::getScalarDataLabel(i)
+                  << "\" of size " << lsPointData<T>::getScalarData(i)->size()
+                  << std::endl;
       }
     }
-    if (getVectorDataSize() > 0) {
+    if (lsPointData<T>::getVectorDataSize() > 0) {
       std::cout << "Vector data:" << std::endl;
-      for (unsigned i = 0; i < getVectorDataSize(); ++i) {
-        std::cout << "  \"" << getVectorDataLabel(i) << "\" of size "
-                  << getVectorData(i)->size() << std::endl;
+      for (unsigned i = 0; i < lsPointData<T>::getVectorDataSize(); ++i) {
+        std::cout << "  \"" << lsPointData<T>::getVectorDataLabel(i)
+                  << "\" of size " << lsPointData<T>::getVectorData(i)->size()
+                  << std::endl;
       }
     }
   }
 };
 
 #endif // LS_MESH_HPP
+
+// add all template specialisations for this class
+PRECOMPILE_PRECISION(lsMesh);

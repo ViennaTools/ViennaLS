@@ -27,14 +27,15 @@ var NAVTREE =
     [ "Releases", "index.html#autotoc_md4", null ],
     [ "Building", "index.html#autotoc_md5", [
       [ "Supported Operating Systems", "index.html#autotoc_md6", null ],
-      [ "System Requirements", "index.html#autotoc_md7", null ],
-      [ "Installing (with dependencies already installed)", "index.html#autotoc_md8", null ]
+      [ "System Requirements", "index.html#autotoc_md7", null ]
     ] ],
-    [ "Using ViennaLS in your project", "index.html#autotoc_md9", null ],
+    [ "Using ViennaLS in your project", "index.html#autotoc_md8", null ],
+    [ "Installing (with dependencies already installed)", "index.html#autotoc_md9", null ],
     [ "Using the viennaLS python module", "index.html#autotoc_md10", [
-      [ "Integration in CMake projects", "index.html#autotoc_md11", null ],
-      [ "Building examples", "index.html#autotoc_md12", null ],
-      [ "Building the python module", "index.html#autotoc_md13", null ],
+      [ "Building the python module", "index.html#autotoc_md11", null ]
+    ] ],
+    [ "Integration in CMake projects", "index.html#autotoc_md12", [
+      [ "Building examples", "index.html#autotoc_md13", null ],
       [ "Shared libraries", "index.html#autotoc_md14", null ]
     ] ],
     [ "Contributing", "index.html#autotoc_md15", null ],
@@ -46,6 +47,7 @@ var NAVTREE =
       [ "Namespace Members", "namespacemembers.html", [
         [ "All", "namespacemembers.html", null ],
         [ "Variables", "namespacemembers_vars.html", null ],
+        [ "Typedefs", "namespacemembers_type.html", null ],
         [ "Enumerations", "namespacemembers_enum.html", null ]
       ] ]
     ] ],
@@ -65,6 +67,7 @@ var NAVTREE =
       [ "File Members", "globals.html", [
         [ "All", "globals.html", null ],
         [ "Functions", "globals_func.html", null ],
+        [ "Typedefs", "globals_type.html", null ],
         [ "Enumerations", "globals_enum.html", null ],
         [ "Macros", "globals_defs.html", null ]
       ] ]
@@ -76,8 +79,8 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "AirGapDeposition_8cpp-example.html",
-"classlsInternal_1_1lsMarchingCubes.html#a95de92b9ed6c7529af292793c5c62115",
-"functions_func_w.html"
+"classlsInternal_1_1lsGraph.html#aa641503c10309eed575c0a0a354f65ff",
+"classlsWriteVisualizationMesh.html#adf13ee153843fdc4336a2209a0167ad6"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

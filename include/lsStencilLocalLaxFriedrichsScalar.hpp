@@ -17,7 +17,8 @@ namespace lsInternal {
 /// see Toifl et al., 2019. ISBN: 978-1-7281-0938-1;
 /// DOI: 10.1109/SISPAD.2019.8870443
 template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
-  lsDomain<T, D> &levelSet;
+  lsSmartPointer<lsDomain<T, D>> levelSet;
+  lsSmartPointer<lsVelocityField<T>> velocities;
   const DifferentiationSchemeEnum finiteDifferenceScheme =
       DifferentiationSchemeEnum::FIRST_ORDER;
   hrleSparseBoxIterator<hrleDomain<T, D>> neighborIterator;
@@ -46,7 +47,7 @@ template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
         values.push_back(neighborIterator.getNeighbor(index).getValue());
       }
       normal[i] = lsFiniteDifferences<T>::calculateGradient(
-          &(values[0]), levelSet.getGrid().getGridDelta());
+          &(values[0]), levelSet->getGrid().getGridDelta());
       modulus += normal[i] * normal[i];
     }
     modulus = std::sqrt(modulus);
@@ -76,13 +77,13 @@ template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
         gradient[i] =
             lsFiniteDifferences<T, DifferentiationSchemeEnum::FIRST_ORDER>::
                 calculateGradient(&(values[0]),
-                                  levelSet.getGrid().getGridDelta());
+                                  levelSet->getGrid().getGridDelta());
       } else if (finiteDifferenceScheme == DifferentiationSchemeEnum::WENO3) {
         gradient[i] = lsFiniteDifferences<T, DifferentiationSchemeEnum::WENO3>::
-            calculateGradient(&(values[0]), levelSet.getGrid().getGridDelta());
+            calculateGradient(&(values[0]), levelSet->getGrid().getGridDelta());
       } else if (finiteDifferenceScheme == DifferentiationSchemeEnum::WENO5)
         gradient[i] = lsFiniteDifferences<T, DifferentiationSchemeEnum::WENO5>::
-            calculateGradient(&(values[0]), levelSet.getGrid().getGridDelta());
+            calculateGradient(&(values[0]), levelSet->getGrid().getGridDelta());
     }
 
     return gradient;
@@ -107,15 +108,15 @@ template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
         gradient[i] =
             lsFiniteDifferences<T, DifferentiationSchemeEnum::FIRST_ORDER>::
                 calculateGradientDiff(&(values[0]),
-                                      levelSet.getGrid().getGridDelta());
+                                      levelSet->getGrid().getGridDelta());
       } else if (finiteDifferenceScheme == DifferentiationSchemeEnum::WENO3) {
         gradient[i] = lsFiniteDifferences<T, DifferentiationSchemeEnum::WENO3>::
             calculateGradientDiff(&(values[0]),
-                                  levelSet.getGrid().getGridDelta());
+                                  levelSet->getGrid().getGridDelta());
       } else if (finiteDifferenceScheme == DifferentiationSchemeEnum::WENO5)
         gradient[i] = lsFiniteDifferences<T, DifferentiationSchemeEnum::WENO5>::
             calculateGradientDiff(&(values[0]),
-                                  levelSet.getGrid().getGridDelta());
+                                  levelSet->getGrid().getGridDelta());
     }
 
     return gradient;
@@ -124,18 +125,20 @@ template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
 public:
   const hrleVectorType<T, 3> &getFinalAlphas() const { return finalAlphas; }
 
-  static void prepareLS(lsDomain<T, D> &passedlsDomain) {
+  static void prepareLS(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     // Expansion of sparse field must depend on spatial derivative order
     // AND  slf stencil order! --> currently assume scheme = 3rd order always
     lsExpand<T, D>(passedlsDomain, 2 * (order + 1) + 4).apply();
   }
 
   lsStencilLocalLaxFriedrichsScalar(
-      lsDomain<T, D> &passedlsDomain, double a = 1.0,
+      lsSmartPointer<lsDomain<T, D>> passedlsDomain,
+      lsSmartPointer<lsVelocityField<T>> vel, double a = 1.0,
       DifferentiationSchemeEnum scheme = DifferentiationSchemeEnum::FIRST_ORDER)
-      : levelSet(passedlsDomain), finiteDifferenceScheme(scheme),
+      : levelSet(passedlsDomain), velocities(vel),
+        finiteDifferenceScheme(scheme),
         neighborIterator(hrleSparseBoxIterator<hrleDomain<T, D>>(
-            levelSet.getDomain(), static_cast<unsigned>(scheme) + 1 + order)),
+            levelSet->getDomain(), static_cast<unsigned>(scheme) + 1 + order)),
         alphaFactor(a), numStencilPoints(std::pow(2 * order + 1, D)) {
 
     for (int i = 0; i < 3; ++i) {
@@ -143,9 +146,8 @@ public:
     }
   }
 
-  T operator()(const hrleVectorType<hrleIndexType, D> &indices,
-               lsVelocityField<T> *velocities, int material) {
-    auto &grid = levelSet.getGrid();
+  T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {
+    auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
 
     hrleVectorType<T, 3> coordinate(0., 0., 0.);
@@ -182,10 +184,12 @@ public:
       normalVector[i] /= denominator;
     }
 
-    double scalarVelocity =
-        velocities->getScalarVelocity(coordArray, material, normalVector);
-    std::array<T, 3> vectorVelocity =
-        velocities->getVectorVelocity(coordArray, material, normalVector);
+    double scalarVelocity = velocities->getScalarVelocity(
+        coordArray, material, normalVector,
+        neighborIterator.getCenter().getPointId());
+    std::array<T, 3> vectorVelocity = velocities->getVectorVelocity(
+        coordArray, material, normalVector,
+        neighborIterator.getCenter().getPointId());
 
     // now calculate scalar product of normal vector with velocity
     for (unsigned i = 0; i < D; ++i) {
@@ -231,10 +235,12 @@ public:
         for (unsigned dir = 0; dir < D; ++dir)
           localCoordArray[dir] += currentIndex[dir];
 
-        T localScalarVelocity =
-            velocities->getScalarVelocity(localCoordArray, material, normal_p);
-        std::array<T, 3> localVectorVelocity =
-            velocities->getVectorVelocity(localCoordArray, material, normal_p);
+        T localScalarVelocity = velocities->getScalarVelocity(
+            localCoordArray, material, normal_p,
+            neighborIterator.getCenter().getPointId());
+        std::array<T, 3> localVectorVelocity = velocities->getVectorVelocity(
+            localCoordArray, material, normal_p,
+            neighborIterator.getCenter().getPointId());
         // now calculate scalar product of normal vector with velocity
         for (unsigned i = 0; i < D; ++i) {
           localScalarVelocity += localVectorVelocity[i] * normal[i];
@@ -247,10 +253,12 @@ public:
           normal_p[k] -= DN; // p=previous
           normal_n[k] += DN; // n==next
 
-          T vp = velocities->getScalarVelocity(localCoordArray, material,
-                                               normal_p);
-          T vn = velocities->getScalarVelocity(localCoordArray, material,
-                                               normal_n);
+          T vp = velocities->getScalarVelocity(
+              localCoordArray, material, normal_p,
+              neighborIterator.getCenter().getPointId());
+          T vn = velocities->getScalarVelocity(
+              localCoordArray, material, normal_n,
+              neighborIterator.getCenter().getPointId());
           // central difference
           velocityDelta[k] = (vn - vp) / (2.0 * DN);
 

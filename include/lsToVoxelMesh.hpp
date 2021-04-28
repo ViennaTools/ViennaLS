@@ -16,8 +16,8 @@
 template <class T, int D> class lsToVoxelMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
 
-  std::vector<const lsDomain<T, D> *> levelSets;
-  lsMesh *mesh = nullptr;
+  std::vector<lsSmartPointer<lsDomain<T, D>>> levelSets;
+  lsSmartPointer<lsMesh<T>> mesh = nullptr;
   hrleVectorType<hrleIndexType, D> minIndex, maxIndex;
 
   void calculateBounds() {
@@ -44,16 +44,18 @@ template <class T, int D> class lsToVoxelMesh {
 public:
   lsToVoxelMesh() {}
 
-  lsToVoxelMesh(lsMesh &passedMesh) : mesh(&passedMesh) {}
+  lsToVoxelMesh(lsSmartPointer<lsMesh<T>> passedMesh) : mesh(passedMesh) {}
 
-  lsToVoxelMesh(const lsDomain<T, D> &passedLevelSet, lsMesh &passedMesh)
-      : mesh(&passedMesh) {
-    levelSets.push_back(&passedLevelSet);
+  lsToVoxelMesh(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+                lsSmartPointer<lsMesh<T>> passedMesh)
+      : mesh(passedMesh) {
+    levelSets.push_back(passedLevelSet);
   }
 
-  lsToVoxelMesh(const std::vector<const lsDomain<T, D> *> &passedLevelSets,
-                lsMesh &passedMesh)
-      : mesh(&passedMesh) {
+  lsToVoxelMesh(
+      const std::vector<lsSmartPointer<lsDomain<T, D>>> passedLevelSets,
+      lsSmartPointer<lsMesh<T>> passedMesh)
+      : mesh(passedMesh) {
     levelSets = passedLevelSets;
   }
 
@@ -61,11 +63,11 @@ public:
   /// If more than one are specified, the voxels will be marked
   /// using a material number for each level set and output into
   /// a single mesh.
-  void insertNextLevelSet(const lsDomain<T, D> &passedLevelSet) {
-    levelSets.push_back(&passedLevelSet);
+  void insertNextLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
+    levelSets.push_back(passedLevelSet);
   }
 
-  void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh<T>> passedMesh) { mesh = passedMesh; }
 
   void apply() {
     if (levelSets.size() < 1) {
@@ -93,7 +95,8 @@ public:
     size_t currentPointId = 0;
 
     // prepare mesh for material ids
-    mesh->insertNextScalarData(lsPointData::ScalarDataType(), "Material");
+    mesh->insertNextScalarData(typename lsPointData<T>::ScalarDataType(),
+                               "Material");
     auto &materialIds = *(mesh->getScalarData(0));
 
     // set up iterators for all materials
@@ -166,7 +169,7 @@ public:
     double gridDelta = grid.getGridDelta();
     mesh->nodes.resize(pointIdMapping.size());
     for (auto it = pointIdMapping.begin(); it != pointIdMapping.end(); ++it) {
-      std::array<double, 3> coords{};
+      std::array<T, 3> coords{};
       for (unsigned i = 0; i < D; ++i) {
         coords[i] = gridDelta * it->first[i];
       }

@@ -32,27 +32,32 @@ int main() {
   // Since we want to make sure we get an error
   // if we do not use a pre-built type, we use
   // the specialization typedef
-  lsDomain_float_3 sphere1(gridDelta);
-  lsDomain_float_3 sphere2(gridDelta);
+  auto sphere1 = lsSmartPointer<lsDomain_float_3>::New(gridDelta);
+  auto sphere2 = lsSmartPointer<lsDomain_float_3>::New(gridDelta);
 
   float origin[3] = {5., 0., 0.};
   float radius = 7.3;
 
-  // these typedefs are available for all templated classes
-  lsMakeGeometry_float_3(sphere1, lsSphere_float_3(origin, radius)).apply();
-  origin[0] = -5.0;
-  radius = 9.5;
-  lsMakeGeometry_float_3(sphere2, lsSphere_float_3(origin, radius)).apply();
+  {
+    // these typedefs are available for all templated classes
+    auto sphere = lsSmartPointer<lsSphere_float_3>::New(origin, radius);
+    lsMakeGeometry_float_3(sphere1, sphere).apply();
+    origin[0] = -5.0;
+    radius = 9.5;
+    sphere = lsSmartPointer<lsSphere_float_3>::New(origin, radius);
+    lsMakeGeometry_float_3(sphere2, sphere).apply();
+  }
 
   {
-    lsMesh mesh1, mesh2;
+    auto mesh1 = lsSmartPointer<lsMesh<float>>::New();
+    auto mesh2 = lsSmartPointer<lsMesh<float>>::New();
 
     std::cout << "Extracting..." << std::endl;
     lsToSurfaceMesh_float_3(sphere1, mesh1).apply();
     lsToSurfaceMesh_float_3(sphere2, mesh2).apply();
 
-    lsVTKWriter(mesh1, "sphere1.vtk").apply();
-    lsVTKWriter(mesh2, "sphere2.vtk").apply();
+    lsVTKWriter<float>(mesh1, "sphere1.vtk").apply();
+    lsVTKWriter<float>(mesh2, "sphere2.vtk").apply();
   }
 
   // Perform a boolean operation
@@ -61,12 +66,12 @@ int main() {
       .apply();
 
   std::cout << "Extracting..." << std::endl;
-  lsMesh mesh;
+  auto mesh = lsSmartPointer<lsMesh<float>>::New();
   lsToSurfaceMesh_float_3(sphere1, mesh).apply();
 
-  mesh.print();
+  mesh->print();
 
-  lsVTKWriter(mesh, "after.vtk").apply();
+  lsVTKWriter<float>(mesh, "after.vtk").apply();
 
   return 0;
 }

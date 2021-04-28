@@ -10,9 +10,9 @@
 #include <lsCheck.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
-#include <lsFastAdvect.hpp>
 #include <lsFromSurfaceMesh.hpp>
 #include <lsFromVolumeMesh.hpp>
+#include <lsGeometricAdvect.hpp>
 #include <lsGeometries.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
@@ -22,16 +22,21 @@
 #include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsToVoxelMesh.hpp>
+#include <lsWriteVisualizationMesh.hpp>
 #include <lsWriter.hpp>
 
 // now call the specialize macro to precompile them
+PRECOMPILE_SPECIALIZE_PRECISION(lsPointData)
+PRECOMPILE_SPECIALIZE_PRECISION(lsMesh)
 PRECOMPILE_SPECIALIZE(lsAdvect)
 PRECOMPILE_SPECIALIZE(lsBooleanOperation)
 PRECOMPILE_SPECIALIZE(lsCalculateNormalVectors)
 PRECOMPILE_SPECIALIZE(lsCheck)
+PRECOMPILE_SPECIALIZE(lsConvexHull)
 PRECOMPILE_SPECIALIZE(lsDomain)
 PRECOMPILE_SPECIALIZE(lsExpand)
-PRECOMPILE_SPECIALIZE(lsFastAdvect)
+PRECOMPILE_SPECIALIZE(lsGeometricAdvect)
+PRECOMPILE_SPECIALIZE(lsFromMesh)
 PRECOMPILE_SPECIALIZE(lsFromSurfaceMesh)
 PRECOMPILE_SPECIALIZE(lsFromVolumeMesh)
 PRECOMPILE_SPECIALIZE(lsSphere)
@@ -47,3 +52,6 @@ PRECOMPILE_SPECIALIZE(lsToMesh)
 PRECOMPILE_SPECIALIZE(lsToSurfaceMesh)
 PRECOMPILE_SPECIALIZE(lsToVoxelMesh)
 PRECOMPILE_SPECIALIZE(lsWriter)
+#ifdef VIENNALS_USE_VTK
+PRECOMPILE_SPECIALIZE(lsWriteVisualizationMesh)
+#endif

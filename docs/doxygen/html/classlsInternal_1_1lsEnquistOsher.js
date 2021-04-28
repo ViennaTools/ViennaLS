@@ -1,6 +1,6 @@
 var classlsInternal_1_1lsEnquistOsher =
 [
-    [ "lsEnquistOsher", "classlsInternal_1_1lsEnquistOsher.html#a6ca276bf68a08ad031803f4586f2fa66", null ],
-    [ "operator()", "classlsInternal_1_1lsEnquistOsher.html#ae6dd5db6e4c7375ac3bb316fbe36e0c4", null ],
-    [ "prepareLS", "classlsInternal_1_1lsEnquistOsher.html#a5363b69b228d8228ca0c7a7676b354d4", null ]
+    [ "lsEnquistOsher", "classlsInternal_1_1lsEnquistOsher.html#af6e5a8b41885cdd3537eaf6d643cfa41", null ],
+    [ "operator()", "classlsInternal_1_1lsEnquistOsher.html#aa88cbd689a670a83d9a38aef86dd4019", null ],
+    [ "prepareLS", "classlsInternal_1_1lsEnquistOsher.html#a052567b036eedcd600126f1ee3eb3223", null ]
 ];

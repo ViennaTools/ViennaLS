@@ -5,6 +5,7 @@
 
 #include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
+
 #include <lsDomain.hpp>
 
 /// Removes all level set points, which do not have
@@ -13,16 +14,16 @@
 /// Afterwards the level set will occupy the least memory
 /// possible.
 template <class T, int D> class lsPrune {
-  lsDomain<T, D> *levelSet = nullptr;
-  const double numericEps = 1e-9;
+  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
 
 public:
   lsPrune() {}
 
-  lsPrune(lsDomain<T, D> &passedlsDomain) : levelSet(&passedlsDomain){};
+  lsPrune(lsSmartPointer<lsDomain<T, D>> passedlsDomain)
+      : levelSet(passedlsDomain){};
 
-  void setLevelSet(lsDomain<T, D> &passedlsDomain) {
-    levelSet = &passedlsDomain;
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+    levelSet = passedlsDomain;
   }
 
   /// removes all grid points, which do not have at least one opposite signed
@@ -35,10 +36,13 @@ public:
           .print();
       return;
     }
+    if (levelSet->getNumberOfPoints() == 0) {
+      return;
+    }
 
     auto &grid = levelSet->getGrid();
-    lsDomain<T, D> newlsDomain(grid);
-    typename lsDomain<T, D>::DomainType &newDomain = newlsDomain.getDomain();
+    auto newlsDomain = lsSmartPointer<lsDomain<T, D>>::New(grid);
+    typename lsDomain<T, D>::DomainType &newDomain = newlsDomain->getDomain();
     typename lsDomain<T, D>::DomainType &domain = levelSet->getDomain();
 
     newDomain.initialize(domain.getNewSegmentation(), domain.getAllocation());
@@ -65,11 +69,14 @@ public:
                neighborIt(domain, startVector);
            neighborIt.getIndices() < endVector; neighborIt.next()) {
         auto &centerIt = neighborIt.getCenter();
-        bool centerSign = centerIt.getValue() < 0;
+        bool centerSign = std::signbit(centerIt.getValue());
         if (centerIt.isDefined()) {
           int i = 0;
           for (; i < 2 * D; i++) {
-            if ((neighborIt.getNeighbor(i).getValue() < 0 + numericEps) !=
+            // Use signbit here instead of numericEps because it makes a clearer
+            // cut between negative and positive numbers. Eps resulted in
+            // problems with exact 0.0 LS values.
+            if (std::signbit(neighborIt.getNeighbor(i).getValue()) !=
                 centerSign)
               break;
           }

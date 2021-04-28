@@ -4,13 +4,16 @@
 #include <array>
 #include <vector>
 
+#include <lsConcepts.hpp>
 #include <lsMessage.hpp>
 
 /// This class holds data associated with points in space.
+template <class T = double,
+          lsConcepts::IsFloatingPoint<T> = lsConcepts::assignable>
 class lsPointData {
 public:
-  typedef std::vector<double> ScalarDataType;
-  typedef std::vector<std::array<double, 3>> VectorDataType;
+  typedef std::vector<T> ScalarDataType;
+  typedef std::vector<std::array<T, 3>> VectorDataType;
 
 private:
   std::vector<ScalarDataType> scalarData;
@@ -203,8 +206,8 @@ public:
     for (unsigned i = 0; i < numberOfScalarData; ++i) {
       uint32_t sizeOfName;
       stream.read(reinterpret_cast<char *>(&sizeOfName), sizeof(uint32_t));
-      char dataLabel[sizeOfName + 1];
-      stream.read(reinterpret_cast<char *>(&dataLabel), sizeOfName);
+      std::vector<char> dataLabel(sizeOfName + 1);
+      stream.read(dataLabel.data(), sizeOfName);
       dataLabel[sizeOfName] = '\0';
       uint32_t numberOfValues;
       stream.read(reinterpret_cast<char *>(&numberOfValues), sizeof(uint32_t));
@@ -216,15 +219,16 @@ public:
                     sizeof(typename ScalarDataType::value_type));
       }
       // now add this scalar data to current lsPointData
-      insertNextScalarData(scalarData, std::string(dataLabel));
+      insertNextScalarData(scalarData,
+                           std::string(dataLabel.begin(), dataLabel.end()));
     }
 
     // read vector data
     for (unsigned i = 0; i < numberOfVectorData; ++i) {
       uint32_t sizeOfName;
       stream.read(reinterpret_cast<char *>(&sizeOfName), sizeof(uint32_t));
-      char dataLabel[sizeOfName + 1];
-      stream.read(reinterpret_cast<char *>(&dataLabel), sizeOfName);
+      std::vector<char> dataLabel(sizeOfName + 1);
+      stream.read(dataLabel.data(), sizeOfName);
       dataLabel[sizeOfName] = '\0';
       uint32_t numberOfValues;
       stream.read(reinterpret_cast<char *>(&numberOfValues), sizeof(uint32_t));
@@ -238,11 +242,15 @@ public:
         }
       }
       // now add this scalar data to current lsPointData
-      insertNextVectorData(vectorData, std::string(dataLabel));
+      insertNextVectorData(vectorData,
+                           std::string(dataLabel.begin(), dataLabel.end()));
     }
 
     return stream;
   }
 };
+
+// add all template specialisations for this class
+PRECOMPILE_PRECISION(lsPointData);
 
 #endif // LS_POINT_DATA_HPP

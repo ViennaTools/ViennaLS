@@ -1,5 +1,7 @@
 var searchData=
 [
-  ['pointdatatype_565',['PointDataType',['../classlsDomain.html#adc45dd6438d2b1f8cb62afb1cdaeaf67',1,'lsDomain']]],
-  ['pointvaluevectortype_566',['PointValueVectorType',['../classlsDomain.html#a81a5c708142e9a0b5bcf2a537934cf7f',1,'lsDomain']]]
+  ['isbaseof_652',['IsBaseOf',['../namespacelsConcepts.html#a90d0ed377343607596475f042f71ae47',1,'lsConcepts']]],
+  ['isfloatingpoint_653',['IsFloatingPoint',['../namespacelsConcepts.html#ab6faf524889c50de47df4a7cbf15a028',1,'lsConcepts']]],
+  ['isnotsame_654',['IsNotSame',['../namespacelsConcepts.html#afe02d602414323eb189f366b54dd86bc',1,'lsConcepts']]],
+  ['issame_655',['IsSame',['../namespacelsConcepts.html#a32ef11830a21da629bcaec40843917b5',1,'lsConcepts']]]
 ];

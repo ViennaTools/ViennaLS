@@ -9,10 +9,10 @@ class velocityField(vls.lsVelocityField):
   # coord and normalVec are lists with 3 elements
   # in 2D coord[2] and normalVec[2] are zero
   # getScalarVelocity must return a scalar
-  def getScalarVelocity(self, coord, material, normal):
+  def getScalarVelocity(self, coord, material, normal,  pointId):
     return abs(normal[0]) + abs(normal[1])
 
-  def getVectorVelocity(self, coord, material, normal):
+  def getVectorVelocity(self, coord, material, normal,  pointId):
     return (0,0,0)
 
 extent = 30

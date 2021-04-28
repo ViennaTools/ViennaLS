@@ -21,7 +21,8 @@ class velocityField : public lsVelocityField<double> {
 public:
   double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
                            int material,
-                           const std::array<double, 3> & /*normalVector*/) {
+                           const std::array<double, 3> & /*normalVector*/,
+                           unsigned long /*pointId*/) {
     // Note that only the top material grows, so having two different,
     // positive velocities will only apply in the first advection step.
     // In the next step, the levelSets of the materials will not overlap
@@ -35,7 +36,8 @@ public:
   std::array<double, 3>
   getVectorVelocity(const std::array<double, 3> & /*coordinate*/,
                     int /*material*/,
-                    const std::array<double, 3> & /*normalVector*/) {
+                    const std::array<double, 3> & /*normalVector*/,
+                    unsigned long /*pointId*/) {
     return std::array<double, 3>({});
   }
 };
@@ -48,17 +50,19 @@ int main() {
   // set up simulation domains and geometry
   double gridDelta = 0.25;
 
-  lsDomain<double, D> sphere1(gridDelta);
-  lsDomain<double, D> sphere2(gridDelta);
+  auto sphere1 = lsSmartPointer<lsDomain<double, D>>::New(gridDelta);
+  auto sphere2 = lsSmartPointer<lsDomain<double, D>>::New(gridDelta);
 
   double origin[3] = {5., 0., 0.};
   double radius = 9.5;
 
-  lsMakeGeometry<double, D>(sphere1, lsSphere<double, D>(origin, radius))
+  lsMakeGeometry<double, D>(
+      sphere1, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
       .apply();
   origin[0] = -5.0;
   radius = 7.3;
-  lsMakeGeometry<double, D>(sphere2, lsSphere<double, D>(origin, radius))
+  lsMakeGeometry<double, D>(
+      sphere2, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
       .apply();
 
   // Perform a boolean operation
@@ -71,21 +75,21 @@ int main() {
 
   {
     std::cout << "Extracting..." << std::endl;
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter(mesh, "lower_0.vtk").apply();
+    lsVTKWriter<double>(mesh, "lower_0.vtk").apply();
 
     lsToSurfaceMesh<double, D>(sphere2, mesh).apply();
-    lsVTKWriter(mesh, "union_0.vtk").apply();
+    lsVTKWriter<double>(mesh, "union_0.vtk").apply();
   }
 
   // ADVECTION
   // fill vector with lsDomain pointers
-  std::vector<lsDomain<double, D> *> lsDomains;
-  lsDomains.push_back(&sphere1);
-  lsDomains.push_back(&sphere2);
+  std::vector<lsSmartPointer<lsDomain<double, D>>> lsDomains;
+  lsDomains.push_back(sphere1);
+  lsDomains.push_back(sphere2);
 
-  velocityField velocities;
+  auto velocities = lsSmartPointer<velocityField>::New();
 
   std::cout << "Advecting" << std::endl;
   lsAdvect<double, D> advection(lsDomains, velocities);
@@ -101,13 +105,13 @@ int main() {
   // Output result
   {
     std::cout << "Extracting..." << std::endl;
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter(mesh, "lower_1.vtk").apply();
+    lsVTKWriter<double>(mesh, "lower_1.vtk").apply();
 
     lsToSurfaceMesh<double, D>(sphere2, mesh).apply();
-    mesh.print();
-    lsVTKWriter(mesh, "union_1.vtk").apply();
+    mesh->print();
+    lsVTKWriter<double>(mesh, "union_1.vtk").apply();
   }
 
   return 0;

@@ -16,22 +16,28 @@
   then grown directionally on top. \example AirGapDeposition.cpp
 */
 
+using NumericType = float;
+
 // implement own velocity field
-class velocityField : public lsVelocityField<double> {
+class velocityField : public lsVelocityField<NumericType> {
 public:
-  double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
-                           int /*material*/,
-                           const std::array<double, 3> &normalVector) {
+  NumericType
+  getScalarVelocity(const std::array<NumericType, 3> & /*coordinate*/,
+                    int /*material*/,
+                    const std::array<NumericType, 3> &normalVector,
+                    unsigned long /*pointId*/) {
     // velocity is proportional to the normal vector
-    double velocity = std::abs(normalVector[0]) + std::abs(normalVector[1]);
+    NumericType velocity =
+        std::abs(normalVector[0]) + std::abs(normalVector[1]);
     return velocity;
   }
 
-  std::array<double, 3>
-  getVectorVelocity(const std::array<double, 3> & /*coordinate*/,
+  std::array<NumericType, 3>
+  getVectorVelocity(const std::array<NumericType, 3> & /*coordinate*/,
                     int /*material*/,
-                    const std::array<double, 3> & /*normalVector*/) {
-    return std::array<double, 3>({});
+                    const std::array<NumericType, 3> & /*normalVector*/,
+                    unsigned long /*pointId*/) {
+    return std::array<NumericType, 3>({});
   }
 };
 
@@ -40,49 +46,55 @@ int main() {
   constexpr int D = 2;
   omp_set_num_threads(2);
 
-  double extent = 30;
-  double gridDelta = 0.5;
+  NumericType extent = 30;
+  NumericType gridDelta = 0.5;
 
-  double bounds[2 * D] = {-extent, extent, -extent, extent};
-  lsDomain<double, D>::BoundaryType boundaryCons[D];
-  boundaryCons[0] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
-  boundaryCons[1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
+  hrleCoordType bounds[2 * D] = {-extent, extent, -extent, extent};
+  lsDomain<NumericType, D>::BoundaryType boundaryCons[D];
+  boundaryCons[0] = lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+  boundaryCons[1] = lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  lsDomain<double, D> substrate(bounds, boundaryCons, gridDelta);
+  auto substrate = lsSmartPointer<lsDomain<NumericType, D>>::New(
+      bounds, boundaryCons, gridDelta);
 
-  double origin[2] = {0., 0.};
-  double planeNormal[2] = {0., 1.};
+  NumericType origin[2] = {0., 0.};
+  NumericType planeNormal[2] = {0., 1.};
 
-  lsMakeGeometry<double, D>(substrate, lsPlane<double, D>(origin, planeNormal))
-      .apply();
+  {
+    auto plane =
+        lsSmartPointer<lsPlane<NumericType, D>>::New(origin, planeNormal);
+    lsMakeGeometry<NumericType, D>(substrate, plane).apply();
+  }
 
   {
     std::cout << "Extracting..." << std::endl;
-    lsMesh mesh;
-    lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, "plane.vtk").apply();
+    auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
+    lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
+    lsVTKWriter<NumericType>(mesh, "plane.vtk").apply();
   }
 
   {
     // create layer used for booling
     std::cout << "Creating box..." << std::endl;
-    lsDomain<double, D> trench(bounds, boundaryCons, gridDelta);
-    double minCorner[D] = {-extent / 6., -25.};
-    double maxCorner[D] = {extent / 6., 1.};
-    lsMakeGeometry<double, D>(trench, lsBox<double, D>(minCorner, maxCorner))
-        .apply();
+    auto trench = lsSmartPointer<lsDomain<NumericType, D>>::New(
+        bounds, boundaryCons, gridDelta);
+    NumericType xlimit = extent / 6.;
+    NumericType minCorner[D] = {-xlimit, -25.};
+    NumericType maxCorner[D] = {xlimit, 1.};
+    auto box = lsSmartPointer<lsBox<NumericType, D>>::New(minCorner, maxCorner);
+    lsMakeGeometry<NumericType, D>(trench, box).apply();
 
     {
       std::cout << "Extracting..." << std::endl;
-      lsMesh mesh;
-      lsToMesh<double, D>(trench, mesh).apply();
-      lsVTKWriter(mesh, "box.vtk").apply();
+      auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
+      lsToMesh<NumericType, D>(trench, mesh).apply();
+      lsVTKWriter<NumericType>(mesh, "box.vtk").apply();
     }
 
     // Create trench geometry
     std::cout << "Booling trench..." << std::endl;
-    lsBooleanOperation<double, D>(substrate, trench,
-                                  lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
+    lsBooleanOperation<NumericType, D>(
+        substrate, trench, lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
         .apply();
   }
 
@@ -91,12 +103,12 @@ int main() {
   // create new levelset for new material, which will be grown
   // since it has to wrap around the substrate, just copy it
   std::cout << "Creating new layer..." << std::endl;
-  lsDomain<double, D> newLayer(substrate);
+  auto newLayer = lsSmartPointer<lsDomain<NumericType, D>>::New(substrate);
 
-  velocityField velocities;
+  auto velocities = lsSmartPointer<velocityField>::New();
 
   std::cout << "Advecting" << std::endl;
-  lsAdvect<double, D> advectionKernel;
+  lsAdvect<NumericType, D> advectionKernel;
 
   // the level set to be advected has to be inserted last
   // the other could be taken as a mask layer for advection
@@ -109,7 +121,7 @@ int main() {
   // Now advect the level set 50 times, outputting every
   // advection step. Save the physical time that
   // passed during the advection.
-  double passedTime = 0.;
+  NumericType passedTime = 0.;
   unsigned numberOfSteps = 60;
   for (unsigned i = 0; i < numberOfSteps; ++i) {
     advectionKernel.apply();
@@ -117,9 +129,10 @@ int main() {
 
     std::cout << "\rAdvection step " + std::to_string(i) + " / "
               << numberOfSteps << std::flush;
-    lsMesh mesh;
-    lsToSurfaceMesh<double, D>(newLayer, mesh).apply();
-    lsVTKWriter(mesh, "trench" + std::to_string(i) + ".vtk").apply();
+    auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
+    lsToSurfaceMesh<NumericType, D>(newLayer, mesh).apply();
+    lsVTKWriter<NumericType>(mesh, "trench" + std::to_string(i) + ".vtk")
+        .apply();
   }
   std::cout << std::endl;
   std::cout << "Time passed during advection: " << passedTime << std::endl;

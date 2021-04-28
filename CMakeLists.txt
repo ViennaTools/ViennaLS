@@ -2,14 +2,24 @@ cmake_minimum_required(VERSION 3.4)
 
 project(
   "ViennaLS"
-  VERSION 1.0.0)
+  VERSION 2.0.0)
+
+add_definitions(-DVIENNALS_VERSION=${PROJECT_VERSION})
 
 include(GNUInstallDirs)
 
-# needed because g++ optimizes away the T(constexpr)
-# workaround for passing references
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-  SET(CMAKE_CXX_STANDARD "17")
+# c++17 for inlince constexpr variables
+SET(CMAKE_CXX_STANDARD "17")
+
+# set default build type
+SET(DEFAULT_BUILD_TYPE "Release")
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to '${DEFAULT_BUILD_TYPE}' as none was specified.")
+  set(CMAKE_BUILD_TYPE "${DEFAULT_BUILD_TYPE}" CACHE
+      STRING "Choose the type of build." FORCE)
+  # Set the possible values of build type for cmake-gui
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
+    "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
 # tell VS to export all symbols to its dll files
@@ -18,9 +28,11 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 endif()
 
 # set whether to build static versions
-option(VIENNALS_STATIC_BUILD "Build all targets with static links." OFF)
+option(VIENNALS_STATIC_BUILD "Link dependencies statically." OFF)
 if(VIENNALS_STATIC_BUILD)
-  set(VTK_DIR $ENV{VTK_STATIC_DIR})
+  if(NOT VTK_DIR)
+    set(VTK_DIR $ENV{VTK_STATIC_DIR})
+  endif(NOT VTK_DIR)
   list(APPEND VIENNALS_LIBRARIES "-static")
 endif(VIENNALS_STATIC_BUILD)
 
@@ -33,10 +45,15 @@ if(VIENNALS_USE_VTK)
   find_package(VTK QUIET)
   if(VTK_FOUND)
     message(STATUS "Found VTK")
-    add_definitions(-DVIENNALS_USE_VTK)
+    add_compile_definitions(VIENNALS_USE_VTK)
     include(${VTK_USE_FILE})
-    # only link needed vtk libraries
-    #set(VTK_LIBRARIES vtksys;vtkIOCore;vtkexpat;vtklz4;vtkzlib;vtklzma;vtkdoubleconversion;vtkCommonMisc;vtkCommonSystem;vtkIOXML)
+    # only link needed vtk libraries for static builds
+    if(VIENNALS_STATIC_BUILD)
+      set(VTK_LIBRARIES vtksys;vtkIOCore;vtkexpat;vtklz4;vtkzlib;vtklzma;vtkdoubleconversion;vtkCommonMisc;vtkCommonSystem;vtkIOXML;vtkFiltersCore;vtkFiltersGeneral;vtkFiltersGeometry;vtkCommonExecutionModel;vtkCommonDataModel;vtkCommonColor;vtkIOXMLParser;vtkIOCore;vtkCommonMisc;vtkCommonComputationalGeometry;vtkCommonTransforms;vtkCommonMath;)
+
+      message(STATUS "Static build: Only linking ${VTK_LIBRARIES}")
+      # vtksys;vtkCommonCore;vtkCommonMath;vtkCommonMisc;vtkCommonSystem;vtkCommonTransforms;vtkCommonDataModel;vtkCommonColor;vtkCommonExecutionModel;vtkCommonComputationalGeometry;vtkFiltersCore;vtkFiltersGeneral;vtkImagingCore;vtkImagingFourier;vtkFiltersStatistics;vtkFiltersExtraction;vtkInfovisCore;vtkFiltersGeometry;vtkFiltersSources;vtkRenderingCore;vtkzlib;vtkfreetype;vtkRenderingFreeType;vtkRenderingContext2D;vtkChartsCore;vtkDICOMParser;vtkdoubleconversion;vtklz4;vtklzma;vtkIOCore;vtkIOLegacy;vtkexpat;vtkIOXMLParser;vtkDomainsChemistry;vtkglew;vtkRenderingOpenGL2;vtkDomainsChemistryOpenGL2;vtkIOXML;vtkParallelCore;vtkFiltersAMR;vtkFiltersFlowPaths;vtkFiltersGeneric;vtkImagingSources;vtkFiltersHybrid;vtkFiltersHyperTree;vtkImagingGeneral;vtkFiltersImaging;vtkFiltersModeling;vtkFiltersParallel;vtkFiltersParallelImaging;vtkFiltersPoints;vtkFiltersProgrammable;vtkFiltersSMP;vtkFiltersSelection;vtkFiltersTexture;vtkFiltersTopology;verdict;vtkFiltersVerdict;vtkmetaio;vtkjpeg;vtkpng;vtktiff;vtkIOImage;vtkImagingHybrid;vtkInfovisLayout;vtkInteractionStyle;vtkImagingColor;vtkRenderingAnnotation;vtkRenderingVolume;vtkInteractionWidgets;vtkViewsCore;vtklibproj;vtkGeovisCore;vtkhdf5_src;vtkhdf5_hl_src;vtkIOAMR;vtkIOAsynchronous;vtkpugixml;vtkIOCityGML;vtkIOEnSight;vtknetcdf;vtkexodusII;vtkIOExodus;vtkgl2ps;vtkRenderingGL2PSOpenGL2;vtkIOExport;vtkIOExportOpenGL2;vtklibharu;vtkIOExportPDF;vtkIOGeometry;vtkIOImport;vtklibxml2;vtkIOInfovis;vtkIOLSDyna;vtkIOMINC;vtkogg;vtktheora;vtkIOMovie;vtkIONetCDF;vtkIOPLY;vtkjsoncpp;vtkIOParallel;vtkIOParallelXML;vtksqlite;vtkIOSQL;vtkIOSegY;vtkIOTecplotTable;vtkIOVeraOut;vtkIOVideo;vtkImagingMath;vtkImagingMorphological;vtkImagingStatistics;vtkImagingStencil;vtkInteractionImage;vtkRenderingContextOpenGL2;vtkRenderingImage;vtkRenderingLOD;vtkRenderingLabel;vtkRenderingVolumeOpenGL2;vtkViewsContext2D;vtkViewsInfovis
+    endif(VIENNALS_STATIC_BUILD)
     list(APPEND VIENNALS_LIBRARIES ${VTK_LIBRARIES})
     list(APPEND VIENNALS_PYTHON_LIBRARIES ${VTK_LIBRARIES})
   else(VTK_FOUND)
@@ -50,12 +67,13 @@ endif(VIENNALS_USE_VTK)
 #################################################
 option(VIENNALS_BUILD_SHARED_LIBS "Build template specialisations for shorter compile times." OFF)
 if(VIENNALS_BUILD_SHARED_LIBS)
-  # add all specialisation source files
   if(NOT ViennaHRLE_DIR)
     set(ViennaHRLE_DIR $ENV{VIENNAHRLE_DIR})
   endif(NOT ViennaHRLE_DIR)
   list(APPEND VIENNALS_LIBRARIES ViennaHRLE)
   find_package(ViennaHRLE REQUIRED)
+  
+  # add all specialisation source files
   file(GLOB SPECIALISATION_CPPS "lib/*.cpp")
 
   # build static or shared object for library

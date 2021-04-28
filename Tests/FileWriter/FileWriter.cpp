@@ -18,35 +18,36 @@ int main() {
 
   omp_set_num_threads(4);
 
-  lsDomain<double, D> levelSet;
+  auto levelSet = lsSmartPointer<lsDomain<double, D>>::New();
 
   const double radius = 7.3;
   const hrleVectorType<double, D> centre(5., 0.);
 
-  lsMakeGeometry<double, D>(levelSet, lsSphere<double, D>(centre, radius))
+  lsMakeGeometry<double, D>(
+      levelSet, lsSmartPointer<lsSphere<double, D>>::New(centre, radius))
       .apply();
 
-  lsPointData &data = levelSet.getPointData();
-  typename lsPointData::ScalarDataType scalars;
-  typename lsPointData::VectorDataType vectors;
-  for (unsigned i = 0; i < levelSet.getNumberOfPoints(); ++i) {
+  lsPointData<double> &data = levelSet->getPointData();
+  typename lsPointData<double>::ScalarDataType scalars;
+  typename lsPointData<double>::VectorDataType vectors;
+  for (unsigned i = 0; i < levelSet->getNumberOfPoints(); ++i) {
     scalars.push_back(i);
     vectors.push_back(
-        typename lsPointData::VectorDataType::value_type({double(i)}));
+        typename lsPointData<double>::VectorDataType::value_type({double(i)}));
   }
 
   data.insertNextScalarData(scalars, "myScalars");
-  data.insertNextVectorData(vectors, "llaalalalalaalalalalalaalal");
+  data.insertNextVectorData(vectors, "myVectors");
 
   lsWriter<double, D>(levelSet, "test.lvst").apply();
 
   // read it in again
-  lsDomain<double, D> newLevelSet;
+  auto newLevelSet = lsSmartPointer<lsDomain<double, D>>::New();
   lsReader<double, D>(newLevelSet, "test.lvst").apply();
 
-  lsMesh mesh;
+  auto mesh = lsSmartPointer<lsMesh<>>::New();
   lsToSurfaceMesh<double, D>(levelSet, mesh).apply();
-  lsVTKWriter(mesh, "test.vtk").apply();
+  lsVTKWriter<double>(mesh, "test.vtk").apply();
 
   return 0;
 }

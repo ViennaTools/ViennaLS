@@ -15,11 +15,11 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  lsMesh mesh;
+  auto mesh = lsSmartPointer<lsMesh<>>::New();
 
-  lsVTKReader(mesh, std::string(argv[1])).apply();
+  lsVTKReader<double>(mesh, std::string(argv[1])).apply();
 
-  lsVTKWriter(mesh, "test.vtk").apply();
+  lsVTKWriter<double>(mesh, "test.vtk").apply();
 
   return 0;
 }

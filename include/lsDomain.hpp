@@ -10,6 +10,7 @@
 #include <hrleVectorType.hpp>
 
 #include <lsPointData.hpp>
+#include <lsSmartPointer.hpp>
 
 #define LS_DOMAIN_SERIALIZATION_VERSION 0
 
@@ -25,7 +26,7 @@ public:
   typedef typename std::vector<std::pair<hrleVectorType<hrleIndexType, D>, T>>
       PointValueVectorType;
   typedef typename std::vector<std::array<T, D>> NormalVectorType;
-  typedef lsPointData PointDataType;
+  typedef lsPointData<T> PointDataType;
   typedef typename std::vector<bool> VoidPointMarkersType;
 
 private:
@@ -33,7 +34,6 @@ private:
   GridType grid;
   DomainType domain;
   int levelSetWidth = 1;
-  NormalVectorType normalVectors;
   PointDataType pointData;
   VoidPointMarkersType voidPointMarkers;
 
@@ -78,14 +78,18 @@ public:
     for (unsigned i = 0; i < D; ++i) {
       boundaryCons[i] = static_cast<BoundaryType>(boundaryConditions[i]);
     }
-    this->deepCopy(lsDomain<T, D>(bounds.data(), boundaryCons, gridDelta));
+    auto newDomain = lsSmartPointer<lsDomain<T, D>>::New(
+        bounds.data(), boundaryCons, gridDelta);
+    this->deepCopy(newDomain);
   }
 
   /// initialise lsDomain with domain size "bounds", filled with point/value
   /// pairs in pointData
   lsDomain(PointValueVectorType pointData, hrleCoordType *bounds,
            BoundaryType *boundaryConditions, hrleCoordType gridDelta = 1.0) {
-    this->deepCopy(lsDomain(bounds, boundaryConditions, gridDelta));
+    auto newDomain = lsSmartPointer<lsDomain<T, D>>::New(
+        bounds, boundaryConditions, gridDelta);
+    this->deepCopy(newDomain);
     hrleFillDomainWithSignedDistance(domain, pointData, T(NEG_VALUE),
                                      T(POS_VALUE));
   }
@@ -94,7 +98,7 @@ public:
     domain.deepCopy(grid, DomainType(grid, T(POS_VALUE)));
   }
 
-  lsDomain(const lsDomain &passedlsDomain) { deepCopy(passedlsDomain); }
+  lsDomain(lsSmartPointer<lsDomain> passedDomain) { deepCopy(passedDomain); }
 
   /// this function sets a new levelset width and finalizes the levelset, so it
   /// is ready for use by other algorithms
@@ -105,17 +109,20 @@ public:
   void finalize() {}
 
   /// copy all values of "passedlsDomain" to this lsDomain
-  void deepCopy(const lsDomain<T, D> &passedlsDomain) {
-    grid = passedlsDomain.grid;
-    domain.deepCopy(grid, passedlsDomain.domain);
-    levelSetWidth = passedlsDomain.levelSetWidth;
-    pointData = passedlsDomain.pointData;
+  void deepCopy(const lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+    grid = passedlsDomain->grid;
+    domain.deepCopy(grid, passedlsDomain->domain);
+    levelSetWidth = passedlsDomain->levelSetWidth;
+    pointData = passedlsDomain->pointData;
   }
 
   /// re-initalise lsDomain with the point/value pairs in pointData
-  void insertPoints(PointValueVectorType pointData) {
+  /// This is similar to lsFromMesh with the difference that pointData
+  /// contains (INDEX, Value) pairs, while lsFromMesh expects coordinates
+  /// rather than indices
+  void insertPoints(PointValueVectorType pointData, bool sort = true) {
     hrleFillDomainWithSignedDistance(domain, pointData, T(NEG_VALUE),
-                                     T(POS_VALUE));
+                                     T(POS_VALUE), sort);
   }
 
   /// get reference to the grid on which the levelset is defined
@@ -141,16 +148,7 @@ public:
   void setLevelSetWidth(int width) { levelSetWidth = width; }
 
   // clear all additional data
-  void clearMetaData() {
-    normalVectors.clear();
-    pointData.clear();
-    voidPointMarkers.clear();
-  }
-
-  /// get reference to the normalVectors of all points
-  NormalVectorType &getNormalVectors() { return normalVectors; }
-
-  const NormalVectorType &getNormalVectors() const { return normalVectors; }
+  void clearMetaData() { pointData.clear(); }
 
   /// get reference to point data saved in the level set
   PointDataType &getPointData() { return pointData; }

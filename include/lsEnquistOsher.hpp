@@ -14,27 +14,28 @@ namespace lsInternal {
 /// upwind integration scheme. Offers high performance
 /// but lower accuracy for complex velocity fields.
 template <class T, int D, int order> class lsEnquistOsher {
-  lsDomain<T, D> &levelSet;
+  lsSmartPointer<lsDomain<T, D>> levelSet;
+  lsSmartPointer<lsVelocityField<T>> velocities;
   hrleSparseStarIterator<hrleDomain<T, D>> neighborIterator;
   bool calculateNormalVectors = true;
 
   static T pow2(const T &value) { return value * value; }
 
 public:
-  static void prepareLS(lsDomain<T, D> &passedlsDomain) {
+  static void prepareLS(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     assert(order == 1 || order == 2);
     lsExpand<T, D>(passedlsDomain, 2 * order + 1).apply();
   }
 
-  lsEnquistOsher(lsDomain<T, D> &passedlsDomain, bool calcNormal = true)
-      : levelSet(passedlsDomain),
+  lsEnquistOsher(lsSmartPointer<lsDomain<T, D>> passedlsDomain,
+                 lsSmartPointer<lsVelocityField<T>> vel, bool calcNormal = true)
+      : levelSet(passedlsDomain), velocities(vel),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>>(
-            levelSet.getDomain(), order)),
+            levelSet->getDomain(), order)),
         calculateNormalVectors(calcNormal) {}
 
-  T operator()(const hrleVectorType<hrleIndexType, D> &indices,
-               lsVelocityField<T> *velocities, int material) {
-    auto &grid = levelSet.getGrid();
+  T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {
+    auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
 
     hrleVectorType<T, 3> coordinate(0., 0., 0.);
@@ -134,10 +135,12 @@ public:
     // convert coordinate to std array for interface
     std::array<T, 3> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
 
-    double scalarVelocity =
-        velocities->getScalarVelocity(coordArray, material, normalVector);
-    std::array<T, 3> vectorVelocity =
-        velocities->getVectorVelocity(coordArray, material, normalVector);
+    double scalarVelocity = velocities->getScalarVelocity(
+        coordArray, material, normalVector,
+        neighborIterator.getCenter().getPointId());
+    std::array<T, 3> vectorVelocity = velocities->getVectorVelocity(
+        coordArray, material, normalVector,
+        neighborIterator.getCenter().getPointId());
 
     if (scalarVelocity > 0) {
       vel_grad += std::sqrt(gradPosTotal) * scalarVelocity;

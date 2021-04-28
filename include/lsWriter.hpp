@@ -7,19 +7,21 @@
 #include <lsPreCompileMacros.hpp>
 
 template <class T, int D> class lsWriter {
-  lsDomain<T, D> *levelSet = nullptr;
+  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
   std::string fileName;
 
 public:
   lsWriter() {}
 
-  lsWriter(lsDomain<T, D> &passedLevelSet) : levelSet(&passedLevelSet) {}
+  lsWriter(lsSmartPointer<lsDomain<T, D>> passedLevelSet)
+      : levelSet(passedLevelSet) {}
 
-  lsWriter(lsDomain<T, D> &passedLevelSet, std::string passedFileName)
-      : levelSet(&passedLevelSet), fileName(passedFileName) {}
+  lsWriter(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+           std::string passedFileName)
+      : levelSet(passedLevelSet), fileName(passedFileName) {}
 
-  void setLevelSet(lsDomain<T, D> &passedLevelSet) {
-    levelSet = &passedLevelSet;
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
+    levelSet = passedLevelSet;
   }
 
   /// set file name for file to write

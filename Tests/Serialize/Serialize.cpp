@@ -4,6 +4,11 @@
 #include <lsDomain.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPointData.hpp>
+#include <lsReader.hpp>
+#include <lsToMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
+#include <lsVTKWriter.hpp>
+#include <lsWriter.hpp>
 
 /**
   Minimal example showing how to serialize an lsDomain and deserialize.
@@ -15,38 +20,41 @@ int main() {
 
   omp_set_num_threads(4);
 
-  lsDomain<double, D> levelSet;
-  lsMesh mesh;
+  auto levelSet = lsSmartPointer<lsDomain<double, D>>::New();
+  auto mesh = lsSmartPointer<lsMesh<>>::New();
 
   const double radius = 7.3;
   const hrleVectorType<double, D> centre(5., 0.);
 
-  lsMakeGeometry<double, 2>(levelSet, lsSphere<double, D>(centre, radius))
+  lsMakeGeometry<double, 2>(
+      levelSet, lsSmartPointer<lsSphere<double, D>>::New(centre, radius))
       .apply();
 
-  lsPointData &data = levelSet.getPointData();
-  typename lsPointData::ScalarDataType scalars;
-  typename lsPointData::VectorDataType vectors;
-  for (unsigned i = 0; i < levelSet.getNumberOfPoints(); ++i) {
+  lsPointData<double> &data = levelSet->getPointData();
+  typename lsPointData<double>::ScalarDataType scalars;
+  typename lsPointData<double>::VectorDataType vectors;
+  for (unsigned i = 0; i < levelSet->getNumberOfPoints(); ++i) {
     scalars.push_back(i);
     vectors.push_back(
-        typename lsPointData::VectorDataType::value_type({double(i)}));
+        typename lsPointData<double>::VectorDataType::value_type({double(i)}));
   }
 
   data.insertNextScalarData(scalars, "myScalars");
   data.insertNextVectorData(vectors, "myVectors");
 
-  {
-    std::ofstream fout("test.lvst", std::ofstream::binary);
-    levelSet.serialize(fout);
-    fout.close();
-  }
+  // {
+  //   std::ofstream fout("test.lvst", std::ofstream::binary);
+  //   levelSet->serialize(fout);
+  //   fout.close();
+  // }
+  lsWriter<double, D>(levelSet, "test.lvst").apply();
 
   {
-    lsDomain<double, D> newLevelSet;
-    std::ifstream fin("test.lvst", std::ofstream::binary);
-    newLevelSet.deserialize(fin);
-    lsPointData &newData = newLevelSet.getPointData();
+    auto newLevelSet = lsSmartPointer<lsDomain<double, D>>::New();
+    // std::ifstream fin("test.lvst", std::ofstream::binary);
+    lsReader<double, D>(newLevelSet, "test.lvst").apply();
+    // newLevelSet->deserialize(fin);
+    lsPointData<double> &newData = newLevelSet->getPointData();
     std::cout << newData.getScalarDataSize() << std::endl;
     auto newScalars = newData.getScalarData(0);
     std::cout << newData.getScalarDataLabel(0) << std::endl;
@@ -58,7 +66,11 @@ int main() {
     for (auto i : *newVectors) {
       std::cout << i[0] << ", " << i[1] << ", " << i[2] << std::endl;
     }
-    fin.close();
+    // fin.close();
+
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
+    lsToMesh<double, D>(newLevelSet, mesh).apply();
+    lsVTKWriter<double>(mesh, "test.vtk").apply();
   }
 
   return 0;

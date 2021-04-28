@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['normalvectortype_564',['NormalVectorType',['../classlsDomain.html#a1b5387cd91551921f8f4b034aef54c80',1,'lsDomain']]]
+  ['gridtype_651',['GridType',['../classlsDomain.html#acd1ed71ed408b19ab82f4b33db28a20d',1,'lsDomain']]]
 ];

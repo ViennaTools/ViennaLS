@@ -5,6 +5,7 @@
 
 #include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
+
 #include <lsDomain.hpp>
 #include <lsMessage.hpp>
 #include <lsPrune.hpp>
@@ -34,15 +35,15 @@ enum struct lsBooleanOperationEnum : unsigned {
 ///  always return the smaller of the two values.
 template <class T, int D> class lsBooleanOperation {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
-  lsDomain<T, D> *levelSetA = nullptr;
-  lsDomain<T, D> *levelSetB = nullptr;
+  lsSmartPointer<lsDomain<T, D>> levelSetA = nullptr;
+  lsSmartPointer<lsDomain<T, D>> levelSetB = nullptr;
   lsBooleanOperationEnum operation = lsBooleanOperationEnum::INTERSECT;
   const T (*operationComp)(const T &, const T &) = nullptr;
 
   void booleanOpInternal(const T (*comp)(const T &, const T &)) {
     auto &grid = levelSetA->getGrid();
-    lsDomain<T, D> newlsDomain(grid);
-    typename lsDomain<T, D>::DomainType &newDomain = newlsDomain.getDomain();
+    auto newlsDomain = lsSmartPointer<lsDomain<T, D>>::New(grid);
+    typename lsDomain<T, D>::DomainType &newDomain = newlsDomain->getDomain();
     typename lsDomain<T, D>::DomainType &domain = levelSetA->getDomain();
 
     newDomain.initialize(domain.getNewSegmentation(), domain.getAllocation());
@@ -97,7 +98,7 @@ template <class T, int D> class lsBooleanOperation {
     }
     newDomain.finalize();
     newDomain.segment();
-    newlsDomain.setLevelSetWidth(levelSetA->getLevelSetWidth());
+    newlsDomain->setLevelSetWidth(levelSetA->getLevelSetWidth());
     // now we need to prune, to remove stray defined points
     lsPrune<T, D>(newlsDomain).apply();
 
@@ -159,27 +160,27 @@ template <class T, int D> class lsBooleanOperation {
 public:
   lsBooleanOperation() {}
 
-  lsBooleanOperation(lsDomain<T, D> &passedlsDomain,
-                     lsBooleanOperationEnum passedOperation =
-                         lsBooleanOperationEnum::INTERSECT)
-      : levelSetA(&passedlsDomain), operation(passedOperation) {}
+  lsBooleanOperation(
+      lsSmartPointer<lsDomain<T, D>> passedlsDomain,
+      lsBooleanOperationEnum passedOperation = lsBooleanOperationEnum::INVERT)
+      : levelSetA(passedlsDomain), operation(passedOperation) {}
 
-  lsBooleanOperation(lsDomain<T, D> &passedlsDomainA,
-                     lsDomain<T, D> &passedlsDomainB,
+  lsBooleanOperation(lsSmartPointer<lsDomain<T, D>> passedlsDomainA,
+                     lsSmartPointer<lsDomain<T, D>> passedlsDomainB,
                      lsBooleanOperationEnum passedOperation =
                          lsBooleanOperationEnum::INTERSECT)
-      : levelSetA(&passedlsDomainA), levelSetB(&passedlsDomainB),
+      : levelSetA(passedlsDomainA), levelSetB(passedlsDomainB),
         operation(passedOperation){};
 
   /// set which level set to perform the boolean operation on
-  void setLevelSet(lsDomain<T, D> &passedlsDomain) {
-    levelSetA = &passedlsDomain;
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+    levelSetA = passedlsDomain;
   }
 
   /// set the level set which will be used to modify the
   /// first level set
-  void setSecondLevelSet(lsDomain<T, D> &passedlsDomain) {
-    levelSetB = &passedlsDomain;
+  void setSecondLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+    levelSetB = passedlsDomain;
   }
 
   /// set which of the operations of lsBooleanOperationEnum to perform

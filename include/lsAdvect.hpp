@@ -14,8 +14,10 @@
 #include <lsMarkVoidPoints.hpp>
 #include <lsMessage.hpp>
 #include <lsReduce.hpp>
+#include <lsSmartPointer.hpp>
 
 // Integration schemes
+#include <lsConcepts.hpp>
 #include <lsEnquistOsher.hpp>
 #include <lsLaxFriedrichs.hpp>
 #include <lsLocalLaxFriedrichs.hpp>
@@ -51,8 +53,8 @@ enum struct lsIntegrationSchemeEnum : unsigned {
 /// implementation of the lsVelocityField (check Advection examples for
 /// guidance)
 template <class T, int D> class lsAdvect {
-  std::vector<lsDomain<T, D> *> levelSets;
-  lsVelocityField<T> *velocities = nullptr;
+  std::vector<lsSmartPointer<lsDomain<T, D>>> levelSets;
+  lsSmartPointer<lsVelocityField<T>> velocities = nullptr;
   lsIntegrationSchemeEnum integrationScheme =
       lsIntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER;
   double timeStepRatio = 0.4999;
@@ -63,22 +65,18 @@ template <class T, int D> class lsAdvect {
   double advectedTime = 0.;
   unsigned numberOfTimeSteps = 0;
   bool saveAdvectionVelocities = false;
+  static constexpr double wrappingLayerEpsilon = 1e-4;
 
-  // SFINAE functions needed for StencilLocalLaxFriedrichs
-  template <
-      class IntegrationSchemeType,
-      typename std::enable_if<
-          !std::is_same<lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>,
-                        IntegrationSchemeType>::value,
-          std::nullptr_t>::type = nullptr>
+  template <class IntegrationSchemeType,
+            lsConcepts::IsNotSame<IntegrationSchemeType,
+                                  lsInternal::lsStencilLocalLaxFriedrichsScalar<
+                                      T, D, 1>> = lsConcepts::assignable>
   void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &, double &) {}
 
-  template <
-      class IntegrationSchemeType,
-      typename std::enable_if<
-          std::is_same<lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>,
-                       IntegrationSchemeType>::value,
-          std::nullptr_t>::type = nullptr>
+  template <class IntegrationSchemeType,
+            lsConcepts::IsSame<IntegrationSchemeType,
+                               lsInternal::lsStencilLocalLaxFriedrichsScalar<
+                                   T, D, 1>> = lsConcepts::assignable>
   void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &scheme,
                                     double &MaxTimeStep) {
     const double alpha_maxCFL = 1.0;
@@ -102,8 +100,8 @@ template <class T, int D> class lsAdvect {
     // renormalisation is needed, so it might be good to implement
     // Euler distance renormalisation as an option
     auto &grid = levelSets.back()->getGrid();
-    lsDomain<T, D> newlsDomain(grid);
-    typename lsDomain<T, D>::DomainType &newDomain = newlsDomain.getDomain();
+    auto newlsDomain = lsSmartPointer<lsDomain<T, D>>::New(grid);
+    typename lsDomain<T, D>::DomainType &newDomain = newlsDomain->getDomain();
     typename lsDomain<T, D>::DomainType &domain = levelSets.back()->getDomain();
 
     newDomain.initialize(domain.getNewSegmentation(),
@@ -251,9 +249,9 @@ template <class T, int D> class lsAdvect {
     // now copy old data into new level set
     auto &pointData = levelSets.back()->getPointData();
     if (!pointData.getScalarDataSize() || !pointData.getVectorDataSize()) {
-      auto &newPointData = newlsDomain.getPointData();
+      auto &newPointData = newlsDomain->getPointData();
       // concatenate all source ids into one vector
-      newDataSourceIds.reserve(newlsDomain.getNumberOfPoints());
+      newDataSourceIds.reserve(newlsDomain->getNumberOfPoints());
       for (unsigned i = 1; i < newDataSourceIds.size(); ++i) {
         for (unsigned j = 0; j < newDataSourceIds[i].size(); ++j) {
           newDataSourceIds[0].push_back(newDataSourceIds[i][j]);
@@ -266,11 +264,11 @@ template <class T, int D> class lsAdvect {
       for (unsigned scalarId = 0; scalarId < pointData.getScalarDataSize();
            ++scalarId) {
         newPointData.insertNextScalarData(
-            lsPointData::ScalarDataType(),
+            typename lsPointData<T>::ScalarDataType(),
             pointData.getScalarDataLabel(scalarId));
         auto &newScalars = *(newPointData.getScalarData(scalarId));
         auto &scalars = *(pointData.getScalarData(scalarId));
-        newScalars.reserve(newlsDomain.getNumberOfPoints());
+        newScalars.reserve(newlsDomain->getNumberOfPoints());
 
         for (unsigned i = 0; i < newDataSourceIds[0].size(); ++i) {
           newScalars.push_back(scalars[newDataSourceIds[0][i]]);
@@ -281,11 +279,11 @@ template <class T, int D> class lsAdvect {
       for (unsigned vectorId = 0; vectorId < pointData.getVectorDataSize();
            ++vectorId) {
         newPointData.insertNextVectorData(
-            lsPointData::VectorDataType(),
+            typename lsPointData<T>::VectorDataType(),
             pointData.getVectorDataLabel(vectorId));
         auto &newVectors = *(newPointData.getVectorData(vectorId));
         auto &vectors = *(pointData.getVectorData(vectorId));
-        newVectors.reserve(newlsDomain.getNumberOfPoints());
+        newVectors.reserve(newlsDomain->getNumberOfPoints());
 
         for (unsigned i = 0; i < newDataSourceIds[0].size(); ++i) {
           newVectors.push_back(vectors[newDataSourceIds[0][i]]);
@@ -322,69 +320,71 @@ template <class T, int D> class lsAdvect {
     double currentTime = 0.;
     if (integrationScheme ==
         lsIntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER) {
-      lsInternal::lsEnquistOsher<T, D, 1>::prepareLS(*(levelSets.back()));
-      auto is = lsInternal::lsEnquistOsher<T, D, 1>(*(levelSets.back()),
-                                                    calculateNormalVectors);
+      lsInternal::lsEnquistOsher<T, D, 1>::prepareLS(levelSets.back());
+      auto is = lsInternal::lsEnquistOsher<T, D, 1>(
+          levelSets.back(), velocities, calculateNormalVectors);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER) {
-      lsInternal::lsEnquistOsher<T, D, 2>::prepareLS(*(levelSets.back()));
-      auto is = lsInternal::lsEnquistOsher<T, D, 2>(*(levelSets.back()),
-                                                    calculateNormalVectors);
+      lsInternal::lsEnquistOsher<T, D, 2>::prepareLS(levelSets.back());
+      auto is = lsInternal::lsEnquistOsher<T, D, 2>(
+          levelSets.back(), velocities, calculateNormalVectors);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
-      lsInternal::lsLaxFriedrichs<T, D, 1>::prepareLS(*(levelSets.back()));
+      lsInternal::lsLaxFriedrichs<T, D, 1>::prepareLS(levelSets.back());
       auto is = lsInternal::lsLaxFriedrichs<T, D, 1>(
-          *(levelSets.back()), calculateNormalVectors, dissipationAlpha);
+          levelSets.back(), velocities, dissipationAlpha,
+          calculateNormalVectors);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER) {
-      lsInternal::lsLaxFriedrichs<T, D, 2>::prepareLS(*(levelSets.back()));
+      lsInternal::lsLaxFriedrichs<T, D, 2>::prepareLS(levelSets.back());
       auto is = lsInternal::lsLaxFriedrichs<T, D, 2>(
-          *(levelSets.back()), calculateNormalVectors, dissipationAlpha);
+          levelSets.back(), velocities, dissipationAlpha,
+          calculateNormalVectors);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::
                    LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER) {
       lsInternal::lsLocalLaxFriedrichsAnalytical<T, D, 1>::prepareLS(
-          *(levelSets.back()));
+          levelSets.back());
       auto is = lsInternal::lsLocalLaxFriedrichsAnalytical<T, D, 1>(
-          *(levelSets.back()));
+          levelSets.back(), velocities);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       lsInternal::lsLocalLocalLaxFriedrichs<T, D, 1>::prepareLS(
-          *(levelSets.back()));
+          levelSets.back());
       auto is = lsInternal::lsLocalLocalLaxFriedrichs<T, D, 1>(
-          *(levelSets.back()), dissipationAlpha);
+          levelSets.back(), velocities, dissipationAlpha);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
       lsInternal::lsLocalLocalLaxFriedrichs<T, D, 2>::prepareLS(
-          *(levelSets.back()));
+          levelSets.back());
       auto is = lsInternal::lsLocalLocalLaxFriedrichs<T, D, 2>(
-          *(levelSets.back()), dissipationAlpha);
+          levelSets.back(), velocities, dissipationAlpha);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-      lsInternal::lsLocalLaxFriedrichs<T, D, 1>::prepareLS(*(levelSets.back()));
-      auto is = lsInternal::lsLocalLaxFriedrichs<T, D, 1>(*(levelSets.back()),
-                                                          dissipationAlpha);
+      lsInternal::lsLocalLaxFriedrichs<T, D, 1>::prepareLS(levelSets.back());
+      auto is = lsInternal::lsLocalLaxFriedrichs<T, D, 1>(
+          levelSets.back(), velocities, dissipationAlpha);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
-      lsInternal::lsLocalLaxFriedrichs<T, D, 2>::prepareLS(*(levelSets.back()));
-      auto is = lsInternal::lsLocalLaxFriedrichs<T, D, 2>(*(levelSets.back()),
-                                                          dissipationAlpha);
+      lsInternal::lsLocalLaxFriedrichs<T, D, 2>::prepareLS(levelSets.back());
+      auto is = lsInternal::lsLocalLaxFriedrichs<T, D, 2>(
+          levelSets.back(), velocities, dissipationAlpha);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::
                    STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>::prepareLS(
-          *(levelSets.back()));
+          levelSets.back());
       auto is = lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>(
-          *(levelSets.back()), dissipationAlpha);
+          levelSets.back(), velocities, dissipationAlpha);
       currentTime = integrateTime(is, maxTimeStep);
     } else {
       lsMessage::getInstance()
@@ -406,7 +406,7 @@ template <class T, int D> class lsAdvect {
     if (integrationScheme !=
         lsIntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       for (unsigned i = 0; i < levelSets.size() - 1; ++i) {
-        lsBooleanOperation<T, D>(*levelSets[i], *(levelSets.back()),
+        lsBooleanOperation<T, D>(levelSets[i], levelSets.back(),
                                  lsBooleanOperationEnum::INTERSECT)
             .apply();
       }
@@ -437,7 +437,7 @@ template <class T, int D> class lsAdvect {
     totalTempRates.resize((levelSets.back())->getNumberOfSegments());
 
     if (ignoreVoids) {
-      lsMarkVoidPoints<T, D>(*levelSets.back()).apply();
+      lsMarkVoidPoints<T, D>(levelSets.back()).apply();
     }
 
 #pragma omp parallel num_threads((levelSets.back())->getNumberOfSegments())
@@ -472,7 +472,8 @@ template <class T, int D> class lsAdvect {
       }
 
       IntegrationSchemeType scheme(IntegrationScheme);
-      auto &voidPoints = levelSets.back()->getVoidPointMarkers();
+      auto &voidPoints =
+          *(levelSets.back()->getPointData().getScalarData("VoidPointMarkers"));
 
       for (hrleSparseIterator<typename lsDomain<T, D>::DomainType> it(
                topDomain, startVector);
@@ -481,7 +482,7 @@ template <class T, int D> class lsAdvect {
         if (!it.isDefined() || std::abs(it.getValue()) > 0.5)
           continue;
 
-        const T value = it.getValue();
+        T value = it.getValue();
         double maxStepTime = 0;
         double cfl = timeStepRatio;
 
@@ -501,9 +502,9 @@ template <class T, int D> class lsAdvect {
 
               // if the lower surface is actually outside, i.e. its LS value is
               // lower or equal
-              if (iterators[lowerLevelSetId].getValue() <= value + 1e-9) {
-                velocity =
-                    scheme(it.getStartIndices(), velocities, lowerLevelSetId);
+              if (iterators[lowerLevelSetId].getValue() <=
+                  value + wrappingLayerEpsilon) {
+                velocity = scheme(it.getStartIndices(), lowerLevelSetId);
                 break;
               }
             }
@@ -548,6 +549,8 @@ template <class T, int D> class lsAdvect {
               // this time step until the end of the material is reached
               tempRates.push_back(std::make_pair(velocity, valueBelow));
               cfl -= difference;
+              // use new LS value for next calculations
+              value = valueBelow;
             }
           }
         }
@@ -571,7 +574,7 @@ template <class T, int D> class lsAdvect {
 
     // reduce to one layer thickness and apply new values directly to the
     // domain segments --> DO NOT CHANGE SEGMENTATION HERE (true parameter)
-    lsReduce<T, D>(*levelSets.back(), 1, true).apply();
+    lsReduce<T, D>(levelSets.back(), 1, true).apply();
 
     const bool saveVelocities = saveAdvectionVelocities;
     std::vector<std::vector<double>> velocityVectors(
@@ -593,9 +596,9 @@ template <class T, int D> class lsAdvect {
         velocityVectors[p].resize(maxId);
       }
 
-      double time = maxTimeStep;
       for (unsigned localId = 0; localId < maxId; ++localId) {
         T &value = segment.definedValues[localId];
+        double time = maxTimeStep;
 
         // if there is a change in materials during one time step, deduct the
         // time taken to advect up to the end of the top material and set the LS
@@ -626,7 +629,7 @@ template <class T, int D> class lsAdvect {
     }
 
     if (saveVelocities) {
-      typename lsPointData::ScalarDataType pointData;
+      typename lsPointData<T>::ScalarDataType pointData;
       for (unsigned i = 0; i < velocityVectors.size(); ++i) {
         pointData.insert(pointData.end(),
                          std::make_move_iterator(velocityVectors[i].begin()),
@@ -642,32 +645,50 @@ template <class T, int D> class lsAdvect {
 public:
   lsAdvect() {}
 
-  lsAdvect(lsDomain<T, D> &passedlsDomain) {
-    levelSets.push_back(&passedlsDomain);
+  lsAdvect(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+    levelSets.push_back(passedlsDomain);
   }
 
-  lsAdvect(lsDomain<T, D> &passedlsDomain, lsVelocityField<T> &passedVelocities)
-      : velocities(&passedVelocities) {
-    levelSets.push_back(&passedlsDomain);
+  template <class VelocityField>
+  lsAdvect(lsSmartPointer<lsDomain<T, D>> passedlsDomain,
+           lsSmartPointer<VelocityField> passedVelocities) {
+    levelSets.push_back(passedlsDomain);
+    velocities =
+        std::dynamic_pointer_cast<lsVelocityField<T>>(passedVelocities);
   }
 
-  lsAdvect(lsVelocityField<T> &passedVelocities)
-      : velocities(&passedVelocities) {}
+  template <class VelocityField,
+            lsConcepts::IsBaseOf<lsVelocityField<T>, VelocityField> =
+                lsConcepts::assignable>
+  lsAdvect(lsSmartPointer<VelocityField> passedVelocities) {
+    velocities =
+        std::dynamic_pointer_cast<lsVelocityField<T>>(passedVelocities);
+  }
 
-  lsAdvect(std::vector<lsDomain<T, D> *> &passedlsDomains,
-           lsVelocityField<T> &passedVelocities)
-      : levelSets(passedlsDomains), velocities(&passedVelocities) {}
+  template <class VelocityField,
+            lsConcepts::IsBaseOf<lsVelocityField<T>, VelocityField> =
+                lsConcepts::assignable>
+  lsAdvect(std::vector<lsSmartPointer<lsDomain<T, D>>> passedlsDomains,
+           lsSmartPointer<VelocityField> passedVelocities)
+      : levelSets(passedlsDomains) {
+    velocities =
+        std::dynamic_pointer_cast<lsVelocityField<T>>(passedVelocities);
+  }
 
   /// Pushes the passed level set to the back of the list of level sets
   /// used for advection.
-  void insertNextLevelSet(lsDomain<T, D> &passedlsDomain) {
-    levelSets.push_back(&passedlsDomain);
+  void insertNextLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+    levelSets.push_back(passedlsDomain);
   }
 
   /// Set the velocity field used for advection. This should be a concrete
   /// implementation of lsVelocityField
-  void setVelocityField(lsVelocityField<T> &passedVelocities) {
-    velocities = &passedVelocities;
+  template <class VelocityField,
+            lsConcepts::IsBaseOf<lsVelocityField<T>, VelocityField> =
+                lsConcepts::assignable>
+  void setVelocityField(lsSmartPointer<VelocityField> passedVelocities) {
+    velocities =
+        std::dynamic_pointer_cast<lsVelocityField<T>>(passedVelocities);
   }
 
   /// Set the time until when the level set should be advected.
@@ -738,6 +759,7 @@ public:
         currentTime += advect(advectionTime - currentTime);
         ++numberOfTimeSteps;
       }
+      advectedTime = currentTime;
     }
   }
 };

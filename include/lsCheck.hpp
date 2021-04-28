@@ -11,7 +11,7 @@
 ///  This class is used to find errors in the underlying level set
 ///  structure, like invalid neighbours of different signs.
 template <class T, int D> class lsCheck {
-  const lsDomain<T, D> *levelSet = nullptr;
+  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
 
   int GetStatusFromDistance(T value) {
     int x = static_cast<int>(value);
@@ -25,10 +25,11 @@ template <class T, int D> class lsCheck {
 public:
   lsCheck() {}
 
-  lsCheck(const lsDomain<T, D> &passedLevelSet) : levelSet(&passedLevelSet) {}
+  lsCheck(const lsSmartPointer<lsDomain<T, D>> passedLevelSet)
+      : levelSet(passedLevelSet) {}
 
-  void setLevelSet(const lsDomain<T, D> &passedLevelSet) {
-    levelSet = &passedLevelSet;
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
+    levelSet = passedLevelSet;
   }
 
   void apply() {

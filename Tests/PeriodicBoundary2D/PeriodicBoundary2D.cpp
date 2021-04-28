@@ -23,7 +23,8 @@ class velocityField : public lsVelocityField<double> {
 public:
   double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
                            int /*material*/,
-                           const std::array<double, 3> & /*normalVector*/) {
+                           const std::array<double, 3> & /*normalVector*/,
+                           unsigned long /*pointId*/) {
     // isotropic etch rate
     return 0;
   }
@@ -31,7 +32,8 @@ public:
   std::array<double, 3>
   getVectorVelocity(const std::array<double, 3> & /*coordinate*/,
                     int /*material*/,
-                    const std::array<double, 3> & /*normalVector*/) {
+                    const std::array<double, 3> & /*normalVector*/,
+                    unsigned long /*pointId*/) {
     return std::array<double, 3>({1., 0.});
   }
 };
@@ -49,16 +51,18 @@ int main() {
   boundaryCons[0] = lsDomain<double, D>::BoundaryType::PERIODIC_BOUNDARY;
   boundaryCons[1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  lsDomain<double, D> substrate(bounds, boundaryCons, gridDelta);
+  auto substrate =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
 
   double origin[D] = {0., 0.};
   double planeNormal[D] = {0., 1.};
 
-  lsMakeGeometry<double, D>(substrate, lsPlane<double, D>(origin, planeNormal))
+  lsMakeGeometry<double, D>(
+      substrate, lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal))
       .apply();
 
-  std::cout << substrate.getGrid().getMinGridPoint() << std::endl;
-  std::cout << substrate.getGrid().getMaxGridPoint() << std::endl;
+  std::cout << substrate->getGrid().getMinGridPoint() << std::endl;
+  std::cout << substrate->getGrid().getMaxGridPoint() << std::endl;
 
   // for(hrleConstSparseStarIterator<lsDomain<double, D>::DomainType>
   // it(substrate.getDomain()); !it.isFinished(); it.next()) {
@@ -76,38 +80,39 @@ int main() {
   //   std::endl;
   // }
 
-  lsMesh mesh;
+  auto mesh = lsSmartPointer<lsMesh<>>::New();
   lsToMesh<double, D>(substrate, mesh).apply();
-  lsVTKWriter(mesh, lsFileFormatEnum::VTP, "normal.vtp").apply();
+  lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP, "normal.vtp").apply();
 
   // lsExpand<double, D>(substrate, 4).apply();
   // lsToMesh<double, D>(substrate, mesh).apply();
-  // lsVTKWriter(mesh, lsFileFormatEnum::VTP, "expanded.vtp").apply();
+  // lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP, "expanded.vtp").apply();
 
   // lsPrune<double, D>(substrate).apply();
   // lsToMesh<double, D>(substrate, mesh).apply();
-  // lsVTKWriter(mesh, lsFileFormatEnum::VTP, "pruned.vtp").apply();
+  // lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP, "pruned.vtp").apply();
   // -----------------------------------------------------
 
   {
     // create spheres used for booling
     std::cout << "Creating pillar..." << std::endl;
-    lsDomain<double, D> pillar(bounds, boundaryCons, gridDelta);
+    auto pillar = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
+                                                           gridDelta);
     double lowerCorner[D] = {5, -1};
     double upperCorner[D] = {15, 10};
-    lsMakeGeometry<double, D>(pillar,
-                              lsBox<double, D>(lowerCorner, upperCorner))
+    lsMakeGeometry<double, D>(
+        pillar, lsSmartPointer<lsBox<double, D>>::New(lowerCorner, upperCorner))
         .apply();
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(pillar, mesh).apply();
-    lsVTKWriter(mesh, lsFileFormatEnum::VTP, "pillar.vtp").apply();
+    lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP, "pillar.vtp").apply();
     lsBooleanOperation<double, D> boolOp(substrate, pillar,
                                          lsBooleanOperationEnum::UNION);
     boolOp.apply();
   }
 
   // Now etch the substrate isotropically
-  velocityField velocities;
+  auto velocities = lsSmartPointer<velocityField>::New();
 
   std::cout << "Advecting" << std::endl;
 
@@ -124,15 +129,15 @@ int main() {
     if (true) {
       std::cout << "\rAdvection step " + std::to_string(i) + " / "
                 << numberOfSteps << std::flush;
-      lsMesh mesh;
+      auto mesh = lsSmartPointer<lsMesh<>>::New();
       lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-      lsVTKWriter(mesh, lsFileFormatEnum::VTP,
-                  "pillar-" + std::to_string(i) + ".vtp")
+      lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP,
+                          "pillar-" + std::to_string(i) + ".vtp")
           .apply();
 
       lsToMesh<double, D>(substrate, mesh).apply();
-      lsVTKWriter(mesh, lsFileFormatEnum::VTP,
-                  "LS-" + std::to_string(i) + ".vtp")
+      lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP,
+                          "LS-" + std::to_string(i) + ".vtp")
           .apply();
     }
 

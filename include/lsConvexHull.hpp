@@ -11,15 +11,16 @@
 #include <lsGeometries.hpp>
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
+#include <lsSmartPointer.hpp>
 
 /// This algorithm creates a convex hull mesh from a
 /// point cloud. This is done using the gift wrapping approach.
-/// The points in the point cloud must be unique.
+/// The points in the point cloud MUST be unique, otherwise this will fail.
 template <class T, int D> class lsConvexHull {
   typedef hrleVectorType<unsigned, D - 1> EdgeType;
 
-  lsMesh *mesh = nullptr;
-  lsPointCloud<T, D> *pointCloud = nullptr;
+  lsSmartPointer<lsMesh<T>> mesh = nullptr;
+  lsSmartPointer<lsPointCloud<T, D>> pointCloud = nullptr;
   std::vector<EdgeType> visitedEdges;
   std::vector<hrleVectorType<unsigned, D>> hullElements;
   std::list<EdgeType> remainingEdges;
@@ -46,7 +47,6 @@ template <class T, int D> class lsConvexHull {
       // surface element normal and distance to point i
       hrleVectorType<T, D> normal;
       hrleVectorType<T, D> distance = points[i] - points[currentEdge[0]];
-      hrleVectorType<T, D> edgeVector;
       // create surface element and check if all points are to its right
       if (D == 2) {
         // in 2D normal is a 90 degree rotation
@@ -59,7 +59,6 @@ template <class T, int D> class lsConvexHull {
         auto v1 = points[currentEdge[1]] - points[currentEdge[0]];
         auto v2 = points[nextIndex] - points[currentEdge[0]];
         normal = calculateNormal(v1, v2);
-        edgeVector = v1;
       }
 
       auto product = DotProduct(distance, normal);
@@ -73,8 +72,9 @@ template <class T, int D> class lsConvexHull {
         triangle[0] = currentEdge[0];
         triangle[1] = currentEdge[1];
         triangle[2] = i;
-        if (doesTriangleClip(triangle))
+        if (doesTriangleClip(triangle)) {
           continue;
+        }
 
         EdgeType edges[2];
         edges[0][0] = currentEdge[0];
@@ -195,7 +195,7 @@ template <class T, int D> class lsConvexHull {
         }
       }
     }
-    // if no other node was ever within two edges, the triangle do not clip
+    // if no other node was ever within two edges, the triangles do not clip
     return false;
   }
 
@@ -266,13 +266,14 @@ template <class T, int D> class lsConvexHull {
 public:
   lsConvexHull() {}
 
-  lsConvexHull(lsMesh &passedMesh, lsPointCloud<T, D> &passedPointCloud)
-      : mesh(&passedMesh), pointCloud(&passedPointCloud) {}
+  lsConvexHull(lsSmartPointer<lsMesh<T>> passedMesh,
+               lsSmartPointer<lsPointCloud<T, D>> passedPointCloud)
+      : mesh(passedMesh), pointCloud(passedPointCloud) {}
 
-  void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh<T>> passedMesh) { mesh = passedMesh; }
 
-  void setPointCloud(lsPointCloud<T, D> &passedPointCloud) {
-    pointCloud = &passedPointCloud;
+  void setPointCloud(lsSmartPointer<lsPointCloud<T, D>> passedPointCloud) {
+    pointCloud = passedPointCloud;
   }
 
   void apply() {
@@ -389,7 +390,7 @@ public:
     }
 
     // now make the mesh
-    auto &elements = mesh->getElements<D>();
+    auto &elements = mesh->template getElements<D>();
     std::unordered_map<unsigned, unsigned> oldToNewNodes;
     for (unsigned i = 0; i < hullElements.size(); ++i) {
       // here add translation of old index to new index for new points
@@ -400,9 +401,9 @@ public:
 
         // if insertion took place, add the point to the nodes
         if (insertion.second) {
-          std::array<double, 3> node{
+          std::array<T, 3> node{
               points[hullElements[i][j]][0], points[hullElements[i][j]][1],
-              (D == 2) ? 0. : points[hullElements[i][j]][2]};
+              (D == 2) ? T(0.) : points[hullElements[i][j]][2]};
           mesh->nodes.push_back(node);
         }
 
@@ -413,5 +414,8 @@ public:
     }
   }
 };
+
+// add all template specialisations for this class
+PRECOMPILE_PRECISION_DIMENSION(lsConvexHull)
 
 #endif // LS_CONVEX_HULL_HPP

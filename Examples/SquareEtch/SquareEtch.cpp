@@ -24,7 +24,8 @@ class velocityField : public lsVelocityField<double> {
 public:
   double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
                            int material,
-                           const std::array<double, 3> &normalVector) {
+                           const std::array<double, 3> &normalVector,
+                           unsigned long /*pointId*/) {
     // if the surface of material 1 is facing upwards, etch it anisotropically
     if (material == 1 && normalVector[1] > 0.) {
       return -std::abs(normalVector[1]);
@@ -44,7 +45,8 @@ class analyticalField : public lsVelocityField<double> {
 public:
   double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
                            int material,
-                           const std::array<double, 3> &normalVector) {
+                           const std::array<double, 3> &normalVector,
+                           unsigned long /*pointId*/) {
     if (material != 1)
       return 0.;
 
@@ -91,35 +93,42 @@ int main() {
     boundaryCons[i] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   boundaryCons[D - 1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  lsDomain<double, D> substrate(bounds, boundaryCons, gridDelta);
+  auto substrate =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
 
   double origin[3] = {0., 0., 0.};
-  double planeNormal[3] = {0., 1., 0.};
+  double planeNormal[3] = {0., D == 2, D == 3};
+  {
+    auto plane = lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal);
+    lsMakeGeometry<double, D>(substrate, plane).apply();
+  }
 
-  lsMakeGeometry<double, D>(substrate, lsPlane<double, D>(origin, planeNormal))
-      .apply();
-
-  lsDomain<double, D> trench(bounds, boundaryCons, gridDelta);
-  // trench bottom is the initial bottom of the trench
   double trenchBottom = -2.;
-  double minCorner[D] = {-extent / 1.5, trenchBottom};
-  double maxCorner[D] = {extent / 1.5, 1.};
-  lsMakeGeometry<double, D>(trench, lsBox<double, D>(minCorner, maxCorner))
-      .apply();
+  {
+    auto trench = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
+                                                           gridDelta);
+    // trench bottom is the initial bottom of the trench
+    double minCorner[D] = {-extent / 1.5, trenchBottom};
+    double maxCorner[D] = {extent / 1.5, 1.};
+    auto box = lsSmartPointer<lsBox<double, D>>::New(minCorner, maxCorner);
+    lsMakeGeometry<double, D>(trench, box).apply();
 
-  // Create trench geometry
-  lsBooleanOperation<double, D>(substrate, trench,
-                                lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
-      .apply();
+    // Create trench geometry
+    lsBooleanOperation<double, D>(substrate, trench,
+                                  lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
+        .apply();
+  }
 
   // in order only to etch the bottom of the trench, we need a mask layer
-  lsDomain<double, D> mask(bounds, boundaryCons, gridDelta);
+  auto mask =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
   // make downward facing plane to remove bottom of trench for the mask
   // layer
   // add small offset so bottom of trench is definetly gone
   origin[D - 1] = trenchBottom + 1e-9;
   planeNormal[D - 1] = -1.;
-  lsMakeGeometry<double, D>(mask, lsPlane<double, D>(origin, planeNormal))
+  lsMakeGeometry<double, D>(
+      mask, lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal))
       .apply();
   lsBooleanOperation<double, D>(mask, substrate,
                                 lsBooleanOperationEnum::INTERSECT)
@@ -134,18 +143,18 @@ int main() {
     std::cout << "Extracting..." << std::endl;
     // output substrate layer (which wraps around mask layer)
     // wrapping is necessary for stable advection
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, fileName + "0.vtk").apply();
+    lsVTKWriter<double>(mesh, fileName + "0.vtk").apply();
 
     // output mask layer
     lsToSurfaceMesh<double, D>(mask, mesh).apply();
-    lsVTKWriter(mesh, "mask.vtk").apply();
+    lsVTKWriter<double>(mesh, "mask.vtk").apply();
   }
 
   // START ADVECTION
-  velocityField velocities;
-  analyticalField analyticalVelocities;
+  auto velocities = lsSmartPointer<velocityField>::New();
+  lsSmartPointer<analyticalField> analyticalVelocities;
 
   std::cout << "Advecting" << std::endl;
   lsAdvect<double, D> advectionKernel;
@@ -184,17 +193,18 @@ int main() {
     std::cout << "Advection step: " << counter
               << ", time: " << advectionKernel.getAdvectedTime() << std::endl;
 
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, fileName + std::to_string(counter) + ".vtk").apply();
+    lsVTKWriter<double>(mesh, fileName + std::to_string(counter) + ".vtk")
+        .apply();
     ++counter;
   }
   std::cout << std::endl;
   std::cout << "Number of Advection steps taken: " << counter << std::endl;
 
-  lsMesh mesh;
+  auto mesh = lsSmartPointer<lsMesh<>>::New();
   lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-  lsVTKWriter(mesh, "final.vtk").apply();
+  lsVTKWriter<double>(mesh, "final.vtk").apply();
 
   return 0;
 }

@@ -19,8 +19,8 @@
 #endif // VIENNALS_USE_VTK
 
 /// Class handling the import of VTK file types.
-class lsVTKReader {
-  lsMesh *mesh = nullptr;
+template <class T = double> class lsVTKReader {
+  lsSmartPointer<lsMesh<T>> mesh = nullptr;
   lsFileFormatEnum fileFormat = lsFileFormatEnum::VTK_LEGACY;
   std::string fileName;
 
@@ -30,17 +30,17 @@ class lsVTKReader {
 public:
   lsVTKReader() {}
 
-  lsVTKReader(lsMesh &passedMesh) : mesh(&passedMesh) {}
+  lsVTKReader(lsSmartPointer<lsMesh<T>> passedMesh) : mesh(passedMesh) {}
 
-  lsVTKReader(lsMesh &passedMesh, std::string passedFileName)
-      : mesh(&passedMesh), fileName(passedFileName) {}
+  lsVTKReader(lsSmartPointer<lsMesh<T>> passedMesh, std::string passedFileName)
+      : mesh(passedMesh), fileName(passedFileName) {}
 
-  lsVTKReader(lsMesh &passedMesh, lsFileFormatEnum passedFormat,
-              std::string passedFileName)
-      : mesh(&passedMesh), fileFormat(passedFormat), fileName(passedFileName) {}
+  lsVTKReader(lsSmartPointer<lsMesh<>> passedMesh,
+              lsFileFormatEnum passedFormat, std::string passedFileName)
+      : mesh(passedMesh), fileFormat(passedFormat), fileName(passedFileName) {}
 
   /// set the mesh the file should be read into
-  void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh<>> passedMesh) { mesh = passedMesh; }
 
   /// set file format for file to read. Defaults to VTK_LEGACY.
   void setFileFormat(lsFileFormatEnum passedFormat) {
@@ -174,7 +174,7 @@ private:
       vtkDataArray *dataArray;
       dataArray = cellData->GetArray(i);
       if (cellData->GetNumberOfComponents() == 1) {
-        mesh->insertNextScalarData(lsPointData::ScalarDataType(),
+        mesh->insertNextScalarData(typename lsPointData<T>::ScalarDataType(),
                                    std::string(cellData->GetArrayName(i)));
         auto &scalars = *(mesh->getScalarData(i));
         scalars.resize(cellData->GetNumberOfTuples());
@@ -182,7 +182,7 @@ private:
           scalars[j] = dataArray->GetTuple1(j);
         }
       } else if (cellData->GetNumberOfComponents() == 3) {
-        mesh->insertNextVectorData(lsPointData::VectorDataType(),
+        mesh->insertNextVectorData(typename lsPointData<T>::VectorDataType(),
                                    std::string(cellData->GetArrayName(i)));
         auto &vectors = *(mesh->getVectorData(i));
         vectors.resize(cellData->GetNumberOfTuples());
@@ -278,7 +278,7 @@ private:
       vtkDataArray *dataArray;
       dataArray = cellData->GetArray(i);
       if (cellData->GetNumberOfComponents() == 1) {
-        mesh->insertNextScalarData(std::vector<double>(),
+        mesh->insertNextScalarData(typename lsPointData<T>::ScalarDataType(),
                                    std::string(cellData->GetArrayName(i)));
         auto &scalars = *(mesh->getScalarData(i));
         scalars.resize(cellData->GetNumberOfTuples());
@@ -286,7 +286,7 @@ private:
           scalars[j] = dataArray->GetTuple1(j);
         }
       } else if (cellData->GetNumberOfComponents() == 3) {
-        mesh->insertNextVectorData(lsPointData::VectorDataType(),
+        mesh->insertNextVectorData(typename lsPointData<T>::VectorDataType(),
                                    std::string(cellData->GetArrayName(i)));
         auto &vectors = *(mesh->getVectorData(i));
         vectors.resize(cellData->GetNumberOfTuples());
@@ -415,12 +415,19 @@ private:
       if (number_nodes == elems_fake || number_nodes == 0) {
         // check for different types to subdivide them into supported types
         switch (cell_type) {
+        case 1: {
+          std::array<unsigned, 1> elem;
+          f >> elem[0];
+          mesh->template getElements<1>().push_back(elem);
+          materials.push_back(cell_material);
+          break;
+        }
         case 3: {
           std::array<unsigned, 2> elem;
           for (unsigned j = 0; j < number_nodes; ++j) {
             f >> elem[j];
           }
-          mesh->getElements<2>().push_back(elem);
+          mesh->template getElements<2>().push_back(elem);
           materials.push_back(cell_material);
           break;
         }
@@ -430,7 +437,7 @@ private:
           for (unsigned j = 0; j < number_nodes; ++j) {
             f >> elem[j];
           }
-          mesh->getElements<3>().push_back(elem);
+          mesh->template getElements<3>().push_back(elem);
           materials.push_back(cell_material);
           break;
         }
@@ -441,7 +448,7 @@ private:
           for (unsigned j = 0; j < number_nodes; ++j) {
             f >> elem[j];
           }
-          mesh->getElements<4>().push_back(elem);
+          mesh->template getElements<4>().push_back(elem);
           materials.push_back(cell_material);
           break;
         }
@@ -452,12 +459,12 @@ private:
           for (unsigned j = 0; j < 3; ++j) {
             f >> elem[j];
           }
-          mesh->getElements<3>().push_back(
+          mesh->template getElements<3>().push_back(
               elem); // push the first three nodes as a triangle
           materials.push_back(cell_material);
 
           f >> elem[1]; // replace middle element to create other triangle
-          mesh->getElements<3>().push_back(elem);
+          mesh->template getElements<3>().push_back(elem);
           materials.push_back(cell_material);
           break;
         }
@@ -480,6 +487,52 @@ private:
     }
 
     mesh->insertNextScalarData(materials, "Material");
+
+    // Now read Cell Data
+    int num_cell_data = 0;
+    while (std::getline(f, temp)) {
+      if (temp.find("CELL_DATA") != std::string::npos) {
+        num_cell_data = atoi(&temp[temp.find(" ") + 1]);
+        break;
+      }
+    }
+    std::cout << "Read cell data: " << num_cell_data << std::endl;
+
+    while (!f.eof()) {
+      std::cout << "reading scalar data" << std::endl;
+      while (std::getline(f, temp)) {
+        if (temp.find("SCALARS") != std::string::npos)
+          break;
+      }
+      if (f.eof()) {
+        break;
+      }
+
+      std::string scalarDataName;
+      {
+        int firstS = temp.find(" ") + 1;
+        int secondS = temp.find(" ", firstS + 1);
+        scalarDataName = temp.substr(firstS, secondS - firstS);
+      }
+      std::vector<double> scalarData;
+
+      // consume one line, which defines the lookup table
+      std::getline(f, temp);
+      if (temp.compare("LOOKUP_TABLE default") != 0) {
+        lsMessage::getInstance()
+            .addWarning("Wrong lookup table for VTKLegacy: " + temp)
+            .print();
+      }
+
+      // now read scalar values
+      for (int i = 0; i < num_cell_data; ++i) {
+        double data;
+        f >> data;
+        scalarData.push_back(data);
+      }
+
+      mesh->insertNextScalarData(scalarData, scalarDataName);
+    }
 
     f_ct.close();
     f_m.close();

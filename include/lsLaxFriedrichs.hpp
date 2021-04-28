@@ -14,7 +14,8 @@ namespace lsInternal {
 /// based on the results of the advection and passed to the
 /// advection Kernel.
 template <class T, int D, int order> class lsLaxFriedrichs {
-  lsDomain<T, D> &levelSet;
+  lsSmartPointer<lsDomain<T, D>> levelSet;
+  lsSmartPointer<lsVelocityField<T>> velocities;
   hrleSparseStarIterator<hrleDomain<T, D>> neighborIterator;
   bool calculateNormalVectors = true;
   const double alpha = 1.0;
@@ -22,22 +23,22 @@ template <class T, int D, int order> class lsLaxFriedrichs {
   static T pow2(const T &value) { return value * value; }
 
 public:
-  static void prepareLS(lsDomain<T, D> &passedlsDomain) {
+  static void prepareLS(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     assert(order == 1 || order == 2);
     lsExpand<T, D>(passedlsDomain, 2 * order + 1).apply();
   }
 
-  lsLaxFriedrichs(lsDomain<T, D> &passedlsDomain, bool calcNormal = true,
-                  double a = 1.0)
-      : levelSet(passedlsDomain),
+  lsLaxFriedrichs(lsSmartPointer<lsDomain<T, D>> passedlsDomain,
+                  lsSmartPointer<lsVelocityField<T>> vel,
+                  bool calcNormal = true, double a = 1.0)
+      : levelSet(passedlsDomain), velocities(vel),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>>(
-            levelSet.getDomain(), order)),
+            levelSet->getDomain(), order)),
         calculateNormalVectors(calcNormal), alpha(a) {}
 
-  T operator()(const hrleVectorType<hrleIndexType, D> &indices,
-               lsVelocityField<T> *velocities, int material) {
+  T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {
 
-    auto &grid = levelSet.getGrid();
+    auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
 
     hrleVectorType<T, 3> coordinate(0., 0., 0.);
@@ -131,10 +132,12 @@ public:
     // convert coordinate to std array for interface
     std::array<T, 3> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
 
-    double scalarVelocity =
-        velocities->getScalarVelocity(coordArray, material, normalVector);
-    std::array<T, 3> vectorVelocity =
-        velocities->getVectorVelocity(coordArray, material, normalVector);
+    double scalarVelocity = velocities->getScalarVelocity(
+        coordArray, material, normalVector,
+        neighborIterator.getCenter().getPointId());
+    std::array<T, 3> vectorVelocity = velocities->getVectorVelocity(
+        coordArray, material, normalVector,
+        neighborIterator.getCenter().getPointId());
 
     T totalGrad = 0.;
     if (scalarVelocity != 0.) {

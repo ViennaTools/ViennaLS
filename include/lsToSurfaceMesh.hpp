@@ -12,29 +12,29 @@
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
 
-/// Extract an explicit lsMesh instance from an lsDomain.
+/// Extract an explicit lsMesh<> instance from an lsDomain.
 /// The interface is then described by explciit surface elements:
 /// Lines in 2D, Triangles in 3D.
 template <class T, int D> class lsToSurfaceMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
 
-  const lsDomain<T, D> *levelSet = nullptr;
-  lsMesh *mesh = nullptr;
+  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
+  lsSmartPointer<lsMesh<T>> mesh = nullptr;
   // std::vector<hrleIndexType> meshNodeToPointIdMapping;
-  const double epsilon;
+  const T epsilon;
 
 public:
   lsToSurfaceMesh(double eps = 1e-12) : epsilon(eps) {}
 
-  lsToSurfaceMesh(const lsDomain<T, D> &passedLevelSet, lsMesh &passedMesh,
-                  double eps = 1e-12)
-      : levelSet(&passedLevelSet), mesh(&passedMesh), epsilon(eps) {}
+  lsToSurfaceMesh(const lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+                  lsSmartPointer<lsMesh<T>> passedMesh, double eps = 1e-12)
+      : levelSet(passedLevelSet), mesh(passedMesh), epsilon(eps) {}
 
-  void setLevelSet(lsDomain<T, D> &passedlsDomain) {
-    levelSet = &passedlsDomain;
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+    levelSet = passedlsDomain;
   }
 
-  void setMesh(lsMesh &passedMesh) { mesh = &passedMesh; }
+  void setMesh(lsSmartPointer<lsMesh<T>> passedMesh) { mesh = passedMesh; }
 
   void apply() {
     if (levelSet == nullptr) {
@@ -47,6 +47,10 @@ public:
       lsMessage::getInstance()
           .addWarning("No mesh was passed to lsToSurfaceMesh.")
           .print();
+      return;
+    }
+
+    if (levelSet->getNumberOfPoints() == 0) {
       return;
     }
 
@@ -123,7 +127,7 @@ public:
           } else { // if node does not exist yet
 
             // calculate coordinate of new node
-            std::array<double, 3> cc{}; // initialise with zeros
+            std::array<T, 3> cc{}; // initialise with zeros
             for (int z = 0; z < D; z++) {
               if (z != dir) {
                 // TODO might not need BitMaskToVector here, just check if z bit

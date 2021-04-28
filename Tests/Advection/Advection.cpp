@@ -19,7 +19,8 @@ class velocityField : public lsVelocityField<double> {
 public:
   double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
                            int /*material*/,
-                           const std::array<double, 3> &normalVector) {
+                           const std::array<double, 3> &normalVector,
+                           unsigned long /*pointId*/) {
     // Some arbitrary velocity function of your liking
     // (try changing it and see what happens :)
     double velocity = 1. + ((normalVector[0] > 0) ? 2.3 : 0.5) *
@@ -30,7 +31,8 @@ public:
   std::array<double, 3>
   getVectorVelocity(const std::array<double, 3> & /*coordinate*/,
                     int /*material*/,
-                    const std::array<double, 3> & /*normalVector*/) {
+                    const std::array<double, 3> & /*normalVector*/,
+                    unsigned long /*pointId*/) {
     return std::array<double, 3>({});
   }
 };
@@ -42,23 +44,24 @@ int main() {
 
   double gridDelta = 0.25;
 
-  lsDomain<double, D> sphere1(gridDelta);
+  auto sphere1 = lsSmartPointer<lsDomain<double, D>>::New(gridDelta);
 
   double origin[3] = {5., 0., 0.};
   double radius = 7.3;
 
-  lsMakeGeometry<double, D>(sphere1, lsSphere<double, D>(origin, radius))
+  lsMakeGeometry<double, D>(
+      sphere1, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
       .apply();
 
   {
     std::cout << "Extracting..." << std::endl;
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter(mesh, "before.vtk").apply();
+    lsVTKWriter<double>(mesh, "before.vtk").apply();
   }
 
   // instantiate velocities
-  velocityField velocities;
+  auto velocities = lsSmartPointer<velocityField>::New();
 
   std::cout << "Advecting" << std::endl;
 
@@ -79,10 +82,10 @@ int main() {
 
   {
     std::cout << "Extracting..." << std::endl;
-    lsMesh mesh;
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
-    mesh.print();
-    lsVTKWriter(mesh, "after.vtk").apply();
+    mesh->print();
+    lsVTKWriter<double>(mesh, "after.vtk").apply();
   }
 
   return 0;
