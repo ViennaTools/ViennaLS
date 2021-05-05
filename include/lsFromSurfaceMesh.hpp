@@ -216,8 +216,11 @@ public:
   lsFromSurfaceMesh(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
                     lsSmartPointer<lsMesh<T>> passedMesh,
                     bool passedRemoveBoundaryTriangles = true)
-      : levelSet(passedLevelSet), mesh(passedMesh),
-        removeBoundaryTriangles{passedRemoveBoundaryTriangles, passedRemoveBoundaryTriangles, passedRemoveBoundaryTriangles} {}
+      : levelSet(passedLevelSet),
+        mesh(passedMesh), removeBoundaryTriangles{
+                              passedRemoveBoundaryTriangles,
+                              passedRemoveBoundaryTriangles,
+                              passedRemoveBoundaryTriangles} {}
 
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
@@ -234,10 +237,12 @@ public:
 
   /// Set whether all triangles outside of the domain should be ignored (=true)
   /// or whether boundary conditions should be applied correctly to such
-  /// triangles(=false), for each direction. Defaults to true for all directions.
-  template<std::size_t N>
-  void setRemoveBoundaryTriangles(std::array<bool, N> passedRemoveBoundaryTriangles) {
-    for(unsigned i = 0; i < D && i < N; ++i) {
+  /// triangles(=false), for each direction. Defaults to true for all
+  /// directions.
+  template <std::size_t N>
+  void setRemoveBoundaryTriangles(
+      std::array<bool, N> passedRemoveBoundaryTriangles) {
+    for (unsigned i = 0; i < D && i < N; ++i) {
       removeBoundaryTriangles[i] = passedRemoveBoundaryTriangles[i];
     }
   }
@@ -256,14 +261,13 @@ public:
       return;
     }
 
-    const auto& grid = levelSet->getGrid();
+    const auto &grid = levelSet->getGrid();
 
     // caluclate which directions should apply removeBoundaryTriangles
     // it only makes sense to keep boundary triangles for periodic BNC
     bool removeBoundaries[D];
     for (unsigned i = 0; i < D; ++i) {
-      if (!removeBoundaryTriangles[i] &&
-          grid.isBoundaryPeriodic(i)) {
+      if (!removeBoundaryTriangles[i] && grid.isBoundaryPeriodic(i)) {
         removeBoundaries[i] = false;
       } else {
         removeBoundaries[i] = true;
@@ -350,8 +354,8 @@ public:
 
         // Only iterate over indices which are actually inside the domain
         // if boundary conditions should be ignored
-        for(unsigned i = 0; i < D; ++i) {
-          if(removeBoundaries[i]) {
+        for (unsigned i = 0; i < D; ++i) {
+          if (removeBoundaries[i]) {
             minIndex[i] = std::max(minIndex[i], grid.getMinIndex(i));
             // for Periodic BNC, MaxGridPoint is MaxIndex-1
             maxIndex[i] = std::min(maxIndex[i], grid.getMaxGridPoint(i));
@@ -390,8 +394,10 @@ public:
 
             if (intersection_status != 0) {
               // if there is an intersection
-              assert(intersection >= minNode[z] && "Intersection should be inside Domain!");
-              assert(intersection <= maxNode[z] && "Intersection should be inside Domain!");
+              assert(intersection >= minNode[z] &&
+                     "Intersection should be inside Domain!");
+              assert(intersection <= maxNode[z] &&
+                     "Intersection should be inside Domain!");
               // intersection = std::max(intersection, minNode[z]);
               // intersection = std::min(intersection, maxNode[z]);
 
@@ -402,8 +408,8 @@ public:
                   intersection < grid.getMinLocalCoordinate(z))
                 continue;
 
-              T intersection2 = grid.globalCoordinate2LocalIndex(
-                  z, intersection);
+              T intersection2 =
+                  grid.globalCoordinate2LocalIndex(z, intersection);
 
               hrleIndexType floor = static_cast<hrleIndexType>(
                   std::floor(intersection2 - distanceEps));
@@ -451,9 +457,9 @@ public:
                 if (RealDistance == 0.)
                   RealDistance = 0.; // to avoid zeros with negative sign
 
-                points.push_back(std::make_pair(
-                    grid.globalIndices2LocalIndices(it_b),
-                    std::make_pair(SignDistance, RealDistance)));
+                points.push_back(
+                    std::make_pair(grid.globalIndices2LocalIndices(it_b),
+                                   std::make_pair(SignDistance, RealDistance)));
               }
             }
           }

@@ -127,7 +127,6 @@ template <class T, int D> class lsAdvect {
     }
 #endif
 
-
 #pragma omp parallel num_threads(newDomain.getNumberOfSegments())
     {
       int p = 0;

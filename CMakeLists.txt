@@ -62,6 +62,7 @@ if(VIENNALS_USE_VTK)
     list(APPEND VIENNALS_PYTHON_LIBRARIES ${VTK_LIBRARIES})
   else(VTK_FOUND)
     message(STATUS "No VTK install found: Building without VTK.")
+    set(VIENNALS_USE_VTK OFF)
   endif(VTK_FOUND)
 endif(VIENNALS_USE_VTK)
 

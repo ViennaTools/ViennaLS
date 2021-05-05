@@ -34,27 +34,20 @@ template <class T, int D> class lsCheck {
 public:
   lsCheck() {}
 
-  lsCheck(lsSmartPointer<lsDomain<T, D>> passedLevelSet, bool print = false) : levelSet(passedLevelSet), printMessage(print) {}
+  lsCheck(lsSmartPointer<lsDomain<T, D>> passedLevelSet, bool print = false)
+      : levelSet(passedLevelSet), printMessage(print) {}
 
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
   }
 
-  void setPrintMessage(bool print) {
-    printMessage = print;
-  }
+  void setPrintMessage(bool print) { printMessage = print; }
 
-  lsCheckStatusEnum getStatus() const {
-    return status;
-  }
+  lsCheckStatusEnum getStatus() const { return status; }
 
-  bool isValid() const {
-    return status == lsCheckStatusEnum::SUCCESS;
-  }
+  bool isValid() const { return status == lsCheckStatusEnum::SUCCESS; }
 
-  std::string what() const {
-    return errors;
-  }
+  std::string what() const { return errors; }
 
   void apply() {
     if (levelSet == nullptr) {
@@ -120,10 +113,10 @@ public:
     }
 
     // output any faults as error
-    if(std::string s = oss.str(); !s.empty()) {
+    if (std::string s = oss.str(); !s.empty()) {
       status = lsCheckStatusEnum::FAILED;
       errors = s;
-      if(printMessage) {
+      if (printMessage) {
         std::string message = "Report from lsCheck:\n" + s;
         lsMessage::getInstance().addError(s);
       }

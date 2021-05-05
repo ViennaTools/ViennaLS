@@ -43,7 +43,7 @@ template <class T, int D> class lsMakeGeometry {
   lsSmartPointer<lsPointCloud<T, D>> pointCloud;
   const double numericEps = 1e-9;
   // bool ignoreBoundaryConditions = false;
-  std::array<bool, 3> ignoreBoundaryConditions{ false, false, false };
+  std::array<bool, 3> ignoreBoundaryConditions{false, false, false};
 
 public:
   lsMakeGeometry() {}
@@ -119,7 +119,7 @@ public:
   /// Ignore boundary conditions, meaning the parts of the generated
   /// geometry which are outside of the domain boundaries are ignored.
   void setIgnoreBoundaryConditions(bool passedIgnoreBoundaryConditions) {
-    for(unsigned i = 0; i < D; ++i) {
+    for (unsigned i = 0; i < D; ++i) {
       ignoreBoundaryConditions[i] = passedIgnoreBoundaryConditions;
     }
   }
@@ -127,9 +127,10 @@ public:
   /// Ignore boundary conditions, meaning the parts of the generated
   /// geometry which are outside of the domain boundaries are ignored.
   /// Set it for each direction separately.
-  template<std::size_t N>
-  void setIgnoreBoundaryConditions(std::array<bool, N> passedIgnoreBoundaryConditions) {
-    for(unsigned i = 0; i < D && i < N; ++i) {
+  template <std::size_t N>
+  void setIgnoreBoundaryConditions(
+      std::array<bool, N> passedIgnoreBoundaryConditions) {
+    for (unsigned i = 0; i < D && i < N; ++i) {
       ignoreBoundaryConditions[i] = passedIgnoreBoundaryConditions[i];
     }
   }
@@ -358,7 +359,8 @@ private:
 
 #ifndef NDEBUG
     static unsigned planeCounter = 0;
-    lsVTKWriter<T>(mesh, "plane" + std::to_string(planeCounter++) + ".vtk").apply();
+    lsVTKWriter<T>(mesh, "plane" + std::to_string(planeCounter++) + ".vtk")
+        .apply();
 #endif
 
     // now convert mesh to levelset

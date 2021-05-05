@@ -64,8 +64,20 @@ public:
       return;
     }
 
-    std::vector<T> scalarData;
+    // LS data
+    std::vector<T> LSValues;
     std::vector<T> subLS;
+    // point data
+    const auto &pointData = levelSet->getPointData();
+    using DomainType = lsDomain<T, D>;
+    using ScalarDataType = typename DomainType::PointDataType::ScalarDataType;
+    using VectorDataType = typename DomainType::PointDataType::VectorDataType;
+
+    // get all the data of the LS
+    std::vector<ScalarDataType> scalarData;
+    std::vector<VectorDataType> vectorData;
+    scalarData.resize(pointData.getScalarDataSize());
+    vectorData.resize(pointData.getVectorDataSize());
 
     const T gridDelta = levelSet->getGrid().getGridDelta();
 
@@ -103,18 +115,55 @@ public:
 
       // insert LS value
       if (it.isDefined()) {
-        scalarData.push_back(it.getDefinedValue());
+        LSValues.push_back(it.getDefinedValue());
       } else {
-        scalarData.push_back((it.getValue() < 0) ? -1000 : 1000);
+        LSValues.push_back((it.getValue() < 0) ? -1000 : 1000);
       }
       subLS.push_back(it.getSegmentId());
+
+      // add all saved LS data
+      for (unsigned i = 0; i < pointData.getScalarDataSize(); ++i) {
+        if (const auto dataPointer = pointData.getScalarData(i);
+            dataPointer != nullptr) {
+          const auto &currentData = *dataPointer;
+          scalarData[i].push_back(currentData[it.getPointId()]);
+        } else {
+          lsMessage::getInstance()
+              .addWarning("lsToMesh: Tried to access out of bounds scalarData! "
+                          "Ignoring.")
+              .print();
+          break;
+        }
+      }
+
+      for (unsigned i = 0; i < pointData.getVectorDataSize(); ++i) {
+        if (const auto dataPointer = pointData.getVectorData(i);
+            dataPointer != nullptr) {
+          const auto &currentData = *dataPointer;
+          vectorData[i].push_back(currentData[it.getPointId()]);
+        } else {
+          lsMessage::getInstance()
+              .addWarning("lsToMesh: Tried to access out of bounds vectorData! "
+                          "Ignoring.")
+              .print();
+          break;
+        }
+      }
     }
 
-    mesh->insertNextScalarData(scalarData, "LSValues");
+    mesh->insertNextScalarData(LSValues, "LSValues");
     mesh->insertNextScalarData(subLS, "SegmentID");
-    if (levelSet->getPointData().getScalarDataSize() > 0 ||
-        levelSet->getPointData().getVectorDataSize() > 0) {
-      mesh->lsPointData<T>::append(levelSet->getPointData());
+
+    // append all scalar and vector data
+    // just move it into the new structure, since we do not need it anymore
+    for (unsigned i = 0; i < scalarData.size(); ++i) {
+      mesh->insertNextScalarData(std::move(scalarData[i]),
+                                 pointData.getScalarDataLabel(i));
+    }
+
+    for (unsigned i = 0; i < vectorData.size(); ++i) {
+      mesh->insertNextVectorData(std::move(vectorData[i]),
+                                 pointData.getVectorDataLabel(i));
     }
   }
 };

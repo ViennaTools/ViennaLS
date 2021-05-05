@@ -2,11 +2,11 @@
 #include <iostream>
 
 #include <lsBooleanOperation.hpp>
-#include <lsTestAsserts.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsFromSurfaceMesh.hpp>
 #include <lsMakeGeometry.hpp>
+#include <lsTestAsserts.hpp>
 #include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsToVoxelMesh.hpp>
@@ -48,7 +48,8 @@ int main() {
 
   LSTEST_ASSERT_VALID_LS(levelSet, double, D)
 
-  // std::cout << "Number of points: " << levelSet->getDomain().getNumberOfPoints()
+  // std::cout << "Number of points: " <<
+  // levelSet->getDomain().getNumberOfPoints()
   //           << std::endl;
   // auto mesh = lsSmartPointer<lsMesh<>>::New();
   // lsToMesh<double, D>(levelSet, mesh).apply();

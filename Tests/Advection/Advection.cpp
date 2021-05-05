@@ -5,10 +5,10 @@
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
+#include <lsTestAsserts.hpp>
 #include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
-#include <lsTestAsserts.hpp>
 
 /**
   This example shows how to use lsAdvect to create an egg
@@ -22,7 +22,7 @@ public:
   double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
                            int /*material*/,
                            const std::array<double, 3> &normalVector,
-                           unsigned long /*pointId*/) {
+                           unsigned long /*pointId*/) final {
     // Some arbitrary velocity function of your liking
     // (try changing it and see what happens :)
     double velocity = 1. + ((normalVector[0] > 0) ? 2.3 : 0.5) *
@@ -34,7 +34,7 @@ public:
   getVectorVelocity(const std::array<double, 3> & /*coordinate*/,
                     int /*material*/,
                     const std::array<double, 3> & /*normalVector*/,
-                    unsigned long /*pointId*/) {
+                    unsigned long /*pointId*/) final {
     return std::array<double, 3>({});
   }
 };
@@ -75,7 +75,7 @@ int main() {
   advectionKernel.setSaveAdvectionVelocities(true);
 
   double time = 0.;
-  for(unsigned i = 0; time < 2.0 && i < 1e3; ++i) {
+  for (unsigned i = 0; time < 2.0 && i < 1e3; ++i) {
     // auto mesh = lsSmartPointer<lsMesh<>>::New();
     // lsToMesh<double, D>(sphere1, mesh).apply();
     // // mesh->print();

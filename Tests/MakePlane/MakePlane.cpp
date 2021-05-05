@@ -3,12 +3,12 @@
 #include <iostream>
 
 #include <lsBooleanOperation.hpp>
-#include <lsTestAsserts.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
 #include <lsReduce.hpp>
+#include <lsTestAsserts.hpp>
 #include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsToVoxelMesh.hpp>

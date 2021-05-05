@@ -8,11 +8,11 @@
 #include <lsFromSurfaceMesh.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
+#include <lsTestAsserts.hpp>
 #include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKReader.hpp>
 #include <lsVTKWriter.hpp>
-#include <lsTestAsserts.hpp>
 
 /**
   This example shows how to use lsAdvect to isotropically
@@ -75,7 +75,8 @@ int main() {
   // Advect the sphere
   auto velocities = lsSmartPointer<velocityField>::New();
 
-  // std::cout << "Number of points: " << sphere1->getDomain().getNumberOfPoints()
+  // std::cout << "Number of points: " <<
+  // sphere1->getDomain().getNumberOfPoints()
   //           << std::endl;
 
   // std::cout << "Advecting" << std::endl;
