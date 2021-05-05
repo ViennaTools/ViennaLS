@@ -5,6 +5,7 @@
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
+#include <lsTestAsserts.hpp>
 #include <lsToMesh.hpp>
 #include <lsVTKWriter.hpp>
 
@@ -49,41 +50,25 @@ int main() {
         .apply();
   }
 
-  std::cout << "Expanding..." << std::endl;
+  // std::cout << "Expanding..." << std::endl;
   lsExpand<double, D>(sphere1, 3).apply();
 
-  std::cout << "Number of points: " << sphere1->getNumberOfPoints()
-            << std::endl;
+  // std::cout << "Number of points: " << sphere1->getNumberOfPoints()
+  // << std::endl;
 
   // normal vectors are only valid as long as the underlying
   // level set does not change
   lsCalculateNormalVectors<double, 3>(sphere1).apply();
-  auto &normalVectors = *(sphere1->getPointData().getVectorData("Normals"));
 
-  auto mesh = lsSmartPointer<lsMesh<>>::New();
-  lsToMesh<double, 3>(sphere1, mesh, true, true).apply();
+  // auto mesh = lsSmartPointer<lsMesh<>>::New();
+  // lsToMesh<double, 3>(sphere1, mesh, true, true).apply();
 
-  // also output LS values as scalar data
-  std::vector<double> scalars;
-  std::vector<std::array<double, 3>> vectors;
-  for (hrleConstSparseIterator<lsDomain<double, D>::DomainType> it(
-           sphere1->getDomain());
-       !it.isFinished(); ++it) {
-    if (!it.isDefined() || std::abs(it.getValue()) > 0.5)
-      continue;
+  // auto writer = lsVTKWriter<double>();
+  // writer.setMesh(mesh);
+  // writer.setFileName("explicit.vtk");
+  // writer.apply();
 
-    scalars.push_back(double(it.getValue()));
-    vectors.push_back(normalVectors[it.getPointId()]);
-  }
-  mesh->insertNextScalarData(scalars, "LSValues");
-
-  // set normal vectors as vectordata to mesh
-  mesh->insertNextVectorData(vectors, "Normals");
-
-  auto writer = lsVTKWriter<double>();
-  writer.setMesh(mesh);
-  writer.setFileName("explicit.vtk");
-  writer.apply();
+  LSTEST_ASSERT_VALID_LS(sphere1, double, D)
 
   return 0;
 }

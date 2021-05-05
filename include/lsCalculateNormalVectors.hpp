@@ -45,7 +45,7 @@ public:
       lsMessage::getInstance()
           .addWarning("lsCalculateNormalVectors: Level set width must be "
                       "greater than " +
-                      std::to_string((maxValue * 4) + 1) + " 2!")
+                      std::to_string((maxValue * 4) + 1) + "!")
           .print();
     }
 

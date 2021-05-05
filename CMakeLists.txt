@@ -36,6 +36,10 @@ if(VIENNALS_STATIC_BUILD)
   list(APPEND VIENNALS_LIBRARIES "-static")
 endif(VIENNALS_STATIC_BUILD)
 
+# OpenMP Support
+find_package(OpenMP REQUIRED)
+list(APPEND VIENNALS_LIBRARIES OpenMP::OpenMP_CXX)
+
 # VTK File type support
 option(VIENNALS_USE_VTK "Build with VTK file support." ON)
 if(VIENNALS_USE_VTK)
@@ -58,6 +62,7 @@ if(VIENNALS_USE_VTK)
     list(APPEND VIENNALS_PYTHON_LIBRARIES ${VTK_LIBRARIES})
   else(VTK_FOUND)
     message(STATUS "No VTK install found: Building without VTK.")
+    set(VIENNALS_USE_VTK OFF)
   endif(VTK_FOUND)
 endif(VIENNALS_USE_VTK)
 
@@ -134,6 +139,7 @@ endif(VIENNALS_BUILD_EXAMPLES)
 #################################################
 option(VIENNALS_BUILD_TESTS "Build tests." OFF)
 if(VIENNALS_BUILD_TESTS)
+  enable_testing()
   add_subdirectory(Tests)
 endif(VIENNALS_BUILD_TESTS)
 

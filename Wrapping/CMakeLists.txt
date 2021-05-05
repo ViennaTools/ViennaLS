@@ -51,6 +51,9 @@ endif()
 if(VIENNALS_BUILD_PYTHON_2_7 AND NOT VIENNALS_BUILD_PYTHON_3_6)
   set(PYBIND11_PYTHON_VERSION 2.7 CACHE STRING "Python version")
 
+  # disable register warning, as Pyhton.h of Python 2 includes register variables
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-register")
+
   find_package(ViennaHRLE REQUIRED)
   find_package(ViennaLS REQUIRED)
   find_package(pybind11)

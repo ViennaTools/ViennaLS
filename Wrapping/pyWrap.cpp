@@ -446,7 +446,13 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("setMesh", &lsFromSurfaceMesh<T, D>::setMesh,
            "Set the mesh to read from.")
       .def("setRemoveBoundaryTriangles",
-           &lsFromSurfaceMesh<T, D>::setRemoveBoundaryTriangles,
+           static_cast<void (lsFromSurfaceMesh<T, D>::*)(bool)>(
+               &lsFromSurfaceMesh<T, D>::setRemoveBoundaryTriangles),
+           "Set whether to include mesh elements outside of the simulation "
+           "domain.")
+      .def("setRemoveBoundaryTriangles",
+           static_cast<void (lsFromSurfaceMesh<T, D>::*)(std::array<bool, 3>)>(
+               &lsFromSurfaceMesh<T, D>::setRemoveBoundaryTriangles),
            "Set whether to include mesh elements outside of the simulation "
            "domain.")
       .def("apply", &lsFromSurfaceMesh<T, D>::apply,
@@ -609,7 +615,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("getTriangles",
            (std::vector<std::array<unsigned, 3>> & (lsMesh<T>::*)()) &
                lsMesh<T>::getElements<3>,
-           "Get a list of verticies of the mesh.")
+           "Get a list of triangles of the mesh.")
       .def("getTetras",
            (std::vector<std::array<unsigned, 4>> & (lsMesh<T>::*)()) &
                lsMesh<T>::getElements<4>,
@@ -620,6 +626,8 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Get a list of hexahedrons of the mesh.")
       .def("insertNextNode", &lsMesh<T>::insertNextNode,
            "Insert a node in the mesh.")
+      .def("insertNextVertex", &lsMesh<T>::insertNextVertex,
+           "Insert a vertex in the mesh.")
       .def("insertNextLine", &lsMesh<T>::insertNextLine,
            "Insert a line in the mesh.")
       .def("insertNextTriangle", &lsMesh<T>::insertNextTriangle,
