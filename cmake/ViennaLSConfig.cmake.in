@@ -8,22 +8,18 @@ SET(CMAKE_CXX_STANDARD "17")
 ###############################################
 if(OMP_PARALLELIZE)
   find_package(OpenMP REQUIRED)
-  list(APPEND VIENNALS_LIBRARIES OpenMP::OpenMP_CXX)
+  list(APPEND VIENNALS_LIBRARIES OpenMP::OpenMP_CXX)  
+endif()
 
-  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp=libomp")
-  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
-    # disable-new-dtags sets RPATH which searches for libs recursively, instead
-    # of RUNPATH which does not
-    # needed for g++ to link correctly
-    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--disable-new-dtags")
-  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-    #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qopenmp")
-  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-    #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp /wd\"4267\" /wd\"4244\"")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd\"4267\" /wd\"4244\"")
-  endif()
+# compiler dependent settings
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  # disable-new-dtags sets RPATH which searches for libs recursively, instead
+  # of RUNPATH which does not
+  # needed for g++ to link correctly
+  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--disable-new-dtags")
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp /wd\"4267\" /wd\"4244\"")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd\"4267\" /wd\"4244\"")
 endif()
 
 if(ViennaLS_COMMON_TARGET)
@@ -43,10 +39,6 @@ if(@VIENNALS_USE_VTK@)
     #message(STATUS "Found VTK")
     add_compile_definitions(VIENNALS_USE_VTK)
     include(${VTK_USE_FILE})
-    # only link needed vtk libraries for static builds
-    if(VIENNALS_STATIC_BUILD)
-      set(VTK_LIBRARIES vtksys;vtkIOCore;vtkexpat;vtklz4;vtkzlib;vtklzma;vtkdoubleconversion;vtkCommonMisc;vtkCommonSystem;vtkIOXML)
-    endif(VIENNALS_STATIC_BUILD)
     list(APPEND VIENNALS_LIBRARIES ${VTK_LIBRARIES})
     list(APPEND VIENNALS_PYTHON_LIBRARIES ${VTK_LIBRARIES})
   else(VTK_FOUND)
@@ -65,5 +57,8 @@ if(VIENNALS_USE_SHARED_LIBS)
   link_directories(@CMAKE_INSTALL_PREFIX@lib)
   list(APPEND VIENNALS_LIBRARIES @PROJECT_NAME@)
 endif()
+
+# find required ViennaHRLE library
+find_package(ViennaHRLE REQUIRED PATHS ${ViennaHRLE_DIR})
 
 check_required_components("@PROJECT_NAME@")

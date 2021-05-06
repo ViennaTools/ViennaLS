@@ -109,10 +109,6 @@ target_include_directories(
 
 target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_11)
 
-# Run tests
-#enable_testing()
-#add_subdirectory(test)
-
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file("${PROJECT_NAME}ConfigVersion.cmake"
                                  VERSION ${PROJECT_VERSION}
