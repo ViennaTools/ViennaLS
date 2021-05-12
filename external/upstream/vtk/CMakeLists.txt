@@ -20,6 +20,7 @@ externalproject_add(vtk-external
     -DCMAKE_CXX_EXTENSIONS=${CMAKE_CXX_EXTENSIONS}
     -DCMAKE_CXX_STANDARD_REQUIRED=${CMAKE_CXX_STANDARD_REQUIRED}
     #-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    -DBUILD_SHARED_LIBS=${VTK_EXTERNAL_BUILD_SHARED}
     -DBUILD_TESTING=OFF
     -DBUILD_EXAMPLES=OFF
     #
@@ -30,7 +31,6 @@ externalproject_add(vtk-external
     -DVTK_Group_Rendering=OFF
     -DModule_vtkIOXML=ON
     -DVTK_RENDERING_BACKEND=None
-    -DVTK_BUILD_SHARED_LIBS=${VTK_EXTERNAL_BUILD_SHARED}
   # BUILD_COMMAND
   "cmake --build -- -j 4"
   # No install needed
