@@ -28,6 +28,12 @@
 // Velocity accessor
 #include <lsVelocityField.hpp>
 
+// #define DEBUG_LS_ADVECT_HPP
+#ifdef DEBUG_LS_ADVECT_HPP
+#include <lsToMesh.hpp>
+#include <lsVTKWriter.hpp>
+#endif
+
 /// Enumeration for the different Integration schemes
 /// used by the advection kernel
 enum struct lsIntegrationSchemeEnum : unsigned {
@@ -112,6 +118,14 @@ template <class T, int D> class lsAdvect {
     // list of indices into the old pointData vector
     std::vector<std::vector<unsigned>> newDataSourceIds;
     newDataSourceIds.resize(newDomain.getNumberOfSegments());
+
+#ifdef DEBUG_LS_ADVECT_HPP
+    {
+      auto mesh = lsSmartPointer<lsMesh<T>>::New();
+      lsToMesh<T, D>(levelSets.back(), mesh).apply();
+      lsVTKWriter<T>(mesh, "lsAdvect_beforeRebuild.vtk").apply();
+    }
+#endif
 
 #pragma omp parallel num_threads(newDomain.getNumberOfSegments())
     {

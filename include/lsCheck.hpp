@@ -8,10 +8,19 @@
 
 #include <lsDomain.hpp>
 
+enum struct lsCheckStatusEnum : unsigned {
+  SUCCESS = 0,
+  FAILED = 1,
+  UNCHECKED = 2
+};
+
 ///  This class is used to find errors in the underlying level set
 ///  structure, like invalid neighbours of different signs.
 template <class T, int D> class lsCheck {
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
+  lsCheckStatusEnum status = lsCheckStatusEnum::UNCHECKED;
+  std::string errors = "Level Set has not been checked yet!";
+  bool printMessage = false;
 
   int GetStatusFromDistance(T value) {
     int x = static_cast<int>(value);
@@ -25,12 +34,20 @@ template <class T, int D> class lsCheck {
 public:
   lsCheck() {}
 
-  lsCheck(const lsSmartPointer<lsDomain<T, D>> passedLevelSet)
-      : levelSet(passedLevelSet) {}
+  lsCheck(lsSmartPointer<lsDomain<T, D>> passedLevelSet, bool print = false)
+      : levelSet(passedLevelSet), printMessage(print) {}
 
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
   }
+
+  void setPrintMessage(bool print) { printMessage = print; }
+
+  lsCheckStatusEnum getStatus() const { return status; }
+
+  bool isValid() const { return status == lsCheckStatusEnum::SUCCESS; }
+
+  std::string what() const { return errors; }
 
   void apply() {
     if (levelSet == nullptr) {
@@ -41,7 +58,6 @@ public:
     }
 
     std::ostringstream oss;
-    oss << "Report from lsCheck: " << std::endl;
 
     for (hrleConstSparseStarIterator<hrleDomain<T, D>> it(
              levelSet->getDomain());
@@ -97,7 +113,17 @@ public:
     }
 
     // output any faults as error
-    lsMessage::getInstance().addError(oss.str());
+    if (std::string s = oss.str(); !s.empty()) {
+      status = lsCheckStatusEnum::FAILED;
+      errors = s;
+      if (printMessage) {
+        std::string message = "Report from lsCheck:\n" + s;
+        lsMessage::getInstance().addError(s);
+      }
+    } else {
+      status = lsCheckStatusEnum::SUCCESS;
+      errors = "";
+    }
   }
 };
 

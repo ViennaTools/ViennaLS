@@ -4,6 +4,7 @@
 #include <lsDomain.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
+#include <lsTestAsserts.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
@@ -38,12 +39,14 @@ int main() {
       levelSet, lsSmartPointer<lsPlane<double, D>>::New(origin, normalVector))
       .apply();
 
-  {
-    std::cout << "Extracting..." << std::endl;
-    auto mesh = lsSmartPointer<lsMesh<>>::New();
-    lsToSurfaceMesh<double, D>(levelSet, mesh).apply();
-    lsVTKWriter<double>(mesh, "plane.vtk").apply();
-  }
+  // {
+  //   std::cout << "Extracting..." << std::endl;
+  //   auto mesh = lsSmartPointer<lsMesh<>>::New();
+  //   lsToSurfaceMesh<double, D>(levelSet, mesh).apply();
+  //   lsVTKWriter<double>(mesh, "plane.vtk").apply();
+  // }
+
+  LSTEST_ASSERT_VALID_LS(levelSet, double, D)
 
   return 0;
 }
