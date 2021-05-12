@@ -10,8 +10,8 @@ set(ViennaLS_DIR "${ViennaLS_BINARY_DIR}")
 set(ViennaLS_COMMON_TARGET ${PROJECT_NAME})
 
 
-option(VIENNALS_BUILD_PYTHON_2_7 "Build for python2.x." OFF)
-option(VIENNALS_BUILD_PYTHON_3_6 "Build for python3.x. Trumps python2.x build." OFF)
+option(VIENNALS_BUILD_PYTHON_2 "Build for python2.x." OFF)
+option(VIENNALS_BUILD_PYTHON_3 "Build for python3.x. Trumps python2.x build." OFF)
 
 set(VIENNALS_PYTHON_SOURCE "pyWrap.cpp")
 set(VIENNALS_PYTHON_MODULE_NAME "viennaLS")
@@ -23,8 +23,8 @@ endif(NOT pybind11_DIR)
 
 message(STATUS "Pybind11: ${pybind11_DIR}")
 
-if(VIENNALS_BUILD_PYTHON_3_6)
-  set(PYBIND11_PYTHON_VERSION 3.6 CACHE STRING "Python version")
+if(VIENNALS_BUILD_PYTHON_3)
+  set(PYBIND11_PYTHON_VERSION 3 CACHE STRING "Python version")
 
   find_package(ViennaHRLE REQUIRED)
   find_package(ViennaLS REQUIRED)
@@ -50,8 +50,8 @@ if(VIENNALS_BUILD_PYTHON_3_6)
   target_compile_definitions(${VIENNALS_PYTHON_MODULE_NAME_3D} PRIVATE -DVIENNALS_PYTHON_DIMENSION=3)
 endif()
 
-if(VIENNALS_BUILD_PYTHON_2_7 AND NOT VIENNALS_BUILD_PYTHON_3_6)
-  set(PYBIND11_PYTHON_VERSION 2.7 CACHE STRING "Python version")
+if(VIENNALS_BUILD_PYTHON_2 AND NOT VIENNALS_BUILD_PYTHON_3)
+  set(PYBIND11_PYTHON_VERSION 2 CACHE STRING "Python version")
 
   # disable register warning, as Pyhton.h of Python 2 includes register variables
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-register")

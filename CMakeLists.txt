@@ -30,6 +30,9 @@ endif()
 # set whether to build static versions
 option(VIENNALS_STATIC_BUILD "Link dependencies statically." OFF)
 
+# whether to use VTK or not
+option(VIENNALS_USE_VTK "Build with VTK file support." ON)
+
 # OpenMP Support
 find_package(OpenMP REQUIRED)
 list(APPEND VIENNALS_LIBRARIES OpenMP::OpenMP_CXX)
@@ -50,7 +53,6 @@ message(STATUS "ViennaHRLE_DIR: ${ViennaHRLE_DIR}")
 message(STATUS "VTK_DIR: ${VTK_DIR}")
 
 # VTK File type support
-option(VIENNALS_USE_VTK "Build with VTK file support." ON)
 if(VIENNALS_USE_VTK)
   find_package(VTK QUIET)
   if(VTK_FOUND)
@@ -84,7 +86,7 @@ if(VIENNALS_BUILD_SHARED_LIBS)
     set(ViennaHRLE_DIR $ENV{VIENNAHRLE_DIR})
   endif(NOT ViennaHRLE_DIR)
   list(APPEND VIENNALS_LIBRARIES ViennaHRLE)
-  find_package(ViennaHRLE REQUIRED)
+  find_package(ViennaHRLE REQUIRED PATHS ${ViennaHRLE_DIR})
   
   # add all specialisation source files
   file(GLOB SPECIALISATION_CPPS "lib/*.cpp")

@@ -33,6 +33,7 @@ endif()
 set(ViennaHRLE_DIR @ViennaHRLE_DIR@)
 
 find_package (ViennaHRLE REQUIRED PATHS ${ViennaHRLE_DIR} NO_DEFAULT_PATH)
+list(APPEND VIENNALS_LIBRARIES ViennaHRLE)
 
 if(@VIENNALS_USE_VTK@)
   set(VTK_DIR @VTK_DIR@)

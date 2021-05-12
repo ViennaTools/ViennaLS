@@ -38,23 +38,36 @@ Releases are tagged on the maser branch and available in the [releases section](
 Have a look at the [example repo](https://github.com/ViennaTools/viennals-example) for creating a project with ViennaLS as a dependency.
 
 
-## Installing (with dependencies already installed)
+## Installing
 
 Since this is a header only project, it does not require any installation.
-However, we recommend the following procedure.
-
-Make sure you have [ViennaHRLE](https://github.com/ViennaTools/viennahrle) installed on your system and run:
+However, we recommend the following procedure in order to set up all dependencies correctly:
 
 ```
 git clone github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
 mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/
-make install
+# The commented lines set up all dependencies, if you want to set them up
+# but do not want to install ViennaLS, run only these lines
+# make pybind11-external
+# make viennahrle-external
+# make vtk-external
+make install # this will install all dependencies and might take a while
 ```
 
 This will install the necessary headers and CMake files to the specified path. If DCMAKE_INSTALL_PREFIX is not specified, it will be installed to the standard path for your system, usually /usr/local/ .
 
+## Installing without VTK
+
+In order to install ViennaLS without VTK, run:
+```
+git clone github.com/ViennaTools/ViennaLS.git
+cd ViennaLS
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/ -DVIENNALS_USE_VTK=OFF
+make install
+```
 
 ## Using the viennaLS python module
 
@@ -83,22 +96,21 @@ import viennaLS3d as vls
 
 ### Building the python module
 
-In order to build the python module, set `VIENNALS_BUILD_PYTHON_2_7` or `VIENNALS_BUILD_PYTHON_3_6` to `ON`:
+In order to build the python module, set `VIENNALS_BUILD_PYTHON_2` or `VIENNALS_BUILD_PYTHON_3` to `ON`:
 ```
-cmake .. -DVIENNALS_BUILD_PYTHON_3_6=ON
+cmake .. -DVIENNALS_BUILD_PYTHON_3=ON
 make
 ```
 
-If both options are on, only VIENNALS_BUILD_PYTHON_3_6 will be used, since only one version can be built at a time.
+If both options are on, only VIENNALS_BUILD_PYTHON_3 will be used, since only one version can be built at a time.
 
 ## Integration in CMake projects
 
-In order to use this library in your CMake project, add the following lines to the CMakeLists.txt of your project:\
-(also do not forget to include ViennaHRLE)
+In order to use this library in your CMake project, add the following lines to the CMakeLists.txt of your project:
 
 ```
 set(ViennaLS_DIR "/path/to/your/custom/install/")
-find_package(ViennaLS REQUIRED)
+find_package(ViennaLS REQUIRED PATHS ${VIENNALS_DIR})
 add_executable(...)
 target_include_directories(${PROJECT_NAME} PUBLIC ${VIENNALS_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} ${VIENNALS_LIBRARIES})
@@ -109,7 +121,6 @@ target_link_libraries(${PROJECT_NAME} ${VIENNALS_LIBRARIES})
 The examples can be built using CMake:
 
 ```
-mkdir build && cd build
 cmake .. -DVIENNALS_BUILD_EXAMPLES=ON
 make
 ```
