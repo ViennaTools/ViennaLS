@@ -113,6 +113,20 @@ make vtk-external
 This will take some time the first time it is run.
 The dependencies only need to be set up once.
 
+## Running the Tests
+
+ViennaLS uses CTest to run its tests.
+In order to check whether ViennaLS runs without issues on your system, you can run:
+
+```
+git clone github.com/ViennaTools/ViennaLS.git
+cd ViennaLS
+mkdir build && cd build
+cmake .. -DVIENNALS_BUILD_TESTS=ON
+make buildTests # build all tests
+make test # run all tests
+```
+
 ## Integration in CMake projects
 
 In order to use this library in your CMake project, add the following lines to the CMakeLists.txt of your project:
