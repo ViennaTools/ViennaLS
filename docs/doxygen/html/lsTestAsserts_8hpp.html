@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.17"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>ViennaLS: include/lsCheck.hpp File Reference</title>
+<title>ViennaLS: include/lsTestAsserts.hpp File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -63,7 +63,7 @@ $(function() {
 </div>
 <script type="text/javascript">
 /* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
-$(document).ready(function(){initNavTree('lsCheck_8hpp.html',''); initResizable(); });
+$(document).ready(function(){initNavTree('lsTestAsserts_8hpp.html',''); initResizable(); });
 /* @license-end */
 </script>
 <div id="doc-content">
@@ -83,56 +83,70 @@ $(document).ready(function(){initNavTree('lsCheck_8hpp.html',''); initResizable(
 
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Classes</a> &#124;
-<a href="#enum-members">Enumerations</a>  </div>
+<a href="#define-members">Macros</a>  </div>
   <div class="headertitle">
-<div class="title">lsCheck.hpp File Reference</div>  </div>
+<div class="title">lsTestAsserts.hpp File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &lt;ostream&gt;</code><br />
-<code>#include &lt;string&gt;</code><br />
-<code>#include &lt;hrleSparseStarIterator.hpp&gt;</code><br />
-<code>#include &lt;<a class="el" href="lsDomain_8hpp.html">lsDomain.hpp</a>&gt;</code><br />
+<div class="textblock"><code>#include &lt;<a class="el" href="lsCheck_8hpp.html">lsCheck.hpp</a>&gt;</code><br />
 </div><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
-Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsCheck.html">lsCheck&lt; T, D &gt;</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This class is used to find errors in the underlying level set structure, like invalid neighbours of different signs.  <a href="classlsCheck.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
-Enumerations</h2></td></tr>
-<tr class="memitem:a567a35958ba7a1bfc2d0d84a097d8307"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="lsCheck_8hpp.html#a567a35958ba7a1bfc2d0d84a097d8307">lsCheckStatusEnum</a> : unsigned { <a class="el" href="lsCheck_8hpp.html#a567a35958ba7a1bfc2d0d84a097d8307ad0749aaba8b833466dfcbb0428e4f89c">lsCheckStatusEnum::SUCCESS</a>, 
-<a class="el" href="lsCheck_8hpp.html#a567a35958ba7a1bfc2d0d84a097d8307ab9e14d9b2886bcff408b85aefa780419">lsCheckStatusEnum::FAILED</a>, 
-<a class="el" href="lsCheck_8hpp.html#a567a35958ba7a1bfc2d0d84a097d8307acb05b13dd1c5294579396a615f2fae82">lsCheckStatusEnum::UNCHECKED</a>
- }</td></tr>
-<tr class="separator:a567a35958ba7a1bfc2d0d84a097d8307"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
+Macros</h2></td></tr>
+<tr class="memitem:a622e9d7e09c25ba495e010a18b719625"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="lsTestAsserts_8hpp.html#a622e9d7e09c25ba495e010a18b719625">LSTEST_ASSERT</a>(condition)</td></tr>
+<tr class="separator:a622e9d7e09c25ba495e010a18b719625"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a577864eccdd1313491124dfc80dc59ce"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="lsTestAsserts_8hpp.html#a577864eccdd1313491124dfc80dc59ce">LSTEST_ASSERT_VALID_LS</a>(levelSet,  <a class="el" href="AirGapDeposition_8cpp.html#ac0710c31044c8dd3cf7a6ba75eb1df9f">NumericType</a>,  D)</td></tr>
+<tr class="separator:a577864eccdd1313491124dfc80dc59ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Enumeration Type Documentation</h2>
-<a id="a567a35958ba7a1bfc2d0d84a097d8307"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a567a35958ba7a1bfc2d0d84a097d8307">&#9670;&nbsp;</a></span>lsCheckStatusEnum</h2>
+<h2 class="groupheader">Macro Definition Documentation</h2>
+<a id="a622e9d7e09c25ba495e010a18b719625"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a622e9d7e09c25ba495e010a18b719625">&#9670;&nbsp;</a></span>LSTEST_ASSERT</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">enum <a class="el" href="lsCheck_8hpp.html#a567a35958ba7a1bfc2d0d84a097d8307">lsCheckStatusEnum</a> : unsigned</td>
+          <td class="memname">#define LSTEST_ASSERT</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">condition</td><td>)</td>
+          <td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">strong</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a567a35958ba7a1bfc2d0d84a097d8307ad0749aaba8b833466dfcbb0428e4f89c"></a>SUCCESS&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a567a35958ba7a1bfc2d0d84a097d8307ab9e14d9b2886bcff408b85aefa780419"></a>FAILED&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a567a35958ba7a1bfc2d0d84a097d8307acb05b13dd1c5294579396a615f2fae82"></a>UNCHECKED&#160;</td><td class="fielddoc"></td></tr>
-</table>
+
+</div>
+</div>
+<a id="a577864eccdd1313491124dfc80dc59ce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a577864eccdd1313491124dfc80dc59ce">&#9670;&nbsp;</a></span>LSTEST_ASSERT_VALID_LS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define LSTEST_ASSERT_VALID_LS</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">levelSet, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><a class="el" href="AirGapDeposition_8cpp.html#ac0710c31044c8dd3cf7a6ba75eb1df9f">NumericType</a>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">D&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
 </div>
 </div>
@@ -141,7 +155,7 @@ Enumerations</h2></td></tr>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a class="el" href="lsCheck_8hpp.html">lsCheck.hpp</a></li>
+    <li class="navelem"><a class="el" href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a class="el" href="lsTestAsserts_8hpp.html">lsTestAsserts.hpp</a></li>
     <li class="footer">Generated by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.17 </li>

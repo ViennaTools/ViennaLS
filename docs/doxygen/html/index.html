@@ -104,23 +104,32 @@ Supported Operating Systems</h2>
 <p>* macOS (XCode)</p>
 <h2><a class="anchor" id="autotoc_md7"></a>
 System Requirements</h2>
-<p>* C++ Compiler with OpenMP support</p>
-<p>* <a href="https://github.com/ViennaTools/viennahrle">ViennaHRLE</a></p>
-<p>* <a href="https://vtk.org/">VTK</a> (optional)</p>
+<p>* C++17 Compiler with OpenMP support</p>
 <h1><a class="anchor" id="autotoc_md8"></a>
 Using ViennaLS in your project</h1>
 <p>Have a look at the <a href="https://github.com/ViennaTools/viennals-example">example repo</a> for creating a project with ViennaLS as a dependency.</p>
 <h1><a class="anchor" id="autotoc_md9"></a>
-Installing (with dependencies already installed)</h1>
-<p>Since this is a header only project, it does not require any installation. However, we recommend the following procedure.</p>
-<p>Make sure you have <a href="https://github.com/ViennaTools/viennahrle">ViennaHRLE</a> installed on your system and run:</p>
+Installing</h1>
+<p>Since this is a header only project, it does not require any installation. However, we recommend the following procedure in order to set up all dependencies correctly:</p>
 <div class="fragment"><div class="line">git clone github.com/ViennaTools/ViennaLS.git</div>
 <div class="line">cd ViennaLS</div>
 <div class="line">mkdir build &amp;&amp; cd build</div>
 <div class="line">cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/</div>
-<div class="line">make install</div>
+<div class="line"># The commented lines set up all dependencies, if you want to set them up</div>
+<div class="line"># but do not want to install ViennaLS, run only these lines</div>
+<div class="line"># make pybind11-external</div>
+<div class="line"># make viennahrle-external</div>
+<div class="line"># make vtk-external</div>
+<div class="line">make install # this will install all dependencies and might take a while</div>
 </div><!-- fragment --><p>This will install the necessary headers and CMake files to the specified path. If DCMAKE_INSTALL_PREFIX is not specified, it will be installed to the standard path for your system, usually /usr/local/ .</p>
 <h1><a class="anchor" id="autotoc_md10"></a>
+Installing without VTK</h1>
+<p>In order to install ViennaLS without VTK, run: </p><div class="fragment"><div class="line">git clone github.com/ViennaTools/ViennaLS.git</div>
+<div class="line">cd ViennaLS</div>
+<div class="line">mkdir build &amp;&amp; cd build</div>
+<div class="line">cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/ -DVIENNALS_USE_VTK=OFF</div>
+<div class="line">make install</div>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md11"></a>
 Using the viennaLS python module</h1>
 <p>The Releases only contain the compiled library for the most common Python version per platform: * Windows: Python 3.8 * Linux: Python 3.6</p>
 <p>For all other Python versions, you have to build the library yourself (see below).</p>
@@ -131,40 +140,39 @@ Using the viennaLS python module</h1>
 <div class="line">vls.lsMakeGeometry(levelset, sphere).apply() # create sphere in level set</div>
 </div><!-- fragment --><p>All functions which are available in C++ are also available in Python. In order to switch to three dimensions, only the import needs to be changed:</p>
 <div class="fragment"><div class="line">import viennaLS3d as vls</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md11"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md12"></a>
 Building the python module</h2>
-<p>In order to build the python module, set <code>VIENNALS_BUILD_PYTHON_2_7</code> or <code>VIENNALS_BUILD_PYTHON_3_6</code> to <code>ON</code>: </p><div class="fragment"><div class="line">cmake .. -DVIENNALS_BUILD_PYTHON_3_6=ON</div>
+<p>In order to build the python module, set <code>VIENNALS_BUILD_PYTHON_2</code> or <code>VIENNALS_BUILD_PYTHON_3</code> to <code>ON</code>: </p><div class="fragment"><div class="line">cmake .. -DVIENNALS_BUILD_PYTHON_3=ON</div>
 <div class="line">make</div>
-</div><!-- fragment --><p>If both options are on, only VIENNALS_BUILD_PYTHON_3_6 will be used, since only one version can be built at a time.</p>
-<h1><a class="anchor" id="autotoc_md12"></a>
+</div><!-- fragment --><p>If both options are on, only VIENNALS_BUILD_PYTHON_3 will be used, since only one version can be built at a time.</p>
+<h1><a class="anchor" id="autotoc_md13"></a>
 Integration in CMake projects</h1>
-<p>In order to use this library in your CMake project, add the following lines to the CMakeLists.txt of your project:\ (also do not forget to include ViennaHRLE)</p>
+<p>In order to use this library in your CMake project, add the following lines to the CMakeLists.txt of your project:</p>
 <div class="fragment"><div class="line">set(ViennaLS_DIR &quot;/path/to/your/custom/install/&quot;)</div>
-<div class="line">find_package(ViennaLS REQUIRED)</div>
+<div class="line">find_package(ViennaLS REQUIRED PATHS ${VIENNALS_DIR})</div>
 <div class="line">add_executable(...)</div>
 <div class="line">target_include_directories(${PROJECT_NAME} PUBLIC ${VIENNALS_INCLUDE_DIRS})</div>
 <div class="line">target_link_libraries(${PROJECT_NAME} ${VIENNALS_LIBRARIES})</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md13"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md14"></a>
 Building examples</h2>
 <p>The examples can be built using CMake:</p>
-<div class="fragment"><div class="line">mkdir build &amp;&amp; cd build</div>
-<div class="line">cmake .. -DVIENNALS_BUILD_EXAMPLES=ON</div>
+<div class="fragment"><div class="line">cmake .. -DVIENNALS_BUILD_EXAMPLES=ON</div>
 <div class="line">make</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md14"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md15"></a>
 Shared libraries</h2>
 <p>In order to save build time during developement, dynamically linked shared libraries can be used if ViennaLS was built with them. This is done by precompiling the most common template specialisations. In order to use shared libraries, use </p><div class="fragment"><div class="line">cmake .. -DVIENNALS_BUILD_SHARED_LIBS=ON</div>
 </div><!-- fragment --><p>If ViennaLS was build with shared libraries and you use ViennaLS in your project (see above), CMake will automatically link them to your project. In order to build a release of your own project with better runtime performance, but longer build times, use the following CMake option when building your project: </p><div class="fragment"><div class="line">VIENNALS_USE_SHARED_LIBS=OFF</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md15"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md16"></a>
 Contributing</h1>
 <p>Before being able to merge your PR, make sure you have met all points on the checklist in <a href="https://github.com/ViennaTools/viennals/blob/master/CONTRIBUTING.md">CONTRIBUTING.md</a>.</p>
 <p>If you want to contribute to ViennaLS, make sure to follow the <a href="https://llvm.org/docs/CodingStandards.html">LLVM Coding guidelines</a>. Before creating a pull request, make sure ALL files have been formatted by clang-format, which can be done using the format-project.sh script in the root directory.</p>
-<h1><a class="anchor" id="autotoc_md16"></a>
+<h1><a class="anchor" id="autotoc_md17"></a>
 Authors</h1>
 <p>Current contributors: Lado Filipovic, Paul Manstetten, Xaver Klemenschits and Josef Weinbub</p>
 <p>Founder and initial developer: Otmar Ertl</p>
 <p>Contact us via: <a href="#" onclick="location.href='mai'+'lto:'+'vie'+'nn'+'ats'+'@i'+'ue.'+'tu'+'wie'+'n.'+'ac.'+'at'; return false;">vienn<span style="display: none;">.nosp@m.</span>ats@<span style="display: none;">.nosp@m.</span>iue.t<span style="display: none;">.nosp@m.</span>uwie<span style="display: none;">.nosp@m.</span>n.ac.<span style="display: none;">.nosp@m.</span>at</a></p>
 <p>ViennaLS was developed under the aegis of the 'Institute for Microelectronics' at the 'TU Wien'. <a href="http://www.iue.tuwien.ac.at/">http://www.iue.tuwien.ac.at/</a></p>
-<h1><a class="anchor" id="autotoc_md17"></a>
+<h1><a class="anchor" id="autotoc_md18"></a>
 License</h1>
 <p>See file LICENSE in the base directory. </p>
 </div></div><!-- PageDoc -->

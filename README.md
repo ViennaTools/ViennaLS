@@ -28,10 +28,6 @@ Releases are tagged on the maser branch and available in the [releases section](
 
 * C++17 Compiler with OpenMP support
 
-* [ViennaHRLE](https://github.com/ViennaTools/viennahrle)
-
-* [VTK](https://vtk.org/) (optional)
-
 
 ## Using ViennaLS in your project
 

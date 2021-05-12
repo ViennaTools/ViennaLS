@@ -5,9 +5,7 @@ var dir_d44c64559bbebec7f509842c48db8b23 =
     [ "lsCalculateNormalVectors.hpp", "lsCalculateNormalVectors_8hpp.html", [
       [ "lsCalculateNormalVectors", "classlsCalculateNormalVectors.html", "classlsCalculateNormalVectors" ]
     ] ],
-    [ "lsCheck.hpp", "lsCheck_8hpp.html", [
-      [ "lsCheck", "classlsCheck.html", "classlsCheck" ]
-    ] ],
+    [ "lsCheck.hpp", "lsCheck_8hpp.html", "lsCheck_8hpp" ],
     [ "lsConcepts.hpp", "lsConcepts_8hpp.html", "lsConcepts_8hpp" ],
     [ "lsConvexHull.hpp", "lsConvexHull_8hpp.html", [
       [ "lsConvexHull", "classlsConvexHull.html", "classlsConvexHull" ]
@@ -91,6 +89,7 @@ var dir_d44c64559bbebec7f509842c48db8b23 =
     [ "lsStencilLocalLaxFriedrichsScalar.hpp", "lsStencilLocalLaxFriedrichsScalar_8hpp.html", [
       [ "lsStencilLocalLaxFriedrichsScalar", "classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar.html", "classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar" ]
     ] ],
+    [ "lsTestAsserts.hpp", "lsTestAsserts_8hpp.html", "lsTestAsserts_8hpp" ],
     [ "lsToDiskMesh.hpp", "lsToDiskMesh_8hpp.html", [
       [ "lsToDiskMesh", "classlsToDiskMesh.html", "classlsToDiskMesh" ]
     ] ],

@@ -30,17 +30,18 @@ var NAVTREE =
       [ "System Requirements", "index.html#autotoc_md7", null ]
     ] ],
     [ "Using ViennaLS in your project", "index.html#autotoc_md8", null ],
-    [ "Installing (with dependencies already installed)", "index.html#autotoc_md9", null ],
-    [ "Using the viennaLS python module", "index.html#autotoc_md10", [
-      [ "Building the python module", "index.html#autotoc_md11", null ]
+    [ "Installing", "index.html#autotoc_md9", null ],
+    [ "Installing without VTK", "index.html#autotoc_md10", null ],
+    [ "Using the viennaLS python module", "index.html#autotoc_md11", [
+      [ "Building the python module", "index.html#autotoc_md12", null ]
     ] ],
-    [ "Integration in CMake projects", "index.html#autotoc_md12", [
-      [ "Building examples", "index.html#autotoc_md13", null ],
-      [ "Shared libraries", "index.html#autotoc_md14", null ]
+    [ "Integration in CMake projects", "index.html#autotoc_md13", [
+      [ "Building examples", "index.html#autotoc_md14", null ],
+      [ "Shared libraries", "index.html#autotoc_md15", null ]
     ] ],
-    [ "Contributing", "index.html#autotoc_md15", null ],
-    [ "Authors", "index.html#autotoc_md16", null ],
-    [ "License", "index.html#autotoc_md17", null ],
+    [ "Contributing", "index.html#autotoc_md16", null ],
+    [ "Authors", "index.html#autotoc_md17", null ],
+    [ "License", "index.html#autotoc_md18", null ],
     [ "Contributing", "md_CONTRIBUTING.html", null ],
     [ "Namespaces", "namespaces.html", [
       [ "Namespace List", "namespaces.html", "namespaces_dup" ],
@@ -79,8 +80,8 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "AirGapDeposition_8cpp-example.html",
-"classlsInternal_1_1lsGraph.html#aa641503c10309eed575c0a0a354f65ff",
-"classlsWriteVisualizationMesh.html#adf13ee153843fdc4336a2209a0167ad6"
+"classlsInternal_1_1lsFiniteDifferences.html#a7d255b73875af1f1345aec82db1df762",
+"classlsVTKWriter.html#ab215aa6dd07d07cb8492c8e62372a757"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

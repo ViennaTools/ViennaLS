@@ -19,6 +19,8 @@ var classlsPointData =
     [ "getVectorDataLabel", "classlsPointData.html#ae346fe438cbe799dae89c1a2ba576ded", null ],
     [ "getVectorDataSize", "classlsPointData.html#aa70073aa2a8e950744d5234748b58f0c", null ],
     [ "insertNextScalarData", "classlsPointData.html#a419d3cfa0e992eb360b49477f4f1c8a5", null ],
+    [ "insertNextScalarData", "classlsPointData.html#a547554fbb15d9cac6737a278880d3568", null ],
     [ "insertNextVectorData", "classlsPointData.html#afd33aa3f404bc85d59a53894cc48cc8e", null ],
+    [ "insertNextVectorData", "classlsPointData.html#a9f8905112fc5e616f8203ddb19b244f3", null ],
     [ "serialize", "classlsPointData.html#ab8f9514c4e5211f6630cd653ab2ae25e", null ]
 ];
