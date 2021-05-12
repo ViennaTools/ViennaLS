@@ -44,12 +44,8 @@ git clone github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
 mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/
-# The commented lines set up all dependencies, if you want to set them up
-# but do not want to install ViennaLS, run only these lines
-# make pybind11-external
-# make viennahrle-external
-# make vtk-external
-make install # this will install all dependencies and might take a while
+make # this will install all dependencies the first time it is called and might take a while
+make install
 ```
 
 This will install the necessary headers and CMake files to the specified path. If DCMAKE_INSTALL_PREFIX is not specified, it will be installed to the standard path for your system, usually /usr/local/ .
@@ -99,6 +95,23 @@ make
 ```
 
 If both options are on, only VIENNALS_BUILD_PYTHON_3 will be used, since only one version can be built at a time.
+
+## Setting up the dependencies
+
+If you just want to install all dependencies before doing anything else, run:
+
+```
+git clone github.com/ViennaTools/ViennaLS.git
+cd ViennaLS
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/
+make pybind11-external
+make viennahrle-external
+make vtk-external
+```
+
+This will take some time the first time it is run.
+The dependencies only need to be set up once.
 
 ## Integration in CMake projects
 
