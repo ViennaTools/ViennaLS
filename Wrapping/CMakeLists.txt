@@ -16,17 +16,19 @@ option(VIENNALS_BUILD_PYTHON_3_6 "Build for python3.x. Trumps python2.x build." 
 set(VIENNALS_PYTHON_SOURCE "pyWrap.cpp")
 set(VIENNALS_PYTHON_MODULE_NAME "viennaLS")
 
-# set the correct path for pybind11
+# set the correct path for pybind11 if not set
 if(NOT pybind11_DIR)
   set(pybind11_DIR $ENV{PYBIND11_DIR})
 endif(NOT pybind11_DIR)
+
+message(STATUS "Pybind11: ${pybind11_DIR}")
 
 if(VIENNALS_BUILD_PYTHON_3_6)
   set(PYBIND11_PYTHON_VERSION 3.6 CACHE STRING "Python version")
 
   find_package(ViennaHRLE REQUIRED)
   find_package(ViennaLS REQUIRED)
-  find_package(pybind11)
+  find_package(pybind11 REQUIRED PATHS ${pybind11_DIR})
 
   #make 3.6 python module
   # define dimension for build

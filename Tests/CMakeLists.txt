@@ -21,11 +21,10 @@ MACRO(SUBDIRLIST result curdir)
   SET(${result} ${dirlist})
 ENDMACRO()
 
-if(NOT ViennaHRLE_DIR)
-  set(ViennaHRLE_DIR $ENV{VIENNAHRLE_DIR})
-endif(NOT ViennaHRLE_DIR)
+add_custom_target(buildTests)
+
 list(APPEND VIENNALS_LIBRARIES ViennaHRLE)
-find_package(ViennaHRLE REQUIRED)
+find_package(ViennaHRLE REQUIRED PATHS ${ViennaHRLE_DIR})
 
 set(ViennaLS_DIR "${ViennaLS_BINARY_DIR}")
 set(ViennaLS_COMMON_TARGET ${PROJECT_NAME})

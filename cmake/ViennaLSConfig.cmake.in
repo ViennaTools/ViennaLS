@@ -29,20 +29,28 @@ else(ViennaLS_COMMON_TARGET)
   #  include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake")
 endif()
 
+# Capturing the variables from configuration time
+set(ViennaHRLE_DIR @ViennaHRLE_DIR@)
+
+find_package (ViennaHRLE REQUIRED PATHS ${ViennaHRLE_DIR} NO_DEFAULT_PATH)
+
 if(@VIENNALS_USE_VTK@)
-  add_compile_definitions(VIENNALS_USE_VTK)
-  if(NOT VTK_DIR)
-    set(VTK_DIR $ENV{VTK_DIR})
-  endif(NOT VTK_DIR)
-  find_package(VTK QUIET)
+  set(VTK_DIR @VTK_DIR@)
+  find_package (VTK QUIET PATHS ${VTK_DIR} NO_DEFAULT_PATH)
+
   if(VTK_FOUND)
     #message(STATUS "Found VTK")
     add_compile_definitions(VIENNALS_USE_VTK)
-    include(${VTK_USE_FILE})
+
+    # only link needed vtk libraries for static builds
+    if(VIENNALS_STATIC_BUILD)
+      set(VTK_LIBRARIES vtksys;vtkIOCore;vtkexpat;vtklz4;vtkzlib;vtklzma;vtkdoubleconversion;vtkCommonMisc;vtkCommonSystem;vtkIOXML;vtkFiltersCore;vtkFiltersGeneral;vtkFiltersGeometry;vtkCommonExecutionModel;vtkCommonDataModel;vtkCommonColor;vtkIOXMLParser;vtkIOCore;vtkCommonMisc;vtkCommonComputationalGeometry;vtkCommonTransforms;vtkCommonMath;)
+    endif(VIENNALS_STATIC_BUILD)
+    
     list(APPEND VIENNALS_LIBRARIES ${VTK_LIBRARIES})
     list(APPEND VIENNALS_PYTHON_LIBRARIES ${VTK_LIBRARIES})
   else(VTK_FOUND)
-    message(STATUS "No VTK install found: Building without VTK.")
+    message(STATUS "No VTK install found: Building without VTK support.")
   endif(VTK_FOUND)
 endif()
 
@@ -57,8 +65,5 @@ if(VIENNALS_USE_SHARED_LIBS)
   link_directories(@CMAKE_INSTALL_PREFIX@lib)
   list(APPEND VIENNALS_LIBRARIES @PROJECT_NAME@)
 endif()
-
-# find required ViennaHRLE library
-find_package(ViennaHRLE REQUIRED PATHS ${ViennaHRLE_DIR})
 
 check_required_components("@PROJECT_NAME@")

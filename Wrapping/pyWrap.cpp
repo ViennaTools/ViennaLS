@@ -555,6 +555,12 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("setGeometry", (void (lsMakeGeometry<T, D>::*)(
                               lsSmartPointer<lsPointCloud<T, D>>)) &
                               lsMakeGeometry<T, D>::setGeometry)
+      .def("setIgnoreBoundaryConditions", (void (lsMakeGeometry<T, D>::*)(
+                              bool)) &
+                              lsMakeGeometry<T, D>::setIgnoreBoundaryConditions)
+      .def("setIgnoreBoundaryConditions", (void (lsMakeGeometry<T, D>::*)(
+                              std::array<bool, 3>)) &
+                              lsMakeGeometry<T, D>::setIgnoreBoundaryConditions)
       .def("apply", &lsMakeGeometry<T, D>::apply, "Generate the geometry.");
 
   // lsPointData
