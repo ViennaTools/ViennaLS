@@ -46,6 +46,15 @@ if(DEFINED ${VTK_DIR})
   set(VTK_DIR ${VTK_DIR} CACHE PATH "Path to VTK installation")
 endif()
 
+if(DEFINED ${ViennaHRLE_DIR})
+  set(ViennaHRLE_DIR ${ViennaHRLE_DIR} CACHE PATH "Path to ViennaHRLE")
+endif()
+
+if(DEFINED ${pybind11_DIR})
+  set(pybind11_DIR ${pybind11_DIR} CACHE PATH "Path to pybind11")
+endif()
+
+# Include all external dependencies
 include(ExternalProject)
 add_subdirectory(external/upstream)
 
@@ -83,9 +92,6 @@ endif(VIENNALS_USE_VTK)
 #################################################
 option(VIENNALS_BUILD_SHARED_LIBS "Build template specialisations for shorter compile times." OFF)
 if(VIENNALS_BUILD_SHARED_LIBS)
-  if(NOT ViennaHRLE_DIR)
-    set(ViennaHRLE_DIR $ENV{VIENNAHRLE_DIR})
-  endif(NOT ViennaHRLE_DIR)
   list(APPEND VIENNALS_LIBRARIES ViennaHRLE)
   find_package(ViennaHRLE REQUIRED PATHS ${ViennaHRLE_DIR})
   

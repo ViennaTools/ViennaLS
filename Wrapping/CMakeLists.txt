@@ -16,11 +16,6 @@ option(VIENNALS_BUILD_PYTHON_3 "Build for python3.x. Trumps python2.x build." OF
 set(VIENNALS_PYTHON_SOURCE "pyWrap.cpp")
 set(VIENNALS_PYTHON_MODULE_NAME "viennaLS")
 
-# set the correct path for pybind11 if not set
-if(NOT pybind11_DIR)
-  set(pybind11_DIR $ENV{PYBIND11_DIR})
-endif(NOT pybind11_DIR)
-
 message(STATUS "Pybind11: ${pybind11_DIR}")
 
 if(VIENNALS_BUILD_PYTHON_3)
