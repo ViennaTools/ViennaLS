@@ -108,6 +108,7 @@ public:
 
     values.reserve(normalVectors.size());
     normals.reserve(normalVectors.size());
+    materialIds.reserve(normalVectors.size());
 
     const bool buildTranslatorFlag = buildTranslator;
     unsigned long counter = 0;
