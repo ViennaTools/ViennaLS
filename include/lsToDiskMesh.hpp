@@ -21,30 +21,42 @@ template <class T, int D, class N = T> class lsToDiskMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
   typedef std::unordered_map<unsigned long, unsigned long> translatorType;
 
-  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
+  std::vector<lsSmartPointer<lsDomain<T, D>>> levelSets;
   lsSmartPointer<lsMesh<N>> mesh = nullptr;
   lsSmartPointer<translatorType> translator = nullptr;
   T maxValue = 0.5;
   bool buildTranslator = false;
+  static constexpr double wrappingLayerEpsilon = 1e-4;
 
 public:
   lsToDiskMesh() {}
 
+  lsToDiskMesh(lsSmartPointer<lsMesh<N>> passedMesh, T passedMaxValue = 0.5)
+      : mesh(passedMesh), maxValue(passedMaxValue) {}
+
   lsToDiskMesh(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
                lsSmartPointer<lsMesh<N>> passedMesh, T passedMaxValue = 0.5)
-      : levelSet(passedLevelSet), mesh(passedMesh), maxValue(passedMaxValue) {}
+      : mesh(passedMesh), maxValue(passedMaxValue) {
+    levelSets.push_back(passedLevelSet);
+  }
 
   lsToDiskMesh(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
                lsSmartPointer<lsMesh<N>> passedMesh,
                lsSmartPointer<translatorType> passedTranslator,
                T passedMaxValue = 0.5)
-      : levelSet(passedLevelSet), mesh(passedMesh),
-        translator(passedTranslator), maxValue(passedMaxValue) {
+      : mesh(passedMesh), translator(passedTranslator),
+        maxValue(passedMaxValue) {
+    levelSets.push_back(passedLevelSet);
     buildTranslator = true;
   }
 
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
-    levelSet = passedLevelSet;
+    levelSets.push_back(passedLevelSet);
+  }
+
+  /// Pushes the passed level set to the back of the list of level sets
+  void insertNextLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
+    levelSets.push_back(passedLevelSet);
   }
 
   void setMesh(lsSmartPointer<lsMesh<N>> passedMesh) { mesh = passedMesh; }
@@ -57,9 +69,9 @@ public:
   void setMaxValue(const T passedMaxValue) { maxValue = passedMaxValue; }
 
   void apply() {
-    if (levelSet == nullptr) {
+    if (levelSets.size() < 1) {
       lsMessage::getInstance()
-          .addWarning("No level set was passed to lsToDiskMesh.")
+          .addWarning("No level sets passed to lsToDiskMesh.")
           .print();
       return;
     }
@@ -77,16 +89,18 @@ public:
 
     mesh->clear();
 
-    lsExpand<T, D>(levelSet, (maxValue * 4) + 1).apply();
-    lsCalculateNormalVectors<T, D>(levelSet, maxValue).apply();
+    // expand top levelset
+    lsExpand<T, D>(levelSets.back(), (maxValue * 4) + 1).apply();
+    lsCalculateNormalVectors<T, D>(levelSets.back(), maxValue).apply();
 
-    const T gridDelta = levelSet->getGrid().getGridDelta();
+    const T gridDelta = levelSets.back()->getGrid().getGridDelta();
     const auto &normalVectors =
-        *(levelSet->getPointData().getVectorData("Normals"));
+        *(levelSets.back()->getPointData().getVectorData("Normals"));
 
     // set up data arrays
     std::vector<N> values;
     std::vector<std::array<N, 3>> normals;
+    std::vector<N> materialIds;
 
     // save the extent of the resulting mesh
     std::array<N, 3> minimumExtent = {};
@@ -98,6 +112,7 @@ public:
 
     values.reserve(normalVectors.size());
     normals.reserve(normalVectors.size());
+    materialIds.reserve(normalVectors.size());
 
     const bool buildTranslatorFlag = buildTranslator;
     unsigned long counter = 0;
@@ -105,18 +120,42 @@ public:
       translator->reserve(normalVectors.size());
     }
 
-    for (hrleConstSparseIterator<hrleDomainType> it(levelSet->getDomain());
-         !it.isFinished(); ++it) {
-      if (!it.isDefined() || std::abs(it.getValue()) > maxValue) {
+    // an iterator for each levelset
+    std::vector<hrleConstSparseIterator<hrleDomainType>> iterators;
+    for (const auto levelSet : levelSets) {
+      iterators.push_back(
+          hrleConstSparseIterator<hrleDomainType>(levelSet->getDomain()));
+    }
+
+    // iterate over top levelset
+    for (auto &topIt = iterators.back(); !topIt.isFinished(); ++topIt) {
+      if (!topIt.isDefined() || std::abs(topIt.getValue()) > maxValue) {
         continue;
       }
 
-      unsigned pointId = it.getPointId();
+      unsigned pointId = topIt.getPointId();
 
       // insert pointId-counter pair in translator
       if (buildTranslatorFlag) {
         translator->insert({pointId, counter++});
       }
+
+      // insert material ID
+      const T value = topIt.getValue();
+      int matId = levelSets.size() - 1;
+      for (int lowerLevelSetId = 0; lowerLevelSetId < levelSets.size() - 1;
+           ++lowerLevelSetId) {
+        // check if there is any other levelset at the same point:
+        // put iterator to same position as the top levelset
+        iterators[lowerLevelSetId].goToIndicesSequential(
+            topIt.getStartIndices());
+        if (iterators[lowerLevelSetId].getValue() <=
+            value + wrappingLayerEpsilon) {
+          matId = lowerLevelSetId;
+          break;
+        }
+      }
+      materialIds.push_back(matId);
 
       // insert vertex
       std::array<unsigned, 1> vertex;
@@ -130,7 +169,7 @@ public:
       double max = 0.;
       for (unsigned i = 0; i < D; ++i) {
         // original position
-        node[i] = double(it.getStartIndices(i)) * gridDelta;
+        node[i] = double(topIt.getStartIndices(i)) * gridDelta;
 
         // save extent
         if (node[i] < minimumExtent[i]) {
@@ -145,7 +184,7 @@ public:
       }
 
       // now normalize vector to scale position correctly to manhatten distance
-      double scaling = it.getValue() * gridDelta * max;
+      double scaling = value * gridDelta * max;
       for (unsigned i = 0; i < D; ++i) {
         node[i] -= scaling * normalVectors[pointId][i];
       }
@@ -162,11 +201,12 @@ public:
       }
 
       normals.push_back(normal);
-      values.push_back(it.getValue());
+      values.push_back(value);
     }
 
     mesh->insertNextScalarData(values, "LSValues");
     mesh->insertNextVectorData(normals, "Normals");
+    mesh->insertNextScalarData(materialIds, "MaterialIds");
     mesh->minimumExtent = minimumExtent;
     mesh->maximumExtent = maximumExtent;
   }
