@@ -58,9 +58,6 @@ endif()
 include(ExternalProject)
 add_subdirectory(external/upstream)
 
-message(STATUS "ViennaHRLE_DIR: ${ViennaHRLE_DIR}")
-message(STATUS "VTK_DIR: ${VTK_DIR}")
-
 # VTK File type support
 if(VIENNALS_USE_VTK)
   find_package(VTK QUIET PATHS ${VTK_DIR})
@@ -160,8 +157,19 @@ endif(VIENNALS_BUILD_TESTS)
 #################################################
 # BUILD PYTHON MODULE
 #################################################
-add_subdirectory(Wrapping)
+option(VIENNALS_BUILD_PYTHON_2 "Build for python2.x." OFF)
+option(VIENNALS_BUILD_PYTHON_3 "Build for python3.x. Trumps python2.x build." OFF)
 
+if(VIENNALS_BUILD_PYTHON_2 OR VIENNALS_BUILD_PYTHON_3)
+  # include external project if not already set
+  if(NOT DEFINED pybind11_DIR OR VIENNALS_BUILD_PYBIND11)
+      add_subdirectory(external/upstream/pybind11)
+  endif()
+
+  message(STATUS "pybind11_DIR: ${pybind11_DIR}")
+
+  add_subdirectory(Wrapping)
+endif()
 
 #################################################
 # INSTALL

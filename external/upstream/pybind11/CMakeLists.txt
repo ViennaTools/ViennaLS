@@ -1,3 +1,5 @@
+set_property(DIRECTORY PROPERTY EP_BASE ${DEPENDENCIES_DIR})
+
 externalproject_add(pybind11-external
   GIT_REPOSITORY
   https://github.com/pybind/pybind11.git
