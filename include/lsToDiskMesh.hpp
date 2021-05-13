@@ -50,9 +50,13 @@ public:
     buildTranslator = true;
   }
 
+  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
+    levelSets.push_back(passedLevelSet);
+  }
+
   /// Pushes the passed level set to the back of the list of level sets
-  void insertNextLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
-    levelSets.push_back(passedlsDomain);
+  void insertNextLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
+    levelSets.push_back(passedLevelSet);
   }
 
   void setMesh(lsSmartPointer<lsMesh<N>> passedMesh) { mesh = passedMesh; }
@@ -96,7 +100,7 @@ public:
     // set up data arrays
     std::vector<N> values;
     std::vector<std::array<N, 3>> normals;
-    std::vector<int> materialIds;
+    std::vector<N> materialIds;
 
     // save the extent of the resulting mesh
     std::array<N, 3> minimumExtent = {};
@@ -124,13 +128,12 @@ public:
     }
 
     // iterate over top levelset
-    for (; !iterators.back().isFinished(); ++iterators.back()) {
-      if (!iterators.back().isDefined() ||
-          std::abs(iterators.back().getValue()) > maxValue) {
+    for (auto &topIt = iterators.back(); !topIt.isFinished(); ++topIt) {
+      if (!topIt.isDefined() || std::abs(topIt.getValue()) > maxValue) {
         continue;
       }
 
-      unsigned pointId = iterators.back().getPointId();
+      unsigned pointId = topIt.getPointId();
 
       // insert pointId-counter pair in translator
       if (buildTranslatorFlag) {
@@ -138,14 +141,14 @@ public:
       }
 
       // insert material ID
-      const T value = iterators.back().getValue();
+      const T value = topIt.getValue();
       int matId = levelSets.size() - 1;
       for (int lowerLevelSetId = 0; lowerLevelSetId < levelSets.size() - 1;
            ++lowerLevelSetId) {
         // check if there is any other levelset at the same point:
         // put iterator to same position as the top levelset
         iterators[lowerLevelSetId].goToIndicesSequential(
-            iterators.back().getStartIndices());
+            topIt.getStartIndices());
         if (iterators[lowerLevelSetId].getValue() <=
             value + wrappingLayerEpsilon) {
           matId = lowerLevelSetId;
@@ -166,7 +169,7 @@ public:
       double max = 0.;
       for (unsigned i = 0; i < D; ++i) {
         // original position
-        node[i] = double(iterators.back().getStartIndices(i)) * gridDelta;
+        node[i] = double(topIt.getStartIndices(i)) * gridDelta;
 
         // save extent
         if (node[i] < minimumExtent[i]) {
