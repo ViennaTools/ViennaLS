@@ -1,8 +1,11 @@
 # if this is a static build, build vtk statically
 if(VIENNALS_STATIC_BUILD)
   set(VTK_EXTERNAL_BUILD_SHARED OFF)
+  set(VTK_EXTERNAL_INSTALL "static-vtk-external")
+  message(STATUS "Static build: Using static VTK libs.")
 else()
   set(VTK_EXTERNAL_BUILD_SHARED ON)
+  set(VTK_EXTERNAL_INSTALL "vtk-external")
 endif()
 
 externalproject_add(vtk-external
@@ -12,6 +15,12 @@ externalproject_add(vtk-external
   GIT_TAG #v9.0.1
     96e6fa9b3ff245e4d51d49f23d40e9ad8774e85e
   # GIT_SHALLOW 1
+  TMP_DIR
+    "${DEPENDENCIES_DIR}/tmp/${VTK_EXTERNAL_INSTALL}"
+  STAMP_DIR
+    "${DEPENDENCIES_DIR}/Stamp/${VTK_EXTERNAL_INSTALL}"
+  BINARY_DIR
+    "${DEPENDENCIES_DIR}/Build/${VTK_EXTERNAL_INSTALL}"
   CMAKE_ARGS
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
@@ -32,7 +41,7 @@ externalproject_add(vtk-external
     -DModule_vtkIOXML=ON
     -DVTK_RENDERING_BACKEND=None
   # BUILD_COMMAND
-  "cmake --build -- -j 4"
+    # "cmake --build . -- -j 4"
   # No install needed
   INSTALL_COMMAND
     ""
