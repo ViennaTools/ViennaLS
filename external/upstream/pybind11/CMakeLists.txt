@@ -33,6 +33,9 @@ externalproject_add(pybind11-external
 # Get install and build directory
 externalproject_get_property(pybind11-external INSTALL_DIR BINARY_DIR)
 
+# Pybind11 should be built
+set(VIENNALS_BUILD_PYBIND11 ON CACHE BOOL "Whether pybind11 should be installed.")
+
 set(
   pybind11_DIR "${INSTALL_DIR}"
   CACHE PATH "Path to pybind11 installation"

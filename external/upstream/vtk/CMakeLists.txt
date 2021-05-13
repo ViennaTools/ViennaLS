@@ -58,6 +58,9 @@ externalproject_add(vtk-external
 # Get install and build directory
 externalproject_get_property(vtk-external INSTALL_DIR BINARY_DIR)
 
+# VTK should be built
+set(VIENNALS_BUILD_VTK ON CACHE BOOL "Whether VTK should be installed.")
+
 set(
   VTK_DIR "${BINARY_DIR}"
   CACHE PATH "Path to VTK installation"

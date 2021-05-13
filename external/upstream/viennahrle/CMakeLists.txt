@@ -39,6 +39,9 @@ externalproject_add(viennahrle-external
 # Get install and build directory
 externalproject_get_property(viennahrle-external INSTALL_DIR BINARY_DIR)
 
+# ViennaHRLE should be built
+set(VIENNALS_BUILD_VIENNAHRLE ON CACHE BOOL "Whether viennaHRLE should be installed.")
+
 set(
   ViennaHRLE_DIR "${INSTALL_DIR}/ViennaHRLE"#/lib/cmake/ViennaHRLE"
   CACHE PATH "Path to VTK installation"
