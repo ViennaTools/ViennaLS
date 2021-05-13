@@ -46,9 +46,9 @@ int main() {
   double gridDelta = 1;
 
   double bounds[2 * D] = {-extent, extent, -extent, extent};
-  lsDomain<double, D>::BoundaryType boundaryCons[D];
-  boundaryCons[0] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
-  boundaryCons[1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
+  lsBoundaryConditionEnum<D> boundaryCons[D];
+  boundaryCons[0] = lsBoundaryConditionEnum<D>::REFLECTIVE_BOUNDARY;
+  boundaryCons[1] = lsBoundaryConditionEnum<D>::INFINITE_BOUNDARY;
 
   auto plane =
       lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);

@@ -333,6 +333,17 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Clear all metadata stored in the level set.")
       .def("print", &lsDomain<T, D>::print, "Print level set structure.");
 
+  // enums
+  pybind11::enum_<lsBoundaryConditionEnum<D>>(module, "lsBoundaryConditionEnum")
+      .value("REFLECTIVE_BOUNDARY",
+             lsBoundaryConditionEnum<D>::REFLECTIVE_BOUNDARY)
+      .value("INFINITE_BOUNDARY", lsBoundaryConditionEnum<D>::INFINITE_BOUNDARY)
+      .value("PERIODIC_BOUNDARY", lsBoundaryConditionEnum<D>::PERIODIC_BOUNDARY)
+      .value("POS_INFINITE_BOUNDARY",
+             lsBoundaryConditionEnum<D>::POS_INFINITE_BOUNDARY)
+      .value("NEG_INFINITE_BOUNDARY",
+             lsBoundaryConditionEnum<D>::NEG_INFINITE_BOUNDARY);
+
   // lsGeometricAdvect
   pybind11::class_<lsGeometricAdvect<T, D>,
                    lsSmartPointer<lsGeometricAdvect<T, D>>>(module,
@@ -555,12 +566,12 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("setGeometry", (void (lsMakeGeometry<T, D>::*)(
                               lsSmartPointer<lsPointCloud<T, D>>)) &
                               lsMakeGeometry<T, D>::setGeometry)
-      .def("setIgnoreBoundaryConditions", (void (lsMakeGeometry<T, D>::*)(
-                              bool)) &
-                              lsMakeGeometry<T, D>::setIgnoreBoundaryConditions)
-      .def("setIgnoreBoundaryConditions", (void (lsMakeGeometry<T, D>::*)(
-                              std::array<bool, 3>)) &
-                              lsMakeGeometry<T, D>::setIgnoreBoundaryConditions)
+      .def("setIgnoreBoundaryConditions",
+           (void (lsMakeGeometry<T, D>::*)(bool)) &
+               lsMakeGeometry<T, D>::setIgnoreBoundaryConditions)
+      .def("setIgnoreBoundaryConditions",
+           (void (lsMakeGeometry<T, D>::*)(std::array<bool, 3>)) &
+               lsMakeGeometry<T, D>::setIgnoreBoundaryConditions)
       .def("apply", &lsMakeGeometry<T, D>::apply, "Generate the geometry.");
 
   // lsPointData

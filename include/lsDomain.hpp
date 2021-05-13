@@ -14,6 +14,10 @@
 
 #define LS_DOMAIN_SERIALIZATION_VERSION 0
 
+// Boundary condition alias for easier access
+template <int D>
+using lsBoundaryConditionEnum = typename hrleGrid<D>::boundaryType;
+
 ///  Class containing all information about the level set, including
 ///  the dimensions of the domain, boundary conditions and all data.
 template <class T, int D> class lsDomain {
@@ -22,7 +26,7 @@ public:
   typedef T ValueType;
   typedef hrleGrid<D> GridType;
   typedef hrleDomain<T, D> DomainType;
-  typedef typename GridType::boundaryType BoundaryType;
+  typedef lsBoundaryConditionEnum<D> BoundaryType;
   typedef typename std::vector<std::pair<hrleVectorType<hrleIndexType, D>, T>>
       PointValueVectorType;
   typedef typename std::vector<std::array<T, D>> NormalVectorType;
