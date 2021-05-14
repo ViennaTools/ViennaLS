@@ -54,6 +54,8 @@ if(DEFINED ${pybind11_DIR})
   set(pybind11_DIR ${pybind11_DIR} CACHE PATH "Path to pybind11")
 endif()
 
+add_custom_target(buildDependencies)
+
 # Include all external dependencies
 include(ExternalProject)
 add_subdirectory(external/upstream)
@@ -64,6 +66,13 @@ if(VIENNALS_USE_VTK)
   if(VTK_FOUND)
     message(STATUS "Found VTK")
     add_compile_definitions(VIENNALS_USE_VTK)
+
+    # use VTK_USE_FILE for older versions of VTK
+    if (VTK_VERSION VERSION_LESS "8.90")
+      message(STATUS "Using old VTK Version: ${VTK_VERSION}")
+      include(${VTK_USE_FILE})
+    endif()
+
     # only link needed vtk libraries for static builds
     if(VIENNALS_STATIC_BUILD)
       # set(VTK_LIBRARIES vtksys;vtkIOCore;vtkexpat;vtklz4;vtkzlib;vtklzma;vtkdoubleconversion;vtkCommonMisc;vtkCommonSystem;vtkIOXML;vtkFiltersCore;vtkFiltersGeneral;vtkFiltersGeometry;vtkCommonExecutionModel;vtkCommonDataModel;vtkCommonColor;vtkIOXMLParser;vtkIOCore;vtkCommonMisc;vtkCommonComputationalGeometry;vtkCommonTransforms;vtkCommonMath;)

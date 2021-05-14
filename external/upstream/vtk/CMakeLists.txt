@@ -66,3 +66,5 @@ set(
   CACHE PATH "Path to VTK installation"
   )
 
+# add to buildDependencies target
+add_dependencies(buildDependencies vtk-external)

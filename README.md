@@ -51,7 +51,7 @@ git clone github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
 mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/
-make # this will install all dependencies the first time it is called and might take a while
+make buildDependencies # this will install all dependencies and might take a while
 make install
 ```
 
@@ -65,6 +65,7 @@ git clone github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
 mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/ -DVIENNALS_USE_VTK=OFF
+make buildDependencies
 make install
 ```
 
@@ -120,7 +121,7 @@ import viennaLS3d as vls
 In order to build the python module, set `VIENNALS_BUILD_PYTHON_2` or `VIENNALS_BUILD_PYTHON_3` to `ON`:
 ```
 cmake .. -DVIENNALS_BUILD_PYTHON_3=ON
-make
+make # this will install pybind11 the first time it is called
 ```
 
 If both options are on, only VIENNALS_BUILD_PYTHON_3 will be used, since only one version can be built at a time.

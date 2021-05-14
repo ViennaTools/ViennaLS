@@ -46,4 +46,5 @@ set(
   ViennaHRLE_DIR "${INSTALL_DIR}/ViennaHRLE"#/lib/cmake/ViennaHRLE"
   CACHE PATH "Path to VTK installation"
   )
-
+# add to buildDependencies target
+add_dependencies(buildDependencies viennahrle-external)
