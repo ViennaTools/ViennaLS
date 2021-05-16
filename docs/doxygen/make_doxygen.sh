@@ -23,7 +23,7 @@ commands[5]="EXAMPLE_PATH "
 
 argument[0]="$viennaLSdir\/README.md"
 argument[1]="$viennaLSdir" 
-argument[2]="$viennaLSdir\/cmake $viennaLSdir\/Tests $viennaLSdir\/Wrapping"
+argument[2]="$viennaLSdir\/cmake $viennaLSdir\/Tests $viennaLSdir\/Wrapping $viennaLSdir\/dependencies $viennaLSdir\/docs"
 argument[3]="$viennaLSdir\/docs\/doxygen\/logo.png"
 argument[4]="$viennaLSdir"
 argument[5]="$viennaLSdir\/Examples"

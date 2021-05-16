@@ -111,6 +111,20 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:acae91b8a8f912523b36bd7a4980d7cbb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7c671e886e5336f66a688a2066fd0ea1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToMesh.html#a7c671e886e5336f66a688a2066fd0ea1">apply</a> ()</td></tr>
 <tr class="separator:a7c671e886e5336f66a688a2066fd0ea1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a13ff52503ffe9a602d41c8ce4925653f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToMesh.html#a13ff52503ffe9a602d41c8ce4925653f">lsToMesh</a> ()</td></tr>
+<tr class="separator:a13ff52503ffe9a602d41c8ce4925653f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a344e795ea77b9d65e93881c3ec3f747f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToMesh.html#a344e795ea77b9d65e93881c3ec3f747f">lsToMesh</a> (const <a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedLevelSet, <a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;&gt; passedMesh, bool passedOnlyDefined=true, bool passedOnlyActive=false)</td></tr>
+<tr class="separator:a344e795ea77b9d65e93881c3ec3f747f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afd28480d6de8b52b76ec8a3912482aff"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToMesh.html#afd28480d6de8b52b76ec8a3912482aff">setLevelSet</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedlsDomain)</td></tr>
+<tr class="separator:afd28480d6de8b52b76ec8a3912482aff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab85b83205e4c0d4079cc5429952e483b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToMesh.html#ab85b83205e4c0d4079cc5429952e483b">setMesh</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;&gt; passedMesh)</td></tr>
+<tr class="separator:ab85b83205e4c0d4079cc5429952e483b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2e06030e5a2d621398d3104092cff1cb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToMesh.html#a2e06030e5a2d621398d3104092cff1cb">setOnlyDefined</a> (bool passedOnlyDefined)</td></tr>
+<tr class="separator:a2e06030e5a2d621398d3104092cff1cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acae91b8a8f912523b36bd7a4980d7cbb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToMesh.html#acae91b8a8f912523b36bd7a4980d7cbb">setOnlyActive</a> (bool passedOnlyActive)</td></tr>
+<tr class="separator:acae91b8a8f912523b36bd7a4980d7cbb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7c671e886e5336f66a688a2066fd0ea1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsToMesh.html#a7c671e886e5336f66a688a2066fd0ea1">apply</a> ()</td></tr>
+<tr class="separator:a7c671e886e5336f66a688a2066fd0ea1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;class T, int D&gt;<br />
@@ -121,7 +135,7 @@ class lsToMesh&lt; T, D &gt;</h3>
 </dl>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a13ff52503ffe9a602d41c8ce4925653f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a13ff52503ffe9a602d41c8ce4925653f">&#9670;&nbsp;</a></span>lsToMesh() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a13ff52503ffe9a602d41c8ce4925653f">&#9670;&nbsp;</a></span>lsToMesh() <span class="overload">[1/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -148,7 +162,84 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="a344e795ea77b9d65e93881c3ec3f747f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a344e795ea77b9d65e93881c3ec3f747f">&#9670;&nbsp;</a></span>lsToMesh() <span class="overload">[2/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a344e795ea77b9d65e93881c3ec3f747f">&#9670;&nbsp;</a></span>lsToMesh() <span class="overload">[2/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsToMesh.html">lsToMesh</a>&lt; T, D &gt;::<a class="el" href="classlsToMesh.html">lsToMesh</a> </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
+          <td class="paramname"><em>passedLevelSet</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;&gt;&#160;</td>
+          <td class="paramname"><em>passedMesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>passedOnlyDefined</em> = <code>true</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>passedOnlyActive</em> = <code>false</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a13ff52503ffe9a602d41c8ce4925653f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a13ff52503ffe9a602d41c8ce4925653f">&#9670;&nbsp;</a></span>lsToMesh() <span class="overload">[3/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsToMesh.html">lsToMesh</a>&lt; T, D &gt;::<a class="el" href="classlsToMesh.html">lsToMesh</a> </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a344e795ea77b9d65e93881c3ec3f747f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a344e795ea77b9d65e93881c3ec3f747f">&#9670;&nbsp;</a></span>lsToMesh() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -199,7 +290,7 @@ template&lt;class T , int D&gt; </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a7c671e886e5336f66a688a2066fd0ea1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7c671e886e5336f66a688a2066fd0ea1">&#9670;&nbsp;</a></span>apply()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a7c671e886e5336f66a688a2066fd0ea1">&#9670;&nbsp;</a></span>apply() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -227,8 +318,63 @@ template&lt;class T , int D&gt; </div>
 
 </div>
 </div>
+<a id="a7c671e886e5336f66a688a2066fd0ea1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7c671e886e5336f66a688a2066fd0ea1">&#9670;&nbsp;</a></span>apply() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsToMesh.html">lsToMesh</a>&lt; T, D &gt;::apply </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="afd28480d6de8b52b76ec8a3912482aff"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afd28480d6de8b52b76ec8a3912482aff">&#9670;&nbsp;</a></span>setLevelSet()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#afd28480d6de8b52b76ec8a3912482aff">&#9670;&nbsp;</a></span>setLevelSet() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsToMesh.html">lsToMesh</a>&lt; T, D &gt;::setLevelSet </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
+          <td class="paramname"><em>passedlsDomain</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="afd28480d6de8b52b76ec8a3912482aff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afd28480d6de8b52b76ec8a3912482aff">&#9670;&nbsp;</a></span>setLevelSet() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -256,7 +402,35 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="ab85b83205e4c0d4079cc5429952e483b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab85b83205e4c0d4079cc5429952e483b">&#9670;&nbsp;</a></span>setMesh()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab85b83205e4c0d4079cc5429952e483b">&#9670;&nbsp;</a></span>setMesh() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsToMesh.html">lsToMesh</a>&lt; T, D &gt;::setMesh </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;&gt;&#160;</td>
+          <td class="paramname"><em>passedMesh</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab85b83205e4c0d4079cc5429952e483b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab85b83205e4c0d4079cc5429952e483b">&#9670;&nbsp;</a></span>setMesh() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -284,7 +458,35 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="acae91b8a8f912523b36bd7a4980d7cbb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acae91b8a8f912523b36bd7a4980d7cbb">&#9670;&nbsp;</a></span>setOnlyActive()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#acae91b8a8f912523b36bd7a4980d7cbb">&#9670;&nbsp;</a></span>setOnlyActive() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsToMesh.html">lsToMesh</a>&lt; T, D &gt;::setOnlyActive </td>
+          <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>passedOnlyActive</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="acae91b8a8f912523b36bd7a4980d7cbb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acae91b8a8f912523b36bd7a4980d7cbb">&#9670;&nbsp;</a></span>setOnlyActive() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -312,7 +514,35 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="a2e06030e5a2d621398d3104092cff1cb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2e06030e5a2d621398d3104092cff1cb">&#9670;&nbsp;</a></span>setOnlyDefined()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a2e06030e5a2d621398d3104092cff1cb">&#9670;&nbsp;</a></span>setOnlyDefined() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsToMesh.html">lsToMesh</a>&lt; T, D &gt;::setOnlyDefined </td>
+          <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>passedOnlyDefined</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2e06030e5a2d621398d3104092cff1cb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2e06030e5a2d621398d3104092cff1cb">&#9670;&nbsp;</a></span>setOnlyDefined() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -340,7 +570,7 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>include/<a class="el" href="lsToMesh_8hpp.html">lsToMesh.hpp</a></li>
+<li>include/<a class="el" href="include_2lsToMesh_8hpp.html">lsToMesh.hpp</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

@@ -106,6 +106,15 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a4c7c29b4fd19be9990e5910c6d16c625"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPrune.html#a4c7c29b4fd19be9990e5910c6d16c625">apply</a> ()</td></tr>
 <tr class="memdesc:a4c7c29b4fd19be9990e5910c6d16c625"><td class="mdescLeft">&#160;</td><td class="mdescRight">removes all grid points, which do not have at least one opposite signed neighbour returns the number of removed points  <a href="classlsPrune.html#a4c7c29b4fd19be9990e5910c6d16c625">More...</a><br /></td></tr>
 <tr class="separator:a4c7c29b4fd19be9990e5910c6d16c625"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a31cc4e017b099f2af82922469fcf9bed"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPrune.html#a31cc4e017b099f2af82922469fcf9bed">lsPrune</a> ()</td></tr>
+<tr class="separator:a31cc4e017b099f2af82922469fcf9bed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0fbca4fedce86a2f1891833784e6fd76"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPrune.html#a0fbca4fedce86a2f1891833784e6fd76">lsPrune</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedlsDomain)</td></tr>
+<tr class="separator:a0fbca4fedce86a2f1891833784e6fd76"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a01f613cdcc13026cf06751633b777369"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPrune.html#a01f613cdcc13026cf06751633b777369">setLevelSet</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedlsDomain)</td></tr>
+<tr class="separator:a01f613cdcc13026cf06751633b777369"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4c7c29b4fd19be9990e5910c6d16c625"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPrune.html#a4c7c29b4fd19be9990e5910c6d16c625">apply</a> ()</td></tr>
+<tr class="memdesc:a4c7c29b4fd19be9990e5910c6d16c625"><td class="mdescLeft">&#160;</td><td class="mdescRight">removes all grid points, which do not have at least one opposite signed neighbour returns the number of removed points  <a href="classlsPrune.html#a4c7c29b4fd19be9990e5910c6d16c625">More...</a><br /></td></tr>
+<tr class="separator:a4c7c29b4fd19be9990e5910c6d16c625"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;class T, int D&gt;<br />
@@ -114,7 +123,7 @@ class lsPrune&lt; T, D &gt;</h3>
 <p>Removes all level set points, which do not have at least one oppositely signed neighbour (Meaning they do not lie directly at the interface). Afterwards the level set will occupy the least memory possible. </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a31cc4e017b099f2af82922469fcf9bed"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a31cc4e017b099f2af82922469fcf9bed">&#9670;&nbsp;</a></span>lsPrune() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a31cc4e017b099f2af82922469fcf9bed">&#9670;&nbsp;</a></span>lsPrune() <span class="overload">[1/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -141,7 +150,62 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="a0fbca4fedce86a2f1891833784e6fd76"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0fbca4fedce86a2f1891833784e6fd76">&#9670;&nbsp;</a></span>lsPrune() <span class="overload">[2/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0fbca4fedce86a2f1891833784e6fd76">&#9670;&nbsp;</a></span>lsPrune() <span class="overload">[2/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsPrune.html">lsPrune</a>&lt; T, D &gt;::<a class="el" href="classlsPrune.html">lsPrune</a> </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
+          <td class="paramname"><em>passedlsDomain</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a31cc4e017b099f2af82922469fcf9bed"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a31cc4e017b099f2af82922469fcf9bed">&#9670;&nbsp;</a></span>lsPrune() <span class="overload">[3/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsPrune.html">lsPrune</a>&lt; T, D &gt;::<a class="el" href="classlsPrune.html">lsPrune</a> </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a0fbca4fedce86a2f1891833784e6fd76"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0fbca4fedce86a2f1891833784e6fd76">&#9670;&nbsp;</a></span>lsPrune() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -170,7 +234,36 @@ template&lt;class T , int D&gt; </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a4c7c29b4fd19be9990e5910c6d16c625"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4c7c29b4fd19be9990e5910c6d16c625">&#9670;&nbsp;</a></span>apply()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a4c7c29b4fd19be9990e5910c6d16c625">&#9670;&nbsp;</a></span>apply() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsPrune.html">lsPrune</a>&lt; T, D &gt;::apply </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>removes all grid points, which do not have at least one opposite signed neighbour returns the number of removed points </p>
+
+</div>
+</div>
+<a id="a4c7c29b4fd19be9990e5910c6d16c625"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4c7c29b4fd19be9990e5910c6d16c625">&#9670;&nbsp;</a></span>apply() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -199,7 +292,35 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="a01f613cdcc13026cf06751633b777369"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a01f613cdcc13026cf06751633b777369">&#9670;&nbsp;</a></span>setLevelSet()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a01f613cdcc13026cf06751633b777369">&#9670;&nbsp;</a></span>setLevelSet() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsPrune.html">lsPrune</a>&lt; T, D &gt;::setLevelSet </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
+          <td class="paramname"><em>passedlsDomain</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a01f613cdcc13026cf06751633b777369"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a01f613cdcc13026cf06751633b777369">&#9670;&nbsp;</a></span>setLevelSet() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -227,7 +348,7 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>include/<a class="el" href="lsPrune_8hpp.html">lsPrune.hpp</a></li>
+<li>include/<a class="el" href="include_2lsPrune_8hpp.html">lsPrune.hpp</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

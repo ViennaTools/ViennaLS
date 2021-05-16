@@ -112,9 +112,25 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a72cbe88df55fd8138851e952c7135dd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a180aade911695157f8efdd325e4aaf42"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMessage.html#a180aade911695157f8efdd325e4aaf42">print</a> (std::ostream &amp;out=std::cout)</td></tr>
 <tr class="separator:a180aade911695157f8efdd325e4aaf42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2603de3902261fab485de97fc69be1ea"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMessage.html#a2603de3902261fab485de97fc69be1ea">lsMessage</a> (const <a class="el" href="classlsMessage.html">lsMessage</a> &amp;)=delete</td></tr>
+<tr class="separator:a2603de3902261fab485de97fc69be1ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2eb16a1651607dd1ad012734ced81bcb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMessage.html#a2eb16a1651607dd1ad012734ced81bcb">operator=</a> (const <a class="el" href="classlsMessage.html">lsMessage</a> &amp;)=delete</td></tr>
+<tr class="separator:a2eb16a1651607dd1ad012734ced81bcb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa6ee03ee6143306f49a8f7aa81108546"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classlsMessage.html">lsMessage</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMessage.html#aa6ee03ee6143306f49a8f7aa81108546">add</a> (std::string s)</td></tr>
+<tr class="separator:aa6ee03ee6143306f49a8f7aa81108546"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:add4053d7e98b51f1ad902d843b45d6fa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classlsMessage.html">lsMessage</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMessage.html#add4053d7e98b51f1ad902d843b45d6fa">addWarning</a> (std::string s)</td></tr>
+<tr class="separator:add4053d7e98b51f1ad902d843b45d6fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a69ccefb413b6a130f104768ba52a061a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classlsMessage.html">lsMessage</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMessage.html#a69ccefb413b6a130f104768ba52a061a">addError</a> (std::string s, bool shouldAbort=true)</td></tr>
+<tr class="separator:a69ccefb413b6a130f104768ba52a061a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a72cbe88df55fd8138851e952c7135dd7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classlsMessage.html">lsMessage</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMessage.html#a72cbe88df55fd8138851e952c7135dd7">addDebug</a> (std::string s)</td></tr>
+<tr class="separator:a72cbe88df55fd8138851e952c7135dd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a180aade911695157f8efdd325e4aaf42"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMessage.html#a180aade911695157f8efdd325e4aaf42">print</a> (std::ostream &amp;out=std::cout)</td></tr>
+<tr class="separator:a180aade911695157f8efdd325e4aaf42"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
+<tr class="memitem:a26184786db860c2f8ae7f4dc00efe9d5"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classlsMessage.html">lsMessage</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMessage.html#a26184786db860c2f8ae7f4dc00efe9d5">getInstance</a> ()</td></tr>
+<tr class="separator:a26184786db860c2f8ae7f4dc00efe9d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a26184786db860c2f8ae7f4dc00efe9d5"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classlsMessage.html">lsMessage</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMessage.html#a26184786db860c2f8ae7f4dc00efe9d5">getInstance</a> ()</td></tr>
 <tr class="separator:a26184786db860c2f8ae7f4dc00efe9d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -122,7 +138,33 @@ Static Public Member Functions</h2></td></tr>
 <div class="textblock"><p>Singleton class for thread-safe logging. </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a2603de3902261fab485de97fc69be1ea"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2603de3902261fab485de97fc69be1ea">&#9670;&nbsp;</a></span>lsMessage()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a2603de3902261fab485de97fc69be1ea">&#9670;&nbsp;</a></span>lsMessage() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">lsMessage::lsMessage </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classlsMessage.html">lsMessage</a> &amp;&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">delete</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2603de3902261fab485de97fc69be1ea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2603de3902261fab485de97fc69be1ea">&#9670;&nbsp;</a></span>lsMessage() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -149,7 +191,33 @@ Static Public Member Functions</h2></td></tr>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="aa6ee03ee6143306f49a8f7aa81108546"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa6ee03ee6143306f49a8f7aa81108546">&#9670;&nbsp;</a></span>add()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa6ee03ee6143306f49a8f7aa81108546">&#9670;&nbsp;</a></span>add() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsMessage.html">lsMessage</a>&amp; lsMessage::add </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>s</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aa6ee03ee6143306f49a8f7aa81108546"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa6ee03ee6143306f49a8f7aa81108546">&#9670;&nbsp;</a></span>add() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -175,7 +243,33 @@ Static Public Member Functions</h2></td></tr>
 </div>
 </div>
 <a id="a72cbe88df55fd8138851e952c7135dd7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a72cbe88df55fd8138851e952c7135dd7">&#9670;&nbsp;</a></span>addDebug()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a72cbe88df55fd8138851e952c7135dd7">&#9670;&nbsp;</a></span>addDebug() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsMessage.html">lsMessage</a>&amp; lsMessage::addDebug </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>s</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a72cbe88df55fd8138851e952c7135dd7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a72cbe88df55fd8138851e952c7135dd7">&#9670;&nbsp;</a></span>addDebug() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -201,7 +295,43 @@ Static Public Member Functions</h2></td></tr>
 </div>
 </div>
 <a id="a69ccefb413b6a130f104768ba52a061a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a69ccefb413b6a130f104768ba52a061a">&#9670;&nbsp;</a></span>addError()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a69ccefb413b6a130f104768ba52a061a">&#9670;&nbsp;</a></span>addError() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsMessage.html">lsMessage</a>&amp; lsMessage::addError </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>s</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>shouldAbort</em> = <code>true</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a69ccefb413b6a130f104768ba52a061a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a69ccefb413b6a130f104768ba52a061a">&#9670;&nbsp;</a></span>addError() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -237,7 +367,33 @@ Static Public Member Functions</h2></td></tr>
 </div>
 </div>
 <a id="add4053d7e98b51f1ad902d843b45d6fa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#add4053d7e98b51f1ad902d843b45d6fa">&#9670;&nbsp;</a></span>addWarning()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#add4053d7e98b51f1ad902d843b45d6fa">&#9670;&nbsp;</a></span>addWarning() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsMessage.html">lsMessage</a>&amp; lsMessage::addWarning </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>s</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="add4053d7e98b51f1ad902d843b45d6fa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#add4053d7e98b51f1ad902d843b45d6fa">&#9670;&nbsp;</a></span>addWarning() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -263,7 +419,32 @@ Static Public Member Functions</h2></td></tr>
 </div>
 </div>
 <a id="a26184786db860c2f8ae7f4dc00efe9d5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a26184786db860c2f8ae7f4dc00efe9d5">&#9670;&nbsp;</a></span>getInstance()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a26184786db860c2f8ae7f4dc00efe9d5">&#9670;&nbsp;</a></span>getInstance() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="el" href="classlsMessage.html">lsMessage</a>&amp; lsMessage::getInstance </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a26184786db860c2f8ae7f4dc00efe9d5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a26184786db860c2f8ae7f4dc00efe9d5">&#9670;&nbsp;</a></span>getInstance() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -288,7 +469,33 @@ Static Public Member Functions</h2></td></tr>
 </div>
 </div>
 <a id="a2eb16a1651607dd1ad012734ced81bcb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2eb16a1651607dd1ad012734ced81bcb">&#9670;&nbsp;</a></span>operator=()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a2eb16a1651607dd1ad012734ced81bcb">&#9670;&nbsp;</a></span>operator=() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void lsMessage::operator= </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classlsMessage.html">lsMessage</a> &amp;&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">delete</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2eb16a1651607dd1ad012734ced81bcb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2eb16a1651607dd1ad012734ced81bcb">&#9670;&nbsp;</a></span>operator=() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -314,7 +521,33 @@ Static Public Member Functions</h2></td></tr>
 </div>
 </div>
 <a id="a180aade911695157f8efdd325e4aaf42"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a180aade911695157f8efdd325e4aaf42">&#9670;&nbsp;</a></span>print()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a180aade911695157f8efdd325e4aaf42">&#9670;&nbsp;</a></span>print() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void lsMessage::print </td>
+          <td>(</td>
+          <td class="paramtype">std::ostream &amp;&#160;</td>
+          <td class="paramname"><em>out</em> = <code>std::cout</code></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a180aade911695157f8efdd325e4aaf42"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a180aade911695157f8efdd325e4aaf42">&#9670;&nbsp;</a></span>print() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -340,7 +573,7 @@ Static Public Member Functions</h2></td></tr>
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>include/<a class="el" href="lsMessage_8hpp.html">lsMessage.hpp</a></li>
+<li>include/<a class="el" href="include_2lsMessage_8hpp.html">lsMessage.hpp</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

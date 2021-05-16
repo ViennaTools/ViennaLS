@@ -97,6 +97,8 @@ $(document).ready(function(){initNavTree('classlsInternal_1_1lsFiniteDifferences
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a6fabd9feca85eed3d96379388139b6c9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsFiniteDifferences.html#a6fabd9feca85eed3d96379388139b6c9">lsFiniteDifferences</a> ()</td></tr>
 <tr class="separator:a6fabd9feca85eed3d96379388139b6c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6fabd9feca85eed3d96379388139b6c9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsFiniteDifferences.html#a6fabd9feca85eed3d96379388139b6c9">lsFiniteDifferences</a> ()</td></tr>
+<tr class="separator:a6fabd9feca85eed3d96379388139b6c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -115,10 +117,52 @@ Static Public Member Functions</h2></td></tr>
 <tr class="separator:a4d0e845db587f2dd7d624d53b893f72f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a602e63e25f54ece3466a5d3e391fc55f"><td class="memItemLeft" align="right" valign="top">static T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsFiniteDifferences.html#a602e63e25f54ece3466a5d3e391fc55f">calculateGradientDiff</a> (const T *values, const double &amp;delta)</td></tr>
 <tr class="separator:a602e63e25f54ece3466a5d3e391fc55f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ba90da7aa5d1d5d86c2ca3f7724a298"><td class="memItemLeft" align="right" valign="top">static unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsFiniteDifferences.html#a6ba90da7aa5d1d5d86c2ca3f7724a298">getNumberOfValues</a> (<a class="el" href="namespacelsInternal.html#a1197c9bc5d272ab73e76ebc2d4ab05a7">DifferentiationSchemeEnum</a> s)</td></tr>
+<tr class="separator:a6ba90da7aa5d1d5d86c2ca3f7724a298"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a79d98864e22c1e1f124e334ba6c0387e"><td class="memItemLeft" align="right" valign="top">static T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsFiniteDifferences.html#a79d98864e22c1e1f124e334ba6c0387e">weno3</a> (const T *x, T delta, bool plus, T eps=1e-6)</td></tr>
+<tr class="memdesc:a79d98864e22c1e1f124e334ba6c0387e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Weighted essentially non-oscillatory differentiation scheme 3rd order x1 ... x5 stencil points from left to right plus == true =&gt; right-sided.  <a href="classlsInternal_1_1lsFiniteDifferences.html#a79d98864e22c1e1f124e334ba6c0387e">More...</a><br /></td></tr>
+<tr class="separator:a79d98864e22c1e1f124e334ba6c0387e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab0b417ce562ed42a8b484dd7214e8a13"><td class="memItemLeft" align="right" valign="top">static T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsFiniteDifferences.html#ab0b417ce562ed42a8b484dd7214e8a13">weno5</a> (const T *x, T dx, bool plus, T eps=1e-6)</td></tr>
+<tr class="separator:ab0b417ce562ed42a8b484dd7214e8a13"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7d255b73875af1f1345aec82db1df762"><td class="memItemLeft" align="right" valign="top">static T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsFiniteDifferences.html#a7d255b73875af1f1345aec82db1df762">differenceNegative</a> (const T *values, const double &amp;delta)</td></tr>
+<tr class="separator:a7d255b73875af1f1345aec82db1df762"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aee7d45bd89a59a4b42f21748f6641cdd"><td class="memItemLeft" align="right" valign="top">static T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsFiniteDifferences.html#aee7d45bd89a59a4b42f21748f6641cdd">differencePositive</a> (const T *values, const double &amp;delta)</td></tr>
+<tr class="separator:aee7d45bd89a59a4b42f21748f6641cdd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d0e845db587f2dd7d624d53b893f72f"><td class="memItemLeft" align="right" valign="top">static T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsFiniteDifferences.html#a4d0e845db587f2dd7d624d53b893f72f">calculateGradient</a> (const T *values, const double &amp;delta)</td></tr>
+<tr class="separator:a4d0e845db587f2dd7d624d53b893f72f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a602e63e25f54ece3466a5d3e391fc55f"><td class="memItemLeft" align="right" valign="top">static T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsFiniteDifferences.html#a602e63e25f54ece3466a5d3e391fc55f">calculateGradientDiff</a> (const T *values, const double &amp;delta)</td></tr>
+<tr class="separator:a602e63e25f54ece3466a5d3e391fc55f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a6fabd9feca85eed3d96379388139b6c9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6fabd9feca85eed3d96379388139b6c9">&#9670;&nbsp;</a></span>lsFiniteDifferences()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6fabd9feca85eed3d96379388139b6c9">&#9670;&nbsp;</a></span>lsFiniteDifferences() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , DifferentiationSchemeEnum scheme = DifferentiationSchemeEnum::FIRST_ORDER&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsInternal_1_1lsFiniteDifferences.html">lsInternal::lsFiniteDifferences</a>&lt; T, scheme &gt;::<a class="el" href="classlsInternal_1_1lsFiniteDifferences.html">lsFiniteDifferences</a> </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a6fabd9feca85eed3d96379388139b6c9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6fabd9feca85eed3d96379388139b6c9">&#9670;&nbsp;</a></span>lsFiniteDifferences() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -146,7 +190,45 @@ template&lt;class T , DifferentiationSchemeEnum scheme = DifferentiationSchemeEn
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a4d0e845db587f2dd7d624d53b893f72f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4d0e845db587f2dd7d624d53b893f72f">&#9670;&nbsp;</a></span>calculateGradient()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a4d0e845db587f2dd7d624d53b893f72f">&#9670;&nbsp;</a></span>calculateGradient() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , DifferentiationSchemeEnum scheme = DifferentiationSchemeEnum::FIRST_ORDER&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static T <a class="el" href="classlsInternal_1_1lsFiniteDifferences.html">lsInternal::lsFiniteDifferences</a>&lt; T, scheme &gt;::calculateGradient </td>
+          <td>(</td>
+          <td class="paramtype">const T *&#160;</td>
+          <td class="paramname"><em>values</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double &amp;&#160;</td>
+          <td class="paramname"><em>delta</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a4d0e845db587f2dd7d624d53b893f72f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4d0e845db587f2dd7d624d53b893f72f">&#9670;&nbsp;</a></span>calculateGradient() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -184,7 +266,45 @@ template&lt;class T , DifferentiationSchemeEnum scheme = DifferentiationSchemeEn
 </div>
 </div>
 <a id="a602e63e25f54ece3466a5d3e391fc55f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a602e63e25f54ece3466a5d3e391fc55f">&#9670;&nbsp;</a></span>calculateGradientDiff()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a602e63e25f54ece3466a5d3e391fc55f">&#9670;&nbsp;</a></span>calculateGradientDiff() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , DifferentiationSchemeEnum scheme = DifferentiationSchemeEnum::FIRST_ORDER&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static T <a class="el" href="classlsInternal_1_1lsFiniteDifferences.html">lsInternal::lsFiniteDifferences</a>&lt; T, scheme &gt;::calculateGradientDiff </td>
+          <td>(</td>
+          <td class="paramtype">const T *&#160;</td>
+          <td class="paramname"><em>values</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double &amp;&#160;</td>
+          <td class="paramname"><em>delta</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a602e63e25f54ece3466a5d3e391fc55f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a602e63e25f54ece3466a5d3e391fc55f">&#9670;&nbsp;</a></span>calculateGradientDiff() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -222,7 +342,45 @@ template&lt;class T , DifferentiationSchemeEnum scheme = DifferentiationSchemeEn
 </div>
 </div>
 <a id="a7d255b73875af1f1345aec82db1df762"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7d255b73875af1f1345aec82db1df762">&#9670;&nbsp;</a></span>differenceNegative()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a7d255b73875af1f1345aec82db1df762">&#9670;&nbsp;</a></span>differenceNegative() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , DifferentiationSchemeEnum scheme = DifferentiationSchemeEnum::FIRST_ORDER&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static T <a class="el" href="classlsInternal_1_1lsFiniteDifferences.html">lsInternal::lsFiniteDifferences</a>&lt; T, scheme &gt;::differenceNegative </td>
+          <td>(</td>
+          <td class="paramtype">const T *&#160;</td>
+          <td class="paramname"><em>values</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double &amp;&#160;</td>
+          <td class="paramname"><em>delta</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7d255b73875af1f1345aec82db1df762"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7d255b73875af1f1345aec82db1df762">&#9670;&nbsp;</a></span>differenceNegative() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -260,7 +418,45 @@ template&lt;class T , DifferentiationSchemeEnum scheme = DifferentiationSchemeEn
 </div>
 </div>
 <a id="aee7d45bd89a59a4b42f21748f6641cdd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aee7d45bd89a59a4b42f21748f6641cdd">&#9670;&nbsp;</a></span>differencePositive()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aee7d45bd89a59a4b42f21748f6641cdd">&#9670;&nbsp;</a></span>differencePositive() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , DifferentiationSchemeEnum scheme = DifferentiationSchemeEnum::FIRST_ORDER&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static T <a class="el" href="classlsInternal_1_1lsFiniteDifferences.html">lsInternal::lsFiniteDifferences</a>&lt; T, scheme &gt;::differencePositive </td>
+          <td>(</td>
+          <td class="paramtype">const T *&#160;</td>
+          <td class="paramname"><em>values</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double &amp;&#160;</td>
+          <td class="paramname"><em>delta</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aee7d45bd89a59a4b42f21748f6641cdd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aee7d45bd89a59a4b42f21748f6641cdd">&#9670;&nbsp;</a></span>differencePositive() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -298,7 +494,35 @@ template&lt;class T , DifferentiationSchemeEnum scheme = DifferentiationSchemeEn
 </div>
 </div>
 <a id="a6ba90da7aa5d1d5d86c2ca3f7724a298"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6ba90da7aa5d1d5d86c2ca3f7724a298">&#9670;&nbsp;</a></span>getNumberOfValues()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6ba90da7aa5d1d5d86c2ca3f7724a298">&#9670;&nbsp;</a></span>getNumberOfValues() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , DifferentiationSchemeEnum scheme = DifferentiationSchemeEnum::FIRST_ORDER&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static unsigned <a class="el" href="classlsInternal_1_1lsFiniteDifferences.html">lsInternal::lsFiniteDifferences</a>&lt; T, scheme &gt;::getNumberOfValues </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespacelsInternal.html#a1197c9bc5d272ab73e76ebc2d4ab05a7">DifferentiationSchemeEnum</a>&#160;</td>
+          <td class="paramname"><em>s</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a6ba90da7aa5d1d5d86c2ca3f7724a298"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6ba90da7aa5d1d5d86c2ca3f7724a298">&#9670;&nbsp;</a></span>getNumberOfValues() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -326,7 +550,59 @@ template&lt;class T , DifferentiationSchemeEnum scheme = DifferentiationSchemeEn
 </div>
 </div>
 <a id="a79d98864e22c1e1f124e334ba6c0387e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a79d98864e22c1e1f124e334ba6c0387e">&#9670;&nbsp;</a></span>weno3()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a79d98864e22c1e1f124e334ba6c0387e">&#9670;&nbsp;</a></span>weno3() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , DifferentiationSchemeEnum scheme = DifferentiationSchemeEnum::FIRST_ORDER&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static T <a class="el" href="classlsInternal_1_1lsFiniteDifferences.html">lsInternal::lsFiniteDifferences</a>&lt; T, scheme &gt;::weno3 </td>
+          <td>(</td>
+          <td class="paramtype">const T *&#160;</td>
+          <td class="paramname"><em>x</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">T&#160;</td>
+          <td class="paramname"><em>delta</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>plus</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">T&#160;</td>
+          <td class="paramname"><em>eps</em> = <code>1e-6</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Weighted essentially non-oscillatory differentiation scheme 3rd order x1 ... x5 stencil points from left to right plus == true =&gt; right-sided. </p>
+
+</div>
+</div>
+<a id="a79d98864e22c1e1f124e334ba6c0387e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a79d98864e22c1e1f124e334ba6c0387e">&#9670;&nbsp;</a></span>weno3() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -378,7 +654,57 @@ template&lt;class T , DifferentiationSchemeEnum scheme = DifferentiationSchemeEn
 </div>
 </div>
 <a id="ab0b417ce562ed42a8b484dd7214e8a13"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab0b417ce562ed42a8b484dd7214e8a13">&#9670;&nbsp;</a></span>weno5()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab0b417ce562ed42a8b484dd7214e8a13">&#9670;&nbsp;</a></span>weno5() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , DifferentiationSchemeEnum scheme = DifferentiationSchemeEnum::FIRST_ORDER&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static T <a class="el" href="classlsInternal_1_1lsFiniteDifferences.html">lsInternal::lsFiniteDifferences</a>&lt; T, scheme &gt;::weno5 </td>
+          <td>(</td>
+          <td class="paramtype">const T *&#160;</td>
+          <td class="paramname"><em>x</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">T&#160;</td>
+          <td class="paramname"><em>dx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>plus</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">T&#160;</td>
+          <td class="paramname"><em>eps</em> = <code>1e-6</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab0b417ce562ed42a8b484dd7214e8a13"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab0b417ce562ed42a8b484dd7214e8a13">&#9670;&nbsp;</a></span>weno5() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -428,7 +754,7 @@ template&lt;class T , DifferentiationSchemeEnum scheme = DifferentiationSchemeEn
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>include/<a class="el" href="lsFiniteDifferences_8hpp.html">lsFiniteDifferences.hpp</a></li>
+<li>include/<a class="el" href="include_2lsFiniteDifferences_8hpp.html">lsFiniteDifferences.hpp</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

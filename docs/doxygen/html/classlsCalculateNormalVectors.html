@@ -107,6 +107,16 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a92100e8acaca1a49e4f15e8dd1be7689"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad613a081f288a83097fdbcfeb5b20825"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsCalculateNormalVectors.html#ad613a081f288a83097fdbcfeb5b20825">apply</a> ()</td></tr>
 <tr class="separator:ad613a081f288a83097fdbcfeb5b20825"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a83f4d828940212da64e23c9e13849839"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsCalculateNormalVectors.html#a83f4d828940212da64e23c9e13849839">lsCalculateNormalVectors</a> ()</td></tr>
+<tr class="separator:a83f4d828940212da64e23c9e13849839"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a197c2d1fb2874b787299e42139cfb4e5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsCalculateNormalVectors.html#a197c2d1fb2874b787299e42139cfb4e5">lsCalculateNormalVectors</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedLevelSet, T passedMaxValue=0.5)</td></tr>
+<tr class="separator:a197c2d1fb2874b787299e42139cfb4e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a47671b3b78dae6390b4d3e89807cfeb0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsCalculateNormalVectors.html#a47671b3b78dae6390b4d3e89807cfeb0">setLevelSet</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedLevelSet)</td></tr>
+<tr class="separator:a47671b3b78dae6390b4d3e89807cfeb0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a92100e8acaca1a49e4f15e8dd1be7689"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsCalculateNormalVectors.html#a92100e8acaca1a49e4f15e8dd1be7689">setMaxValue</a> (const T passedMaxValue)</td></tr>
+<tr class="separator:a92100e8acaca1a49e4f15e8dd1be7689"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad613a081f288a83097fdbcfeb5b20825"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsCalculateNormalVectors.html#ad613a081f288a83097fdbcfeb5b20825">apply</a> ()</td></tr>
+<tr class="separator:ad613a081f288a83097fdbcfeb5b20825"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;class T, int D&gt;<br />
@@ -115,7 +125,7 @@ class lsCalculateNormalVectors&lt; T, D &gt;</h3>
 <p>This algorithm is used to compute the normal vectors for all points with level set values &lt;= 0.5. The result is saved in the <a class="el" href="classlsPointData.html" title="This class holds data associated with points in space.">lsPointData</a> of the <a class="el" href="classlsDomain.html" title="Class containing all information about the level set, including the dimensions of the domain,...">lsDomain</a> and can be retrieved with <a class="el" href="classlsDomain.html#a927530a0e159079db3f61fe8bce8f25a" title="get reference to point data saved in the level set">lsDomain.getPointData()</a>.getVectorData("Normals"). Since neighbors in each cartesian direction are necessary for the calculation, the levelset width must be &gt;=3. </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a83f4d828940212da64e23c9e13849839"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a83f4d828940212da64e23c9e13849839">&#9670;&nbsp;</a></span>lsCalculateNormalVectors() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a83f4d828940212da64e23c9e13849839">&#9670;&nbsp;</a></span>lsCalculateNormalVectors() <span class="overload">[1/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -142,7 +152,72 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="a197c2d1fb2874b787299e42139cfb4e5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a197c2d1fb2874b787299e42139cfb4e5">&#9670;&nbsp;</a></span>lsCalculateNormalVectors() <span class="overload">[2/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a197c2d1fb2874b787299e42139cfb4e5">&#9670;&nbsp;</a></span>lsCalculateNormalVectors() <span class="overload">[2/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsCalculateNormalVectors.html">lsCalculateNormalVectors</a>&lt; T, D &gt;::<a class="el" href="classlsCalculateNormalVectors.html">lsCalculateNormalVectors</a> </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
+          <td class="paramname"><em>passedLevelSet</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">T&#160;</td>
+          <td class="paramname"><em>passedMaxValue</em> = <code>0.5</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a83f4d828940212da64e23c9e13849839"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a83f4d828940212da64e23c9e13849839">&#9670;&nbsp;</a></span>lsCalculateNormalVectors() <span class="overload">[3/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsCalculateNormalVectors.html">lsCalculateNormalVectors</a>&lt; T, D &gt;::<a class="el" href="classlsCalculateNormalVectors.html">lsCalculateNormalVectors</a> </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a197c2d1fb2874b787299e42139cfb4e5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a197c2d1fb2874b787299e42139cfb4e5">&#9670;&nbsp;</a></span>lsCalculateNormalVectors() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -181,7 +256,35 @@ template&lt;class T , int D&gt; </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="ad613a081f288a83097fdbcfeb5b20825"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad613a081f288a83097fdbcfeb5b20825">&#9670;&nbsp;</a></span>apply()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ad613a081f288a83097fdbcfeb5b20825">&#9670;&nbsp;</a></span>apply() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsCalculateNormalVectors.html">lsCalculateNormalVectors</a>&lt; T, D &gt;::apply </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Calculate Normalvectors </p>
+
+</div>
+</div>
+<a id="ad613a081f288a83097fdbcfeb5b20825"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad613a081f288a83097fdbcfeb5b20825">&#9670;&nbsp;</a></span>apply() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -209,7 +312,35 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="a47671b3b78dae6390b4d3e89807cfeb0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a47671b3b78dae6390b4d3e89807cfeb0">&#9670;&nbsp;</a></span>setLevelSet()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a47671b3b78dae6390b4d3e89807cfeb0">&#9670;&nbsp;</a></span>setLevelSet() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsCalculateNormalVectors.html">lsCalculateNormalVectors</a>&lt; T, D &gt;::setLevelSet </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
+          <td class="paramname"><em>passedLevelSet</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a47671b3b78dae6390b4d3e89807cfeb0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a47671b3b78dae6390b4d3e89807cfeb0">&#9670;&nbsp;</a></span>setLevelSet() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -237,7 +368,35 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="a92100e8acaca1a49e4f15e8dd1be7689"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a92100e8acaca1a49e4f15e8dd1be7689">&#9670;&nbsp;</a></span>setMaxValue()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a92100e8acaca1a49e4f15e8dd1be7689">&#9670;&nbsp;</a></span>setMaxValue() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsCalculateNormalVectors.html">lsCalculateNormalVectors</a>&lt; T, D &gt;::setMaxValue </td>
+          <td>(</td>
+          <td class="paramtype">const T&#160;</td>
+          <td class="paramname"><em>passedMaxValue</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a92100e8acaca1a49e4f15e8dd1be7689"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a92100e8acaca1a49e4f15e8dd1be7689">&#9670;&nbsp;</a></span>setMaxValue() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -265,7 +424,7 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>include/<a class="el" href="lsCalculateNormalVectors_8hpp.html">lsCalculateNormalVectors.hpp</a></li>
+<li>include/<a class="el" href="include_2lsCalculateNormalVectors_8hpp.html">lsCalculateNormalVectors.hpp</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

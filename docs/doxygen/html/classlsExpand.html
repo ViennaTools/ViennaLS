@@ -111,6 +111,20 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:af252c81a9cc628c837afb285a8834353"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsExpand.html#af252c81a9cc628c837afb285a8834353">apply</a> ()</td></tr>
 <tr class="memdesc:af252c81a9cc628c837afb285a8834353"><td class="mdescLeft">&#160;</td><td class="mdescRight">Apply the expansion to the specified width.  <a href="classlsExpand.html#af252c81a9cc628c837afb285a8834353">More...</a><br /></td></tr>
 <tr class="separator:af252c81a9cc628c837afb285a8834353"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aee5561b9b273fd27770803e23be36f9c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsExpand.html#aee5561b9b273fd27770803e23be36f9c">lsExpand</a> ()</td></tr>
+<tr class="separator:aee5561b9b273fd27770803e23be36f9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab59166b5fc19a99b6d2dc4f21cbf83a3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsExpand.html#ab59166b5fc19a99b6d2dc4f21cbf83a3">lsExpand</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedlsDomain)</td></tr>
+<tr class="separator:ab59166b5fc19a99b6d2dc4f21cbf83a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a72b130ab8f8ce1f3182c6f527fe9c6b8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsExpand.html#a72b130ab8f8ce1f3182c6f527fe9c6b8">lsExpand</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedlsDomain, int passedWidth)</td></tr>
+<tr class="separator:a72b130ab8f8ce1f3182c6f527fe9c6b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4f1d1ac4bc90ae870bcefe44f157741d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsExpand.html#a4f1d1ac4bc90ae870bcefe44f157741d">setLevelSet</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedlsDomain)</td></tr>
+<tr class="separator:a4f1d1ac4bc90ae870bcefe44f157741d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af347c11def96375fec96c6bbd192491c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsExpand.html#af347c11def96375fec96c6bbd192491c">setWidth</a> (int passedWidth)</td></tr>
+<tr class="memdesc:af347c11def96375fec96c6bbd192491c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set how far the level set should be extended. Points with value width*0.5 will be added by this algorithm.  <a href="classlsExpand.html#af347c11def96375fec96c6bbd192491c">More...</a><br /></td></tr>
+<tr class="separator:af347c11def96375fec96c6bbd192491c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af252c81a9cc628c837afb285a8834353"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsExpand.html#af252c81a9cc628c837afb285a8834353">apply</a> ()</td></tr>
+<tr class="memdesc:af252c81a9cc628c837afb285a8834353"><td class="mdescLeft">&#160;</td><td class="mdescRight">Apply the expansion to the specified width.  <a href="classlsExpand.html#af252c81a9cc628c837afb285a8834353">More...</a><br /></td></tr>
+<tr class="separator:af252c81a9cc628c837afb285a8834353"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;class T, int D&gt;<br />
@@ -119,7 +133,7 @@ class lsExpand&lt; T, D &gt;</h3>
 <p>Expands the leveleSet to the specified number of layers. The largest value in the levelset is thus width*0.5 Returns the number of added points. </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="aee5561b9b273fd27770803e23be36f9c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aee5561b9b273fd27770803e23be36f9c">&#9670;&nbsp;</a></span>lsExpand() <span class="overload">[1/3]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aee5561b9b273fd27770803e23be36f9c">&#9670;&nbsp;</a></span>lsExpand() <span class="overload">[1/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -146,7 +160,7 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="ab59166b5fc19a99b6d2dc4f21cbf83a3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab59166b5fc19a99b6d2dc4f21cbf83a3">&#9670;&nbsp;</a></span>lsExpand() <span class="overload">[2/3]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab59166b5fc19a99b6d2dc4f21cbf83a3">&#9670;&nbsp;</a></span>lsExpand() <span class="overload">[2/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -174,7 +188,100 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="a72b130ab8f8ce1f3182c6f527fe9c6b8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a72b130ab8f8ce1f3182c6f527fe9c6b8">&#9670;&nbsp;</a></span>lsExpand() <span class="overload">[3/3]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a72b130ab8f8ce1f3182c6f527fe9c6b8">&#9670;&nbsp;</a></span>lsExpand() <span class="overload">[3/6]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsExpand.html">lsExpand</a>&lt; T, D &gt;::<a class="el" href="classlsExpand.html">lsExpand</a> </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
+          <td class="paramname"><em>passedlsDomain</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>passedWidth</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aee5561b9b273fd27770803e23be36f9c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aee5561b9b273fd27770803e23be36f9c">&#9670;&nbsp;</a></span>lsExpand() <span class="overload">[4/6]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsExpand.html">lsExpand</a>&lt; T, D &gt;::<a class="el" href="classlsExpand.html">lsExpand</a> </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab59166b5fc19a99b6d2dc4f21cbf83a3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab59166b5fc19a99b6d2dc4f21cbf83a3">&#9670;&nbsp;</a></span>lsExpand() <span class="overload">[5/6]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsExpand.html">lsExpand</a>&lt; T, D &gt;::<a class="el" href="classlsExpand.html">lsExpand</a> </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
+          <td class="paramname"><em>passedlsDomain</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a72b130ab8f8ce1f3182c6f527fe9c6b8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a72b130ab8f8ce1f3182c6f527fe9c6b8">&#9670;&nbsp;</a></span>lsExpand() <span class="overload">[6/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -213,7 +320,36 @@ template&lt;class T , int D&gt; </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="af252c81a9cc628c837afb285a8834353"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af252c81a9cc628c837afb285a8834353">&#9670;&nbsp;</a></span>apply()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af252c81a9cc628c837afb285a8834353">&#9670;&nbsp;</a></span>apply() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsExpand.html">lsExpand</a>&lt; T, D &gt;::apply </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Apply the expansion to the specified width. </p>
+
+</div>
+</div>
+<a id="af252c81a9cc628c837afb285a8834353"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af252c81a9cc628c837afb285a8834353">&#9670;&nbsp;</a></span>apply() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -242,7 +378,35 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="a4f1d1ac4bc90ae870bcefe44f157741d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4f1d1ac4bc90ae870bcefe44f157741d">&#9670;&nbsp;</a></span>setLevelSet()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a4f1d1ac4bc90ae870bcefe44f157741d">&#9670;&nbsp;</a></span>setLevelSet() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsExpand.html">lsExpand</a>&lt; T, D &gt;::setLevelSet </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
+          <td class="paramname"><em>passedlsDomain</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a4f1d1ac4bc90ae870bcefe44f157741d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4f1d1ac4bc90ae870bcefe44f157741d">&#9670;&nbsp;</a></span>setLevelSet() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -270,7 +434,37 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="af347c11def96375fec96c6bbd192491c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af347c11def96375fec96c6bbd192491c">&#9670;&nbsp;</a></span>setWidth()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af347c11def96375fec96c6bbd192491c">&#9670;&nbsp;</a></span>setWidth() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsExpand.html">lsExpand</a>&lt; T, D &gt;::setWidth </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>passedWidth</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set how far the level set should be extended. Points with value width*0.5 will be added by this algorithm. </p>
+
+</div>
+</div>
+<a id="af347c11def96375fec96c6bbd192491c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af347c11def96375fec96c6bbd192491c">&#9670;&nbsp;</a></span>setWidth() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -300,7 +494,7 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>include/<a class="el" href="lsExpand_8hpp.html">lsExpand.hpp</a></li>
+<li>include/<a class="el" href="include_2lsExpand_8hpp.html">lsExpand.hpp</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->
