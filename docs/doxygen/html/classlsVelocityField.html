@@ -110,6 +110,19 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a9e95150133beb47249897d05d2c4d9da"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a584c90d1d3e35d43e657a57ecaa12d45"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVelocityField.html#a584c90d1d3e35d43e657a57ecaa12d45">~lsVelocityField</a> ()</td></tr>
 <tr class="separator:a584c90d1d3e35d43e657a57ecaa12d45"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0e78edc56bdb3f2ed2d27827a4388ff3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVelocityField.html#a0e78edc56bdb3f2ed2d27827a4388ff3">lsVelocityField</a> ()</td></tr>
+<tr class="separator:a0e78edc56bdb3f2ed2d27827a4388ff3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6bbdbe1f20c0236d92e444324a692244"><td class="memItemLeft" align="right" valign="top">virtual T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVelocityField.html#a6bbdbe1f20c0236d92e444324a692244">getScalarVelocity</a> (const std::array&lt; T, 3 &gt; &amp;, int, const std::array&lt; T, 3 &gt; &amp;, unsigned long)</td></tr>
+<tr class="memdesc:a6bbdbe1f20c0236d92e444324a692244"><td class="mdescLeft">&#160;</td><td class="mdescRight">Should return a scalar value for the velocity at coordinate for a point of material with the given normalVector.  <a href="classlsVelocityField.html#a6bbdbe1f20c0236d92e444324a692244">More...</a><br /></td></tr>
+<tr class="separator:a6bbdbe1f20c0236d92e444324a692244"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae58594fd8f8522474bac6ed4dd62ee0c"><td class="memItemLeft" align="right" valign="top">virtual std::array&lt; T, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVelocityField.html#ae58594fd8f8522474bac6ed4dd62ee0c">getVectorVelocity</a> (const std::array&lt; T, 3 &gt; &amp;, int, const std::array&lt; T, 3 &gt; &amp;, unsigned long)</td></tr>
+<tr class="memdesc:ae58594fd8f8522474bac6ed4dd62ee0c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Like getScalarVelocity, but returns a velocity value for each cartesian direction.  <a href="classlsVelocityField.html#ae58594fd8f8522474bac6ed4dd62ee0c">More...</a><br /></td></tr>
+<tr class="separator:ae58594fd8f8522474bac6ed4dd62ee0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9e95150133beb47249897d05d2c4d9da"><td class="memItemLeft" align="right" valign="top">virtual T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVelocityField.html#a9e95150133beb47249897d05d2c4d9da">getDissipationAlpha</a> (int, int, const std::array&lt; T, 3 &gt; &amp;)</td></tr>
+<tr class="memdesc:a9e95150133beb47249897d05d2c4d9da"><td class="mdescLeft">&#160;</td><td class="mdescRight">If lsLocalLaxFriedrichsAnalytical is used as the advection scheme, this is called to provide the analytical solution for the alpha values, needed for stable integration.  <a href="classlsVelocityField.html#a9e95150133beb47249897d05d2c4d9da">More...</a><br /></td></tr>
+<tr class="separator:a9e95150133beb47249897d05d2c4d9da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a584c90d1d3e35d43e657a57ecaa12d45"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsVelocityField.html#a584c90d1d3e35d43e657a57ecaa12d45">~lsVelocityField</a> ()</td></tr>
+<tr class="separator:a584c90d1d3e35d43e657a57ecaa12d45"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;class T&gt;<br />
@@ -120,7 +133,7 @@ class lsVelocityField&lt; T &gt;</h3>
 </dl>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a0e78edc56bdb3f2ed2d27827a4388ff3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0e78edc56bdb3f2ed2d27827a4388ff3">&#9670;&nbsp;</a></span>lsVelocityField()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0e78edc56bdb3f2ed2d27827a4388ff3">&#9670;&nbsp;</a></span>lsVelocityField() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -147,7 +160,61 @@ template&lt;class T &gt; </div>
 </div>
 </div>
 <a id="a584c90d1d3e35d43e657a57ecaa12d45"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a584c90d1d3e35d43e657a57ecaa12d45">&#9670;&nbsp;</a></span>~lsVelocityField()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a584c90d1d3e35d43e657a57ecaa12d45">&#9670;&nbsp;</a></span>~lsVelocityField() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="classlsVelocityField.html">lsVelocityField</a>&lt; T &gt;::~<a class="el" href="classlsVelocityField.html">lsVelocityField</a> </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a0e78edc56bdb3f2ed2d27827a4388ff3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0e78edc56bdb3f2ed2d27827a4388ff3">&#9670;&nbsp;</a></span>lsVelocityField() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsVelocityField.html">lsVelocityField</a>&lt; T &gt;::<a class="el" href="classlsVelocityField.html">lsVelocityField</a> </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a584c90d1d3e35d43e657a57ecaa12d45"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a584c90d1d3e35d43e657a57ecaa12d45">&#9670;&nbsp;</a></span>~lsVelocityField() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -175,7 +242,7 @@ template&lt;class T &gt; </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a9e95150133beb47249897d05d2c4d9da"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9e95150133beb47249897d05d2c4d9da">&#9670;&nbsp;</a></span>getDissipationAlpha()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a9e95150133beb47249897d05d2c4d9da">&#9670;&nbsp;</a></span>getDissipationAlpha() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -222,8 +289,106 @@ template&lt;class T &gt; </div>
 
 </div>
 </div>
+<a id="a9e95150133beb47249897d05d2c4d9da"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9e95150133beb47249897d05d2c4d9da">&#9670;&nbsp;</a></span>getDissipationAlpha() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual T <a class="el" href="classlsVelocityField.html">lsVelocityField</a>&lt; T &gt;::getDissipationAlpha </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::array&lt; T, 3 &gt; &amp;&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>If lsLocalLaxFriedrichsAnalytical is used as the advection scheme, this is called to provide the analytical solution for the alpha values, needed for stable integration. </p>
+
+</div>
+</div>
 <a id="a6bbdbe1f20c0236d92e444324a692244"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6bbdbe1f20c0236d92e444324a692244">&#9670;&nbsp;</a></span>getScalarVelocity()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6bbdbe1f20c0236d92e444324a692244">&#9670;&nbsp;</a></span>getScalarVelocity() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual T <a class="el" href="classlsVelocityField.html">lsVelocityField</a>&lt; T &gt;::getScalarVelocity </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; T, 3 &gt; &amp;&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::array&lt; T, 3 &gt; &amp;&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned long&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Should return a scalar value for the velocity at coordinate for a point of material with the given normalVector. </p>
+
+</div>
+</div>
+<a id="a6bbdbe1f20c0236d92e444324a692244"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6bbdbe1f20c0236d92e444324a692244">&#9670;&nbsp;</a></span>getScalarVelocity() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -277,7 +442,7 @@ template&lt;class T &gt; </div>
 </div>
 </div>
 <a id="ae58594fd8f8522474bac6ed4dd62ee0c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae58594fd8f8522474bac6ed4dd62ee0c">&#9670;&nbsp;</a></span>getVectorVelocity()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae58594fd8f8522474bac6ed4dd62ee0c">&#9670;&nbsp;</a></span>getVectorVelocity() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -330,8 +495,60 @@ template&lt;class T &gt; </div>
 
 </div>
 </div>
+<a id="ae58594fd8f8522474bac6ed4dd62ee0c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae58594fd8f8522474bac6ed4dd62ee0c">&#9670;&nbsp;</a></span>getVectorVelocity() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual std::array&lt;T, 3&gt; <a class="el" href="classlsVelocityField.html">lsVelocityField</a>&lt; T &gt;::getVectorVelocity </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; T, 3 &gt; &amp;&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::array&lt; T, 3 &gt; &amp;&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned long&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Like getScalarVelocity, but returns a velocity value for each cartesian direction. </p>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>include/<a class="el" href="lsVelocityField_8hpp.html">lsVelocityField.hpp</a></li>
+<li>include/<a class="el" href="include_2lsVelocityField_8hpp.html">lsVelocityField.hpp</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

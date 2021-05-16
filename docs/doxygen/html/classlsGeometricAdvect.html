@@ -115,6 +115,24 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a0b3b6a2cdbed6fc6cbc25f9d4658792d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsGeometricAdvect.html#a0b3b6a2cdbed6fc6cbc25f9d4658792d">apply</a> ()</td></tr>
 <tr class="memdesc:a0b3b6a2cdbed6fc6cbc25f9d4658792d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform geometrical advection.  <a href="classlsGeometricAdvect.html#a0b3b6a2cdbed6fc6cbc25f9d4658792d">More...</a><br /></td></tr>
 <tr class="separator:a0b3b6a2cdbed6fc6cbc25f9d4658792d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afa114754eb0c48733246affa17c3d5ef"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsGeometricAdvect.html#afa114754eb0c48733246affa17c3d5ef">lsGeometricAdvect</a> ()</td></tr>
+<tr class="separator:afa114754eb0c48733246affa17c3d5ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adaf3544a1cf577038076ac7e8cbb8cfb"><td class="memTemplParams" colspan="2">template&lt;class DistType , lsConcepts::IsBaseOf&lt; lsGeometricAdvectDistribution&lt; hrleCoordType, D &gt;, DistType &gt;  = lsConcepts::assignable&gt; </td></tr>
+<tr class="memitem:adaf3544a1cf577038076ac7e8cbb8cfb"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classlsGeometricAdvect.html#adaf3544a1cf577038076ac7e8cbb8cfb">lsGeometricAdvect</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedLevelSet, <a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; DistType &gt; passedDist, <a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedMaskLevelSet=nullptr)</td></tr>
+<tr class="separator:adaf3544a1cf577038076ac7e8cbb8cfb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a32ffd580185a1f8d48ebe4e85a4247d5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsGeometricAdvect.html#a32ffd580185a1f8d48ebe4e85a4247d5">setLevelSet</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedLevelSet)</td></tr>
+<tr class="memdesc:a32ffd580185a1f8d48ebe4e85a4247d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the levelset which should be advected.  <a href="classlsGeometricAdvect.html#a32ffd580185a1f8d48ebe4e85a4247d5">More...</a><br /></td></tr>
+<tr class="separator:a32ffd580185a1f8d48ebe4e85a4247d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acc5c5433a88b82065b3c7d8f54240461"><td class="memTemplParams" colspan="2">template&lt;class DistType , lsConcepts::IsBaseOf&lt; lsGeometricAdvectDistribution&lt; hrleCoordType, D &gt;, DistType &gt;  = lsConcepts::assignable&gt; </td></tr>
+<tr class="memitem:acc5c5433a88b82065b3c7d8f54240461"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classlsGeometricAdvect.html#acc5c5433a88b82065b3c7d8f54240461">setAdvectionDistribution</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; DistType &gt; passedDist)</td></tr>
+<tr class="memdesc:acc5c5433a88b82065b3c7d8f54240461"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set which advection distribution to use. Must be derived from <a class="el" href="classlsGeometricAdvectDistribution.html" title="Base class for distributions used by lsGeometricAdvect. All functions are pure virtual and must be im...">lsGeometricAdvectDistribution</a>.  <a href="classlsGeometricAdvect.html#acc5c5433a88b82065b3c7d8f54240461">More...</a><br /></td></tr>
+<tr class="separator:acc5c5433a88b82065b3c7d8f54240461"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af91c9d430370a6e02cd1090163402ea2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsGeometricAdvect.html#af91c9d430370a6e02cd1090163402ea2">setMaskLevelSet</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedMaskLevelSet)</td></tr>
+<tr class="memdesc:af91c9d430370a6e02cd1090163402ea2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the levelset, which should be used as a mask. This level set has to be wrapped by the levelset set by setLevelSet, so the mask is entirely inside the advected level set.  <a href="classlsGeometricAdvect.html#af91c9d430370a6e02cd1090163402ea2">More...</a><br /></td></tr>
+<tr class="separator:af91c9d430370a6e02cd1090163402ea2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0b3b6a2cdbed6fc6cbc25f9d4658792d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsGeometricAdvect.html#a0b3b6a2cdbed6fc6cbc25f9d4658792d">apply</a> ()</td></tr>
+<tr class="memdesc:a0b3b6a2cdbed6fc6cbc25f9d4658792d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform geometrical advection.  <a href="classlsGeometricAdvect.html#a0b3b6a2cdbed6fc6cbc25f9d4658792d">More...</a><br /></td></tr>
+<tr class="separator:a0b3b6a2cdbed6fc6cbc25f9d4658792d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;class T, int D&gt;<br />
@@ -125,7 +143,7 @@ class lsGeometricAdvect&lt; T, D &gt;</h3>
 </dl>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="afa114754eb0c48733246affa17c3d5ef"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afa114754eb0c48733246affa17c3d5ef">&#9670;&nbsp;</a></span>lsGeometricAdvect() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#afa114754eb0c48733246affa17c3d5ef">&#9670;&nbsp;</a></span>lsGeometricAdvect() <span class="overload">[1/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -152,7 +170,80 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="adaf3544a1cf577038076ac7e8cbb8cfb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adaf3544a1cf577038076ac7e8cbb8cfb">&#9670;&nbsp;</a></span>lsGeometricAdvect() <span class="overload">[2/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#adaf3544a1cf577038076ac7e8cbb8cfb">&#9670;&nbsp;</a></span>lsGeometricAdvect() <span class="overload">[2/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<div class="memtemplate">
+template&lt;class DistType , lsConcepts::IsBaseOf&lt; lsGeometricAdvectDistribution&lt; hrleCoordType, D &gt;, DistType &gt;  = lsConcepts::assignable&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsGeometricAdvect.html">lsGeometricAdvect</a>&lt; T, D &gt;::<a class="el" href="classlsGeometricAdvect.html">lsGeometricAdvect</a> </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
+          <td class="paramname"><em>passedLevelSet</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; DistType &gt;&#160;</td>
+          <td class="paramname"><em>passedDist</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
+          <td class="paramname"><em>passedMaskLevelSet</em> = <code>nullptr</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="afa114754eb0c48733246affa17c3d5ef"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afa114754eb0c48733246affa17c3d5ef">&#9670;&nbsp;</a></span>lsGeometricAdvect() <span class="overload">[3/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsGeometricAdvect.html">lsGeometricAdvect</a>&lt; T, D &gt;::<a class="el" href="classlsGeometricAdvect.html">lsGeometricAdvect</a> </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="adaf3544a1cf577038076ac7e8cbb8cfb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adaf3544a1cf577038076ac7e8cbb8cfb">&#9670;&nbsp;</a></span>lsGeometricAdvect() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -199,7 +290,7 @@ template&lt;class DistType , lsConcepts::IsBaseOf&lt; lsGeometricAdvectDistribut
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a0b3b6a2cdbed6fc6cbc25f9d4658792d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0b3b6a2cdbed6fc6cbc25f9d4658792d">&#9670;&nbsp;</a></span>apply()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0b3b6a2cdbed6fc6cbc25f9d4658792d">&#9670;&nbsp;</a></span>apply() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -229,8 +320,69 @@ template&lt;class T , int D&gt; </div>
 
 </div>
 </div>
+<a id="a0b3b6a2cdbed6fc6cbc25f9d4658792d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0b3b6a2cdbed6fc6cbc25f9d4658792d">&#9670;&nbsp;</a></span>apply() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsGeometricAdvect.html">lsGeometricAdvect</a>&lt; T, D &gt;::apply </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Perform geometrical advection. </p>
+
+</div>
+</div>
 <a id="acc5c5433a88b82065b3c7d8f54240461"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acc5c5433a88b82065b3c7d8f54240461">&#9670;&nbsp;</a></span>setAdvectionDistribution()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#acc5c5433a88b82065b3c7d8f54240461">&#9670;&nbsp;</a></span>setAdvectionDistribution() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<div class="memtemplate">
+template&lt;class DistType , lsConcepts::IsBaseOf&lt; lsGeometricAdvectDistribution&lt; hrleCoordType, D &gt;, DistType &gt;  = lsConcepts::assignable&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsGeometricAdvect.html">lsGeometricAdvect</a>&lt; T, D &gt;::setAdvectionDistribution </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; DistType &gt;&#160;</td>
+          <td class="paramname"><em>passedDist</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set which advection distribution to use. Must be derived from <a class="el" href="classlsGeometricAdvectDistribution.html" title="Base class for distributions used by lsGeometricAdvect. All functions are pure virtual and must be im...">lsGeometricAdvectDistribution</a>. </p>
+
+</div>
+</div>
+<a id="acc5c5433a88b82065b3c7d8f54240461"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acc5c5433a88b82065b3c7d8f54240461">&#9670;&nbsp;</a></span>setAdvectionDistribution() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -262,7 +414,37 @@ template&lt;class DistType , lsConcepts::IsBaseOf&lt; lsGeometricAdvectDistribut
 </div>
 </div>
 <a id="a32ffd580185a1f8d48ebe4e85a4247d5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a32ffd580185a1f8d48ebe4e85a4247d5">&#9670;&nbsp;</a></span>setLevelSet()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a32ffd580185a1f8d48ebe4e85a4247d5">&#9670;&nbsp;</a></span>setLevelSet() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsGeometricAdvect.html">lsGeometricAdvect</a>&lt; T, D &gt;::setLevelSet </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
+          <td class="paramname"><em>passedLevelSet</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set the levelset which should be advected. </p>
+
+</div>
+</div>
+<a id="a32ffd580185a1f8d48ebe4e85a4247d5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a32ffd580185a1f8d48ebe4e85a4247d5">&#9670;&nbsp;</a></span>setLevelSet() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -292,7 +474,37 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="af91c9d430370a6e02cd1090163402ea2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af91c9d430370a6e02cd1090163402ea2">&#9670;&nbsp;</a></span>setMaskLevelSet()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af91c9d430370a6e02cd1090163402ea2">&#9670;&nbsp;</a></span>setMaskLevelSet() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsGeometricAdvect.html">lsGeometricAdvect</a>&lt; T, D &gt;::setMaskLevelSet </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
+          <td class="paramname"><em>passedMaskLevelSet</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set the levelset, which should be used as a mask. This level set has to be wrapped by the levelset set by setLevelSet, so the mask is entirely inside the advected level set. </p>
+
+</div>
+</div>
+<a id="af91c9d430370a6e02cd1090163402ea2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af91c9d430370a6e02cd1090163402ea2">&#9670;&nbsp;</a></span>setMaskLevelSet() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -322,7 +534,7 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>include/<a class="el" href="lsGeometricAdvect_8hpp.html">lsGeometricAdvect.hpp</a></li>
+<li>include/<a class="el" href="include_2lsGeometricAdvect_8hpp.html">lsGeometricAdvect.hpp</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

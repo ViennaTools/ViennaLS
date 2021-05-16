@@ -104,9 +104,17 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aa2ee31a39640d12494db52dea0443c51"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a728551b121bc7a4a2f254d8614e140fd"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar.html#a728551b121bc7a4a2f254d8614e140fd">operator()</a> (const hrleVectorType&lt; hrleIndexType, D &gt; &amp;indices, int material)</td></tr>
 <tr class="separator:a728551b121bc7a4a2f254d8614e140fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a038135c7444d659518728c2b461fa653"><td class="memItemLeft" align="right" valign="top">const hrleVectorType&lt; T, 3 &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar.html#a038135c7444d659518728c2b461fa653">getFinalAlphas</a> () const</td></tr>
+<tr class="separator:a038135c7444d659518728c2b461fa653"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa2ee31a39640d12494db52dea0443c51"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar.html#aa2ee31a39640d12494db52dea0443c51">lsStencilLocalLaxFriedrichsScalar</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedlsDomain, <a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsVelocityField.html">lsVelocityField</a>&lt; T &gt;&gt; vel, double a=1.0, <a class="el" href="namespacelsInternal.html#a1197c9bc5d272ab73e76ebc2d4ab05a7">DifferentiationSchemeEnum</a> scheme=<a class="el" href="namespacelsInternal.html#a1197c9bc5d272ab73e76ebc2d4ab05a7a381be4beabc209c2c0999eabbfcaa16b">DifferentiationSchemeEnum::FIRST_ORDER</a>)</td></tr>
+<tr class="separator:aa2ee31a39640d12494db52dea0443c51"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a728551b121bc7a4a2f254d8614e140fd"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar.html#a728551b121bc7a4a2f254d8614e140fd">operator()</a> (const hrleVectorType&lt; hrleIndexType, D &gt; &amp;indices, int material)</td></tr>
+<tr class="separator:a728551b121bc7a4a2f254d8614e140fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
+<tr class="memitem:a904ce99675eb0cfe50a41b460cf6deba"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar.html#a904ce99675eb0cfe50a41b460cf6deba">prepareLS</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedlsDomain)</td></tr>
+<tr class="separator:a904ce99675eb0cfe50a41b460cf6deba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a904ce99675eb0cfe50a41b460cf6deba"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar.html#a904ce99675eb0cfe50a41b460cf6deba">prepareLS</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedlsDomain)</td></tr>
 <tr class="separator:a904ce99675eb0cfe50a41b460cf6deba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -117,7 +125,57 @@ class lsInternal::lsStencilLocalLaxFriedrichsScalar&lt; T, D, order &gt;</h3>
 <p>Stencil Local Lax Friedrichs Integration Scheme. It uses a stencil of order around active points, in order to evaluate dissipation values for each point, taking into account the mathematical nature of the speed function. see Toifl et al., 2019. ISBN: 978-1-7281-0938-1; DOI: 10.1109/SISPAD.2019.8870443. </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="aa2ee31a39640d12494db52dea0443c51"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa2ee31a39640d12494db52dea0443c51">&#9670;&nbsp;</a></span>lsStencilLocalLaxFriedrichsScalar()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa2ee31a39640d12494db52dea0443c51">&#9670;&nbsp;</a></span>lsStencilLocalLaxFriedrichsScalar() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D, int order&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar.html">lsInternal::lsStencilLocalLaxFriedrichsScalar</a>&lt; T, D, order &gt;::<a class="el" href="classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar.html">lsStencilLocalLaxFriedrichsScalar</a> </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
+          <td class="paramname"><em>passedlsDomain</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsVelocityField.html">lsVelocityField</a>&lt; T &gt;&gt;&#160;</td>
+          <td class="paramname"><em>vel</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>a</em> = <code>1.0</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespacelsInternal.html#a1197c9bc5d272ab73e76ebc2d4ab05a7">DifferentiationSchemeEnum</a>&#160;</td>
+          <td class="paramname"><em>scheme</em> = <code><a class="el" href="namespacelsInternal.html#a1197c9bc5d272ab73e76ebc2d4ab05a7a381be4beabc209c2c0999eabbfcaa16b">DifferentiationSchemeEnum::FIRST_ORDER</a></code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aa2ee31a39640d12494db52dea0443c51"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa2ee31a39640d12494db52dea0443c51">&#9670;&nbsp;</a></span>lsStencilLocalLaxFriedrichsScalar() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -168,7 +226,34 @@ template&lt;class T , int D, int order&gt; </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a038135c7444d659518728c2b461fa653"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a038135c7444d659518728c2b461fa653">&#9670;&nbsp;</a></span>getFinalAlphas()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a038135c7444d659518728c2b461fa653">&#9670;&nbsp;</a></span>getFinalAlphas() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D, int order&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const hrleVectorType&lt;T, 3&gt;&amp; <a class="el" href="classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar.html">lsInternal::lsStencilLocalLaxFriedrichsScalar</a>&lt; T, D, order &gt;::getFinalAlphas </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a038135c7444d659518728c2b461fa653"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a038135c7444d659518728c2b461fa653">&#9670;&nbsp;</a></span>getFinalAlphas() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -195,7 +280,45 @@ template&lt;class T , int D, int order&gt; </div>
 </div>
 </div>
 <a id="a728551b121bc7a4a2f254d8614e140fd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a728551b121bc7a4a2f254d8614e140fd">&#9670;&nbsp;</a></span>operator()()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a728551b121bc7a4a2f254d8614e140fd">&#9670;&nbsp;</a></span>operator()() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D, int order&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">T <a class="el" href="classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar.html">lsInternal::lsStencilLocalLaxFriedrichsScalar</a>&lt; T, D, order &gt;::operator() </td>
+          <td>(</td>
+          <td class="paramtype">const hrleVectorType&lt; hrleIndexType, D &gt; &amp;&#160;</td>
+          <td class="paramname"><em>indices</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>material</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a728551b121bc7a4a2f254d8614e140fd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a728551b121bc7a4a2f254d8614e140fd">&#9670;&nbsp;</a></span>operator()() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -233,7 +356,35 @@ template&lt;class T , int D, int order&gt; </div>
 </div>
 </div>
 <a id="a904ce99675eb0cfe50a41b460cf6deba"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a904ce99675eb0cfe50a41b460cf6deba">&#9670;&nbsp;</a></span>prepareLS()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a904ce99675eb0cfe50a41b460cf6deba">&#9670;&nbsp;</a></span>prepareLS() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D, int order&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static void <a class="el" href="classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar.html">lsInternal::lsStencilLocalLaxFriedrichsScalar</a>&lt; T, D, order &gt;::prepareLS </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
+          <td class="paramname"><em>passedlsDomain</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a904ce99675eb0cfe50a41b460cf6deba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a904ce99675eb0cfe50a41b460cf6deba">&#9670;&nbsp;</a></span>prepareLS() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -261,7 +412,7 @@ template&lt;class T , int D, int order&gt; </div>
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>include/<a class="el" href="lsStencilLocalLaxFriedrichsScalar_8hpp.html">lsStencilLocalLaxFriedrichsScalar.hpp</a></li>
+<li>include/<a class="el" href="include_2lsStencilLocalLaxFriedrichsScalar_8hpp.html">lsStencilLocalLaxFriedrichsScalar.hpp</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->
