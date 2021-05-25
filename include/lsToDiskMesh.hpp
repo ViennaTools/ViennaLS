@@ -117,6 +117,7 @@ public:
     const bool buildTranslatorFlag = buildTranslator;
     unsigned long counter = 0;
     if (buildTranslatorFlag) {
+      translator->clear();
       translator->reserve(normalVectors.size());
     }
 
