@@ -243,9 +243,8 @@ public:
     for (unsigned i = 0; i < numberOfScalarData; ++i) {
       uint32_t sizeOfName;
       stream.read(reinterpret_cast<char *>(&sizeOfName), sizeof(uint32_t));
-      std::vector<char> dataLabel(sizeOfName + 1);
+      std::vector<char> dataLabel(sizeOfName);
       stream.read(dataLabel.data(), sizeOfName);
-      dataLabel[sizeOfName] = '\0';
       uint32_t numberOfValues;
       stream.read(reinterpret_cast<char *>(&numberOfValues), sizeof(uint32_t));
       ScalarDataType scalarData;
@@ -264,9 +263,8 @@ public:
     for (unsigned i = 0; i < numberOfVectorData; ++i) {
       uint32_t sizeOfName;
       stream.read(reinterpret_cast<char *>(&sizeOfName), sizeof(uint32_t));
-      std::vector<char> dataLabel(sizeOfName + 1);
+      std::vector<char> dataLabel(sizeOfName);
       stream.read(dataLabel.data(), sizeOfName);
-      dataLabel[sizeOfName] = '\0';
       uint32_t numberOfValues;
       stream.read(reinterpret_cast<char *>(&numberOfValues), sizeof(uint32_t));
       VectorDataType vectorData;

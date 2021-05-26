@@ -26,8 +26,8 @@ externalproject_add(viennahrle-external
   # No install needed
 #   INSTALL_COMMAND
 #     "make install"
-  UPDATE_COMMAND
-    ""
+  # UPDATE_COMMAND
+  #   ""
   USES_TERMINAL_DOWNLOAD
     1
   USES_TERMINAL_UPDATE

@@ -98,7 +98,7 @@ endif(VIENNALS_USE_VTK)
 #################################################
 option(VIENNALS_BUILD_SHARED_LIBS "Build template specialisations for shorter compile times." OFF)
 if(VIENNALS_BUILD_SHARED_LIBS)
-  list(APPEND VIENNALS_LIBRARIES ViennaHRLE)
+  # list(APPEND VIENNALS_LIBRARIES ViennaHRLE)
   find_package(ViennaHRLE REQUIRED PATHS ${ViennaHRLE_DIR})
   
   # add all specialisation source files

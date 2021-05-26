@@ -23,9 +23,6 @@ ENDMACRO()
 
 add_custom_target(buildTests)
 
-list(APPEND VIENNALS_LIBRARIES ViennaHRLE)
-find_package(ViennaHRLE REQUIRED PATHS ${ViennaHRLE_DIR})
-
 set(ViennaLS_DIR "${ViennaLS_BINARY_DIR}")
 set(ViennaLS_COMMON_TARGET ${PROJECT_NAME})
 
