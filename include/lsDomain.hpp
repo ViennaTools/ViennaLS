@@ -167,14 +167,14 @@ public:
   }
 
   /// prints basic information and all memebers of the levelset structure
-  void print() {
-    std::cout << "Grid pointer: " << &grid << std::endl;
-    std::cout << "Domain: " << &domain << std::endl;
-    std::cout << "DomainSegments: " << std::endl;
+  void print(std::ostream &out = std::cout) {
+    out << "Grid pointer: " << &grid << std::endl;
+    out << "Domain: " << &domain << std::endl;
+    out << "DomainSegments: " << std::endl;
     for (unsigned i = 0; i < getNumberOfSegments(); ++i) {
-      std::cout << &(domain.getDomainSegment(i)) << std::endl;
+      out << &(domain.getDomainSegment(i)) << std::endl;
     }
-    domain.print();
+    domain.print(out);
   }
 
   /// Serializes the lsDomain into a binary stream

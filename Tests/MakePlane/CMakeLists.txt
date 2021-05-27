@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.4)
 
 project("MakePlane")
 
-find_package(ViennaHRLE REQUIRED)
 find_package(ViennaLS REQUIRED)
 
 add_executable(${PROJECT_NAME} ${PROJECT_NAME}.cpp)

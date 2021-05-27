@@ -86,7 +86,7 @@ var NAVTREEINDEX =
 "classlsDomain.html#a6432176faa114eee197c3f70c3e6f775",
 "classlsMesh.html#a360b67fc507f0d13c6f0bb6db2202e82",
 "classlsToDiskMesh.html#a1617d3c10a7b469a49e933e47a671745",
-"include_2lsEnquistOsher_8hpp.html"
+"include_2lsDomain_8hpp.html#a5f744444bbee7265e693abfcce25bf9f"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

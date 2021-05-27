@@ -40,7 +40,7 @@ public:
   lsPlane(hrleVectorType<T, D> passedOrigin, hrleVectorType<T, D> passedNormal)
       : origin(passedOrigin), normal(passedNormal) {}
 
-  lsPlane(T *passedOrigin, T *passedNormal) {
+  lsPlane(const T *passedOrigin, const T *passedNormal) {
     for (unsigned i = 0; i < D; ++i) {
       origin[i] = passedOrigin[i];
       normal[i] = passedNormal[i];
@@ -64,7 +64,7 @@ public:
         hrleVectorType<T, D> passedMaxCorner)
       : minCorner(passedMinCorner), maxCorner(passedMaxCorner) {}
 
-  lsBox(T *passedMinCorner, T *passedMaxCorner) {
+  lsBox(const T *passedMinCorner, const T *passedMaxCorner) {
     for (unsigned i = 0; i < D; ++i) {
       minCorner[i] = passedMinCorner[i];
       maxCorner[i] = passedMaxCorner[i];
@@ -96,8 +96,8 @@ public:
       : origin(passedOrigin), axisDirection(passedAxisDirection),
         height(passedHeight), radius(passedRadius) {}
 
-  lsCylinder(T *passedOrigin, T *passedAxisDirection, T passedHeight,
-             T passedRadius)
+  lsCylinder(const T *passedOrigin, const T *passedAxisDirection,
+             const T passedHeight, const T passedRadius)
       : height(passedHeight), radius(passedRadius) {
     for (unsigned i = 0; i < D; ++i) {
       origin[i] = passedOrigin[i];
