@@ -16,6 +16,7 @@
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/iostream.h>
 
 // all header files which define API functions
 #include <lsAdvect.hpp>
@@ -331,7 +332,18 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "stored around the explicit surface.")
       .def("clearMetaData", &lsDomain<T, D>::clearMetaData,
            "Clear all metadata stored in the level set.")
-      .def("print", &lsDomain<T, D>::print, "Print level set structure.");
+      // allow filehandle to be passed and default to python standard output
+      .def("print", [](lsDomain<T, D>& d, pybind11::object fileHandle) {
+          if (!(pybind11::hasattr(fileHandle,"write") &&
+          pybind11::hasattr(fileHandle,"flush") )){
+               throw pybind11::type_error("MyClass::read_from_file_like_object(file): incompatible function argument:  `file` must be a file-like object, but `"
+                                        +(std::string)(pybind11::repr(fileHandle))+"` provided"
+               );
+          }
+          pybind11::detail::pythonbuf buf(fileHandle);
+          std::ostream stream(&buf);
+          d.print(stream);
+          }, pybind11::arg("stream") = pybind11::module_::import("sys").attr("stdout"));
 
   // enums
   pybind11::enum_<lsBoundaryConditionEnum<D>>(module, "lsBoundaryConditionEnum")
