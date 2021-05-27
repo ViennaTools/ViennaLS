@@ -14,9 +14,9 @@
 #define STRINGIZE(s) STRINGIZE2(s)
 #define VIENNALS_MODULE_VERSION STRINGIZE(VIENNALS_VERSION)
 
+#include <pybind11/iostream.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <pybind11/iostream.h>
 
 // all header files which define API functions
 #include <lsAdvect.hpp>
