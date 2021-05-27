@@ -1,6 +1,7 @@
 externalproject_add(viennahrle-external
   GIT_REPOSITORY
   https://github.com/ViennaTools/ViennaHRLE
+  GIT_SHALLOW 1 # use --depth 1 when cloning
 #   GIT_TAG
 #     96e6fa9b3ff245e4d51d49f23d40e9ad8774e85e
   CMAKE_ARGS
@@ -26,8 +27,8 @@ externalproject_add(viennahrle-external
   # No install needed
 #   INSTALL_COMMAND
 #     "make install"
-  # UPDATE_COMMAND
-  #   ""
+  UPDATE_COMMAND
+    ""
   USES_TERMINAL_DOWNLOAD
     1
   USES_TERMINAL_UPDATE

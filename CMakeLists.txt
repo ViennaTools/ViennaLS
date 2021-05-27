@@ -176,8 +176,13 @@ if(VIENNALS_BUILD_PYTHON_2 OR VIENNALS_BUILD_PYTHON_3)
   endif()
 
   message(STATUS "pybind11_DIR: ${pybind11_DIR}")
+  find_package(pybind11 QUIET PATHS ${pybind11_DIR})
+  if(pybind11_FOUND)
+    add_subdirectory(Wrapping)
+  else()
+    message(STATUS "No pybind11 install found. If you did not specify a custom install path, you have to build the target pybind11-external.")
+  endif()
 
-  add_subdirectory(Wrapping)
 endif()
 
 #################################################
