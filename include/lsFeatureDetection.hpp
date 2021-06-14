@@ -2,13 +2,9 @@
 #define LS_FEATURE_DETECTION_HPP
 
 #include <lsDomain.hpp>
-
 #include <hrleSparseStarIterator.hpp>
-
 #include <hrleSparseBoxIterator.hpp>
-
 #include <hrleCartesianPlaneIterator.hpp>
-
 #include <lsCurvatureFormulas.hpp>
 
 enum struct FeatureDetectionMethod : unsigned {
@@ -57,7 +53,6 @@ public:
 
   /// Execute the algorithm.
   void apply() {
-
     if (method == FeatureDetectionMethod::CURVATURE) {
       FeatureDetectionCurvature();
     } else {
@@ -215,12 +210,10 @@ private:
 
           if (currentNormal != zeroVector) {
             T skp = 0.;
-
             // Calculate scalar product
             for (int j = 0; j < D; j++) {
               skp += currentNormal[j] * centerNormal[j];
             }
-
             // Vectors are normlized so skp = cos(alpha)
             if ((cosAngleTreshold - skp) >= 0.) {
               flag = true;
