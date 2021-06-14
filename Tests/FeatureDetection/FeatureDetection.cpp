@@ -26,20 +26,14 @@ int main() {
 
   omp_set_num_threads(4);
 
-  NumericType gridDelta = 0.5;
+  NumericType gridDelta = 4;
 
-  std::vector<NumericType> planeNormal;
-  std::vector<NumericType> origin;
-
-  for (int i = 0; i < D; i++) {
-    planeNormal.push_back(0.);
-    origin.push_back(0.);
-  }
-  planeNormal[D - 1] = 1.;
+  std::vector<NumericType> planeNormal{0, 0, 1};
+  std::vector<NumericType> origin{0, 0, 0.3};
 
   std::cout << "Creating trench..." << std::endl;
 
-  double extent = 50;
+  double extent = 47.3;
   double bounds[2 * D] = {-extent, extent, -extent, extent};
   if (D == 3) {
     bounds[4] = -extent;
@@ -72,15 +66,15 @@ int main() {
 
     if (D == 3) {
       NumericType minCorner[3] = {(NumericType)(-extent / 4.),
-                                  (NumericType)-extent - 1, -50.};
+                                  (NumericType)-extent - 1, -49.8};
       NumericType maxCorner[3] = {(NumericType)(extent / 4.),
-                                  (NumericType)extent + 1, 1.0};
+                                  (NumericType)extent + 1, 5.0};
       auto box =
           lsSmartPointer<lsBox<NumericType, D>>::New(minCorner, maxCorner);
       lsMakeGeometry<NumericType, D>(trench, box).apply();
     } else {
-      NumericType minCorner[2] = {(NumericType)(-extent / 4.), -50.};
-      NumericType maxCorner[2] = {(NumericType)(extent / 4.), 1.0};
+      NumericType minCorner[2] = {(NumericType)(-extent / 4.), -49.8};
+      NumericType maxCorner[2] = {(NumericType)(extent / 4.), 5.0};
       auto box =
           lsSmartPointer<lsBox<NumericType, D>>::New(minCorner, maxCorner);
       lsMakeGeometry<NumericType, D>(trench, box).apply();
@@ -103,14 +97,15 @@ int main() {
 
   std::cout << "Flagging Curvatures..." << std::endl;
 
-  lsFeatureDetection<NumericType, D> CurvatureFlagger(levelSet, 1e-3);
+  lsFeatureDetection<NumericType, D> CurvatureFlagger(
+      levelSet, 1e-3, FeatureDetectionMethod::CURVATURE, "Features_Curve");
 
   CurvatureFlagger.apply();
 
   std::cout << "Flagging Normals..." << std::endl;
 
   lsFeatureDetection<NumericType, D> NormalsFlagger(
-      levelSet, 0.16, FeatureDetectionMethod::NORMALS_ANGLE, "Features_Angle");
+      levelSet, 1e-3, FeatureDetectionMethod::NORMALS_ANGLE, "Features_Angle");
 
   NormalsFlagger.apply();
 

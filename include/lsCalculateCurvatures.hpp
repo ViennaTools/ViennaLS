@@ -13,12 +13,10 @@ enum struct lsCurvatureType : unsigned {
   MEAN_AND_GAUSSIAN_CURVATURE = 2
 };
 
-// Calculates the Curvature 2D, Mean Curvature and/or Gaussian Curvature (3D)
+// Calculates the Mean Curvature and/or Gaussian Curvature (3D)
 // for the passed lsDomain for all points with level set values <= 0.5. The
-// result is saved in the lsDomain. requires a levelset width >=4.
-
+// result is saved in the lsDomain.
 template <class T, int D> class lsCalculateCurvatures {
-
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
   T maxValue = 0.5;
   lsCurvatureType type = lsCurvatureType::MEAN_CURVATURE;
@@ -26,19 +24,24 @@ template <class T, int D> class lsCalculateCurvatures {
 public:
   lsCalculateCurvatures() {}
 
-  lsCalculateCurvatures(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-                        T passedMaxValue = 0.5)
-      : levelSet(passedLevelSet), maxValue(passedMaxValue) {}
+  lsCalculateCurvatures(lsSmartPointer<lsDomain<T, D>> passedLevelSet)
+      : levelSet(passedLevelSet) {}
 
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
   }
 
   void setCurvatureType(lsCurvatureType passedType) {
-    if (D == 2) {
-      return;
+    // in 2D there is only one option so ignore
+    if constexpr (D == 3) {
+      type = passedType;
+    } else {
+      if (passedType != type) {
+        lsMessage::getInstance().addWarning(
+            "lsCalculateCurvatures: Could not set curvature type because 2D "
+            "only supports mean curvature.");
+      }
     }
-    type = passedType;
   }
 
   void setMaxValue(const T passedMaxValue) { maxValue = passedMaxValue; }
@@ -62,11 +65,14 @@ public:
         levelSet->getNumberOfSegments());
     std::vector<std::vector<T>> gaussCurvaturesVector(
         levelSet->getNumberOfSegments());
-    double pointsPerSegment =
-        double(2 * levelSet->getDomain().getNumberOfPoints()) /
-        double(levelSet->getLevelSetWidth());
 
     auto grid = levelSet->getGrid();
+    const bool calculateMean =
+        (type == lsCurvatureType::MEAN_CURVATURE) ||
+        (type == lsCurvatureType::MEAN_AND_GAUSSIAN_CURVATURE);
+    const bool calculateGauss =
+        (type == lsCurvatureType::GAUSSIAN_CURVATURE) ||
+        (type == lsCurvatureType::MEAN_AND_GAUSSIAN_CURVATURE);
 
     //! Calculate Curvatures
 #pragma omp parallel num_threads(levelSet->getNumberOfSegments())
@@ -76,19 +82,19 @@ public:
       p = omp_get_thread_num();
 #endif
 
-      lsInternal::curvaturGeneralFormula<T, D> curvatureCalculator(
+      lsInternal::curvatureGeneralFormula<T, D> curvatureCalculator(
           levelSet->getGrid().getGridDelta());
 
       auto &meanCurvatures = meanCurvaturesVector[p];
       auto &gaussCurvatures = gaussCurvaturesVector[p];
 
-      if (type == lsCurvatureType::MEAN_CURVATURE) {
-        meanCurvatures.reserve(pointsPerSegment);
-      } else if (type == lsCurvatureType::GAUSSIAN_CURVATURE) {
-        gaussCurvatures.reserve(pointsPerSegment);
-      } else {
-        meanCurvatures.reserve(pointsPerSegment);
-        gaussCurvatures.reserve(pointsPerSegment);
+      if (calculateMean) {
+        meanCurvatures.reserve(
+            levelSet->getDomain().getDomainSegment(p).getNumberOfPoints());
+      }
+      if (calculateGauss) {
+        gaussCurvatures.reserve(
+            levelSet->getDomain().getDomainSegment(p).getNumberOfPoints());
       }
 
       hrleVectorType<hrleIndexType, D> startVector =
@@ -108,6 +114,10 @@ public:
         if (!center.isDefined()) {
           continue;
         } else if (std::abs(center.getValue()) > maxValue) {
+          if (calculateMean)
+            meanCurvatures.push_back(0.);
+          if (calculateGauss)
+            gaussCurvatures.push_back(0.);
           continue;
         }
 
@@ -128,9 +138,7 @@ public:
     }
 
     // put all curvature values in the correct ordering
-
-    if (type == lsCurvatureType::MEAN_CURVATURE ||
-        type == lsCurvatureType::MEAN_AND_GAUSSIAN_CURVATURE) {
+    if (calculateMean) {
       unsigned numberOfCurvatures = 0;
       for (unsigned i = 0; i < levelSet->getNumberOfSegments(); ++i) {
         numberOfCurvatures += meanCurvaturesVector[i].size();
@@ -144,8 +152,7 @@ public:
       }
     }
 
-    if (type == lsCurvatureType::GAUSSIAN_CURVATURE ||
-        type == lsCurvatureType::MEAN_AND_GAUSSIAN_CURVATURE) {
+    if (calculateGauss) {
       unsigned numberOfCurvatures = 0;
       for (unsigned i = 0; i < levelSet->getNumberOfSegments(); ++i) {
         numberOfCurvatures += gaussCurvaturesVector[i].size();
@@ -160,8 +167,7 @@ public:
     }
 
     // insert into pointData of levelSet
-    if (type == lsCurvatureType::MEAN_CURVATURE ||
-        type == lsCurvatureType::MEAN_AND_GAUSSIAN_CURVATURE) {
+    if (calculateMean) {
       auto &pointData = levelSet->getPointData();
       auto scalarDataPointer = pointData.getScalarData("MeanCurvatures");
       // if it does not exist, insert new normals vector
@@ -174,9 +180,7 @@ public:
       }
     }
 
-    if (type == lsCurvatureType::GAUSSIAN_CURVATURE ||
-        type == lsCurvatureType::MEAN_AND_GAUSSIAN_CURVATURE) {
-
+    if (calculateGauss) {
       auto &pointData = levelSet->getPointData();
       auto scalarDataPointer = pointData.getScalarData("GaussianCurvatures");
       // if it does not exist, insert new normals vector

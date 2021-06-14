@@ -16,41 +16,46 @@ enum struct FeatureDetectionMethod : unsigned {
   NORMALS_ANGLE = 1,
 };
 
-// Detects Features of the level set function for more information see private
-// functions. This class offers two methods, curvature based feature detection
-// should always be the preferred choice.
-
+/// This class detects features of the level set function. This class offers two
+/// methods to determine features of the surface: based on the mean curvature,
+/// and based on the angle between surface normals. The curvature-based
+/// algorithm is the defaults as it leads to more accurate results and should be
+/// preferred in general.
 template <class T, int D> class lsFeatureDetection {
-
-private:
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
-
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
-
   FeatureDetectionMethod method = FeatureDetectionMethod::CURVATURE;
-
-  T flatBoundary = 0.;
-
-  std::string outputName;
-
+  T flatLimit = 0.;
+  std::string outputName = "FeatureMarkers";
   std::vector<T> flaggedCells;
 
 public:
-  lsFeatureDetection(
-      lsSmartPointer<lsDomain<T, D>> passedLevelSet, T passedBoundary,
-      FeatureDetectionMethod passedMethod = FeatureDetectionMethod::CURVATURE,
-      std::string passedOutputName = "Features")
-      : levelSet(passedLevelSet), flatBoundary(passedBoundary),
-        method(passedMethod), outputName(passedOutputName) {}
+  lsFeatureDetection(lsSmartPointer<lsDomain<T, D>> passedLevelSet)
+      : levelSet(passedLevelSet) {}
 
-  void setOutputName(std::string passedOutputName) {
-    outputName = passedOutputName;
+  lsFeatureDetection(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+                     T passedLimit)
+      : levelSet(passedLevelSet), flatLimit(passedLimit) {}
+
+  lsFeatureDetection(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+                     T passedLimit, FeatureDetectionMethod passedMethod)
+      : levelSet(passedLevelSet), flatLimit(passedLimit), method(passedMethod) {
   }
 
+  lsFeatureDetection(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+                     T passedLimit, FeatureDetectionMethod passedMethod,
+                     std::string passedOutputName)
+      : levelSet(passedLevelSet), flatLimit(passedLimit), method(passedMethod),
+        outputName(passedOutputName) {}
+
+  /// Set which algorithm to used to detect features. The curvature-based
+  /// algorithm should always be preferred, while the normals-based algorithm is
+  /// just provided for experimental use.
   void setFeatureDetectionMethod(FeatureDetectionMethod passedMethod) {
     method = passedMethod;
   }
 
+  /// Execute the algorithm.
   void apply() {
 
     if (method == FeatureDetectionMethod::CURVATURE) {
@@ -62,7 +67,7 @@ public:
     // insert into pointData of levelSet
     auto &pointData = levelSet->getPointData();
     auto vectorDataPointer = pointData.getScalarData(outputName);
-    // if it does not exist, insert new normals vector
+    // if it does not exist, insert new feature vector
     if (vectorDataPointer == nullptr) {
       pointData.insertNextScalarData(flaggedCells, outputName);
     } else {
@@ -79,199 +84,12 @@ private:
   // constructor 0.0 Curvature describes a flat plane, the bigger the passed
   // parameter gets the more grid points will be detected as features.
   void FeatureDetectionCurvature() {
-
-    flaggedCells.clear();
-    flaggedCells.reserve(levelSet->getNumberOfPoints());
-
-    auto grid = levelSet->getGrid();
-
-    typename lsDomain<T, D>::DomainType &domain = levelSet->getDomain();
-
-    std::vector<std::vector<T>> flagsReserve(levelSet->getNumberOfSegments());
-
-    double pointsPerSegment =
-        double(2 * levelSet->getDomain().getNumberOfPoints()) /
-        double(levelSet->getLevelSetWidth());
-
-    // In 2 Dimensions there are no minimal Surfaces -> Do not need to calculate
-    // Gaussian Curvature
-    if (D == 2) {
-
-#pragma omp parallel num_threads((levelSet)->getNumberOfSegments())
-      {
-        int p = 0;
-#ifdef _OPENMP
-        p = omp_get_thread_num();
-#endif
-
-        lsInternal::curvaturGeneralFormula<T, D> curvatureCalculator(
-            levelSet->getGrid().getGridDelta());
-
-        auto &flagsSegment = flagsReserve[p];
-        flagsSegment.reserve(pointsPerSegment);
-
-        hrleVectorType<hrleIndexType, D> startVector =
-            (p == 0) ? grid.getMinGridPoint() : domain.getSegmentation()[p - 1];
-
-        hrleVectorType<hrleIndexType, D> endVector =
-            (p != static_cast<int>(domain.getNumberOfSegments() - 1))
-                ? domain.getSegmentation()[p]
-                : grid.incrementIndices(grid.getMaxGridPoint());
-
-        for (hrleCartesianPlaneIterator<typename lsDomain<T, D>::DomainType>
-                 neighborIt(levelSet->getDomain(), startVector, 1);
-             neighborIt.getIndices() < endVector; neighborIt.next()) {
-
-          if (!neighborIt.getCenter().isDefined() ||
-              std::abs(neighborIt.getCenter().getValue()) > 0.5) {
-            continue;
-          }
-
-          T curve = curvatureCalculator.meanCurvature(neighborIt);
-
-          if (std::abs(curve) > flatBoundary) {
-            flagsSegment.push_back(1);
-          } else {
-            flagsSegment.push_back(0);
-          }
-        }
-      }
-
-    } else {
-
-#pragma omp parallel num_threads((levelSet)->getNumberOfSegments())
-      {
-        int p = 0;
-#ifdef _OPENMP
-        p = omp_get_thread_num();
-#endif
-
-        lsInternal::curvaturGeneralFormula<T, D> curvatureCalculator(
-            levelSet->getGrid().getGridDelta());
-
-        auto &flagsSegment = flagsReserve[p];
-        flagsSegment.reserve(pointsPerSegment);
-
-        hrleVectorType<hrleIndexType, D> startVector =
-            (p == 0) ? grid.getMinGridPoint() : domain.getSegmentation()[p - 1];
-
-        hrleVectorType<hrleIndexType, D> endVector =
-            (p != static_cast<int>(domain.getNumberOfSegments() - 1))
-                ? domain.getSegmentation()[p]
-                : grid.incrementIndices(grid.getMaxGridPoint());
-
-        for (hrleCartesianPlaneIterator<typename lsDomain<T, D>::DomainType>
-                 neighborIt(levelSet->getDomain(), startVector, 1);
-             neighborIt.getIndices() < endVector; neighborIt.next()) {
-
-          if (!neighborIt.getCenter().isDefined() ||
-              std::abs(neighborIt.getCenter().getValue()) > 0.5) {
-            continue;
-          }
-
-          std::array<T, 2> curves =
-              curvatureCalculator.meanGaussianCurvature(neighborIt);
-
-          // Minimal surfaces can have Mean Curvature equal to 0 at non-flat
-          // points on the surface additionally check Gaussian Curvature if the
-          // point is flat
-          if (std::abs(curves[0]) > flatBoundary ||
-              std::abs(curves[1]) > flatBoundary) {
-            flagsSegment.push_back(1);
-          } else {
-            flagsSegment.push_back(0);
-          }
-        }
-      }
-    }
-
-    for (unsigned i = 0; i < levelSet->getNumberOfSegments(); ++i)
-      flaggedCells.insert(flaggedCells.end(), flagsReserve[i].begin(),
-                          flagsReserve[i].end());
-  }
-
-  // Detects Features of the level set by comparing the angle of each normal
-  // vector on the surface to its adjacent normal vectors. The minimal angle
-  // that should be considered a feature is passed to the class constructor.
-
-  void FeatureDetectionNormals() {
-
-    // Clear results from previous run
     flaggedCells.clear();
 
-    T cosAngleTreshold = std::cos(flatBoundary);
-    ;
-
-    std::vector<hrleVectorType<hrleIndexType, D>> combinations;
-
-    if (D == 3) {
-
-      for (int i = 0; i < D; i++) {
-
-        hrleVectorType<hrleIndexType, D> posUnit(0);
-        hrleVectorType<hrleIndexType, D> negUnit(0);
-
-        int first_pos = i;
-        int second_pos = (i + 1) % D;
-
-        posUnit[first_pos] = 1;
-        negUnit[first_pos] = -1;
-
-        combinations.push_back(posUnit);
-        combinations.push_back(negUnit);
-
-        posUnit[second_pos] = 1;
-        negUnit[second_pos] = 1;
-
-        combinations.push_back(posUnit);
-        combinations.push_back(negUnit);
-
-        posUnit[second_pos] = -1;
-        negUnit[second_pos] = -1;
-
-        combinations.push_back(posUnit);
-        combinations.push_back(negUnit);
-      }
-
-      combinations.push_back(hrleVectorType<hrleIndexType, D>(1, 1, 1));
-      combinations.push_back(hrleVectorType<hrleIndexType, D>(-1, -1, -1));
-      combinations.push_back(hrleVectorType<hrleIndexType, D>(-1, -1, 1));
-      combinations.push_back(hrleVectorType<hrleIndexType, D>(1, -1, -1));
-      combinations.push_back(hrleVectorType<hrleIndexType, D>(-1, 1, -1));
-      combinations.push_back(hrleVectorType<hrleIndexType, D>(-1, 1, 1));
-      combinations.push_back(hrleVectorType<hrleIndexType, D>(1, -1, 1));
-      combinations.push_back(hrleVectorType<hrleIndexType, D>(1, 1, -1));
-    } else {
-
-      combinations.push_back(hrleVectorType<hrleIndexType, D>(1, 1));
-      combinations.push_back(hrleVectorType<hrleIndexType, D>(-1, -1));
-      combinations.push_back(hrleVectorType<hrleIndexType, D>(-1, 1));
-      combinations.push_back(hrleVectorType<hrleIndexType, D>(1, -1));
-      combinations.push_back(hrleVectorType<hrleIndexType, D>(0, 1));
-      combinations.push_back(hrleVectorType<hrleIndexType, D>(1, 0));
-      combinations.push_back(hrleVectorType<hrleIndexType, D>(0, -1));
-      combinations.push_back(hrleVectorType<hrleIndexType, D>(-1, 0));
-    }
-
-    std::vector<std::array<T, D>> normals;
-
-    std::vector<std::vector<std::array<T, D>>> normalsVector(
-        levelSet->getNumberOfSegments());
-
-    normals.reserve(levelSet->getNumberOfPoints());
-    flaggedCells.reserve(levelSet->getNumberOfPoints());
-
     auto grid = levelSet->getGrid();
-
     typename lsDomain<T, D>::DomainType &domain = levelSet->getDomain();
-
     std::vector<std::vector<T>> flagsReserve(levelSet->getNumberOfSegments());
 
-    double pointsPerSegment =
-        double(2 * levelSet->getDomain().getNumberOfPoints()) /
-        double(levelSet->getLevelSetWidth());
-
-    // Calculate all Surface normals
 #pragma omp parallel num_threads((levelSet)->getNumberOfSegments())
     {
       int p = 0;
@@ -279,14 +97,12 @@ private:
       p = omp_get_thread_num();
 #endif
 
-      std::array<T, D> zeroVector;
+      lsInternal::curvatureGeneralFormula<T, D> curvatureCalculator(
+          levelSet->getGrid().getGridDelta());
 
-      for (int i = 0; i < D; i++) {
-        zeroVector[i] = 0.;
-      }
-
-      auto &normalsSegment = normalsVector[p];
-      normalsSegment.reserve(pointsPerSegment);
+      auto &flagsSegment = flagsReserve[p];
+      flagsSegment.reserve(
+          levelSet->getDomain().getDomainSegment(p).getNumberOfPoints());
 
       hrleVectorType<hrleIndexType, D> startVector =
           (p == 0) ? grid.getMinGridPoint() : domain.getSegmentation()[p - 1];
@@ -296,46 +112,68 @@ private:
               ? domain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
-      for (hrleConstSparseStarIterator<typename lsDomain<T, D>::DomainType>
-               neighborIt(levelSet->getDomain(), startVector);
+      for (hrleCartesianPlaneIterator<typename lsDomain<T, D>::DomainType>
+               neighborIt(levelSet->getDomain(), startVector, 1);
            neighborIt.getIndices() < endVector; neighborIt.next()) {
 
-        if (!neighborIt.getCenter().isDefined()) {
+        auto &center = neighborIt.getCenter();
+        if (!center.isDefined()) {
           continue;
-        } else if (std::abs(neighborIt.getCenter().getValue()) >= 0.5) {
-          normalsSegment.push_back(zeroVector);
+        } else if (std::abs(center.getValue()) > 0.5) {
+          flagsSegment.push_back(0);
           continue;
         }
 
-        std::array<T, D> n;
+        if constexpr (D == 2) {
+          T curve = curvatureCalculator.meanCurvature(neighborIt);
 
-        T norm = 0.;
+          if (std::abs(curve) > flatLimit) {
+            flagsSegment.push_back(1);
+          } else {
+            flagsSegment.push_back(0);
+          }
+        } else {
+          std::array<T, 2> curves =
+              curvatureCalculator.meanGaussianCurvature(neighborIt);
 
-        for (int i = 0; i < D; i++) {
-
-          T pos1 = neighborIt.getNeighbor(i).getValue();
-
-          T neg1 = neighborIt.getNeighbor(i + D).getValue();
-
-          n[i] = (pos1 - neg1) * 0.5;
-
-          norm += n[i] * n[i];
+          // Minimal surfaces can have Mean Curvature equal to 0 at non-flat
+          // points on the surface additionally check Gaussian Curvature if the
+          // point is flat
+          if (std::abs(curves[0]) > flatLimit ||
+              std::abs(curves[1]) > flatLimit) {
+            flagsSegment.push_back(1);
+          } else {
+            flagsSegment.push_back(0);
+          }
         }
-
-        norm = std::sqrt(norm);
-
-        for (int j = 0; j < D; j++)
-          n[j] /= norm;
-
-        normalsSegment.push_back(n);
       }
     }
 
+    flaggedCells.reserve(levelSet->getNumberOfPoints());
     for (unsigned i = 0; i < levelSet->getNumberOfSegments(); ++i)
-      normals.insert(normals.end(), normalsVector[i].begin(),
-                     normalsVector[i].end());
+      flaggedCells.insert(flaggedCells.end(), flagsReserve[i].begin(),
+                          flagsReserve[i].end());
+  }
 
-      // Compare angles between normal vectors
+  // Detects Features of the level set by comparing the angle of each normal
+  // vector on the surface to its adjacent normal vectors. The minimal angle
+  // that should be considered a feature is passed to the class constructor.
+  void FeatureDetectionNormals() {
+    // Clear results from previous run
+    flaggedCells.clear();
+
+    auto &grid = levelSet->getGrid();
+    auto &domain = levelSet->getDomain();
+    T cosAngleTreshold = std::cos(flatLimit);
+
+    // CALCULATE NORMALS
+    lsExpand<T, D>(levelSet, 3).apply();
+    lsCalculateNormalVectors<T, D>(levelSet).apply();
+    const auto &normals = *(levelSet->getPointData().getVectorData("Normals"));
+
+    std::vector<std::vector<T>> flagsReserve(levelSet->getNumberOfSegments());
+
+    // Compare angles between normal vectors
 #pragma omp parallel num_threads((levelSet)->getNumberOfSegments())
     {
       int p = 0;
@@ -343,14 +181,11 @@ private:
       p = omp_get_thread_num();
 #endif
 
-      std::array<T, D> zeroVector;
-
-      for (int i = 0; i < D; i++) {
-        zeroVector[i] = 0.;
-      }
+      std::array<T, D> zeroVector{};
 
       std::vector<T> &flagsSegment = flagsReserve[p];
-      flagsSegment.reserve(pointsPerSegment);
+      flagsSegment.reserve(
+          levelSet->getDomain().getDomainSegment(p).getNumberOfPoints());
 
       hrleVectorType<hrleIndexType, D> startVector =
           (p == 0) ? grid.getMinGridPoint() : domain.getSegmentation()[p - 1];
@@ -363,9 +198,10 @@ private:
       for (hrleSparseBoxIterator<typename lsDomain<T, D>::DomainType>
                neighborIt(levelSet->getDomain(), startVector, 1);
            neighborIt.getIndices() < endVector; neighborIt.next()) {
-
-        if (!neighborIt.getCenter().isDefined() ||
-            std::abs(neighborIt.getCenter().getValue()) >= 0.5) {
+        if (!neighborIt.getCenter().isDefined()) {
+          continue;
+        } else if (std::abs(neighborIt.getCenter().getValue()) >= 0.5) {
+          flagsSegment.push_back(0);
           continue;
         }
 
@@ -375,12 +211,10 @@ private:
         bool flag = false;
 
         for (unsigned dir = 0; dir < (D * D * D); dir++) {
-
           std::array<T, D> currentNormal =
               normals[neighborIt.getNeighbor(dir).getPointId()];
 
           if (currentNormal != zeroVector) {
-
             T skp = 0.;
 
             // Calculate scalar product
