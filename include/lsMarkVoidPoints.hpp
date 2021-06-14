@@ -13,6 +13,7 @@
 template <class T, int D> class lsMarkVoidPoints {
   lsSmartPointer<lsDomain<T, D>> domain = nullptr;
   bool reverseVoidDetection = false;
+  bool saveComponents = false;
 
   // two points are connected if they have the same sign
   bool areConnected(const T &value1, const T &value2) {
@@ -36,6 +37,11 @@ public:
   void setReverseVoidDetection(bool passedReverseVoidDetection) {
     reverseVoidDetection = passedReverseVoidDetection;
   }
+
+  /// Set whether the connected component IDs used to generate the void
+  /// points should be saved. Ech point is assigned a component ID
+  /// denoting which other points it is connected to.
+  void setSaveComponentIds(bool scid) { saveComponents = scid; }
 
   void apply() {
     lsInternal::lsGraph graph;
@@ -121,6 +127,10 @@ public:
     std::vector<T> voidPointMarkers;
     voidPointMarkers.resize(domain->getNumberOfPoints());
 
+    std::vector<T> componentMarkers;
+    if (saveComponents)
+      componentMarkers.resize(domain->getNumberOfPoints());
+
     // cycle through again to set correct voidPointMarkers
     for (hrleConstSparseStarIterator<typename lsDomain<T, D>::DomainType>
              neighborIt(domain->getDomain());
@@ -130,14 +140,16 @@ public:
       if (!center.isDefined())
         continue;
 
-      // TODO: currently this will break if the iterator hits a negative
-      // run first
+      // if it is positive, just check if it is part of the top component
       if (center.getValue() >= 0) {
         const int &oldComponentId = componentList[center.getSegmentId()][0]
                                                  [center.getRunTypePosition()];
         voidPointMarkers[center.getPointId()] =
             (components[oldComponentId] != topComponent);
       } else {
+        // if it is negative, check all neighbours (with different sign),
+        // because they are part of of a positive component, which might
+        // be the top
         unsigned k;
         for (k = 0; k < 2 * D; ++k) {
           auto &neighbor = neighborIt.getNeighbor(k);
@@ -150,6 +162,12 @@ public:
         }
         voidPointMarkers[center.getPointId()] = (k == 2 * D);
       }
+
+      if (saveComponents) {
+        componentMarkers[center.getPointId()] =
+            componentList[center.getSegmentId()][0]
+                         [center.getRunTypePosition()];
+      }
     }
 
     auto &pointData = domain->getPointData();
@@ -159,6 +177,18 @@ public:
       pointData.insertNextScalarData(voidPointMarkers, "VoidPointMarkers");
     } else {
       *voidMarkersPointer = std::move(voidPointMarkers);
+    }
+
+    if (saveComponents) {
+      auto componentMarkersPointer =
+          pointData.getScalarData("ConnectedComponentId");
+      // if vector data does not exist
+      if (componentMarkersPointer == nullptr) {
+        pointData.insertNextScalarData(componentMarkers,
+                                       "ConnectedComponentId");
+      } else {
+        *componentMarkersPointer = std::move(componentMarkers);
+      }
     }
   }
 };
