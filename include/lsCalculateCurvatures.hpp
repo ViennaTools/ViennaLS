@@ -1,11 +1,9 @@
 #ifndef LS_CALCULATE_CURVATURES_HPP
 #define LS_CALCULATE_CURVATURES_HPP
 
-#include <lsDomain.hpp>
-
 #include <hrleCartesianPlaneIterator.hpp>
-
 #include <lsCurvatureFormulas.hpp>
+#include <lsDomain.hpp>
 
 enum struct lsCurvatureType : unsigned {
   MEAN_CURVATURE = 0,

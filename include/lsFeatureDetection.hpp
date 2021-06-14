@@ -1,11 +1,11 @@
 #ifndef LS_FEATURE_DETECTION_HPP
 #define LS_FEATURE_DETECTION_HPP
 
-#include <lsDomain.hpp>
-#include <hrleSparseStarIterator.hpp>
-#include <hrleSparseBoxIterator.hpp>
 #include <hrleCartesianPlaneIterator.hpp>
+#include <hrleSparseBoxIterator.hpp>
+#include <hrleSparseStarIterator.hpp>
 #include <lsCurvatureFormulas.hpp>
+#include <lsDomain.hpp>
 
 enum struct FeatureDetectionMethod : unsigned {
   CURVATURE = 0,
