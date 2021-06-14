@@ -82,9 +82,6 @@ public:
       p = omp_get_thread_num();
 #endif
 
-      lsInternal::curvatureGeneralFormula<T, D> curvatureCalculator(
-          levelSet->getGrid().getGridDelta());
-
       auto &meanCurvatures = meanCurvaturesVector[p];
       auto &gaussCurvatures = gaussCurvaturesVector[p];
 
@@ -122,17 +119,11 @@ public:
         }
 
         // calculate curvatures
-        if (type == lsCurvatureType::MEAN_CURVATURE) {
-          meanCurvatures.push_back(
-              curvatureCalculator.meanCurvature(neighborIt));
-        } else if (type == lsCurvatureType::GAUSSIAN_CURVATURE) {
-          gaussCurvatures.push_back(
-              curvatureCalculator.gaussianCurvature(neighborIt));
-        } else {
-          std::array<T, 2> curves =
-              curvatureCalculator.meanGaussianCurvature(neighborIt);
-          meanCurvatures.push_back(curves[0]);
-          gaussCurvatures.push_back(curves[1]);
+        if (calculateMean) {
+          meanCurvatures.push_back(lsInternal::meanCurvature(neighborIt));
+        }
+        if (calculateGauss) {
+          gaussCurvatures.push_back(lsInternal::gaussianCurvature(neighborIt));
         }
       }
     }

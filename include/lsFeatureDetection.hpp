@@ -97,9 +97,6 @@ private:
       p = omp_get_thread_num();
 #endif
 
-      lsInternal::curvatureGeneralFormula<T, D> curvatureCalculator(
-          levelSet->getGrid().getGridDelta());
-
       auto &flagsSegment = flagsReserve[p];
       flagsSegment.reserve(
           levelSet->getDomain().getDomainSegment(p).getNumberOfPoints());
@@ -125,7 +122,7 @@ private:
         }
 
         if constexpr (D == 2) {
-          T curve = curvatureCalculator.meanCurvature(neighborIt);
+          T curve = lsInternal::meanCurvature(neighborIt);
 
           if (std::abs(curve) > flatLimit) {
             flagsSegment.push_back(1);
@@ -133,17 +130,19 @@ private:
             flagsSegment.push_back(0);
           }
         } else {
-          std::array<T, 2> curves =
-              curvatureCalculator.meanGaussianCurvature(neighborIt);
+          T curve = lsInternal::meanCurvature(neighborIt);
 
           // Minimal surfaces can have Mean Curvature equal to 0 at non-flat
           // points on the surface additionally check Gaussian Curvature if the
           // point is flat
-          if (std::abs(curves[0]) > flatLimit ||
-              std::abs(curves[1]) > flatLimit) {
+          if (std::abs(curve) > flatLimit) {
             flagsSegment.push_back(1);
           } else {
-            flagsSegment.push_back(0);
+            curve = lsInternal::gaussianCurvature(neighborIt);
+            if (std::abs(curve) > flatLimit)
+              flagsSegment.push_back(1);
+            else
+              flagsSegment.push_back(0);
           }
         }
       }

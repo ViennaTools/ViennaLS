@@ -150,108 +150,49 @@ std::array<T, 9> bigStencilFromIterator(It &it, const double gridDelta) {
   return std::move(d);
 }
 
-/// Calculates the Mean Curvature and/or the Gaussian Curvature of the level set
-/// function in 3D Calculates the Curvature of the level set function in 2D.
+/// Calculates the Mean Curvature of the level set
+/// function from a suitable hrle iterator.
 /// Requires an iterator that is big enough to calculate second order
 /// derivatives(e.g. hrleBoxIterator or hrleCartesianPlaneIterator)
-template <class T, int D> class curvatureGeneralFormula {
-private:
-  T gridDelta;
-
-public:
-  curvatureGeneralFormula(T mGD) : gridDelta(mGD) {}
-
-  template <class IteratorType>
-  T meanCurvature(IteratorType &neighborIterator) {
-    std::array<T, 9> d = smallStencilFromIterator(neighborIterator, gridDelta);
-    if constexpr (D == 2) {
-      return meanCurvature2D(d);
-    } else {
-      return meanCurvature3D(d);
-    }
+template <class It, class T = typename It::DomainType::hrleValueType>
+T meanCurvature(It &it, bool bigStencil = false) {
+  constexpr int D = It::DomainType::dimension;
+  auto gridDelta = it.getDomain().getGrid().getGridDelta();
+  std::array<T, 9> d;
+  if (bigStencil)
+    d = bigStencilFromIterator(it, gridDelta);
+  else
+    d = smallStencilFromIterator(it, gridDelta);
+  if constexpr (D == 2) {
+    return meanCurvature2D(d);
+  } else {
+    return meanCurvature3D(d);
   }
+}
 
-  template <class IteratorType>
-  T gaussianCurvature(IteratorType &neighborIterator) {
-    if constexpr (D == 2) {
-      lsMessage::getInstance()
-          .addWarning(
-              "2D structures do not have a Gaussian Curvature, use "
-              "\"meanCurvature(IteratorType & neighborIterator)\" instead!")
-          .print();
-    }
-    std::array<T, 9> d = smallStencilFromIterator(neighborIterator, gridDelta);
+/// Calculates the Gaussian Curvature of the level set
+/// function from a suitable hrle iterator.
+/// Requires an iterator that is big enough to calculate second order
+/// derivatives(e.g. hrleBoxIterator or hrleCartesianPlaneIterator)
+template <class It, class T = typename It::DomainType::hrleValueType>
+T gaussianCurvature(It &it, bool bigStencil = false) {
+  constexpr int D = It::DomainType::dimension;
+  auto gridDelta = it.getDomain().getGrid().getGridDelta();
+  std::array<T, 9> d;
+  if (bigStencil)
+    d = bigStencilFromIterator(it, gridDelta);
+  else
+    d = smallStencilFromIterator(it, gridDelta);
+  if constexpr (D == 2) {
+    lsMessage::getInstance()
+        .addWarning(
+            "2D structures do not have a Gaussian Curvature, use "
+            "\"meanCurvature(IteratorType & neighborIterator)\" instead!")
+        .print();
+  } else {
     return gaussianCurvature3D(d);
   }
-
-  template <class IteratorType>
-  std::array<T, 2> meanGaussianCurvature(IteratorType &neighborIterator) {
-    if constexpr (D == 2) {
-      lsMessage::getInstance()
-          .addWarning(
-              "2D structures do not have a Gaussian Curvature, use "
-              "\"meanCurvature(IteratorType & neighborIterator)\" instead!")
-          .print();
-    }
-    std::array<T, 9> d = smallStencilFromIterator(neighborIterator, gridDelta);
-    T mean = meanCurvature3D(d);
-    T gauss = gaussianCurvature3D(d);
-
-    return std::array<T, 2>{mean, gauss};
-  }
-};
-
-// Calculates the Curvature using the General Formula for implict surfaces and
-// uses different first order approximations for D_x and D_xx derivatives
-template <class T, int D> class curvatureGeneralFormulaBigStencil {
-
-private:
-  T gridDelta;
-
-public:
-  curvatureGeneralFormulaBigStencil(T mGD) : gridDelta(mGD) {}
-
-  template <class IteratorType>
-  T meanCurvature(IteratorType &neighborIterator) {
-
-    // stores the values of the discrete Hessian of the level set function
-    //(F_x, F_y, F_z, F_xx, F_yy, F_zz, F_xy, F_yz, F_zx)
-    std::array<T, 9> d = bigStencilFromIterator(neighborIterator, gridDelta);
-    if constexpr (D == 2) {
-      return meanCurvature2D(d);
-    } else {
-      return meanCurvature3D(d);
-    }
-  }
-
-  template <class IteratorType>
-  T gaussianCurvature(IteratorType &neighborIterator) {
-    if constexpr (D == 2) {
-      lsMessage::getInstance()
-          .addWarning(
-              "2D structures do not have a Gaussian Curvature, use "
-              "\"meanCurvature(IteratorType & neighborIterator)\" instead!")
-          .print();
-    }
-    std::array<T, 9> d = bigStencilFromIterator(neighborIterator, gridDelta);
-    return gaussianCurvature3D(d);
-  }
-  template <class IteratorType>
-  std::array<T, 2> meanGaussianCurvature(IteratorType &neighborIterator) {
-    if constexpr (D == 2) {
-      lsMessage::getInstance()
-          .addWarning(
-              "2D structures do not have a Gaussian Curvature, use "
-              "\"meanCurvature(IteratorType & neighborIterator)\" instead!")
-          .print();
-    }
-    std::array<T, 9> d = bigStencilFromIterator(neighborIterator, gridDelta);
-    T mean = meanCurvature3D(d);
-    T gauss = gaussianCurvature3D(d);
-    return std::array<T, 2>{mean, gauss};
-  }
-  // TODO: Add Variation of normals.
-};
+}
 
 } // namespace lsInternal
 

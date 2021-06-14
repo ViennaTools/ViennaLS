@@ -4,6 +4,7 @@
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
+#include <lsTestAsserts.hpp>
 #include <lsToMesh.hpp>
 #include <lsVTKWriter.hpp>
 
@@ -27,7 +28,6 @@ int main() {
 
   NumericType gridDelta = 0.5;
 
-  std::cout << "Creating Sphere..." << std::endl;
   auto sphere = lsSmartPointer<lsDomain<NumericType, D>>::New(gridDelta);
   NumericType origin[3] = {5., 0., 0.};
   NumericType radius = 10.0;
@@ -36,10 +36,8 @@ int main() {
       sphere, lsSmartPointer<lsSphere<NumericType, D>>::New(origin, radius))
       .apply();
 
-  std::cout << "Expanding..." << std::endl;
-  lsExpand<NumericType, D>(sphere, 5).apply();
-
-  std::cout << "Calculating Curvatures..." << std::endl;
+  double sphereRadius = 5.;
+  lsExpand<NumericType, D>(sphere, sphereRadius).apply();
 
   lsCalculateCurvatures<NumericType, D> calcCurve(sphere);
 
@@ -51,17 +49,37 @@ int main() {
 
   calcCurve.apply();
 
-  std::cout << "Writing Output..." << std::endl;
+  auto meanCurvatures = sphere->getPointData().getScalarData("MeanCurvatures");
 
-  auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
-  lsToMesh<NumericType, D>(sphere, mesh, true, true).apply();
+  LSTEST_ASSERT(meanCurvatures != nullptr)
 
-  auto writer = lsVTKWriter<NumericType>();
-  writer.setMesh(mesh);
-  writer.setFileName("curvatures.vtk");
-  writer.apply();
+  double analyticCurvature = 1. / (2 * sphereRadius);
+  hrleSizeType numberOfActivePoints = 0;
+  double sum = 0.;
+  for (hrleConstSparseIterator<typename lsDomain<NumericType, D>::DomainType>
+           it(sphere->getDomain());
+       !it.isFinished(); ++it) {
+    if (NumericType value = it.getValue();
+        !it.isDefined() || std::abs(value) > 0.5)
+      continue;
 
-  std::cout << "Finished" << std::endl;
+    sum += meanCurvatures->at(it.getPointId());
+    ++numberOfActivePoints;
+  }
+
+  LSTEST_ASSERT(std::abs(sum / numberOfActivePoints - analyticCurvature) < 1e-3)
+
+  // std::cout << "Writing Output..." << std::endl;
+
+  // auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
+  // lsToMesh<NumericType, D>(sphere, mesh, true, true).apply();
+
+  // auto writer = lsVTKWriter<NumericType>();
+  // writer.setMesh(mesh);
+  // writer.setFileName("curvatures.vtk");
+  // writer.apply();
+
+  // std::cout << "Finished" << std::endl;
 
   return 0;
 }
