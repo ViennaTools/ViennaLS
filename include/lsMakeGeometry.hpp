@@ -15,7 +15,10 @@
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
 #include <lsTransformMesh.hpp>
+
+#ifndef NDEBUG
 #include <lsVTKWriter.hpp>
+#endif
 
 /// Create level sets describing basic geometric forms.
 template <class T, int D> class lsMakeGeometry {
@@ -39,7 +42,8 @@ template <class T, int D> class lsMakeGeometry {
   lsSmartPointer<lsCylinder<T, D>> cylinder;
   lsSmartPointer<lsPointCloud<T, D>> pointCloud;
   const double numericEps = 1e-9;
-  bool ignoreBoundaryConditions = false;
+  // bool ignoreBoundaryConditions = false;
+  std::array<bool, 3> ignoreBoundaryConditions{false, false, false};
 
 public:
   lsMakeGeometry() {}
@@ -112,8 +116,23 @@ public:
     geometry = lsGeometryEnum::CUSTOM;
   }
 
+  /// Ignore boundary conditions, meaning the parts of the generated
+  /// geometry which are outside of the domain boundaries are ignored.
   void setIgnoreBoundaryConditions(bool passedIgnoreBoundaryConditions) {
-    ignoreBoundaryConditions = passedIgnoreBoundaryConditions;
+    for (unsigned i = 0; i < D; ++i) {
+      ignoreBoundaryConditions[i] = passedIgnoreBoundaryConditions;
+    }
+  }
+
+  /// Ignore boundary conditions, meaning the parts of the generated
+  /// geometry which are outside of the domain boundaries are ignored.
+  /// Set it for each direction separately.
+  template <std::size_t N>
+  void setIgnoreBoundaryConditions(
+      std::array<bool, N> passedIgnoreBoundaryConditions) {
+    for (unsigned i = 0; i < D && i < N; ++i) {
+      ignoreBoundaryConditions[i] = passedIgnoreBoundaryConditions[i];
+    }
   }
 
   void apply() {
@@ -149,7 +168,7 @@ public:
   }
 
 private:
-  void makeSphere(hrleVectorType<T, D> origin, T radius, int width = 3) {
+  void makeSphere(hrleVectorType<T, D> origin, T radius) {
     if (levelSet == nullptr) {
       lsMessage::getInstance()
           .addWarning("No level set was passed to lsMakeGeometry.")
@@ -170,7 +189,8 @@ private:
       endIndex[i] = (origin[i] + radius) / gridDelta + 1;
     }
 
-    const T valueLimit = width * 0.5 * gridDelta;
+    const double initialWidth = 2.;
+    const T valueLimit = initialWidth * 0.5 * gridDelta + 1e-5;
     const T radius2 = radius * radius;
 
     pointDataType pointData;
@@ -193,7 +213,7 @@ private:
           distance = dirRadius;
       }
 
-      if (std::abs(distance) <= valueLimit + 1e-10) {
+      if (std::abs(distance) <= valueLimit) {
         pointData.push_back(std::make_pair(index, distance / gridDelta));
       }
       int dim = 0;
@@ -207,20 +227,18 @@ private:
 
     // Mirror indices correctly into domain, unless boundary conditions
     // are ignored
-    if (!ignoreBoundaryConditions) {
-      for (unsigned i = 0; i < pointData.size(); ++i) {
-        for (unsigned j = 0; j < D; ++j) {
-          if (grid.isBoundaryPeriodic(j)) {
-            pointData[i].first[j] =
-                grid.globalIndex2LocalIndex(j, pointData[i].first[j]);
-          }
+    for (unsigned i = 0; i < pointData.size(); ++i) {
+      for (unsigned j = 0; j < D; ++j) {
+        if (!ignoreBoundaryConditions[j] && grid.isBoundaryPeriodic(j)) {
+          pointData[i].first[j] =
+              grid.globalIndex2LocalIndex(j, pointData[i].first[j]);
         }
       }
     }
 
     levelSet->insertPoints(pointData);
     levelSet->getDomain().segment();
-    levelSet->finalize(width);
+    levelSet->finalize(initialWidth);
   }
 
   /// Creates a plane containing the point origin, with
@@ -292,8 +310,8 @@ private:
     // the correct boundary conditions will add stray points for
     // tilted planes in lsFromSurfaceMesh later on.
     for (unsigned n = 0; n < D - 1; ++n) {
-      minCoord[n] = gridDelta * (grid.getMinIndex((i + n + 1) % D));
-      maxCoord[n] = gridDelta * (grid.getMaxIndex((i + n + 1) % D));
+      minCoord[n] = gridDelta * (grid.getMinIndex((i + n + 1) % D) - 1);
+      maxCoord[n] = gridDelta * (grid.getMaxIndex((i + n + 1) % D) + 1);
     }
 
     // set corner points
@@ -338,6 +356,13 @@ private:
         std::swap(triangle[0], triangle[1]);
       mesh->insertNextTriangle(triangle);
     }
+
+#ifndef NDEBUG
+    static unsigned planeCounter = 0;
+    lsVTKWriter<T>(mesh, "plane" + std::to_string(planeCounter++) + ".vtk")
+        .apply();
+#endif
+
     // now convert mesh to levelset
     lsFromSurfaceMesh<T, D>(levelSet, mesh).apply();
   }
@@ -403,7 +428,9 @@ private:
     }
 
     // now convert mesh to levelset
-    lsFromSurfaceMesh<T, D>(levelSet, mesh, ignoreBoundaryConditions).apply();
+    lsFromSurfaceMesh<T, D> mesher(levelSet, mesh);
+    mesher.setRemoveBoundaryTriangles(ignoreBoundaryConditions);
+    mesher.apply();
   }
 
   void makeCylinder(lsSmartPointer<lsCylinder<T, D>> cylinder) {
@@ -481,7 +508,9 @@ private:
         .apply();
 
     // read mesh from surface
-    lsFromSurfaceMesh<T, D>(levelSet, mesh, ignoreBoundaryConditions).apply();
+    lsFromSurfaceMesh<T, D> mesher(levelSet, mesh);
+    mesher.setRemoveBoundaryTriangles(ignoreBoundaryConditions);
+    mesher.apply();
   }
 
   void makeCustom(lsSmartPointer<lsPointCloud<T, D>> pointCloud) {
@@ -490,7 +519,9 @@ private:
     lsConvexHull<T, D>(mesh, pointCloud).apply();
 
     // read mesh from surface
-    lsFromSurfaceMesh<T, D>(levelSet, mesh, ignoreBoundaryConditions).apply();
+    lsFromSurfaceMesh<T, D> mesher(levelSet, mesh);
+    mesher.setRemoveBoundaryTriangles(ignoreBoundaryConditions);
+    mesher.apply();
   }
 };
 

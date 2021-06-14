@@ -14,6 +14,10 @@
 
 #define LS_DOMAIN_SERIALIZATION_VERSION 0
 
+// Boundary condition alias for easier access
+template <int D>
+using lsBoundaryConditionEnum = typename hrleGrid<D>::boundaryType;
+
 ///  Class containing all information about the level set, including
 ///  the dimensions of the domain, boundary conditions and all data.
 template <class T, int D> class lsDomain {
@@ -22,7 +26,7 @@ public:
   typedef T ValueType;
   typedef hrleGrid<D> GridType;
   typedef hrleDomain<T, D> DomainType;
-  typedef typename GridType::boundaryType BoundaryType;
+  typedef lsBoundaryConditionEnum<D> BoundaryType;
   typedef typename std::vector<std::pair<hrleVectorType<hrleIndexType, D>, T>>
       PointValueVectorType;
   typedef typename std::vector<std::array<T, D>> NormalVectorType;
@@ -163,14 +167,14 @@ public:
   }
 
   /// prints basic information and all memebers of the levelset structure
-  void print() {
-    std::cout << "Grid pointer: " << &grid << std::endl;
-    std::cout << "Domain: " << &domain << std::endl;
-    std::cout << "DomainSegments: " << std::endl;
+  void print(std::ostream &out = std::cout) {
+    out << "Grid pointer: " << &grid << std::endl;
+    out << "Domain: " << &domain << std::endl;
+    out << "DomainSegments: " << std::endl;
     for (unsigned i = 0; i < getNumberOfSegments(); ++i) {
-      std::cout << &(domain.getDomainSegment(i)) << std::endl;
+      out << &(domain.getDomainSegment(i)) << std::endl;
     }
-    domain.print();
+    domain.print(out);
   }
 
   /// Serializes the lsDomain into a binary stream

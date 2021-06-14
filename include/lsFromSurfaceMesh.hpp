@@ -96,7 +96,8 @@ template <class T, int D> class lsFromSurfaceMesh {
   lsSmartPointer<lsDomain<T, D>> levelSet =
       lsSmartPointer<lsDomain<T, D>>::New();
   lsSmartPointer<lsMesh<T>> mesh = lsSmartPointer<lsMesh<T>>::New();
-  bool removeBoundaryTriangles = true;
+  // bool removeBoundaryTriangles = true;
+  std::array<bool, 3> removeBoundaryTriangles{true, true, true};
   T boundaryEps = 1e-5;
   T distanceEps = 1e-4;
   T signEps = 1e-6;
@@ -215,8 +216,11 @@ public:
   lsFromSurfaceMesh(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
                     lsSmartPointer<lsMesh<T>> passedMesh,
                     bool passedRemoveBoundaryTriangles = true)
-      : levelSet(passedLevelSet), mesh(passedMesh),
-        removeBoundaryTriangles(passedRemoveBoundaryTriangles) {}
+      : levelSet(passedLevelSet),
+        mesh(passedMesh), removeBoundaryTriangles{
+                              passedRemoveBoundaryTriangles,
+                              passedRemoveBoundaryTriangles,
+                              passedRemoveBoundaryTriangles} {}
 
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
@@ -228,7 +232,19 @@ public:
   /// or whether boundary conditions should be applied correctly to such
   /// triangles(=false). Defaults to true.
   void setRemoveBoundaryTriangles(bool passedRemoveBoundaryTriangles) {
-    removeBoundaryTriangles = passedRemoveBoundaryTriangles;
+    removeBoundaryTriangles.fill(passedRemoveBoundaryTriangles);
+  }
+
+  /// Set whether all triangles outside of the domain should be ignored (=true)
+  /// or whether boundary conditions should be applied correctly to such
+  /// triangles(=false), for each direction. Defaults to true for all
+  /// directions.
+  template <std::size_t N>
+  void setRemoveBoundaryTriangles(
+      std::array<bool, N> passedRemoveBoundaryTriangles) {
+    for (unsigned i = 0; i < D && i < N; ++i) {
+      removeBoundaryTriangles[i] = passedRemoveBoundaryTriangles[i];
+    }
   }
 
   void apply() {
@@ -245,11 +261,13 @@ public:
       return;
     }
 
+    const auto &grid = levelSet->getGrid();
+
     // caluclate which directions should apply removeBoundaryTriangles
+    // it only makes sense to keep boundary triangles for periodic BNC
     bool removeBoundaries[D];
     for (unsigned i = 0; i < D; ++i) {
-      if (!removeBoundaryTriangles &&
-          levelSet->getGrid().isBoundaryPeriodic(i)) {
+      if (!removeBoundaryTriangles[i] && grid.isBoundaryPeriodic(i)) {
         removeBoundaries[i] = false;
       } else {
         removeBoundaries[i] = true;
@@ -264,12 +282,12 @@ public:
           std::pair<hrleVectorType<hrleIndexType, D>, std::pair<T, T>>>
           point_vector;
       point_vector points;
-      T gridDelta = levelSet->getGrid().getGridDelta();
+      T gridDelta = grid.getGridDelta();
 
       hrleVectorType<T, D> gridMin, gridMax;
       for (unsigned i = 0; i < D; ++i) {
-        gridMin[i] = levelSet->getGrid().getMinIndex(i) * gridDelta;
-        gridMax[i] = levelSet->getGrid().getMaxIndex(i) * gridDelta;
+        gridMin[i] = grid.getMinIndex(i) * gridDelta;
+        gridMax[i] = grid.getMaxIndex(i) * gridDelta;
       }
 
       // for each surface element do
@@ -334,6 +352,16 @@ public:
               static_cast<hrleIndexType>(std::floor(maxNode[q] / gridDelta));
         }
 
+        // Only iterate over indices which are actually inside the domain
+        // if boundary conditions should be ignored
+        for (unsigned i = 0; i < D; ++i) {
+          if (removeBoundaries[i]) {
+            minIndex[i] = std::max(minIndex[i], grid.getMinIndex(i));
+            // for Periodic BNC, MaxGridPoint is MaxIndex-1
+            maxIndex[i] = std::min(maxIndex[i], grid.getMaxGridPoint(i));
+          }
+        }
+
         // each cartesian direction
         for (int z = 0; z < D; z++) {
           hrleVectorType<hrleIndexType, D - 1> min_bb, max_bb;
@@ -357,7 +385,7 @@ public:
 
             hrleVectorType<T, D> p;
             for (int k = 1; k < D; k++)
-              p[(k + z) % D] = levelSet->getGrid().gridPositionOfGlobalIndex(
+              p[(k + z) % D] = grid.gridPositionOfGlobalIndex(
                   (k + z) % D, it_b[(k + z) % D]);
 
             T intersection;
@@ -366,28 +394,22 @@ public:
 
             if (intersection_status != 0) {
               // if there is an intersection
-
-              if (intersection < minNode[z])
-                assert(0); // TODO
-              if (intersection > maxNode[z])
-                assert(0); // TODO
-              intersection = std::max(intersection, minNode[z]);
-              intersection = std::min(intersection, maxNode[z]);
+              assert(intersection >= minNode[z] &&
+                     "Intersection should be inside Domain!");
+              assert(intersection <= maxNode[z] &&
+                     "Intersection should be inside Domain!");
+              // intersection = std::max(intersection, minNode[z]);
+              // intersection = std::min(intersection, maxNode[z]);
 
               if (removeBoundaries[z] &&
-                  intersection > levelSet->getGrid().getMaxLocalCoordinate(z))
+                  intersection > gridDelta * (grid.getMaxIndex(z)))
                 continue;
               if (removeBoundaries[z] &&
-                  intersection < levelSet->getGrid().getMinLocalCoordinate(z))
+                  intersection < grid.getMinLocalCoordinate(z))
                 continue;
 
-              // T localIntersection =
-              //     levelSet->getGrid().globalCoordinate2GlobalIndex(
-              //         intersection);
-              // T intersection2 = levelSet->getGrid().globalIndex2LocalIndex(
-              //     z, localIntersection);
-              T intersection2 = levelSet->getGrid().globalCoordinate2LocalIndex(
-                  z, intersection);
+              T intersection2 =
+                  grid.globalCoordinate2LocalIndex(z, intersection);
 
               hrleIndexType floor = static_cast<hrleIndexType>(
                   std::floor(intersection2 - distanceEps));
@@ -396,12 +418,12 @@ public:
 
               floor = std::max(floor, minIndex[z] - 1);
               ceil = std::min(ceil, maxIndex[z] + 1);
-              floor = std::max(floor, levelSet->getGrid().getMinIndex(z));
-              ceil = std::min(ceil, levelSet->getGrid().getMaxIndex(z));
+              floor = std::max(floor, grid.getMinIndex(z));
+              ceil = std::min(ceil, grid.getMaxIndex(z));
 
               if (!removeBoundaries[z]) {
-                floor = levelSet->getGrid().globalIndex2LocalIndex(z, floor);
-                ceil = levelSet->getGrid().globalIndex2LocalIndex(z, ceil);
+                floor = grid.globalIndex2LocalIndex(z, floor);
+                ceil = grid.globalIndex2LocalIndex(z, ceil);
               }
 
               hrleVectorType<T, D> t = center;
@@ -435,9 +457,9 @@ public:
                 if (RealDistance == 0.)
                   RealDistance = 0.; // to avoid zeros with negative sign
 
-                points.push_back(std::make_pair(
-                    levelSet->getGrid().globalIndices2LocalIndices(it_b),
-                    std::make_pair(SignDistance, RealDistance)));
+                points.push_back(
+                    std::make_pair(grid.globalIndices2LocalIndices(it_b),
+                                   std::make_pair(SignDistance, RealDistance)));
               }
             }
           }

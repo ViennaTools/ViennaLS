@@ -52,17 +52,18 @@ int main() {
   lsBooleanOperation<double, D>(sphere1, sphere2, lsBooleanOperationEnum::UNION)
       .apply();
 
-  std::cout << "Extracting..." << std::endl;
+  //   std::cout << "Extracting..." << std::endl;
   lsToDiskMesh<double, D>(sphere1, mesh).apply();
-  std::cout << "Disk mesh:" << std::endl;
-  mesh->print();
-  lsVTKWriter<double>(mesh, "disks-" + std::to_string(radius) + ".vtk").apply();
+  //   std::cout << "Disk mesh:" << std::endl;
+  //   mesh->print();
+  //   lsVTKWriter<double>(mesh, "disks-" + std::to_string(radius) +
+  //   ".vtk").apply();
 
-  lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
-  std::cout << "Surface mesh:" << std::endl;
-  mesh->print();
-  lsVTKWriter<double>(mesh, "surface-" + std::to_string(radius) + ".vtk")
-      .apply();
+  //   lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
+  //   std::cout << "Surface mesh:" << std::endl;
+  //   mesh->print();
+  //   lsVTKWriter<double>(mesh, "surface-" + std::to_string(radius) + ".vtk")
+  //       .apply();
 
   return 0;
 }

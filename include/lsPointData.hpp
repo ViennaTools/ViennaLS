@@ -21,11 +21,33 @@ private:
   std::vector<VectorDataType> vectorData;
   std::vector<std::string> vectorDataLabels;
 
+  template <class VectorType, class ReturnType = std::conditional_t<
+                                  std::is_const<VectorType>::value,
+                                  const typename VectorType::value_type *,
+                                  typename VectorType::value_type *>>
+  ReturnType indexPointerOrNull(VectorType &v, int index) const {
+    if (index >= 0 && index < v.size())
+      return &(v[index]);
+    else
+      lsMessage::getInstance()
+          .addWarning("lsPointData: Tried to access out of bounds index! "
+                      "Returned nullptr instead.")
+          .print();
+    return nullptr;
+  }
+
 public:
   /// insert new scalar data array
   void insertNextScalarData(const ScalarDataType &scalars,
                             std::string label = "Scalars") {
     scalarData.push_back(scalars);
+    scalarDataLabels.push_back(label);
+  }
+
+  /// insert new scalar data array
+  void insertNextScalarData(ScalarDataType &&scalars,
+                            std::string label = "Scalars") {
+    scalarData.push_back(std::move(scalars));
     scalarDataLabels.push_back(label);
   }
 
@@ -36,16 +58,25 @@ public:
     vectorDataLabels.push_back(label);
   }
 
+  /// insert new vector data array
+  void insertNextVectorData(VectorDataType &&vectors,
+                            std::string label = "Vectors") {
+    vectorData.push_back(std::move(vectors));
+    vectorDataLabels.push_back(label);
+  }
+
   /// get the number of different scalar data arrays saved
   unsigned getScalarDataSize() const { return scalarData.size(); }
 
   /// get the number of different vector data arrays saved
   unsigned getVectorDataSize() const { return vectorData.size(); }
 
-  ScalarDataType *getScalarData(int index) { return &(scalarData[index]); }
+  ScalarDataType *getScalarData(int index) {
+    return indexPointerOrNull(scalarData, index);
+  }
 
   const ScalarDataType *getScalarData(int index) const {
-    return &(scalarData[index]);
+    return indexPointerOrNull(scalarData, index);
   }
 
   ScalarDataType *getScalarData(std::string searchLabel) {
@@ -67,13 +98,17 @@ public:
   }
 
   std::string getScalarDataLabel(int index) const {
-    return scalarDataLabels[index];
+    return (index >= 0 && index < scalarDataLabels.size())
+               ? scalarDataLabels[index]
+               : "";
   }
 
-  VectorDataType *getVectorData(int index) { return &(vectorData[index]); }
+  VectorDataType *getVectorData(int index) {
+    return indexPointerOrNull(vectorData, index);
+  }
 
   const VectorDataType *getVectorData(int index) const {
-    return &(vectorData[index]);
+    return indexPointerOrNull(vectorData, index);
   }
 
   VectorDataType *getVectorData(std::string searchLabel) {
@@ -95,7 +130,9 @@ public:
   }
 
   std::string getVectorDataLabel(int index) const {
-    return vectorDataLabels[index];
+    return (index >= 0 && index < vectorDataLabels.size())
+               ? vectorDataLabels[index]
+               : "";
   }
 
   void append(const lsPointData &passedData) {
@@ -206,9 +243,8 @@ public:
     for (unsigned i = 0; i < numberOfScalarData; ++i) {
       uint32_t sizeOfName;
       stream.read(reinterpret_cast<char *>(&sizeOfName), sizeof(uint32_t));
-      std::vector<char> dataLabel(sizeOfName + 1);
+      std::vector<char> dataLabel(sizeOfName);
       stream.read(dataLabel.data(), sizeOfName);
-      dataLabel[sizeOfName] = '\0';
       uint32_t numberOfValues;
       stream.read(reinterpret_cast<char *>(&numberOfValues), sizeof(uint32_t));
       ScalarDataType scalarData;
@@ -227,9 +263,8 @@ public:
     for (unsigned i = 0; i < numberOfVectorData; ++i) {
       uint32_t sizeOfName;
       stream.read(reinterpret_cast<char *>(&sizeOfName), sizeof(uint32_t));
-      std::vector<char> dataLabel(sizeOfName + 1);
+      std::vector<char> dataLabel(sizeOfName);
       stream.read(dataLabel.data(), sizeOfName);
-      dataLabel[sizeOfName] = '\0';
       uint32_t numberOfValues;
       stream.read(reinterpret_cast<char *>(&numberOfValues), sizeof(uint32_t));
       VectorDataType vectorData;

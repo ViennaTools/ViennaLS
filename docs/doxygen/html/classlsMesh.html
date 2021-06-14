@@ -110,6 +110,10 @@ Inheritance diagram for lsMesh&lt; T &gt;:</div>
 Public Types</h2></td></tr>
 <tr class="memitem:ae16a499be075c2f8dd85f65b25bad982"><td class="memItemLeft" align="right" valign="top">typedef std::vector&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#ae16a499be075c2f8dd85f65b25bad982">ScalarDataType</a></td></tr>
 <tr class="separator:ae16a499be075c2f8dd85f65b25bad982"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae16a499be075c2f8dd85f65b25bad982"><td class="memItemLeft" align="right" valign="top">typedef std::vector&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#ae16a499be075c2f8dd85f65b25bad982">ScalarDataType</a></td></tr>
+<tr class="separator:ae16a499be075c2f8dd85f65b25bad982"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aabacd946ba7b56a2106350812b587633"><td class="memItemLeft" align="right" valign="top">typedef std::vector&lt; std::array&lt; double, 3 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#aabacd946ba7b56a2106350812b587633">VectorDataType</a></td></tr>
+<tr class="separator:aabacd946ba7b56a2106350812b587633"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aabacd946ba7b56a2106350812b587633"><td class="memItemLeft" align="right" valign="top">typedef std::vector&lt; std::array&lt; double, 3 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#aabacd946ba7b56a2106350812b587633">VectorDataType</a></td></tr>
 <tr class="separator:aabacd946ba7b56a2106350812b587633"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -164,15 +168,88 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a04b852bf429a4022800b59515e64a43a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a32b0311db368cccb62d2ff8eee1a10a4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a32b0311db368cccb62d2ff8eee1a10a4">print</a> ()</td></tr>
 <tr class="separator:a32b0311db368cccb62d2ff8eee1a10a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a07646b3b22f60f21872bc1822e7b72bd"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; std::array&lt; T, 3 &gt; &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a07646b3b22f60f21872bc1822e7b72bd">getNodes</a> () const</td></tr>
+<tr class="separator:a07646b3b22f60f21872bc1822e7b72bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a65059433f01efbfa726875e973e2bc35"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; T, 3 &gt; &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a65059433f01efbfa726875e973e2bc35">getNodes</a> ()</td></tr>
+<tr class="separator:a65059433f01efbfa726875e973e2bc35"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aebf00e4f74352f2e4bd945b9b7c749fc"><td class="memTemplParams" colspan="2">template&lt;int D, typename std::enable_if&lt; D==1, int &gt;::type  = 0&gt; </td></tr>
+<tr class="memitem:aebf00e4f74352f2e4bd945b9b7c749fc"><td class="memTemplItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; unsigned, D &gt; &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classlsMesh.html#aebf00e4f74352f2e4bd945b9b7c749fc">getElements</a> ()</td></tr>
+<tr class="separator:aebf00e4f74352f2e4bd945b9b7c749fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aebf00e4f74352f2e4bd945b9b7c749fc"><td class="memTemplParams" colspan="2">template&lt;int D, typename std::enable_if&lt; D==2, int &gt;::type  = 0&gt; </td></tr>
+<tr class="memitem:aebf00e4f74352f2e4bd945b9b7c749fc"><td class="memTemplItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; unsigned, D &gt; &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classlsMesh.html#aebf00e4f74352f2e4bd945b9b7c749fc">getElements</a> ()</td></tr>
+<tr class="separator:aebf00e4f74352f2e4bd945b9b7c749fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aebf00e4f74352f2e4bd945b9b7c749fc"><td class="memTemplParams" colspan="2">template&lt;int D, typename std::enable_if&lt; D==3, int &gt;::type  = 0&gt; </td></tr>
+<tr class="memitem:aebf00e4f74352f2e4bd945b9b7c749fc"><td class="memTemplItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; unsigned, D &gt; &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classlsMesh.html#aebf00e4f74352f2e4bd945b9b7c749fc">getElements</a> ()</td></tr>
+<tr class="separator:aebf00e4f74352f2e4bd945b9b7c749fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aebf00e4f74352f2e4bd945b9b7c749fc"><td class="memTemplParams" colspan="2">template&lt;int D, typename std::enable_if&lt; D==4, int &gt;::type  = 0&gt; </td></tr>
+<tr class="memitem:aebf00e4f74352f2e4bd945b9b7c749fc"><td class="memTemplItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; unsigned, D &gt; &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classlsMesh.html#aebf00e4f74352f2e4bd945b9b7c749fc">getElements</a> ()</td></tr>
+<tr class="separator:aebf00e4f74352f2e4bd945b9b7c749fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aebf00e4f74352f2e4bd945b9b7c749fc"><td class="memTemplParams" colspan="2">template&lt;int D, typename std::enable_if&lt; D==8, int &gt;::type  = 0&gt; </td></tr>
+<tr class="memitem:aebf00e4f74352f2e4bd945b9b7c749fc"><td class="memTemplItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; unsigned, D &gt; &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classlsMesh.html#aebf00e4f74352f2e4bd945b9b7c749fc">getElements</a> ()</td></tr>
+<tr class="separator:aebf00e4f74352f2e4bd945b9b7c749fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a54083a0fd1af79c2b899e685bf0eac1e"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a54083a0fd1af79c2b899e685bf0eac1e">insertNextNode</a> (const std::array&lt; T, 3 &gt; &amp;node)</td></tr>
+<tr class="separator:a54083a0fd1af79c2b899e685bf0eac1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8b5c5533b6dab1a7f491350d11c4ea2b"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a8b5c5533b6dab1a7f491350d11c4ea2b">insertNextVertex</a> (const std::array&lt; unsigned, 1 &gt; &amp;vertex)</td></tr>
+<tr class="separator:a8b5c5533b6dab1a7f491350d11c4ea2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad312684b5ee902221eb8230f807c0ce7"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#ad312684b5ee902221eb8230f807c0ce7">insertNextLine</a> (const std::array&lt; unsigned, 2 &gt; &amp;line)</td></tr>
+<tr class="separator:ad312684b5ee902221eb8230f807c0ce7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a97414ee5e2bbdca74c3769821eeaf36f"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a97414ee5e2bbdca74c3769821eeaf36f">insertNextTriangle</a> (const std::array&lt; unsigned, 3 &gt; &amp;triangle)</td></tr>
+<tr class="separator:a97414ee5e2bbdca74c3769821eeaf36f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f6767d602c3ed66ce3b1a3b48359530"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a6f6767d602c3ed66ce3b1a3b48359530">insertNextTetra</a> (const std::array&lt; unsigned, 4 &gt; &amp;tetra)</td></tr>
+<tr class="separator:a6f6767d602c3ed66ce3b1a3b48359530"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a52083651d8f1c17fd932948a26c36eb8"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a52083651d8f1c17fd932948a26c36eb8">insertNextHexa</a> (const std::array&lt; unsigned, 8 &gt; &amp;hexa)</td></tr>
+<tr class="separator:a52083651d8f1c17fd932948a26c36eb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afaf91c842d170f9af2723550bc042ab6"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#afaf91c842d170f9af2723550bc042ab6">insertNextElement</a> (const std::array&lt; unsigned, 1 &gt; &amp;vertex)</td></tr>
+<tr class="separator:afaf91c842d170f9af2723550bc042ab6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab5d02b8c2fd38f0db716ec1d197c4cb1"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#ab5d02b8c2fd38f0db716ec1d197c4cb1">insertNextElement</a> (const std::array&lt; unsigned, 2 &gt; &amp;line)</td></tr>
+<tr class="separator:ab5d02b8c2fd38f0db716ec1d197c4cb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb03ebf9d3e05eb21e889e269b035d0f"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#aeb03ebf9d3e05eb21e889e269b035d0f">insertNextElement</a> (const std::array&lt; unsigned, 3 &gt; &amp;triangle)</td></tr>
+<tr class="separator:aeb03ebf9d3e05eb21e889e269b035d0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e4fc766b6f02aaa25c107ced8fbd297"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a4e4fc766b6f02aaa25c107ced8fbd297">insertNextElement</a> (const std::array&lt; unsigned, 4 &gt; &amp;tetra)</td></tr>
+<tr class="separator:a4e4fc766b6f02aaa25c107ced8fbd297"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae2949ce1c86f0b6c866053471041d502"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#ae2949ce1c86f0b6c866053471041d502">insertNextElement</a> (const std::array&lt; unsigned, 8 &gt; &amp;hexa)</td></tr>
+<tr class="separator:ae2949ce1c86f0b6c866053471041d502"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab4e41a44cea55b071f652302bc2249a4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#ab4e41a44cea55b071f652302bc2249a4">removeDuplicateNodes</a> ()</td></tr>
+<tr class="separator:ab4e41a44cea55b071f652302bc2249a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a93d2f2c80aa65a296ab550f4169f5531"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a93d2f2c80aa65a296ab550f4169f5531">append</a> (const <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt; &amp;passedMesh)</td></tr>
+<tr class="separator:a93d2f2c80aa65a296ab550f4169f5531"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04b852bf429a4022800b59515e64a43a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a04b852bf429a4022800b59515e64a43a">clear</a> ()</td></tr>
+<tr class="separator:a04b852bf429a4022800b59515e64a43a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a32b0311db368cccb62d2ff8eee1a10a4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a32b0311db368cccb62d2ff8eee1a10a4">print</a> ()</td></tr>
+<tr class="separator:a32b0311db368cccb62d2ff8eee1a10a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a419d3cfa0e992eb360b49477f4f1c8a5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#a419d3cfa0e992eb360b49477f4f1c8a5">insertNextScalarData</a> (const <a class="el" href="classlsPointData.html#ae16a499be075c2f8dd85f65b25bad982">ScalarDataType</a> &amp;scalars, std::string label=&quot;Scalars&quot;)</td></tr>
 <tr class="memdesc:a419d3cfa0e992eb360b49477f4f1c8a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">insert new scalar data array  <a href="classlsPointData.html#a419d3cfa0e992eb360b49477f4f1c8a5">More...</a><br /></td></tr>
 <tr class="separator:a419d3cfa0e992eb360b49477f4f1c8a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a547554fbb15d9cac6737a278880d3568"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#a547554fbb15d9cac6737a278880d3568">insertNextScalarData</a> (<a class="el" href="classlsPointData.html#ae16a499be075c2f8dd85f65b25bad982">ScalarDataType</a> &amp;&amp;scalars, std::string label=&quot;Scalars&quot;)</td></tr>
+<tr class="memdesc:a547554fbb15d9cac6737a278880d3568"><td class="mdescLeft">&#160;</td><td class="mdescRight">insert new scalar data array  <a href="classlsPointData.html#a547554fbb15d9cac6737a278880d3568">More...</a><br /></td></tr>
+<tr class="separator:a547554fbb15d9cac6737a278880d3568"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a419d3cfa0e992eb360b49477f4f1c8a5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#a419d3cfa0e992eb360b49477f4f1c8a5">insertNextScalarData</a> (const <a class="el" href="classlsPointData.html#ae16a499be075c2f8dd85f65b25bad982">ScalarDataType</a> &amp;scalars, std::string label=&quot;Scalars&quot;)</td></tr>
+<tr class="memdesc:a419d3cfa0e992eb360b49477f4f1c8a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">insert new scalar data array  <a href="classlsPointData.html#a419d3cfa0e992eb360b49477f4f1c8a5">More...</a><br /></td></tr>
+<tr class="separator:a419d3cfa0e992eb360b49477f4f1c8a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a547554fbb15d9cac6737a278880d3568"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#a547554fbb15d9cac6737a278880d3568">insertNextScalarData</a> (<a class="el" href="classlsPointData.html#ae16a499be075c2f8dd85f65b25bad982">ScalarDataType</a> &amp;&amp;scalars, std::string label=&quot;Scalars&quot;)</td></tr>
+<tr class="memdesc:a547554fbb15d9cac6737a278880d3568"><td class="mdescLeft">&#160;</td><td class="mdescRight">insert new scalar data array  <a href="classlsPointData.html#a547554fbb15d9cac6737a278880d3568">More...</a><br /></td></tr>
+<tr class="separator:a547554fbb15d9cac6737a278880d3568"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afd33aa3f404bc85d59a53894cc48cc8e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#afd33aa3f404bc85d59a53894cc48cc8e">insertNextVectorData</a> (const <a class="el" href="classlsPointData.html#aabacd946ba7b56a2106350812b587633">VectorDataType</a> &amp;vectors, std::string label=&quot;Vectors&quot;)</td></tr>
 <tr class="memdesc:afd33aa3f404bc85d59a53894cc48cc8e"><td class="mdescLeft">&#160;</td><td class="mdescRight">insert new vector data array  <a href="classlsPointData.html#afd33aa3f404bc85d59a53894cc48cc8e">More...</a><br /></td></tr>
 <tr class="separator:afd33aa3f404bc85d59a53894cc48cc8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f8905112fc5e616f8203ddb19b244f3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#a9f8905112fc5e616f8203ddb19b244f3">insertNextVectorData</a> (<a class="el" href="classlsPointData.html#aabacd946ba7b56a2106350812b587633">VectorDataType</a> &amp;&amp;vectors, std::string label=&quot;Vectors&quot;)</td></tr>
+<tr class="memdesc:a9f8905112fc5e616f8203ddb19b244f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">insert new vector data array  <a href="classlsPointData.html#a9f8905112fc5e616f8203ddb19b244f3">More...</a><br /></td></tr>
+<tr class="separator:a9f8905112fc5e616f8203ddb19b244f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afd33aa3f404bc85d59a53894cc48cc8e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#afd33aa3f404bc85d59a53894cc48cc8e">insertNextVectorData</a> (const <a class="el" href="classlsPointData.html#aabacd946ba7b56a2106350812b587633">VectorDataType</a> &amp;vectors, std::string label=&quot;Vectors&quot;)</td></tr>
+<tr class="memdesc:afd33aa3f404bc85d59a53894cc48cc8e"><td class="mdescLeft">&#160;</td><td class="mdescRight">insert new vector data array  <a href="classlsPointData.html#afd33aa3f404bc85d59a53894cc48cc8e">More...</a><br /></td></tr>
+<tr class="separator:afd33aa3f404bc85d59a53894cc48cc8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f8905112fc5e616f8203ddb19b244f3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#a9f8905112fc5e616f8203ddb19b244f3">insertNextVectorData</a> (<a class="el" href="classlsPointData.html#aabacd946ba7b56a2106350812b587633">VectorDataType</a> &amp;&amp;vectors, std::string label=&quot;Vectors&quot;)</td></tr>
+<tr class="memdesc:a9f8905112fc5e616f8203ddb19b244f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">insert new vector data array  <a href="classlsPointData.html#a9f8905112fc5e616f8203ddb19b244f3">More...</a><br /></td></tr>
+<tr class="separator:a9f8905112fc5e616f8203ddb19b244f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af34badefacc0fa40d24043dbb666220b"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#af34badefacc0fa40d24043dbb666220b">getScalarDataSize</a> () const</td></tr>
 <tr class="memdesc:af34badefacc0fa40d24043dbb666220b"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the number of different scalar data arrays saved  <a href="classlsPointData.html#af34badefacc0fa40d24043dbb666220b">More...</a><br /></td></tr>
 <tr class="separator:af34badefacc0fa40d24043dbb666220b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af34badefacc0fa40d24043dbb666220b"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#af34badefacc0fa40d24043dbb666220b">getScalarDataSize</a> () const</td></tr>
+<tr class="memdesc:af34badefacc0fa40d24043dbb666220b"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the number of different scalar data arrays saved  <a href="classlsPointData.html#af34badefacc0fa40d24043dbb666220b">More...</a><br /></td></tr>
+<tr class="separator:af34badefacc0fa40d24043dbb666220b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa70073aa2a8e950744d5234748b58f0c"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#aa70073aa2a8e950744d5234748b58f0c">getVectorDataSize</a> () const</td></tr>
+<tr class="memdesc:aa70073aa2a8e950744d5234748b58f0c"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the number of different vector data arrays saved  <a href="classlsPointData.html#aa70073aa2a8e950744d5234748b58f0c">More...</a><br /></td></tr>
+<tr class="separator:aa70073aa2a8e950744d5234748b58f0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa70073aa2a8e950744d5234748b58f0c"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#aa70073aa2a8e950744d5234748b58f0c">getVectorDataSize</a> () const</td></tr>
 <tr class="memdesc:aa70073aa2a8e950744d5234748b58f0c"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the number of different vector data arrays saved  <a href="classlsPointData.html#aa70073aa2a8e950744d5234748b58f0c">More...</a><br /></td></tr>
 <tr class="separator:aa70073aa2a8e950744d5234748b58f0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -184,6 +261,16 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a3f82aa3dad020543417a879cab8b729a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a21907d94c22217c6820e458ec614f745"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classlsPointData.html#ae16a499be075c2f8dd85f65b25bad982">ScalarDataType</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#a21907d94c22217c6820e458ec614f745">getScalarData</a> (std::string searchLabel) const</td></tr>
 <tr class="separator:a21907d94c22217c6820e458ec614f745"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a910814b3e385d7e6e47cbd3eb99f3565"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classlsPointData.html#ae16a499be075c2f8dd85f65b25bad982">ScalarDataType</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#a910814b3e385d7e6e47cbd3eb99f3565">getScalarData</a> (int index)</td></tr>
+<tr class="separator:a910814b3e385d7e6e47cbd3eb99f3565"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8e29db6ab29f60784246efd9d366008b"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classlsPointData.html#ae16a499be075c2f8dd85f65b25bad982">ScalarDataType</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#a8e29db6ab29f60784246efd9d366008b">getScalarData</a> (int index) const</td></tr>
+<tr class="separator:a8e29db6ab29f60784246efd9d366008b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3f82aa3dad020543417a879cab8b729a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classlsPointData.html#ae16a499be075c2f8dd85f65b25bad982">ScalarDataType</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#a3f82aa3dad020543417a879cab8b729a">getScalarData</a> (std::string searchLabel)</td></tr>
+<tr class="separator:a3f82aa3dad020543417a879cab8b729a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a21907d94c22217c6820e458ec614f745"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classlsPointData.html#ae16a499be075c2f8dd85f65b25bad982">ScalarDataType</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#a21907d94c22217c6820e458ec614f745">getScalarData</a> (std::string searchLabel) const</td></tr>
+<tr class="separator:a21907d94c22217c6820e458ec614f745"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a146172a79edbd51b8144c80ecc121177"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#a146172a79edbd51b8144c80ecc121177">getScalarDataLabel</a> (int index) const</td></tr>
+<tr class="separator:a146172a79edbd51b8144c80ecc121177"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a146172a79edbd51b8144c80ecc121177"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#a146172a79edbd51b8144c80ecc121177">getScalarDataLabel</a> (int index) const</td></tr>
 <tr class="separator:a146172a79edbd51b8144c80ecc121177"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a30f77a926d9337096045211d8f64a67c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classlsPointData.html#aabacd946ba7b56a2106350812b587633">VectorDataType</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#a30f77a926d9337096045211d8f64a67c">getVectorData</a> (int index)</td></tr>
@@ -194,36 +281,53 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ab821d43c37ac606bfb7c510187466015"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad4b0dd00417dd859790214eba4175ccf"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classlsPointData.html#aabacd946ba7b56a2106350812b587633">VectorDataType</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#ad4b0dd00417dd859790214eba4175ccf">getVectorData</a> (std::string searchLabel) const</td></tr>
 <tr class="separator:ad4b0dd00417dd859790214eba4175ccf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a30f77a926d9337096045211d8f64a67c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classlsPointData.html#aabacd946ba7b56a2106350812b587633">VectorDataType</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#a30f77a926d9337096045211d8f64a67c">getVectorData</a> (int index)</td></tr>
+<tr class="separator:a30f77a926d9337096045211d8f64a67c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9ee8ae9c3f1811b3d3ec4ea10305dd92"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classlsPointData.html#aabacd946ba7b56a2106350812b587633">VectorDataType</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#a9ee8ae9c3f1811b3d3ec4ea10305dd92">getVectorData</a> (int index) const</td></tr>
+<tr class="separator:a9ee8ae9c3f1811b3d3ec4ea10305dd92"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab821d43c37ac606bfb7c510187466015"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classlsPointData.html#aabacd946ba7b56a2106350812b587633">VectorDataType</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#ab821d43c37ac606bfb7c510187466015">getVectorData</a> (std::string searchLabel)</td></tr>
+<tr class="separator:ab821d43c37ac606bfb7c510187466015"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad4b0dd00417dd859790214eba4175ccf"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classlsPointData.html#aabacd946ba7b56a2106350812b587633">VectorDataType</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#ad4b0dd00417dd859790214eba4175ccf">getVectorData</a> (std::string searchLabel) const</td></tr>
+<tr class="separator:ad4b0dd00417dd859790214eba4175ccf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae346fe438cbe799dae89c1a2ba576ded"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#ae346fe438cbe799dae89c1a2ba576ded">getVectorDataLabel</a> (int index) const</td></tr>
+<tr class="separator:ae346fe438cbe799dae89c1a2ba576ded"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae346fe438cbe799dae89c1a2ba576ded"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#ae346fe438cbe799dae89c1a2ba576ded">getVectorDataLabel</a> (int index) const</td></tr>
 <tr class="separator:ae346fe438cbe799dae89c1a2ba576ded"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a30f64dfd5dc51fa07198aa3d1ec6e540"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#a30f64dfd5dc51fa07198aa3d1ec6e540">append</a> (const <a class="el" href="classlsPointData.html">lsPointData</a> &amp;passedData)</td></tr>
 <tr class="separator:a30f64dfd5dc51fa07198aa3d1ec6e540"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a94ecd32b8ef890831d819453abf5258d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#a94ecd32b8ef890831d819453abf5258d">empty</a> ()</td></tr>
 <tr class="separator:a94ecd32b8ef890831d819453abf5258d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a94ecd32b8ef890831d819453abf5258d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#a94ecd32b8ef890831d819453abf5258d">empty</a> ()</td></tr>
+<tr class="separator:a94ecd32b8ef890831d819453abf5258d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab8f9514c4e5211f6630cd653ab2ae25e"><td class="memItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#ab8f9514c4e5211f6630cd653ab2ae25e">serialize</a> (std::ostream &amp;stream)</td></tr>
+<tr class="memdesc:ab8f9514c4e5211f6630cd653ab2ae25e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Serialize <a class="el" href="classlsPointData.html" title="This class holds data associated with points in space.">lsPointData</a> into a binary stream.  <a href="classlsPointData.html#ab8f9514c4e5211f6630cd653ab2ae25e">More...</a><br /></td></tr>
+<tr class="separator:ab8f9514c4e5211f6630cd653ab2ae25e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab8f9514c4e5211f6630cd653ab2ae25e"><td class="memItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#ab8f9514c4e5211f6630cd653ab2ae25e">serialize</a> (std::ostream &amp;stream)</td></tr>
 <tr class="memdesc:ab8f9514c4e5211f6630cd653ab2ae25e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Serialize <a class="el" href="classlsPointData.html" title="This class holds data associated with points in space.">lsPointData</a> into a binary stream.  <a href="classlsPointData.html#ab8f9514c4e5211f6630cd653ab2ae25e">More...</a><br /></td></tr>
 <tr class="separator:ab8f9514c4e5211f6630cd653ab2ae25e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a360b67fc507f0d13c6f0bb6db2202e82"><td class="memItemLeft" align="right" valign="top">std::istream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#a360b67fc507f0d13c6f0bb6db2202e82">deserialize</a> (std::istream &amp;stream)</td></tr>
 <tr class="separator:a360b67fc507f0d13c6f0bb6db2202e82"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a360b67fc507f0d13c6f0bb6db2202e82"><td class="memItemLeft" align="right" valign="top">std::istream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsPointData.html#a360b67fc507f0d13c6f0bb6db2202e82">deserialize</a> (std::istream &amp;stream)</td></tr>
+<tr class="separator:a360b67fc507f0d13c6f0bb6db2202e82"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a1263c627ad297bdb55490f2e9693619a"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; T, 3 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a1263c627ad297bdb55490f2e9693619a">nodes</a></td></tr>
-<tr class="separator:a1263c627ad297bdb55490f2e9693619a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af1ad2909210f5c55d9fc5b09bc9a8422"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; unsigned, 1 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#af1ad2909210f5c55d9fc5b09bc9a8422">vertices</a></td></tr>
-<tr class="separator:af1ad2909210f5c55d9fc5b09bc9a8422"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aae7c90e9ffeadcd0fbd8ada9f17f6155"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; unsigned, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#aae7c90e9ffeadcd0fbd8ada9f17f6155">lines</a></td></tr>
-<tr class="separator:aae7c90e9ffeadcd0fbd8ada9f17f6155"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a187623438639ca59ad47050490f31042"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; unsigned, 3 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a187623438639ca59ad47050490f31042">triangles</a></td></tr>
-<tr class="separator:a187623438639ca59ad47050490f31042"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a251ffc0f169ecfcf2faf46d8e6334d6d"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; unsigned, 4 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a251ffc0f169ecfcf2faf46d8e6334d6d">tetras</a></td></tr>
-<tr class="separator:a251ffc0f169ecfcf2faf46d8e6334d6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1f209d1bb2a77a64c2e57246e06b00a0"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; unsigned, 8 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a1f209d1bb2a77a64c2e57246e06b00a0">hexas</a></td></tr>
-<tr class="separator:a1f209d1bb2a77a64c2e57246e06b00a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3037ea57a496ab43b0841a6fb67fe8c2"><td class="memItemLeft" align="right" valign="top">std::array&lt; T, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a3037ea57a496ab43b0841a6fb67fe8c2">minimumExtent</a></td></tr>
-<tr class="separator:a3037ea57a496ab43b0841a6fb67fe8c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa4ea06a085a9cc803f61ec1c71301677"><td class="memItemLeft" align="right" valign="top">std::array&lt; T, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#aa4ea06a085a9cc803f61ec1c71301677">maximumExtent</a></td></tr>
-<tr class="separator:aa4ea06a085a9cc803f61ec1c71301677"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aef70c079c387114ba1f929cdc9d72f04"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; T, 3 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#aef70c079c387114ba1f929cdc9d72f04">nodes</a></td></tr>
+<tr class="separator:aef70c079c387114ba1f929cdc9d72f04"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a138c81afd44ae5ae6d5110e4df0e9c0f"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; unsigned, 1 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a138c81afd44ae5ae6d5110e4df0e9c0f">vertices</a></td></tr>
+<tr class="separator:a138c81afd44ae5ae6d5110e4df0e9c0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9c6811eb25723030619f8a155c159a8c"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; unsigned, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a9c6811eb25723030619f8a155c159a8c">lines</a></td></tr>
+<tr class="separator:a9c6811eb25723030619f8a155c159a8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7f993e67a05d8c3603858ef1a35aeb5a"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; unsigned, 3 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a7f993e67a05d8c3603858ef1a35aeb5a">triangles</a></td></tr>
+<tr class="separator:a7f993e67a05d8c3603858ef1a35aeb5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac66736a0f7162c21f42df2632aaeb739"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; unsigned, 4 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#ac66736a0f7162c21f42df2632aaeb739">tetras</a></td></tr>
+<tr class="separator:ac66736a0f7162c21f42df2632aaeb739"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6fa110f111ac84650d9d3101860b59b2"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; unsigned, 8 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a6fa110f111ac84650d9d3101860b59b2">hexas</a></td></tr>
+<tr class="separator:a6fa110f111ac84650d9d3101860b59b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aadb5c6417f0720f7c3f7a3ee2942af9f"><td class="memItemLeft" align="right" valign="top">std::array&lt; T, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#aadb5c6417f0720f7c3f7a3ee2942af9f">minimumExtent</a></td></tr>
+<tr class="separator:aadb5c6417f0720f7c3f7a3ee2942af9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8abd8564dc1d598bd8ee910297aa298e"><td class="memItemLeft" align="right" valign="top">std::array&lt; T, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsMesh.html#a8abd8564dc1d598bd8ee910297aa298e">maximumExtent</a></td></tr>
+<tr class="separator:a8abd8564dc1d598bd8ee910297aa298e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;class T = double&gt;<br />
@@ -234,7 +338,29 @@ class lsMesh&lt; T &gt;</h3>
 </dl>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="ae16a499be075c2f8dd85f65b25bad982"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae16a499be075c2f8dd85f65b25bad982">&#9670;&nbsp;</a></span>ScalarDataType</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae16a499be075c2f8dd85f65b25bad982">&#9670;&nbsp;</a></span>ScalarDataType <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef std::vector&lt;double &gt; <a class="el" href="classlsPointData.html">lsPointData</a>&lt; double , &gt;::<a class="el" href="classlsPointData.html#ae16a499be075c2f8dd85f65b25bad982">ScalarDataType</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae16a499be075c2f8dd85f65b25bad982"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae16a499be075c2f8dd85f65b25bad982">&#9670;&nbsp;</a></span>ScalarDataType <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -256,7 +382,29 @@ class lsMesh&lt; T &gt;</h3>
 </div>
 </div>
 <a id="aabacd946ba7b56a2106350812b587633"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aabacd946ba7b56a2106350812b587633">&#9670;&nbsp;</a></span>VectorDataType</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aabacd946ba7b56a2106350812b587633">&#9670;&nbsp;</a></span>VectorDataType <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef std::vector&lt;std::array&lt;double , 3&gt; &gt; <a class="el" href="classlsPointData.html">lsPointData</a>&lt; double , &gt;::<a class="el" href="classlsPointData.html#aabacd946ba7b56a2106350812b587633">VectorDataType</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aabacd946ba7b56a2106350812b587633"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aabacd946ba7b56a2106350812b587633">&#9670;&nbsp;</a></span>VectorDataType <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -279,7 +427,35 @@ class lsMesh&lt; T &gt;</h3>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a93d2f2c80aa65a296ab550f4169f5531"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a93d2f2c80aa65a296ab550f4169f5531">&#9670;&nbsp;</a></span>append() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a93d2f2c80aa65a296ab550f4169f5531">&#9670;&nbsp;</a></span>append() <span class="overload">[1/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::append </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt; &amp;&#160;</td>
+          <td class="paramname"><em>passedMesh</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a93d2f2c80aa65a296ab550f4169f5531"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a93d2f2c80aa65a296ab550f4169f5531">&#9670;&nbsp;</a></span>append() <span class="overload">[2/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -307,7 +483,7 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="a30f64dfd5dc51fa07198aa3d1ec6e540"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a30f64dfd5dc51fa07198aa3d1ec6e540">&#9670;&nbsp;</a></span>append() <span class="overload">[2/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a30f64dfd5dc51fa07198aa3d1ec6e540">&#9670;&nbsp;</a></span>append() <span class="overload">[3/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -333,7 +509,34 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="a04b852bf429a4022800b59515e64a43a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a04b852bf429a4022800b59515e64a43a">&#9670;&nbsp;</a></span>clear()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a04b852bf429a4022800b59515e64a43a">&#9670;&nbsp;</a></span>clear() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::clear </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a04b852bf429a4022800b59515e64a43a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a04b852bf429a4022800b59515e64a43a">&#9670;&nbsp;</a></span>clear() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -360,7 +563,33 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="a360b67fc507f0d13c6f0bb6db2202e82"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a360b67fc507f0d13c6f0bb6db2202e82">&#9670;&nbsp;</a></span>deserialize()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a360b67fc507f0d13c6f0bb6db2202e82">&#9670;&nbsp;</a></span>deserialize() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::istream&amp; <a class="el" href="classlsPointData.html">lsPointData</a>&lt; double , &gt;::deserialize </td>
+          <td>(</td>
+          <td class="paramtype">std::istream &amp;&#160;</td>
+          <td class="paramname"><em>stream</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a360b67fc507f0d13c6f0bb6db2202e82"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a360b67fc507f0d13c6f0bb6db2202e82">&#9670;&nbsp;</a></span>deserialize() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -386,7 +615,29 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="a94ecd32b8ef890831d819453abf5258d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a94ecd32b8ef890831d819453abf5258d">&#9670;&nbsp;</a></span>empty()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a94ecd32b8ef890831d819453abf5258d">&#9670;&nbsp;</a></span>empty() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="classlsPointData.html">lsPointData</a>&lt; double , &gt;::empty</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a94ecd32b8ef890831d819453abf5258d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a94ecd32b8ef890831d819453abf5258d">&#9670;&nbsp;</a></span>empty() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -408,7 +659,7 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="aebf00e4f74352f2e4bd945b9b7c749fc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aebf00e4f74352f2e4bd945b9b7c749fc">&#9670;&nbsp;</a></span>getElements() <span class="overload">[1/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aebf00e4f74352f2e4bd945b9b7c749fc">&#9670;&nbsp;</a></span>getElements() <span class="overload">[1/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -437,7 +688,36 @@ template&lt;int D, typename std::enable_if&lt; D==1, int &gt;::type  = 0&gt; </d
 </div>
 </div>
 <a id="aebf00e4f74352f2e4bd945b9b7c749fc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aebf00e4f74352f2e4bd945b9b7c749fc">&#9670;&nbsp;</a></span>getElements() <span class="overload">[2/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aebf00e4f74352f2e4bd945b9b7c749fc">&#9670;&nbsp;</a></span>getElements() <span class="overload">[2/10]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
+<div class="memtemplate">
+template&lt;int D, typename std::enable_if&lt; D==1, int &gt;::type  = 0&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;std::array&lt;unsigned, D&gt; &gt;&amp; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::getElements </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aebf00e4f74352f2e4bd945b9b7c749fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aebf00e4f74352f2e4bd945b9b7c749fc">&#9670;&nbsp;</a></span>getElements() <span class="overload">[3/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -466,7 +746,36 @@ template&lt;int D, typename std::enable_if&lt; D==2, int &gt;::type  = 0&gt; </d
 </div>
 </div>
 <a id="aebf00e4f74352f2e4bd945b9b7c749fc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aebf00e4f74352f2e4bd945b9b7c749fc">&#9670;&nbsp;</a></span>getElements() <span class="overload">[3/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aebf00e4f74352f2e4bd945b9b7c749fc">&#9670;&nbsp;</a></span>getElements() <span class="overload">[4/10]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
+<div class="memtemplate">
+template&lt;int D, typename std::enable_if&lt; D==2, int &gt;::type  = 0&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;std::array&lt;unsigned, D&gt; &gt;&amp; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::getElements </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aebf00e4f74352f2e4bd945b9b7c749fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aebf00e4f74352f2e4bd945b9b7c749fc">&#9670;&nbsp;</a></span>getElements() <span class="overload">[5/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -495,7 +804,36 @@ template&lt;int D, typename std::enable_if&lt; D==3, int &gt;::type  = 0&gt; </d
 </div>
 </div>
 <a id="aebf00e4f74352f2e4bd945b9b7c749fc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aebf00e4f74352f2e4bd945b9b7c749fc">&#9670;&nbsp;</a></span>getElements() <span class="overload">[4/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aebf00e4f74352f2e4bd945b9b7c749fc">&#9670;&nbsp;</a></span>getElements() <span class="overload">[6/10]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
+<div class="memtemplate">
+template&lt;int D, typename std::enable_if&lt; D==3, int &gt;::type  = 0&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;std::array&lt;unsigned, D&gt; &gt;&amp; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::getElements </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aebf00e4f74352f2e4bd945b9b7c749fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aebf00e4f74352f2e4bd945b9b7c749fc">&#9670;&nbsp;</a></span>getElements() <span class="overload">[7/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -524,7 +862,65 @@ template&lt;int D, typename std::enable_if&lt; D==4, int &gt;::type  = 0&gt; </d
 </div>
 </div>
 <a id="aebf00e4f74352f2e4bd945b9b7c749fc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aebf00e4f74352f2e4bd945b9b7c749fc">&#9670;&nbsp;</a></span>getElements() <span class="overload">[5/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aebf00e4f74352f2e4bd945b9b7c749fc">&#9670;&nbsp;</a></span>getElements() <span class="overload">[8/10]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
+<div class="memtemplate">
+template&lt;int D, typename std::enable_if&lt; D==4, int &gt;::type  = 0&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;std::array&lt;unsigned, D&gt; &gt;&amp; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::getElements </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aebf00e4f74352f2e4bd945b9b7c749fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aebf00e4f74352f2e4bd945b9b7c749fc">&#9670;&nbsp;</a></span>getElements() <span class="overload">[9/10]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
+<div class="memtemplate">
+template&lt;int D, typename std::enable_if&lt; D==8, int &gt;::type  = 0&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;std::array&lt;unsigned, D&gt; &gt;&amp; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::getElements </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aebf00e4f74352f2e4bd945b9b7c749fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aebf00e4f74352f2e4bd945b9b7c749fc">&#9670;&nbsp;</a></span>getElements() <span class="overload">[10/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -553,7 +949,34 @@ template&lt;int D, typename std::enable_if&lt; D==8, int &gt;::type  = 0&gt; </d
 </div>
 </div>
 <a id="a65059433f01efbfa726875e973e2bc35"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a65059433f01efbfa726875e973e2bc35">&#9670;&nbsp;</a></span>getNodes() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a65059433f01efbfa726875e973e2bc35">&#9670;&nbsp;</a></span>getNodes() <span class="overload">[1/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;std::array&lt;T, 3&gt; &gt;&amp; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::getNodes </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a65059433f01efbfa726875e973e2bc35"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a65059433f01efbfa726875e973e2bc35">&#9670;&nbsp;</a></span>getNodes() <span class="overload">[2/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -580,7 +1003,34 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="a07646b3b22f60f21872bc1822e7b72bd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a07646b3b22f60f21872bc1822e7b72bd">&#9670;&nbsp;</a></span>getNodes() <span class="overload">[2/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a07646b3b22f60f21872bc1822e7b72bd">&#9670;&nbsp;</a></span>getNodes() <span class="overload">[3/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const std::vector&lt;std::array&lt;T, 3&gt; &gt;&amp; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::getNodes </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a07646b3b22f60f21872bc1822e7b72bd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a07646b3b22f60f21872bc1822e7b72bd">&#9670;&nbsp;</a></span>getNodes() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -607,7 +1057,33 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="a910814b3e385d7e6e47cbd3eb99f3565"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a910814b3e385d7e6e47cbd3eb99f3565">&#9670;&nbsp;</a></span>getScalarData() <span class="overload">[1/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a910814b3e385d7e6e47cbd3eb99f3565">&#9670;&nbsp;</a></span>getScalarData() <span class="overload">[1/8]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsPointData.html#ae16a499be075c2f8dd85f65b25bad982">ScalarDataType</a>* <a class="el" href="classlsPointData.html">lsPointData</a>&lt; double , &gt;::getScalarData </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a910814b3e385d7e6e47cbd3eb99f3565"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a910814b3e385d7e6e47cbd3eb99f3565">&#9670;&nbsp;</a></span>getScalarData() <span class="overload">[2/8]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -633,7 +1109,33 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="a8e29db6ab29f60784246efd9d366008b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8e29db6ab29f60784246efd9d366008b">&#9670;&nbsp;</a></span>getScalarData() <span class="overload">[2/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a8e29db6ab29f60784246efd9d366008b">&#9670;&nbsp;</a></span>getScalarData() <span class="overload">[3/8]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="classlsPointData.html#ae16a499be075c2f8dd85f65b25bad982">ScalarDataType</a>* <a class="el" href="classlsPointData.html">lsPointData</a>&lt; double , &gt;::getScalarData </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a8e29db6ab29f60784246efd9d366008b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8e29db6ab29f60784246efd9d366008b">&#9670;&nbsp;</a></span>getScalarData() <span class="overload">[4/8]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -659,7 +1161,33 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="a3f82aa3dad020543417a879cab8b729a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3f82aa3dad020543417a879cab8b729a">&#9670;&nbsp;</a></span>getScalarData() <span class="overload">[3/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a3f82aa3dad020543417a879cab8b729a">&#9670;&nbsp;</a></span>getScalarData() <span class="overload">[5/8]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsPointData.html#ae16a499be075c2f8dd85f65b25bad982">ScalarDataType</a>* <a class="el" href="classlsPointData.html">lsPointData</a>&lt; double , &gt;::getScalarData </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>searchLabel</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a3f82aa3dad020543417a879cab8b729a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3f82aa3dad020543417a879cab8b729a">&#9670;&nbsp;</a></span>getScalarData() <span class="overload">[6/8]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -685,7 +1213,33 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="a21907d94c22217c6820e458ec614f745"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a21907d94c22217c6820e458ec614f745">&#9670;&nbsp;</a></span>getScalarData() <span class="overload">[4/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a21907d94c22217c6820e458ec614f745">&#9670;&nbsp;</a></span>getScalarData() <span class="overload">[7/8]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="classlsPointData.html#ae16a499be075c2f8dd85f65b25bad982">ScalarDataType</a>* <a class="el" href="classlsPointData.html">lsPointData</a>&lt; double , &gt;::getScalarData </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>searchLabel</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a21907d94c22217c6820e458ec614f745"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a21907d94c22217c6820e458ec614f745">&#9670;&nbsp;</a></span>getScalarData() <span class="overload">[8/8]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -711,7 +1265,33 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="a146172a79edbd51b8144c80ecc121177"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a146172a79edbd51b8144c80ecc121177">&#9670;&nbsp;</a></span>getScalarDataLabel()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a146172a79edbd51b8144c80ecc121177">&#9670;&nbsp;</a></span>getScalarDataLabel() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string <a class="el" href="classlsPointData.html">lsPointData</a>&lt; double , &gt;::getScalarDataLabel </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a146172a79edbd51b8144c80ecc121177"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a146172a79edbd51b8144c80ecc121177">&#9670;&nbsp;</a></span>getScalarDataLabel() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -737,7 +1317,31 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="af34badefacc0fa40d24043dbb666220b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af34badefacc0fa40d24043dbb666220b">&#9670;&nbsp;</a></span>getScalarDataSize()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af34badefacc0fa40d24043dbb666220b">&#9670;&nbsp;</a></span>getScalarDataSize() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned <a class="el" href="classlsPointData.html">lsPointData</a>&lt; double , &gt;::getScalarDataSize</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>get the number of different scalar data arrays saved </p>
+
+</div>
+</div>
+<a id="af34badefacc0fa40d24043dbb666220b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af34badefacc0fa40d24043dbb666220b">&#9670;&nbsp;</a></span>getScalarDataSize() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -761,7 +1365,33 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="a30f77a926d9337096045211d8f64a67c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a30f77a926d9337096045211d8f64a67c">&#9670;&nbsp;</a></span>getVectorData() <span class="overload">[1/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a30f77a926d9337096045211d8f64a67c">&#9670;&nbsp;</a></span>getVectorData() <span class="overload">[1/8]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsPointData.html#aabacd946ba7b56a2106350812b587633">VectorDataType</a>* <a class="el" href="classlsPointData.html">lsPointData</a>&lt; double , &gt;::getVectorData </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a30f77a926d9337096045211d8f64a67c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a30f77a926d9337096045211d8f64a67c">&#9670;&nbsp;</a></span>getVectorData() <span class="overload">[2/8]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -787,7 +1417,33 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="a9ee8ae9c3f1811b3d3ec4ea10305dd92"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9ee8ae9c3f1811b3d3ec4ea10305dd92">&#9670;&nbsp;</a></span>getVectorData() <span class="overload">[2/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a9ee8ae9c3f1811b3d3ec4ea10305dd92">&#9670;&nbsp;</a></span>getVectorData() <span class="overload">[3/8]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="classlsPointData.html#aabacd946ba7b56a2106350812b587633">VectorDataType</a>* <a class="el" href="classlsPointData.html">lsPointData</a>&lt; double , &gt;::getVectorData </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9ee8ae9c3f1811b3d3ec4ea10305dd92"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9ee8ae9c3f1811b3d3ec4ea10305dd92">&#9670;&nbsp;</a></span>getVectorData() <span class="overload">[4/8]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -813,7 +1469,33 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="ab821d43c37ac606bfb7c510187466015"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab821d43c37ac606bfb7c510187466015">&#9670;&nbsp;</a></span>getVectorData() <span class="overload">[3/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab821d43c37ac606bfb7c510187466015">&#9670;&nbsp;</a></span>getVectorData() <span class="overload">[5/8]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsPointData.html#aabacd946ba7b56a2106350812b587633">VectorDataType</a>* <a class="el" href="classlsPointData.html">lsPointData</a>&lt; double , &gt;::getVectorData </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>searchLabel</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab821d43c37ac606bfb7c510187466015"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab821d43c37ac606bfb7c510187466015">&#9670;&nbsp;</a></span>getVectorData() <span class="overload">[6/8]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -839,7 +1521,33 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="ad4b0dd00417dd859790214eba4175ccf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad4b0dd00417dd859790214eba4175ccf">&#9670;&nbsp;</a></span>getVectorData() <span class="overload">[4/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ad4b0dd00417dd859790214eba4175ccf">&#9670;&nbsp;</a></span>getVectorData() <span class="overload">[7/8]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="classlsPointData.html#aabacd946ba7b56a2106350812b587633">VectorDataType</a>* <a class="el" href="classlsPointData.html">lsPointData</a>&lt; double , &gt;::getVectorData </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>searchLabel</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ad4b0dd00417dd859790214eba4175ccf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad4b0dd00417dd859790214eba4175ccf">&#9670;&nbsp;</a></span>getVectorData() <span class="overload">[8/8]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -865,7 +1573,33 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="ae346fe438cbe799dae89c1a2ba576ded"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae346fe438cbe799dae89c1a2ba576ded">&#9670;&nbsp;</a></span>getVectorDataLabel()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae346fe438cbe799dae89c1a2ba576ded">&#9670;&nbsp;</a></span>getVectorDataLabel() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string <a class="el" href="classlsPointData.html">lsPointData</a>&lt; double , &gt;::getVectorDataLabel </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae346fe438cbe799dae89c1a2ba576ded"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae346fe438cbe799dae89c1a2ba576ded">&#9670;&nbsp;</a></span>getVectorDataLabel() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -891,7 +1625,31 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="aa70073aa2a8e950744d5234748b58f0c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa70073aa2a8e950744d5234748b58f0c">&#9670;&nbsp;</a></span>getVectorDataSize()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa70073aa2a8e950744d5234748b58f0c">&#9670;&nbsp;</a></span>getVectorDataSize() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned <a class="el" href="classlsPointData.html">lsPointData</a>&lt; double , &gt;::getVectorDataSize</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>get the number of different vector data arrays saved </p>
+
+</div>
+</div>
+<a id="aa70073aa2a8e950744d5234748b58f0c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa70073aa2a8e950744d5234748b58f0c">&#9670;&nbsp;</a></span>getVectorDataSize() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -915,7 +1673,35 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="afaf91c842d170f9af2723550bc042ab6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afaf91c842d170f9af2723550bc042ab6">&#9670;&nbsp;</a></span>insertNextElement() <span class="overload">[1/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#afaf91c842d170f9af2723550bc042ab6">&#9670;&nbsp;</a></span>insertNextElement() <span class="overload">[1/10]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::insertNextElement </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; unsigned, 1 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vertex</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="afaf91c842d170f9af2723550bc042ab6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afaf91c842d170f9af2723550bc042ab6">&#9670;&nbsp;</a></span>insertNextElement() <span class="overload">[2/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -943,7 +1729,35 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="ab5d02b8c2fd38f0db716ec1d197c4cb1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab5d02b8c2fd38f0db716ec1d197c4cb1">&#9670;&nbsp;</a></span>insertNextElement() <span class="overload">[2/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab5d02b8c2fd38f0db716ec1d197c4cb1">&#9670;&nbsp;</a></span>insertNextElement() <span class="overload">[3/10]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::insertNextElement </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; unsigned, 2 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>line</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab5d02b8c2fd38f0db716ec1d197c4cb1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab5d02b8c2fd38f0db716ec1d197c4cb1">&#9670;&nbsp;</a></span>insertNextElement() <span class="overload">[4/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -971,7 +1785,35 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="aeb03ebf9d3e05eb21e889e269b035d0f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeb03ebf9d3e05eb21e889e269b035d0f">&#9670;&nbsp;</a></span>insertNextElement() <span class="overload">[3/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aeb03ebf9d3e05eb21e889e269b035d0f">&#9670;&nbsp;</a></span>insertNextElement() <span class="overload">[5/10]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::insertNextElement </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; unsigned, 3 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>triangle</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aeb03ebf9d3e05eb21e889e269b035d0f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeb03ebf9d3e05eb21e889e269b035d0f">&#9670;&nbsp;</a></span>insertNextElement() <span class="overload">[6/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -999,7 +1841,35 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="a4e4fc766b6f02aaa25c107ced8fbd297"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4e4fc766b6f02aaa25c107ced8fbd297">&#9670;&nbsp;</a></span>insertNextElement() <span class="overload">[4/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e4fc766b6f02aaa25c107ced8fbd297">&#9670;&nbsp;</a></span>insertNextElement() <span class="overload">[7/10]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::insertNextElement </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; unsigned, 4 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>tetra</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a4e4fc766b6f02aaa25c107ced8fbd297"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e4fc766b6f02aaa25c107ced8fbd297">&#9670;&nbsp;</a></span>insertNextElement() <span class="overload">[8/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1027,7 +1897,35 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="ae2949ce1c86f0b6c866053471041d502"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae2949ce1c86f0b6c866053471041d502">&#9670;&nbsp;</a></span>insertNextElement() <span class="overload">[5/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae2949ce1c86f0b6c866053471041d502">&#9670;&nbsp;</a></span>insertNextElement() <span class="overload">[9/10]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::insertNextElement </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; unsigned, 8 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>hexa</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae2949ce1c86f0b6c866053471041d502"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae2949ce1c86f0b6c866053471041d502">&#9670;&nbsp;</a></span>insertNextElement() <span class="overload">[10/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1055,7 +1953,35 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="a52083651d8f1c17fd932948a26c36eb8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a52083651d8f1c17fd932948a26c36eb8">&#9670;&nbsp;</a></span>insertNextHexa()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a52083651d8f1c17fd932948a26c36eb8">&#9670;&nbsp;</a></span>insertNextHexa() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::insertNextHexa </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; unsigned, 8 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>hexa</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a52083651d8f1c17fd932948a26c36eb8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a52083651d8f1c17fd932948a26c36eb8">&#9670;&nbsp;</a></span>insertNextHexa() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1083,7 +2009,35 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="ad312684b5ee902221eb8230f807c0ce7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad312684b5ee902221eb8230f807c0ce7">&#9670;&nbsp;</a></span>insertNextLine()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ad312684b5ee902221eb8230f807c0ce7">&#9670;&nbsp;</a></span>insertNextLine() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::insertNextLine </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; unsigned, 2 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>line</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ad312684b5ee902221eb8230f807c0ce7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad312684b5ee902221eb8230f807c0ce7">&#9670;&nbsp;</a></span>insertNextLine() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1111,7 +2065,35 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="a54083a0fd1af79c2b899e685bf0eac1e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a54083a0fd1af79c2b899e685bf0eac1e">&#9670;&nbsp;</a></span>insertNextNode()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a54083a0fd1af79c2b899e685bf0eac1e">&#9670;&nbsp;</a></span>insertNextNode() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::insertNextNode </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; T, 3 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>node</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a54083a0fd1af79c2b899e685bf0eac1e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a54083a0fd1af79c2b899e685bf0eac1e">&#9670;&nbsp;</a></span>insertNextNode() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1139,7 +2121,7 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="a419d3cfa0e992eb360b49477f4f1c8a5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a419d3cfa0e992eb360b49477f4f1c8a5">&#9670;&nbsp;</a></span>insertNextScalarData()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a419d3cfa0e992eb360b49477f4f1c8a5">&#9670;&nbsp;</a></span>insertNextScalarData() <span class="overload">[1/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1176,8 +2158,150 @@ template&lt;class T  = double&gt; </div>
 
 </div>
 </div>
+<a id="a419d3cfa0e992eb360b49477f4f1c8a5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a419d3cfa0e992eb360b49477f4f1c8a5">&#9670;&nbsp;</a></span>insertNextScalarData() <span class="overload">[2/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsPointData.html">lsPointData</a>&lt; double , &gt;::insertNextScalarData </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classlsPointData.html#ae16a499be075c2f8dd85f65b25bad982">ScalarDataType</a> &amp;&#160;</td>
+          <td class="paramname"><em>scalars</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>label</em> = <code>&quot;Scalars&quot;</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>insert new scalar data array </p>
+
+</div>
+</div>
+<a id="a547554fbb15d9cac6737a278880d3568"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a547554fbb15d9cac6737a278880d3568">&#9670;&nbsp;</a></span>insertNextScalarData() <span class="overload">[3/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsPointData.html">lsPointData</a>&lt; double , &gt;::insertNextScalarData </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsPointData.html#ae16a499be075c2f8dd85f65b25bad982">ScalarDataType</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>scalars</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>label</em> = <code>&quot;Scalars&quot;</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>insert new scalar data array </p>
+
+</div>
+</div>
+<a id="a547554fbb15d9cac6737a278880d3568"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a547554fbb15d9cac6737a278880d3568">&#9670;&nbsp;</a></span>insertNextScalarData() <span class="overload">[4/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsPointData.html">lsPointData</a>&lt; double , &gt;::insertNextScalarData </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsPointData.html#ae16a499be075c2f8dd85f65b25bad982">ScalarDataType</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>scalars</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>label</em> = <code>&quot;Scalars&quot;</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>insert new scalar data array </p>
+
+</div>
+</div>
 <a id="a6f6767d602c3ed66ce3b1a3b48359530"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6f6767d602c3ed66ce3b1a3b48359530">&#9670;&nbsp;</a></span>insertNextTetra()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6f6767d602c3ed66ce3b1a3b48359530">&#9670;&nbsp;</a></span>insertNextTetra() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::insertNextTetra </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; unsigned, 4 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>tetra</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a6f6767d602c3ed66ce3b1a3b48359530"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6f6767d602c3ed66ce3b1a3b48359530">&#9670;&nbsp;</a></span>insertNextTetra() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1205,7 +2329,35 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="a97414ee5e2bbdca74c3769821eeaf36f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a97414ee5e2bbdca74c3769821eeaf36f">&#9670;&nbsp;</a></span>insertNextTriangle()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a97414ee5e2bbdca74c3769821eeaf36f">&#9670;&nbsp;</a></span>insertNextTriangle() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::insertNextTriangle </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; unsigned, 3 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>triangle</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a97414ee5e2bbdca74c3769821eeaf36f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a97414ee5e2bbdca74c3769821eeaf36f">&#9670;&nbsp;</a></span>insertNextTriangle() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1233,7 +2385,7 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="afd33aa3f404bc85d59a53894cc48cc8e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afd33aa3f404bc85d59a53894cc48cc8e">&#9670;&nbsp;</a></span>insertNextVectorData()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#afd33aa3f404bc85d59a53894cc48cc8e">&#9670;&nbsp;</a></span>insertNextVectorData() <span class="overload">[1/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1270,8 +2422,150 @@ template&lt;class T  = double&gt; </div>
 
 </div>
 </div>
+<a id="afd33aa3f404bc85d59a53894cc48cc8e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afd33aa3f404bc85d59a53894cc48cc8e">&#9670;&nbsp;</a></span>insertNextVectorData() <span class="overload">[2/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsPointData.html">lsPointData</a>&lt; double , &gt;::insertNextVectorData </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classlsPointData.html#aabacd946ba7b56a2106350812b587633">VectorDataType</a> &amp;&#160;</td>
+          <td class="paramname"><em>vectors</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>label</em> = <code>&quot;Vectors&quot;</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>insert new vector data array </p>
+
+</div>
+</div>
+<a id="a9f8905112fc5e616f8203ddb19b244f3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9f8905112fc5e616f8203ddb19b244f3">&#9670;&nbsp;</a></span>insertNextVectorData() <span class="overload">[3/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsPointData.html">lsPointData</a>&lt; double , &gt;::insertNextVectorData </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsPointData.html#aabacd946ba7b56a2106350812b587633">VectorDataType</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>vectors</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>label</em> = <code>&quot;Vectors&quot;</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>insert new vector data array </p>
+
+</div>
+</div>
+<a id="a9f8905112fc5e616f8203ddb19b244f3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9f8905112fc5e616f8203ddb19b244f3">&#9670;&nbsp;</a></span>insertNextVectorData() <span class="overload">[4/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsPointData.html">lsPointData</a>&lt; double , &gt;::insertNextVectorData </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsPointData.html#aabacd946ba7b56a2106350812b587633">VectorDataType</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>vectors</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>label</em> = <code>&quot;Vectors&quot;</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>insert new vector data array </p>
+
+</div>
+</div>
 <a id="a8b5c5533b6dab1a7f491350d11c4ea2b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8b5c5533b6dab1a7f491350d11c4ea2b">&#9670;&nbsp;</a></span>insertNextVertex()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a8b5c5533b6dab1a7f491350d11c4ea2b">&#9670;&nbsp;</a></span>insertNextVertex() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::insertNextVertex </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; unsigned, 1 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vertex</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a8b5c5533b6dab1a7f491350d11c4ea2b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8b5c5533b6dab1a7f491350d11c4ea2b">&#9670;&nbsp;</a></span>insertNextVertex() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1299,7 +2593,34 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="a32b0311db368cccb62d2ff8eee1a10a4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a32b0311db368cccb62d2ff8eee1a10a4">&#9670;&nbsp;</a></span>print()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a32b0311db368cccb62d2ff8eee1a10a4">&#9670;&nbsp;</a></span>print() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::print </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a32b0311db368cccb62d2ff8eee1a10a4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a32b0311db368cccb62d2ff8eee1a10a4">&#9670;&nbsp;</a></span>print() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1326,7 +2647,34 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="ab4e41a44cea55b071f652302bc2249a4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab4e41a44cea55b071f652302bc2249a4">&#9670;&nbsp;</a></span>removeDuplicateNodes()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab4e41a44cea55b071f652302bc2249a4">&#9670;&nbsp;</a></span>removeDuplicateNodes() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T  = double&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::removeDuplicateNodes </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab4e41a44cea55b071f652302bc2249a4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab4e41a44cea55b071f652302bc2249a4">&#9670;&nbsp;</a></span>removeDuplicateNodes() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1353,7 +2701,35 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <a id="ab8f9514c4e5211f6630cd653ab2ae25e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab8f9514c4e5211f6630cd653ab2ae25e">&#9670;&nbsp;</a></span>serialize()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab8f9514c4e5211f6630cd653ab2ae25e">&#9670;&nbsp;</a></span>serialize() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::ostream&amp; <a class="el" href="classlsPointData.html">lsPointData</a>&lt; double , &gt;::serialize </td>
+          <td>(</td>
+          <td class="paramtype">std::ostream &amp;&#160;</td>
+          <td class="paramname"><em>stream</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Serialize <a class="el" href="classlsPointData.html" title="This class holds data associated with points in space.">lsPointData</a> into a binary stream. </p>
+
+</div>
+</div>
+<a id="ab8f9514c4e5211f6630cd653ab2ae25e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab8f9514c4e5211f6630cd653ab2ae25e">&#9670;&nbsp;</a></span>serialize() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1381,8 +2757,8 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a1f209d1bb2a77a64c2e57246e06b00a0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1f209d1bb2a77a64c2e57246e06b00a0">&#9670;&nbsp;</a></span>hexas</h2>
+<a id="a6fa110f111ac84650d9d3101860b59b2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6fa110f111ac84650d9d3101860b59b2">&#9670;&nbsp;</a></span>hexas</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1390,15 +2766,15 @@ template&lt;class T  = double&gt; </div>
 template&lt;class T  = double&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;std::array&lt;unsigned, 8&gt; &gt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::hexas</td>
+          <td class="memname">std::vector&lt; std::array&lt; unsigned, 8 &gt; &gt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::hexas</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="aae7c90e9ffeadcd0fbd8ada9f17f6155"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aae7c90e9ffeadcd0fbd8ada9f17f6155">&#9670;&nbsp;</a></span>lines</h2>
+<a id="a9c6811eb25723030619f8a155c159a8c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9c6811eb25723030619f8a155c159a8c">&#9670;&nbsp;</a></span>lines</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1406,15 +2782,15 @@ template&lt;class T  = double&gt; </div>
 template&lt;class T  = double&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;std::array&lt;unsigned, 2&gt; &gt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::lines</td>
+          <td class="memname">std::vector&lt; std::array&lt; unsigned, 2 &gt; &gt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::lines</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="aa4ea06a085a9cc803f61ec1c71301677"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa4ea06a085a9cc803f61ec1c71301677">&#9670;&nbsp;</a></span>maximumExtent</h2>
+<a id="a8abd8564dc1d598bd8ee910297aa298e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8abd8564dc1d598bd8ee910297aa298e">&#9670;&nbsp;</a></span>maximumExtent</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1422,15 +2798,15 @@ template&lt;class T  = double&gt; </div>
 template&lt;class T  = double&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">std::array&lt;T, 3&gt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::maximumExtent</td>
+          <td class="memname">std::array&lt; T, 3 &gt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::maximumExtent</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="a3037ea57a496ab43b0841a6fb67fe8c2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3037ea57a496ab43b0841a6fb67fe8c2">&#9670;&nbsp;</a></span>minimumExtent</h2>
+<a id="aadb5c6417f0720f7c3f7a3ee2942af9f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aadb5c6417f0720f7c3f7a3ee2942af9f">&#9670;&nbsp;</a></span>minimumExtent</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1438,15 +2814,15 @@ template&lt;class T  = double&gt; </div>
 template&lt;class T  = double&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">std::array&lt;T, 3&gt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::minimumExtent</td>
+          <td class="memname">std::array&lt; T, 3 &gt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::minimumExtent</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="a1263c627ad297bdb55490f2e9693619a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1263c627ad297bdb55490f2e9693619a">&#9670;&nbsp;</a></span>nodes</h2>
+<a id="aef70c079c387114ba1f929cdc9d72f04"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aef70c079c387114ba1f929cdc9d72f04">&#9670;&nbsp;</a></span>nodes</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1454,15 +2830,15 @@ template&lt;class T  = double&gt; </div>
 template&lt;class T  = double&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;std::array&lt;T, 3&gt; &gt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::nodes</td>
+          <td class="memname">std::vector&lt; std::array&lt; T, 3 &gt; &gt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::nodes</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="a251ffc0f169ecfcf2faf46d8e6334d6d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a251ffc0f169ecfcf2faf46d8e6334d6d">&#9670;&nbsp;</a></span>tetras</h2>
+<a id="ac66736a0f7162c21f42df2632aaeb739"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac66736a0f7162c21f42df2632aaeb739">&#9670;&nbsp;</a></span>tetras</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1470,15 +2846,15 @@ template&lt;class T  = double&gt; </div>
 template&lt;class T  = double&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;std::array&lt;unsigned, 4&gt; &gt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::tetras</td>
+          <td class="memname">std::vector&lt; std::array&lt; unsigned, 4 &gt; &gt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::tetras</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="a187623438639ca59ad47050490f31042"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a187623438639ca59ad47050490f31042">&#9670;&nbsp;</a></span>triangles</h2>
+<a id="a7f993e67a05d8c3603858ef1a35aeb5a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7f993e67a05d8c3603858ef1a35aeb5a">&#9670;&nbsp;</a></span>triangles</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1486,15 +2862,15 @@ template&lt;class T  = double&gt; </div>
 template&lt;class T  = double&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;std::array&lt;unsigned, 3&gt; &gt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::triangles</td>
+          <td class="memname">std::vector&lt; std::array&lt; unsigned, 3 &gt; &gt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::triangles</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="af1ad2909210f5c55d9fc5b09bc9a8422"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af1ad2909210f5c55d9fc5b09bc9a8422">&#9670;&nbsp;</a></span>vertices</h2>
+<a id="a138c81afd44ae5ae6d5110e4df0e9c0f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a138c81afd44ae5ae6d5110e4df0e9c0f">&#9670;&nbsp;</a></span>vertices</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1502,7 +2878,7 @@ template&lt;class T  = double&gt; </div>
 template&lt;class T  = double&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;std::array&lt;unsigned, 1&gt; &gt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::vertices</td>
+          <td class="memname">std::vector&lt; std::array&lt; unsigned, 1 &gt; &gt; <a class="el" href="classlsMesh.html">lsMesh</a>&lt; T &gt;::vertices</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1510,7 +2886,7 @@ template&lt;class T  = double&gt; </div>
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>include/<a class="el" href="lsMesh_8hpp.html">lsMesh.hpp</a></li>
+<li>include/<a class="el" href="include_2lsMesh_8hpp.html">lsMesh.hpp</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

@@ -144,7 +144,63 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a8a9e64c2f053d28d459d5742f18f424b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#a8a9e64c2f053d28d459d5742f18f424b">getCalculateNormalVectors</a> ()</td></tr>
 <tr class="memdesc:a8a9e64c2f053d28d459d5742f18f424b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get whether normal vectors were caluclated.  <a href="classlsAdvect.html#a8a9e64c2f053d28d459d5742f18f424b">More...</a><br /></td></tr>
 <tr class="separator:a8a9e64c2f053d28d459d5742f18f424b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5f46e20b204edca8a987514909e34907"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#a5f46e20b204edca8a987514909e34907">setIntegrationScheme</a> (<a class="el" href="lsAdvect_8hpp.html#afe9778bbf7b5f9aeb52d14c4f133cc9b">lsIntegrationSchemeEnum</a> scheme)</td></tr>
+<tr class="memitem:a5f46e20b204edca8a987514909e34907"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#a5f46e20b204edca8a987514909e34907">setIntegrationScheme</a> (<a class="el" href="include_2lsAdvect_8hpp.html#afe9778bbf7b5f9aeb52d14c4f133cc9b">lsIntegrationSchemeEnum</a> scheme)</td></tr>
+<tr class="memdesc:a5f46e20b204edca8a987514909e34907"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set which integration scheme should be used out of the ones specified in lsIntegrationSchemeEnum.  <a href="classlsAdvect.html#a5f46e20b204edca8a987514909e34907">More...</a><br /></td></tr>
+<tr class="separator:a5f46e20b204edca8a987514909e34907"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af644ebf0efd6dbef33865a9c5c61988c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#af644ebf0efd6dbef33865a9c5c61988c">setDissipationAlpha</a> (const double &amp;a)</td></tr>
+<tr class="memdesc:af644ebf0efd6dbef33865a9c5c61988c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the alpha dissipation coefficient. For lsLaxFriedrichs, this is used as the alpha value. For all other LaxFriedrichs schemes it is used as a scaling factor for the calculated alpha values.  <a href="classlsAdvect.html#af644ebf0efd6dbef33865a9c5c61988c">More...</a><br /></td></tr>
+<tr class="separator:af644ebf0efd6dbef33865a9c5c61988c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7b6f35f0b35133d40ceeb866b5c733f3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#a7b6f35f0b35133d40ceeb866b5c733f3">apply</a> ()</td></tr>
+<tr class="memdesc:a7b6f35f0b35133d40ceeb866b5c733f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform the advection.  <a href="classlsAdvect.html#a7b6f35f0b35133d40ceeb866b5c733f3">More...</a><br /></td></tr>
+<tr class="separator:a7b6f35f0b35133d40ceeb866b5c733f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04133cfc8f477fa8357e8ebda371dc1d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#a04133cfc8f477fa8357e8ebda371dc1d">lsAdvect</a> ()</td></tr>
+<tr class="separator:a04133cfc8f477fa8357e8ebda371dc1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4a900d55114e22c8a51f485dd77e45ad"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#a4a900d55114e22c8a51f485dd77e45ad">lsAdvect</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedlsDomain)</td></tr>
+<tr class="separator:a4a900d55114e22c8a51f485dd77e45ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0b6d7e69b4f851a265a97b301b1c1349"><td class="memTemplParams" colspan="2">template&lt;class VelocityField &gt; </td></tr>
+<tr class="memitem:a0b6d7e69b4f851a265a97b301b1c1349"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#a0b6d7e69b4f851a265a97b301b1c1349">lsAdvect</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedlsDomain, <a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; VelocityField &gt; passedVelocities)</td></tr>
+<tr class="separator:a0b6d7e69b4f851a265a97b301b1c1349"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2368631b9ced18dd258ad92611058d6c"><td class="memTemplParams" colspan="2">template&lt;class VelocityField , lsConcepts::IsBaseOf&lt; lsVelocityField&lt; T &gt;, VelocityField &gt;  = lsConcepts::assignable&gt; </td></tr>
+<tr class="memitem:a2368631b9ced18dd258ad92611058d6c"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#a2368631b9ced18dd258ad92611058d6c">lsAdvect</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; VelocityField &gt; passedVelocities)</td></tr>
+<tr class="separator:a2368631b9ced18dd258ad92611058d6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8891159704eeb94426ed1f6cfc60fec8"><td class="memTemplParams" colspan="2">template&lt;class VelocityField , lsConcepts::IsBaseOf&lt; lsVelocityField&lt; T &gt;, VelocityField &gt;  = lsConcepts::assignable&gt; </td></tr>
+<tr class="memitem:a8891159704eeb94426ed1f6cfc60fec8"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#a8891159704eeb94426ed1f6cfc60fec8">lsAdvect</a> (std::vector&lt; <a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&gt; passedlsDomains, <a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; VelocityField &gt; passedVelocities)</td></tr>
+<tr class="separator:a8891159704eeb94426ed1f6cfc60fec8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade9b7c529409501a42b8a0eb550bf7ae"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#ade9b7c529409501a42b8a0eb550bf7ae">insertNextLevelSet</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt; passedlsDomain)</td></tr>
+<tr class="memdesc:ade9b7c529409501a42b8a0eb550bf7ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pushes the passed level set to the back of the list of level sets used for advection.  <a href="classlsAdvect.html#ade9b7c529409501a42b8a0eb550bf7ae">More...</a><br /></td></tr>
+<tr class="separator:ade9b7c529409501a42b8a0eb550bf7ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a33f8966aac303d434345cca2b6139815"><td class="memTemplParams" colspan="2">template&lt;class VelocityField , lsConcepts::IsBaseOf&lt; lsVelocityField&lt; T &gt;, VelocityField &gt;  = lsConcepts::assignable&gt; </td></tr>
+<tr class="memitem:a33f8966aac303d434345cca2b6139815"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#a33f8966aac303d434345cca2b6139815">setVelocityField</a> (<a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; VelocityField &gt; passedVelocities)</td></tr>
+<tr class="memdesc:a33f8966aac303d434345cca2b6139815"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the velocity field used for advection. This should be a concrete implementation of <a class="el" href="classlsVelocityField.html" title="Abstract class defining the interface for the velocity field used during advection using lsAdvect.">lsVelocityField</a>.  <a href="classlsAdvect.html#a33f8966aac303d434345cca2b6139815">More...</a><br /></td></tr>
+<tr class="separator:a33f8966aac303d434345cca2b6139815"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad0504339e8d545dfec417acd5c6b0eb7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#ad0504339e8d545dfec417acd5c6b0eb7">setAdvectionTime</a> (double time)</td></tr>
+<tr class="memdesc:ad0504339e8d545dfec417acd5c6b0eb7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the time until when the level set should be advected. If this takes more than one advection step, multiple will be performed. Defaults to 0, which means one advection step with the maximum time step possible according to the CFL condition(see setTimeStepRatio) will be performed.  <a href="classlsAdvect.html#ad0504339e8d545dfec417acd5c6b0eb7">More...</a><br /></td></tr>
+<tr class="separator:ad0504339e8d545dfec417acd5c6b0eb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac1ec99a52859c693e3c8741f50329a7e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#ac1ec99a52859c693e3c8741f50329a7e">setTimeStepRatio</a> (const double &amp;cfl)</td></tr>
+<tr class="memdesc:ac1ec99a52859c693e3c8741f50329a7e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the CFL condition to use during advection. The CFL condition sets the maximum distance a surface can be moved during one advection step. It MUST be below 0.5 to guarantee numerical stability. Defaults to 0.4999.  <a href="classlsAdvect.html#ac1ec99a52859c693e3c8741f50329a7e">More...</a><br /></td></tr>
+<tr class="separator:ac1ec99a52859c693e3c8741f50329a7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa2aba91f9cccd19247a5017d9b1b4142"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#aa2aba91f9cccd19247a5017d9b1b4142">setCalculateNormalVectors</a> (bool cnv)</td></tr>
+<tr class="memdesc:aa2aba91f9cccd19247a5017d9b1b4142"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set whether normal vectors should be calculated at each level set point. Defaults to true. If normal vectors are not required for velocity calculation, this can be set to false, in order to increase computational efficiency.  <a href="classlsAdvect.html#aa2aba91f9cccd19247a5017d9b1b4142">More...</a><br /></td></tr>
+<tr class="separator:aa2aba91f9cccd19247a5017d9b1b4142"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a520e28feacd2655a4eff2a33e1d7f92d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#a520e28feacd2655a4eff2a33e1d7f92d">setIgnoreVoids</a> (bool iV)</td></tr>
+<tr class="memdesc:a520e28feacd2655a4eff2a33e1d7f92d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set whether level set values, which are not part of the "top" geometrically connected part of values, should be advected. The "top" part is identified by the most positive part in the lowest dimension with INFINITE boundary conditions. Defaults to false. If set to true, only the "top" values will be advected. All others values are not changed.  <a href="classlsAdvect.html#a520e28feacd2655a4eff2a33e1d7f92d">More...</a><br /></td></tr>
+<tr class="separator:a520e28feacd2655a4eff2a33e1d7f92d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f78eb026aa00ec77cf420fe3674dd03"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#a1f78eb026aa00ec77cf420fe3674dd03">setSaveAdvectionVelocities</a> (bool sAV)</td></tr>
+<tr class="memdesc:a1f78eb026aa00ec77cf420fe3674dd03"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set whether the velocities applied to each point should be saved in the level set for debug purposes.  <a href="classlsAdvect.html#a1f78eb026aa00ec77cf420fe3674dd03">More...</a><br /></td></tr>
+<tr class="separator:a1f78eb026aa00ec77cf420fe3674dd03"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab3aa1882d86169065989b55c839f061a"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#ab3aa1882d86169065989b55c839f061a">getAdvectedTime</a> ()</td></tr>
+<tr class="memdesc:ab3aa1882d86169065989b55c839f061a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get by how much the physical time was advanced during the last <a class="el" href="classlsAdvect.html#a7b6f35f0b35133d40ceeb866b5c733f3" title="Perform the advection.">apply()</a> call.  <a href="classlsAdvect.html#ab3aa1882d86169065989b55c839f061a">More...</a><br /></td></tr>
+<tr class="separator:ab3aa1882d86169065989b55c839f061a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a77a15f986e3037afa870d4a5aab5162b"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#a77a15f986e3037afa870d4a5aab5162b">getNumberOfTimeSteps</a> ()</td></tr>
+<tr class="memdesc:a77a15f986e3037afa870d4a5aab5162b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get how many advection steps were performed during the last <a class="el" href="classlsAdvect.html#a7b6f35f0b35133d40ceeb866b5c733f3" title="Perform the advection.">apply()</a> call.  <a href="classlsAdvect.html#a77a15f986e3037afa870d4a5aab5162b">More...</a><br /></td></tr>
+<tr class="separator:a77a15f986e3037afa870d4a5aab5162b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a65951348ca5870a5b0caa8196358bdc2"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#a65951348ca5870a5b0caa8196358bdc2">getTimeStepRatio</a> ()</td></tr>
+<tr class="memdesc:a65951348ca5870a5b0caa8196358bdc2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the value of the CFL number.  <a href="classlsAdvect.html#a65951348ca5870a5b0caa8196358bdc2">More...</a><br /></td></tr>
+<tr class="separator:a65951348ca5870a5b0caa8196358bdc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8a9e64c2f053d28d459d5742f18f424b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#a8a9e64c2f053d28d459d5742f18f424b">getCalculateNormalVectors</a> ()</td></tr>
+<tr class="memdesc:a8a9e64c2f053d28d459d5742f18f424b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get whether normal vectors were caluclated.  <a href="classlsAdvect.html#a8a9e64c2f053d28d459d5742f18f424b">More...</a><br /></td></tr>
+<tr class="separator:a8a9e64c2f053d28d459d5742f18f424b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5f46e20b204edca8a987514909e34907"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#a5f46e20b204edca8a987514909e34907">setIntegrationScheme</a> (<a class="el" href="include_2lsAdvect_8hpp.html#afe9778bbf7b5f9aeb52d14c4f133cc9b">lsIntegrationSchemeEnum</a> scheme)</td></tr>
 <tr class="memdesc:a5f46e20b204edca8a987514909e34907"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set which integration scheme should be used out of the ones specified in lsIntegrationSchemeEnum.  <a href="classlsAdvect.html#a5f46e20b204edca8a987514909e34907">More...</a><br /></td></tr>
 <tr class="separator:a5f46e20b204edca8a987514909e34907"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af644ebf0efd6dbef33865a9c5c61988c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsAdvect.html#af644ebf0efd6dbef33865a9c5c61988c">setDissipationAlpha</a> (const double &amp;a)</td></tr>
@@ -163,7 +219,7 @@ class lsAdvect&lt; T, D &gt;</h3>
 </dl>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a04133cfc8f477fa8357e8ebda371dc1d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a04133cfc8f477fa8357e8ebda371dc1d">&#9670;&nbsp;</a></span>lsAdvect() <span class="overload">[1/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a04133cfc8f477fa8357e8ebda371dc1d">&#9670;&nbsp;</a></span>lsAdvect() <span class="overload">[1/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -190,7 +246,7 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="a4a900d55114e22c8a51f485dd77e45ad"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4a900d55114e22c8a51f485dd77e45ad">&#9670;&nbsp;</a></span>lsAdvect() <span class="overload">[2/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a4a900d55114e22c8a51f485dd77e45ad">&#9670;&nbsp;</a></span>lsAdvect() <span class="overload">[2/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -218,7 +274,7 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="a0b6d7e69b4f851a265a97b301b1c1349"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0b6d7e69b4f851a265a97b301b1c1349">&#9670;&nbsp;</a></span>lsAdvect() <span class="overload">[3/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0b6d7e69b4f851a265a97b301b1c1349">&#9670;&nbsp;</a></span>lsAdvect() <span class="overload">[3/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -258,7 +314,7 @@ template&lt;class VelocityField &gt; </div>
 </div>
 </div>
 <a id="a2368631b9ced18dd258ad92611058d6c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2368631b9ced18dd258ad92611058d6c">&#9670;&nbsp;</a></span>lsAdvect() <span class="overload">[4/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a2368631b9ced18dd258ad92611058d6c">&#9670;&nbsp;</a></span>lsAdvect() <span class="overload">[4/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -288,7 +344,172 @@ template&lt;class VelocityField , lsConcepts::IsBaseOf&lt; lsVelocityField&lt; T
 </div>
 </div>
 <a id="a8891159704eeb94426ed1f6cfc60fec8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8891159704eeb94426ed1f6cfc60fec8">&#9670;&nbsp;</a></span>lsAdvect() <span class="overload">[5/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a8891159704eeb94426ed1f6cfc60fec8">&#9670;&nbsp;</a></span>lsAdvect() <span class="overload">[5/10]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<div class="memtemplate">
+template&lt;class VelocityField , lsConcepts::IsBaseOf&lt; lsVelocityField&lt; T &gt;, VelocityField &gt;  = lsConcepts::assignable&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsAdvect.html">lsAdvect</a>&lt; T, D &gt;::<a class="el" href="classlsAdvect.html">lsAdvect</a> </td>
+          <td>(</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&gt;&#160;</td>
+          <td class="paramname"><em>passedlsDomains</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; VelocityField &gt;&#160;</td>
+          <td class="paramname"><em>passedVelocities</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a04133cfc8f477fa8357e8ebda371dc1d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a04133cfc8f477fa8357e8ebda371dc1d">&#9670;&nbsp;</a></span>lsAdvect() <span class="overload">[6/10]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsAdvect.html">lsAdvect</a>&lt; T, D &gt;::<a class="el" href="classlsAdvect.html">lsAdvect</a> </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a4a900d55114e22c8a51f485dd77e45ad"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4a900d55114e22c8a51f485dd77e45ad">&#9670;&nbsp;</a></span>lsAdvect() <span class="overload">[7/10]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsAdvect.html">lsAdvect</a>&lt; T, D &gt;::<a class="el" href="classlsAdvect.html">lsAdvect</a> </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
+          <td class="paramname"><em>passedlsDomain</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a0b6d7e69b4f851a265a97b301b1c1349"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0b6d7e69b4f851a265a97b301b1c1349">&#9670;&nbsp;</a></span>lsAdvect() <span class="overload">[8/10]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<div class="memtemplate">
+template&lt;class VelocityField &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsAdvect.html">lsAdvect</a>&lt; T, D &gt;::<a class="el" href="classlsAdvect.html">lsAdvect</a> </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
+          <td class="paramname"><em>passedlsDomain</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; VelocityField &gt;&#160;</td>
+          <td class="paramname"><em>passedVelocities</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2368631b9ced18dd258ad92611058d6c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2368631b9ced18dd258ad92611058d6c">&#9670;&nbsp;</a></span>lsAdvect() <span class="overload">[9/10]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<div class="memtemplate">
+template&lt;class VelocityField , lsConcepts::IsBaseOf&lt; lsVelocityField&lt; T &gt;, VelocityField &gt;  = lsConcepts::assignable&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsAdvect.html">lsAdvect</a>&lt; T, D &gt;::<a class="el" href="classlsAdvect.html">lsAdvect</a> </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; VelocityField &gt;&#160;</td>
+          <td class="paramname"><em>passedVelocities</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a8891159704eeb94426ed1f6cfc60fec8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8891159704eeb94426ed1f6cfc60fec8">&#9670;&nbsp;</a></span>lsAdvect() <span class="overload">[10/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -329,7 +550,36 @@ template&lt;class VelocityField , lsConcepts::IsBaseOf&lt; lsVelocityField&lt; T
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a7b6f35f0b35133d40ceeb866b5c733f3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7b6f35f0b35133d40ceeb866b5c733f3">&#9670;&nbsp;</a></span>apply()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a7b6f35f0b35133d40ceeb866b5c733f3">&#9670;&nbsp;</a></span>apply() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsAdvect.html">lsAdvect</a>&lt; T, D &gt;::apply </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Perform the advection. </p>
+
+</div>
+</div>
+<a id="a7b6f35f0b35133d40ceeb866b5c733f3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7b6f35f0b35133d40ceeb866b5c733f3">&#9670;&nbsp;</a></span>apply() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -358,7 +608,36 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="ab3aa1882d86169065989b55c839f061a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab3aa1882d86169065989b55c839f061a">&#9670;&nbsp;</a></span>getAdvectedTime()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab3aa1882d86169065989b55c839f061a">&#9670;&nbsp;</a></span>getAdvectedTime() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double <a class="el" href="classlsAdvect.html">lsAdvect</a>&lt; T, D &gt;::getAdvectedTime </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get by how much the physical time was advanced during the last <a class="el" href="classlsAdvect.html#a7b6f35f0b35133d40ceeb866b5c733f3" title="Perform the advection.">apply()</a> call. </p>
+
+</div>
+</div>
+<a id="ab3aa1882d86169065989b55c839f061a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab3aa1882d86169065989b55c839f061a">&#9670;&nbsp;</a></span>getAdvectedTime() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -387,7 +666,36 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="a8a9e64c2f053d28d459d5742f18f424b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8a9e64c2f053d28d459d5742f18f424b">&#9670;&nbsp;</a></span>getCalculateNormalVectors()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a8a9e64c2f053d28d459d5742f18f424b">&#9670;&nbsp;</a></span>getCalculateNormalVectors() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="classlsAdvect.html">lsAdvect</a>&lt; T, D &gt;::getCalculateNormalVectors </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get whether normal vectors were caluclated. </p>
+
+</div>
+</div>
+<a id="a8a9e64c2f053d28d459d5742f18f424b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8a9e64c2f053d28d459d5742f18f424b">&#9670;&nbsp;</a></span>getCalculateNormalVectors() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -416,7 +724,36 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="a77a15f986e3037afa870d4a5aab5162b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a77a15f986e3037afa870d4a5aab5162b">&#9670;&nbsp;</a></span>getNumberOfTimeSteps()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a77a15f986e3037afa870d4a5aab5162b">&#9670;&nbsp;</a></span>getNumberOfTimeSteps() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned <a class="el" href="classlsAdvect.html">lsAdvect</a>&lt; T, D &gt;::getNumberOfTimeSteps </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get how many advection steps were performed during the last <a class="el" href="classlsAdvect.html#a7b6f35f0b35133d40ceeb866b5c733f3" title="Perform the advection.">apply()</a> call. </p>
+
+</div>
+</div>
+<a id="a77a15f986e3037afa870d4a5aab5162b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a77a15f986e3037afa870d4a5aab5162b">&#9670;&nbsp;</a></span>getNumberOfTimeSteps() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -445,7 +782,36 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="a65951348ca5870a5b0caa8196358bdc2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a65951348ca5870a5b0caa8196358bdc2">&#9670;&nbsp;</a></span>getTimeStepRatio()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a65951348ca5870a5b0caa8196358bdc2">&#9670;&nbsp;</a></span>getTimeStepRatio() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double <a class="el" href="classlsAdvect.html">lsAdvect</a>&lt; T, D &gt;::getTimeStepRatio </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get the value of the CFL number. </p>
+
+</div>
+</div>
+<a id="a65951348ca5870a5b0caa8196358bdc2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a65951348ca5870a5b0caa8196358bdc2">&#9670;&nbsp;</a></span>getTimeStepRatio() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -474,7 +840,37 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="ade9b7c529409501a42b8a0eb550bf7ae"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ade9b7c529409501a42b8a0eb550bf7ae">&#9670;&nbsp;</a></span>insertNextLevelSet()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ade9b7c529409501a42b8a0eb550bf7ae">&#9670;&nbsp;</a></span>insertNextLevelSet() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsAdvect.html">lsAdvect</a>&lt; T, D &gt;::insertNextLevelSet </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; <a class="el" href="classlsDomain.html">lsDomain</a>&lt; T, D &gt;&gt;&#160;</td>
+          <td class="paramname"><em>passedlsDomain</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Pushes the passed level set to the back of the list of level sets used for advection. </p>
+
+</div>
+</div>
+<a id="ade9b7c529409501a42b8a0eb550bf7ae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ade9b7c529409501a42b8a0eb550bf7ae">&#9670;&nbsp;</a></span>insertNextLevelSet() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -504,7 +900,37 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="ad0504339e8d545dfec417acd5c6b0eb7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad0504339e8d545dfec417acd5c6b0eb7">&#9670;&nbsp;</a></span>setAdvectionTime()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ad0504339e8d545dfec417acd5c6b0eb7">&#9670;&nbsp;</a></span>setAdvectionTime() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsAdvect.html">lsAdvect</a>&lt; T, D &gt;::setAdvectionTime </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>time</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set the time until when the level set should be advected. If this takes more than one advection step, multiple will be performed. Defaults to 0, which means one advection step with the maximum time step possible according to the CFL condition(see setTimeStepRatio) will be performed. </p>
+
+</div>
+</div>
+<a id="ad0504339e8d545dfec417acd5c6b0eb7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad0504339e8d545dfec417acd5c6b0eb7">&#9670;&nbsp;</a></span>setAdvectionTime() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -534,7 +960,37 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="aa2aba91f9cccd19247a5017d9b1b4142"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa2aba91f9cccd19247a5017d9b1b4142">&#9670;&nbsp;</a></span>setCalculateNormalVectors()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa2aba91f9cccd19247a5017d9b1b4142">&#9670;&nbsp;</a></span>setCalculateNormalVectors() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsAdvect.html">lsAdvect</a>&lt; T, D &gt;::setCalculateNormalVectors </td>
+          <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>cnv</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set whether normal vectors should be calculated at each level set point. Defaults to true. If normal vectors are not required for velocity calculation, this can be set to false, in order to increase computational efficiency. </p>
+
+</div>
+</div>
+<a id="aa2aba91f9cccd19247a5017d9b1b4142"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa2aba91f9cccd19247a5017d9b1b4142">&#9670;&nbsp;</a></span>setCalculateNormalVectors() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -564,7 +1020,37 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="af644ebf0efd6dbef33865a9c5c61988c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af644ebf0efd6dbef33865a9c5c61988c">&#9670;&nbsp;</a></span>setDissipationAlpha()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af644ebf0efd6dbef33865a9c5c61988c">&#9670;&nbsp;</a></span>setDissipationAlpha() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsAdvect.html">lsAdvect</a>&lt; T, D &gt;::setDissipationAlpha </td>
+          <td>(</td>
+          <td class="paramtype">const double &amp;&#160;</td>
+          <td class="paramname"><em>a</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set the alpha dissipation coefficient. For lsLaxFriedrichs, this is used as the alpha value. For all other LaxFriedrichs schemes it is used as a scaling factor for the calculated alpha values. </p>
+
+</div>
+</div>
+<a id="af644ebf0efd6dbef33865a9c5c61988c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af644ebf0efd6dbef33865a9c5c61988c">&#9670;&nbsp;</a></span>setDissipationAlpha() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -594,7 +1080,37 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="a520e28feacd2655a4eff2a33e1d7f92d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a520e28feacd2655a4eff2a33e1d7f92d">&#9670;&nbsp;</a></span>setIgnoreVoids()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a520e28feacd2655a4eff2a33e1d7f92d">&#9670;&nbsp;</a></span>setIgnoreVoids() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsAdvect.html">lsAdvect</a>&lt; T, D &gt;::setIgnoreVoids </td>
+          <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>iV</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set whether level set values, which are not part of the "top" geometrically connected part of values, should be advected. The "top" part is identified by the most positive part in the lowest dimension with INFINITE boundary conditions. Defaults to false. If set to true, only the "top" values will be advected. All others values are not changed. </p>
+
+</div>
+</div>
+<a id="a520e28feacd2655a4eff2a33e1d7f92d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a520e28feacd2655a4eff2a33e1d7f92d">&#9670;&nbsp;</a></span>setIgnoreVoids() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -624,7 +1140,7 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="a5f46e20b204edca8a987514909e34907"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5f46e20b204edca8a987514909e34907">&#9670;&nbsp;</a></span>setIntegrationScheme()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5f46e20b204edca8a987514909e34907">&#9670;&nbsp;</a></span>setIntegrationScheme() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -637,7 +1153,37 @@ template&lt;class T , int D&gt; </div>
         <tr>
           <td class="memname">void <a class="el" href="classlsAdvect.html">lsAdvect</a>&lt; T, D &gt;::setIntegrationScheme </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="lsAdvect_8hpp.html#afe9778bbf7b5f9aeb52d14c4f133cc9b">lsIntegrationSchemeEnum</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="include_2lsAdvect_8hpp.html#afe9778bbf7b5f9aeb52d14c4f133cc9b">lsIntegrationSchemeEnum</a>&#160;</td>
+          <td class="paramname"><em>scheme</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set which integration scheme should be used out of the ones specified in lsIntegrationSchemeEnum. </p>
+
+</div>
+</div>
+<a id="a5f46e20b204edca8a987514909e34907"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5f46e20b204edca8a987514909e34907">&#9670;&nbsp;</a></span>setIntegrationScheme() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsAdvect.html">lsAdvect</a>&lt; T, D &gt;::setIntegrationScheme </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="include_2lsAdvect_8hpp.html#afe9778bbf7b5f9aeb52d14c4f133cc9b">lsIntegrationSchemeEnum</a>&#160;</td>
           <td class="paramname"><em>scheme</em></td><td>)</td>
           <td></td>
         </tr>
@@ -654,7 +1200,37 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="a1f78eb026aa00ec77cf420fe3674dd03"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1f78eb026aa00ec77cf420fe3674dd03">&#9670;&nbsp;</a></span>setSaveAdvectionVelocities()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f78eb026aa00ec77cf420fe3674dd03">&#9670;&nbsp;</a></span>setSaveAdvectionVelocities() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsAdvect.html">lsAdvect</a>&lt; T, D &gt;::setSaveAdvectionVelocities </td>
+          <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>sAV</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set whether the velocities applied to each point should be saved in the level set for debug purposes. </p>
+
+</div>
+</div>
+<a id="a1f78eb026aa00ec77cf420fe3674dd03"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f78eb026aa00ec77cf420fe3674dd03">&#9670;&nbsp;</a></span>setSaveAdvectionVelocities() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -684,7 +1260,37 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="ac1ec99a52859c693e3c8741f50329a7e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac1ec99a52859c693e3c8741f50329a7e">&#9670;&nbsp;</a></span>setTimeStepRatio()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ac1ec99a52859c693e3c8741f50329a7e">&#9670;&nbsp;</a></span>setTimeStepRatio() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsAdvect.html">lsAdvect</a>&lt; T, D &gt;::setTimeStepRatio </td>
+          <td>(</td>
+          <td class="paramtype">const double &amp;&#160;</td>
+          <td class="paramname"><em>cfl</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set the CFL condition to use during advection. The CFL condition sets the maximum distance a surface can be moved during one advection step. It MUST be below 0.5 to guarantee numerical stability. Defaults to 0.4999. </p>
+
+</div>
+</div>
+<a id="ac1ec99a52859c693e3c8741f50329a7e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac1ec99a52859c693e3c8741f50329a7e">&#9670;&nbsp;</a></span>setTimeStepRatio() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -714,7 +1320,39 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="a33f8966aac303d434345cca2b6139815"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a33f8966aac303d434345cca2b6139815">&#9670;&nbsp;</a></span>setVelocityField()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a33f8966aac303d434345cca2b6139815">&#9670;&nbsp;</a></span>setVelocityField() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<div class="memtemplate">
+template&lt;class VelocityField , lsConcepts::IsBaseOf&lt; lsVelocityField&lt; T &gt;, VelocityField &gt;  = lsConcepts::assignable&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classlsAdvect.html">lsAdvect</a>&lt; T, D &gt;::setVelocityField </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classlsSmartPointer.html">lsSmartPointer</a>&lt; VelocityField &gt;&#160;</td>
+          <td class="paramname"><em>passedVelocities</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set the velocity field used for advection. This should be a concrete implementation of <a class="el" href="classlsVelocityField.html" title="Abstract class defining the interface for the velocity field used during advection using lsAdvect.">lsVelocityField</a>. </p>
+
+</div>
+</div>
+<a id="a33f8966aac303d434345cca2b6139815"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a33f8966aac303d434345cca2b6139815">&#9670;&nbsp;</a></span>setVelocityField() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -746,7 +1384,7 @@ template&lt;class VelocityField , lsConcepts::IsBaseOf&lt; lsVelocityField&lt; T
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>include/<a class="el" href="lsAdvect_8hpp.html">lsAdvect.hpp</a></li>
+<li>include/<a class="el" href="include_2lsAdvect_8hpp.html">lsAdvect.hpp</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

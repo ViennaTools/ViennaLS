@@ -29,35 +29,67 @@ endif()
 
 # set whether to build static versions
 option(VIENNALS_STATIC_BUILD "Link dependencies statically." OFF)
-if(VIENNALS_STATIC_BUILD)
-  if(NOT VTK_DIR)
-    set(VTK_DIR $ENV{VTK_STATIC_DIR})
-  endif(NOT VTK_DIR)
-  list(APPEND VIENNALS_LIBRARIES "-static")
-endif(VIENNALS_STATIC_BUILD)
+
+# whether to use VTK or not
+option(VIENNALS_USE_VTK "Build with VTK file support." ON)
+
+# OpenMP Support
+find_package(OpenMP REQUIRED)
+list(APPEND VIENNALS_LIBRARIES OpenMP::OpenMP_CXX)
+
+## build dependencies
+set(DEPENDENCIES_DIR ${CMAKE_SOURCE_DIR}/dependencies)
+# if using external VTK build because it takes long to rebuild
+# move value of VTK_DIR to cache so it is not overwritten
+# by external project
+if(DEFINED ${VTK_DIR})
+  set(VTK_DIR ${VTK_DIR} CACHE PATH "Path to VTK installation")
+endif()
+
+if(DEFINED ${ViennaHRLE_DIR})
+  set(ViennaHRLE_DIR ${ViennaHRLE_DIR} CACHE PATH "Path to ViennaHRLE")
+endif()
+
+if(DEFINED ${pybind11_DIR})
+  set(pybind11_DIR ${pybind11_DIR} CACHE PATH "Path to pybind11")
+endif()
+
+add_custom_target(buildDependencies)
+
+# Include all external dependencies
+include(ExternalProject)
+add_subdirectory(external/upstream)
 
 # VTK File type support
-option(VIENNALS_USE_VTK "Build with VTK file support." ON)
 if(VIENNALS_USE_VTK)
-  if(NOT VTK_DIR)
-    set(VTK_DIR $ENV{VTK_DIR})
-  endif(NOT VTK_DIR)
-  find_package(VTK QUIET)
+  find_package(VTK QUIET PATHS ${VTK_DIR})
   if(VTK_FOUND)
     message(STATUS "Found VTK")
     add_compile_definitions(VIENNALS_USE_VTK)
-    include(${VTK_USE_FILE})
+
+    # use VTK_USE_FILE for older versions of VTK
+    if (VTK_VERSION VERSION_LESS "8.90")
+      message(STATUS "Using old VTK Version: ${VTK_VERSION}")
+      include(${VTK_USE_FILE})
+    endif()
+
     # only link needed vtk libraries for static builds
     if(VIENNALS_STATIC_BUILD)
-      set(VTK_LIBRARIES vtksys;vtkIOCore;vtkexpat;vtklz4;vtkzlib;vtklzma;vtkdoubleconversion;vtkCommonMisc;vtkCommonSystem;vtkIOXML;vtkFiltersCore;vtkFiltersGeneral;vtkFiltersGeometry;vtkCommonExecutionModel;vtkCommonDataModel;vtkCommonColor;vtkIOXMLParser;vtkIOCore;vtkCommonMisc;vtkCommonComputationalGeometry;vtkCommonTransforms;vtkCommonMath;)
+      # set(VTK_LIBRARIES vtksys;vtkIOCore;vtkexpat;vtklz4;vtkzlib;vtklzma;vtkdoubleconversion;vtkCommonMisc;vtkCommonSystem;vtkIOXML;vtkFiltersCore;vtkFiltersGeneral;vtkFiltersGeometry;vtkCommonExecutionModel;vtkCommonDataModel;vtkCommonColor;vtkIOXMLParser;vtkIOCore;vtkCommonMisc;vtkCommonComputationalGeometry;vtkCommonTransforms;vtkCommonMath;)
 
-      message(STATUS "Static build: Only linking ${VTK_LIBRARIES}")
+      message(STATUS "Static build: Linking static VTK libraries")
+      # message(STATUS "Static build: Only linking ${VTK_LIBRARIES}")
       # vtksys;vtkCommonCore;vtkCommonMath;vtkCommonMisc;vtkCommonSystem;vtkCommonTransforms;vtkCommonDataModel;vtkCommonColor;vtkCommonExecutionModel;vtkCommonComputationalGeometry;vtkFiltersCore;vtkFiltersGeneral;vtkImagingCore;vtkImagingFourier;vtkFiltersStatistics;vtkFiltersExtraction;vtkInfovisCore;vtkFiltersGeometry;vtkFiltersSources;vtkRenderingCore;vtkzlib;vtkfreetype;vtkRenderingFreeType;vtkRenderingContext2D;vtkChartsCore;vtkDICOMParser;vtkdoubleconversion;vtklz4;vtklzma;vtkIOCore;vtkIOLegacy;vtkexpat;vtkIOXMLParser;vtkDomainsChemistry;vtkglew;vtkRenderingOpenGL2;vtkDomainsChemistryOpenGL2;vtkIOXML;vtkParallelCore;vtkFiltersAMR;vtkFiltersFlowPaths;vtkFiltersGeneric;vtkImagingSources;vtkFiltersHybrid;vtkFiltersHyperTree;vtkImagingGeneral;vtkFiltersImaging;vtkFiltersModeling;vtkFiltersParallel;vtkFiltersParallelImaging;vtkFiltersPoints;vtkFiltersProgrammable;vtkFiltersSMP;vtkFiltersSelection;vtkFiltersTexture;vtkFiltersTopology;verdict;vtkFiltersVerdict;vtkmetaio;vtkjpeg;vtkpng;vtktiff;vtkIOImage;vtkImagingHybrid;vtkInfovisLayout;vtkInteractionStyle;vtkImagingColor;vtkRenderingAnnotation;vtkRenderingVolume;vtkInteractionWidgets;vtkViewsCore;vtklibproj;vtkGeovisCore;vtkhdf5_src;vtkhdf5_hl_src;vtkIOAMR;vtkIOAsynchronous;vtkpugixml;vtkIOCityGML;vtkIOEnSight;vtknetcdf;vtkexodusII;vtkIOExodus;vtkgl2ps;vtkRenderingGL2PSOpenGL2;vtkIOExport;vtkIOExportOpenGL2;vtklibharu;vtkIOExportPDF;vtkIOGeometry;vtkIOImport;vtklibxml2;vtkIOInfovis;vtkIOLSDyna;vtkIOMINC;vtkogg;vtktheora;vtkIOMovie;vtkIONetCDF;vtkIOPLY;vtkjsoncpp;vtkIOParallel;vtkIOParallelXML;vtksqlite;vtkIOSQL;vtkIOSegY;vtkIOTecplotTable;vtkIOVeraOut;vtkIOVideo;vtkImagingMath;vtkImagingMorphological;vtkImagingStatistics;vtkImagingStencil;vtkInteractionImage;vtkRenderingContextOpenGL2;vtkRenderingImage;vtkRenderingLOD;vtkRenderingLabel;vtkRenderingVolumeOpenGL2;vtkViewsContext2D;vtkViewsInfovis
     endif(VIENNALS_STATIC_BUILD)
+
     list(APPEND VIENNALS_LIBRARIES ${VTK_LIBRARIES})
     list(APPEND VIENNALS_PYTHON_LIBRARIES ${VTK_LIBRARIES})
+
   else(VTK_FOUND)
-    message(STATUS "No VTK install found: Building without VTK.")
+    message(STATUS "No VTK install found: Building without VTK support.")
+    # set(VIENNALS_USE_VTK OFF CACHE BOOL "" FORCE)
+    # need to unset, so if vtk is built in first step, it is found the second time cmake ..  is run
+    unset(VTK_DIR CACHE)
   endif(VTK_FOUND)
 endif(VIENNALS_USE_VTK)
 
@@ -67,11 +99,8 @@ endif(VIENNALS_USE_VTK)
 #################################################
 option(VIENNALS_BUILD_SHARED_LIBS "Build template specialisations for shorter compile times." OFF)
 if(VIENNALS_BUILD_SHARED_LIBS)
-  if(NOT ViennaHRLE_DIR)
-    set(ViennaHRLE_DIR $ENV{VIENNAHRLE_DIR})
-  endif(NOT ViennaHRLE_DIR)
-  list(APPEND VIENNALS_LIBRARIES ViennaHRLE)
-  find_package(ViennaHRLE REQUIRED)
+  # list(APPEND VIENNALS_LIBRARIES ViennaHRLE)
+  find_package(ViennaHRLE REQUIRED PATHS ${ViennaHRLE_DIR})
   
   # add all specialisation source files
   file(GLOB SPECIALISATION_CPPS "lib/*.cpp")
@@ -104,10 +133,6 @@ target_include_directories(
 
 target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_11)
 
-# Run tests
-#enable_testing()
-#add_subdirectory(test)
-
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file("${PROJECT_NAME}ConfigVersion.cmake"
                                  VERSION ${PROJECT_VERSION}
@@ -134,6 +159,7 @@ endif(VIENNALS_BUILD_EXAMPLES)
 #################################################
 option(VIENNALS_BUILD_TESTS "Build tests." OFF)
 if(VIENNALS_BUILD_TESTS)
+  enable_testing()
   add_subdirectory(Tests)
 endif(VIENNALS_BUILD_TESTS)
 
@@ -141,8 +167,24 @@ endif(VIENNALS_BUILD_TESTS)
 #################################################
 # BUILD PYTHON MODULE
 #################################################
-add_subdirectory(Wrapping)
+option(VIENNALS_BUILD_PYTHON_2 "Build for python2.x." OFF)
+option(VIENNALS_BUILD_PYTHON_3 "Build for python3.x. Trumps python2.x build." OFF)
 
+if(VIENNALS_BUILD_PYTHON_2 OR VIENNALS_BUILD_PYTHON_3)
+  # include external project if not already set
+  if(NOT DEFINED pybind11_DIR OR VIENNALS_BUILD_PYBIND11)
+      add_subdirectory(external/upstream/pybind11)
+  endif()
+
+  message(STATUS "pybind11_DIR: ${pybind11_DIR}")
+  find_package(pybind11 QUIET PATHS ${pybind11_DIR})
+  if(pybind11_FOUND)
+    add_subdirectory(Wrapping)
+  else()
+    message(STATUS "No pybind11 install found. If you did not specify a custom install path, you have to build the target pybind11-external.")
+  endif()
+
+endif()
 
 #################################################
 # INSTALL

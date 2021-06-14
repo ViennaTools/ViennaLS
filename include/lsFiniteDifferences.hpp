@@ -137,7 +137,7 @@ public:
   // WENO3: x_-2, x_-1, x, x_+1, x_+2
   // WENO5: x_-3, x_-2, x_-1, x, x_+1, x_+2, x_+3
   static T differenceNegative(const T *values, const double &delta) {
-    if (scheme == DifferentiationSchemeEnum::FIRST_ORDER) {
+    if constexpr (scheme == DifferentiationSchemeEnum::FIRST_ORDER) {
       return (values[1] - values[0]) / delta;
     } else if (scheme == DifferentiationSchemeEnum::SECOND_ORDER) {
       // TODO: implement second order integration here
@@ -157,7 +157,7 @@ public:
   // WENO3:       x_-2, x_-1, x, x_+1, x_+2
   // WENO5: x_-3, x_-2, x_-1, x, x_+1, x_+2, x_+3
   static T differencePositive(const T *values, const double &delta) {
-    if (scheme == DifferentiationSchemeEnum::FIRST_ORDER) {
+    if constexpr (scheme == DifferentiationSchemeEnum::FIRST_ORDER) {
       return (values[2] - values[1]) / delta;
     } else if (scheme == DifferentiationSchemeEnum::SECOND_ORDER) {
       // TODO: implement second order integration here

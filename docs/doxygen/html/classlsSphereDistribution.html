@@ -118,6 +118,17 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a4ec5f7a7c26b1c926d6cb650b945ccfe"><td class="memItemLeft" align="right" valign="top">std::array&lt; hrleCoordType, 6 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsSphereDistribution.html#a4ec5f7a7c26b1c926d6cb650b945ccfe">getBounds</a> () const</td></tr>
 <tr class="memdesc:a4ec5f7a7c26b1c926d6cb650b945ccfe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets bounds to the bounding box of the distribution.  <a href="classlsSphereDistribution.html#a4ec5f7a7c26b1c926d6cb650b945ccfe">More...</a><br /></td></tr>
 <tr class="separator:a4ec5f7a7c26b1c926d6cb650b945ccfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0071db703db6ef1992c7e4493966ed14"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsSphereDistribution.html#a0071db703db6ef1992c7e4493966ed14">lsSphereDistribution</a> (const T passedRadius, const T delta)</td></tr>
+<tr class="separator:a0071db703db6ef1992c7e4493966ed14"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a390706ad646864d88a8ff0346ecef343"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsSphereDistribution.html#a390706ad646864d88a8ff0346ecef343">isInside</a> (const std::array&lt; hrleCoordType, 3 &gt; &amp;initial, const std::array&lt; hrleCoordType, 3 &gt; &amp;candidate, double eps=0.) const</td></tr>
+<tr class="memdesc:a390706ad646864d88a8ff0346ecef343"><td class="mdescLeft">&#160;</td><td class="mdescRight">Quick check whether a point relative to the distributions center is inside the distribution. If there is no quick check due to the complexity of the distribution, always return true or do not overload this function.  <a href="classlsSphereDistribution.html#a390706ad646864d88a8ff0346ecef343">More...</a><br /></td></tr>
+<tr class="separator:a390706ad646864d88a8ff0346ecef343"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acf246bdf12ca1378c1c62d2d63099c87"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsSphereDistribution.html#acf246bdf12ca1378c1c62d2d63099c87">getSignedDistance</a> (const std::array&lt; hrleCoordType, 3 &gt; &amp;initial, const std::array&lt; hrleCoordType, 3 &gt; &amp;candidate) const</td></tr>
+<tr class="memdesc:acf246bdf12ca1378c1c62d2d63099c87"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the signed distance of a point relative to the distributions center. This is the signed manhatten distance to the nearest surface point.  <a href="classlsSphereDistribution.html#acf246bdf12ca1378c1c62d2d63099c87">More...</a><br /></td></tr>
+<tr class="separator:acf246bdf12ca1378c1c62d2d63099c87"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4ec5f7a7c26b1c926d6cb650b945ccfe"><td class="memItemLeft" align="right" valign="top">std::array&lt; hrleCoordType, 6 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classlsSphereDistribution.html#a4ec5f7a7c26b1c926d6cb650b945ccfe">getBounds</a> () const</td></tr>
+<tr class="memdesc:a4ec5f7a7c26b1c926d6cb650b945ccfe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets bounds to the bounding box of the distribution.  <a href="classlsSphereDistribution.html#a4ec5f7a7c26b1c926d6cb650b945ccfe">More...</a><br /></td></tr>
+<tr class="separator:a4ec5f7a7c26b1c926d6cb650b945ccfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -135,7 +146,45 @@ class lsSphereDistribution&lt; T, D &gt;</h3>
 <p>Concrete implementation of <a class="el" href="classlsGeometricAdvectDistribution.html" title="Base class for distributions used by lsGeometricAdvect. All functions are pure virtual and must be im...">lsGeometricAdvectDistribution</a> for a spherical advection distribution. </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a0071db703db6ef1992c7e4493966ed14"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0071db703db6ef1992c7e4493966ed14">&#9670;&nbsp;</a></span>lsSphereDistribution()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0071db703db6ef1992c7e4493966ed14">&#9670;&nbsp;</a></span>lsSphereDistribution() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classlsSphereDistribution.html">lsSphereDistribution</a>&lt; T, D &gt;::<a class="el" href="classlsSphereDistribution.html">lsSphereDistribution</a> </td>
+          <td>(</td>
+          <td class="paramtype">const T&#160;</td>
+          <td class="paramname"><em>passedRadius</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const T&#160;</td>
+          <td class="paramname"><em>delta</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a0071db703db6ef1992c7e4493966ed14"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0071db703db6ef1992c7e4493966ed14">&#9670;&nbsp;</a></span>lsSphereDistribution() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -174,7 +223,38 @@ template&lt;class T , int D&gt; </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a4ec5f7a7c26b1c926d6cb650b945ccfe"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4ec5f7a7c26b1c926d6cb650b945ccfe">&#9670;&nbsp;</a></span>getBounds()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a4ec5f7a7c26b1c926d6cb650b945ccfe">&#9670;&nbsp;</a></span>getBounds() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::array&lt;hrleCoordType, 6&gt; <a class="el" href="classlsSphereDistribution.html">lsSphereDistribution</a>&lt; T, D &gt;::getBounds </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Sets bounds to the bounding box of the distribution. </p>
+
+<p>Implements <a class="el" href="classlsGeometricAdvectDistribution.html#a12803831ab6cbb55b21dccdb068a41ce">lsGeometricAdvectDistribution&lt; T, D &gt;</a>.</p>
+
+</div>
+</div>
+<a id="a4ec5f7a7c26b1c926d6cb650b945ccfe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4ec5f7a7c26b1c926d6cb650b945ccfe">&#9670;&nbsp;</a></span>getBounds() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -205,7 +285,49 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="acf246bdf12ca1378c1c62d2d63099c87"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acf246bdf12ca1378c1c62d2d63099c87">&#9670;&nbsp;</a></span>getSignedDistance()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#acf246bdf12ca1378c1c62d2d63099c87">&#9670;&nbsp;</a></span>getSignedDistance() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">T <a class="el" href="classlsSphereDistribution.html">lsSphereDistribution</a>&lt; T, D &gt;::getSignedDistance </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; hrleCoordType, 3 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>initial</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::array&lt; hrleCoordType, 3 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>candidate</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns the signed distance of a point relative to the distributions center. This is the signed manhatten distance to the nearest surface point. </p>
+
+<p>Implements <a class="el" href="classlsGeometricAdvectDistribution.html#ad7fb15005eaf5a3743b6a90121c11364">lsGeometricAdvectDistribution&lt; T, D &gt;</a>.</p>
+
+</div>
+</div>
+<a id="acf246bdf12ca1378c1c62d2d63099c87"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acf246bdf12ca1378c1c62d2d63099c87">&#9670;&nbsp;</a></span>getSignedDistance() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -247,7 +369,55 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <a id="a390706ad646864d88a8ff0346ecef343"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a390706ad646864d88a8ff0346ecef343">&#9670;&nbsp;</a></span>isInside()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a390706ad646864d88a8ff0346ecef343">&#9670;&nbsp;</a></span>isInside() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T , int D&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="classlsSphereDistribution.html">lsSphereDistribution</a>&lt; T, D &gt;::isInside </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; hrleCoordType, 3 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>initial</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::array&lt; hrleCoordType, 3 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>candidate</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>eps</em> = <code>0.</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Quick check whether a point relative to the distributions center is inside the distribution. If there is no quick check due to the complexity of the distribution, always return true or do not overload this function. </p>
+
+<p>Reimplemented from <a class="el" href="classlsGeometricAdvectDistribution.html#a100184ca8c5fd3e7b53f1328e5aa5b30">lsGeometricAdvectDistribution&lt; T, D &gt;</a>.</p>
+
+</div>
+</div>
+<a id="a390706ad646864d88a8ff0346ecef343"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a390706ad646864d88a8ff0346ecef343">&#9670;&nbsp;</a></span>isInside() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -344,7 +514,7 @@ template&lt;class T , int D&gt; </div>
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>include/<a class="el" href="lsGeometricAdvectDistributions_8hpp.html">lsGeometricAdvectDistributions.hpp</a></li>
+<li>include/<a class="el" href="include_2lsGeometricAdvectDistributions_8hpp.html">lsGeometricAdvectDistributions.hpp</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

@@ -68,6 +68,7 @@ var hierarchy =
       [ "lsSmartPointer< lsPlane< T, D > >", "classlsSmartPointer.html", null ],
       [ "lsSmartPointer< lsPointCloud< T, D > >", "classlsSmartPointer.html", null ],
       [ "lsSmartPointer< lsSphere< T, D > >", "classlsSmartPointer.html", null ],
-      [ "lsSmartPointer< lsVelocityField< T > >", "classlsSmartPointer.html", null ]
+      [ "lsSmartPointer< lsVelocityField< T > >", "classlsSmartPointer.html", null ],
+      [ "lsSmartPointer< translatorType >", "classlsSmartPointer.html", null ]
     ] ]
 ];

@@ -8,6 +8,7 @@
 // #include <lsFromSurfaceMesh.hpp>
 #include <lsAdvect.hpp>
 #include <lsMakeGeometry.hpp>
+#include <lsTestAsserts.hpp>
 #include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
@@ -45,9 +46,9 @@ int main() {
   double gridDelta = 1;
 
   double bounds[2 * D] = {-extent, extent, -extent, extent};
-  lsDomain<double, D>::BoundaryType boundaryCons[D];
-  boundaryCons[0] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
-  boundaryCons[1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
+  lsBoundaryConditionEnum<D> boundaryCons[D];
+  boundaryCons[0] = lsBoundaryConditionEnum<D>::REFLECTIVE_BOUNDARY;
+  boundaryCons[1] = lsBoundaryConditionEnum<D>::INFINITE_BOUNDARY;
 
   auto plane =
       lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
@@ -58,39 +59,42 @@ int main() {
   lsMakeGeometry<double, D>(
       plane, lsSmartPointer<lsPlane<double, D>>::New(origin, normal))
       .apply();
-  {
-    auto mesh = lsSmartPointer<lsMesh<>>::New();
+  // {
+  //   auto mesh = lsSmartPointer<lsMesh<>>::New();
 
-    std::cout << "Extracting..." << std::endl;
-    lsToSurfaceMesh<double, D>(plane, mesh).apply();
-    lsVTKWriter<double>(mesh, "before.vtk").apply();
+  //   std::cout << "Extracting..." << std::endl;
+  //   lsToSurfaceMesh<double, D>(plane, mesh).apply();
+  //   lsVTKWriter<double>(mesh, "before.vtk").apply();
 
-    lsToMesh<double, D>(plane, mesh).apply();
-    lsVTKWriter<double>(mesh, "beforeLS.vtk").apply();
+  //   lsToMesh<double, D>(plane, mesh).apply();
+  //   lsVTKWriter<double>(mesh, "beforeLS.vtk").apply();
 
-    mesh->print();
-  }
+  //   mesh->print();
+  // }
 
   auto velocities = lsSmartPointer<velocityField>::New();
 
-  std::cout << "number of Points: " << plane->getNumberOfPoints() << std::endl;
+  // std::cout << "number of Points: " << plane->getNumberOfPoints() <<
+  // std::endl;
 
-  std::cout << "Advecting" << std::endl;
+  // std::cout << "Advecting" << std::endl;
   lsAdvect<double, D> advectionKernel(plane, velocities);
   advectionKernel.apply();
   double advectionTime = advectionKernel.getAdvectedTime();
-  std::cout << "Time difference: " << advectionTime << std::endl;
+  // std::cout << "Time difference: " << advectionTime << std::endl;
 
-  lsPrune<double, D>(plane).apply();
-  lsExpand<double, D>(plane, 2).apply();
+  LSTEST_ASSERT_VALID_LS(plane, double, D)
 
-  std::cout << "Extracting..." << std::endl;
-  auto mesh = lsSmartPointer<lsMesh<>>::New();
-  lsToSurfaceMesh<double, D>(plane, mesh).apply();
+  // lsPrune<double, D>(plane).apply();
+  // lsExpand<double, D>(plane, 2).apply();
 
-  // mesh.print();
+  // std::cout << "Extracting..." << std::endl;
+  // auto mesh = lsSmartPointer<lsMesh<>>::New();
+  // lsToSurfaceMesh<double, D>(plane, mesh).apply();
 
-  lsVTKWriter<double>(mesh, "after.vtk").apply();
+  // // mesh.print();
+
+  // lsVTKWriter<double>(mesh, "after.vtk").apply();
 
   return 0;
 }
