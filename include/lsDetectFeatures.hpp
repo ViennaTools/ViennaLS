@@ -8,7 +8,7 @@
 #include <lsCurvatureFormulas.hpp>
 #include <lsDomain.hpp>
 
-enum struct FeatureDetectionMethod : unsigned {
+enum struct lsFeatureDetectionEnum : unsigned {
   CURVATURE = 0,
   NORMALS_ANGLE = 1,
 };
@@ -16,49 +16,52 @@ enum struct FeatureDetectionMethod : unsigned {
 /// This class detects features of the level set function. This class offers two
 /// methods to determine features of the surface: based on the mean curvature,
 /// and based on the angle between surface normals. The curvature-based
-/// algorithm is the defaults as it leads to more accurate results and should be
+/// algorithm is the default as it leads to more accurate results and should be
 /// preferred in general.
-template <class T, int D> class lsFeatureDetection {
+template <class T, int D> class lsDetectFeatures {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
-  FeatureDetectionMethod method = FeatureDetectionMethod::CURVATURE;
+  lsFeatureDetectionEnum method = lsFeatureDetectionEnum::CURVATURE;
   T flatLimit = 1.;
+  T flatLimit2 = 1.;
   std::string outputName = "FeatureMarkers";
   std::vector<T> flaggedCells;
 
 public:
-  lsFeatureDetection(lsSmartPointer<lsDomain<T, D>> passedLevelSet)
+  lsDetectFeatures(lsSmartPointer<lsDomain<T, D>> passedLevelSet)
       : levelSet(passedLevelSet) {}
 
-  lsFeatureDetection(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-                     T passedLimit)
-      : levelSet(passedLevelSet), flatLimit(passedLimit) {}
+  lsDetectFeatures(lsSmartPointer<lsDomain<T, D>> passedLevelSet, T passedLimit)
+      : levelSet(passedLevelSet), flatLimit(passedLimit),
+        flatLimit2(flatLimit * flatLimit) {}
 
-  lsFeatureDetection(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-                     T passedLimit, FeatureDetectionMethod passedMethod)
-      : levelSet(passedLevelSet), flatLimit(passedLimit), method(passedMethod) {
-  }
+  lsDetectFeatures(lsSmartPointer<lsDomain<T, D>> passedLevelSet, T passedLimit,
+                   lsFeatureDetectionEnum passedMethod)
+      : levelSet(passedLevelSet), flatLimit(passedLimit),
+        flatLimit2(flatLimit * flatLimit), method(passedMethod) {}
 
-  lsFeatureDetection(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-                     T passedLimit, FeatureDetectionMethod passedMethod,
-                     std::string passedOutputName)
-      : levelSet(passedLevelSet), flatLimit(passedLimit), method(passedMethod),
+  lsDetectFeatures(lsSmartPointer<lsDomain<T, D>> passedLevelSet, T passedLimit,
+                   lsFeatureDetectionEnum passedMethod,
+                   std::string passedOutputName)
+      : levelSet(passedLevelSet), flatLimit(passedLimit),
+        flatLimit2(flatLimit * flatLimit), method(passedMethod),
         outputName(passedOutputName) {}
 
   void setDetectionThreshold(T threshold) {
     flatLimit = threshold;
+    flatLimit2 = flatLimit * flatLimit;
   }
 
   /// Set which algorithm to used to detect features. The curvature-based
   /// algorithm should always be preferred, while the normals-based algorithm is
   /// just provided for experimental use.
-  void setFeatureDetectionMethod(FeatureDetectionMethod passedMethod) {
+  void setlsFeatureDetectionEnum(lsFeatureDetectionEnum passedMethod) {
     method = passedMethod;
   }
 
   /// Execute the algorithm.
   void apply() {
-    if (method == FeatureDetectionMethod::CURVATURE) {
+    if (method == lsFeatureDetectionEnum::CURVATURE) {
       FeatureDetectionCurvature();
     } else {
       FeatureDetectionNormals();
@@ -121,25 +124,15 @@ private:
           continue;
         }
 
-        if constexpr (D == 2) {
-          T curve = lsInternal::meanCurvature(neighborIt);
-
-          if (std::abs(curve) > flatLimit) {
-            flagsSegment.push_back(1);
-          } else {
-            flagsSegment.push_back(0);
-          }
+        T curve = lsInternal::meanCurvature(neighborIt);
+        if (std::abs(curve) > flatLimit) {
+          flagsSegment.push_back(1);
         } else {
-          T curve = lsInternal::meanCurvature(neighborIt);
-
-          // Minimal surfaces can have Mean Curvature equal to 0 at non-flat
-          // points on the surface additionally check Gaussian Curvature if the
-          // point is flat
-          if (std::abs(curve) > flatLimit) {
-            flagsSegment.push_back(1);
+          if constexpr (D == 2) {
+            flagsSegment.push_back(0);
           } else {
             curve = lsInternal::gaussianCurvature(neighborIt);
-            if (std::sqrt(std::abs(curve)) > flatLimit)
+            if (std::abs(curve) > flatLimit2)
               flagsSegment.push_back(1);
             else
               flagsSegment.push_back(0);

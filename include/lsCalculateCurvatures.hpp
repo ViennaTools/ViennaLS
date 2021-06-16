@@ -52,7 +52,8 @@ public:
     }
 
     // need second neighbours
-    if (unsigned minWidth = std::ceil((maxValue * 8) + 1); levelSet->getLevelSetWidth() < minWidth) {
+    if (unsigned minWidth = std::ceil((maxValue * 8) + 1);
+        levelSet->getLevelSetWidth() < minWidth) {
       lsMessage::getInstance()
           .addWarning("lsCalculateCurvatures: Level set width must be "
                       "at least " +
