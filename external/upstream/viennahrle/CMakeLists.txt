@@ -35,6 +35,7 @@ externalproject_add(viennahrle-external
     1
   GIT_PROGRESS
     1
+  EXCLUDE_FROM_ALL TRUE
 )
 
 # Get install and build directory

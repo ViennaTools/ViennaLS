@@ -62,7 +62,7 @@ add_subdirectory(external/upstream)
 
 # VTK File type support
 if(VIENNALS_USE_VTK)
-  find_package(VTK QUIET PATHS ${VTK_DIR})
+  find_package(VTK QUIET PATHS ${VTK_DIR} NO_DEFAULT_PATH)
   if(VTK_FOUND)
     message(STATUS "Found VTK")
     add_compile_definitions(VIENNALS_USE_VTK)
