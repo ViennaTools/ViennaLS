@@ -4,6 +4,7 @@
 #include <hrleCartesianPlaneIterator.hpp>
 #include <hrleSparseBoxIterator.hpp>
 #include <hrleSparseStarIterator.hpp>
+#include <lsCalculateNormalVectors.hpp>
 #include <lsCurvatureFormulas.hpp>
 #include <lsDomain.hpp>
 
@@ -21,7 +22,7 @@ template <class T, int D> class lsFeatureDetection {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
   FeatureDetectionMethod method = FeatureDetectionMethod::CURVATURE;
-  T flatLimit = 0.;
+  T flatLimit = 1.;
   std::string outputName = "FeatureMarkers";
   std::vector<T> flaggedCells;
 
@@ -43,6 +44,10 @@ public:
                      std::string passedOutputName)
       : levelSet(passedLevelSet), flatLimit(passedLimit), method(passedMethod),
         outputName(passedOutputName) {}
+
+  void setDetectionThreshold(T threshold) {
+    flatLimit = threshold;
+  }
 
   /// Set which algorithm to used to detect features. The curvature-based
   /// algorithm should always be preferred, while the normals-based algorithm is
@@ -134,7 +139,7 @@ private:
             flagsSegment.push_back(1);
           } else {
             curve = lsInternal::gaussianCurvature(neighborIt);
-            if (std::abs(curve) > flatLimit)
+            if (std::sqrt(std::abs(curve)) > flatLimit)
               flagsSegment.push_back(1);
             else
               flagsSegment.push_back(0);

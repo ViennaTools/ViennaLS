@@ -42,9 +42,9 @@ int main() {
   lsCalculateCurvatures<NumericType, D> calcCurve(sphere);
 
   if (D == 2) {
-    calcCurve.setCurvatureType(lsCurvatureType::MEAN_CURVATURE);
+    calcCurve.setCurvatureType(lsCurvatureEnum::MEAN_CURVATURE);
   } else {
-    calcCurve.setCurvatureType(lsCurvatureType::MEAN_AND_GAUSSIAN_CURVATURE);
+    calcCurve.setCurvatureType(lsCurvatureEnum::MEAN_AND_GAUSSIAN_CURVATURE);
   }
 
   calcCurve.apply();
