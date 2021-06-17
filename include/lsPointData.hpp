@@ -103,6 +103,10 @@ public:
                : "";
   }
 
+  void setScalarDataLabel(int index, std::string newLabel) {
+    scalarDataLabels[index] = newLabel;
+  }
+
   VectorDataType *getVectorData(int index) {
     return indexPointerOrNull(vectorData, index);
   }
@@ -133,6 +137,10 @@ public:
     return (index >= 0 && index < vectorDataLabels.size())
                ? vectorDataLabels[index]
                : "";
+  }
+
+  void setVectorDataLabel(int index, std::string newLabel) {
+    vectorDataLabels[index] = newLabel;
   }
 
   void append(const lsPointData &passedData) {

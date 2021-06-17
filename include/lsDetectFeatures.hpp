@@ -28,6 +28,8 @@ template <class T, int D> class lsDetectFeatures {
   std::vector<T> flaggedCells;
 
 public:
+  lsDetectFeatures() {}
+
   lsDetectFeatures(lsSmartPointer<lsDomain<T, D>> passedLevelSet)
       : levelSet(passedLevelSet) {}
 
@@ -40,22 +42,15 @@ public:
       : levelSet(passedLevelSet), flatLimit(passedLimit),
         flatLimit2(flatLimit * flatLimit), method(passedMethod) {}
 
-  lsDetectFeatures(lsSmartPointer<lsDomain<T, D>> passedLevelSet, T passedLimit,
-                   lsFeatureDetectionEnum passedMethod,
-                   std::string passedOutputName)
-      : levelSet(passedLevelSet), flatLimit(passedLimit),
-        flatLimit2(flatLimit * flatLimit), method(passedMethod),
-        outputName(passedOutputName) {}
-
   void setDetectionThreshold(T threshold) {
     flatLimit = threshold;
     flatLimit2 = flatLimit * flatLimit;
   }
 
-  /// Set which algorithm to used to detect features. The curvature-based
+  /// Set which algorithm to use to detect features. The curvature-based
   /// algorithm should always be preferred, while the normals-based algorithm is
   /// just provided for experimental use.
-  void setlsFeatureDetectionEnum(lsFeatureDetectionEnum passedMethod) {
+  void setDetectionMethod(lsFeatureDetectionEnum passedMethod) {
     method = passedMethod;
   }
 
@@ -173,7 +168,7 @@ private:
       p = omp_get_thread_num();
 #endif
 
-      std::array<T, D> zeroVector{};
+      std::array<T, 3> zeroVector{};
 
       std::vector<T> &flagsSegment = flagsReserve[p];
       flagsSegment.reserve(
@@ -197,13 +192,13 @@ private:
           continue;
         }
 
-        std::array<T, D> centerNormal =
+        std::array<T, 3> centerNormal =
             normals[neighborIt.getCenter().getPointId()];
 
         bool flag = false;
 
         for (unsigned dir = 0; dir < (D * D * D); dir++) {
-          std::array<T, D> currentNormal =
+          std::array<T, 3> currentNormal =
               normals[neighborIt.getNeighbor(dir).getPointId()];
 
           if (currentNormal != zeroVector) {

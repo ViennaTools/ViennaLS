@@ -189,6 +189,7 @@ T gaussianCurvature(It &it, bool bigStencil = false) {
             "2D structures do not have a Gaussian Curvature, use "
             "\"meanCurvature(IteratorType & neighborIterator)\" instead!")
         .print();
+    return 0.;
   } else {
     return gaussianCurvature3D(d);
   }
