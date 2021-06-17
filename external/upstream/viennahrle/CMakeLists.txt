@@ -5,7 +5,7 @@ externalproject_add(viennahrle-external
 #   GIT_TAG
 #     96e6fa9b3ff245e4d51d49f23d40e9ad8774e85e
   CMAKE_ARGS
-    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+    -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
     -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
     -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
     # -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
@@ -42,7 +42,7 @@ externalproject_add(viennahrle-external
 externalproject_get_property(viennahrle-external INSTALL_DIR BINARY_DIR)
 
 # ViennaHRLE should be built
-set(VIENNALS_BUILD_VIENNAHRLE ON CACHE BOOL "Whether viennaHRLE should be installed.")
+set(VIENNALS_BUILD_VIENNAHRLE ON CACHE BOOL "Whether ViennaHRLE should be installed.")
 
 set(
   ViennaHRLE_DIR "${INSTALL_DIR}/ViennaHRLE"#/lib/cmake/ViennaHRLE"
