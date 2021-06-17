@@ -256,8 +256,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
                    lsSmartPointer<lsCalculateCurvatures<T, D>>>(
       module, "lsCalculateCurvatures")
       // constructors
-      .def(pybind11::init(
-          &lsSmartPointer<lsCalculateCurvatures<T, D>>::New<>))
+      .def(pybind11::init(&lsSmartPointer<lsCalculateCurvatures<T, D>>::New<>))
       .def(pybind11::init(&lsSmartPointer<lsCalculateCurvatures<T, D>>::New<
                           lsSmartPointer<lsDomain<T, D>> &>))
       // some constructors need lambda to work: seems to be an issue with
@@ -270,7 +269,8 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("setLevelSet", &lsCalculateCurvatures<T, D>::setLevelSet,
            "Set levelset for which to calculate the curvatures.")
       .def("setCurvatureType", &lsCalculateCurvatures<T, D>::setCurvatureType,
-           "Set which method to use for calculation: Defaults to mean curvature.")
+           "Set which method to use for calculation: Defaults to mean "
+           "curvature.")
       .def("setMaxValue", &lsCalculateCurvatures<T, D>::setMaxValue,
            "Curvatures will be calculated for all LS values < maxValue.")
       .def("apply", &lsCalculateCurvatures<T, D>::apply,
@@ -280,7 +280,8 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
   pybind11::enum_<lsCurvatureEnum>(module, "lsCurvatureEnum")
       .value("MEAN_CURVATURE", lsCurvatureEnum::MEAN_CURVATURE)
       .value("GAUSSIAN_CURVATURE", lsCurvatureEnum::GAUSSIAN_CURVATURE)
-      .value("MEAN_AND_GAUSSIAN_CURVATURE", lsCurvatureEnum::MEAN_AND_GAUSSIAN_CURVATURE);
+      .value("MEAN_AND_GAUSSIAN_CURVATURE",
+             lsCurvatureEnum::MEAN_AND_GAUSSIAN_CURVATURE);
 
   // lsCalculateNormalVectors
   pybind11::class_<lsCalculateNormalVectors<T, D>,
@@ -325,8 +326,9 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("apply", &lsConvexHull<T, D>::apply, "Generate Hull.");
 
   // lsDetectFeatures
-  pybind11::class_<lsDetectFeatures<T, D>, lsSmartPointer<lsDetectFeatures<T, D>>>(
-      module, "lsDetectFeatures")
+  pybind11::class_<lsDetectFeatures<T, D>,
+                   lsSmartPointer<lsDetectFeatures<T, D>>>(module,
+                                                           "lsDetectFeatures")
       // constructors
       .def(pybind11::init(&lsSmartPointer<lsDetectFeatures<T, D>>::New<>))
       .def(pybind11::init(&lsSmartPointer<lsDetectFeatures<T, D>>::New<
@@ -337,10 +339,13 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       // implicit move constructor
       .def(pybind11::init([](lsSmartPointer<lsDomain<T, D>> &domain, T maxValue,
                              lsFeatureDetectionEnum type) {
-        return lsSmartPointer<lsDetectFeatures<T, D>>::New(domain, maxValue, type);
+        return lsSmartPointer<lsDetectFeatures<T, D>>::New(domain, maxValue,
+                                                           type);
       }))
-      .def("setDetectionThreshold", &lsDetectFeatures<T, D>::setDetectionThreshold,
-           "Set the curvature value above which a point is considered a feature.")
+      .def("setDetectionThreshold",
+           &lsDetectFeatures<T, D>::setDetectionThreshold,
+           "Set the curvature value above which a point is considered a "
+           "feature.")
       .def("setDetectionMethod", &lsDetectFeatures<T, D>::setDetectionMethod,
            "Set which method to use to detect features. Defaults to Curvature.")
       .def("apply", &lsDetectFeatures<T, D>::apply, "Detect features.");

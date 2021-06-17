@@ -25,7 +25,8 @@ public:
   lsCalculateCurvatures(lsSmartPointer<lsDomain<T, D>> passedLevelSet)
       : levelSet(passedLevelSet) {}
 
-  lsCalculateCurvatures(lsSmartPointer<lsDomain<T, D>> passedLevelSet, lsCurvatureEnum method)
+  lsCalculateCurvatures(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+                        lsCurvatureEnum method)
       : levelSet(passedLevelSet), type(method) {}
 
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {

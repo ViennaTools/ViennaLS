@@ -103,9 +103,9 @@ int main() {
   CurvatureFlagger.apply();
 
   // now rename markers, so they are not overwritten by next calls
-  auto& pointData = levelSet->getPointData();
-  for(unsigned i = 0; i < pointData.getScalarDataSize(); ++i) {
-    if(pointData.getScalarDataLabel(i) == "FeatureMarkers") {
+  auto &pointData = levelSet->getPointData();
+  for (unsigned i = 0; i < pointData.getScalarDataSize(); ++i) {
+    if (pointData.getScalarDataLabel(i) == "FeatureMarkers") {
       pointData.setScalarDataLabel(i, "FeatureMarkers_Curvature");
     }
   }
