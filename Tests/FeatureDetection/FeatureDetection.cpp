@@ -8,7 +8,7 @@
 #include <lsToMesh.hpp>
 #include <lsVTKWriter.hpp>
 
-#include <lsFeatureDetection.hpp>
+#include <lsDetectFeatures.hpp>
 
 #include <omp.h>
 
@@ -97,15 +97,23 @@ int main() {
 
   std::cout << "Flagging Curvatures..." << std::endl;
 
-  lsFeatureDetection<NumericType, D> CurvatureFlagger(
-      levelSet, 1e-3, FeatureDetectionMethod::CURVATURE, "Features_Curve");
+  lsDetectFeatures<NumericType, D> CurvatureFlagger(
+      levelSet, 1e-3, lsFeatureDetectionEnum::CURVATURE);
 
   CurvatureFlagger.apply();
 
+  // now rename markers, so they are not overwritten by next calls
+  auto &pointData = levelSet->getPointData();
+  for (unsigned i = 0; i < pointData.getScalarDataSize(); ++i) {
+    if (pointData.getScalarDataLabel(i) == "FeatureMarkers") {
+      pointData.setScalarDataLabel(i, "FeatureMarkers_Curvature");
+    }
+  }
+
   std::cout << "Flagging Normals..." << std::endl;
 
-  lsFeatureDetection<NumericType, D> NormalsFlagger(
-      levelSet, 1e-3, FeatureDetectionMethod::NORMALS_ANGLE, "Features_Angle");
+  lsDetectFeatures<NumericType, D> NormalsFlagger(
+      levelSet, 1e-3, lsFeatureDetectionEnum::NORMALS_ANGLE);
 
   NormalsFlagger.apply();
 

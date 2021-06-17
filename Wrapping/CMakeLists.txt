@@ -1,7 +1,5 @@
 # target for python module build
 
-message(STATUS "${CMAKE_BINARY_DIR}")
-
 externalproject_add(viennaLSPython
 #   DEPENDS
   SOURCE_DIR

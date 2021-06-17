@@ -36,15 +36,14 @@ int main() {
       sphere, lsSmartPointer<lsSphere<NumericType, D>>::New(origin, radius))
       .apply();
 
-  double sphereRadius = 5.;
-  lsExpand<NumericType, D>(sphere, sphereRadius).apply();
+  lsExpand<NumericType, D>(sphere, 5).apply();
 
   lsCalculateCurvatures<NumericType, D> calcCurve(sphere);
 
   if (D == 2) {
-    calcCurve.setCurvatureType(lsCurvatureType::MEAN_CURVATURE);
+    calcCurve.setCurvatureType(lsCurvatureEnum::MEAN_CURVATURE);
   } else {
-    calcCurve.setCurvatureType(lsCurvatureType::MEAN_AND_GAUSSIAN_CURVATURE);
+    calcCurve.setCurvatureType(lsCurvatureEnum::MEAN_AND_GAUSSIAN_CURVATURE);
   }
 
   calcCurve.apply();
@@ -53,7 +52,7 @@ int main() {
 
   LSTEST_ASSERT(meanCurvatures != nullptr)
 
-  double analyticCurvature = 1. / (2 * sphereRadius);
+  double analyticCurvature = 1. / radius;
   hrleSizeType numberOfActivePoints = 0;
   double sum = 0.;
   for (hrleConstSparseIterator<typename lsDomain<NumericType, D>::DomainType>

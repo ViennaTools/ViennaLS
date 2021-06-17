@@ -88,6 +88,7 @@ git clone github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
 mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/ -DVTK_DIR=/path/to/vtk/install
+make buildDependencies
 make install
 ```
 
@@ -121,7 +122,8 @@ import viennaLS3d as vls
 In order to build the python module, set `VIENNALS_BUILD_PYTHON_2` or `VIENNALS_BUILD_PYTHON_3` to `ON`:
 ```
 cmake .. -DVIENNALS_BUILD_PYTHON_3=ON
-make # this will install pybind11 the first time it is called
+make buildDependencies # this will install pybind11 the first time it is called
+make
 ```
 
 If both options are on, only VIENNALS_BUILD_PYTHON_3 will be used, since only one version can be built at a time.
@@ -172,10 +174,10 @@ In order to use this library in your CMake project, add the following lines to t
 
 ```
 set(ViennaLS_DIR "/path/to/your/custom/install/")
-find_package(ViennaLS REQUIRED PATHS ${VIENNALS_DIR})
-add_executable(...)
-target_include_directories(${PROJECT_NAME} PUBLIC ${VIENNALS_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} ${VIENNALS_LIBRARIES})
+find_package(ViennaLS REQUIRED PATHS ${ViennaLS_DIR})
+add_executable(myExe mySource.cpp)
+target_include_directories(myExe PUBLIC ${VIENNALS_INCLUDE_DIRS})
+target_link_libraries(myExe ${VIENNALS_LIBRARIES})
 ```
 
 ### Shared libraries

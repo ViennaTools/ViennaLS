@@ -5,7 +5,7 @@
 #include <lsCurvatureFormulas.hpp>
 #include <lsDomain.hpp>
 
-enum struct lsCurvatureType : unsigned {
+enum struct lsCurvatureEnum : unsigned {
   MEAN_CURVATURE = 0,
   GAUSSIAN_CURVATURE = 1,
   MEAN_AND_GAUSSIAN_CURVATURE = 2
@@ -17,7 +17,7 @@ enum struct lsCurvatureType : unsigned {
 template <class T, int D> class lsCalculateCurvatures {
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
   T maxValue = 0.5;
-  lsCurvatureType type = lsCurvatureType::MEAN_CURVATURE;
+  lsCurvatureEnum type = lsCurvatureEnum::MEAN_CURVATURE;
 
 public:
   lsCalculateCurvatures() {}
@@ -25,11 +25,15 @@ public:
   lsCalculateCurvatures(lsSmartPointer<lsDomain<T, D>> passedLevelSet)
       : levelSet(passedLevelSet) {}
 
+  lsCalculateCurvatures(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
+                        lsCurvatureEnum method)
+      : levelSet(passedLevelSet), type(method) {}
+
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
   }
 
-  void setCurvatureType(lsCurvatureType passedType) {
+  void setCurvatureType(lsCurvatureEnum passedType) {
     // in 2D there is only one option so ignore
     if constexpr (D == 3) {
       type = passedType;
@@ -51,11 +55,13 @@ public:
           .print();
     }
 
-    if (levelSet->getLevelSetWidth() < (maxValue * 5) + 1) {
+    // need second neighbours
+    if (unsigned minWidth = std::ceil((maxValue * 8) + 1);
+        levelSet->getLevelSetWidth() < minWidth) {
       lsMessage::getInstance()
           .addWarning("lsCalculateCurvatures: Level set width must be "
-                      "greater than " +
-                      std::to_string((maxValue * 5) + 1) + " !")
+                      "at least " +
+                      std::to_string(minWidth) + " !")
           .print();
     }
 
@@ -66,11 +72,11 @@ public:
 
     auto grid = levelSet->getGrid();
     const bool calculateMean =
-        (type == lsCurvatureType::MEAN_CURVATURE) ||
-        (type == lsCurvatureType::MEAN_AND_GAUSSIAN_CURVATURE);
+        (type == lsCurvatureEnum::MEAN_CURVATURE) ||
+        (type == lsCurvatureEnum::MEAN_AND_GAUSSIAN_CURVATURE);
     const bool calculateGauss =
-        (type == lsCurvatureType::GAUSSIAN_CURVATURE) ||
-        (type == lsCurvatureType::MEAN_AND_GAUSSIAN_CURVATURE);
+        (type == lsCurvatureEnum::GAUSSIAN_CURVATURE) ||
+        (type == lsCurvatureEnum::MEAN_AND_GAUSSIAN_CURVATURE);
 
     //! Calculate Curvatures
 #pragma omp parallel num_threads(levelSet->getNumberOfSegments())

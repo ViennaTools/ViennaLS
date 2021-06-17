@@ -22,7 +22,7 @@ externalproject_add(vtk-external
   BINARY_DIR
     "${DEPENDENCIES_DIR}/Build/${VTK_EXTERNAL_INSTALL}"
   CMAKE_ARGS
-    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+    -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
     -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
     -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
     -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
@@ -53,6 +53,7 @@ externalproject_add(vtk-external
     1
   GIT_PROGRESS
     1
+  EXCLUDE_FROM_ALL TRUE
 )
 
 # Get install and build directory

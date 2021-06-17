@@ -9,9 +9,9 @@
 #include <lsCalculateCurvatures.hpp>
 #include <lsCalculateNormalVectors.hpp>
 #include <lsCheck.hpp>
+#include <lsDetectFeatures.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
-#include <lsFeatureDetection.hpp>
 #include <lsFromSurfaceMesh.hpp>
 #include <lsFromVolumeMesh.hpp>
 #include <lsGeometricAdvect.hpp>
@@ -39,7 +39,7 @@ PRECOMPILE_SPECIALIZE(lsConvexHull)
 PRECOMPILE_SPECIALIZE(lsDomain)
 PRECOMPILE_SPECIALIZE(lsExpand)
 PRECOMPILE_SPECIALIZE(lsGeometricAdvect)
-PRECOMPILE_SPECIALIZE(lsFeatureDetection)
+PRECOMPILE_SPECIALIZE(lsDetectFeatures)
 PRECOMPILE_SPECIALIZE(lsFromMesh)
 PRECOMPILE_SPECIALIZE(lsFromSurfaceMesh)
 PRECOMPILE_SPECIALIZE(lsFromVolumeMesh)

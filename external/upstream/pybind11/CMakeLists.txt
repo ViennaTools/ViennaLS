@@ -8,7 +8,7 @@ externalproject_add(pybind11-external
   8de7772cc72daca8e947b79b83fea46214931604
   # GIT_SHALLOW 1
   CMAKE_ARGS
-    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+    -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
     # -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
     -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
     -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
@@ -30,6 +30,7 @@ externalproject_add(pybind11-external
     1
   GIT_PROGRESS
     1
+  EXCLUDE_FROM_ALL TRUE
 )
 
 # Get install and build directory
