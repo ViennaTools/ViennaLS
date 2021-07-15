@@ -205,9 +205,9 @@ public:
       values.push_back(value);
     }
 
-    mesh->insertNextScalarData(values, "LSValues");
-    mesh->insertNextVectorData(normals, "Normals");
-    mesh->insertNextScalarData(materialIds, "MaterialIds");
+    mesh->cellData.insertNextScalarData(values, "LSValues");
+    mesh->cellData.insertNextVectorData(normals, "Normals");
+    mesh->cellData.insertNextScalarData(materialIds, "MaterialIds");
     mesh->minimumExtent = minimumExtent;
     mesh->maximumExtent = maximumExtent;
   }

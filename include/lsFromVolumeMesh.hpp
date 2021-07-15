@@ -15,21 +15,26 @@
 /// one level set for each material will be created and stored
 /// in the supplied std::vector<lsDomain<T,D>> object.
 template <class T, int D> class lsFromVolumeMesh {
-  std::vector<lsSmartPointer<lsDomain<T, D>>> levelSets;
+public:
+  using LevelSetType = lsSmartPointer<lsDomain<T, D>>;
+  using LevelSetsType = lsSmartPointer<std::vector<LevelSetType>>;
+
+private:
+  LevelSetsType levelSets;
   lsSmartPointer<lsMesh<T>> mesh = nullptr;
   bool removeBoundaryTriangles = true;
 
 public:
   lsFromVolumeMesh() {}
 
-  lsFromVolumeMesh(std::vector<lsSmartPointer<lsDomain<T, D>>> passedLevelSets,
+  lsFromVolumeMesh(LevelSetsType passedLevelSets,
                    lsSmartPointer<lsMesh<T>> passedMesh,
                    bool passedRemoveBoundaryTriangles = true)
       : levelSets(passedLevelSets), mesh(passedMesh),
         removeBoundaryTriangles(passedRemoveBoundaryTriangles) {}
 
   void
-  setLevelSets(std::vector<lsSmartPointer<lsDomain<T, D>>> passedLevelSets) {
+  setLevelSets(LevelSetsType passedLevelSets) {
     levelSets = passedLevelSets;
   }
 
@@ -40,7 +45,7 @@ public:
   }
 
   void apply() {
-    if (levelSets.empty()) {
+    if (levelSets->empty()) {
       lsMessage::getInstance()
           .addWarning("No level set vector was passed to lsFromVolumeMesh.")
           .print();
@@ -56,7 +61,7 @@ public:
     // get the unique material numbers for explicit booling
     std::vector<int> materialInts;
     typename lsPointData<T>::ScalarDataType *materialData =
-        mesh->getScalarData("Material");
+        mesh->cellData.getScalarData("Material");
     if (materialData != nullptr) {
       // make unique list of materialIds
       materialInts =
@@ -173,8 +178,17 @@ public:
     }
 
     // for all materials/for each surface
-    levelSets.resize(materialInts.size());
-    auto levelSetIterator = levelSets.begin();
+    // resize to empty levelsets, but they need grid information
+    {
+      auto grid = levelSets->at(0)->getGrid();
+      levelSets->clear();
+      for(unsigned i = 0; i < materialInts.size(); ++i) {
+        auto ls = LevelSetType::New(grid);
+        levelSets->push_back(ls);
+      }
+    }
+
+    auto levelSetIterator = (*levelSets).begin();
     for (auto matIt = materialInts.begin(); matIt != materialInts.end();
          ++matIt) {
       auto currentSurface = lsSmartPointer<lsMesh<T>>::New();

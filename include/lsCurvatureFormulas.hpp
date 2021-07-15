@@ -105,7 +105,7 @@ std::array<T, 9> smallStencilFromIterator(It &it, const double gridDelta) {
     d[i + 3] = (phi_px - 2. * phi_0 + phi_nx) / gridDelta;
     d[i + 6] = (phi_pp - phi_pn - phi_np + phi_nn) / (4 * gridDelta);
   }
-  return std::move(d);
+  return d;
 }
 
 /// Fills an std::array with differential values calculated from
@@ -147,7 +147,7 @@ std::array<T, 9> bigStencilFromIterator(It &it, const double gridDelta) {
                (3 * gridDelta2);
     d[i + 6] = (phi_pp - phi_pn - phi_np + phi_nn) / (4 * gridDelta2);
   }
-  return std::move(d);
+  return d;
 }
 
 /// Calculates the Mean Curvature of the level set

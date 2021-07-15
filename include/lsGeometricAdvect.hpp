@@ -190,7 +190,7 @@ public:
     if (maskLevelSet != nullptr) {
       // Go over all contribute points and see if they are on the mask surface
       auto &maskDomain = maskLevelSet->getDomain();
-      auto values = surfaceMesh->getScalarData("LSValues");
+      auto values = surfaceMesh->cellData.getScalarData("LSValues");
       auto valueIt = values->begin();
 
       auto newSurfaceMesh = lsSmartPointer<lsMesh<hrleCoordType>>::New();
@@ -215,7 +215,7 @@ public:
         }
         ++valueIt;
       }
-      newSurfaceMesh->insertNextScalarData(newValues, "LSValues");
+      newSurfaceMesh->cellData.insertNextScalarData(newValues, "LSValues");
       // use new mesh as surfaceMesh
       newSurfaceMesh->minimumExtent = surfaceMesh->minimumExtent;
       newSurfaceMesh->maximumExtent = surfaceMesh->maximumExtent;
@@ -480,7 +480,7 @@ public:
         mesh->insertNextVertex(vertex);
         scalarData.push_back(it->second);
       }
-      mesh->insertNextScalarData(scalarData, "LSValues");
+      mesh->cellData.insertNextScalarData(scalarData, "LSValues");
     }
 
 #ifndef NDEBUG // if in debug build

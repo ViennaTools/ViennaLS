@@ -52,7 +52,7 @@ public:
 
     auto &domain = levelSet->getDomain();
     auto &nodes = mesh->getNodes();
-    auto values = mesh->getScalarData("LSValues");
+    auto values = mesh->cellData.getScalarData("LSValues");
 
     if (values == nullptr) {
       lsMessage::getInstance()

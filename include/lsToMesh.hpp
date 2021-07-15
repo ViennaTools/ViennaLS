@@ -151,18 +151,18 @@ public:
       }
     }
 
-    mesh->insertNextScalarData(LSValues, "LSValues");
-    mesh->insertNextScalarData(subLS, "SegmentID");
+    mesh->cellData.insertNextScalarData(LSValues, "LSValues");
+    mesh->cellData.insertNextScalarData(subLS, "SegmentID");
 
     // append all scalar and vector data
     // just move it into the new structure, since we do not need it anymore
     for (unsigned i = 0; i < scalarData.size(); ++i) {
-      mesh->insertNextScalarData(std::move(scalarData[i]),
+      mesh->cellData.insertNextScalarData(std::move(scalarData[i]),
                                  pointData.getScalarDataLabel(i));
     }
 
     for (unsigned i = 0; i < vectorData.size(); ++i) {
-      mesh->insertNextVectorData(std::move(vectorData[i]),
+      mesh->cellData.insertNextVectorData(std::move(vectorData[i]),
                                  pointData.getVectorDataLabel(i));
     }
   }

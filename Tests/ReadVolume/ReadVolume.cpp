@@ -19,9 +19,11 @@ int main() {
 
   boundaryCons[1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  std::vector<lsSmartPointer<lsDomain<double, D>>> levelSets(
-      5, lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
-                                                  gridDelta));
+  auto domain = lsSmartPointer<lsDomain<double, D>>::New(
+      bounds, boundaryCons, gridDelta);
+
+  auto levelSets = lsFromVolumeMesh<double, D>::LevelSetsType::New();
+  levelSets->push_back(domain);
 
   // Read mesh
   auto initialMesh = lsSmartPointer<lsMesh<>>::New();
@@ -30,9 +32,9 @@ int main() {
 
   lsFromVolumeMesh<double, D>(levelSets, initialMesh).apply();
 
-  for (unsigned i = 0; i < levelSets.size(); ++i) {
+  for (unsigned i = 0; i < levelSets->size(); ++i) {
     auto mesh = lsSmartPointer<lsMesh<>>::New();
-    lsToSurfaceMesh<double, D>(levelSets[i], mesh).apply();
+    lsToSurfaceMesh<double, D>(levelSets->at(i), mesh).apply();
     lsVTKWriter<double>(mesh, "LSsurface-" + std::to_string(i) + ".vtk")
         .apply();
   }
