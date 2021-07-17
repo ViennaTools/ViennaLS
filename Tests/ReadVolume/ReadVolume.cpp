@@ -19,16 +19,17 @@ int main() {
 
   boundaryCons[1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  std::vector<lsSmartPointer<lsDomain<double, D>>> levelSets(
-      5, lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
-                                                  gridDelta));
+  auto domain =
+      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
 
   // Read mesh
   auto initialMesh = lsSmartPointer<lsMesh<>>::New();
-  lsVTKReader<double>(initialMesh, "initial.vtk").apply();
+  lsVTKReader<double>(initialMesh, "initial.vtu").apply();
   initialMesh->print();
 
-  lsFromVolumeMesh<double, D>(levelSets, initialMesh).apply();
+  lsFromVolumeMesh<double, D> reader(domain->getGrid(), initialMesh);
+  reader.apply();
+  auto levelSets = reader.getLevelSets();
 
   for (unsigned i = 0; i < levelSets.size(); ++i) {
     auto mesh = lsSmartPointer<lsMesh<>>::New();

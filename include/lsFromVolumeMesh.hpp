@@ -15,22 +15,30 @@
 /// one level set for each material will be created and stored
 /// in the supplied std::vector<lsDomain<T,D>> object.
 template <class T, int D> class lsFromVolumeMesh {
-  std::vector<lsSmartPointer<lsDomain<T, D>>> levelSets;
+public:
+  using LevelSetType = lsSmartPointer<lsDomain<T, D>>;
+  using LevelSetsType = std::vector<LevelSetType>;
+  using GridType = typename lsDomain<T, D>::GridType;
+
+private:
+  LevelSetsType levelSets;
   lsSmartPointer<lsMesh<T>> mesh = nullptr;
+  GridType grid;
   bool removeBoundaryTriangles = true;
+  bool gridSet = false;
 
 public:
   lsFromVolumeMesh() {}
 
-  lsFromVolumeMesh(std::vector<lsSmartPointer<lsDomain<T, D>>> passedLevelSets,
+  lsFromVolumeMesh(const GridType &passedGrid,
                    lsSmartPointer<lsMesh<T>> passedMesh,
                    bool passedRemoveBoundaryTriangles = true)
-      : levelSets(passedLevelSets), mesh(passedMesh),
-        removeBoundaryTriangles(passedRemoveBoundaryTriangles) {}
+      : grid(passedGrid), mesh(passedMesh),
+        removeBoundaryTriangles(passedRemoveBoundaryTriangles), gridSet(true) {}
 
-  void
-  setLevelSets(std::vector<lsSmartPointer<lsDomain<T, D>>> passedLevelSets) {
-    levelSets = passedLevelSets;
+  void setGrid(const GridType &passedGrid) {
+    grid = passedGrid;
+    gridSet = true;
   }
 
   void setMesh(lsSmartPointer<lsMesh<T>> passedMesh) { mesh = passedMesh; }
@@ -39,10 +47,12 @@ public:
     removeBoundaryTriangles = passedRemoveBoundaryTriangles;
   }
 
+  std::vector<LevelSetType> getLevelSets() const { return levelSets; }
+
   void apply() {
-    if (levelSets.empty()) {
+    if (!gridSet) {
       lsMessage::getInstance()
-          .addWarning("No level set vector was passed to lsFromVolumeMesh.")
+          .addWarning("No grid has been set in lsFromVolumeMesh.")
           .print();
       return;
     }
@@ -56,7 +66,7 @@ public:
     // get the unique material numbers for explicit booling
     std::vector<int> materialInts;
     typename lsPointData<T>::ScalarDataType *materialData =
-        mesh->getScalarData("Material");
+        mesh->cellData.getScalarData("Material");
     if (materialData != nullptr) {
       // make unique list of materialIds
       materialInts =
@@ -173,7 +183,15 @@ public:
     }
 
     // for all materials/for each surface
-    levelSets.resize(materialInts.size());
+    // resize to empty levelsets, but they need grid information
+    {
+      levelSets.clear();
+      for (unsigned i = 0; i < materialInts.size(); ++i) {
+        auto ls = LevelSetType::New(grid);
+        levelSets.push_back(ls);
+      }
+    }
+
     auto levelSetIterator = levelSets.begin();
     for (auto matIt = materialInts.begin(); matIt != materialInts.end();
          ++matIt) {

@@ -11,7 +11,7 @@
 /// If it describes a 2D mesh, the third dimension is set to 0.
 /// Vertices, Lines, Triangles, Tetras & Hexas are supported as geometric
 /// elements.
-template <class T = double> class lsMesh : public lsPointData<T> {
+template <class T = double> class lsMesh {
 public:
   std::vector<std::array<T, 3>> nodes;
   std::vector<std::array<unsigned, 1>> vertices;
@@ -19,6 +19,8 @@ public:
   std::vector<std::array<unsigned, 3>> triangles;
   std::vector<std::array<unsigned, 4>> tetras;
   std::vector<std::array<unsigned, 8>> hexas;
+  lsPointData<T> pointData;
+  lsPointData<T> cellData;
   std::array<T, 3> minimumExtent;
   std::array<T, 3> maximumExtent;
 
@@ -76,6 +78,14 @@ public:
   std::vector<std::array<unsigned, D>> &getElements() {
     return hexas;
   }
+
+  lsPointData<T> &getPointData() { return pointData; }
+
+  const lsPointData<T> &getPointData() const { return pointData; }
+
+  lsPointData<T> &getCellData() { return cellData; }
+
+  const lsPointData<T> &getCellData() const { return cellData; }
 
   unsigned insertNextNode(const std::array<T, 3> &node) {
     nodes.push_back(node);
@@ -222,14 +232,22 @@ public:
     // Append data
     // TODO need to adjust lsVTKWriter to deal with different data correctly
     // currently this only works for vertex only meshes
-    lsPointData<T>::append(passedMesh);
+    pointData.append(passedMesh.pointData);
+    cellData.append(passedMesh.cellData);
 
     // if(lsPointData<T>::scalarData.size() < nodes.size())
-    for (unsigned i = 0; i < lsPointData<T>::getScalarDataSize(); ++i) {
-      lsPointData<T>::getScalarData(i)->resize(vertices.size());
+    for (unsigned i = 0; i < pointData.getScalarDataSize(); ++i) {
+      pointData.getScalarData(i)->resize(vertices.size());
     }
-    for (unsigned i = 0; i < lsPointData<T>::getVectorDataSize(); ++i) {
-      lsPointData<T>::getVectorData(i)->resize(vertices.size());
+    for (unsigned i = 0; i < pointData.getVectorDataSize(); ++i) {
+      pointData.getVectorData(i)->resize(vertices.size());
+    }
+
+    for (unsigned i = 0; i < cellData.getScalarDataSize(); ++i) {
+      cellData.getScalarData(i)->resize(vertices.size());
+    }
+    for (unsigned i = 0; i < cellData.getVectorDataSize(); ++i) {
+      cellData.getVectorData(i)->resize(vertices.size());
     }
   }
 
@@ -240,7 +258,8 @@ public:
     triangles.clear();
     tetras.clear();
     hexas.clear();
-    lsPointData<T>::clear();
+    pointData.clear();
+    cellData.clear();
   }
 
   void print() {
@@ -256,21 +275,35 @@ public:
       std::cout << "Number of Tetrahedrons: " << tetras.size() << std::endl;
     if (hexas.size() > 0)
       std::cout << "Number of Hexas: " << hexas.size() << std::endl;
-    // data
-    if (lsPointData<T>::getScalarDataSize() > 0) {
+    // pointData
+    if (pointData.getScalarDataSize() > 0) {
       std::cout << "Scalar data:" << std::endl;
-      for (unsigned i = 0; i < lsPointData<T>::getScalarDataSize(); ++i) {
-        std::cout << "  \"" << lsPointData<T>::getScalarDataLabel(i)
-                  << "\" of size " << lsPointData<T>::getScalarData(i)->size()
-                  << std::endl;
+      for (unsigned i = 0; i < pointData.getScalarDataSize(); ++i) {
+        std::cout << "  \"" << pointData.getScalarDataLabel(i) << "\" of size "
+                  << pointData.getScalarData(i)->size() << std::endl;
       }
     }
-    if (lsPointData<T>::getVectorDataSize() > 0) {
+    if (pointData.getVectorDataSize() > 0) {
       std::cout << "Vector data:" << std::endl;
-      for (unsigned i = 0; i < lsPointData<T>::getVectorDataSize(); ++i) {
-        std::cout << "  \"" << lsPointData<T>::getVectorDataLabel(i)
-                  << "\" of size " << lsPointData<T>::getVectorData(i)->size()
-                  << std::endl;
+      for (unsigned i = 0; i < pointData.getVectorDataSize(); ++i) {
+        std::cout << "  \"" << pointData.getVectorDataLabel(i) << "\" of size "
+                  << pointData.getVectorData(i)->size() << std::endl;
+      }
+    }
+
+    // cellData
+    if (cellData.getScalarDataSize() > 0) {
+      std::cout << "Scalar data:" << std::endl;
+      for (unsigned i = 0; i < cellData.getScalarDataSize(); ++i) {
+        std::cout << "  \"" << cellData.getScalarDataLabel(i) << "\" of size "
+                  << cellData.getScalarData(i)->size() << std::endl;
+      }
+    }
+    if (cellData.getVectorDataSize() > 0) {
+      std::cout << "Vector data:" << std::endl;
+      for (unsigned i = 0; i < cellData.getVectorDataSize(); ++i) {
+        std::cout << "  \"" << cellData.getVectorDataLabel(i) << "\" of size "
+                  << cellData.getVectorData(i)->size() << std::endl;
       }
     }
   }

@@ -76,6 +76,26 @@ public:
 
     lsInternal::lsMarchingCubes marchingCubes;
 
+    using DomainType = lsDomain<T, D>;
+    using ScalarDataType = typename DomainType::PointDataType::ScalarDataType;
+    using VectorDataType = typename DomainType::PointDataType::VectorDataType;
+
+    const auto &pointData = levelSet->getPointData();
+    // scalar data
+    for (unsigned i = 0; i < pointData.getScalarDataSize(); ++i) {
+      ScalarDataType tmp;
+      tmp.reserve(pointData.getScalarData(i)->size());
+      mesh->pointData.insertNextScalarData(tmp,
+                                           pointData.getScalarDataLabel(i));
+    }
+    // vector data
+    for (unsigned i = 0; i < pointData.getVectorDataSize(); ++i) {
+      VectorDataType tmp;
+      tmp.reserve(pointData.getVectorData(i)->size());
+      mesh->pointData.insertNextVectorData(tmp,
+                                           pointData.getVectorDataLabel(i));
+    }
+
     // iterate over all active points
     for (hrleConstSparseCellIterator<hrleDomainType> cellIt(
              levelSet->getDomain());
@@ -128,6 +148,7 @@ public:
 
             // calculate coordinate of new node
             std::array<T, 3> cc{}; // initialise with zeros
+            std::size_t currentPointId = 0;
             for (int z = 0; z < D; z++) {
               if (z != dir) {
                 // TODO might not need BitMaskToVector here, just check if z bit
@@ -142,18 +163,15 @@ public:
 
                 // calculate the surface-grid intersection point
                 if (d0 == -d1) { // includes case where d0=d1=0
-                  // meshNodeToPointIdMapping.push_back(
-                  //     cellIt.getCorner(p0).getPointId());
+                  currentPointId = cellIt.getCorner(p0).getPointId();
                   cc[z] = static_cast<T>(cellIt.getIndices(z)) + 0.5;
                 } else {
                   if (std::abs(d0) <= std::abs(d1)) {
-                    // meshNodeToPointIdMapping.push_back(
-                    //     cellIt.getCorner(p0).getPointId());
+                    currentPointId = cellIt.getCorner(p0).getPointId();
                     cc[z] =
                         static_cast<T>(cellIt.getIndices(z)) + (d0 / (d0 - d1));
                   } else {
-                    // meshNodeToPointIdMapping.push_back(
-                    //     cellIt.getCorner(p1).getPointId());
+                    currentPointId = cellIt.getCorner(p1).getPointId();
                     cc[z] = static_cast<T>(cellIt.getIndices(z) + 1) -
                             (d1 / (d1 - d0));
                   }
@@ -168,6 +186,19 @@ public:
             nod_numbers[n] =
                 mesh->insertNextNode(cc); // insert new surface node
             nodes[dir][d] = nod_numbers[n];
+
+            // insert corresponding point data
+            for (unsigned i = 0; i < pointData.getScalarDataSize(); ++i) {
+              const auto &currentData = *pointData.getScalarData(i);
+              mesh->pointData.getScalarData(i)->push_back(
+                  currentData[currentPointId]);
+            }
+
+            for (unsigned i = 0; i < pointData.getVectorDataSize(); ++i) {
+              const auto &currentData = *pointData.getVectorData(i);
+              mesh->pointData.getVectorData(i)->push_back(
+                  currentData[currentPointId]);
+            }
           }
         }
 
