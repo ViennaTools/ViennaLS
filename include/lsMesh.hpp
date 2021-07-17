@@ -79,6 +79,14 @@ public:
     return hexas;
   }
 
+  lsPointData<T> &getPointData() { return pointData; }
+
+  const lsPointData<T> &getPointData() const { return pointData; }
+
+  lsPointData<T> &getCellData() { return cellData; }
+
+  const lsPointData<T> &getCellData() const { return cellData; }
+
   unsigned insertNextNode(const std::array<T, 3> &node) {
     nodes.push_back(node);
     return nodes.size() - 1;
@@ -271,36 +279,31 @@ public:
     if (pointData.getScalarDataSize() > 0) {
       std::cout << "Scalar data:" << std::endl;
       for (unsigned i = 0; i < pointData.getScalarDataSize(); ++i) {
-        std::cout << "  \"" << pointData.getScalarDataLabel(i)
-                  << "\" of size " << pointData.getScalarData(i)->size()
-                  << std::endl;
+        std::cout << "  \"" << pointData.getScalarDataLabel(i) << "\" of size "
+                  << pointData.getScalarData(i)->size() << std::endl;
       }
     }
     if (pointData.getVectorDataSize() > 0) {
       std::cout << "Vector data:" << std::endl;
       for (unsigned i = 0; i < pointData.getVectorDataSize(); ++i) {
-        std::cout << "  \"" << pointData.getVectorDataLabel(i)
-                  << "\" of size " << pointData.getVectorData(i)->size()
-                  << std::endl;
+        std::cout << "  \"" << pointData.getVectorDataLabel(i) << "\" of size "
+                  << pointData.getVectorData(i)->size() << std::endl;
       }
     }
-
 
     // cellData
     if (cellData.getScalarDataSize() > 0) {
       std::cout << "Scalar data:" << std::endl;
       for (unsigned i = 0; i < cellData.getScalarDataSize(); ++i) {
-        std::cout << "  \"" << cellData.getScalarDataLabel(i)
-                  << "\" of size " << cellData.getScalarData(i)->size()
-                  << std::endl;
+        std::cout << "  \"" << cellData.getScalarDataLabel(i) << "\" of size "
+                  << cellData.getScalarData(i)->size() << std::endl;
       }
     }
     if (cellData.getVectorDataSize() > 0) {
       std::cout << "Vector data:" << std::endl;
       for (unsigned i = 0; i < cellData.getVectorDataSize(); ++i) {
-        std::cout << "  \"" << cellData.getVectorDataLabel(i)
-                  << "\" of size " << cellData.getVectorData(i)->size()
-                  << std::endl;
+        std::cout << "  \"" << cellData.getVectorDataLabel(i) << "\" of size "
+                  << cellData.getVectorData(i)->size() << std::endl;
       }
     }
   }

@@ -95,8 +95,8 @@ public:
     size_t currentPointId = 0;
 
     // prepare mesh for material ids
-    mesh->cellData.insertNextScalarData(typename lsPointData<T>::ScalarDataType(),
-                               "Material");
+    mesh->cellData.insertNextScalarData(
+        typename lsPointData<T>::ScalarDataType(), "Material");
     auto &materialIds = *(mesh->cellData.getScalarData(0));
 
     // set up iterators for all materials

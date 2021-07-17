@@ -10,8 +10,8 @@
 
 #ifdef VIENNALS_USE_VTK
 #include <vtkCellData.h>
-#include <vtkPointData.h>
 #include <vtkIdList.h>
+#include <vtkPointData.h>
 #include <vtkPolyData.h>
 #include <vtkSmartPointer.h>
 #include <vtkUnstructuredGrid.h>
@@ -22,7 +22,7 @@
 /// Class handling the import of VTK file types.
 template <class T = double> class lsVTKReader {
   lsSmartPointer<lsMesh<T>> mesh = nullptr;
-  lsFileFormatEnum fileFormat = lsFileFormatEnum::VTK_LEGACY;
+  lsFileFormatEnum fileFormat = lsFileFormatEnum::VTK_AUTO;
   std::string fileName;
 
   unsigned vtk_nodes_for_cell_type[15] = {0, 1, 0, 2, 0, 3, 0, 0,
@@ -65,6 +65,23 @@ public:
           .addWarning("No file name specified for lsVTKReader. Not reading.")
           .print();
       return;
+    }
+
+    if (fileFormat == lsFileFormatEnum::VTK_AUTO) {
+      auto ending = fileName.substr(fileName.find_last_of('.'));
+      if (ending == ".vtk") {
+        fileFormat = lsFileFormatEnum::VTK_LEGACY;
+      } else if (ending == ".vtp") {
+        fileFormat = lsFileFormatEnum::VTP;
+      } else if (ending == ".vtu") {
+        fileFormat = lsFileFormatEnum::VTU;
+      } else {
+        lsMessage::getInstance()
+            .addWarning("No valid file format found based on the file ending "
+                        "passed to lsVTKReader. Not reading.")
+            .print();
+        return;
+      }
     }
 
     // check file format
@@ -167,7 +184,8 @@ private:
     }
 
     // get point data
-    vtkSmartPointer<vtkPointData> pointData = vtkSmartPointer<vtkPointData>::New();
+    vtkSmartPointer<vtkPointData> pointData =
+        vtkSmartPointer<vtkPointData>::New();
     pointData = polyData->GetPointData();
 
     for (unsigned i = 0;
@@ -175,16 +193,18 @@ private:
       vtkDataArray *dataArray;
       dataArray = pointData->GetArray(i);
       if (pointData->GetNumberOfComponents() == 1) {
-        mesh->pointData.insertNextScalarData(typename lsPointData<T>::ScalarDataType(),
-                                   std::string(pointData->GetArrayName(i)));
+        mesh->pointData.insertNextScalarData(
+            typename lsPointData<T>::ScalarDataType(),
+            std::string(pointData->GetArrayName(i)));
         auto &scalars = *(mesh->pointData.getScalarData(i));
         scalars.resize(pointData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++j) {
           scalars[j] = dataArray->GetTuple1(j);
         }
       } else if (pointData->GetNumberOfComponents() == 3) {
-        mesh->pointData.insertNextVectorData(typename lsPointData<T>::VectorDataType(),
-                                   std::string(pointData->GetArrayName(i)));
+        mesh->pointData.insertNextVectorData(
+            typename lsPointData<T>::VectorDataType(),
+            std::string(pointData->GetArrayName(i)));
         auto &vectors = *(mesh->pointData.getVectorData(i));
         vectors.resize(pointData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++j) {
@@ -204,16 +224,18 @@ private:
       vtkDataArray *dataArray;
       dataArray = cellData->GetArray(i);
       if (cellData->GetNumberOfComponents() == 1) {
-        mesh->cellData.insertNextScalarData(typename lsPointData<T>::ScalarDataType(),
-                                   std::string(cellData->GetArrayName(i)));
+        mesh->cellData.insertNextScalarData(
+            typename lsPointData<T>::ScalarDataType(),
+            std::string(cellData->GetArrayName(i)));
         auto &scalars = *(mesh->cellData.getScalarData(i));
         scalars.resize(cellData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++j) {
           scalars[j] = dataArray->GetTuple1(j);
         }
       } else if (cellData->GetNumberOfComponents() == 3) {
-        mesh->cellData.insertNextVectorData(typename lsPointData<T>::VectorDataType(),
-                                   std::string(cellData->GetArrayName(i)));
+        mesh->cellData.insertNextVectorData(
+            typename lsPointData<T>::VectorDataType(),
+            std::string(cellData->GetArrayName(i)));
         auto &vectors = *(mesh->cellData.getVectorData(i));
         vectors.resize(cellData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++j) {
@@ -300,7 +322,8 @@ private:
     }
 
     // get point data
-    vtkSmartPointer<vtkPointData> pointData = vtkSmartPointer<vtkPointData>::New();
+    vtkSmartPointer<vtkPointData> pointData =
+        vtkSmartPointer<vtkPointData>::New();
     pointData = ugrid->GetPointData();
 
     for (unsigned i = 0;
@@ -308,16 +331,18 @@ private:
       vtkDataArray *dataArray;
       dataArray = pointData->GetArray(i);
       if (pointData->GetNumberOfComponents() == 1) {
-        mesh->pointData.insertNextScalarData(typename lsPointData<T>::ScalarDataType(),
-                                   std::string(pointData->GetArrayName(i)));
+        mesh->pointData.insertNextScalarData(
+            typename lsPointData<T>::ScalarDataType(),
+            std::string(pointData->GetArrayName(i)));
         auto &scalars = *(mesh->pointData.getScalarData(i));
         scalars.resize(pointData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++j) {
           scalars[j] = dataArray->GetTuple1(j);
         }
       } else if (pointData->GetNumberOfComponents() == 3) {
-        mesh->pointData.insertNextVectorData(typename lsPointData<T>::VectorDataType(),
-                                   std::string(pointData->GetArrayName(i)));
+        mesh->pointData.insertNextVectorData(
+            typename lsPointData<T>::VectorDataType(),
+            std::string(pointData->GetArrayName(i)));
         auto &vectors = *(mesh->pointData.getVectorData(i));
         vectors.resize(pointData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++j) {
@@ -337,16 +362,18 @@ private:
       vtkDataArray *dataArray;
       dataArray = cellData->GetArray(i);
       if (cellData->GetNumberOfComponents() == 1) {
-        mesh->cellData.insertNextScalarData(typename lsPointData<T>::ScalarDataType(),
-                                   std::string(cellData->GetArrayName(i)));
+        mesh->cellData.insertNextScalarData(
+            typename lsPointData<T>::ScalarDataType(),
+            std::string(cellData->GetArrayName(i)));
         auto &scalars = *(mesh->cellData.getScalarData(i));
         scalars.resize(cellData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++j) {
           scalars[j] = dataArray->GetTuple1(j);
         }
       } else if (cellData->GetNumberOfComponents() == 3) {
-        mesh->cellData.insertNextVectorData(typename lsPointData<T>::VectorDataType(),
-                                   std::string(cellData->GetArrayName(i)));
+        mesh->cellData.insertNextVectorData(
+            typename lsPointData<T>::VectorDataType(),
+            std::string(cellData->GetArrayName(i)));
         auto &vectors = *(mesh->cellData.getVectorData(i));
         vectors.resize(cellData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++j) {

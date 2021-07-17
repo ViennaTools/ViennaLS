@@ -551,14 +551,14 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       // constructors
       .def(pybind11::init(&lsSmartPointer<lsFromVolumeMesh<T, D>>::New<>))
       .def(pybind11::init(&lsSmartPointer<lsFromVolumeMesh<T, D>>::New<
-                          std::vector<lsSmartPointer<lsDomain<T, D>>> &,
+                          typename lsFromVolumeMesh<T, D>::GridType &,
                           lsSmartPointer<lsMesh<T>> &>))
       .def(pybind11::init(&lsSmartPointer<lsFromVolumeMesh<T, D>>::New<
-                          std::vector<lsSmartPointer<lsDomain<T, D>>> &,
+                          typename lsFromVolumeMesh<T, D>::GridType &,
                           lsSmartPointer<lsMesh<T>> &, bool>))
       // methods
-      .def("setLevelSets", &lsFromVolumeMesh<T, D>::setLevelSets,
-           "Set levelsets to read into.")
+      .def("setGrid", &lsFromVolumeMesh<T, D>::setGrid,
+           "Set the grid used to read in the level sets.")
       .def("setMesh", &lsFromVolumeMesh<T, D>::setMesh,
            "Set the mesh to read from.")
       .def("setRemoveBoundaryTriangles",
@@ -683,8 +683,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("getVectorDataLabel", &lsPointData<T>::getVectorDataLabel);
 
   // lsMesh<T>
-  pybind11::class_<lsMesh<T>, lsSmartPointer<lsMesh<T>>, lsPointData<T>>(
-      module, "lsMesh")
+  pybind11::class_<lsMesh<T>, lsSmartPointer<lsMesh<T>>>(module, "lsMesh")
       // constructors
       .def(pybind11::init(&lsSmartPointer<lsMesh<T>>::New<>))
       // methods
@@ -716,6 +715,12 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            (std::vector<std::array<unsigned, 8>> & (lsMesh<T>::*)()) &
                lsMesh<T>::getElements<8>,
            "Get a list of hexahedrons of the mesh.")
+      .def("getPointData",
+           (lsPointData<T> & (lsMesh<T>::*)()) & lsMesh<T>::getPointData,
+           "Return a reference to the point data of the mesh.")
+      .def("getCellData",
+           (lsPointData<T> & (lsMesh<T>::*)()) & lsMesh<T>::getCellData,
+           "Return a reference to the cell data of the mesh.")
       .def("insertNextNode", &lsMesh<T>::insertNextNode,
            "Insert a node in the mesh.")
       .def("insertNextVertex", &lsMesh<T>::insertNextVertex,

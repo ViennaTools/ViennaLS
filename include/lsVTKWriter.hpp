@@ -9,10 +9,10 @@
 #include <lsMessage.hpp>
 
 #ifdef VIENNALS_USE_VTK
-#include <vtkPointData.h>
 #include <vtkCellArray.h>
 #include <vtkCellData.h>
 #include <vtkFloatArray.h>
+#include <vtkPointData.h>
 #include <vtkPoints.h>
 #include <vtkPolyData.h>
 #include <vtkSmartPointer.h>
@@ -28,7 +28,7 @@ template <class T> class lsVTKWriter {
   lsFileFormatEnum fileFormat = lsFileFormatEnum::VTK_LEGACY;
   std::string fileName;
 
-template<class In, class Out>
+  template <class In, class Out>
   void addDataFromMesh(const In &inData, Out outData) const {
     // now add pointData
     for (unsigned i = 0; i < inData.getScalarDataSize(); ++i) {
@@ -405,7 +405,8 @@ private:
       f << "CELL_DATA " << mesh->cellData.getScalarData(0)->size() << std::endl;
       for (unsigned i = 0; i < mesh->cellData.getScalarDataSize(); ++i) {
         auto scalars = *(mesh->cellData.getScalarData(i));
-        f << "SCALARS " << mesh->cellData.getScalarDataLabel(i) << " float" << std::endl;
+        f << "SCALARS " << mesh->cellData.getScalarDataLabel(i) << " float"
+          << std::endl;
         f << "LOOKUP_TABLE default" << std::endl;
         for (unsigned j = 0; j < scalars.size(); ++j) {
           f << ((std::abs(scalars[j]) < 1e-6) ? 0.0 : scalars[j]) << std::endl;
@@ -416,10 +417,12 @@ private:
     // WRITE VECTOR DATA
     if (mesh->cellData.getVectorDataSize()) {
       if (!mesh->cellData.getScalarDataSize())
-        f << "CELL_DATA " << mesh->cellData.getVectorData(0)->size() << std::endl;
+        f << "CELL_DATA " << mesh->cellData.getVectorData(0)->size()
+          << std::endl;
       for (unsigned i = 0; i < mesh->cellData.getVectorDataSize(); ++i) {
         auto vectors = *(mesh->cellData.getVectorData(i));
-        f << "VECTORS " << mesh->cellData.getVectorDataLabel(i) << " float" << std::endl;
+        f << "VECTORS " << mesh->cellData.getVectorDataLabel(i) << " float"
+          << std::endl;
         for (unsigned j = 0; j < vectors.size(); ++j) {
           for (unsigned k = 0; k < 3; ++k) {
             f << vectors[j][k] << " ";

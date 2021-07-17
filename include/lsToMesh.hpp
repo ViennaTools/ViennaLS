@@ -158,12 +158,12 @@ public:
     // just move it into the new structure, since we do not need it anymore
     for (unsigned i = 0; i < scalarData.size(); ++i) {
       mesh->cellData.insertNextScalarData(std::move(scalarData[i]),
-                                 pointData.getScalarDataLabel(i));
+                                          pointData.getScalarDataLabel(i));
     }
 
     for (unsigned i = 0; i < vectorData.size(); ++i) {
       mesh->cellData.insertNextVectorData(std::move(vectorData[i]),
-                                 pointData.getVectorDataLabel(i));
+                                          pointData.getVectorDataLabel(i));
     }
   }
 };
