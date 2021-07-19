@@ -265,44 +265,14 @@ template <class T, int D> class lsAdvect {
     if (!pointData.getScalarDataSize() || !pointData.getVectorDataSize()) {
       auto &newPointData = newlsDomain->getPointData();
       // concatenate all source ids into one vector
-      newDataSourceIds.reserve(newlsDomain->getNumberOfPoints());
+      newDataSourceIds[0].reserve(newlsDomain->getNumberOfPoints());
       for (unsigned i = 1; i < newDataSourceIds.size(); ++i) {
-        for (unsigned j = 0; j < newDataSourceIds[i].size(); ++j) {
-          newDataSourceIds[0].push_back(newDataSourceIds[i][j]);
-        }
-        // free memory of copied vectors
-        std::vector<unsigned>().swap(newDataSourceIds[i]);
+        newDataSourceIds[0].insert(newDataSourceIds[0].end(),
+                                  newDataSourceIds[i].begin(),
+                                  newDataSourceIds[i].end());
       }
 
-      // scalars
-      for (unsigned scalarId = 0; scalarId < pointData.getScalarDataSize();
-           ++scalarId) {
-        newPointData.insertNextScalarData(
-            typename lsPointData<T>::ScalarDataType(),
-            pointData.getScalarDataLabel(scalarId));
-        auto &newScalars = *(newPointData.getScalarData(scalarId));
-        auto &scalars = *(pointData.getScalarData(scalarId));
-        newScalars.reserve(newlsDomain->getNumberOfPoints());
-
-        for (unsigned i = 0; i < newDataSourceIds[0].size(); ++i) {
-          newScalars.push_back(scalars[newDataSourceIds[0][i]]);
-        }
-      }
-
-      // vectors
-      for (unsigned vectorId = 0; vectorId < pointData.getVectorDataSize();
-           ++vectorId) {
-        newPointData.insertNextVectorData(
-            typename lsPointData<T>::VectorDataType(),
-            pointData.getVectorDataLabel(vectorId));
-        auto &newVectors = *(newPointData.getVectorData(vectorId));
-        auto &vectors = *(pointData.getVectorData(vectorId));
-        newVectors.reserve(newlsDomain->getNumberOfPoints());
-
-        for (unsigned i = 0; i < newDataSourceIds[0].size(); ++i) {
-          newVectors.push_back(vectors[newDataSourceIds[0][i]]);
-        }
-      }
+      newPointData.translateFromData(pointData, newDataSourceIds[0]);
     }
 
     newDomain.finalize();
@@ -329,7 +299,7 @@ template <class T, int D> class lsAdvect {
     }
 
     // clear all metadata as it will be invalidated
-    levelSets.back()->clearMetaData();
+    // levelSets.back()->clearMetaData();
 
     double currentTime = 0.;
     if (integrationScheme ==
@@ -643,14 +613,20 @@ template <class T, int D> class lsAdvect {
     }
 
     if (saveVelocities) {
-      typename lsPointData<T>::ScalarDataType pointData;
+      auto &pointData = levelSets.back()->getPointData();
+      // delete if already exists
+      if(int i = pointData.getScalarDataIndex("AdvectionVelocity"); i != -1) {
+        pointData.eraseScalarData(i);
+      }
+      
+      typename lsPointData<T>::ScalarDataType vels;
+      
       for (unsigned i = 0; i < velocityVectors.size(); ++i) {
-        pointData.insert(pointData.end(),
+        vels.insert(vels.end(),
                          std::make_move_iterator(velocityVectors[i].begin()),
                          std::make_move_iterator(velocityVectors[i].end()));
-      }
-      levelSets.back()->getPointData().insertNextScalarData(
-          pointData, "AdvectionVelocity");
+      }      
+      pointData.insertNextScalarData(std::move(vels), "AdvectionVelocity");
     }
 
     return maxTimeStep;

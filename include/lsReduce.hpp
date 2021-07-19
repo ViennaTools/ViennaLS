@@ -66,6 +66,11 @@ public:
 
     newDomain.initialize(domain.getNewSegmentation(), domain.getAllocation());
 
+    // save how data should be transferred to new level set
+    // list of indices into the old pointData vector
+    std::vector<std::vector<unsigned>> newDataSourceIds;
+    newDataSourceIds.resize(newDomain.getNumberOfSegments());
+
 #pragma omp parallel num_threads(newDomain.getNumberOfSegments())
     {
       int p = 0;
@@ -91,6 +96,7 @@ public:
         if (it.isDefined() && std::abs(currentValue) <= valueLimit) {
           domainSegment.insertNextDefinedPoint(it.getStartIndices(),
                                                currentValue);
+          newDataSourceIds[p].push_back(it.getPointId());
         } else {
           // TODO: use insertNextUndefinedRunType
           domainSegment.insertNextUndefinedPoint(
@@ -99,6 +105,23 @@ public:
                                         : lsDomain<T, D>::POS_VALUE);
         }
       }
+    }
+
+    // now copy old data into new level set
+    auto &pointData = levelSet->getPointData();
+    if (!pointData.getScalarDataSize() || !pointData.getVectorDataSize()) {
+      auto &newPointData = newlsDomain->getPointData();
+
+      // concatenate all source ids into one vector
+      newDataSourceIds[0].reserve(newlsDomain->getNumberOfPoints());
+      for (unsigned i = 1; i < newDataSourceIds.size(); ++i) {
+        newDataSourceIds[0].insert(newDataSourceIds[0].end(),
+                                  newDataSourceIds[i].begin(),
+                                  newDataSourceIds[i].end());
+      }
+
+      newlsDomain->getPointData().clear();
+      newlsDomain->getPointData().translateFromData(pointData, newDataSourceIds[0]);
     }
 
     // distribute evenly across segments and copy

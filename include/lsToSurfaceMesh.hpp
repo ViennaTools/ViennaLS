@@ -81,20 +81,7 @@ public:
     using VectorDataType = typename DomainType::PointDataType::VectorDataType;
 
     const auto &pointData = levelSet->getPointData();
-    // scalar data
-    for (unsigned i = 0; i < pointData.getScalarDataSize(); ++i) {
-      ScalarDataType tmp;
-      tmp.reserve(pointData.getScalarData(i)->size());
-      mesh->pointData.insertNextScalarData(tmp,
-                                           pointData.getScalarDataLabel(i));
-    }
-    // vector data
-    for (unsigned i = 0; i < pointData.getVectorDataSize(); ++i) {
-      VectorDataType tmp;
-      tmp.reserve(pointData.getVectorData(i)->size());
-      mesh->pointData.insertNextVectorData(tmp,
-                                           pointData.getVectorDataLabel(i));
-    }
+    mesh->pointData.copyFieldsFromData(pointData);
 
     // iterate over all active points
     for (hrleConstSparseCellIterator<hrleDomainType> cellIt(
@@ -187,18 +174,7 @@ public:
                 mesh->insertNextNode(cc); // insert new surface node
             nodes[dir][d] = nod_numbers[n];
 
-            // insert corresponding point data
-            for (unsigned i = 0; i < pointData.getScalarDataSize(); ++i) {
-              const auto &currentData = *pointData.getScalarData(i);
-              mesh->pointData.getScalarData(i)->push_back(
-                  currentData[currentPointId]);
-            }
-
-            for (unsigned i = 0; i < pointData.getVectorDataSize(); ++i) {
-              const auto &currentData = *pointData.getVectorData(i);
-              mesh->pointData.getVectorData(i)->push_back(
-                  currentData[currentPointId]);
-            }
+            mesh->pointData.insertElementFromData(pointData, currentPointId);
           }
         }
 

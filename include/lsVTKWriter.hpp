@@ -25,7 +25,7 @@
 /// Class handling the output of an lsMesh<> to VTK file types.
 template <class T> class lsVTKWriter {
   lsSmartPointer<lsMesh<T>> mesh = nullptr;
-  lsFileFormatEnum fileFormat = lsFileFormatEnum::VTK_LEGACY;
+  lsFileFormatEnum fileFormat = lsFileFormatEnum::VTK_AUTO;
   std::string fileName;
 
   template <class In, class Out>
@@ -94,6 +94,23 @@ public:
           .addWarning("No file name specified for lsVTKWriter. Not writing.")
           .print();
       return;
+    }
+
+    if (fileFormat == lsFileFormatEnum::VTK_AUTO) {
+      auto ending = fileName.substr(fileName.find_last_of('.'));
+      if (ending == ".vtk") {
+        fileFormat = lsFileFormatEnum::VTK_LEGACY;
+      } else if (ending == ".vtp") {
+        fileFormat = lsFileFormatEnum::VTP;
+      } else if (ending == ".vtu") {
+        fileFormat = lsFileFormatEnum::VTU;
+      } else {
+        lsMessage::getInstance()
+            .addWarning("No valid file format found based on the file ending "
+                        "passed to lsVTKWriter. Not writing.")
+            .print();
+        return;
+      }
     }
 
     // check file format

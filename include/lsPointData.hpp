@@ -80,21 +80,26 @@ public:
   }
 
   ScalarDataType *getScalarData(std::string searchLabel) {
-    for (unsigned i = 0; i < scalarDataLabels.size(); ++i) {
-      if (scalarDataLabels[i] == searchLabel) {
-        return &(scalarData[i]);
-      }
+    if(int i = getScalarDataIndex(searchLabel); i != -1) {
+      return &(scalarData[i]);
     }
     return nullptr;
   }
 
   const ScalarDataType *getScalarData(std::string searchLabel) const {
-    for (unsigned i = 0; i < scalarDataLabels.size(); ++i) {
-      if (scalarDataLabels[i] == searchLabel) {
-        return &(scalarData[i]);
-      }
+    if(int i = getScalarDataIndex(searchLabel); i != -1) {
+      return &(scalarData[i]);
     }
     return nullptr;
+  }
+
+  int getScalarDataIndex(std::string searchLabel) const {
+    for (int i = 0; i < scalarDataLabels.size(); ++i) {
+      if (scalarDataLabels[i] == searchLabel) {
+        return i;
+      }
+    }
+    return -1;
   }
 
   std::string getScalarDataLabel(int index) const {
@@ -107,6 +112,11 @@ public:
     scalarDataLabels[index] = newLabel;
   }
 
+  void eraseScalarData(int index) {
+    scalarData.erase(scalarData.begin() + index);
+    scalarDataLabels.erase(scalarDataLabels.begin() + index);
+  }
+
   VectorDataType *getVectorData(int index) {
     return indexPointerOrNull(vectorData, index);
   }
@@ -116,21 +126,26 @@ public:
   }
 
   VectorDataType *getVectorData(std::string searchLabel) {
-    for (unsigned i = 0; i < vectorDataLabels.size(); ++i) {
-      if (vectorDataLabels[i] == searchLabel) {
-        return &(vectorData[i]);
-      }
+    if(int i = getVectorDataIndex(searchLabel); i != -1) {
+      return &(vectorData[i]);
     }
     return nullptr;
   }
 
   const VectorDataType *getVectorData(std::string searchLabel) const {
-    for (unsigned i = 0; i < vectorDataLabels.size(); ++i) {
-      if (vectorDataLabels[i] == searchLabel) {
-        return &(vectorData[i]);
-      }
+    if(int i = getVectorDataIndex(searchLabel); i != -1) {
+      return &(vectorData[i]);
     }
     return nullptr;
+  }
+
+  int getVectorDataIndex(std::string searchLabel) const {
+    for (int i = 0; i < vectorDataLabels.size(); ++i) {
+      if (vectorDataLabels[i] == searchLabel) {
+        return i;
+      }
+    }
+    return -1;
   }
 
   std::string getVectorDataLabel(int index) const {
@@ -141,6 +156,11 @@ public:
 
   void setVectorDataLabel(int index, std::string newLabel) {
     vectorDataLabels[index] = newLabel;
+  }
+
+  void eraseVectorData(int index) {
+    vectorData.erase(vectorData.begin() + index);
+    vectorDataLabels.erase(vectorDataLabels.begin() + index);
   }
 
   void append(const lsPointData &passedData) {
@@ -154,6 +174,28 @@ public:
     vectorDataLabels.insert(vectorDataLabels.end(),
                             passedData.vectorDataLabels.begin(),
                             passedData.vectorDataLabels.end());
+  }
+
+  void translateFromData(const lsPointData& source, std::vector<unsigned> &indices) {
+    // scalars
+    for (unsigned j = 0; j < source.getScalarDataSize(); ++j) {
+      insertNextScalarData(ScalarDataType(), source.getScalarDataLabel(j));
+      auto currentData = --scalarData.end();
+      currentData->reserve(indices.size());
+      for (unsigned i = 0; i < indices.size(); ++i) {
+        currentData->push_back(source.scalarData[j][indices[i]]);
+      }
+    }
+
+    // vectors
+    for (unsigned j = 0; j < source.getVectorDataSize(); ++j) {
+      insertNextVectorData(VectorDataType(), source.getVectorDataLabel(j));
+      auto currentData = --vectorData.end();
+      currentData->reserve(indices.size());
+      for (unsigned i = 0; i < indices.size(); ++i) {
+        currentData->push_back(source.vectorData[j][indices[i]]);
+      }
+    }
   }
 
   void clear() {

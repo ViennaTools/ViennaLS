@@ -76,13 +76,13 @@ int main() {
 
   double time = 0.;
   for (unsigned i = 0; time < 2.0 && i < 1e3; ++i) {
-    // auto mesh = lsSmartPointer<lsMesh<>>::New();
-    // lsToMesh<double, D>(sphere1, mesh).apply();
-    // // mesh->print();
-    // lsVTKWriter<double>(mesh, "after-" + std::to_string(i) + ".vtk").apply();
-
     advectionKernel.apply();
     time += advectionKernel.getAdvectedTime();
+
+    auto mesh = lsSmartPointer<lsMesh<>>::New();
+    lsToMesh<double, D>(sphere1, mesh).apply();
+    // mesh->print();
+    lsVTKWriter<double>(mesh, "after-" + std::to_string(i) + ".vtk").apply();
   }
 
   LSTEST_ASSERT_VALID_LS(sphere1, double, D)
