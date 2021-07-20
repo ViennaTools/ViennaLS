@@ -156,7 +156,8 @@ private:
     // CALCULATE NORMALS
     lsExpand<T, D>(levelSet, 3).apply();
     lsCalculateNormalVectors<T, D>(levelSet).apply();
-    const auto &normals = *(levelSet->getPointData().getVectorData("Normals"));
+    const auto &normals = *(levelSet->getPointData().getVectorData(
+        lsCalculateNormalVectors<T, D>::normalVectorsLabel));
 
     std::vector<std::vector<T>> flagsReserve(levelSet->getNumberOfSegments());
 

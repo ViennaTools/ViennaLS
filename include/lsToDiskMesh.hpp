@@ -95,7 +95,8 @@ public:
 
     const T gridDelta = levelSets.back()->getGrid().getGridDelta();
     const auto &normalVectors =
-        *(levelSets.back()->getPointData().getVectorData("Normals"));
+        *(levelSets.back()->getPointData().getVectorData(
+            lsCalculateNormalVectors<T, D>::normalVectorsLabel));
 
     // set up data arrays
     std::vector<N> values;

@@ -417,6 +417,15 @@ private:
     for (unsigned i = 0; i < mesh->hexas.size(); ++i)
       f << 12 << std::endl;
 
+    // WRITE POINT DATA
+    if (mesh->pointData.getScalarDataSize() ||
+        mesh->pointData.getVectorDataSize()) {
+      lsMessage::getInstance()
+          .addWarning("Point data output not supported for legacy VTK output. "
+                      "Point data is ignored.")
+          .print();
+    }
+
     // WRITE SCALAR DATA
     if (mesh->cellData.getScalarDataSize()) {
       f << "CELL_DATA " << mesh->cellData.getScalarData(0)->size() << std::endl;

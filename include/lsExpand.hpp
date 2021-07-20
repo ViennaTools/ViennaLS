@@ -15,6 +15,7 @@ template <class T, int D> class lsExpand {
   typedef typename lsDomain<T, D>::GridType GridType;
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
   int width = 0;
+  bool updatePointData = true;
 
 public:
   lsExpand() {}
@@ -33,6 +34,8 @@ public:
   /// with value width*0.5 will be added by this algorithm.
   void setWidth(int passedWidth) { width = passedWidth; }
 
+  void setUpdatePointData(bool update) { updatePointData = update; }
+
   /// Apply the expansion to the specified width
   void apply() {
     if (width <= levelSet->getLevelSetWidth())
@@ -47,6 +50,8 @@ public:
     if (levelSet->getNumberOfPoints() == 0) {
       return;
     }
+
+    const bool updateData = updatePointData;
 
     const T totalLimit = width * 0.5;
     const int startWidth = levelSet->getLevelSetWidth();
@@ -70,7 +75,8 @@ public:
       // save how data should be transferred to new level set
       // list of indices into the old pointData vector
       std::vector<std::vector<unsigned>> newDataSourceIds;
-      newDataSourceIds.resize(newDomain.getNumberOfSegments());
+      if (updateData)
+        newDataSourceIds.resize(newDomain.getNumberOfSegments());
 
 #pragma omp parallel num_threads(newDomain.getNumberOfSegments())
       {
@@ -98,14 +104,15 @@ public:
           if (std::abs(centerIt.getValue()) <= totalLimit) {
             domainSegment.insertNextDefinedPoint(neighborIt.getIndices(),
                                                  centerIt.getValue());
-            newDataSourceIds[p].push_back(centerIt.getPointId());
+            if (updateData)
+              newDataSourceIds[p].push_back(centerIt.getPointId());
           } else {
             if (centerIt.getValue() > 0.) {
               T distance = lsDomain<T, D>::POS_VALUE;
               int neighbor = -1;
               for (int i = 0; i < 2 * D; i++) {
                 T newValue = neighborIt.getNeighbor(i).getValue() + T(1);
-                if(distance > newValue) {
+                if (distance > newValue) {
                   distance = newValue;
                   neighbor = i;
                 }
@@ -113,7 +120,9 @@ public:
               if (distance <= limit) {
                 domainSegment.insertNextDefinedPoint(neighborIt.getIndices(),
                                                      distance);
-                newDataSourceIds[p].push_back(neighborIt.getNeighbor(neighbor).getPointId());
+                if (updateData)
+                  newDataSourceIds[p].push_back(
+                      neighborIt.getNeighbor(neighbor).getPointId());
               } else {
                 // TODO: use insertNextUndefinedRunType
                 domainSegment.insertNextUndefinedPoint(
@@ -124,7 +133,7 @@ public:
               int neighbor = -1;
               for (int i = 0; i < 2 * D; i++) {
                 T newValue = neighborIt.getNeighbor(i).getValue() - T(1);
-                if(distance < newValue) {
+                if (distance < newValue) {
                   distance = newValue;
                   neighbor = i;
                 }
@@ -132,7 +141,9 @@ public:
               if (distance >= -limit) {
                 domainSegment.insertNextDefinedPoint(neighborIt.getIndices(),
                                                      distance);
-                newDataSourceIds[p].push_back(neighborIt.getNeighbor(neighbor).getPointId());
+                if (updateData)
+                  newDataSourceIds[p].push_back(
+                      neighborIt.getNeighbor(neighbor).getPointId());
               } else {
                 // TODO: use insertNextUndefinedRunType
                 domainSegment.insertNextUndefinedPoint(
@@ -144,20 +155,9 @@ public:
       }
 
       // now copy old data into new level set
-      auto &pointData = levelSet->getPointData();
-      if (!pointData.getScalarDataSize() || !pointData.getVectorDataSize()) {
-        auto &newPointData = newlsDomain->getPointData();
-
-        // concatenate all source ids into one vector
-        newDataSourceIds[0].reserve(newlsDomain->getNumberOfPoints());
-        for (unsigned i = 1; i < newDataSourceIds.size(); ++i) {
-          newDataSourceIds[0].insert(newDataSourceIds[0].end(),
-                                    newDataSourceIds[i].begin(),
-                                    newDataSourceIds[i].end());
-        }
-
-        newlsDomain->getPointData().clear();
-        newlsDomain->getPointData().translateFromData(pointData, newDataSourceIds[0]);
+      if (updateData) {
+        newlsDomain->getPointData().translateFromMultiData(
+            levelSet->getPointData(), newDataSourceIds);
       }
 
       newDomain.finalize();

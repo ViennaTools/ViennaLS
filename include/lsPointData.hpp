@@ -36,6 +36,15 @@ private:
     return nullptr;
   }
 
+  template <class DataType>
+  void appendTranslateData(DataType &currentData, const DataType &source,
+                           const std::vector<unsigned> &indices) {
+    currentData.reserve(currentData.size() + indices.size());
+    for (unsigned i = 0; i < indices.size(); ++i) {
+      currentData.push_back(source[indices[i]]);
+    }
+  }
+
 public:
   /// insert new scalar data array
   void insertNextScalarData(const ScalarDataType &scalars,
@@ -80,14 +89,14 @@ public:
   }
 
   ScalarDataType *getScalarData(std::string searchLabel) {
-    if(int i = getScalarDataIndex(searchLabel); i != -1) {
+    if (int i = getScalarDataIndex(searchLabel); i != -1) {
       return &(scalarData[i]);
     }
     return nullptr;
   }
 
   const ScalarDataType *getScalarData(std::string searchLabel) const {
-    if(int i = getScalarDataIndex(searchLabel); i != -1) {
+    if (int i = getScalarDataIndex(searchLabel); i != -1) {
       return &(scalarData[i]);
     }
     return nullptr;
@@ -112,6 +121,7 @@ public:
     scalarDataLabels[index] = newLabel;
   }
 
+  /// Delete the scalar data at index.
   void eraseScalarData(int index) {
     scalarData.erase(scalarData.begin() + index);
     scalarDataLabels.erase(scalarDataLabels.begin() + index);
@@ -126,14 +136,14 @@ public:
   }
 
   VectorDataType *getVectorData(std::string searchLabel) {
-    if(int i = getVectorDataIndex(searchLabel); i != -1) {
+    if (int i = getVectorDataIndex(searchLabel); i != -1) {
       return &(vectorData[i]);
     }
     return nullptr;
   }
 
   const VectorDataType *getVectorData(std::string searchLabel) const {
-    if(int i = getVectorDataIndex(searchLabel); i != -1) {
+    if (int i = getVectorDataIndex(searchLabel); i != -1) {
       return &(vectorData[i]);
     }
     return nullptr;
@@ -158,11 +168,13 @@ public:
     vectorDataLabels[index] = newLabel;
   }
 
+  /// Delete the vector data at index.
   void eraseVectorData(int index) {
     vectorData.erase(vectorData.begin() + index);
     vectorDataLabels.erase(vectorDataLabels.begin() + index);
   }
 
+  /// Append the passed lsPointData to this one.
   void append(const lsPointData &passedData) {
     scalarData.insert(scalarData.end(), passedData.scalarData.begin(),
                       passedData.scalarData.end());
@@ -176,14 +188,38 @@ public:
                             passedData.vectorDataLabels.end());
   }
 
-  void translateFromData(const lsPointData& source, std::vector<unsigned> &indices) {
+  /// Add data in the passed source pointData into this data according to the
+  /// indices passed. The index of the indices vector corresponds to the index
+  /// of this data, while the values of indices correspond to the index in
+  /// source.
+  void translateFromData(const lsPointData &source,
+                         const std::vector<unsigned> &indices) {
     // scalars
     for (unsigned j = 0; j < source.getScalarDataSize(); ++j) {
       insertNextScalarData(ScalarDataType(), source.getScalarDataLabel(j));
       auto currentData = --scalarData.end();
-      currentData->reserve(indices.size());
-      for (unsigned i = 0; i < indices.size(); ++i) {
-        currentData->push_back(source.scalarData[j][indices[i]]);
+      appendTranslateData(*currentData, source.scalarData[j], indices);
+    }
+
+    // vectors
+    for (unsigned j = 0; j < source.getVectorDataSize(); ++j) {
+      insertNextVectorData(VectorDataType(), source.getVectorDataLabel(j));
+      auto currentData = --vectorData.end();
+      appendTranslateData(*currentData, source.vectorData[j], indices);
+    }
+  }
+
+  /// Same as translateFromData, but the indices are given as a vector, as
+  /// is the case when collecting indices during parallel algorithms.
+  void translateFromMultiData(
+      const lsPointData &source,
+      const std::vector<std::vector<unsigned>> &indicesVector) {
+    // scalars
+    for (unsigned j = 0; j < source.getScalarDataSize(); ++j) {
+      insertNextScalarData(ScalarDataType(), source.getScalarDataLabel(j));
+      auto currentData = --scalarData.end();
+      for (const auto &i : indicesVector) {
+        appendTranslateData(*currentData, source.scalarData[j], i);
       }
     }
 
@@ -191,13 +227,13 @@ public:
     for (unsigned j = 0; j < source.getVectorDataSize(); ++j) {
       insertNextVectorData(VectorDataType(), source.getVectorDataLabel(j));
       auto currentData = --vectorData.end();
-      currentData->reserve(indices.size());
-      for (unsigned i = 0; i < indices.size(); ++i) {
-        currentData->push_back(source.vectorData[j][indices[i]]);
+      for (const auto &i : indicesVector) {
+        appendTranslateData(*currentData, source.vectorData[j], i);
       }
     }
   }
 
+  /// Delete all data stored in this object.
   void clear() {
     scalarData.clear();
     scalarDataLabels.clear();
@@ -205,9 +241,10 @@ public:
     vectorDataLabels.clear();
   }
 
+  /// Return whether this object is empty.
   bool empty() { return scalarData.empty() && vectorData.empty(); }
 
-  /// Serialize lsPointData into a binary stream
+  /// Serialize lsPointData into a binary stream.
   std::ostream &serialize(std::ostream &stream) {
     // HEADER
     // identifier: "lsPointData"
@@ -270,6 +307,7 @@ public:
     return stream;
   }
 
+  /// Deserialize lsPointData from a binary stream.
   std::istream &deserialize(std::istream &stream) {
     char identifier[11];
     stream.read(identifier, 11);

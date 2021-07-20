@@ -15,6 +15,7 @@ template <class T, int D> class lsReduce {
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
   int width = 0;
   bool noNewSegment = false;
+  bool updatePointData = true;
 
 public:
   lsReduce() {}
@@ -43,6 +44,10 @@ public:
     noNewSegment = passedNoNewSegment;
   }
 
+  /// Set whether to update the point data stored in the LS
+  /// during this algorithm.
+  void setUpdatePointData(bool update) { updatePointData = update; }
+
   /// Reduces the leveleSet to the specified number of layers.
   /// The largest value in the levelset is thus width*0.5
   /// Returns the number of added points
@@ -66,10 +71,12 @@ public:
 
     newDomain.initialize(domain.getNewSegmentation(), domain.getAllocation());
 
+    const bool updateData = updatePointData;
     // save how data should be transferred to new level set
     // list of indices into the old pointData vector
     std::vector<std::vector<unsigned>> newDataSourceIds;
-    newDataSourceIds.resize(newDomain.getNumberOfSegments());
+    if (updateData)
+      newDataSourceIds.resize(newDomain.getNumberOfSegments());
 
 #pragma omp parallel num_threads(newDomain.getNumberOfSegments())
     {
@@ -96,7 +103,8 @@ public:
         if (it.isDefined() && std::abs(currentValue) <= valueLimit) {
           domainSegment.insertNextDefinedPoint(it.getStartIndices(),
                                                currentValue);
-          newDataSourceIds[p].push_back(it.getPointId());
+          if (updateData)
+            newDataSourceIds[p].push_back(it.getPointId());
         } else {
           // TODO: use insertNextUndefinedRunType
           domainSegment.insertNextUndefinedPoint(
@@ -108,20 +116,21 @@ public:
     }
 
     // now copy old data into new level set
-    auto &pointData = levelSet->getPointData();
-    if (!pointData.getScalarDataSize() || !pointData.getVectorDataSize()) {
-      auto &newPointData = newlsDomain->getPointData();
+    if (updateData) {
+      auto &pointData = levelSet->getPointData();
+      if (!pointData.getScalarDataSize() || !pointData.getVectorDataSize()) {
+        auto &newPointData = newlsDomain->getPointData();
 
-      // concatenate all source ids into one vector
-      newDataSourceIds[0].reserve(newlsDomain->getNumberOfPoints());
-      for (unsigned i = 1; i < newDataSourceIds.size(); ++i) {
-        newDataSourceIds[0].insert(newDataSourceIds[0].end(),
-                                  newDataSourceIds[i].begin(),
-                                  newDataSourceIds[i].end());
+        // concatenate all source ids into one vector
+        newDataSourceIds[0].reserve(newlsDomain->getNumberOfPoints());
+        for (unsigned i = 1; i < newDataSourceIds.size(); ++i) {
+          newDataSourceIds[0].insert(newDataSourceIds[0].end(),
+                                     newDataSourceIds[i].begin(),
+                                     newDataSourceIds[i].end());
+        }
+
+        newPointData.translateFromData(pointData, newDataSourceIds[0]);
       }
-
-      newlsDomain->getPointData().clear();
-      newlsDomain->getPointData().translateFromData(pointData, newDataSourceIds[0]);
     }
 
     // distribute evenly across segments and copy

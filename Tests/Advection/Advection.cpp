@@ -1,4 +1,5 @@
 #include <iostream>
+#include <numeric>
 
 #include <lsAdvect.hpp>
 #include <lsDomain.hpp>
@@ -67,6 +68,14 @@ int main() {
 
   // std::cout << "Advecting" << std::endl;
 
+  // Fill point data with original point IDs to see how LS changed
+  {
+    typename lsPointData<double>::ScalarDataType pointIDs(
+        sphere1->getNumberOfPoints());
+    std::iota(std::begin(pointIDs), std::end(pointIDs), 0);
+    sphere1->getPointData().insertNextScalarData(pointIDs, "originalIDs");
+  }
+
   lsAdvect<double, D> advectionKernel;
   advectionKernel.insertNextLevelSet(sphere1);
   advectionKernel.setVelocityField(velocities);
@@ -79,10 +88,12 @@ int main() {
     advectionKernel.apply();
     time += advectionKernel.getAdvectedTime();
 
-    auto mesh = lsSmartPointer<lsMesh<>>::New();
-    lsToMesh<double, D>(sphere1, mesh).apply();
-    // mesh->print();
-    lsVTKWriter<double>(mesh, "after-" + std::to_string(i) + ".vtk").apply();
+    // std::string fileName = std::to_string(i) + ".vtp";
+    // auto mesh = lsSmartPointer<lsMesh<>>::New();
+    // lsToMesh<double, D>(sphere1, mesh).apply();
+    // lsVTKWriter<double>(mesh, "points_" + fileName).apply();
+    // lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
+    // lsVTKWriter(mesh, "surface_" + fileName).apply();
   }
 
   LSTEST_ASSERT_VALID_LS(sphere1, double, D)

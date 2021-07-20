@@ -21,6 +21,8 @@ template <class T, int D> class lsMarkVoidPoints {
   }
 
 public:
+  static constexpr char voidPointLabel[] = "VoidPointMarkers";
+
   lsMarkVoidPoints(lsSmartPointer<lsDomain<T, D>> passedlsDomain,
                    bool passedReverseVoidDetection = false)
       : domain(passedlsDomain),
@@ -171,10 +173,10 @@ public:
     }
 
     auto &pointData = domain->getPointData();
-    auto voidMarkersPointer = pointData.getScalarData("VoidPointMarkers");
+    auto voidMarkersPointer = pointData.getScalarData(voidPointLabel);
     // if vector data does not exist
     if (voidMarkersPointer == nullptr) {
-      pointData.insertNextScalarData(voidPointMarkers, "VoidPointMarkers");
+      pointData.insertNextScalarData(voidPointMarkers, voidPointLabel);
     } else {
       *voidMarkersPointer = std::move(voidPointMarkers);
     }

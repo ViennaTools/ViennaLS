@@ -77,11 +77,12 @@ int main() {
 
   // Fill point data with original point IDs to see how LS changed
   {
-    typename lsPointData<double>::ScalarDataType pointIDs(sphere1->getNumberOfPoints());
+    typename lsPointData<double>::ScalarDataType pointIDs(
+        sphere1->getNumberOfPoints());
     std::iota(std::begin(pointIDs), std::end(pointIDs), 0);
     sphere1->getPointData().insertNextScalarData(pointIDs, "originalIDs");
   }
-  
+
   // {
   //   auto mesh = lsSmartPointer<lsMesh<double>>::New();
   //   lsToMesh(sphere1, mesh, true, true).apply();

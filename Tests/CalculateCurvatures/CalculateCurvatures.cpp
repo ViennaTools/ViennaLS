@@ -71,7 +71,8 @@ int main() {
   // std::cout << "Writing Output..." << std::endl;
   // typename lsPointData<NumericType>::ScalarDataType analytic;
   // analytic.resize(meanCurvatures->size(), analyticCurvature);
-  // sphere->getPointData().insertNextScalarData(analytic, "analyticCurvatures");
+  // sphere->getPointData().insertNextScalarData(analytic,
+  // "analyticCurvatures");
 
   // auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
   // lsToSurfaceMesh(sphere, mesh).apply();
