@@ -34,6 +34,8 @@ public:
   /// with value width*0.5 will be added by this algorithm.
   void setWidth(int passedWidth) { width = passedWidth; }
 
+  /// Set whether to update the point data stored in the LS
+  /// during this algorithm. Defaults to true.
   void setUpdatePointData(bool update) { updatePointData = update; }
 
   /// Apply the expansion to the specified width
@@ -50,8 +52,6 @@ public:
     if (levelSet->getNumberOfPoints() == 0) {
       return;
     }
-
-    const bool updateData = updatePointData;
 
     const T totalLimit = width * 0.5;
     const int startWidth = levelSet->getLevelSetWidth();
@@ -72,6 +72,7 @@ public:
       newDomain.initialize(domain.getNewSegmentation(),
                            domain.getAllocation() * allocationFactor);
 
+      const bool updateData = updatePointData;
       // save how data should be transferred to new level set
       // list of indices into the old pointData vector
       std::vector<std::vector<unsigned>> newDataSourceIds;

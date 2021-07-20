@@ -39,6 +39,8 @@ template <class T, int D> class lsBooleanOperation {
   lsSmartPointer<lsDomain<T, D>> levelSetB = nullptr;
   lsBooleanOperationEnum operation = lsBooleanOperationEnum::INTERSECT;
   const T (*operationComp)(const T &, const T &) = nullptr;
+  bool updatePointData = true;
+  static constexpr double comparisonEps = 10.0 * std::numeric_limits<T>::epsilon();
 
   void booleanOpInternal(const T (*comp)(const T &, const T &)) {
     auto &grid = levelSetA->getGrid();
@@ -47,6 +49,16 @@ template <class T, int D> class lsBooleanOperation {
     typename lsDomain<T, D>::DomainType &domain = levelSetA->getDomain();
 
     newDomain.initialize(domain.getNewSegmentation(), domain.getAllocation());
+
+    const bool updateData = updatePointData;
+    // save how data should be transferred to new level set
+    // list of indices into the old pointData vector
+    std::vector<std::vector<unsigned>> newDataSourceIds;
+    std::vector<std::vector<bool>> newDataLS;
+    if (updateData) {
+      newDataSourceIds.resize(newDomain.getNumberOfSegments());
+      newDataLS.resize(newDataSourceIds.size());
+    }
 
 #pragma omp parallel num_threads(newDomain.getNumberOfSegments())
     {
@@ -78,6 +90,12 @@ template <class T, int D> class lsBooleanOperation {
         if (currentValue != lsDomain<T, D>::NEG_VALUE &&
             currentValue != lsDomain<T, D>::POS_VALUE) {
           domainSegment.insertNextDefinedPoint(currentVector, currentValue);
+          if (updateData) {
+            newDataSourceIds[p].push_back(centerIt.getPointId());
+            // if taken from A, set to false
+            const bool newVal = std::abs(itA.getValue() - currentValue) > std::abs(currentValue) * comparisonEps;
+            newDataLS[p].push_back(newVal);
+          }
         } else {
           domainSegment.insertNextUndefinedPoint(
               currentVector, (currentValue < 0) ? lsDomain<T, D>::NEG_VALUE
@@ -96,6 +114,10 @@ template <class T, int D> class lsBooleanOperation {
         currentVector = std::max(itA.getStartIndices(), itB.getStartIndices());
       }
     }
+
+    // transfer data from the old LSs to new LS
+    // TODO
+
     newDomain.finalize();
     newDomain.segment();
     newlsDomain->setLevelSetWidth(levelSetA->getLevelSetWidth());
@@ -172,30 +194,34 @@ public:
       : levelSetA(passedlsDomainA), levelSetB(passedlsDomainB),
         operation(passedOperation){};
 
-  /// set which level set to perform the boolean operation on
+  /// Set which level set to perform the boolean operation on.
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     levelSetA = passedlsDomain;
   }
 
-  /// set the level set which will be used to modify the
-  /// first level set
+  /// Set the level set which will be used to modify the
+  /// first level set.
   void setSecondLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     levelSetB = passedlsDomain;
   }
 
-  /// set which of the operations of lsBooleanOperationEnum to perform
+  /// Set which of the operations of lsBooleanOperationEnum to perform.
   void setBooleanOperation(lsBooleanOperationEnum passedOperation) {
     operation = passedOperation;
   }
 
-  /// set the comparator to be used when the BooleanOperation
-  /// is set to CUSTOM
+  /// Set the comparator to be used when the BooleanOperation
+  /// is set to CUSTOM.
   void setBooleanOperationComparator(
       const T (*passedOperationComp)(const T &, const T &)) {
     operationComp = passedOperationComp;
   }
 
-  /// perform operation
+  /// Set whether to update the point data stored in the LS
+  /// during this algorithm. Defaults to true.
+  void setUpdatePointData(bool update) { updatePointData = update; }
+
+  /// Perform operation.
   void apply() {
     if (levelSetA == nullptr) {
       lsMessage::getInstance()

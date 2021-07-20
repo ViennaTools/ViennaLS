@@ -45,7 +45,7 @@ public:
   }
 
   /// Set whether to update the point data stored in the LS
-  /// during this algorithm.
+  /// during this algorithm. Defaults to true.
   void setUpdatePointData(bool update) { updatePointData = update; }
 
   /// Reduces the leveleSet to the specified number of layers.
@@ -117,20 +117,8 @@ public:
 
     // now copy old data into new level set
     if (updateData) {
-      auto &pointData = levelSet->getPointData();
-      if (!pointData.getScalarDataSize() || !pointData.getVectorDataSize()) {
-        auto &newPointData = newlsDomain->getPointData();
-
-        // concatenate all source ids into one vector
-        newDataSourceIds[0].reserve(newlsDomain->getNumberOfPoints());
-        for (unsigned i = 1; i < newDataSourceIds.size(); ++i) {
-          newDataSourceIds[0].insert(newDataSourceIds[0].end(),
-                                     newDataSourceIds[i].begin(),
-                                     newDataSourceIds[i].end());
-        }
-
-        newPointData.translateFromData(pointData, newDataSourceIds[0]);
-      }
+      newlsDomain->getPointData().translateFromMultiData(
+          levelSet->getPointData(), newDataSourceIds);
     }
 
     // distribute evenly across segments and copy
