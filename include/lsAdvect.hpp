@@ -34,6 +34,14 @@
 #include <lsVTKWriter.hpp>
 #endif
 
+namespace lsInternal::advect {
+  template <class IntegrationSchemeType, class T, int D,
+            lsConcepts::IsNotSame<IntegrationSchemeType,
+                                  lsInternal::lsStencilLocalLaxFriedrichsScalar<
+                                      T, D, 1>> = lsConcepts::assignable>
+  void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &, double &, hrleCoordType) {}
+}
+
 /// Enumeration for the different Integration schemes
 /// used by the advection kernel
 enum struct lsIntegrationSchemeEnum : unsigned {
@@ -72,33 +80,6 @@ template <class T, int D> class lsAdvect {
   unsigned numberOfTimeSteps = 0;
   bool saveAdvectionVelocities = false;
   static constexpr double wrappingLayerEpsilon = 1e-4;
-
-  template <class IntegrationSchemeType,
-            lsConcepts::IsNotSame<IntegrationSchemeType,
-                                  lsInternal::lsStencilLocalLaxFriedrichsScalar<
-                                      T, D, 1>> = lsConcepts::assignable>
-  void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &, double &) {}
-
-  template <class IntegrationSchemeType,
-            lsConcepts::IsSame<IntegrationSchemeType,
-                               lsInternal::lsStencilLocalLaxFriedrichsScalar<
-                                   T, D, 1>> = lsConcepts::assignable>
-  void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &scheme,
-                                    double &MaxTimeStep) {
-    const double alpha_maxCFL = 1.0;
-    // second time step test, based on alphas
-    hrleVectorType<T, 3> alphas = scheme.getFinalAlphas();
-
-    auto gridDelta = levelSets.back()->getGrid().getGridDelta();
-
-    double timeStep = 0;
-    for (int i = 0; i < D; ++i) {
-      timeStep += alphas[i] / gridDelta;
-    }
-
-    timeStep = alpha_maxCFL / timeStep;
-    MaxTimeStep = std::min(timeStep, MaxTimeStep);
-  }
 
   void rebuildLS() {
     // TODO: this function uses manhatten distances for renormalisation,
@@ -578,7 +559,7 @@ template <class T, int D> class lsAdvect {
         // If scheme is STENCIL_LOCAL_LAX_FRIEDRICHS the time step is reduced
         // depending on the dissipation coefficients For all remaining schemes
         // this function is empty.
-        reduceTimeStepHamiltonJacobi(scheme, tempMaxTimeStep);
+        lsInternal::advect::reduceTimeStepHamiltonJacobi<IntegrationSchemeType, T, D>(scheme, tempMaxTimeStep, levelSets.back()->getGrid().getGridDelta());
 
         // set global timestep maximum
         if (tempMaxTimeStep < maxTimeStep)
