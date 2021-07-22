@@ -50,21 +50,22 @@ int main() {
     auto explMesh = lsSmartPointer<lsMesh<>>::New();
 
     std::cout << "Extracting..." << std::endl;
-    lsToSurfaceMesh<double, D>(substrate, explMesh).apply();
+    lsToMesh<double, D>(substrate, explMesh).apply();
 
-    lsVTKWriter<double>(explMesh, "before.vtk").apply();
+    lsVTKWriter<double>(explMesh, lsFileFormatEnum::VTP, "before.vtp").apply();
   }
 
-  lsMarkVoidPoints<double, D>(substrate).apply();
-
   // Remove the stray points
-  lsRemoveStrayPoints<double, D>(substrate).apply();
+  lsRemoveStrayPoints<double, D> cleaner;
+  cleaner.setLevelSet(substrate);
+  cleaner.setVoidTopSurface(lsVoidTopSurfaceEnum::LEX_HIGHEST);
+  cleaner.apply();
 
   {
     std::cout << "Extracting..." << std::endl;
     auto mesh = lsSmartPointer<lsMesh<>>::New();
-    lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter<double>(mesh, "after.vtk").apply();
+    lsToMesh<double, D>(substrate, mesh).apply();
+    lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP, "after.vtp").apply();
   }
 
   return 0;

@@ -10,14 +10,16 @@
 namespace lsInternal {
 
 class lsGraph {
+  // type for indexing components
+  using IndexType = std::size_t;
   // edges must be unique
-  typedef typename std::unordered_set<std::size_t> edgeListType;
+  typedef typename std::unordered_set<IndexType> edgeListType;
   // points must be unique and adressable
-  typedef typename std::unordered_map<std::size_t, edgeListType>
-      adjacencyListType;
+  typedef typename std::unordered_map<IndexType, edgeListType>
+      adjacencyListType;  
 
   adjacencyListType adjacencyList;
-  std::vector<int> componentIds;
+  std::vector<IndexType> componentIds;
 
   void depthFirstComponentSearch(const std::size_t &currentVertex,
                                  int &currentComponent) {
@@ -64,7 +66,7 @@ public:
 
   // returns an std::vector, where the value at each
   // index denotes the component, the vertex belongs to
-  std::vector<int> getConnectedComponents() {
+  std::vector<IndexType> getConnectedComponents() {
     // traverse all vertices and stop at unvisited ones
     // to build connectivity.
     componentIds.resize(adjacencyList.size(), -1);

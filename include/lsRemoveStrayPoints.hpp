@@ -6,6 +6,7 @@
 
 template <class T, int D> class lsRemoveStrayPoints {
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
+  lsVoidTopSurfaceEnum voidTopSurface = lsVoidTopSurfaceEnum::LARGEST;
 
 public:
   lsRemoveStrayPoints() {}
@@ -15,6 +16,12 @@ public:
 
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
+  }
+
+  /// Set how the algorithm should pick the surface which will not
+  /// be removed. Defaults to the surface with the most LS points.
+  void setVoidTopSurface(lsVoidTopSurfaceEnum topSurface) {
+    voidTopSurface = topSurface;
   }
 
   void apply() {
@@ -29,7 +36,12 @@ public:
     }
 
     // Mark which points are voids
-    lsMarkVoidPoints<T, D>(levelSet).apply();
+    {
+      lsMarkVoidPoints<T, D> marker;
+      marker.setLevelSet(levelSet);
+      marker.setVoidTopSurface(voidTopSurface);
+      marker.apply();
+    }
 
     auto voidMarkers = levelSet->getPointData().getScalarData("VoidPointMarkers");
     if(voidMarkers == nullptr) {
