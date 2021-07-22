@@ -35,12 +35,13 @@
 #endif
 
 namespace lsInternal::advect {
-  template <class IntegrationSchemeType, class T, int D,
-            lsConcepts::IsNotSame<IntegrationSchemeType,
-                                  lsInternal::lsStencilLocalLaxFriedrichsScalar<
-                                      T, D, 1>> = lsConcepts::assignable>
-  void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &, double &, hrleCoordType) {}
-}
+template <class IntegrationSchemeType, class T, int D,
+          lsConcepts::IsNotSame<IntegrationSchemeType,
+                                lsInternal::lsStencilLocalLaxFriedrichsScalar<
+                                    T, D, 1>> = lsConcepts::assignable>
+void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &, double &,
+                                  hrleCoordType) {}
+} // namespace lsInternal::advect
 
 /// Enumeration for the different Integration schemes
 /// used by the advection kernel
@@ -559,7 +560,10 @@ template <class T, int D> class lsAdvect {
         // If scheme is STENCIL_LOCAL_LAX_FRIEDRICHS the time step is reduced
         // depending on the dissipation coefficients For all remaining schemes
         // this function is empty.
-        lsInternal::advect::reduceTimeStepHamiltonJacobi<IntegrationSchemeType, T, D>(scheme, tempMaxTimeStep, levelSets.back()->getGrid().getGridDelta());
+        lsInternal::advect::reduceTimeStepHamiltonJacobi<IntegrationSchemeType,
+                                                         T, D>(
+            scheme, tempMaxTimeStep,
+            levelSets.back()->getGrid().getGridDelta());
 
         // set global timestep maximum
         if (tempMaxTimeStep < maxTimeStep)

@@ -135,8 +135,8 @@ public:
   }
 
   lsStencilLocalLaxFriedrichsScalar(
-      LevelSetType passedlsDomain,
-      lsSmartPointer<lsVelocityField<T>> vel, double a = 1.0,
+      LevelSetType passedlsDomain, lsSmartPointer<lsVelocityField<T>> vel,
+      double a = 1.0,
       DifferentiationSchemeEnum scheme = DifferentiationSchemeEnum::FIRST_ORDER)
       : levelSet(passedlsDomain), velocities(vel),
         finiteDifferenceScheme(scheme),
@@ -328,38 +328,45 @@ public:
 };
 
 namespace advect {
-    template <class IntegrationSchemeType, class T, int D,
-            lsConcepts::IsSame<IntegrationSchemeType,
-                               lsInternal::lsStencilLocalLaxFriedrichsScalar<
-                                   T, D, 1>> = lsConcepts::assignable>
-    void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &scheme,
-                                      double &MaxTimeStep, hrleCoordType gridDelta) {
-      const double alpha_maxCFL = 1.0;
-      // second time step test, based on alphas
-      hrleVectorType<T, 3> alphas = scheme.getFinalAlphas();
+template <
+    class IntegrationSchemeType, class T, int D,
+    lsConcepts::IsSame<IntegrationSchemeType,
+                       lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>> =
+        lsConcepts::assignable>
+void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &scheme,
+                                  double &MaxTimeStep,
+                                  hrleCoordType gridDelta) {
+  const double alpha_maxCFL = 1.0;
+  // second time step test, based on alphas
+  hrleVectorType<T, 3> alphas = scheme.getFinalAlphas();
 
-      double timeStep = 0;
-      for (int i = 0; i < D; ++i) {
-        timeStep += alphas[i] / gridDelta;
-      }
-
-      timeStep = alpha_maxCFL / timeStep;
-      MaxTimeStep = std::min(timeStep, MaxTimeStep);
-    }
+  double timeStep = 0;
+  for (int i = 0; i < D; ++i) {
+    timeStep += alphas[i] / gridDelta;
   }
 
+  timeStep = alpha_maxCFL / timeStep;
+  MaxTimeStep = std::min(timeStep, MaxTimeStep);
+}
+} // namespace advect
 } // namespace lsInternal
 
 /// This class creates the specialized layer wrapping which
 /// produces better results for the SSLF integration scheme.
 /// isDepo must contain whether the corresponding level sets
 /// are used for deposition or not.
-template<class T, int D>
-void lsPrepareStencilLocalLaxFriedrichs(std::vector<lsSmartPointer<lsDomain<T, D>>> &levelSets, std::vector<bool> isDepo) {
-  if(isDepo.size() < levelSets.size()) {
-    lsMessage::getInstance().addWarning("lsPrepareStencilLocalLaxFriedrichs: isDepo does not have enough elements. Assuming all other layers are not depo layers.").print();
+template <class T, int D>
+void lsPrepareStencilLocalLaxFriedrichs(
+    std::vector<lsSmartPointer<lsDomain<T, D>>> &levelSets,
+    std::vector<bool> isDepo) {
+  if (isDepo.size() < levelSets.size()) {
+    lsMessage::getInstance()
+        .addWarning(
+            "lsPrepareStencilLocalLaxFriedrichs: isDepo does not have enough "
+            "elements. Assuming all higher layers are not depo layers.")
+        .print();
+    isDepo.resize(levelSets.size(), false);
   }
-  isDepo.resize(levelSets.size(), false);
 
   // Begin with biggest level set (top LS wrapped around all others)
   auto layerIt = levelSets.rbegin();
@@ -368,52 +375,56 @@ void lsPrepareStencilLocalLaxFriedrichs(std::vector<lsSmartPointer<lsDomain<T, D
   auto finalTop = lsSmartPointer<lsDomain<T, D>>::New(levelSets[0]->getGrid());
 
   bool layerAboveIsDepo = false;
-  unsigned index = 0;
+  auto depoIt = isDepo.rbegin();
 
   // subtract each first non-depo layer below a depo layer from the latter
   // then union these results to the final layer
-  for(auto maskIt = levelSets.rbegin(); maskIt != levelSets.rend(); ++maskIt) {
-    if(isDepo[index]) {
+  for (auto maskIt = levelSets.rbegin(); maskIt != levelSets.rend(); ++maskIt) {
+    if (isDepo[*depoIt]) {
       // this layer will be deposited on
-      if(!layerAboveIsDepo) {
+      if (!layerAboveIsDepo) {
         layerIt = maskIt;
         layerAboveIsDepo = true;
       }
     } else {
       // no depo on this layer
-      if(layerAboveIsDepo) {
-        auto inverted = lsSmartPointer<lsDomain<T, D>>::New(*maskIt);
-        lsBooleanOperation<T, D>(inverted, lsBooleanOperationEnum::INVERT).apply();
+      if (layerAboveIsDepo) {
         auto layerAbove = lsSmartPointer<lsDomain<T, D>>::New(*layerIt);
-        lsBooleanOperation<T, D>(layerAbove, inverted, lsBooleanOperationEnum::INTERSECT).apply();
-        lsBooleanOperation<T, D>(finalTop, layerAbove, lsBooleanOperationEnum::UNION).apply();
+        lsBooleanOperation<T, D>(layerAbove, *maskIt,
+                                 lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
+            .apply();
+
+        lsBooleanOperation<T, D>(finalTop, layerAbove,
+                                 lsBooleanOperationEnum::UNION)
+            .apply();
         lsPrune<T, D>(finalTop).apply();
       }
       layerAboveIsDepo = false;
     }
-    ++index;
+    ++depoIt;
   }
 
   // If the lowest layer is a depo substrate, add it to the final top layer
-  if(layerAboveIsDepo) {
-    lsBooleanOperation<T, D>(finalTop, *layerIt, lsBooleanOperationEnum::UNION).apply();
+  if (layerAboveIsDepo) {
+    lsBooleanOperation<T, D>(finalTop, *layerIt, lsBooleanOperationEnum::UNION)
+        .apply();
   }
 
   lsBooleanOperation<T, D>(finalTop, lsBooleanOperationEnum::INVERT).apply();
   levelSets.back()->deepCopy(finalTop);
-  // TODO: this is not efficient at all
 }
 
 /// After advection using the SLLF layer wrapping approach is done,
 /// restore the original layer wrapping used everywhere else.
-template<class T, int D>
-void lsFinalizeStencilLocalLaxFriedrichs(std::vector<lsSmartPointer<lsDomain<T, D>>> &levelSets) {
+template <class T, int D>
+void lsFinalizeStencilLocalLaxFriedrichs(
+    std::vector<lsSmartPointer<lsDomain<T, D>>> &levelSets) {
   auto layerIt = levelSets.rbegin();
   auto lastIt = ++levelSets.rbegin();
 
   lsBooleanOperation<T, D>(*layerIt, lsBooleanOperationEnum::INVERT).apply();
-  lsBooleanOperation<T, D>(*layerIt, *lastIt, lsBooleanOperationEnum::UNION).apply();
+  lsBooleanOperation<T, D>(*layerIt, *lastIt, lsBooleanOperationEnum::UNION)
+      .apply();
 }
-
 
 #endif // LS_STENCIL_LOCAL_LACHS_FRIEDRICHS_SCALAR_HPP
