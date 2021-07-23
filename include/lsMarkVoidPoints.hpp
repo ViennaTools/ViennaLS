@@ -37,13 +37,15 @@ template <class T, int D> class lsMarkVoidPoints {
     return (value1 >= 0) == (value2 >= 0);
   }
 
-  std::vector<IndexType> mergeComponentCounts(const std::vector<IndexType>& components, const std::vector<IndexType>& pointsPerComponent) {
+  std::vector<IndexType>
+  mergeComponentCounts(const std::vector<IndexType> &components,
+                       const std::vector<IndexType> &pointsPerComponent) {
     // find number of connected components after merge
     // TODO: the last element in the components vector is very likely
     // the highest index, so could just set it instead of checking all values
     unsigned highestIndex = 0;
-    for(auto it : components) {
-      if(highestIndex < it) {
+    for (auto it : components) {
+      if (highestIndex < it) {
         highestIndex = it;
       }
     }
@@ -51,22 +53,25 @@ template <class T, int D> class lsMarkVoidPoints {
     // merge pointsPerComponent acording to the connected components
     std::vector<IndexType> pointsPerConnected;
     pointsPerConnected.resize(highestIndex + 1, 0);
-    for(unsigned i = 0; i < components.size(); ++i) {
+    for (unsigned i = 0; i < components.size(); ++i) {
       pointsPerConnected[components[i]] += pointsPerComponent[i];
     }
 
     return pointsPerConnected;
   }
 
-  IndexType calculateTopID(const std::vector<IndexType>& components, const std::vector<IndexType>& pointsPerConnected) {
+  IndexType calculateTopID(const std::vector<IndexType> &components,
+                           const std::vector<IndexType> &pointsPerConnected) {
     // check which component has the most points
     IndexType topId = 0;
     // use first component, which contains more than 0 points
-    while(topId < pointsPerConnected.size() && pointsPerConnected[topId] == 0) {
+    while (topId < pointsPerConnected.size() &&
+           pointsPerConnected[topId] == 0) {
       ++topId;
     }
-    for(unsigned i = topId + 1; i < pointsPerConnected.size(); ++i) {
-      if((pointsPerConnected[topId] < pointsPerConnected[i]) != reverseVoidDetection) {
+    for (unsigned i = topId + 1; i < pointsPerConnected.size(); ++i) {
+      if ((pointsPerConnected[topId] < pointsPerConnected[i]) !=
+          reverseVoidDetection) {
         topId = i;
       }
     }
@@ -96,7 +101,7 @@ public:
 
   /// Set whether the number of points of one connected surface
   /// should be used to detect void points. Defaults to false.
-  /// If this is set to true, the largest connected surface will be 
+  /// If this is set to true, the largest connected surface will be
   /// kept and all other grid points marked as void points.
   /// By setting reverseVoidDetection to true, the smallest
   /// surface will be used instead.
@@ -107,30 +112,32 @@ public:
   /// Set which connected component to use as the top surface
   /// and mark all other components as void points.
   void setVoidTopSurface(lsVoidTopSurfaceEnum topSurface) {
-    switch (topSurface)
-    {
-      case lsVoidTopSurfaceEnum::LEX_LOWEST:
-        reverseVoidDetection = true;
-        detectLargestSurface = false;
-        break;
-      case lsVoidTopSurfaceEnum::LEX_HIGHEST:
-        reverseVoidDetection = false;
-        detectLargestSurface = false;
-        break;
-      case lsVoidTopSurfaceEnum::LARGEST:
-        reverseVoidDetection = false;
-        detectLargestSurface = true;
-        break;
-      case lsVoidTopSurfaceEnum::SMALLEST:
-        reverseVoidDetection = true;
-        detectLargestSurface = true;
-        break;
-    
-      default:
-        lsMessage::getInstance().addWarning("lsMarkVoidPoints: Invalid lsVoidTopSurfaceEnum set. Using default values.").print();
-        reverseVoidDetection = false;
-        detectLargestSurface = false;
-        break;
+    switch (topSurface) {
+    case lsVoidTopSurfaceEnum::LEX_LOWEST:
+      reverseVoidDetection = true;
+      detectLargestSurface = false;
+      break;
+    case lsVoidTopSurfaceEnum::LEX_HIGHEST:
+      reverseVoidDetection = false;
+      detectLargestSurface = false;
+      break;
+    case lsVoidTopSurfaceEnum::LARGEST:
+      reverseVoidDetection = false;
+      detectLargestSurface = true;
+      break;
+    case lsVoidTopSurfaceEnum::SMALLEST:
+      reverseVoidDetection = true;
+      detectLargestSurface = true;
+      break;
+
+    default:
+      lsMessage::getInstance()
+          .addWarning("lsMarkVoidPoints: Invalid lsVoidTopSurfaceEnum set. "
+                      "Using default values.")
+          .print();
+      reverseVoidDetection = false;
+      detectLargestSurface = false;
+      break;
     }
   }
 
@@ -180,7 +187,7 @@ public:
           if (neighborComponentId != -1) {
             if (areConnected(center.getValue(), neighbor.getValue())) {
               currentComponentId = neighborComponentId;
-              if(center.getValue() >= 0.)
+              if (center.getValue() >= 0.)
                 ++pointsPerComponent[currentComponentId];
               break;
             }
@@ -191,7 +198,7 @@ public:
       // it is still not set, so add new vertex
       if (currentComponentId == -1) {
         currentComponentId = numberOfComponents;
-        pointsPerComponent.push_back((center.getValue() > 0.)?1:0);
+        pointsPerComponent.push_back((center.getValue() > 0.) ? 1 : 0);
         graph.insertNextVertex();
         ++numberOfComponents;
       }
@@ -211,7 +218,7 @@ public:
             }
           } else {
             neighborComponentId = currentComponentId;
-            if(neighbor.getValue() >= 0.)
+            if (neighbor.getValue() >= 0.)
               ++pointsPerComponent[neighborComponentId];
           }
         }
@@ -220,18 +227,20 @@ public:
 
     auto components = graph.getConnectedComponents();
 
-    int topComponent = (reverseVoidDetection) ? components[0] : components.back();
+    int topComponent =
+        (reverseVoidDetection) ? components[0] : components.back();
 
     // identify which layer to keep
     {
-      auto pointsPerConnected = mergeComponentCounts(components, pointsPerComponent);
+      auto pointsPerConnected =
+          mergeComponentCounts(components, pointsPerComponent);
 
       // find largest connected surface
-      if(detectLargestSurface) {
+      if (detectLargestSurface) {
         topComponent = calculateTopID(components, pointsPerConnected);
       } else { // if component does not contain points, take the next one
-        while(pointsPerConnected[topComponent] == 0) {
-          if(reverseVoidDetection)
+        while (pointsPerConnected[topComponent] == 0) {
+          if (reverseVoidDetection)
             ++topComponent;
           else
             --topComponent;
@@ -268,7 +277,8 @@ public:
         unsigned k;
         for (k = 0; k < 2 * D; ++k) {
           auto &neighbor = neighborIt.getNeighbor(k);
-          if(std::signbit(neighbor.getValue()) == std::signbit(center.getValue()))
+          if (std::signbit(neighbor.getValue()) ==
+              std::signbit(center.getValue()))
             continue;
           const int &oldneighborComponentId =
               componentList[neighbor.getSegmentId()][neighbor.getLevel()]
@@ -282,7 +292,7 @@ public:
 
       if (saveComponents) {
         const int &oldComponentId = componentList[center.getSegmentId()][0]
-                         [center.getRunTypePosition()];
+                                                 [center.getRunTypePosition()];
         componentMarkers[center.getPointId()] = components[oldComponentId];
       }
     }

@@ -16,7 +16,7 @@ class lsGraph {
   typedef typename std::unordered_set<IndexType> edgeListType;
   // points must be unique and adressable
   typedef typename std::unordered_map<IndexType, edgeListType>
-      adjacencyListType;  
+      adjacencyListType;
 
   adjacencyListType adjacencyList;
   std::vector<IndexType> componentIds;

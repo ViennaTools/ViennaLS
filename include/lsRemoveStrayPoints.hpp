@@ -50,9 +50,13 @@ public:
       marker.apply();
     }
 
-    auto voidMarkers = levelSet->getPointData().getScalarData("VoidPointMarkers");
-    if(voidMarkers == nullptr) {
-      lsMessage::getInstance().addWarning("lsRemoveStrayPoints: No scalar data for void point markers found. Cannot remove stray points.").print();
+    auto voidMarkers =
+        levelSet->getPointData().getScalarData("VoidPointMarkers");
+    if (voidMarkers == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("lsRemoveStrayPoints: No scalar data for void point "
+                      "markers found. Cannot remove stray points.")
+          .print();
     }
 
     // now iterate through the domain and remove points which are void points
@@ -84,19 +88,19 @@ public:
               ? newDomain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
-      for (hrleConstSparseIterator<typename lsDomain<T, D>::DomainType>
-               it(domain, startVector);
+      for (hrleConstSparseIterator<typename lsDomain<T, D>::DomainType> it(
+               domain, startVector);
            it.getStartIndices() < endVector; it.next()) {
-        if(it.isDefined() && !voidMarkers->at(it.getPointId())) {
-          newPoints[p].push_back(std::make_pair(it.getStartIndices(), it.getValue()));
+        if (it.isDefined() && !voidMarkers->at(it.getPointId())) {
+          newPoints[p].push_back(
+              std::make_pair(it.getStartIndices(), it.getValue()));
         }
       }
     }
 
     // merge points
-    for(unsigned i = 1; i < newDomain.getNumberOfSegments(); ++i) {
-      newPoints[0].insert(newPoints[0].end(),
-                          newPoints[i].begin(),
+    for (unsigned i = 1; i < newDomain.getNumberOfSegments(); ++i) {
+      newPoints[0].insert(newPoints[0].end(), newPoints[i].begin(),
                           newPoints[i].end());
     }
 

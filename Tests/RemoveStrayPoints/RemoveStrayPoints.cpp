@@ -5,10 +5,10 @@
 #include <lsBooleanOperation.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsMarkVoidPoints.hpp>
+#include <lsRemoveStrayPoints.hpp>
 #include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
-#include <lsRemoveStrayPoints.hpp>
 
 int main() {
   constexpr int D = 2;
