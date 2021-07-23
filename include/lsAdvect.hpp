@@ -77,6 +77,7 @@ template <class T, int D> class lsAdvect {
   bool calculateNormalVectors = true;
   bool ignoreVoids = false;
   double advectionTime = 0.;
+  bool performOnlySingleStep = false;
   double advectedTime = 0.;
   unsigned numberOfTimeSteps = 0;
   bool saveAdvectionVelocities = false;
@@ -686,6 +687,12 @@ public:
   /// CFL condition(see setTimeStepRatio) will be performed.
   void setAdvectionTime(double time) { advectionTime = time; }
 
+  /// If set to true, only a single advection step will be
+  /// performed, even if the advection time set with
+  /// setAdvectionTime(double) would require several steps to pass.
+  /// Defaults to false.
+  void setSingleStep(bool singleStep) { performOnlySingleStep = singleStep; }
+
   /// Set the CFL condition to use during advection.
   /// The CFL condition sets the maximum distance a surface can
   /// be moved during one advection step. It MUST be below 0.5
@@ -750,6 +757,8 @@ public:
       while (currentTime < advectionTime) {
         currentTime += advect(advectionTime - currentTime);
         ++numberOfTimeSteps;
+        if (performOnlySingleStep)
+          break;
       }
       advectedTime = currentTime;
     }
