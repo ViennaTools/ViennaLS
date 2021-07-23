@@ -15,6 +15,7 @@ template <class T, int D> class lsReduce {
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
   int width = 0;
   bool noNewSegment = false;
+  bool updatePointData = true;
 
 public:
   lsReduce() {}
@@ -43,6 +44,10 @@ public:
     noNewSegment = passedNoNewSegment;
   }
 
+  /// Set whether to update the point data stored in the LS
+  /// during this algorithm. Defaults to true.
+  void setUpdatePointData(bool update) { updatePointData = update; }
+
   /// Reduces the leveleSet to the specified number of layers.
   /// The largest value in the levelset is thus width*0.5
   /// Returns the number of added points
@@ -65,6 +70,13 @@ public:
     typename lsDomain<T, D>::DomainType &domain = levelSet->getDomain();
 
     newDomain.initialize(domain.getNewSegmentation(), domain.getAllocation());
+
+    const bool updateData = updatePointData;
+    // save how data should be transferred to new level set
+    // list of indices into the old pointData vector
+    std::vector<std::vector<unsigned>> newDataSourceIds;
+    if (updateData)
+      newDataSourceIds.resize(newDomain.getNumberOfSegments());
 
 #pragma omp parallel num_threads(newDomain.getNumberOfSegments())
     {
@@ -91,6 +103,8 @@ public:
         if (it.isDefined() && std::abs(currentValue) <= valueLimit) {
           domainSegment.insertNextDefinedPoint(it.getStartIndices(),
                                                currentValue);
+          if (updateData)
+            newDataSourceIds[p].push_back(it.getPointId());
         } else {
           // TODO: use insertNextUndefinedRunType
           domainSegment.insertNextUndefinedPoint(
@@ -99,6 +113,12 @@ public:
                                         : lsDomain<T, D>::POS_VALUE);
         }
       }
+    }
+
+    // now copy old data into new level set
+    if (updateData) {
+      newlsDomain->getPointData().translateFromMultiData(
+          levelSet->getPointData(), newDataSourceIds);
     }
 
     // distribute evenly across segments and copy

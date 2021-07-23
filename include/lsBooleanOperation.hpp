@@ -33,20 +33,37 @@ enum struct lsBooleanOperationEnum : unsigned {
 ///  This comparator returns one value generated from the level set value
 ///  supplied by each level set. E.g.: for a union, the comparator will
 ///  always return the smaller of the two values.
+///  The function signature for the comparator is defined in the public
+///  ComparatorType.
 template <class T, int D> class lsBooleanOperation {
+public:
+  using ComparatorType = std::pair<T, bool> (*)(const T &, const T &);
+
+private:
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
   lsSmartPointer<lsDomain<T, D>> levelSetA = nullptr;
   lsSmartPointer<lsDomain<T, D>> levelSetB = nullptr;
   lsBooleanOperationEnum operation = lsBooleanOperationEnum::INTERSECT;
-  const T (*operationComp)(const T &, const T &) = nullptr;
+  ComparatorType operationComp = nullptr;
+  bool updatePointData = true;
 
-  void booleanOpInternal(const T (*comp)(const T &, const T &)) {
+  void booleanOpInternal(ComparatorType comp) {
     auto &grid = levelSetA->getGrid();
     auto newlsDomain = lsSmartPointer<lsDomain<T, D>>::New(grid);
     typename lsDomain<T, D>::DomainType &newDomain = newlsDomain->getDomain();
     typename lsDomain<T, D>::DomainType &domain = levelSetA->getDomain();
 
     newDomain.initialize(domain.getNewSegmentation(), domain.getAllocation());
+
+    const bool updateData = updatePointData;
+    // save how data should be transferred to new level set
+    // list of indices into the old pointData vector
+    std::vector<std::vector<unsigned>> newDataSourceIds;
+    std::vector<std::vector<bool>> newDataLS;
+    if (updateData) {
+      newDataSourceIds.resize(newDomain.getNumberOfSegments());
+      newDataLS.resize(newDataSourceIds.size());
+    }
 
 #pragma omp parallel num_threads(newDomain.getNumberOfSegments())
     {
@@ -72,12 +89,20 @@ template <class T, int D> class lsBooleanOperation {
                                                   currentVector);
 
       while (currentVector < endVector) {
-
-        const T &currentValue = comp(itA.getValue(), itB.getValue());
+        const auto &comparison = comp(itA.getValue(), itB.getValue());
+        const auto &currentValue = comparison.first;
 
         if (currentValue != lsDomain<T, D>::NEG_VALUE &&
             currentValue != lsDomain<T, D>::POS_VALUE) {
           domainSegment.insertNextDefinedPoint(currentVector, currentValue);
+          if (updateData) {
+            // if taken from A, set to true
+            const bool originLS = comparison.second;
+            newDataLS[p].push_back(originLS);
+            const auto originPointId =
+                (originLS) ? itA.getPointId() : itB.getPointId();
+            newDataSourceIds[p].push_back(originPointId);
+          }
         } else {
           domainSegment.insertNextUndefinedPoint(
               currentVector, (currentValue < 0) ? lsDomain<T, D>::NEG_VALUE
@@ -96,6 +121,63 @@ template <class T, int D> class lsBooleanOperation {
         currentVector = std::max(itA.getStartIndices(), itB.getStartIndices());
       }
     }
+
+    // merge data
+    for (unsigned i = 1; i < newDataLS.size(); ++i) {
+      newDataLS[0].insert(newDataLS[0].end(), newDataLS[i].begin(),
+                          newDataLS[i].end());
+
+      newDataSourceIds[0].insert(newDataSourceIds[0].end(),
+                                 newDataSourceIds[i].begin(),
+                                 newDataSourceIds[i].end());
+    }
+
+    // transfer data from the old LSs to new LS
+    // Only do so if the same data exists in both LSs
+    // If this is not the case, the data is invalid
+    // and therefore not needed anyway.
+    if (updateData) {
+      const auto &AData = levelSetA->getPointData();
+      const auto &BData = levelSetB->getPointData();
+      auto &newData = newlsDomain->getPointData();
+
+      // scalars
+      for (unsigned i = 0; i < AData.getScalarDataSize(); ++i) {
+        auto scalarDataLabel = AData.getScalarDataLabel(i);
+        auto BPointer = BData.getScalarData(scalarDataLabel);
+        if (BPointer != nullptr) {
+          auto APointer = AData.getScalarData(i);
+          // copy all data into the new scalarData
+          typename lsDomain<T, D>::PointDataType::ScalarDataType scalars;
+          scalars.resize(newlsDomain->getNumberOfPoints());
+          for (unsigned j = 0; j < newlsDomain->getNumberOfPoints(); ++j) {
+            scalars[j] = (newDataLS[0][j])
+                             ? APointer->at(newDataSourceIds[0][j])
+                             : BPointer->at(newDataSourceIds[0][j]);
+          }
+          newData.insertNextScalarData(scalars, scalarDataLabel);
+        }
+      }
+
+      // vectors
+      for (unsigned i = 0; i < AData.getVectorDataSize(); ++i) {
+        auto vectorDataLabel = AData.getVectorDataLabel(i);
+        auto BPointer = BData.getVectorData(vectorDataLabel);
+        if (BPointer != nullptr) {
+          auto APointer = AData.getVectorData(i);
+          // copy all data into the new vectorData
+          typename lsDomain<T, D>::PointDataType::VectorDataType vectors;
+          vectors.resize(newlsDomain->getNumberOfPoints());
+          for (unsigned j = 0; j < newlsDomain->getNumberOfPoints(); ++j) {
+            vectors[j] = (newDataLS[0][j])
+                             ? APointer->at(newDataSourceIds[0][j])
+                             : BPointer->at(newDataSourceIds[0][j]);
+          }
+          newData.insertNextVectorData(vectors, vectorDataLabel);
+        }
+      }
+    }
+
     newDomain.finalize();
     newDomain.segment();
     newlsDomain->setLevelSetWidth(levelSetA->getLevelSetWidth());
@@ -149,12 +231,24 @@ template <class T, int D> class lsBooleanOperation {
     levelSetA->finalize();
   }
 
-  static const T minComp(const T &A, const T &B) { return std::min(A, B); }
+  static std::pair<T, bool> minComp(const T &a, const T &b) {
+    bool AIsSmaller = a < b;
+    if (AIsSmaller)
+      return std::make_pair(a, true);
+    else
+      return std::make_pair(b, false);
+  }
 
-  static const T maxComp(const T &A, const T &B) { return std::max(A, B); }
+  static std::pair<T, bool> maxComp(const T &a, const T &b) {
+    bool AIsLarger = a > b;
+    if (AIsLarger)
+      return std::make_pair(a, true);
+    else
+      return std::make_pair(b, false);
+  }
 
-  static const T relativeComplementComp(const T &A, const T &B) {
-    return std::max(A, -B);
+  static std::pair<T, bool> relativeComplementComp(const T &a, const T &b) {
+    return maxComp(a, -b);
   }
 
 public:
@@ -172,30 +266,33 @@ public:
       : levelSetA(passedlsDomainA), levelSetB(passedlsDomainB),
         operation(passedOperation){};
 
-  /// set which level set to perform the boolean operation on
+  /// Set which level set to perform the boolean operation on.
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     levelSetA = passedlsDomain;
   }
 
-  /// set the level set which will be used to modify the
-  /// first level set
+  /// Set the level set which will be used to modify the
+  /// first level set.
   void setSecondLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     levelSetB = passedlsDomain;
   }
 
-  /// set which of the operations of lsBooleanOperationEnum to perform
+  /// Set which of the operations of lsBooleanOperationEnum to perform.
   void setBooleanOperation(lsBooleanOperationEnum passedOperation) {
     operation = passedOperation;
   }
 
-  /// set the comparator to be used when the BooleanOperation
-  /// is set to CUSTOM
-  void setBooleanOperationComparator(
-      const T (*passedOperationComp)(const T &, const T &)) {
+  /// Set the comparator to be used when the BooleanOperation
+  /// is set to CUSTOM.
+  void setBooleanOperationComparator(ComparatorType passedOperationComp) {
     operationComp = passedOperationComp;
   }
 
-  /// perform operation
+  /// Set whether to update the point data stored in the LS
+  /// during this algorithm. Defaults to true.
+  void setUpdatePointData(bool update) { updatePointData = update; }
+
+  /// Perform operation.
   void apply() {
     if (levelSetA == nullptr) {
       lsMessage::getInstance()

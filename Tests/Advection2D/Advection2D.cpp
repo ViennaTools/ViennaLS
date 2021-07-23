@@ -1,8 +1,10 @@
 #include <iostream>
+#include <numeric>
 
 // #include <lsBooleanOperation.hpp>
 #include <hrleSparseIterator.hpp>
 #include <lsAdvect.hpp>
+#include <lsCalculateNormalVectors.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsFromSurfaceMesh.hpp>
@@ -43,7 +45,7 @@ int main() {
 
   constexpr int D = 2;
 
-  omp_set_num_threads(2);
+  omp_set_num_threads(4);
 
   double extent = 100;
   double gridDelta = 0.5;
@@ -71,6 +73,23 @@ int main() {
   //   lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
   //   lsVTKWriter<double>(mesh, "before2D.vtk").apply();
   // }
+  // lsExpand(sphere1, 3).apply();
+
+  // Fill point data with original point IDs to see how LS changed
+  {
+    typename lsPointData<double>::ScalarDataType pointIDs(
+        sphere1->getNumberOfPoints());
+    std::iota(std::begin(pointIDs), std::end(pointIDs), 0);
+    sphere1->getPointData().insertNextScalarData(pointIDs, "originalIDs");
+  }
+
+  // {
+  //   auto mesh = lsSmartPointer<lsMesh<double>>::New();
+  //   lsToMesh(sphere1, mesh, true, true).apply();
+  //   lsVTKWriter(mesh, "initial.vtp").apply();
+  //   lsToSurfaceMesh(sphere1, mesh).apply();
+  //   lsVTKWriter(mesh, "surface_initial.vtp").apply();
+  // }
 
   // Advect the sphere
   auto velocities = lsSmartPointer<velocityField>::New();
@@ -95,6 +114,16 @@ int main() {
   // unsigned advectionSteps = advectionKernel.getNumberOfTimeSteps();
   // std::cout << "Time difference: " << advectionTime << std::endl;
   // std::cout << "Number of advection steps: " << advectionSteps << std::endl;
+
+  // lsExpand(sphere1, 5).apply();
+
+  // {
+  //   auto mesh = lsSmartPointer<lsMesh<double>>::New();
+  //   lsToMesh(sphere1, mesh).apply();
+  //   lsVTKWriter(mesh, "final.vtp").apply();
+  //   lsToSurfaceMesh(sphere1, mesh).apply();
+  //   lsVTKWriter(mesh, "surface_final.vtp").apply();
+  // }
 
   // std::cout << "Pruning" << std::endl;
   // lsPrune<double, D>(sphere1).apply();

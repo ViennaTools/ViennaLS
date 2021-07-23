@@ -80,6 +80,7 @@ template <class T, int D> class lsAdvect {
   double advectedTime = 0.;
   unsigned numberOfTimeSteps = 0;
   bool saveAdvectionVelocities = false;
+  bool updatePointData = true;
   static constexpr double wrappingLayerEpsilon = 1e-4;
 
   void rebuildLS() {
@@ -96,10 +97,12 @@ template <class T, int D> class lsAdvect {
                          domain.getAllocation() *
                              (2.0 / levelSets.back()->getLevelSetWidth()));
 
+    const bool updateData = updatePointData;
     // save how data should be transferred to new level set
     // list of indices into the old pointData vector
     std::vector<std::vector<unsigned>> newDataSourceIds;
-    newDataSourceIds.resize(newDomain.getNumberOfSegments());
+    if (updateData)
+      newDataSourceIds.resize(newDomain.getNumberOfSegments());
 
 #ifdef DEBUG_LS_ADVECT_HPP
     {
@@ -129,7 +132,8 @@ template <class T, int D> class lsAdvect {
 
       // reserve a bit more to avoid reallocation
       // would expect number of points to roughly double
-      newDataSourceIds[p].reserve(2.5 * domainSegment.getNumberOfPoints());
+      if (updateData)
+        newDataSourceIds[p].reserve(2.5 * domainSegment.getNumberOfPoints());
 
       for (hrleSparseStarIterator<typename lsDomain<T, D>::DomainType> it(
                domain, startVector);
@@ -157,11 +161,13 @@ template <class T, int D> class lsAdvect {
               if (j == 2 * D) {
                 domainSegment.insertNextDefinedPoint(
                     it.getIndices(), it.getCenter().getDefinedValue());
-                newDataSourceIds[p].push_back(it.getCenter().getPointId());
+                if (updateData)
+                  newDataSourceIds[p].push_back(it.getCenter().getPointId());
                 // if there is at least one active grid point, which is < -0.5
               } else {
                 domainSegment.insertNextDefinedPoint(it.getIndices(), 0.5);
-                newDataSourceIds[p].push_back(it.getNeighbor(j).getPointId());
+                if (updateData)
+                  newDataSourceIds[p].push_back(it.getNeighbor(j).getPointId());
               }
             } else if (it.getCenter().getDefinedValue() < -0.5) {
               int j = 0;
@@ -174,16 +180,19 @@ template <class T, int D> class lsAdvect {
               if (j == 2 * D) {
                 domainSegment.insertNextDefinedPoint(
                     it.getIndices(), it.getCenter().getDefinedValue());
-                newDataSourceIds[p].push_back(it.getCenter().getPointId());
+                if (updateData)
+                  newDataSourceIds[p].push_back(it.getCenter().getPointId());
                 // if there is at least one active grid point, which is > 0.5
               } else {
                 domainSegment.insertNextDefinedPoint(it.getIndices(), -0.5);
-                newDataSourceIds[p].push_back(it.getNeighbor(j).getPointId());
+                if (updateData)
+                  newDataSourceIds[p].push_back(it.getNeighbor(j).getPointId());
               }
             } else {
               domainSegment.insertNextDefinedPoint(
                   it.getIndices(), it.getCenter().getDefinedValue());
-              newDataSourceIds[p].push_back(it.getCenter().getPointId());
+              if (updateData)
+                newDataSourceIds[p].push_back(it.getCenter().getPointId());
             }
           } else {
             domainSegment.insertNextUndefinedPoint(
@@ -208,8 +217,9 @@ template <class T, int D> class lsAdvect {
 
             if (distance <= 1.) {
               domainSegment.insertNextDefinedPoint(it.getIndices(), distance);
-              newDataSourceIds[p].push_back(
-                  it.getNeighbor(usedNeighbor).getPointId());
+              if (updateData)
+                newDataSourceIds[p].push_back(
+                    it.getNeighbor(usedNeighbor).getPointId());
             } else {
               domainSegment.insertNextUndefinedPoint(it.getIndices(),
                                                      lsDomain<T, D>::POS_VALUE);
@@ -231,8 +241,9 @@ template <class T, int D> class lsAdvect {
 
             if (distance >= -1.) {
               domainSegment.insertNextDefinedPoint(it.getIndices(), distance);
-              newDataSourceIds[p].push_back(
-                  it.getNeighbor(usedNeighbor).getPointId());
+              if (updateData)
+                newDataSourceIds[p].push_back(
+                    it.getNeighbor(usedNeighbor).getPointId());
             } else {
               domainSegment.insertNextUndefinedPoint(it.getIndices(),
                                                      lsDomain<T, D>::NEG_VALUE);
@@ -243,48 +254,10 @@ template <class T, int D> class lsAdvect {
     }
 
     // now copy old data into new level set
-    auto &pointData = levelSets.back()->getPointData();
-    if (!pointData.getScalarDataSize() || !pointData.getVectorDataSize()) {
-      auto &newPointData = newlsDomain->getPointData();
-      // concatenate all source ids into one vector
-      newDataSourceIds.reserve(newlsDomain->getNumberOfPoints());
-      for (unsigned i = 1; i < newDataSourceIds.size(); ++i) {
-        for (unsigned j = 0; j < newDataSourceIds[i].size(); ++j) {
-          newDataSourceIds[0].push_back(newDataSourceIds[i][j]);
-        }
-        // free memory of copied vectors
-        std::vector<unsigned>().swap(newDataSourceIds[i]);
-      }
-
-      // scalars
-      for (unsigned scalarId = 0; scalarId < pointData.getScalarDataSize();
-           ++scalarId) {
-        newPointData.insertNextScalarData(
-            typename lsPointData<T>::ScalarDataType(),
-            pointData.getScalarDataLabel(scalarId));
-        auto &newScalars = *(newPointData.getScalarData(scalarId));
-        auto &scalars = *(pointData.getScalarData(scalarId));
-        newScalars.reserve(newlsDomain->getNumberOfPoints());
-
-        for (unsigned i = 0; i < newDataSourceIds[0].size(); ++i) {
-          newScalars.push_back(scalars[newDataSourceIds[0][i]]);
-        }
-      }
-
-      // vectors
-      for (unsigned vectorId = 0; vectorId < pointData.getVectorDataSize();
-           ++vectorId) {
-        newPointData.insertNextVectorData(
-            typename lsPointData<T>::VectorDataType(),
-            pointData.getVectorDataLabel(vectorId));
-        auto &newVectors = *(newPointData.getVectorData(vectorId));
-        auto &vectors = *(pointData.getVectorData(vectorId));
-        newVectors.reserve(newlsDomain->getNumberOfPoints());
-
-        for (unsigned i = 0; i < newDataSourceIds[0].size(); ++i) {
-          newVectors.push_back(vectors[newDataSourceIds[0][i]]);
-        }
-      }
+    if (updateData) {
+      auto &pointData = levelSets.back()->getPointData();
+      newlsDomain->getPointData().translateFromMultiData(pointData,
+                                                         newDataSourceIds);
     }
 
     newDomain.finalize();
@@ -309,9 +282,6 @@ template <class T, int D> class lsAdvect {
           .print();
       return std::numeric_limits<double>::max();
     }
-
-    // clear all metadata as it will be invalidated
-    levelSets.back()->clearMetaData();
 
     double currentTime = 0.;
     if (integrationScheme ==
@@ -432,9 +402,22 @@ template <class T, int D> class lsAdvect {
     std::vector<std::vector<std::pair<T, T>>> totalTempRates;
     totalTempRates.resize((levelSets.back())->getNumberOfSegments());
 
+    typename lsPointData<T>::ScalarDataType *voidMarkerPointer;
     if (ignoreVoids) {
       lsMarkVoidPoints<T, D>(levelSets.back()).apply();
+      auto &pointData = levelSets.back()->getPointData();
+      voidMarkerPointer =
+          pointData.getScalarData(lsMarkVoidPoints<T, D>::voidPointLabel);
+      if (voidMarkerPointer == nullptr) {
+        lsMessage::getInstance()
+            .addWarning("lsAdvect: Cannot find void point markers. Not "
+                        "ignoring void points.")
+            .print();
+        ignoreVoids = false;
+      }
     }
+
+    const bool ignoreVoidPoints = ignoreVoids;
 
 #pragma omp parallel num_threads((levelSets.back())->getNumberOfSegments())
     {
@@ -468,8 +451,6 @@ template <class T, int D> class lsAdvect {
       }
 
       IntegrationSchemeType scheme(IntegrationScheme);
-      auto &voidPoints =
-          *(levelSets.back()->getPointData().getScalarData("VoidPointMarkers"));
 
       for (hrleSparseIterator<typename lsDomain<T, D>::DomainType> it(
                topDomain, startVector);
@@ -487,7 +468,7 @@ template <class T, int D> class lsAdvect {
 
           T velocity = 0;
 
-          if (!(ignoreVoids && voidPoints[it.getPointId()])) {
+          if (!(ignoreVoidPoints && (*voidMarkerPointer)[it.getPointId()])) {
             // check if there is any other levelset at the same point:
             // if yes, take the velocity of the lowest levelset
             for (unsigned lowerLevelSetId = 0;
@@ -628,20 +609,28 @@ template <class T, int D> class lsAdvect {
     }
 
     if (saveVelocities) {
-      typename lsPointData<T>::ScalarDataType pointData;
-      for (unsigned i = 0; i < velocityVectors.size(); ++i) {
-        pointData.insert(pointData.end(),
-                         std::make_move_iterator(velocityVectors[i].begin()),
-                         std::make_move_iterator(velocityVectors[i].end()));
+      auto &pointData = levelSets.back()->getPointData();
+      // delete if already exists
+      if (int i = pointData.getScalarDataIndex(velocityLabel); i != -1) {
+        pointData.eraseScalarData(i);
       }
-      levelSets.back()->getPointData().insertNextScalarData(
-          pointData, "AdvectionVelocity");
+
+      typename lsPointData<T>::ScalarDataType vels;
+
+      for (unsigned i = 0; i < velocityVectors.size(); ++i) {
+        vels.insert(vels.end(),
+                    std::make_move_iterator(velocityVectors[i].begin()),
+                    std::make_move_iterator(velocityVectors[i].end()));
+      }
+      pointData.insertNextScalarData(std::move(vels), velocityLabel);
     }
 
     return maxTimeStep;
   }
 
 public:
+  static constexpr char velocityLabel[] = "AdvectionVelocities";
+
   lsAdvect() {}
 
   lsAdvect(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
@@ -745,6 +734,10 @@ public:
   /// For all other LaxFriedrichs schemes it is used as a
   /// scaling factor for the calculated alpha values.
   void setDissipationAlpha(const double &a) { dissipationAlpha = a; }
+
+  /// Set whether the point data in the old LS should
+  /// be translated to the advected LS. Defaults to true.
+  void setUpdatePointData(bool update) { updatePointData = update; }
 
   /// Perform the advection.
   void apply() {

@@ -20,6 +20,9 @@ template <class T, int D> class lsCalculateCurvatures {
   lsCurvatureEnum type = lsCurvatureEnum::MEAN_CURVATURE;
 
 public:
+  static constexpr char meanCurvatureLabel[] = "MeanCurvatures";
+  static constexpr char gaussianCurvatureLabel[] = "GaussianCurvatures";
+
   lsCalculateCurvatures() {}
 
   lsCalculateCurvatures(lsSmartPointer<lsDomain<T, D>> passedLevelSet)
@@ -164,11 +167,11 @@ public:
     // insert into pointData of levelSet
     if (calculateMean) {
       auto &pointData = levelSet->getPointData();
-      auto scalarDataPointer = pointData.getScalarData("MeanCurvatures");
+      auto scalarDataPointer = pointData.getScalarData(meanCurvatureLabel);
       // if it does not exist, insert new normals vector
       if (scalarDataPointer == nullptr) {
         pointData.insertNextScalarData(meanCurvaturesVector[0],
-                                       "MeanCurvatures");
+                                       meanCurvatureLabel);
       } else {
         // if it does exist, just swap the old with the new values
         *scalarDataPointer = std::move(meanCurvaturesVector[0]);
@@ -177,11 +180,11 @@ public:
 
     if (calculateGauss) {
       auto &pointData = levelSet->getPointData();
-      auto scalarDataPointer = pointData.getScalarData("GaussianCurvatures");
+      auto scalarDataPointer = pointData.getScalarData(gaussianCurvatureLabel);
       // if it does not exist, insert new normals vector
       if (scalarDataPointer == nullptr) {
         pointData.insertNextScalarData(gaussCurvaturesVector[0],
-                                       "GaussianCurvatures");
+                                       gaussianCurvatureLabel);
       } else {
         // if it does exist, just swap the old with the new values
         *scalarDataPointer = std::move(gaussCurvaturesVector[0]);

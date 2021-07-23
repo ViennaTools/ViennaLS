@@ -22,6 +22,8 @@ template <class T, int D> class lsCalculateNormalVectors {
   T maxValue = 0.5;
 
 public:
+  static constexpr char normalVectorsLabel[] = "Normals";
+
   lsCalculateNormalVectors() {}
 
   lsCalculateNormalVectors(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
@@ -134,10 +136,11 @@ public:
 
     // insert into pointData of levelSet
     auto &pointData = levelSet->getPointData();
-    auto vectorDataPointer = pointData.getVectorData("Normals");
+    auto vectorDataPointer = pointData.getVectorData(normalVectorsLabel);
     // if it does not exist, insert new normals vector
     if (vectorDataPointer == nullptr) {
-      pointData.insertNextVectorData(normalVectorsVector[0], "Normals");
+      pointData.insertNextVectorData(normalVectorsVector[0],
+                                     normalVectorsLabel);
     } else {
       // if it does exist, just swap the old with the new values
       *vectorDataPointer = std::move(normalVectorsVector[0]);

@@ -5,7 +5,7 @@
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsTestAsserts.hpp>
-#include <lsToMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
 #include <lsCalculateCurvatures.hpp>
@@ -69,10 +69,16 @@ int main() {
   LSTEST_ASSERT(std::abs(sum / numberOfActivePoints - analyticCurvature) < 1e-3)
 
   // std::cout << "Writing Output..." << std::endl;
+  // typename lsPointData<NumericType>::ScalarDataType analytic;
+  // analytic.resize(meanCurvatures->size(), analyticCurvature);
+  // sphere->getPointData().insertNextScalarData(analytic,
+  // "analyticCurvatures");
 
   // auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
-  // lsToMesh<NumericType, D>(sphere, mesh, true, true).apply();
+  // lsToSurfaceMesh(sphere, mesh).apply();
+  // lsVTKWriter(mesh, "curvatures.vtp").apply();
 
+  // lsToMesh<NumericType, D>(sphere, mesh, true, true).apply();
   // auto writer = lsVTKWriter<NumericType>();
   // writer.setMesh(mesh);
   // writer.setFileName("curvatures.vtk");

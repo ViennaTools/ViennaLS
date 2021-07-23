@@ -89,7 +89,7 @@ int main() {
     std::cout << "Extracting..." << std::endl;
     auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
     lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-    lsVTKWriter<NumericType>(mesh, "trench-0.vtk").apply();
+    lsVTKWriter<NumericType>(mesh, "trench-0.vtp").apply();
   }
 
   // Now grow new material isotropically
@@ -117,11 +117,11 @@ int main() {
 
     auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
     lsToSurfaceMesh<NumericType, D>(newLayer, mesh).apply();
-    lsVTKWriter<NumericType>(mesh, "trench-" + std::to_string(counter) + ".vtk")
+    lsVTKWriter<NumericType>(mesh, "trench-" + std::to_string(counter) + ".vtp")
         .apply();
 
     lsToMesh<NumericType, D>(newLayer, mesh).apply();
-    lsVTKWriter<NumericType>(mesh, "LS-" + std::to_string(counter) + ".vtk")
+    lsVTKWriter<NumericType>(mesh, "LS-" + std::to_string(counter) + ".vtp")
         .apply();
 
     ++counter;

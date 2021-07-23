@@ -70,7 +70,7 @@ int main() {
     std::cout << "Extracting..." << std::endl;
     auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
     lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-    lsVTKWriter<NumericType>(mesh, "plane.vtk").apply();
+    lsVTKWriter<NumericType>(mesh, "plane.vtp").apply();
   }
 
   {
@@ -88,7 +88,7 @@ int main() {
       std::cout << "Extracting..." << std::endl;
       auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
       lsToMesh<NumericType, D>(trench, mesh).apply();
-      lsVTKWriter<NumericType>(mesh, "box.vtk").apply();
+      lsVTKWriter<NumericType>(mesh, "box.vtp").apply();
     }
 
     // Create trench geometry
@@ -131,7 +131,7 @@ int main() {
               << numberOfSteps << std::flush;
     auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
     lsToSurfaceMesh<NumericType, D>(newLayer, mesh).apply();
-    lsVTKWriter<NumericType>(mesh, "trench" + std::to_string(i) + ".vtk")
+    lsVTKWriter<NumericType>(mesh, "trench" + std::to_string(i) + ".vtp")
         .apply();
   }
   std::cout << std::endl;

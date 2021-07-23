@@ -25,7 +25,7 @@
 /// Class handling the output of an lsMesh<> to VTK file types.
 template <class T> class lsVTKWriter {
   lsSmartPointer<lsMesh<T>> mesh = nullptr;
-  lsFileFormatEnum fileFormat = lsFileFormatEnum::VTK_LEGACY;
+  lsFileFormatEnum fileFormat = lsFileFormatEnum::VTK_AUTO;
   std::string fileName;
 
 #ifdef VIENNALS_USE_VTK
@@ -98,6 +98,23 @@ public:
       return;
     }
 
+    if (fileFormat == lsFileFormatEnum::VTK_AUTO) {
+      auto ending = fileName.substr(fileName.find_last_of('.'));
+      if (ending == ".vtk") {
+        fileFormat = lsFileFormatEnum::VTK_LEGACY;
+      } else if (ending == ".vtp") {
+        fileFormat = lsFileFormatEnum::VTP;
+      } else if (ending == ".vtu") {
+        fileFormat = lsFileFormatEnum::VTU;
+      } else {
+        lsMessage::getInstance()
+            .addWarning("No valid file format found based on the file ending "
+                        "passed to lsVTKWriter. Not writing.")
+            .print();
+        return;
+      }
+    }
+
     // check file format
     switch (fileFormat) {
     case lsFileFormatEnum::VTK_LEGACY:
@@ -115,9 +132,10 @@ public:
     case lsFileFormatEnum::VTU:
       lsMessage::getInstance()
           .addWarning(
-              "lsVTKWriter was built without VTK support. Only VTK_LEGACY "
-              "can be used. File not written.")
+              "lsVTKWriter was built without VTK support. Falling back to VTK_LEGACY.")
           .print();
+      writeVTKLegacy(fileName);
+      break;
 #endif
     default:
       lsMessage::getInstance()
@@ -401,6 +419,15 @@ private:
 
     for (unsigned i = 0; i < mesh->hexas.size(); ++i)
       f << 12 << std::endl;
+
+    // WRITE POINT DATA
+    if (mesh->pointData.getScalarDataSize() ||
+        mesh->pointData.getVectorDataSize()) {
+      lsMessage::getInstance()
+          .addWarning("Point data output not supported for legacy VTK output. "
+                      "Point data is ignored.")
+          .print();
+    }
 
     // WRITE SCALAR DATA
     if (mesh->cellData.getScalarDataSize()) {

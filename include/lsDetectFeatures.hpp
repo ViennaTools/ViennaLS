@@ -24,10 +24,11 @@ template <class T, int D> class lsDetectFeatures {
   lsFeatureDetectionEnum method = lsFeatureDetectionEnum::CURVATURE;
   T flatLimit = 1.;
   T flatLimit2 = 1.;
-  std::string outputName = "FeatureMarkers";
   std::vector<T> flaggedCells;
 
 public:
+  static constexpr char featureMarkersLabel[] = "FeatureMarkers";
+
   lsDetectFeatures() {}
 
   lsDetectFeatures(lsSmartPointer<lsDomain<T, D>> passedLevelSet)
@@ -64,10 +65,10 @@ public:
 
     // insert into pointData of levelSet
     auto &pointData = levelSet->getPointData();
-    auto vectorDataPointer = pointData.getScalarData(outputName);
+    auto vectorDataPointer = pointData.getScalarData(featureMarkersLabel);
     // if it does not exist, insert new feature vector
     if (vectorDataPointer == nullptr) {
-      pointData.insertNextScalarData(flaggedCells, outputName);
+      pointData.insertNextScalarData(flaggedCells, featureMarkersLabel);
     } else {
       // if it does exist, just swap the old with the new values
       *vectorDataPointer = std::move(flaggedCells);
@@ -156,7 +157,8 @@ private:
     // CALCULATE NORMALS
     lsExpand<T, D>(levelSet, 3).apply();
     lsCalculateNormalVectors<T, D>(levelSet).apply();
-    const auto &normals = *(levelSet->getPointData().getVectorData("Normals"));
+    const auto &normals = *(levelSet->getPointData().getVectorData(
+        lsCalculateNormalVectors<T, D>::normalVectorsLabel));
 
     std::vector<std::vector<T>> flagsReserve(levelSet->getNumberOfSegments());
 

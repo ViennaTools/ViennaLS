@@ -15,6 +15,7 @@
 /// possible.
 template <class T, int D> class lsPrune {
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
+  bool updatePointData = true;
 
 public:
   lsPrune() {}
@@ -25,6 +26,10 @@ public:
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     levelSet = passedlsDomain;
   }
+
+  /// Set whether to update the point data stored in the LS
+  /// during this algorithm. Defaults to true.
+  void setUpdatePointData(bool update) { updatePointData = update; }
 
   /// removes all grid points, which do not have at least one opposite signed
   /// neighbour
@@ -46,6 +51,13 @@ public:
     typename lsDomain<T, D>::DomainType &domain = levelSet->getDomain();
 
     newDomain.initialize(domain.getNewSegmentation(), domain.getAllocation());
+
+    const bool updateData = updatePointData;
+    // save how data should be transferred to new level set
+    // list of indices into the old pointData vector
+    std::vector<std::vector<unsigned>> newDataSourceIds;
+    if (updateData)
+      newDataSourceIds.resize(newDomain.getNumberOfSegments());
 
 #pragma omp parallel num_threads(newDomain.getNumberOfSegments())
     {
@@ -83,6 +95,8 @@ public:
           if (i != 2 * D) {
             domainSegment.insertNextDefinedPoint(neighborIt.getIndices(),
                                                  centerIt.getValue());
+            if (updateData)
+              newDataSourceIds[p].push_back(centerIt.getPointId());
           } else {
             // TODO: it is more efficient to insertNextUndefinedRunType, since
             // we know it already exists
@@ -98,6 +112,13 @@ public:
         }
       }
     }
+
+    // now copy old data into new level set
+    if (updateData) {
+      newlsDomain->getPointData().translateFromMultiData(
+          levelSet->getPointData(), newDataSourceIds);
+    }
+
     // distribute evenly across segments and copy
     newDomain.finalize();
     newDomain.segment();

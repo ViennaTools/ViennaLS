@@ -15,6 +15,7 @@ template <class T, int D> class lsExpand {
   typedef typename lsDomain<T, D>::GridType GridType;
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
   int width = 0;
+  bool updatePointData = true;
 
 public:
   lsExpand() {}
@@ -32,6 +33,10 @@ public:
   /// Set how far the level set should be extended. Points
   /// with value width*0.5 will be added by this algorithm.
   void setWidth(int passedWidth) { width = passedWidth; }
+
+  /// Set whether to update the point data stored in the LS
+  /// during this algorithm. Defaults to true.
+  void setUpdatePointData(bool update) { updatePointData = update; }
 
   /// Apply the expansion to the specified width
   void apply() {
@@ -67,6 +72,13 @@ public:
       newDomain.initialize(domain.getNewSegmentation(),
                            domain.getAllocation() * allocationFactor);
 
+      const bool updateData = updatePointData;
+      // save how data should be transferred to new level set
+      // list of indices into the old pointData vector
+      std::vector<std::vector<unsigned>> newDataSourceIds;
+      if (updateData)
+        newDataSourceIds.resize(newDomain.getNumberOfSegments());
+
 #pragma omp parallel num_threads(newDomain.getNumberOfSegments())
       {
         int p = 0;
@@ -93,16 +105,25 @@ public:
           if (std::abs(centerIt.getValue()) <= totalLimit) {
             domainSegment.insertNextDefinedPoint(neighborIt.getIndices(),
                                                  centerIt.getValue());
+            if (updateData)
+              newDataSourceIds[p].push_back(centerIt.getPointId());
           } else {
             if (centerIt.getValue() > 0.) {
               T distance = lsDomain<T, D>::POS_VALUE;
+              int neighbor = -1;
               for (int i = 0; i < 2 * D; i++) {
-                distance = std::min(
-                    distance, neighborIt.getNeighbor(i).getValue() + T(1));
+                T newValue = neighborIt.getNeighbor(i).getValue() + T(1);
+                if (distance > newValue) {
+                  distance = newValue;
+                  neighbor = i;
+                }
               }
               if (distance <= limit) {
                 domainSegment.insertNextDefinedPoint(neighborIt.getIndices(),
                                                      distance);
+                if (updateData)
+                  newDataSourceIds[p].push_back(
+                      neighborIt.getNeighbor(neighbor).getPointId());
               } else {
                 // TODO: use insertNextUndefinedRunType
                 domainSegment.insertNextUndefinedPoint(
@@ -110,13 +131,20 @@ public:
               }
             } else {
               T distance = lsDomain<T, D>::NEG_VALUE;
+              int neighbor = -1;
               for (int i = 0; i < 2 * D; i++) {
-                distance = std::max(
-                    distance, neighborIt.getNeighbor(i).getValue() - T(1));
+                T newValue = neighborIt.getNeighbor(i).getValue() - T(1);
+                if (distance < newValue) {
+                  distance = newValue;
+                  neighbor = i;
+                }
               }
               if (distance >= -limit) {
                 domainSegment.insertNextDefinedPoint(neighborIt.getIndices(),
                                                      distance);
+                if (updateData)
+                  newDataSourceIds[p].push_back(
+                      neighborIt.getNeighbor(neighbor).getPointId());
               } else {
                 // TODO: use insertNextUndefinedRunType
                 domainSegment.insertNextUndefinedPoint(
@@ -126,6 +154,13 @@ public:
           }
         }
       }
+
+      // now copy old data into new level set
+      if (updateData) {
+        newlsDomain->getPointData().translateFromMultiData(
+            levelSet->getPointData(), newDataSourceIds);
+      }
+
       newDomain.finalize();
       levelSet->deepCopy(newlsDomain);
     }

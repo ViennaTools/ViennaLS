@@ -206,7 +206,7 @@ int main() {
                 << numberOfEtchSteps << std::flush;
       auto mesh = lsSmartPointer<lsMesh<>>::New();
       lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-      lsVTKWriter<double>(mesh, "substrate-" + std::to_string(i) + ".vtk")
+      lsVTKWriter<double>(mesh, "substrate-" + std::to_string(i) + ".vtp")
           .apply();
 
       advectionKernel.apply();
@@ -218,7 +218,7 @@ int main() {
       auto mesh = lsSmartPointer<lsMesh<>>::New();
       lsToSurfaceMesh<double, D>(substrate, mesh).apply();
       lsVTKWriter<double>(mesh, "substrate-" +
-                                    std::to_string(numberOfEtchSteps) + ".vtk")
+                                    std::to_string(numberOfEtchSteps) + ".vtp")
           .apply();
     }
 
@@ -254,7 +254,7 @@ int main() {
       lsToSurfaceMesh<double, D>(fillLayer, mesh).apply();
       lsVTKWriter<double>(mesh, "fillLayer-" +
                                     std::to_string(numberOfEtchSteps + 1 + i) +
-                                    ".vtk")
+                                    ".vtp")
           .apply();
 
       advectionKernel.apply();
@@ -268,7 +268,7 @@ int main() {
       lsVTKWriter<double>(
           mesh, "fillLayer-" +
                     std::to_string(numberOfEtchSteps + numberOfDepoSteps) +
-                    ".vtk")
+                    ".vtp")
           .apply();
     }
 
@@ -280,10 +280,10 @@ int main() {
   {
     auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter<double>(mesh, "final-substrate.vtk").apply();
+    lsVTKWriter<double>(mesh, "final-substrate.vtp").apply();
 
     lsToSurfaceMesh<double, D>(fillLayer, mesh).apply();
-    lsVTKWriter<double>(mesh, "final-fillLayer.vtk").apply();
+    lsVTKWriter<double>(mesh, "final-fillLayer.vtp").apply();
   }
 
   return 0;

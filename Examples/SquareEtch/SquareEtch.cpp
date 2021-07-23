@@ -145,16 +145,16 @@ int main() {
     // wrapping is necessary for stable advection
     auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter<double>(mesh, fileName + "0.vtk").apply();
+    lsVTKWriter<double>(mesh, fileName + "0.vtp").apply();
 
     // output mask layer
     lsToSurfaceMesh<double, D>(mask, mesh).apply();
-    lsVTKWriter<double>(mesh, "mask.vtk").apply();
+    lsVTKWriter<double>(mesh, "mask.vtp").apply();
   }
 
   // START ADVECTION
   auto velocities = lsSmartPointer<velocityField>::New();
-  lsSmartPointer<analyticalField> analyticalVelocities;
+  auto analyticalVelocities = lsSmartPointer<analyticalField>::New();
 
   std::cout << "Advecting" << std::endl;
   lsAdvect<double, D> advectionKernel;
@@ -195,7 +195,7 @@ int main() {
 
     auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter<double>(mesh, fileName + std::to_string(counter) + ".vtk")
+    lsVTKWriter<double>(mesh, fileName + std::to_string(counter) + ".vtp")
         .apply();
     ++counter;
   }
@@ -204,7 +204,7 @@ int main() {
 
   auto mesh = lsSmartPointer<lsMesh<>>::New();
   lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-  lsVTKWriter<double>(mesh, "final.vtk").apply();
+  lsVTKWriter<double>(mesh, "final.vtp").apply();
 
   return 0;
 }

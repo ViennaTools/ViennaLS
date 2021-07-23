@@ -126,7 +126,7 @@ int main() {
               << numberOfSteps << std::flush;
     auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter<double>(mesh, "void-" + std::to_string(i) + ".vtk").apply();
+    lsVTKWriter<double>(mesh, "void-" + std::to_string(i) + ".vtp").apply();
 
     advectionKernel.apply();
     passedTime += advectionKernel.getAdvectedTime();

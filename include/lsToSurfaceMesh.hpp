@@ -22,6 +22,7 @@ template <class T, int D> class lsToSurfaceMesh {
   lsSmartPointer<lsMesh<T>> mesh = nullptr;
   // std::vector<hrleIndexType> meshNodeToPointIdMapping;
   const T epsilon;
+  bool updatePointData = true;
 
 public:
   lsToSurfaceMesh(double eps = 1e-12) : epsilon(eps) {}
@@ -35,6 +36,8 @@ public:
   }
 
   void setMesh(lsSmartPointer<lsMesh<T>> passedMesh) { mesh = passedMesh; }
+
+  void setUpdatePointData(bool update) { updatePointData = update; }
 
   void apply() {
     if (levelSet == nullptr) {
@@ -80,21 +83,14 @@ public:
     using ScalarDataType = typename DomainType::PointDataType::ScalarDataType;
     using VectorDataType = typename DomainType::PointDataType::VectorDataType;
 
-    const auto &pointData = levelSet->getPointData();
-    // scalar data
-    for (unsigned i = 0; i < pointData.getScalarDataSize(); ++i) {
-      ScalarDataType tmp;
-      tmp.reserve(pointData.getScalarData(i)->size());
-      mesh->pointData.insertNextScalarData(tmp,
-                                           pointData.getScalarDataLabel(i));
-    }
-    // vector data
-    for (unsigned i = 0; i < pointData.getVectorDataSize(); ++i) {
-      VectorDataType tmp;
-      tmp.reserve(pointData.getVectorData(i)->size());
-      mesh->pointData.insertNextVectorData(tmp,
-                                           pointData.getVectorDataLabel(i));
-    }
+    const bool updateData = updatePointData;
+
+    // save how data should be transferred to new level set
+    // list of indices into the old pointData vector
+    std::vector<std::vector<unsigned>> newDataSourceIds;
+    // there is no multithreading here, so just use 1
+    if (updateData)
+      newDataSourceIds.resize(1);
 
     // iterate over all active points
     for (hrleConstSparseCellIterator<hrleDomainType> cellIt(
@@ -187,23 +183,19 @@ public:
                 mesh->insertNextNode(cc); // insert new surface node
             nodes[dir][d] = nod_numbers[n];
 
-            // insert corresponding point data
-            for (unsigned i = 0; i < pointData.getScalarDataSize(); ++i) {
-              const auto &currentData = *pointData.getScalarData(i);
-              mesh->pointData.getScalarData(i)->push_back(
-                  currentData[currentPointId]);
-            }
-
-            for (unsigned i = 0; i < pointData.getVectorDataSize(); ++i) {
-              const auto &currentData = *pointData.getVectorData(i);
-              mesh->pointData.getVectorData(i)->push_back(
-                  currentData[currentPointId]);
-            }
+            if (updateData)
+              newDataSourceIds[0].push_back(currentPointId);
           }
         }
 
         mesh->insertNextElement(nod_numbers); // insert new surface element
       }
+    }
+
+    // now copy old data into new level set
+    if (updateData) {
+      mesh->getPointData().translateFromMultiData(levelSet->getPointData(),
+                                                  newDataSourceIds);
     }
   }
 };
