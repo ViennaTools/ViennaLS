@@ -55,10 +55,12 @@ int main() {
   {
     using ScalarDataType = lsDomain<double, D>::PointDataType::ScalarDataType;
     ScalarDataType scalars1(sphere1->getNumberOfPoints(), 0.);
-    sphere1->getPointData().insertNextScalarData(std::move(scalars1), "originID");
+    sphere1->getPointData().insertNextScalarData(std::move(scalars1),
+                                                 "originID");
 
     ScalarDataType scalars2(sphere2->getNumberOfPoints(), 1.);
-    sphere2->getPointData().insertNextScalarData(std::move(scalars2), "originID");
+    sphere2->getPointData().insertNextScalarData(std::move(scalars2),
+                                                 "originID");
   }
 
   // {

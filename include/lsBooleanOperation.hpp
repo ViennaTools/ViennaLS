@@ -38,6 +38,7 @@ enum struct lsBooleanOperationEnum : unsigned {
 template <class T, int D> class lsBooleanOperation {
 public:
   using ComparatorType = std::pair<T, bool> (*)(const T &, const T &);
+
 private:
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
   lsSmartPointer<lsDomain<T, D>> levelSetA = nullptr;
@@ -98,7 +99,8 @@ private:
             // if taken from A, set to true
             const bool originLS = comparison.second;
             newDataLS[p].push_back(originLS);
-            const auto originPointId = (originLS) ? itA.getPointId() : itB.getPointId();
+            const auto originPointId =
+                (originLS) ? itA.getPointId() : itB.getPointId();
             newDataSourceIds[p].push_back(originPointId);
           }
         } else {
@@ -121,52 +123,55 @@ private:
     }
 
     // merge data
-    for(unsigned i = 1; i < newDataLS.size(); ++i) {
-      newDataLS[0].insert(newDataLS[0].end(),
-                          newDataLS[i].begin(),
+    for (unsigned i = 1; i < newDataLS.size(); ++i) {
+      newDataLS[0].insert(newDataLS[0].end(), newDataLS[i].begin(),
                           newDataLS[i].end());
 
       newDataSourceIds[0].insert(newDataSourceIds[0].end(),
-                          newDataSourceIds[i].begin(),
-                          newDataSourceIds[i].end());
+                                 newDataSourceIds[i].begin(),
+                                 newDataSourceIds[i].end());
     }
 
     // transfer data from the old LSs to new LS
     // Only do so if the same data exists in both LSs
     // If this is not the case, the data is invalid
     // and therefore not needed anyway.
-    if(updateData) {
+    if (updateData) {
       const auto &AData = levelSetA->getPointData();
       const auto &BData = levelSetB->getPointData();
       auto &newData = newlsDomain->getPointData();
 
       // scalars
-      for(unsigned i = 0; i < AData.getScalarDataSize(); ++i) {
+      for (unsigned i = 0; i < AData.getScalarDataSize(); ++i) {
         auto scalarDataLabel = AData.getScalarDataLabel(i);
         auto BPointer = BData.getScalarData(scalarDataLabel);
-        if(BPointer != nullptr) {
+        if (BPointer != nullptr) {
           auto APointer = AData.getScalarData(i);
           // copy all data into the new scalarData
           typename lsDomain<T, D>::PointDataType::ScalarDataType scalars;
           scalars.resize(newlsDomain->getNumberOfPoints());
-          for(unsigned j = 0; j < newlsDomain->getNumberOfPoints(); ++j) {
-            scalars[j] = (newDataLS[0][j]) ? APointer->at(newDataSourceIds[0][j]) : BPointer->at(newDataSourceIds[0][j]);
+          for (unsigned j = 0; j < newlsDomain->getNumberOfPoints(); ++j) {
+            scalars[j] = (newDataLS[0][j])
+                             ? APointer->at(newDataSourceIds[0][j])
+                             : BPointer->at(newDataSourceIds[0][j]);
           }
           newData.insertNextScalarData(scalars, scalarDataLabel);
         }
       }
 
       // vectors
-      for(unsigned i = 0; i < AData.getVectorDataSize(); ++i) {
+      for (unsigned i = 0; i < AData.getVectorDataSize(); ++i) {
         auto vectorDataLabel = AData.getVectorDataLabel(i);
         auto BPointer = BData.getVectorData(vectorDataLabel);
-        if(BPointer != nullptr) {
+        if (BPointer != nullptr) {
           auto APointer = AData.getVectorData(i);
           // copy all data into the new vectorData
           typename lsDomain<T, D>::PointDataType::VectorDataType vectors;
           vectors.resize(newlsDomain->getNumberOfPoints());
-          for(unsigned j = 0; j < newlsDomain->getNumberOfPoints(); ++j) {
-            vectors[j] = (newDataLS[0][j]) ? APointer->at(newDataSourceIds[0][j]) : BPointer->at(newDataSourceIds[0][j]);
+          for (unsigned j = 0; j < newlsDomain->getNumberOfPoints(); ++j) {
+            vectors[j] = (newDataLS[0][j])
+                             ? APointer->at(newDataSourceIds[0][j])
+                             : BPointer->at(newDataSourceIds[0][j]);
           }
           newData.insertNextVectorData(vectors, vectorDataLabel);
         }
@@ -228,7 +233,7 @@ private:
 
   static std::pair<T, bool> minComp(const T &a, const T &b) {
     bool AIsSmaller = a < b;
-    if(AIsSmaller)
+    if (AIsSmaller)
       return std::make_pair(a, true);
     else
       return std::make_pair(b, false);
@@ -236,7 +241,7 @@ private:
 
   static std::pair<T, bool> maxComp(const T &a, const T &b) {
     bool AIsLarger = a > b;
-    if(AIsLarger)
+    if (AIsLarger)
       return std::make_pair(a, true);
     else
       return std::make_pair(b, false);
