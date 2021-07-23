@@ -33,16 +33,20 @@ enum struct lsBooleanOperationEnum : unsigned {
 ///  This comparator returns one value generated from the level set value
 ///  supplied by each level set. E.g.: for a union, the comparator will
 ///  always return the smaller of the two values.
+///  The function signature for the comparator is defined in the public
+///  ComparatorType.
 template <class T, int D> class lsBooleanOperation {
+public:
+  using ComparatorType = std::pair<T, bool> (*)(const T &, const T &);
+private:
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
   lsSmartPointer<lsDomain<T, D>> levelSetA = nullptr;
   lsSmartPointer<lsDomain<T, D>> levelSetB = nullptr;
   lsBooleanOperationEnum operation = lsBooleanOperationEnum::INTERSECT;
-  const T (*operationComp)(const T &, const T &) = nullptr;
+  ComparatorType operationComp = nullptr;
   bool updatePointData = true;
-  static constexpr double comparisonEps = 10.0 * std::numeric_limits<T>::epsilon();
 
-  void booleanOpInternal(const T (*comp)(const T &, const T &)) {
+  void booleanOpInternal(ComparatorType comp) {
     auto &grid = levelSetA->getGrid();
     auto newlsDomain = lsSmartPointer<lsDomain<T, D>>::New(grid);
     typename lsDomain<T, D>::DomainType &newDomain = newlsDomain->getDomain();
@@ -84,17 +88,18 @@ template <class T, int D> class lsBooleanOperation {
                                                   currentVector);
 
       while (currentVector < endVector) {
-
-        const T &currentValue = comp(itA.getValue(), itB.getValue());
+        const auto &comparison = comp(itA.getValue(), itB.getValue());
+        const auto &currentValue = comparison.first;
 
         if (currentValue != lsDomain<T, D>::NEG_VALUE &&
             currentValue != lsDomain<T, D>::POS_VALUE) {
           domainSegment.insertNextDefinedPoint(currentVector, currentValue);
           if (updateData) {
-            newDataSourceIds[p].push_back(centerIt.getPointId());
-            // if taken from A, set to false
-            const bool newVal = std::abs(itA.getValue() - currentValue) > std::abs(currentValue) * comparisonEps;
-            newDataLS[p].push_back(newVal);
+            // if taken from A, set to true
+            const bool originLS = comparison.second;
+            newDataLS[p].push_back(originLS);
+            const auto originPointId = (originLS) ? itA.getPointId() : itB.getPointId();
+            newDataSourceIds[p].push_back(originPointId);
           }
         } else {
           domainSegment.insertNextUndefinedPoint(
@@ -115,8 +120,58 @@ template <class T, int D> class lsBooleanOperation {
       }
     }
 
+    // merge data
+    for(unsigned i = 1; i < newDataLS.size(); ++i) {
+      newDataLS[0].insert(newDataLS[0].end(),
+                          newDataLS[i].begin(),
+                          newDataLS[i].end());
+
+      newDataSourceIds[0].insert(newDataSourceIds[0].end(),
+                          newDataSourceIds[i].begin(),
+                          newDataSourceIds[i].end());
+    }
+
     // transfer data from the old LSs to new LS
-    // TODO
+    // Only do so if the same data exists in both LSs
+    // If this is not the case, the data is invalid
+    // and therefore not needed anyway.
+    if(updateData) {
+      const auto &AData = levelSetA->getPointData();
+      const auto &BData = levelSetB->getPointData();
+      auto &newData = newlsDomain->getPointData();
+
+      // scalars
+      for(unsigned i = 0; i < AData.getScalarDataSize(); ++i) {
+        auto scalarDataLabel = AData.getScalarDataLabel(i);
+        auto BPointer = BData.getScalarData(scalarDataLabel);
+        if(BPointer != nullptr) {
+          auto APointer = AData.getScalarData(i);
+          // copy all data into the new scalarData
+          typename lsDomain<T, D>::PointDataType::ScalarDataType scalars;
+          scalars.resize(newlsDomain->getNumberOfPoints());
+          for(unsigned j = 0; j < newlsDomain->getNumberOfPoints(); ++j) {
+            scalars[j] = (newDataLS[0][j]) ? APointer->at(newDataSourceIds[0][j]) : BPointer->at(newDataSourceIds[0][j]);
+          }
+          newData.insertNextScalarData(scalars, scalarDataLabel);
+        }
+      }
+
+      // vectors
+      for(unsigned i = 0; i < AData.getVectorDataSize(); ++i) {
+        auto vectorDataLabel = AData.getVectorDataLabel(i);
+        auto BPointer = BData.getVectorData(vectorDataLabel);
+        if(BPointer != nullptr) {
+          auto APointer = AData.getVectorData(i);
+          // copy all data into the new vectorData
+          typename lsDomain<T, D>::PointDataType::VectorDataType vectors;
+          vectors.resize(newlsDomain->getNumberOfPoints());
+          for(unsigned j = 0; j < newlsDomain->getNumberOfPoints(); ++j) {
+            vectors[j] = (newDataLS[0][j]) ? APointer->at(newDataSourceIds[0][j]) : BPointer->at(newDataSourceIds[0][j]);
+          }
+          newData.insertNextVectorData(vectors, vectorDataLabel);
+        }
+      }
+    }
 
     newDomain.finalize();
     newDomain.segment();
@@ -171,12 +226,24 @@ template <class T, int D> class lsBooleanOperation {
     levelSetA->finalize();
   }
 
-  static const T minComp(const T &A, const T &B) { return std::min(A, B); }
+  static std::pair<T, bool> minComp(const T &a, const T &b) {
+    bool AIsSmaller = a < b;
+    if(AIsSmaller)
+      return std::make_pair(a, true);
+    else
+      return std::make_pair(b, false);
+  }
 
-  static const T maxComp(const T &A, const T &B) { return std::max(A, B); }
+  static std::pair<T, bool> maxComp(const T &a, const T &b) {
+    bool AIsLarger = a > b;
+    if(AIsLarger)
+      return std::make_pair(a, true);
+    else
+      return std::make_pair(b, false);
+  }
 
-  static const T relativeComplementComp(const T &A, const T &B) {
-    return std::max(A, -B);
+  static std::pair<T, bool> relativeComplementComp(const T &a, const T &b) {
+    return maxComp(a, -b);
   }
 
 public:
@@ -212,8 +279,7 @@ public:
 
   /// Set the comparator to be used when the BooleanOperation
   /// is set to CUSTOM.
-  void setBooleanOperationComparator(
-      const T (*passedOperationComp)(const T &, const T &)) {
+  void setBooleanOperationComparator(ComparatorType passedOperationComp) {
     operationComp = passedOperationComp;
   }
 

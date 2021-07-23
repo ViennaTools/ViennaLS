@@ -1,4 +1,5 @@
 #include <iostream>
+#include <numeric>
 
 #include <lsBooleanOperation.hpp>
 #include <lsDomain.hpp>
@@ -50,6 +51,16 @@ int main() {
       sphere2, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
       .apply();
 
+  // put some data into either LS
+  {
+    using ScalarDataType = lsDomain<double, D>::PointDataType::ScalarDataType;
+    ScalarDataType scalars1(sphere1->getNumberOfPoints(), 0.);
+    sphere1->getPointData().insertNextScalarData(std::move(scalars1), "originID");
+
+    ScalarDataType scalars2(sphere2->getNumberOfPoints(), 1.);
+    sphere2->getPointData().insertNextScalarData(std::move(scalars2), "originID");
+  }
+
   // {
   //   auto mesh1 = lsSmartPointer<lsMesh<>>::New();
   //   auto mesh2 = lsSmartPointer<lsMesh<>>::New();
@@ -77,10 +88,7 @@ int main() {
   // std::cout << "Extracting..." << std::endl;
   // auto mesh = lsSmartPointer<lsMesh<>>::New();
   // lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
-
-  // mesh->print();
-
-  // lsVTKWriter<double>(mesh, "after.vtk").apply();
+  // lsVTKWriter<double>(mesh, "after.vtp").apply();
 
   return 0;
 }
