@@ -42,6 +42,7 @@
 #include <lsPrune.hpp>
 #include <lsReader.hpp>
 #include <lsReduce.hpp>
+#include <lsRemoveStrayPoints.hpp>
 #include <lsSmartPointer.hpp>
 #include <lsToDiskMesh.hpp>
 #include <lsToMesh.hpp>
@@ -649,6 +650,35 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
                lsMakeGeometry<T, D>::setIgnoreBoundaryConditions)
       .def("apply", &lsMakeGeometry<T, D>::apply, "Generate the geometry.");
 
+  //lsMarkVoidPoints
+  pybind11::class_<lsMarkVoidPoints<T, D>, lsSmartPointer<lsMarkVoidPoints<T, D>>>(module, "lsMarkVoidPoints")
+      // constructors
+      .def(pybind11::init(&lsSmartPointer<lsMarkVoidPoints<T, D>>::New<>))
+      .def(pybind11::init(&lsSmartPointer<lsMarkVoidPoints<T, D>>::New<
+                          lsSmartPointer<lsDomain<T, D>> &>))
+      .def(pybind11::init(&lsSmartPointer<lsMarkVoidPoints<T, D>>::New<
+                          lsSmartPointer<lsDomain<T, D>> &, bool &>))
+      // methods
+      .def("setLevelSet", &lsMarkVoidPoints<T, D>::setLevelSet,
+           "Set the levelset to mark void points in.")
+      .def("setReverseVoidDetection", &lsMarkVoidPoints<T, D>::setReverseVoidDetection,
+           "Reverse the logic of detecting the top surface.")
+      .def("setDetectLargestSurface", &lsMarkVoidPoints<T, D>::setDetectLargestSurface,
+           "Set that the top surface should be the one with the most connected LS points.")
+      .def("setVoidTopSurface", &lsMarkVoidPoints<T, D>::setVoidTopSurface,
+           "Set the logic by which to choose the surface which is non-void. All other connected surfaces will then be marked as void points.")
+      .def("setSaveComponentsId", &lsMarkVoidPoints<T, D>::setSaveComponentIds,
+           "Save the connectivity information of all LS points in the pointData of the level set.")
+      .def("apply", &lsMarkVoidPoints<T, D>::apply,
+           "Mark void points.");
+
+  // lsVoidTopSurfaceEnum
+  pybind11::enum_<lsVoidTopSurfaceEnum>(module, "lsVoidTopSurfaceEnum")
+      .value("LEX_LOWEST", lsVoidTopSurfaceEnum::LEX_LOWEST)
+      .value("LEX_HIGHEST", lsVoidTopSurfaceEnum::LEX_HIGHEST)
+      .value("LARGEST", lsVoidTopSurfaceEnum::LARGEST)
+      .value("SMALLEST", lsVoidTopSurfaceEnum::SMALLEST);
+
   // lsPointData
   pybind11::class_<lsPointData<T>, lsSmartPointer<lsPointData<T>>>(
       module, "lsPointData")
@@ -788,6 +818,19 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Set whether the levelset should be segmented anew (balanced across "
            "cores) after reduction.")
       .def("apply", &lsReduce<T, D>::apply, "Perform reduction.");
+
+  // lsRemoveStrayPoints
+  pybind11::class_<lsRemoveStrayPoints<T, D>, lsSmartPointer<lsRemoveStrayPoints<T, D>>>(module, "lsRemoveStrayPoints")
+      // constructors
+      .def(pybind11::init(&lsSmartPointer<lsRemoveStrayPoints<T, D>>::New<>))
+      .def(pybind11::init(&lsSmartPointer<lsRemoveStrayPoints<T, D>>::New<lsSmartPointer<lsDomain<T, D>> &>))
+      // methods
+      .def("setLevelSet", &lsRemoveStrayPoints<T, D>::setLevelSet,
+           "Set levelset for stray point removal.")
+      .def("setVoidTopSurface", &lsRemoveStrayPoints<T, D>::setVoidTopSurface,
+           "Set the logic by which to choose the surface which should be kept. All other LS values will be marked as stray points and removed.")
+      .def("apply", &lsRemoveStrayPoints<T, D>::apply, "Remove stray points.");
+
 
   // lsToDiskMesh
   pybind11::class_<lsToDiskMesh<T, D>, lsSmartPointer<lsToDiskMesh<T, D>>>(

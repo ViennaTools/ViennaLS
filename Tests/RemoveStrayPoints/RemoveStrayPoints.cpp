@@ -12,7 +12,7 @@
 
 int main() {
   constexpr int D = 2;
-  omp_set_num_threads(1);
+  // omp_set_num_threads(1);
 
   double extent = 10;
   double gridDelta = 1;
@@ -47,11 +47,14 @@ int main() {
   }
 
   {
+    // uncomment this to see the marked components in the output
+    // lsMarkVoidPoints<double, D> marker;
+    // marker.setLevelSet(substrate);
+    // marker.setVoidTopSurface(lsVoidTopSurfaceEnum::LEX_HIGHEST);
+    // marker.setSaveComponentIds(true);
+    // marker.apply();
     auto explMesh = lsSmartPointer<lsMesh<>>::New();
-
-    std::cout << "Extracting..." << std::endl;
     lsToMesh<double, D>(substrate, explMesh).apply();
-
     lsVTKWriter<double>(explMesh, lsFileFormatEnum::VTP, "before.vtp").apply();
   }
 
@@ -62,7 +65,6 @@ int main() {
   cleaner.apply();
 
   {
-    std::cout << "Extracting..." << std::endl;
     auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToMesh<double, D>(substrate, mesh).apply();
     lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP, "after.vtp").apply();

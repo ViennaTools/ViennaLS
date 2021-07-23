@@ -4,6 +4,13 @@
 #include <lsMarkVoidPoints.hpp>
 #include <lsSmartPointer.hpp>
 
+/// This algorithm can be used to remove all LS values
+/// which are not part of a so-called top surface.
+/// This surface is detected using the lsMarkVoidPoints
+/// algorithm, according to the method chosen by the user.
+/// This method is set using setVoidTopSurface, which
+/// is equivalent to the corresponding member function
+/// of lsMarkVoidPoints.
 template <class T, int D> class lsRemoveStrayPoints {
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
   lsVoidTopSurfaceEnum voidTopSurface = lsVoidTopSurfaceEnum::LARGEST;

@@ -11,6 +11,10 @@
 /// Enumeration describing which connected component to use
 /// as top surface during void point detection.
 /// All others points will be set as void poitns.
+/// LEX_* means the top surface is chosen according to the
+/// lexicographic first or last LS point, while LARGEST
+/// means that the connected component containing the
+/// largest number of points will be chosen.
 enum struct lsVoidTopSurfaceEnum : unsigned {
   LEX_LOWEST = 0,
   LEX_HIGHEST = 1,
@@ -103,7 +107,6 @@ public:
   /// Set which connected component to use as the top surface
   /// and mark all other components as void points.
   void setVoidTopSurface(lsVoidTopSurfaceEnum topSurface) {
-
     switch (topSurface)
     {
       case lsVoidTopSurfaceEnum::LEX_LOWEST:
@@ -278,9 +281,9 @@ public:
       }
 
       if (saveComponents) {
-        componentMarkers[center.getPointId()] =
-            componentList[center.getSegmentId()][0]
+        const int &oldComponentId = componentList[center.getSegmentId()][0]
                          [center.getRunTypePosition()];
+        componentMarkers[center.getPointId()] = components[oldComponentId];
       }
     }
 
