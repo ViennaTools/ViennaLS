@@ -56,8 +56,8 @@ int main() {
     lsToSurfaceMesh_float_3(sphere1, mesh1).apply();
     lsToSurfaceMesh_float_3(sphere2, mesh2).apply();
 
-    lsVTKWriter<float>(mesh1, "sphere1.vtk").apply();
-    lsVTKWriter<float>(mesh2, "sphere2.vtk").apply();
+    lsVTKWriter<float>(mesh1, "sphere1.vtp").apply();
+    lsVTKWriter<float>(mesh2, "sphere2.vtp").apply();
   }
 
   // Perform a boolean operation
@@ -71,7 +71,7 @@ int main() {
 
   mesh->print();
 
-  lsVTKWriter<float>(mesh, "after.vtk").apply();
+  lsVTKWriter<float>(mesh, "after.vtp").apply();
 
   return 0;
 }

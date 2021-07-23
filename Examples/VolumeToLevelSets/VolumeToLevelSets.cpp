@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
   for (unsigned i = 0; i < levelSets.size(); ++i) {
     auto mesh = lsSmartPointer<lsMesh<>>::New();
     lsToSurfaceMesh<double, D>(levelSets[i], mesh).apply();
-    lsVTKWriter<double>(mesh, "LSsurface-" + std::to_string(i) + ".vtk")
+    lsVTKWriter<double>(mesh, "LSsurface-" + std::to_string(i) + ".vtp")
         .apply();
   }
 
