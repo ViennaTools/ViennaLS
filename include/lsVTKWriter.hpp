@@ -28,6 +28,7 @@ template <class T> class lsVTKWriter {
   lsFileFormatEnum fileFormat = lsFileFormatEnum::VTK_AUTO;
   std::string fileName;
 
+#ifdef VIENNALS_USE_VTK
   template <class In, class Out>
   void addDataFromMesh(const In &inData, Out outData) const {
     // now add pointData
@@ -57,6 +58,7 @@ template <class T> class lsVTKWriter {
       outData->AddArray(vectorData);
     }
   }
+#endif // VIENNALS_USE_VTK
 
 public:
   lsVTKWriter() {}
