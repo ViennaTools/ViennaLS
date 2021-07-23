@@ -6,6 +6,7 @@
 #include <lsMakeGeometry.hpp>
 #include <lsMarkVoidPoints.hpp>
 #include <lsRemoveStrayPoints.hpp>
+#include <lsTestAsserts.hpp>
 #include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
@@ -46,17 +47,17 @@ int main() {
         .apply();
   }
 
-  {
-    // uncomment this to see the marked components in the output
-    // lsMarkVoidPoints<double, D> marker;
-    // marker.setLevelSet(substrate);
-    // marker.setVoidTopSurface(lsVoidTopSurfaceEnum::LEX_HIGHEST);
-    // marker.setSaveComponentIds(true);
-    // marker.apply();
-    auto explMesh = lsSmartPointer<lsMesh<>>::New();
-    lsToMesh<double, D>(substrate, explMesh).apply();
-    lsVTKWriter<double>(explMesh, lsFileFormatEnum::VTP, "before.vtp").apply();
-  }
+  // {
+  //   lsMarkVoidPoints<double, D> marker;
+  //   marker.setLevelSet(substrate);
+  //   marker.setVoidTopSurface(lsVoidTopSurfaceEnum::LEX_HIGHEST);
+  //   marker.setSaveComponentIds(true);
+  //   marker.apply();
+  //   auto explMesh = lsSmartPointer<lsMesh<>>::New();
+  //   lsToMesh<double, D>(substrate, explMesh).apply();
+  //   lsVTKWriter<double>(explMesh, lsFileFormatEnum::VTP,
+  //   "before.vtp").apply();
+  // }
 
   // Remove the stray points
   lsRemoveStrayPoints<double, D> cleaner;
@@ -64,11 +65,14 @@ int main() {
   cleaner.setVoidTopSurface(lsVoidTopSurfaceEnum::LEX_HIGHEST);
   cleaner.apply();
 
-  {
-    auto mesh = lsSmartPointer<lsMesh<>>::New();
-    lsToMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP, "after.vtp").apply();
-  }
+  // check if the correct surface was removed
+  LSTEST_ASSERT(substrate->getNumberOfPoints() == 42)
+
+  // {
+  //   auto mesh = lsSmartPointer<lsMesh<>>::New();
+  //   lsToMesh<double, D>(substrate, mesh).apply();
+  //   lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP, "after.vtp").apply();
+  // }
 
   return 0;
 }
