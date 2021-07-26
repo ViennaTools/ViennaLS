@@ -365,8 +365,9 @@ void lsPrepareStencilLocalLaxFriedrichs(
             "lsPrepareStencilLocalLaxFriedrichs: isDepo does not have enough "
             "elements. Assuming all higher layers are not depo layers.")
         .print();
-    isDepo.resize(levelSets.size(), false);
   }
+  // always resize, so it has the correct number of elements
+  isDepo.resize(levelSets.size(), false);
 
   // Begin with biggest level set (top LS wrapped around all others)
   auto layerIt = levelSets.rbegin();
