@@ -351,10 +351,17 @@ void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &scheme,
 } // namespace advect
 } // namespace lsInternal
 
-/// This class creates the specialized layer wrapping which
+/// This function creates the specialized layer wrapping which
 /// produces better results for the SSLF integration scheme.
 /// isDepo must contain whether the corresponding level sets
 /// are used for deposition or not.
+/// This function assumes that the layers where deposition is
+/// not possible represent only masking layers and are not
+/// wrapped around other depo layers.
+/// Hint: Sometimes it is useful to introduce a new
+/// mask layer combining all masking materials and remove it
+/// after advection instead of trying to deal with numerous
+/// separate masking layers.
 template <class T, int D>
 void lsPrepareStencilLocalLaxFriedrichs(
     std::vector<lsSmartPointer<lsDomain<T, D>>> &levelSets,
