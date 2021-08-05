@@ -64,7 +64,7 @@ public:
   T getSignedDistance(const std::array<hrleCoordType, 3> &initial,
                       const std::array<hrleCoordType, 3> &candidate) const {
     T distance = std::numeric_limits<T>::max();
-    std::array<hrleCoordType, D> v;
+    std::array<hrleCoordType, 3> v{};
     for (unsigned i = 0; i < D; ++i) {
       v[i] = candidate[i] - initial[i];
     }
@@ -77,7 +77,7 @@ public:
       for (unsigned i = 0; i < D; ++i) {
         T y = (v[(i + 1) % D]);
         T z = 0;
-        if (D == 3)
+        if constexpr (D == 3)
           z = (v[(i + 2) % D]);
         T x = radius2 - y * y - z * z;
         if (x < 0.)
