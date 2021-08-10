@@ -108,7 +108,7 @@ public:
             if (updateData)
               newDataSourceIds[p].push_back(centerIt.getPointId());
           } else {
-            if (centerIt.getValue() > 0.) {
+            if (centerIt.getValue() > -std::numeric_limits<T>::epsilon()) {
               T distance = lsDomain<T, D>::POS_VALUE;
               int neighbor = -1;
               for (int i = 0; i < 2 * D; i++) {
