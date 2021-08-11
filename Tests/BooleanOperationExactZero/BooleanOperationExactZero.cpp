@@ -75,12 +75,7 @@ int main() {
 
   lsBooleanOperation(substrate, mask, lsBooleanOperationEnum::UNION).apply();
 
-  writeLS(substrate, "subs_afterBool.vtp");
-
-  lsPrune(substrate).apply();
-
-  writeLS(substrate, "final.vtp");    
-  
+  writeLS(substrate, "subs_afterBool.vtp");  
 
   return 0;
 }
