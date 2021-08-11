@@ -16,6 +16,7 @@
 template <class T, int D> class lsPrune {
   lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
   bool updatePointData = true;
+  bool removeStrayZeros = false;
 
   template <class Numeric> bool isNegative(const Numeric a) {
     return a <= -std::numeric_limits<Numeric>::epsilon();
@@ -24,6 +25,14 @@ template <class T, int D> class lsPrune {
   template <class Numeric>
   bool isSignDifferent(const Numeric a, const Numeric b) {
     return (isNegative(a) ^ isNegative(b));
+  }
+
+  // small helper to check whether LS function is monotone
+  // around a zero value
+  bool isMonotone(const T a, const T b, const T c) {
+    const auto diff1 = a - b;
+    const auto diff2 = b - c;
+    return !(isSignDifferent(diff1, diff2) && a != 0. && c != 0.);
   }
 
 public:
@@ -39,6 +48,10 @@ public:
   /// Set whether to update the point data stored in the LS
   /// during this algorithm. Defaults to true.
   void setUpdatePointData(bool update) { updatePointData = update; }
+
+  /// Set whether to remove exact zero values between grid
+  /// points with the same sign
+  void setRemoveStrayZeros(bool rsz) { removeStrayZeros = rsz; }
 
   /// removes all grid points, which do not have at least one opposite signed
   /// neighbour
@@ -99,6 +112,32 @@ public:
               break;
             }
           }
+
+          if(removeStrayZeros) {
+            // if the centre point is 0.0 and the level set values
+            // along each grid dimension are not monotone, it is
+            // a numerical glitch and should be removed
+            if(const auto &midVal = centerIt.getValue(); midVal == std::abs(0.)) {
+              int undefVal = 0;
+              for (int i = 0; i < D; i++) {
+                const auto &negVal = neighborIt.getNeighbor(i).getValue();
+                const auto &posVal = neighborIt.getNeighbor(D + i).getValue();
+
+                if(!isMonotone(negVal, midVal, posVal)) {
+                  undefVal = isNegative(negVal) ? -1 : 1;
+                  break;
+                }
+              }
+              if(undefVal != 0) {
+                domainSegment.insertNextUndefinedPoint(
+                  neighborIt.getIndices(), undefVal == -1
+                                              ? lsDomain<T, D>::NEG_VALUE
+                                              : lsDomain<T, D>::POS_VALUE);
+                continue;
+              }
+            }
+          }
+
           if (i != 2 * D) {
             domainSegment.insertNextDefinedPoint(neighborIt.getIndices(),
                                                  centerIt.getValue());
