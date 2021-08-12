@@ -19,11 +19,14 @@
 /// This allows for a simple setup of disks for ray tracing.
 template <class T, int D, class N = T> class lsToDiskMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
-  typedef std::unordered_map<unsigned long, unsigned long> translatorType;
 
+public:
+  using TranslatorType = std::unordered_map<unsigned long, unsigned long>;
+
+private:
   std::vector<lsSmartPointer<lsDomain<T, D>>> levelSets;
   lsSmartPointer<lsMesh<N>> mesh = nullptr;
-  lsSmartPointer<translatorType> translator = nullptr;
+  lsSmartPointer<TranslatorType> translator = nullptr;
   T maxValue = 0.5;
   bool buildTranslator = false;
   static constexpr double wrappingLayerEpsilon = 1e-4;
@@ -42,7 +45,7 @@ public:
 
   lsToDiskMesh(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
                lsSmartPointer<lsMesh<N>> passedMesh,
-               lsSmartPointer<translatorType> passedTranslator,
+               lsSmartPointer<TranslatorType> passedTranslator,
                T passedMaxValue = 0.5)
       : mesh(passedMesh), translator(passedTranslator),
         maxValue(passedMaxValue) {
@@ -61,7 +64,7 @@ public:
 
   void setMesh(lsSmartPointer<lsMesh<N>> passedMesh) { mesh = passedMesh; }
 
-  void setTranslator(lsSmartPointer<translatorType> passedTranslator) {
+  void setTranslator(lsSmartPointer<TranslatorType> passedTranslator) {
     translator = passedTranslator;
     buildTranslator = true;
   }
@@ -209,13 +212,17 @@ public:
     // delete normal vectors point data again as it is not needed anymore
     {
       auto &pointData = levelSets.back()->getPointData();
-      auto index = pointData.getVectorDataIndex(lsCalculateNormalVectors<T, D>::normalVectorsLabel);
-      if(index < 0) {
-        lsMessage::getInstance().addWarning("lsToDiskMesh: Internal error: Could not find normal vector data.").print();
+      auto index = pointData.getVectorDataIndex(
+          lsCalculateNormalVectors<T, D>::normalVectorsLabel);
+      if (index < 0) {
+        lsMessage::getInstance()
+            .addWarning("lsToDiskMesh: Internal error: Could not find normal "
+                        "vector data.")
+            .print();
       } else {
         pointData.eraseVectorData(index);
       }
-    }            
+    }
 
     mesh->cellData.insertNextScalarData(values, "LSValues");
     mesh->cellData.insertNextVectorData(normals, "Normals");

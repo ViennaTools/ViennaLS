@@ -14,11 +14,11 @@ public:
   // Make visible all constructors of std::shared_ptr
   // including copy constructors
   template <typename... Args>
-  lsSmartPointer(Args &&...args)
+  lsSmartPointer(Args &&... args)
       : std::shared_ptr<T>(std::forward<Args>(args)...) {}
 
   /// Use this function to create new objects when using ViennaLS
-  template <typename... TArgs> static lsSmartPointer New(TArgs &&...targs) {
+  template <typename... TArgs> static lsSmartPointer New(TArgs &&... targs) {
     return lsSmartPointer(std::make_shared<T>(std::forward<TArgs>(targs)...));
   }
 };

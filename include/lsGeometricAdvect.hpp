@@ -50,6 +50,15 @@ template <class T, int D> class lsGeometricAdvect {
     ++indices[dim];
   }
 
+  template <class K, class V, template <class...> class MapType, class... Ts>
+  MapType<V, K> inverseTranslator(MapType<K, V, Ts...> &map) {
+    MapType<V, K> inv;
+    std::for_each(map.begin(), map.end(), [&inv](const std::pair<K, V> &p) {
+      inv.insert(std::make_pair(p.second, p.first));
+    });
+    return inv;
+  }
+
 public:
   lsGeometricAdvect() {}
 
@@ -121,7 +130,11 @@ public:
     // Extract the original surface as a point cloud of grid
     // points shifted to the surface (disk mesh)
     auto surfaceMesh = lsSmartPointer<lsMesh<hrleCoordType>>::New();
-    lsToDiskMesh<T, D, hrleCoordType>(levelSet, surfaceMesh).apply();
+    auto pointIdTranslator =
+        lsSmartPointer<typename lsToDiskMesh<T, D>::TranslatorType>::New();
+    lsToDiskMesh<T, D, hrleCoordType>(levelSet, surfaceMesh, pointIdTranslator)
+        .apply();
+    *pointIdTranslator = inverseTranslator(*pointIdTranslator);
 
     // find bounds of distribution
     auto distBounds = dist->getBounds();
@@ -231,10 +244,10 @@ public:
                                  "DEBUG_lsGeomAdvectMesh_contributewoMask.vtp")
           .apply();
       auto mesh = lsSmartPointer<lsMesh<T>>::New();
-      if(maskLevelSet != nullptr) {
+      if (maskLevelSet != nullptr) {
         lsToMesh<T, D>(maskLevelSet, mesh).apply();
         lsVTKWriter<T>(mesh, lsFileFormatEnum::VTP,
-                      "DEBUG_lsGeomAdvectMesh_mask.vtp")
+                       "DEBUG_lsGeomAdvectMesh_mask.vtp")
             .apply();
       }
       lsToMesh<T, D>(levelSet, mesh).apply();
@@ -247,8 +260,6 @@ public:
 
     typedef std::vector<std::array<hrleCoordType, 3>> SurfaceNodesType;
     const SurfaceNodesType &surfaceNodes = surfaceMesh->getNodes();
-    const auto &surfaceNormals = *(surfaceMesh->getCellData().getVectorData(lsCalculateNormalVectors<T, D>::normalVectorsLabel));
-    using SurfaceNormalsType = std::remove_reference_t<decltype(surfaceNormals)>;
 
     // initialize with segmentation for whole range
     typename hrleDomain<T, D>::hrleIndexPoints segmentation;
@@ -360,11 +371,11 @@ public:
 
         T distance = initialDistance;
 
-        typename SurfaceNormalsType::const_iterator normIt = surfaceNormals.begin();
+        unsigned long currentPointId = 0;
         // now check which surface points contribute to currentIndex
         for (typename SurfaceNodesType::const_iterator surfIt =
                  surfaceNodes.begin();
-             surfIt != surfaceNodes.end(); ++surfIt, ++normIt) {
+             surfIt != surfaceNodes.end(); ++surfIt, ++currentPointId) {
 
           auto &currentNode = *surfIt;
 
@@ -389,8 +400,10 @@ public:
           }
 
           // get filling fraction from distance to dist surface
-          T tmpDistance =
-              dist->getSignedDistance(currentNode, currentCoords, *normIt) / gridDelta;
+          T tmpDistance = dist->getSignedDistance(
+                              currentNode, currentCoords,
+                              pointIdTranslator->find(currentPointId)->second) /
+                          gridDelta;
 
           // if cell is far within a distribution, set it filled
           if (distIsPositive) {
@@ -440,13 +453,11 @@ public:
         if (std::abs(distance) <= cutoffValue) {
           // avoid using distribution in wrong direction
           if (distIsPositive && oldValue >= 0.) {
-            newPoints[p].push_back(
-                std::make_pair(currentIndex, distance));
+            newPoints[p].push_back(std::make_pair(currentIndex, distance));
           } else if (!distIsPositive && oldValue <= 0.) {
             // if we are etching, need to make sure, we are not inside mask
             if (maskIt == nullptr || maskIt->getValue() > -cutoffValue) {
-              newPoints[p].push_back(
-                  std::make_pair(currentIndex, distance));
+              newPoints[p].push_back(std::make_pair(currentIndex, distance));
             }
           } else {
             // this only happens if distribution is very small, < 2 * gridDelta

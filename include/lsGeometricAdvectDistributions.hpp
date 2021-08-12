@@ -24,10 +24,9 @@ public:
   /// Returns the signed distance of a point relative to the distributions
   /// center. This is the signed manhatten distance to the nearest surface
   /// point.
-  virtual T
-  getSignedDistance(const std::array<hrleCoordType, 3> &initial,
-                    const std::array<hrleCoordType, 3> &candidate,
-                    const std::array<hrleCoordType, 3> &initialNormal) const = 0;
+  virtual T getSignedDistance(const std::array<hrleCoordType, 3> &initial,
+                              const std::array<hrleCoordType, 3> &candidate,
+                              unsigned long initialPointId) const = 0;
 
   /// Sets bounds to the bounding box of the distribution.
   virtual std::array<hrleCoordType, 6> getBounds() const = 0;
@@ -49,7 +48,7 @@ public:
 
   bool isInside(const std::array<hrleCoordType, 3> &initial,
                 const std::array<hrleCoordType, 3> &candidate,
-                double eps = 0.) const {
+                double eps = 0.) const override {
     hrleCoordType dot = 0.;
     for (unsigned i = 0; i < D; ++i) {
       double tmp = candidate[i] - initial[i];
@@ -64,7 +63,7 @@ public:
 
   T getSignedDistance(const std::array<hrleCoordType, 3> &initial,
                       const std::array<hrleCoordType, 3> &candidate,
-                      const std::array<hrleCoordType, 3> &/*initialNormal*/) const override {
+                      unsigned long /*initialPointId*/) const override {
     T distance = std::numeric_limits<T>::max();
     std::array<hrleCoordType, 3> v{};
     for (unsigned i = 0; i < D; ++i) {
@@ -97,7 +96,7 @@ public:
     }
   }
 
-  std::array<hrleCoordType, 6> getBounds() const {
+  std::array<hrleCoordType, 6> getBounds() const override {
     std::array<hrleCoordType, 6> bounds = {};
     for (unsigned i = 0; i < D; ++i) {
       bounds[2 * i] = -radius;
@@ -130,7 +129,7 @@ public:
 
   bool isInside(const std::array<hrleCoordType, 3> &initial,
                 const std::array<hrleCoordType, 3> &candidate,
-                double eps = 0.) const {
+                double eps = 0.) const override {
     for (unsigned i = 0; i < D; ++i) {
       if (std::abs(candidate[i] - initial[i]) >
           (std::abs(posExtent[i]) + eps)) {
@@ -142,7 +141,7 @@ public:
 
   T getSignedDistance(const std::array<hrleCoordType, 3> &initial,
                       const std::array<hrleCoordType, 3> &candidate,
-                      const std::array<hrleCoordType, 3> &/*initialNormal*/) const override {
+                      unsigned long /*initialPointId*/) const override {
     T distance = std::numeric_limits<T>::lowest();
     for (unsigned i = 0; i < D; ++i) {
       T vector = std::abs(candidate[i] - initial[i]);
@@ -151,7 +150,7 @@ public:
     return (posExtent[0] < 0) ? -distance : distance;
   }
 
-  std::array<hrleCoordType, 6> getBounds() const {
+  std::array<hrleCoordType, 6> getBounds() const override {
     std::array<hrleCoordType, 6> bounds = {};
     for (unsigned i = 0; i < D; ++i) {
       bounds[2 * i] = -posExtent[i];
