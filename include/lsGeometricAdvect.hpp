@@ -247,6 +247,8 @@ public:
 
     typedef std::vector<std::array<hrleCoordType, 3>> SurfaceNodesType;
     const SurfaceNodesType &surfaceNodes = surfaceMesh->getNodes();
+    const auto &surfaceNormals = *(surfaceMesh->getCellData().getVectorData(lsCalculateNormalVectors<T, D>::normalVectorsLabel));
+    using SurfaceNormalsType = std::remove_reference_t<decltype(surfaceNormals)>;
 
     // initialize with segmentation for whole range
     typename hrleDomain<T, D>::hrleIndexPoints segmentation;
@@ -358,10 +360,11 @@ public:
 
         T distance = initialDistance;
 
+        typename SurfaceNormalsType::const_iterator normIt = surfaceNormals.begin();
         // now check which surface points contribute to currentIndex
         for (typename SurfaceNodesType::const_iterator surfIt =
                  surfaceNodes.begin();
-             surfIt != surfaceNodes.end(); ++surfIt) {
+             surfIt != surfaceNodes.end(); ++surfIt, ++normIt) {
 
           auto &currentNode = *surfIt;
 
@@ -387,7 +390,7 @@ public:
 
           // get filling fraction from distance to dist surface
           T tmpDistance =
-              dist->getSignedDistance(currentNode, currentCoords) / gridDelta;
+              dist->getSignedDistance(currentNode, currentCoords, *normIt) / gridDelta;
 
           // if cell is far within a distribution, set it filled
           if (distIsPositive) {

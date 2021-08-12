@@ -26,7 +26,8 @@ public:
   /// point.
   virtual T
   getSignedDistance(const std::array<hrleCoordType, 3> &initial,
-                    const std::array<hrleCoordType, 3> &candidate) const = 0;
+                    const std::array<hrleCoordType, 3> &candidate,
+                    const std::array<hrleCoordType, 3> &initialNormal) const = 0;
 
   /// Sets bounds to the bounding box of the distribution.
   virtual std::array<hrleCoordType, 6> getBounds() const = 0;
@@ -62,7 +63,8 @@ public:
   }
 
   T getSignedDistance(const std::array<hrleCoordType, 3> &initial,
-                      const std::array<hrleCoordType, 3> &candidate) const {
+                      const std::array<hrleCoordType, 3> &candidate,
+                      const std::array<hrleCoordType, 3> &/*initialNormal*/) const override {
     T distance = std::numeric_limits<T>::max();
     std::array<hrleCoordType, 3> v{};
     for (unsigned i = 0; i < D; ++i) {
@@ -139,7 +141,8 @@ public:
   }
 
   T getSignedDistance(const std::array<hrleCoordType, 3> &initial,
-                      const std::array<hrleCoordType, 3> &candidate) const {
+                      const std::array<hrleCoordType, 3> &candidate,
+                      const std::array<hrleCoordType, 3> &/*initialNormal*/) const override {
     T distance = std::numeric_limits<T>::lowest();
     for (unsigned i = 0; i < D; ++i) {
       T vector = std::abs(candidate[i] - initial[i]);
