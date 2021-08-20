@@ -451,14 +451,14 @@ private:
 
     auto mesh = lsSmartPointer<lsMesh<T>>::New();
     // insert midpoint at base
-    mesh->insertNextNode(std::array<T, D>{0.0, 0.0, 0.0});
+    mesh->insertNextNode(std::array<T, 3>{0.0, 0.0, 0.0});
     {
       constexpr double limit = 2 * M_PI - 1e-6;
       std::vector<std::array<T, 3>> points;
 
       // create and insert points at base
       for (double angle = 0.; angle < limit; angle += smallAngle) {
-        std::array<T, D> point;
+        std::array<T, 3> point;
         point[0] = cylinder->radius * std::cos(angle);
         point[1] = cylinder->radius * std::sin(angle);
         point[2] = 0.0;
@@ -467,7 +467,7 @@ private:
       }
 
       // insert midpoint at top
-      mesh->insertNextNode(std::array<T, D>{0.0, 0.0, cylinder->height});
+      mesh->insertNextNode(std::array<T, 3>{0.0, 0.0, cylinder->height});
 
       for (unsigned i = 0; i < numPoints; ++i) {
         // create triangles at base
