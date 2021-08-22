@@ -440,8 +440,8 @@ private:
           .print();
       return;
     }
-    // generate the points on the edges of the cylinders and then
-    // run the convex hull algorithm to create the cylinder
+    // generate the points on the edges of the cylinders and mesh
+    // them manually
     // cylinder axis will be (0,0,1)
     auto gridDelta = levelSet->getGrid().getGridDelta();
 
@@ -449,38 +449,59 @@ private:
     unsigned numPoints = std::ceil(2 * M_PI * cylinder->radius / gridDelta);
     double smallAngle = 2.0 * M_PI / double(numPoints);
 
-    // insert first point, which is asymmetrical
-    {
-      std::array<T, D> point;
-      point[0] = cylinder->radius * std::cos(0.);
-      point[1] = cylinder->radius * std::sin(0.);
-      point[2] = 0.0;
-      points->insertNextPoint(point);
-      point[2] = cylinder->height;
-      points->insertNextPoint(point);
-    }
-    // insert all other points
-    constexpr double limit = M_PI - 1e-6;
-    for (double angle = smallAngle; angle < limit; angle += smallAngle) {
-      std::array<T, D> posPoint;
-      std::array<T, D> negPoint;
-      posPoint[0] = cylinder->radius * std::cos(angle);
-      posPoint[1] = cylinder->radius * std::sin(angle);
-      posPoint[2] = 0.0;
-      negPoint = posPoint;
-      negPoint[1] = -negPoint[1];
-      // insert points at base
-      points->insertNextPoint(posPoint);
-      points->insertNextPoint(negPoint);
-      // insert points at top
-      posPoint[2] = cylinder->height;
-      negPoint[2] = cylinder->height;
-      points->insertNextPoint(posPoint);
-      points->insertNextPoint(negPoint);
-    }
-
     auto mesh = lsSmartPointer<lsMesh<T>>::New();
-    lsConvexHull<T, D>(mesh, points).apply();
+    // insert midpoint at base
+    mesh->insertNextNode(std::array<T, 3>{0.0, 0.0, 0.0});
+    {
+      constexpr double limit = 2 * M_PI - 1e-6;
+      std::vector<std::array<T, 3>> points;
+
+      // create and insert points at base
+      for (double angle = 0.; angle < limit; angle += smallAngle) {
+        std::array<T, 3> point;
+        point[0] = cylinder->radius * std::cos(angle);
+        point[1] = cylinder->radius * std::sin(angle);
+        point[2] = 0.0;
+        points.push_back(point);
+        mesh->insertNextNode(point);
+      }
+
+      // insert midpoint at top
+      mesh->insertNextNode(std::array<T, 3>{0.0, 0.0, cylinder->height});
+
+      for (unsigned i = 0; i < numPoints; ++i) {
+        // create triangles at base
+        std::array<unsigned, 3> triangle;
+        triangle[0] = (i + 1) % numPoints + 1;
+        triangle[1] = i + 1;
+        triangle[2] = 0;
+        mesh->insertNextTriangle(triangle);
+
+        // insert points at top
+        points[i][2] = cylinder->height;
+        mesh->insertNextNode(points[i]);
+
+        // insert triangles at top
+        triangle[0] = numPoints + 1;
+        triangle[1] = numPoints + i + 2;
+        triangle[2] = (i + 1) % numPoints + 2 + numPoints;
+        mesh->insertNextTriangle(triangle);
+      }
+
+      // insert sidewall triangles
+      for (unsigned i = 0; i < numPoints; ++i) {
+        std::array<unsigned, 3> triangle;
+        triangle[0] = i + 1;
+        triangle[1] = (i + 1) % numPoints + 1;
+        triangle[2] = i + numPoints + 2;
+        mesh->insertNextTriangle(triangle);
+
+        triangle[0] = (i + 1) % numPoints + 1;
+        triangle[1] = (i + 1) % numPoints + 2 + numPoints;
+        triangle[2] = i + numPoints + 2;
+        mesh->insertNextTriangle(triangle);
+      }
+    }
 
     // rotate mesh
     // normalise axis vector
