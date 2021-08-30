@@ -181,6 +181,11 @@ private:
     newDomain.finalize();
     newDomain.segment();
     newlsDomain->setLevelSetWidth(levelSetA->getLevelSetWidth());
+
+    auto pruner = lsPrune<T, D>(newlsDomain);
+    pruner.setRemoveStrayZeros(true);
+    pruner.apply();
+
     // now we need to prune, to remove stray defined points
     lsPrune<T, D>(newlsDomain).apply();
 

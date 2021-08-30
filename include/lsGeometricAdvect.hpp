@@ -20,6 +20,7 @@
 #include <lsToDiskMesh.hpp>
 
 #ifndef NDEBUG // if in debug build
+#include <lsCheck.hpp>
 #include <lsToMesh.hpp>
 #include <lsVTKWriter.hpp>
 #endif
@@ -36,7 +37,8 @@ template <class T, int D> class lsGeometricAdvect {
   lsSmartPointer<lsDomain<T, D>> maskLevelSet = nullptr;
   lsSmartPointer<const lsGeometricAdvectDistribution<hrleCoordType, D>> dist =
       nullptr;
-  static constexpr T numericEps = 10 * std::numeric_limits<T>::epsilon();
+  static constexpr T cutoffValue =
+      T(1.) + std::numeric_limits<T>::epsilon() * T(100);
 
   static void incrementIndices(hrleVectorType<hrleIndexType, D> &indices,
                                const hrleVectorType<hrleIndexType, D> &min,
@@ -277,7 +279,6 @@ public:
     std::vector<PointValueVector> newPoints;
     newPoints.resize(domain.getNumberOfSegments());
 
-    constexpr T cutoffValue = 1.0 + numericEps;
     const T initialDistance = (distIsPositive)
                                   ? std::numeric_limits<double>::max()
                                   : std::numeric_limits<double>::lowest();

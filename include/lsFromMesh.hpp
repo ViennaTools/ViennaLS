@@ -89,7 +89,8 @@ public:
     auto valueIt = values->begin();
     auto valueEnd = values->end();
 
-    hrleVectorType<bool, D> signs(values->front() < 0);
+    hrleVectorType<bool, D> signs(values->front() <=
+                                  -std::numeric_limits<T>::epsilon());
 
     while (pointDataIt != pointDataEnd && valueIt != valueEnd) {
       // only read in points within the first 5 layers, to ignore
@@ -128,7 +129,7 @@ public:
           for (int i = D - 1; i >= 0; --i) {
             changeSign = changeSign || (currentIndex[i] > lastIndex[i]);
             if (changeSign) {
-              signs[i] = *valueIt < 0;
+              signs[i] = *valueIt <= -std::numeric_limits<T>::epsilon();
               lastIndex[i] = currentIndex[i];
             }
           }
