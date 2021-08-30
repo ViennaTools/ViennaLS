@@ -182,22 +182,9 @@ private:
     newDomain.segment();
     newlsDomain->setLevelSetWidth(levelSetA->getLevelSetWidth());
 
-    // TODO: remove !!!!!!
-    {
-      auto mesh = lsSmartPointer<lsMesh<T>>::New();
-      lsToMesh<T, D>(newlsDomain, mesh, false).apply();
-      lsVTKWriter<T>(mesh, "subs_before.vtp").apply();
-    }
-
     auto pruner = lsPrune<T, D>(newlsDomain);
     pruner.setRemoveStrayZeros(true);
     pruner.apply();
-
-    {
-      auto mesh = lsSmartPointer<lsMesh<T>>::New();
-      lsToMesh<T, D>(newlsDomain, mesh, false).apply();
-      lsVTKWriter<T>(mesh, "subs_after.vtp").apply();
-    }
 
     // now we need to prune, to remove stray defined points
     lsPrune<T, D>(newlsDomain).apply();

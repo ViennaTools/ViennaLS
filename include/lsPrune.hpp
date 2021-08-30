@@ -75,6 +75,7 @@ public:
     newDomain.initialize(domain.getNewSegmentation(), domain.getAllocation());
 
     const bool updateData = updatePointData;
+    const bool removeZeros = removeStrayZeros;
     // save how data should be transferred to new level set
     // list of indices into the old pointData vector
     std::vector<std::vector<unsigned>> newDataSourceIds;
@@ -106,19 +107,22 @@ public:
         bool centerSign = isNegative(centerIt.getValue());
         if (centerIt.isDefined()) {
           int i = 0;
-          for (; i < 2 * D; i++) {
-            if (isSignDifferent(neighborIt.getNeighbor(i).getValue(),
-                                centerIt.getValue())) {
-              break;
+          // if center is exact zero, always treat as unprunable
+          if (std::abs(centerIt.getValue()) != 0.) {
+            for (; i < 2 * D; i++) {
+              if (isSignDifferent(neighborIt.getNeighbor(i).getValue(),
+                                  centerIt.getValue())) {
+                break;
+              }
             }
           }
 
-          if (removeStrayZeros) {
+          if (removeZeros) {
             // if the centre point is 0.0 and the level set values
             // along each grid dimension are not monotone, it is
             // a numerical glitch and should be removed
             if (const auto &midVal = centerIt.getValue();
-                midVal == std::abs(0.)) {
+                std::abs(midVal) == 0.) {
               int undefVal = 0;
               for (int i = 0; i < D; i++) {
                 const auto &negVal = neighborIt.getNeighbor(i).getValue();
@@ -130,10 +134,8 @@ public:
                 }
               }
               if (undefVal != 0) {
-                domainSegment.insertNextUndefinedPoint(
-                    neighborIt.getIndices(), undefVal == -1
-                                                 ? lsDomain<T, D>::NEG_VALUE
-                                                 : lsDomain<T, D>::POS_VALUE);
+                domainSegment.insertNextDefinedPoint(neighborIt.getIndices(),
+                                                     T(undefVal));
                 continue;
               }
             }
