@@ -113,26 +113,27 @@ public:
             }
           }
 
-          if(removeStrayZeros) {
+          if (removeStrayZeros) {
             // if the centre point is 0.0 and the level set values
             // along each grid dimension are not monotone, it is
             // a numerical glitch and should be removed
-            if(const auto &midVal = centerIt.getValue(); midVal == std::abs(0.)) {
+            if (const auto &midVal = centerIt.getValue();
+                midVal == std::abs(0.)) {
               int undefVal = 0;
               for (int i = 0; i < D; i++) {
                 const auto &negVal = neighborIt.getNeighbor(i).getValue();
                 const auto &posVal = neighborIt.getNeighbor(D + i).getValue();
 
-                if(!isMonotone(negVal, midVal, posVal)) {
+                if (!isMonotone(negVal, midVal, posVal)) {
                   undefVal = isNegative(negVal) ? -1 : 1;
                   break;
                 }
               }
-              if(undefVal != 0) {
+              if (undefVal != 0) {
                 domainSegment.insertNextUndefinedPoint(
-                  neighborIt.getIndices(), undefVal == -1
-                                              ? lsDomain<T, D>::NEG_VALUE
-                                              : lsDomain<T, D>::POS_VALUE);
+                    neighborIt.getIndices(), undefVal == -1
+                                                 ? lsDomain<T, D>::NEG_VALUE
+                                                 : lsDomain<T, D>::POS_VALUE);
                 continue;
               }
             }

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <numeric>
 
+#include <lsBooleanOperation.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
@@ -9,7 +10,6 @@
 #include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
-#include <lsBooleanOperation.hpp>
 
 /**
   Check if Boolean Operation works with exact zero LS values
@@ -35,19 +35,23 @@ int main() {
     double gridDelta = 1.0;
     double extent = 10;
     double bounds[2 * D] = {-extent, extent, -extent, extent};
-    
+
     typename lsDomain<NumericType, D>::BoundaryType boundaryCons[D];
-    boundaryCons[0] = lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+    boundaryCons[0] =
+        lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
     boundaryCons[1] = lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
     if constexpr (D == 3) {
-      boundaryCons[1] = lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
-      boundaryCons[2] = lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY; 
+      boundaryCons[1] =
+          lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+      boundaryCons[2] =
+          lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
     }
 
-    mask = lsSmartPointer<lsDomain<NumericType, D>>::New(bounds, boundaryCons, gridDelta);
+    mask = lsSmartPointer<lsDomain<NumericType, D>>::New(bounds, boundaryCons,
+                                                         gridDelta);
   }
-  
+
   // make mask geometry ( just a simple box )
   {
     double min[D] = {-5., 1.};
@@ -58,7 +62,8 @@ int main() {
       max[1] = 5.;
       max[2] = 10.;
     }
-    lsMakeGeometry(mask, lsSmartPointer<lsBox<NumericType, D>>::New(min, max)).apply();
+    lsMakeGeometry(mask, lsSmartPointer<lsBox<NumericType, D>>::New(min, max))
+        .apply();
     writeLS(mask, "mask_initial.vtp");
   }
 
@@ -67,15 +72,17 @@ int main() {
   {
     double origin[D] = {};
     double normal[D] = {};
-    origin[D-1] = 1.;
-    normal[D-1] = 1.;
-    lsMakeGeometry(substrate, lsSmartPointer<lsPlane<NumericType, D>>::New(origin, normal)).apply();
+    origin[D - 1] = 1.;
+    normal[D - 1] = 1.;
+    lsMakeGeometry(substrate,
+                   lsSmartPointer<lsPlane<NumericType, D>>::New(origin, normal))
+        .apply();
     writeLS(substrate, "subs_initial.vtp");
   }
 
   lsBooleanOperation(substrate, mask, lsBooleanOperationEnum::UNION).apply();
 
-  writeLS(substrate, "subs_afterBool.vtp");  
+  writeLS(substrate, "subs_afterBool.vtp");
 
   return 0;
 }
