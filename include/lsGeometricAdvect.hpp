@@ -231,10 +231,10 @@ public:
                                  "DEBUG_lsGeomAdvectMesh_contributewoMask.vtp")
           .apply();
       auto mesh = lsSmartPointer<lsMesh<T>>::New();
-      if(maskLevelSet != nullptr) {
+      if (maskLevelSet != nullptr) {
         lsToMesh<T, D>(maskLevelSet, mesh).apply();
         lsVTKWriter<T>(mesh, lsFileFormatEnum::VTP,
-                      "DEBUG_lsGeomAdvectMesh_mask.vtp")
+                       "DEBUG_lsGeomAdvectMesh_mask.vtp")
             .apply();
       }
       lsToMesh<T, D>(levelSet, mesh).apply();
@@ -437,13 +437,11 @@ public:
         if (std::abs(distance) <= cutoffValue) {
           // avoid using distribution in wrong direction
           if (distIsPositive && oldValue >= 0.) {
-            newPoints[p].push_back(
-                std::make_pair(currentIndex, distance));
+            newPoints[p].push_back(std::make_pair(currentIndex, distance));
           } else if (!distIsPositive && oldValue <= 0.) {
             // if we are etching, need to make sure, we are not inside mask
             if (maskIt == nullptr || maskIt->getValue() > -cutoffValue) {
-              newPoints[p].push_back(
-                  std::make_pair(currentIndex, distance));
+              newPoints[p].push_back(std::make_pair(currentIndex, distance));
             }
           } else {
             // this only happens if distribution is very small, < 2 * gridDelta
