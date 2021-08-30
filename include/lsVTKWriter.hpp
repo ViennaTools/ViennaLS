@@ -131,8 +131,8 @@ public:
     case lsFileFormatEnum::VTP:
     case lsFileFormatEnum::VTU:
       lsMessage::getInstance()
-          .addWarning(
-              "lsVTKWriter was built without VTK support. Falling back to VTK_LEGACY.")
+          .addWarning("lsVTKWriter was built without VTK support. Falling back "
+                      "to VTK_LEGACY.")
           .print();
       writeVTKLegacy(fileName);
       break;

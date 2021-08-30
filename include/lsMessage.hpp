@@ -36,9 +36,11 @@ public:
 
   lsMessage &addError(std::string s, bool shouldAbort = true) {
 #pragma omp critical
-    { message += "\n" + std::string(tabWidth, ' ') + "ERROR: " + s + "\n"; }
-    // always abort once error message should be printed
-    error = true;
+    {
+      message += "\n" + std::string(tabWidth, ' ') + "ERROR: " + s + "\n";
+      // always abort once error message should be printed
+      error = true;
+    }
     // abort now if asked
     if (shouldAbort)
       print();
@@ -52,10 +54,13 @@ public:
   }
 
   void print(std::ostream &out = std::cout) {
-    out << message;
-    message.clear();
-    if (error)
-      abort();
+#pragma omp critical
+    {
+      out << message;
+      message.clear();
+      if (error)
+        abort();
+    }
   }
 };
 

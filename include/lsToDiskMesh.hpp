@@ -209,13 +209,17 @@ public:
     // delete normal vectors point data again as it is not needed anymore
     {
       auto &pointData = levelSets.back()->getPointData();
-      auto index = pointData.getVectorDataIndex(lsCalculateNormalVectors<T, D>::normalVectorsLabel);
-      if(index < 0) {
-        lsMessage::getInstance().addWarning("lsToDiskMesh: Internal error: Could not find normal vector data.").print();
+      auto index = pointData.getVectorDataIndex(
+          lsCalculateNormalVectors<T, D>::normalVectorsLabel);
+      if (index < 0) {
+        lsMessage::getInstance()
+            .addWarning("lsToDiskMesh: Internal error: Could not find normal "
+                        "vector data.")
+            .print();
       } else {
         pointData.eraseVectorData(index);
       }
-    }            
+    }
 
     mesh->cellData.insertNextScalarData(values, "LSValues");
     mesh->cellData.insertNextVectorData(normals, "Normals");
