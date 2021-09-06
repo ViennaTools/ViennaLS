@@ -69,7 +69,10 @@ public:
     typename lsDomain<T, D>::DomainType &newDomain = newlsDomain->getDomain();
     typename lsDomain<T, D>::DomainType &domain = levelSet->getDomain();
 
-    newDomain.initialize(domain.getNewSegmentation(), domain.getAllocation());
+    if (noNewSegment)
+      newDomain.initialize(domain.getSegmentation(), domain.getAllocation());
+    else
+      newDomain.initialize(domain.getNewSegmentation(), domain.getAllocation());
 
     const bool updateData = updatePointData;
     // save how data should be transferred to new level set
