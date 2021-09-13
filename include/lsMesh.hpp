@@ -114,7 +114,7 @@ public:
 
   unsigned insertNextHexa(const std::array<unsigned, 8> &hexa) {
     hexas.push_back(hexa);
-    return hexas.size();
+    return hexas.size() - 1;
   }
 
   unsigned insertNextElement(const std::array<unsigned, 1> &vertex) {
@@ -139,7 +139,7 @@ public:
 
   unsigned insertNextElement(const std::array<unsigned, 8> &hexa) {
     hexas.push_back(hexa);
-    return hexas.size();
+    return hexas.size() - 1;
   }
 
   void removeDuplicateNodes() {
