@@ -46,6 +46,7 @@ private:
   lsBooleanOperationEnum operation = lsBooleanOperationEnum::INTERSECT;
   ComparatorType operationComp = nullptr;
   bool updatePointData = true;
+  bool pruneResult = true;
 
   void booleanOpInternal(ComparatorType comp) {
     auto &grid = levelSetA->getGrid();
@@ -182,12 +183,14 @@ private:
     newDomain.segment();
     newlsDomain->setLevelSetWidth(levelSetA->getLevelSetWidth());
 
-    auto pruner = lsPrune<T, D>(newlsDomain);
-    pruner.setRemoveStrayZeros(true);
-    pruner.apply();
+    if (pruneResult) {
+      auto pruner = lsPrune<T, D>(newlsDomain);
+      pruner.setRemoveStrayZeros(true);
+      pruner.apply();
 
-    // now we need to prune, to remove stray defined points
-    lsPrune<T, D>(newlsDomain).apply();
+      // now we need to prune, to remove stray defined points
+      lsPrune<T, D>(newlsDomain).apply();
+    }
 
     levelSetA->deepCopy(newlsDomain);
   }
@@ -296,6 +299,9 @@ public:
   /// Set whether to update the point data stored in the LS
   /// during this algorithm. Defaults to true.
   void setUpdatePointData(bool update) { updatePointData = update; }
+
+  /// Set whether the resulting level set should be pruned. Defaults to true
+  void setPruneResult(bool pR) { pruneResult = pR; }
 
   /// Perform operation.
   void apply() {
