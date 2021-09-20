@@ -18,21 +18,36 @@ template <class T, int D> class lsPrune {
   bool updatePointData = true;
   bool removeStrayZeros = false;
 
-  template <class Numeric> bool isNegative(const Numeric a) {
+  template <class Numeric> static bool isNegative(const Numeric a) {
     return a <= -std::numeric_limits<Numeric>::epsilon();
   }
 
   template <class Numeric>
-  bool isSignDifferent(const Numeric a, const Numeric b) {
+  static bool isSignDifferent(const Numeric a, const Numeric b) {
     return (isNegative(a) ^ isNegative(b));
+  }
+
+  template <class Numeric>
+  static bool isSignDifferentOrZero(const Numeric a, const Numeric b) {
+    if (a == 0. || b == 0.)
+      return true;
+    return isSignDifferent(a, b);
+  }
+
+  template <class hrleIterator, class Compare>
+  static bool checkNeighbourSigns(const hrleIterator &it, Compare comp) {
+    for (int i = 0; i < 2 * D; i++) {
+      if (comp(it.getCenter().getValue(), it.getNeighbor(i).getValue())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   // small helper to check whether LS function is monotone
   // around a zero value
-  bool isMonotone(const T a, const T b, const T c) {
-    const auto diff1 = a - b;
-    const auto diff2 = b - c;
-    return !(isSignDifferent(diff1, diff2) && a != 0. && c != 0.);
+  static bool isMonotone(const T a, const T c) {
+    return a == 0. || c == 0. || isSignDifferent(a, c);
   }
 
 public:
@@ -106,14 +121,14 @@ public:
         auto &centerIt = neighborIt.getCenter();
         bool centerSign = isNegative(centerIt.getValue());
         if (centerIt.isDefined()) {
-          int i = 0;
+          bool keepPoint = true;
           // if center is exact zero, always treat as unprunable
           if (std::abs(centerIt.getValue()) != 0.) {
-            for (; i < 2 * D; i++) {
-              if (isSignDifferent(neighborIt.getNeighbor(i).getValue(),
-                                  centerIt.getValue())) {
-                break;
-              }
+            if (removeZeros) {
+              keepPoint =
+                  checkNeighbourSigns(neighborIt, isSignDifferentOrZero<T>);
+            } else {
+              keepPoint = checkNeighbourSigns(neighborIt, isSignDifferent<T>);
             }
           }
 
@@ -121,27 +136,31 @@ public:
             // if the centre point is 0.0 and the level set values
             // along each grid dimension are not monotone, it is
             // a numerical glitch and should be removed
-            if (const auto &midVal = centerIt.getValue();
-                std::abs(midVal) == 0.) {
-              int undefVal = 0;
+            if (std::abs(centerIt.getValue()) == 0.) {
+              bool overWritePoint = false;
+              T undefVal = 0.;
               for (int i = 0; i < D; i++) {
                 const auto &negVal = neighborIt.getNeighbor(i).getValue();
                 const auto &posVal = neighborIt.getNeighbor(D + i).getValue();
 
-                if (!isMonotone(negVal, midVal, posVal)) {
-                  undefVal = isNegative(negVal) ? -1 : 1;
+                // if LS function is not monotone around the zero value,
+                // set the points value to that of the lower neighbour
+                if (!isMonotone(negVal, posVal)) {
+                  overWritePoint = true;
+                  undefVal =
+                      std::abs(negVal) < std::abs(posVal) ? negVal : posVal;
                   break;
                 }
               }
-              if (undefVal != 0) {
+              if (overWritePoint) {
                 domainSegment.insertNextDefinedPoint(neighborIt.getIndices(),
-                                                     T(undefVal));
+                                                     undefVal);
                 continue;
               }
             }
           }
 
-          if (i != 2 * D) {
+          if (keepPoint) {
             domainSegment.insertNextDefinedPoint(neighborIt.getIndices(),
                                                  centerIt.getValue());
             if (updateData)
