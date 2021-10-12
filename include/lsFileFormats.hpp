@@ -5,7 +5,8 @@ enum struct lsFileFormatEnum : unsigned {
   VTK_LEGACY = 0,
   VTP = 1,
   VTU = 2,
-  VTK_AUTO = 3
+  VTK_AUTO = 3,
+  VTI = 4
 };
 
 #endif

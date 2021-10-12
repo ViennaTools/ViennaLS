@@ -12,6 +12,7 @@
 #include <vtkCellArray.h>
 #include <vtkCellData.h>
 #include <vtkFloatArray.h>
+#include <vtkImageData.h>
 #include <vtkPointData.h>
 #include <vtkPoints.h>
 #include <vtkPolyData.h>
@@ -106,6 +107,8 @@ public:
         fileFormat = lsFileFormatEnum::VTP;
       } else if (ending == ".vtu") {
         fileFormat = lsFileFormatEnum::VTU;
+      } else if (ending == ".vti") {
+        fileFormat = lsFileFormatEnum::VTI;
       } else {
         lsMessage::getInstance()
             .addWarning("No valid file format found based on the file ending "
@@ -127,6 +130,8 @@ public:
     case lsFileFormatEnum::VTU:
       writeVTU(fileName);
       break;
+    case lsFileFormatEnum::VTI:
+      writeVTI(fileName);
 #else
     case lsFileFormatEnum::VTP:
     case lsFileFormatEnum::VTU:
@@ -335,6 +340,20 @@ private:
     owriter->SetFileName(filename.c_str());
     owriter->SetInputData(uGrid);
     owriter->Write();
+  }
+
+  void writeVTI(std::string filename) const {
+    if (mesh == nullptr) {
+      lsMessage::getInstance()
+          .addWarning("No mesh was passed to lsVTKWriter.")
+          .print();
+      return;
+    }
+
+    if (filename.find(".vti") != filename.size() - 4)
+      filename += ".vti";
+    vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
+
   }
 
 #endif // VIENNALS_USE_VTK
