@@ -68,7 +68,15 @@ public:
     }
 
     if (fileFormat == lsFileFormatEnum::VTK_AUTO) {
-      auto ending = fileName.substr(fileName.find_last_of('.'));
+      auto dotPos = fileName.rfind('.');
+      if (dotPos == std::string::npos) {
+        lsMessage::getInstance()
+            .addWarning("No valid file format found based on the file ending "
+                        "passed to lsVTKReader. Not reading.")
+            .print();
+        return;
+      }
+      auto ending = fileName.substr(dotPos);
       if (ending == ".vtk") {
         fileFormat = lsFileFormatEnum::VTK_LEGACY;
       } else if (ending == ".vtp") {

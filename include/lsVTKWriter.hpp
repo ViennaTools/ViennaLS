@@ -99,19 +99,24 @@ public:
     }
 
     if (fileFormat == lsFileFormatEnum::VTK_AUTO) {
-      auto ending = fileName.substr(fileName.find_last_of('.'));
-      if (ending == ".vtk") {
-        fileFormat = lsFileFormatEnum::VTK_LEGACY;
-      } else if (ending == ".vtp") {
+      auto dotPos = fileName.rfind('.');
+      if (dotPos == std::string::npos) {
         fileFormat = lsFileFormatEnum::VTP;
-      } else if (ending == ".vtu") {
-        fileFormat = lsFileFormatEnum::VTU;
       } else {
-        lsMessage::getInstance()
-            .addWarning("No valid file format found based on the file ending "
-                        "passed to lsVTKWriter. Not writing.")
-            .print();
-        return;
+        auto ending = fileName.substr();
+        if (ending == ".vtk") {
+          fileFormat = lsFileFormatEnum::VTK_LEGACY;
+        } else if (ending == ".vtp") {
+          fileFormat = lsFileFormatEnum::VTP;
+        } else if (ending == ".vtu") {
+          fileFormat = lsFileFormatEnum::VTU;
+        } else {
+          lsMessage::getInstance()
+              .addWarning("No valid file format found based on the file ending "
+                          "passed to lsVTKWriter. Not writing.")
+              .print();
+          return;
+        }
       }
     }
 
