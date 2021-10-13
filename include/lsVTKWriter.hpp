@@ -103,7 +103,7 @@ public:
       if (dotPos == std::string::npos) {
         fileFormat = lsFileFormatEnum::VTP;
       } else {
-        auto ending = fileName.substr();
+        auto ending = fileName.substr(dotPos);
         if (ending == ".vtk") {
           fileFormat = lsFileFormatEnum::VTK_LEGACY;
         } else if (ending == ".vtp") {
