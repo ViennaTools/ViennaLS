@@ -40,18 +40,18 @@ public:
 
   /// Apply the expansion to the specified width
   void apply() {
-    if (width <= levelSet->getLevelSetWidth())
-      return;
-
     if (levelSet == nullptr) {
       lsMessage::getInstance()
           .addWarning("No level set passed to lsExpand. Not expanding.")
           .print();
-    }
-
-    if (levelSet->getNumberOfPoints() == 0) {
       return;
     }
+
+    if (width <= levelSet->getLevelSetWidth())
+      return;
+
+    if (levelSet->getNumberOfPoints() == 0)
+      return;
 
     const T totalLimit = width * 0.5;
     const int startWidth = levelSet->getLevelSetWidth();
