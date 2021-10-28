@@ -100,9 +100,10 @@ public:
     PYBIND11_OVERLOAD(bool, ClassType, isInside, initial, candidate, eps);
   }
 
-  T getSignedDistance(const vectorType &initial,
-                      const vectorType &candidate) const override {
-    PYBIND11_OVERLOAD_PURE(T, ClassType, getSignedDistance, initial, candidate);
+  T getSignedDistance(const vectorType &initial, const vectorType &candidate,
+                      unsigned long initialPointId) const override {
+    PYBIND11_OVERLOAD_PURE(T, ClassType, getSignedDistance, initial, candidate,
+                           initialPointId);
   }
 
   boundsType getBounds() const override {
@@ -407,7 +408,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
           pybind11::detail::pythonbuf buf(fileHandle);
           std::ostream stream(&buf);
           d.print(stream);
-          }, pybind11::arg("stream") = pybind11::module_::import("sys").attr("stdout"));
+          }, pybind11::arg("stream") = pybind11::module::import("sys").attr("stdout"));
 
   // enums
   pybind11::enum_<lsBoundaryConditionEnum<D>>(module, "lsBoundaryConditionEnum")
@@ -605,7 +606,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
                           const std::vector<std::vector<T>> &>))
       // methods
       .def("insertNextPoint",
-           (void (lsPointCloud<T, D>::*)(const std::vector<T> &)) &
+           (void(lsPointCloud<T, D>::*)(const std::vector<T> &)) &
                lsPointCloud<T, D>::insertNextPoint);
 
   // lsMakeGeometry
@@ -631,22 +632,22 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("setLevelSet", &lsMakeGeometry<T, D>::setLevelSet,
            "Set the levelset in which to create the geometry.")
       .def("setGeometry",
-           (void (lsMakeGeometry<T, D>::*)(lsSmartPointer<lsSphere<T, D>>)) &
+           (void(lsMakeGeometry<T, D>::*)(lsSmartPointer<lsSphere<T, D>>)) &
                lsMakeGeometry<T, D>::setGeometry)
       .def("setGeometry",
-           (void (lsMakeGeometry<T, D>::*)(lsSmartPointer<lsPlane<T, D>>)) &
+           (void(lsMakeGeometry<T, D>::*)(lsSmartPointer<lsPlane<T, D>>)) &
                lsMakeGeometry<T, D>::setGeometry)
       .def("setGeometry",
-           (void (lsMakeGeometry<T, D>::*)(lsSmartPointer<lsBox<T, D>>)) &
+           (void(lsMakeGeometry<T, D>::*)(lsSmartPointer<lsBox<T, D>>)) &
                lsMakeGeometry<T, D>::setGeometry)
-      .def("setGeometry", (void (lsMakeGeometry<T, D>::*)(
-                              lsSmartPointer<lsPointCloud<T, D>>)) &
-                              lsMakeGeometry<T, D>::setGeometry)
+      .def("setGeometry",
+           (void(lsMakeGeometry<T, D>::*)(lsSmartPointer<lsPointCloud<T, D>>)) &
+               lsMakeGeometry<T, D>::setGeometry)
       .def("setIgnoreBoundaryConditions",
-           (void (lsMakeGeometry<T, D>::*)(bool)) &
+           (void(lsMakeGeometry<T, D>::*)(bool)) &
                lsMakeGeometry<T, D>::setIgnoreBoundaryConditions)
       .def("setIgnoreBoundaryConditions",
-           (void (lsMakeGeometry<T, D>::*)(std::array<bool, 3>)) &
+           (void(lsMakeGeometry<T, D>::*)(std::array<bool, 3>)) &
                lsMakeGeometry<T, D>::setIgnoreBoundaryConditions)
       .def("apply", &lsMakeGeometry<T, D>::apply, "Generate the geometry.");
 
@@ -692,13 +693,13 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def(pybind11::init(&lsSmartPointer<lsPointData<T>>::New<>))
       // methods
       .def("insertNextScalarData",
-           (void (lsPointData<T>::*)(const lsPointData<T>::ScalarDataType &,
-                                     std::string)) &
+           (void(lsPointData<T>::*)(const lsPointData<T>::ScalarDataType &,
+                                    std::string)) &
                lsPointData<T>::insertNextScalarData,
            pybind11::arg("scalars"), pybind11::arg("label") = "Scalars")
       .def("insertNextVectorData",
-           (void (lsPointData<T>::*)(const lsPointData<T>::VectorDataType &,
-                                     std::string)) &
+           (void(lsPointData<T>::*)(const lsPointData<T>::VectorDataType &,
+                                    std::string)) &
                lsPointData<T>::insertNextVectorData,
            pybind11::arg("vectors"), pybind11::arg("label") = "Vectors")
       .def("getScalarDataSize", &lsPointData<T>::getScalarDataSize)
@@ -728,7 +729,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
                lsMesh<T>::getNodes,
            "Get all nodes of the mesh as a list.")
       .def("getNodes",
-           (const std::vector<std::array<double, 3>> &(lsMesh<T>::*)() const) &
+           (std::vector<std::array<double, 3>> & (lsMesh<T>::*)()) &
                lsMesh<T>::getNodes,
            "Get all nodes of the mesh as a list.")
       .def("getVerticies",

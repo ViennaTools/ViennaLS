@@ -52,6 +52,15 @@ template <class T, int D> class lsGeometricAdvect {
     ++indices[dim];
   }
 
+  template <class K, class V, template <class...> class MapType, class... Ts>
+  MapType<V, K> inverseTranslator(MapType<K, V, Ts...> &map) {
+    MapType<V, K> inv;
+    std::for_each(map.begin(), map.end(), [&inv](const std::pair<K, V> &p) {
+      inv.insert(std::make_pair(p.second, p.first));
+    });
+    return inv;
+  }
+
 public:
   lsGeometricAdvect() {}
 
@@ -123,7 +132,11 @@ public:
     // Extract the original surface as a point cloud of grid
     // points shifted to the surface (disk mesh)
     auto surfaceMesh = lsSmartPointer<lsMesh<hrleCoordType>>::New();
-    lsToDiskMesh<T, D, hrleCoordType>(levelSet, surfaceMesh).apply();
+    auto pointIdTranslator =
+        lsSmartPointer<typename lsToDiskMesh<T, D>::TranslatorType>::New();
+    lsToDiskMesh<T, D, hrleCoordType>(levelSet, surfaceMesh, pointIdTranslator)
+        .apply();
+    *pointIdTranslator = inverseTranslator(*pointIdTranslator);
 
     // find bounds of distribution
     auto distBounds = dist->getBounds();
@@ -359,10 +372,11 @@ public:
 
         T distance = initialDistance;
 
+        unsigned long currentPointId = 0;
         // now check which surface points contribute to currentIndex
         for (typename SurfaceNodesType::const_iterator surfIt =
                  surfaceNodes.begin();
-             surfIt != surfaceNodes.end(); ++surfIt) {
+             surfIt != surfaceNodes.end(); ++surfIt, ++currentPointId) {
 
           auto &currentNode = *surfIt;
 
@@ -387,8 +401,10 @@ public:
           }
 
           // get filling fraction from distance to dist surface
-          T tmpDistance =
-              dist->getSignedDistance(currentNode, currentCoords) / gridDelta;
+          T tmpDistance = dist->getSignedDistance(
+                              currentNode, currentCoords,
+                              pointIdTranslator->find(currentPointId)->second) /
+                          gridDelta;
 
           // if cell is far within a distribution, set it filled
           if (distIsPositive) {
