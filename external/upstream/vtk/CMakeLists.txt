@@ -11,9 +11,9 @@ endif()
 externalproject_add(vtk-external
   GIT_REPOSITORY
     https://gitlab.kitware.com/vtk/vtk.git
-  # Hash of tags/v9.0.1
-  GIT_TAG #v9.0.1
-    96e6fa9b3ff245e4d51d49f23d40e9ad8774e85e
+  # Hash of tags/v9.1.0
+  GIT_TAG #v9.1.0
+    285daeedd58eb890cb90d6e907d822eea3d2d092
   # GIT_SHALLOW 1
   TMP_DIR
     "${DEPENDENCIES_DIR}/tmp/${VTK_EXTERNAL_INSTALL}"
