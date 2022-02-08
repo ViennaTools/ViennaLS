@@ -10,3 +10,4 @@ CMakeSettings.json
 docs/doxygen/*.txt
 !docs/doxygen/doxygen_template.txt
 /dependencies
+.cache

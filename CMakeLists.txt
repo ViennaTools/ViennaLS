@@ -4,6 +4,8 @@ project(
   "ViennaLS"
   VERSION 2.0.0)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 add_definitions(-DVIENNALS_VERSION=${PROJECT_VERSION})
 
 include(GNUInstallDirs)
