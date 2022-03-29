@@ -1,6 +1,8 @@
 #ifndef LS_MESH_HPP
 #define LS_MESH_HPP
 
+#include <lsPreCompileMacros.hpp>
+
 #include <array>
 #include <iostream>
 #include <vector>

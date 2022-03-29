@@ -1,9 +1,10 @@
 #ifndef LS_CONVEX_HULL_HPP
 #define LS_CONVEX_HULL_HPP
 
+#include <lsPreCompileMacros.hpp>
+
 #include <algorithm>
 #include <list>
-#include <lsPreCompileMacros.hpp>
 #include <unordered_map>
 
 #include <hrleVectorType.hpp>

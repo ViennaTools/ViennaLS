@@ -1,6 +1,8 @@
 #ifndef LS_POINT_DATA_HPP
 #define LS_POINT_DATA_HPP
 
+#include <lsPreCompileMacros.hpp>
+
 #include <array>
 #include <vector>
 
