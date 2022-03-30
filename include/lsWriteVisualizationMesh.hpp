@@ -23,6 +23,7 @@
 
 #include <hrleDenseIterator.hpp>
 
+#include <lsPreCompileMacros.hpp>
 #include <lsDomain.hpp>
 #include <lsMessage.hpp>
 
