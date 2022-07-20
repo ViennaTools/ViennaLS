@@ -152,11 +152,9 @@ public:
             mesh->hexas.push_back(hexa);
             materialIds.push_back(materialId);
           } else {
-            std::array<unsigned, 3> triangle{voxel[0], voxel[1], voxel[2]};
-            mesh->triangles.push_back(triangle);
-            materialIds.push_back(materialId);
-            triangle[0] = voxel[3];
-            mesh->triangles.push_back(triangle);
+            std::array<unsigned, 4> tetra{voxel[0], voxel[2], voxel[3],
+                                          voxel[1]};
+            mesh->tetras.push_back(tetra);
             materialIds.push_back(materialId);
           }
           // jump out of material for loop
