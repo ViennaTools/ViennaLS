@@ -200,7 +200,7 @@ private:
          i < static_cast<unsigned>(pointData->GetNumberOfArrays()); ++i) {
       vtkDataArray *dataArray;
       dataArray = pointData->GetArray(i);
-      if (pointData->GetNumberOfComponents() == 1) {
+      if (dataArray->GetNumberOfComponents() == 1) {
         mesh->pointData.insertNextScalarData(
             typename lsPointData<T>::ScalarDataType(),
             std::string(pointData->GetArrayName(i)));
@@ -209,7 +209,7 @@ private:
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++j) {
           scalars[j] = dataArray->GetTuple1(j);
         }
-      } else if (pointData->GetNumberOfComponents() == 3) {
+      } else if (dataArray->GetNumberOfComponents() == 3) {
         mesh->pointData.insertNextVectorData(
             typename lsPointData<T>::VectorDataType(),
             std::string(pointData->GetArrayName(i)));
