@@ -1,7 +1,4 @@
 var searchData=
 [
-  ['isbaseof_673',['IsBaseOf',['../namespacelsConcepts.html#a90d0ed377343607596475f042f71ae47',1,'lsConcepts']]],
-  ['isfloatingpoint_674',['IsFloatingPoint',['../namespacelsConcepts.html#ab6faf524889c50de47df4a7cbf15a028',1,'lsConcepts']]],
-  ['isnotsame_675',['IsNotSame',['../namespacelsConcepts.html#afe02d602414323eb189f366b54dd86bc',1,'lsConcepts']]],
-  ['issame_676',['IsSame',['../namespacelsConcepts.html#a32ef11830a21da629bcaec40843917b5',1,'lsConcepts']]]
+  ['gridtype_0',['GridType',['../classlsDomain.html#acd1ed71ed408b19ab82f4b33db28a20d',1,'lsDomain::GridType()'],['../classlsFromVolumeMesh.html#ae128378f34da6e6c0ca9141321a7f21a',1,'lsFromVolumeMesh::GridType()'],['../classlsDomain.html#acd1ed71ed408b19ab82f4b33db28a20d',1,'lsDomain::GridType()'],['../classlsFromVolumeMesh.html#ae128378f34da6e6c0ca9141321a7f21a',1,'lsFromVolumeMesh::GridType()']]]
 ];

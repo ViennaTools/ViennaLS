@@ -1,4 +1,4 @@
-import viennaLS3d as vls
+import viennals3d as vls
 
 ## @example Deposition.py
 #  3D Example showing how to use the library for topography

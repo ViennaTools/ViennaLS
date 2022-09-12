@@ -1,4 +1,4 @@
-import viennaLS2d as vls
+import viennals2d as vls
 
 ## @example AirGapDeposition.py
 #  Example showing how to use the library for topography

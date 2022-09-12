@@ -1,7 +1,7 @@
 #ifndef LS_PRE_COMPILE_MACROS_HPP
 #define LS_PRE_COMPILE_MACROS_HPP
 
-#ifdef VIENNALS_USE_SHARED_LIBS
+#ifdef VIENNALS_USE_PRECOMPILED
 
 #define PRECOMPILE_PRECISION_DIMENSION(className)                              \
   typedef className<double, 2> className##_double_2;                           \

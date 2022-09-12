@@ -1,6 +1,6 @@
 var AirGapDeposition_8py =
 [
-    [ "velocityField", "classAirGapDeposition_1_1velocityField.html", "classAirGapDeposition_1_1velocityField" ],
+    [ "AirGapDeposition.velocityField", "classAirGapDeposition_1_1velocityField.html", "classAirGapDeposition_1_1velocityField" ],
     [ "advectionKernel", "AirGapDeposition_8py.html#a5b4e34f279dffcb1b991e19b37c690f0", null ],
     [ "boundaryCons", "AirGapDeposition_8py.html#a0a16a1d4a9f90f67f7251d38034723e0", null ],
     [ "bounds", "AirGapDeposition_8py.html#a4ed932eb04869593914daf91837d5e08", null ],

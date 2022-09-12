@@ -8,6 +8,6 @@ var classlsVelocityField =
     [ "getDissipationAlpha", "classlsVelocityField.html#a9e95150133beb47249897d05d2c4d9da", null ],
     [ "getScalarVelocity", "classlsVelocityField.html#a6bbdbe1f20c0236d92e444324a692244", null ],
     [ "getScalarVelocity", "classlsVelocityField.html#a6bbdbe1f20c0236d92e444324a692244", null ],
-    [ "getVectorVelocity", "classlsVelocityField.html#ae58594fd8f8522474bac6ed4dd62ee0c", null ],
-    [ "getVectorVelocity", "classlsVelocityField.html#ae58594fd8f8522474bac6ed4dd62ee0c", null ]
+    [ "getVectorVelocity", "classlsVelocityField.html#a74bf62969a1c05342f7bb18dc7a5eec4", null ],
+    [ "getVectorVelocity", "classlsVelocityField.html#a74bf62969a1c05342f7bb18dc7a5eec4", null ]
 ];

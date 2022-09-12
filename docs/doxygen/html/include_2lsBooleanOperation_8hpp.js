@@ -1,6 +1,6 @@
 var include_2lsBooleanOperation_8hpp =
 [
-    [ "lsBooleanOperation", "classlsBooleanOperation.html", "classlsBooleanOperation" ],
+    [ "lsBooleanOperation< T, D >", "classlsBooleanOperation.html", "classlsBooleanOperation" ],
     [ "lsBooleanOperationEnum", "include_2lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8", [
       [ "INTERSECT", "include_2lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8a24bdbe2bcaf533b7b3f0bd58bfa7f291", null ],
       [ "UNION", "include_2lsBooleanOperation_8hpp.html#a8b5747a2da7e017486ffceefca67d6d8aea931da33de8ba05c3635a51c2b25d75", null ],

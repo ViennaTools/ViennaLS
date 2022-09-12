@@ -1,6 +1,6 @@
 var Deposition_8py =
 [
-    [ "velocityField", "classDeposition_1_1velocityField.html", "classDeposition_1_1velocityField" ],
+    [ "Deposition.velocityField", "classDeposition_1_1velocityField.html", "classDeposition_1_1velocityField" ],
     [ "advectionKernel", "Deposition_8py.html#a6f4170d2c9e1329b971b2ee1ae1d7164", null ],
     [ "boundaryCons", "Deposition_8py.html#aa65393a8f7e2b0fd80d5cf1cb7dcf951", null ],
     [ "bounds", "Deposition_8py.html#a554727b209466cd83d3f7d3316d88d6c", null ],

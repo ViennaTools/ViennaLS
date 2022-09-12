@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['substrate_663',['substrate',['../namespaceAirGapDeposition.html#a00dc73663e030fed6bb40169ef4070b6',1,'AirGapDeposition.substrate()'],['../namespaceDeposition.html#a68c03f351e1469988a55e41eba8b288f',1,'Deposition.substrate()'],['../namespaceGeometricAdvection.html#a6847ded4385aaab7eb500e36ca0f3f7c',1,'GeometricAdvection.substrate()']]]
+  ['radius_0',['radius',['../classlsSphereDistribution.html#a425e0f5e4670854be0482a39741cb260',1,'lsSphereDistribution::radius()'],['../classlsSphere.html#a9d3efa11ce374c9fd4e864d9b73a12ab',1,'lsSphere::radius()'],['../classlsCylinder.html#a84426e0ea4c3f8ec15822a729270273b',1,'lsCylinder::radius()']]],
+  ['radius2_1',['radius2',['../classlsSphereDistribution.html#a127f7767efe18e76c8c6c04841f111e1',1,'lsSphereDistribution']]]
 ];

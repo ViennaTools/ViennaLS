@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['gridtype_672',['GridType',['../classlsDomain.html#acd1ed71ed408b19ab82f4b33db28a20d',1,'lsDomain::GridType()'],['../classlsDomain.html#acd1ed71ed408b19ab82f4b33db28a20d',1,'lsDomain::GridType()']]]
+  ['domaintype_0',['DomainType',['../classlsDomain.html#a7e989b2c137e03c4f8e09c181b6311af',1,'lsDomain::DomainType()'],['../classlsDomain.html#a7e989b2c137e03c4f8e09c181b6311af',1,'lsDomain::DomainType()']]]
 ];

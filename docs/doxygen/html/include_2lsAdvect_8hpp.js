@@ -1,6 +1,6 @@
 var include_2lsAdvect_8hpp =
 [
-    [ "lsAdvect", "classlsAdvect.html", "classlsAdvect" ],
+    [ "lsAdvect< T, D >", "classlsAdvect.html", "classlsAdvect" ],
     [ "lsIntegrationSchemeEnum", "include_2lsAdvect_8hpp.html#afe9778bbf7b5f9aeb52d14c4f133cc9b", [
       [ "ENGQUIST_OSHER_1ST_ORDER", "include_2lsAdvect_8hpp.html#afe9778bbf7b5f9aeb52d14c4f133cc9bad0a7e3dc2008232b277a258bb57d2049", null ],
       [ "ENGQUIST_OSHER_2ND_ORDER", "include_2lsAdvect_8hpp.html#afe9778bbf7b5f9aeb52d14c4f133cc9baa04ccfbc276e404065c286a5ff2f249d", null ],
@@ -22,5 +22,6 @@ var include_2lsAdvect_8hpp =
       [ "LOCAL_LAX_FRIEDRICHS_1ST_ORDER", "include_2lsAdvect_8hpp.html#afe9778bbf7b5f9aeb52d14c4f133cc9ba9d9467fd3cd87ad296f1e808bde320e7", null ],
       [ "LOCAL_LAX_FRIEDRICHS_2ND_ORDER", "include_2lsAdvect_8hpp.html#afe9778bbf7b5f9aeb52d14c4f133cc9baa8159c2466e3dc270b8273486c9c5288", null ],
       [ "STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER", "include_2lsAdvect_8hpp.html#afe9778bbf7b5f9aeb52d14c4f133cc9ba42659a032846a2676b762fed7a2666f8", null ]
-    ] ]
+    ] ],
+    [ "reduceTimeStepHamiltonJacobi", "include_2lsAdvect_8hpp.html#a55518456d0d4959c618121a07da6ff22", null ]
 ];

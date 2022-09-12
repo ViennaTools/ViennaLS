@@ -1,8 +1,4 @@
 var searchData=
 [
-  ['passedtime_656',['passedTime',['../namespaceAirGapDeposition.html#a86904a08b62cc0d346f96b5a7609263e',1,'AirGapDeposition.passedTime()'],['../namespaceDeposition.html#a9df7fa526473e45109729f2dd37fbbb6',1,'Deposition.passedTime()']]],
-  ['planenormal_657',['planeNormal',['../namespaceAirGapDeposition.html#a8f9a128eb4d3a446d178e6756691d08e',1,'AirGapDeposition.planeNormal()'],['../namespaceDeposition.html#a822cb2e71c77b4c9815adba4e890b8d7',1,'Deposition.planeNormal()'],['../namespaceGeometricAdvection.html#a08c9c6b2be2e81901d5bef9dbb609f2d',1,'GeometricAdvection.planeNormal()']]],
-  ['points_658',['points',['../classlsPointCloud.html#a811e6a9dfc2b8fbee7a45c03091a4edd',1,'lsPointCloud']]],
-  ['pos_5fvalue_659',['POS_VALUE',['../classlsDomain.html#a9c130cd72fdf29fb0c281780faeff7ea',1,'lsDomain']]],
-  ['posextent_660',['posExtent',['../classlsBoxDistribution.html#a4be7039fa78a256e91b2bb59c07e03d4',1,'lsBoxDistribution']]]
+  ['origin_0',['origin',['../classlsSphere.html#aba0dc3001111b997ca98a79baf23ffba',1,'lsSphere::origin()'],['../classlsPlane.html#a8d04795ea979be3468c895efd84fb2b4',1,'lsPlane::origin()'],['../classlsCylinder.html#a5f69ab67fae5153465b95543405141ed',1,'lsCylinder::origin()'],['../namespaceAirGapDeposition.html#ae54fe602ea6ed9d4d67fc74791f536c5',1,'AirGapDeposition.origin()'],['../namespaceDeposition.html#acdb3f1e89daecbef98d6f71113c249fd',1,'Deposition.origin()'],['../namespaceGeometricAdvection.html#a24e2a92a06eed3283575cc671a99680f',1,'GeometricAdvection.origin()']]]
 ];
