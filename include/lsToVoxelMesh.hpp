@@ -110,14 +110,15 @@ public:
 
     // move iterator for lowest material id and then adjust others if they are
     // needed
-    for (; iterators.back().getIndices() < maxIndex; iterators.back().next()) {
+    for (; iterators.front().getIndices() < maxIndex;
+         iterators.front().next()) {
       // go over all materials
       for (unsigned materialId = 0; materialId < levelSets.size();
            ++materialId) {
 
         auto &cellIt = iterators[materialId];
 
-        cellIt.goToIndicesSequential(iterators.back().getIndices());
+        cellIt.goToIndicesSequential(iterators.front().getIndices());
 
         // find out whether the centre of the box is inside
         T centerValue = 0.;
@@ -130,16 +131,22 @@ public:
           // now insert all points of voxel into pointList
           for (unsigned i = 0; i < (1 << D); ++i) {
             hrleVectorType<hrleIndexType, D> index;
+            bool add = true;
             for (unsigned j = 0; j < D; ++j) {
               index[j] =
                   cellIt.getIndices(j) + cellIt.getCorner(i).getOffset()[j];
+              if (index[j] > maxIndex[j]) {
+                add = false;
+                break;
+              }
             }
-            auto pointIdValue = std::make_pair(index, currentPointId);
-
-            auto pointIdPair = pointIdMapping.insert(pointIdValue);
-            voxel[i] = pointIdPair.first->second;
-            if (pointIdPair.second) {
-              ++currentPointId;
+            if (add) {
+              auto pointIdValue = std::make_pair(index, currentPointId);
+              auto pointIdPair = pointIdMapping.insert(pointIdValue);
+              voxel[i] = pointIdPair.first->second;
+              if (pointIdPair.second) {
+                ++currentPointId;
+              }
             }
           }
 
