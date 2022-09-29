@@ -128,41 +128,46 @@ public:
 
         if (centerValue <= 0.) {
           std::array<unsigned, 1 << D> voxel;
+          bool addVoxel;
           // now insert all points of voxel into pointList
           for (unsigned i = 0; i < (1 << D); ++i) {
             hrleVectorType<hrleIndexType, D> index;
-            bool add = true;
+            addVoxel = true;
             for (unsigned j = 0; j < D; ++j) {
               index[j] =
                   cellIt.getIndices(j) + cellIt.getCorner(i).getOffset()[j];
               if (index[j] > maxIndex[j]) {
-                add = false;
+                addVoxel = false;
                 break;
               }
             }
-            if (add) {
+            if (addVoxel) {
               auto pointIdValue = std::make_pair(index, currentPointId);
               auto pointIdPair = pointIdMapping.insert(pointIdValue);
               voxel[i] = pointIdPair.first->second;
               if (pointIdPair.second) {
                 ++currentPointId;
               }
+            } else {
+              break;
             }
           }
 
-          // create element
-          if (D == 3) {
-            // reorder elements for hexas to be ordered correctly
-            std::array<unsigned, 8> hexa{voxel[0], voxel[1], voxel[3],
-                                         voxel[2], voxel[4], voxel[5],
-                                         voxel[7], voxel[6]};
-            mesh->hexas.push_back(hexa);
-            materialIds.push_back(materialId);
-          } else {
-            std::array<unsigned, 4> tetra{voxel[0], voxel[2], voxel[3],
-                                          voxel[1]};
-            mesh->tetras.push_back(tetra);
-            materialIds.push_back(materialId);
+          // create element if inside domain bounds
+          if (addVoxel) {
+            if constexpr (D == 3) {
+              // reorder elements for hexas to be ordered correctly
+              std::array<unsigned, 8> hexa{voxel[0], voxel[1], voxel[3],
+                                           voxel[2], voxel[4], voxel[5],
+                                           voxel[7], voxel[6]};
+              mesh->hexas.push_back(hexa);
+              materialIds.push_back(materialId);
+            } else {
+              std::array<unsigned, 4> tetra{voxel[0], voxel[2], voxel[3],
+                                            voxel[1]};
+              mesh->tetras.push_back(tetra);
+              materialIds.push_back(materialId);
+            }
           }
           // jump out of material for loop
           break;
