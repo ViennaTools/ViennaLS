@@ -110,14 +110,15 @@ public:
 
     // move iterator for lowest material id and then adjust others if they are
     // needed
-    for (; iterators.back().getIndices() < maxIndex; iterators.back().next()) {
+    for (; iterators.front().getIndices() < maxIndex;
+         iterators.front().next()) {
       // go over all materials
       for (unsigned materialId = 0; materialId < levelSets.size();
            ++materialId) {
 
         auto &cellIt = iterators[materialId];
 
-        cellIt.goToIndicesSequential(iterators.back().getIndices());
+        cellIt.goToIndicesSequential(iterators.front().getIndices());
 
         // find out whether the centre of the box is inside
         T centerValue = 0.;
@@ -127,37 +128,46 @@ public:
 
         if (centerValue <= 0.) {
           std::array<unsigned, 1 << D> voxel;
+          bool addVoxel;
           // now insert all points of voxel into pointList
           for (unsigned i = 0; i < (1 << D); ++i) {
             hrleVectorType<hrleIndexType, D> index;
+            addVoxel = true;
             for (unsigned j = 0; j < D; ++j) {
               index[j] =
                   cellIt.getIndices(j) + cellIt.getCorner(i).getOffset()[j];
+              if (index[j] > maxIndex[j]) {
+                addVoxel = false;
+                break;
+              }
             }
-            auto pointIdValue = std::make_pair(index, currentPointId);
-
-            auto pointIdPair = pointIdMapping.insert(pointIdValue);
-            voxel[i] = pointIdPair.first->second;
-            if (pointIdPair.second) {
-              ++currentPointId;
+            if (addVoxel) {
+              auto pointIdValue = std::make_pair(index, currentPointId);
+              auto pointIdPair = pointIdMapping.insert(pointIdValue);
+              voxel[i] = pointIdPair.first->second;
+              if (pointIdPair.second) {
+                ++currentPointId;
+              }
+            } else {
+              break;
             }
           }
 
-          // create element
-          if (D == 3) {
-            // reorder elements for hexas to be ordered correctly
-            std::array<unsigned, 8> hexa{voxel[0], voxel[1], voxel[3],
-                                         voxel[2], voxel[4], voxel[5],
-                                         voxel[7], voxel[6]};
-            mesh->hexas.push_back(hexa);
-            materialIds.push_back(materialId);
-          } else {
-            std::array<unsigned, 3> triangle{voxel[0], voxel[1], voxel[2]};
-            mesh->triangles.push_back(triangle);
-            materialIds.push_back(materialId);
-            triangle[0] = voxel[3];
-            mesh->triangles.push_back(triangle);
-            materialIds.push_back(materialId);
+          // create element if inside domain bounds
+          if (addVoxel) {
+            if constexpr (D == 3) {
+              // reorder elements for hexas to be ordered correctly
+              std::array<unsigned, 8> hexa{voxel[0], voxel[1], voxel[3],
+                                           voxel[2], voxel[4], voxel[5],
+                                           voxel[7], voxel[6]};
+              mesh->hexas.push_back(hexa);
+              materialIds.push_back(materialId);
+            } else {
+              std::array<unsigned, 4> tetra{voxel[0], voxel[2], voxel[3],
+                                            voxel[1]};
+              mesh->tetras.push_back(tetra);
+              materialIds.push_back(materialId);
+            }
           }
           // jump out of material for loop
           break;
