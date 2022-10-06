@@ -1,11 +1,13 @@
 var searchData=
 [
-  ['neg_5fvalue_237',['NEG_VALUE',['../classlsDomain.html#acd59efb6dcdc1ccc8f48a17fdc4aa356',1,'lsDomain']]],
-  ['new_238',['New',['../classlsSmartPointer.html#abc42fbab727d1b3ff0a04ae68a3e5f7a',1,'lsSmartPointer::New(TArgs &amp;&amp;...targs)'],['../classlsSmartPointer.html#abc42fbab727d1b3ff0a04ae68a3e5f7a',1,'lsSmartPointer::New(TArgs &amp;&amp;...targs)']]],
-  ['newlayer_239',['newLayer',['../namespaceAirGapDeposition.html#ae4c15d7b109cfa0500c2e84e79c19ef6',1,'AirGapDeposition.newLayer()'],['../namespaceDeposition.html#a448222c801fb513e47426d6adcbadcbd',1,'Deposition.newLayer()'],['../namespaceGeometricAdvection.html#abd9a032068d19a191bc00596224a23fe',1,'GeometricAdvection.newLayer()']]],
-  ['nodes_240',['nodes',['../classlsMesh.html#aef70c079c387114ba1f929cdc9d72f04',1,'lsMesh']]],
-  ['normal_241',['normal',['../classlsPlane.html#a758faaa5fcfc68674040158a21511ef6',1,'lsPlane']]],
-  ['normalvectortype_242',['NormalVectorType',['../classlsDomain.html#a1b5387cd91551921f8f4b034aef54c80',1,'lsDomain::NormalVectorType()'],['../classlsDomain.html#a1b5387cd91551921f8f4b034aef54c80',1,'lsDomain::NormalVectorType()']]],
-  ['numberofsteps_243',['numberOfSteps',['../namespaceAirGapDeposition.html#aad04fd5c5532665c5eee936cd2681b74',1,'AirGapDeposition']]],
-  ['numerictype_244',['NumericType',['../AirGapDeposition_8cpp.html#ac0710c31044c8dd3cf7a6ba75eb1df9f',1,'NumericType():&#160;AirGapDeposition.cpp'],['../Deposition_8cpp.html#ac0710c31044c8dd3cf7a6ba75eb1df9f',1,'NumericType():&#160;Deposition.cpp'],['../GeometricAdvection_8cpp.html#ac0710c31044c8dd3cf7a6ba75eb1df9f',1,'NumericType():&#160;GeometricAdvection.cpp']]]
+  ['neg_5fvalue_0',['NEG_VALUE',['../classlsDomain.html#acd59efb6dcdc1ccc8f48a17fdc4aa356',1,'lsDomain']]],
+  ['new_1',['New',['../classlsSmartPointer.html#ae58c9ee92c03b933f07228fd4e79b849',1,'lsSmartPointer::New(TArgs &amp;&amp;... targs)'],['../classlsSmartPointer.html#abc42fbab727d1b3ff0a04ae68a3e5f7a',1,'lsSmartPointer::New(TArgs &amp;&amp;...targs)']]],
+  ['newlayer_2',['newLayer',['../namespaceGeometricAdvection.html#abd9a032068d19a191bc00596224a23fe',1,'GeometricAdvection.newLayer()'],['../namespaceDeposition.html#a448222c801fb513e47426d6adcbadcbd',1,'Deposition.newLayer()'],['../namespaceAirGapDeposition.html#ae4c15d7b109cfa0500c2e84e79c19ef6',1,'AirGapDeposition.newLayer()']]],
+  ['nodes_3',['nodes',['../classlsMesh.html#aef70c079c387114ba1f929cdc9d72f04',1,'lsMesh']]],
+  ['normal_4',['normal',['../classlsPlane.html#a758faaa5fcfc68674040158a21511ef6',1,'lsPlane']]],
+  ['normals_5fangle_5',['NORMALS_ANGLE',['../include_2lsDetectFeatures_8hpp.html#a505172fee2074f3ca33038216a92c0ecafdf760a0ba0aa40216ea830cb58a1714',1,'NORMALS_ANGLE():&#160;lsDetectFeatures.hpp'],['../install_2ViennaLS_2include_2lsDetectFeatures_8hpp.html#a505172fee2074f3ca33038216a92c0ecafdf760a0ba0aa40216ea830cb58a1714',1,'NORMALS_ANGLE():&#160;lsDetectFeatures.hpp'],['../include_2lsDetectFeatures_8hpp.html#a505172fee2074f3ca33038216a92c0ecafdf760a0ba0aa40216ea830cb58a1714',1,'NORMALS_ANGLE():&#160;lsDetectFeatures.hpp'],['../install_2ViennaLS_2include_2lsDetectFeatures_8hpp.html#a505172fee2074f3ca33038216a92c0ecafdf760a0ba0aa40216ea830cb58a1714',1,'NORMALS_ANGLE():&#160;lsDetectFeatures.hpp']]],
+  ['normalvectorslabel_6',['normalVectorsLabel',['../classlsCalculateNormalVectors.html#a6008b54cf1c7c73f45479b2ecdf59f31',1,'lsCalculateNormalVectors']]],
+  ['normalvectortype_7',['NormalVectorType',['../classlsDomain.html#a1b5387cd91551921f8f4b034aef54c80',1,'lsDomain::NormalVectorType()'],['../classlsDomain.html#a1b5387cd91551921f8f4b034aef54c80',1,'lsDomain::NormalVectorType()']]],
+  ['numberofsteps_8',['numberOfSteps',['../namespaceAirGapDeposition.html#aad04fd5c5532665c5eee936cd2681b74',1,'AirGapDeposition']]],
+  ['numerictype_9',['NumericType',['../AirGapDeposition_8cpp.html#ac0710c31044c8dd3cf7a6ba75eb1df9f',1,'NumericType():&#160;AirGapDeposition.cpp'],['../Deposition_8cpp.html#ac0710c31044c8dd3cf7a6ba75eb1df9f',1,'NumericType():&#160;Deposition.cpp'],['../GeometricAdvection_8cpp.html#ac0710c31044c8dd3cf7a6ba75eb1df9f',1,'NumericType():&#160;GeometricAdvection.cpp'],['../ViewFactor_8cpp.html#a14553a085b558f7ab8acb83e593290f8',1,'NumericType():&#160;ViewFactor.cpp']]]
 ];

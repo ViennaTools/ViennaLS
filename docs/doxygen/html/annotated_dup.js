@@ -1,16 +1,32 @@
 var annotated_dup =
 [
-    [ "AirGapDeposition", "namespaceAirGapDeposition.html", "namespaceAirGapDeposition" ],
-    [ "Deposition", "namespaceDeposition.html", "namespaceDeposition" ],
-    [ "lsInternal", "namespacelsInternal.html", "namespacelsInternal" ],
+    [ "AirGapDeposition", "namespaceAirGapDeposition.html", [
+      [ "velocityField", "classAirGapDeposition_1_1velocityField.html", "classAirGapDeposition_1_1velocityField" ]
+    ] ],
+    [ "Deposition", "namespaceDeposition.html", [
+      [ "velocityField", "classDeposition_1_1velocityField.html", "classDeposition_1_1velocityField" ]
+    ] ],
+    [ "lsInternal", "namespacelsInternal.html", [
+      [ "lsEnquistOsher", "classlsInternal_1_1lsEnquistOsher.html", "classlsInternal_1_1lsEnquistOsher" ],
+      [ "lsFiniteDifferences", "classlsInternal_1_1lsFiniteDifferences.html", "classlsInternal_1_1lsFiniteDifferences" ],
+      [ "lsGraph", "classlsInternal_1_1lsGraph.html", "classlsInternal_1_1lsGraph" ],
+      [ "lsLaxFriedrichs", "classlsInternal_1_1lsLaxFriedrichs.html", "classlsInternal_1_1lsLaxFriedrichs" ],
+      [ "lsLocalLaxFriedrichs", "classlsInternal_1_1lsLocalLaxFriedrichs.html", "classlsInternal_1_1lsLocalLaxFriedrichs" ],
+      [ "lsLocalLaxFriedrichsAnalytical", "classlsInternal_1_1lsLocalLaxFriedrichsAnalytical.html", "classlsInternal_1_1lsLocalLaxFriedrichsAnalytical" ],
+      [ "lsLocalLocalLaxFriedrichs", "classlsInternal_1_1lsLocalLocalLaxFriedrichs.html", "classlsInternal_1_1lsLocalLocalLaxFriedrichs" ],
+      [ "lsMarchingCubes", "classlsInternal_1_1lsMarchingCubes.html", "classlsInternal_1_1lsMarchingCubes" ],
+      [ "lsStencilLocalLaxFriedrichsScalar", "classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar.html", "classlsInternal_1_1lsStencilLocalLaxFriedrichsScalar" ]
+    ] ],
     [ "lsAdvect", "classlsAdvect.html", "classlsAdvect" ],
     [ "lsBooleanOperation", "classlsBooleanOperation.html", "classlsBooleanOperation" ],
     [ "lsBox", "classlsBox.html", "classlsBox" ],
     [ "lsBoxDistribution", "classlsBoxDistribution.html", "classlsBoxDistribution" ],
+    [ "lsCalculateCurvatures", "classlsCalculateCurvatures.html", "classlsCalculateCurvatures" ],
     [ "lsCalculateNormalVectors", "classlsCalculateNormalVectors.html", "classlsCalculateNormalVectors" ],
     [ "lsCheck", "classlsCheck.html", "classlsCheck" ],
     [ "lsConvexHull", "classlsConvexHull.html", "classlsConvexHull" ],
     [ "lsCylinder", "classlsCylinder.html", "classlsCylinder" ],
+    [ "lsDetectFeatures", "classlsDetectFeatures.html", "classlsDetectFeatures" ],
     [ "lsDomain", "classlsDomain.html", "classlsDomain" ],
     [ "lsExpand", "classlsExpand.html", "classlsExpand" ],
     [ "lsFromMesh", "classlsFromMesh.html", "classlsFromMesh" ],
@@ -28,6 +44,7 @@ var annotated_dup =
     [ "lsPrune", "classlsPrune.html", "classlsPrune" ],
     [ "lsReader", "classlsReader.html", "classlsReader" ],
     [ "lsReduce", "classlsReduce.html", "classlsReduce" ],
+    [ "lsRemoveStrayPoints", "classlsRemoveStrayPoints.html", "classlsRemoveStrayPoints" ],
     [ "lsSmartPointer", "classlsSmartPointer.html", "classlsSmartPointer" ],
     [ "lsSphere", "classlsSphere.html", "classlsSphere" ],
     [ "lsSphereDistribution", "classlsSphereDistribution.html", "classlsSphereDistribution" ],
@@ -40,5 +57,8 @@ var annotated_dup =
     [ "lsVTKReader", "classlsVTKReader.html", "classlsVTKReader" ],
     [ "lsVTKWriter", "classlsVTKWriter.html", "classlsVTKWriter" ],
     [ "lsWriter", "classlsWriter.html", "classlsWriter" ],
-    [ "lsWriteVisualizationMesh", "classlsWriteVisualizationMesh.html", "classlsWriteVisualizationMesh" ]
+    [ "lsWriteVisualizationMesh", "classlsWriteVisualizationMesh.html", "classlsWriteVisualizationMesh" ],
+    [ "ViewFactorDistribution", "classViewFactorDistribution.html", "classViewFactorDistribution" ],
+    [ "ViewFactorProcess", "classViewFactorProcess.html", "classViewFactorProcess" ],
+    [ "ViewFactorProcessDataType", "structViewFactorProcessDataType.html", "structViewFactorProcessDataType" ]
 ];

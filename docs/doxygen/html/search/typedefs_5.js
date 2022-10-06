@@ -1,4 +1,7 @@
 var searchData=
 [
-  ['lsboundaryconditionenum_677',['lsBoundaryConditionEnum',['../include_2lsDomain_8hpp.html#a5f744444bbee7265e693abfcce25bf9f',1,'lsBoundaryConditionEnum():&#160;lsDomain.hpp'],['../install_2ViennaLS_2include_2lsDomain_8hpp.html#a5f744444bbee7265e693abfcce25bf9f',1,'lsBoundaryConditionEnum():&#160;lsDomain.hpp']]]
+  ['isbaseof_0',['IsBaseOf',['../namespacelsConcepts.html#a90d0ed377343607596475f042f71ae47',1,'lsConcepts']]],
+  ['isfloatingpoint_1',['IsFloatingPoint',['../namespacelsConcepts.html#ab6faf524889c50de47df4a7cbf15a028',1,'lsConcepts']]],
+  ['isnotsame_2',['IsNotSame',['../namespacelsConcepts.html#afe02d602414323eb189f366b54dd86bc',1,'lsConcepts']]],
+  ['issame_3',['IsSame',['../namespacelsConcepts.html#a32ef11830a21da629bcaec40843917b5',1,'lsConcepts']]]
 ];

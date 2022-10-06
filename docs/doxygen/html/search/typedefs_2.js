@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['domaintype_671',['DomainType',['../classlsDomain.html#a7e989b2c137e03c4f8e09c181b6311af',1,'lsDomain::DomainType()'],['../classlsDomain.html#a7e989b2c137e03c4f8e09c181b6311af',1,'lsDomain::DomainType()']]]
+  ['comparatortype_0',['ComparatorType',['../classlsBooleanOperation.html#a60c213740c79909b47fea280b356d6ff',1,'lsBooleanOperation::ComparatorType()'],['../classlsBooleanOperation.html#a60c213740c79909b47fea280b356d6ff',1,'lsBooleanOperation::ComparatorType()']]]
 ];

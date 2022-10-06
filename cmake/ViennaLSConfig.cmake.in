@@ -1,76 +1,73 @@
 @PACKAGE_INIT@
 
-# ViennaLS requires C++17
-SET(CMAKE_CXX_STANDARD "17")
+include(CMakeFindDependencyMacro)
 
-###############################################
-#  compiler dependent settings for ViennaLS
-###############################################
+# ViennaLS requires C++17
+set(CMAKE_CXX_STANDARD "17")
+
+# ##################################################################################################
+# compiler dependent settings for ViennaLS
+# ##################################################################################################
 if(OMP_PARALLELIZE)
-  find_package(OpenMP REQUIRED)
-  list(APPEND VIENNALS_LIBRARIES OpenMP::OpenMP_CXX)  
+  find_dependency(OpenMP)
+  list(APPEND VIENNALS_LIBRARIES OpenMP::OpenMP_CXX)
 endif()
 
 # compiler dependent settings
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-  # disable-new-dtags sets RPATH which searches for libs recursively, instead
-  # of RUNPATH which does not
-  # needed for g++ to link correctly
-  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--disable-new-dtags")
+  # disable-new-dtags sets RPATH which searches for libs recursively, instead of RUNPATH which is
+  # not needed for g++ to link correctly
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--disable-new-dtags")
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-  #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp /wd\"4267\" /wd\"4244\"")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd\"4267\" /wd\"4244\"")
+  # SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp /wd\"4267\" /wd\"4244\"")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd\"4267\" /wd\"4244\"")
 endif()
 
-if(ViennaLS_COMMON_TARGET)
-  SET(VIENNALS_INCLUDE_DIRS "${VIENNAHRLE_INCLUDE_DIRS}" "@VIENNALS_BUILD_INCLUDE_DIRS@")
-else(ViennaLS_COMMON_TARGET)
-  SET(VIENNALS_INCLUDE_DIRS "${VIENNAHRLE_INCLUDE_DIRS}" "@CMAKE_INSTALL_PREFIX@@CMAKE_INSTALL_INCLUDEDIR@")
-  #  include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake")
-endif()
+set(VIENNALS_INCLUDE_DIRS "@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_INCLUDEDIR@")
 
-# Capturing the variables from configuration time
 set(ViennaHRLE_DIR @ViennaHRLE_DIR@)
 
-find_package (ViennaHRLE REQUIRED PATHS ${ViennaHRLE_DIR} NO_DEFAULT_PATH)
+find_dependency(ViennaHRLE PATHS ${ViennaHRLE_DIR} NO_DEFAULT_PATH)
 list(APPEND VIENNALS_INCLUDE_DIRS ${VIENNAHRLE_INCLUDE_DIRS})
 
+set(VIENNALS_USE_VTK @VIENNALS_USE_VTK@)
 if(@VIENNALS_USE_VTK@)
   set(VTK_DIR @VTK_DIR@)
-  find_package (VTK QUIET PATHS ${VTK_DIR} NO_DEFAULT_PATH)
 
-  if(VTK_FOUND)
-    #message(STATUS "Found VTK")
-    add_compile_definitions(VIENNALS_USE_VTK)
+  # If VIENNALS_USE_VTK is set to true, we expect vtk to be found. Otherwise throw an error.
+  # NO_DEFAULT_PATH ensures that the path is stored in cmake cache and consecutive find_dependency
+  # calls don't overwrite its value.
+  find_dependency(
+    VTK
+    CONFIG
+    PATHS
+    ${VTK_DIR}
+    COMPONENTS
+    @VTK_COMPONENTS@
+    NO_DEFAULT_PATH)
 
-    # use VTK_USE_FILE for older versions of VTK
-    if (VTK_VERSION VERSION_LESS "8.90")
-      message(STATUS "Using old VTK Version: ${VTK_VERSION}")
-      include(${VTK_USE_FILE})
-    endif()
+  add_compile_definitions(VIENNALS_USE_VTK)
 
-    # only link needed vtk libraries for static builds
-    # if(VIENNALS_STATIC_BUILD)
-    #   set(VTK_LIBRARIES vtksys;vtkIOCore;vtkexpat;vtklz4;vtkzlib;vtklzma;vtkdoubleconversion;vtkCommonMisc;vtkCommonSystem;vtkIOXML;vtkFiltersCore;vtkFiltersGeneral;vtkFiltersGeometry;vtkCommonExecutionModel;vtkCommonDataModel;vtkCommonColor;vtkIOXMLParser;vtkIOCore;vtkCommonMisc;vtkCommonComputationalGeometry;vtkCommonTransforms;vtkCommonMath;)
-    # endif(VIENNALS_STATIC_BUILD)
-    
-    list(APPEND VIENNALS_LIBRARIES ${VTK_LIBRARIES})
-    list(APPEND VIENNALS_PYTHON_LIBRARIES ${VTK_LIBRARIES})
-  else(VTK_FOUND)
-    message(STATUS "No VTK install found: Building without VTK support.")
-  endif(VTK_FOUND)
+  # use VTK_USE_FILE for older versions of VTK
+  if(VTK_VERSION VERSION_LESS "9.0")
+    message(STATUS "Using old VTK Version: ${VTK_VERSION}")
+    include(${VTK_USE_FILE})
+  endif()
+
+  set(VTK_LIBRARIES @VTK_LIBRARIES@)
+
+  list(APPEND VIENNALS_LIBRARIES ${VTK_LIBRARIES})
 endif()
 
-if(@VIENNALS_BUILD_SHARED_LIBS@)
-  option(VIENNALS_USE_SHARED_LIBS "Use precompiled headers" ON)
-  if(VIENNALS_USE_SHARED_LIBS)
-    ADD_DEFINITIONS(-DVIENNALS_USE_SHARED_LIBS)
-  endif(VIENNALS_USE_SHARED_LIBS)
-endif()
+set(VIENNALS_PYTHON_LIBRARIES ${VIENNALS_LIBRARIES})
 
-if(VIENNALS_USE_SHARED_LIBS)
-  link_directories(@CMAKE_INSTALL_PREFIX@lib)
-  list(APPEND VIENNALS_LIBRARIES @PROJECT_NAME@)
+if(@VIENNALS_PRECOMPILE_HEADERS@)
+  option(VIENNALS_USE_PRECOMPILED "Use precompiled headers" ON)
+  if(VIENNALS_USE_PRECOMPILED)
+    add_definitions(-DVIENNALS_USE_PRECOMPILED)
+    link_directories(@CMAKE_INSTALL_PREFIX@/lib)
+    list(APPEND VIENNALS_LIBRARIES @PROJECT_NAME@)
+  endif()
 endif()
 
 check_required_components("@PROJECT_NAME@")

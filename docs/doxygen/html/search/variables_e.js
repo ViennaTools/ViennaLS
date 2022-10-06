@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['tetras_664',['tetras',['../classlsMesh.html#ac66736a0f7162c21f42df2632aaeb739',1,'lsMesh']]],
-  ['trench_665',['trench',['../namespaceAirGapDeposition.html#adc994ddcd49604c115802be0b6394a33',1,'AirGapDeposition.trench()'],['../namespaceDeposition.html#a926efaf965f4ac96389fe463ccf0b7be',1,'Deposition.trench()'],['../namespaceGeometricAdvection.html#abcb12fafe44f5af6a80265bf54d9d628',1,'GeometricAdvection.trench()']]],
-  ['triangles_666',['triangles',['../classlsMesh.html#a7f993e67a05d8c3603858ef1a35aeb5a',1,'lsMesh']]]
+  ['sidewallnormal_0',['sidewallNormal',['../structViewFactorProcessDataType.html#a618a6fa58c2541e6d4f037455f1cbb24',1,'ViewFactorProcessDataType']]],
+  ['substrate_1',['substrate',['../namespaceAirGapDeposition.html#a00dc73663e030fed6bb40169ef4070b6',1,'AirGapDeposition.substrate()'],['../namespaceDeposition.html#a68c03f351e1469988a55e41eba8b288f',1,'Deposition.substrate()'],['../namespaceGeometricAdvection.html#a6847ded4385aaab7eb500e36ca0f3f7c',1,'GeometricAdvection.substrate()']]]
 ];

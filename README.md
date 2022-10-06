@@ -71,26 +71,17 @@ make install
 
 ## Installing with dependencies already installed on the system
 
-If you want to use your own install of dependencies, just specify the directories of dependencies in CMake:
+The CMake configuration automatically checks if the dependencies are installed. If CMake is unable to find them, the dependencies will be built from source with the _buildDependencies_ target.
 
 ```bash
 git clone github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/ -DVTK_DIR=/path/to/vtk/install -Dpybind11_DIR=/path/to/pybind11 -DViennaHRLE_DIR=/path/to/viennahrle
-make install
-```
-
-It is possible to specify one preinstalled dependency and automatically install the others, by just passing the path to one dependency as shown above, but not the others, i.e. for using preinstalled vtk but automatically installed ViennaHRLE and pybind11:
-
-```bash
-git clone github.com/ViennaTools/ViennaLS.git
-cd ViennaLS
-mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/ -DVTK_DIR=/path/to/vtk/install
+cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/
 make buildDependencies
 make install
 ```
+If one wants to use a specific installation of one or more of the dependencies, just pass the corresponding _*_DIR_ variable as a configuration option (e.g. -DVTK_DIR=/path/to/vtk/install -Dpybind11_DIR=/path/to/pybind11 -DViennaHRLE_DIR=/path/to/viennahrle)
 
 ## Using the viennaLS python module
 
@@ -104,7 +95,7 @@ In order to use ViennaLS in python, just download the python shared libraries fr
 From this folder just import the 2D or the 3D version of the library:
 
 ```
-import viennaLS2d as vls
+import viennals2d as vls
 levelset = vls.lsDomain(0.2) # empty level set with grid spacing 0.2
 sphere = vls.lsSphere((0,0,0), 5) # sphere at origin with radius 5
 vls.lsMakeGeometry(levelset, sphere).apply() # create sphere in level set
@@ -113,7 +104,7 @@ vls.lsMakeGeometry(levelset, sphere).apply() # create sphere in level set
 All functions which are available in C++ are also available in Python. In order to switch to three dimensions, only the import needs to be changed:
 
 ```
-import viennaLS3d as vls
+import viennals3d as vls
 ```
 
 
@@ -137,9 +128,9 @@ git clone github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
 mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/
-make pybind11-external
-make viennahrle-external
-make vtk-external
+make pybind11_external
+make viennahrle_external
+make vtk_external
 ```
 
 This will take some time the first time it is run.
@@ -182,16 +173,16 @@ target_link_libraries(myExe ${VIENNALS_LIBRARIES})
 
 ### Shared libraries
 
-In order to save build time during developement, dynamically linked shared libraries can be used
+In order to save build time during development, dynamically linked shared libraries can be used
 if ViennaLS was built with them. This is done by precompiling the most common template specialisations.
 In order to use shared libraries, use 
 ```
-cmake .. -DVIENNALS_BUILD_SHARED_LIBS=ON
+cmake .. -DVIENNALS_PRECOMPILE_HEADERS=ON
 ```
 If ViennaLS was build with shared libraries and you use ViennaLS in your project (see above), CMake will automatically link them to your project. In order to build a release of your own project with better runtime performance, but
 longer build times, use the following CMake option when building a release:
 ```
-VIENNALS_USE_SHARED_LIBS=OFF
+VIENNALS_USE_PRECOMPILED=OFF
 ```
 
 ## Contributing
