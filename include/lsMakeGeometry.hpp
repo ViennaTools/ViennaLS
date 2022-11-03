@@ -455,6 +455,8 @@ private:
     {
       constexpr double limit = 2 * M_PI - 1e-6;
       std::vector<std::array<T, 3>> points;
+      if (cylinder->topRadius)
+        std::vector<std::array<T, 3>> pointsTop;
 
       // create and insert points at base
       for (double angle = 0.; angle < limit; angle += smallAngle) {
@@ -469,6 +471,7 @@ private:
       // insert midpoint at top
       mesh->insertNextNode(std::array<T, 3>{0.0, 0.0, cylinder->height});
 
+      double angle = 0;
       for (unsigned i = 0; i < numPoints; ++i) {
         // create triangles at base
         std::array<unsigned, 3> triangle;
@@ -478,6 +481,13 @@ private:
         mesh->insertNextTriangle(triangle);
 
         // insert points at top
+        // If topRadius is specified, update the first two coordinates of the
+        // points
+        if (cylinder->topRadius) {
+          points[i][0] = cylinder->topRadius * std::cos(angle);
+          points[i][1] = cylinder->topRadius * std::sin(angle);
+          angle += smallAngle;
+        }
         points[i][2] = cylinder->height;
         mesh->insertNextNode(points[i]);
 
