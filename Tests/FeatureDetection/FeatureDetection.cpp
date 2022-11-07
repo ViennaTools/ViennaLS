@@ -35,7 +35,7 @@ int main() {
 
   double extent = 47.3;
   double bounds[2 * D] = {-extent, extent, -extent, extent};
-  if (D == 3) {
+  if constexpr (D == 3) {
     bounds[4] = -extent;
     bounds[5] = extent;
   }
@@ -64,7 +64,7 @@ int main() {
     auto trench = lsSmartPointer<lsDomain<NumericType, D>>::New(
         bounds, boundaryCons, gridDelta);
 
-    if (D == 3) {
+    if constexpr (D == 3) {
       NumericType minCorner[3] = {(NumericType)(-extent / 4.),
                                   (NumericType)-extent - 1, -49.8};
       NumericType maxCorner[3] = {(NumericType)(extent / 4.),

@@ -1,14 +1,13 @@
-#include <fstream>
 #include <iostream>
+#include <sstream>
+
 #include <lsBooleanOperation.hpp>
 #include <lsDomain.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPointData.hpp>
-#include <lsReader.hpp>
 #include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
-#include <lsWriter.hpp>
 
 /**
   Minimal example showing how to serialize an lsDomain and deserialize.
@@ -42,36 +41,44 @@ int main() {
   data.insertNextScalarData(scalars, "myScalars");
   data.insertNextVectorData(vectors, "myVectors");
 
-  // {
-  //   std::ofstream fout("test.lvst", std::ofstream::binary);
-  //   levelSet->serialize(fout);
-  //   fout.close();
-  // }
-  lsWriter<double, D>(levelSet, "test.lvst").apply();
+  std::stringstream stream;
+  levelSet->serialize(stream);
 
   {
     auto newLevelSet = lsSmartPointer<lsDomain<double, D>>::New();
-    // std::ifstream fin("test.lvst", std::ofstream::binary);
-    lsReader<double, D>(newLevelSet, "test.lvst").apply();
-    // newLevelSet->deserialize(fin);
+    newLevelSet->deserialize(stream);
+
+    if (newLevelSet->getNumberOfPoints() != levelSet->getNumberOfPoints()) {
+      std::cout << "Levelset points were not properly deserialized"
+                << std::endl;
+      return EXIT_FAILURE;
+    }
+
     lsPointData<double> &newData = newLevelSet->getPointData();
-    std::cout << newData.getScalarDataSize() << std::endl;
+    auto scalarDataSize = newData.getScalarDataSize();
+    if (scalarDataSize != levelSet->getPointData().getScalarDataSize()) {
+      std::cout << "Scalar data was not properly deserialized" << std::endl;
+      return EXIT_FAILURE;
+    }
+
     auto newScalars = newData.getScalarData(0);
     std::cout << newData.getScalarDataLabel(0) << std::endl;
     for (auto i : *newScalars) {
       std::cout << i << std::endl;
     }
+
+    auto vectorDataSize = newData.getVectorDataSize();
+    if (vectorDataSize != levelSet->getPointData().getVectorDataSize()) {
+      std::cout << "Vector data was not properly deserialized" << std::endl;
+      return EXIT_FAILURE;
+    }
+
     auto newVectors = newData.getVectorData(0);
     std::cout << newData.getVectorDataLabel(0) << std::endl;
     for (auto i : *newVectors) {
       std::cout << i[0] << ", " << i[1] << ", " << i[2] << std::endl;
     }
-    // fin.close();
-
-    auto mesh = lsSmartPointer<lsMesh<>>::New();
-    lsToMesh<double, D>(newLevelSet, mesh).apply();
-    lsVTKWriter<double>(mesh, "test.vtk").apply();
   }
 
-  return 0;
+  return EXIT_SUCCESS;
 }

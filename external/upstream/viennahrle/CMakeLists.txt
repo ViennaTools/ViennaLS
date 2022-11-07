@@ -1,7 +1,17 @@
 # ##################################################################################################
 # Check ViennaHRLE Dependency
 # ##################################################################################################
-if(DEFINED ${ViennaHRLE_DIR})
+# Check if the variable is a cache variable
+get_property(
+  is_cached
+  CACHE ViennaHRLE_DIR
+  PROPERTY TYPE)
+if("${is_cached}" STREQUAL "" AND DEFINED ViennaHRLE_DIR)
+  # Required for windows to convert backslashes to forward slashes
+  file(TO_CMAKE_PATH "${ViennaHRLE_DIR}" ViennaHRLE_DIR)
+  set(ViennaHRLE_DIR
+      "${ViennaHRLE_DIR}"
+      CACHE PATH "Path to ViennaHRLE installation" FORCE)
   find_package(ViennaHRLE REQUIRED PATHS ${ViennaHRLE_DIR} NO_DEFAULT_PATH)
   message(STATUS "ViennaHRLE_DIR: ${ViennaHRLE_DIR}")
   add_library(viennahrle_external INTERFACE) # dummy target

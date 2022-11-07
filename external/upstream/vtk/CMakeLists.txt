@@ -25,8 +25,17 @@ set(VTK_LIBRARY_TARGETS
     VTK::CommonComputationalGeometry;VTK::CommonCore;VTK::CommonDataModel;VTK::CommonExecutionModel;VTK::CommonMath;VTK::CommonMisc;VTK::CommonSystem;VTK::CommonTransforms;VTK::FiltersCore;VTK::FiltersGeneral;VTK::FiltersGeometry;VTK::IOCore;VTK::IOXML;VTK::IOXMLParser;VTK::WrappingTools
 )
 
-# If the user provided a path to a VTK installation
-if(DEFINED ${VTK_DIR})
+# Check if the variable is a cache variable
+get_property(
+  is_cached
+  CACHE VTK_DIR
+  PROPERTY TYPE)
+if("${is_cached}" STREQUAL "" AND DEFINED VTK_DIR)
+  # Required for windows to convert backslashes to forward slashes
+  file(TO_CMAKE_PATH "${VTK_DIR}" VTK_DIR)
+  set(VTK_DIR
+      "${VTK_DIR}"
+      CACHE PATH "Path to VTK installation" FORCE)
   find_package(VTK CONFIG REQUIRED PATHS ${VTK_DIR} COMPONENTS "${VTK_COMPONENTS}" NO_DEFAULT_PATH)
   if(VIENNALS_STATIC_BUILD)
     check_all_type(ALL_STATIC "STATIC_LIBRARY" "${VTK_LIBRARY_TARGETS}")
@@ -74,8 +83,7 @@ else() # Automatically detect installation
       vtk_external
       GIT_REPOSITORY https://gitlab.kitware.com/vtk/vtk.git
       # Hash of tags/v9.1.0
-      GIT_TAG # v9.1.0
-              285daeedd58eb890cb90d6e907d822eea3d2d092
+      GIT_TAG 285daeedd58eb890cb90d6e907d822eea3d2d092
       GIT_SHALLOW true
       GIT_SUBMODULES ""
       TMP_DIR "${DEPENDENCIES_DIR}/tmp/${VTK_EXTERNAL_INSTALL}"
@@ -116,16 +124,17 @@ else() # Automatically detect installation
                  -DVTK_MODULE_ENABLE_VTK_FiltersGeneral:BOOL=YES
                  -DVTK_MODULE_ENABLE_VTK_FiltersGeometry:BOOL=YES
       BUILD_COMMAND ${CMAKE_COMMAND} --build . --parallel ${NPROC}
+      # INSTALL_COMMAND ${CMAKE_COMMAND} --install .
       INSTALL_COMMAND ""
       UPDATE_COMMAND ""
       USES_TERMINAL_DOWNLOAD 1
       USES_TERMINAL_UPDATE 1
       GIT_PROGRESS 1)
 
-    # Get install and build directory
+    # Get install directory
     ExternalProject_Get_Property(vtk_external BINARY_DIR)
 
-    # Set the required variables. Use BINARY_DIR as VTK_DIR since we used an empy install command
+    # Set the required variables
     set(VTK_DIR "${BINARY_DIR}")
 
     set(VTK_VERSION 9.1)

@@ -55,7 +55,7 @@ int main() {
 
   double extent = 10;
   double bounds[2 * D] = {-extent, extent, -extent, extent};
-  if (D == 3) {
+  if constexpr (D == 3) {
     bounds[4] = -extent;
     bounds[5] = extent;
   }
@@ -81,7 +81,7 @@ int main() {
       .apply();
 
   double maskOrigin[3] = {0., -10 * (D == 2), -10 * (D == 3)};
-  double maskNormal[3] = {0, -(D == 2), -(D == 3)};
+  double maskNormal[3] = {0, -1.0 * (D == 2), -1.0 * (D == 3)};
 
   lsMakeGeometry<double, D>(
       mask, lsSmartPointer<lsPlane<double, D>>::New(maskOrigin, maskNormal))

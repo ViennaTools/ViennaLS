@@ -29,6 +29,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS
       TRUE
       CACHE BOOL "Export all symbols" FORCE)
+  add_compile_definitions(_USE_MATH_DEFINES)
 endif()
 
 list(APPEND VIENNALS_DEPENDENCIES "viennahrle_external")

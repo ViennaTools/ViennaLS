@@ -50,7 +50,7 @@ public:
     }
 
     // Open file for writing and save serialized level set in it
-    std::ifstream fin(fileName);
+    std::ifstream fin(fileName, std::ios::binary);
 
     levelSet->deserialize(fin);
 

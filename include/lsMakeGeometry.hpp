@@ -202,7 +202,7 @@ private:
       for (unsigned i = 0; i < D; ++i) {
         T y = (index[(i + 1) % D] * gridDelta) - origin[(i + 1) % D];
         T z = 0;
-        if (D == 3)
+        if constexpr (D == 3)
           z = (index[(i + 2) % D] * gridDelta) - origin[(i + 2) % D];
         T x = radius2 - y * y - z * z;
         if (x < 0.)
@@ -318,7 +318,7 @@ private:
     cornerPoints[0][j] = minCoord[0];
     cornerPoints[1][j] = maxCoord[0];
 
-    if (D == 3) {
+    if constexpr (D == 3) {
       cornerPoints[0][k] = minCoord[1];
       cornerPoints[1][k] = maxCoord[1];
 
@@ -333,7 +333,7 @@ private:
 
     for (unsigned n = 0; n < cornerPoints.size(); ++n) {
       double numerator = (cornerPoints[n][j] - origin[j]) * normal[j];
-      if (D == 3)
+      if constexpr (D == 3)
         numerator += (cornerPoints[n][k] - origin[k]) * normal[k];
       else
         cornerPoints[n][2] = 0.;
@@ -395,7 +395,7 @@ private:
     corners[2] = corners[0];
     corners[2][1] = corners.back()[1];
 
-    if (D == 3) {
+    if constexpr (D == 3) {
       corners[3] = corners.back();
       corners[3][2] = corners[0][2];
 

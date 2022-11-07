@@ -1,5 +1,14 @@
-if(DEFINED ${pybind11_DIR})
-  find_package(pybind11 REQUIRED PATHS ${pybind11_FOUND})
+get_property(
+  is_cached
+  CACHE pybind11_DIR
+  PROPERTY TYPE)
+if("${is_cached}" STREQUAL "" AND DEFINED pybind11_DIR)
+  # Required for windows to convert backslashes to forward slashes
+  file(TO_CMAKE_PATH "${pybind11_DIR}" pybind11_DIR)
+  set(pybind11_DIR
+      "${pybind11_DIR}"
+      CACHE PATH "Path to pybind11 installation" FORCE)
+  find_package(pybind11 REQUIRED PATHS ${pybind11_FOUND} NO_DEFAULT_PATH)
   message(STATUS "pybind11_DIR: ${pybind11_DIR}")
   add_library(pybind11_external INTERFACE) # dummy target
 else()

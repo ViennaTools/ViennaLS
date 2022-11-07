@@ -10,7 +10,7 @@ auto makeLSDomain() {
 
   double extent = 50;
   double bounds[2 * D] = {-extent, extent, -extent, extent};
-  if (D == 3) {
+  if constexpr (D == 3) {
     bounds[4] = -extent;
     bounds[5] = extent;
   }

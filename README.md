@@ -1,4 +1,7 @@
 # ViennaLS
+[![Linux](https://github.com/ViennaTools/ViennaLS/actions/workflows/linux_test.yml/badge.svg)](https://github.com/ViennaTools/ViennaLS/actions/workflows/linux_test.yml)
+[![macOS](https://github.com/ViennaTools/ViennaLS/actions/workflows/macos_test.yml/badge.svg)](https://github.com/ViennaTools/ViennaLS/actions/workflows/macos_test.yml)
+[![Windows](https://github.com/ViennaTools/ViennaLS/actions/workflows/windows_test.yml/badge.svg)](https://github.com/ViennaTools/ViennaLS/actions/workflows/windows_test.yml)
 
 ViennaLS is a header-only C++ level set library developed for high performance topography simulations. The main design goals are simplicity and efficiency, tailored towards scientific simulations. ViennaLS can also be used for visualisation applications, although this is not the main design target.
 
@@ -179,7 +182,7 @@ In order to use shared libraries, use
 ```
 cmake .. -DVIENNALS_PRECOMPILE_HEADERS=ON
 ```
-If ViennaLS was build with shared libraries and you use ViennaLS in your project (see above), CMake will automatically link them to your project. In order to build a release of your own project with better runtime performance, but
+If ViennaLS was built with shared libraries and you use ViennaLS in your project (see above), CMake will automatically link them to your project. In order to build a release of your own project with better runtime performance, but
 longer build times, use the following CMake option when building a release:
 ```
 VIENNALS_USE_PRECOMPILED=OFF
