@@ -201,14 +201,14 @@ public:
            ++it) {
         if (((*matIt) >= it->second.first) && ((*matIt) < it->second.second)) {
           std::array<unsigned, D> element{it->first[0], it->first[1]};
-          if (D == 3)
+          if constexpr (D == 3)
             element[2] = it->first[2];
           meshElements.push_back(element);
         } else if (((*matIt) >= it->second.second) &&
                    ((*matIt) < it->second.first)) {
           // swap first two elements since triangle has different orientation
           std::array<unsigned, D> element{it->first[1], it->first[0]};
-          if (D == 3)
+          if constexpr (D == 3)
             element[2] = it->first[2];
           meshElements.push_back(element);
         }

@@ -51,7 +51,7 @@ public:
     }
 
     // Open file for writing and save serialized level set in it
-    std::ofstream fout(fileName);
+    std::ofstream fout(fileName, std::ios::binary);
 
     levelSet->serialize(fout);
 

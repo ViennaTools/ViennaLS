@@ -28,7 +28,7 @@ int main() {
   double extent = 10;
   double gridDelta = 0.25;
   double bounds[2 * D] = {-extent, extent, -extent, extent};
-  if (D == 3) {
+  if constexpr (D == 3) {
     bounds[4] = -10;
     bounds[5] = 10;
   }

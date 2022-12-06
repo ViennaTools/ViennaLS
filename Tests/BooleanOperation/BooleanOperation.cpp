@@ -24,7 +24,7 @@ int main() {
 
   double gridDelta = 1.0;
   double bounds[2 * D] = {-20, 20, -20, 20};
-  if (D == 3) {
+  if constexpr (D == 3) {
     bounds[4] = -20;
     bounds[5] = 20;
   }

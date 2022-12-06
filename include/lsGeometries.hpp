@@ -96,10 +96,12 @@ public:
              hrleVectorType<T, D> passedAxisDirection, T passedHeight,
              T passedRadius, T passedTopRadius = 0)
       : origin(passedOrigin), axisDirection(passedAxisDirection),
-        height(passedHeight), radius(passedRadius), topRadius(passedTopRadius) {}
+        height(passedHeight), radius(passedRadius), topRadius(passedTopRadius) {
+  }
 
   lsCylinder(const T *passedOrigin, const T *passedAxisDirection,
-             const T passedHeight, const T passedRadius, const T passedTopRadius = 0)
+             const T passedHeight, const T passedRadius,
+             const T passedTopRadius = 0)
       : height(passedHeight), radius(passedRadius), topRadius(passedTopRadius) {
     for (unsigned i = 0; i < D; ++i) {
       origin[i] = passedOrigin[i];
@@ -110,7 +112,8 @@ public:
   lsCylinder(std::vector<T> passedOrigin, std::vector<T> passedAxisDirection,
              T passedHeight, T passedRadius, T passedTopRadius = 0)
       : origin(passedOrigin), axisDirection(passedAxisDirection),
-        height(passedHeight), radius(passedRadius), topRadius(passedTopRadius) {}
+        height(passedHeight), radius(passedRadius), topRadius(passedTopRadius) {
+  }
 };
 
 /// Class describing a point cloud, which can be used to

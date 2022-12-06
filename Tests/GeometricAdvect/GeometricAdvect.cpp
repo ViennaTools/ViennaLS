@@ -18,7 +18,7 @@ int main() {
 
   double extent = 50;
   double bounds[2 * D] = {-extent, extent, -extent, extent};
-  if (D == 3) {
+  if constexpr (D == 3) {
     bounds[4] = -extent;
     bounds[5] = extent;
   }
@@ -35,7 +35,7 @@ int main() {
       lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
   // create a sphere in the level set
   NumericType origin[D] = {0., 0.};
-  if (D == 3)
+  if constexpr (D == 3)
     origin[2] = 0;
   NumericType radius = 8.0;
   lsMakeGeometry<NumericType, D>(

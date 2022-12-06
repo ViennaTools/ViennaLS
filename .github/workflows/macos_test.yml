@@ -1,0 +1,61 @@
+name: macOS
+
+on:
+  pull_request:
+    branches: [master]
+  workflow_run:
+    workflows: [Build Dependencies on macOS]
+    types:
+      - completed
+
+env:
+  BUILD_TYPE: Debug
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macos-test:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Dependency Cache
+        uses: actions/cache@v3
+        id: cache-dependencies
+        with:
+          key: viennals-dependency-cache-${{ runner.os }}-${{env.BUILD_TYPE}}-${{ hashFiles( './external/upstream/**CMakeLists.txt' ) }}
+          path: |
+            ${{github.workspace}}/dependencies/Source
+            ${{github.workspace}}/dependencies/Build
+            ${{github.workspace}}/dependencies/Install
+
+      - name: Configure
+        run: |
+          cmake -B ./build \
+            -D CMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
+            -D VIENNALS_BUILD_TESTS=ON \
+            -D OpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" \
+            -D OpenMP_CXX_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" \
+            -D OpenMP_C_LIB_NAMES="omp" \
+            -D OpenMP_CXX_LIB_NAMES="omp" \
+            -D OpenMP_omp_LIBRARY="$(brew --prefix libomp)/lib/libomp.a"
+
+      - name: Build Tests
+        run: cmake --build ./build
+
+      - name: Run Tests
+        working-directory: ${{github.workspace}}/build
+        # Run all tests that are not labeled as benchmark
+        run: ctest -LE '^benchmark$'
+
+      - name: Trigger Action on ViennaPS Repository
+        if: github.event_name != 'pull_request'
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.PAT_VIENNAPS }}
+          repository: ${{github.repository_owner}}/ViennaPS
+          event-type: viennals-update-macos

@@ -16,7 +16,7 @@ int main() {
   double gridDelta = 1.0;
 
   double bounds[2 * D] = {-20, 20, -20, 20};
-  if (D == 3) {
+  if constexpr (D == 3) {
     bounds[4] = -20;
     bounds[5] = 20;
   }
@@ -34,7 +34,7 @@ int main() {
 
   // create a sphere in the level set
   NumericType origin[D] = {0., 0.};
-  if (D == 3)
+  if constexpr (D == 3)
     origin[2] = 0;
   NumericType radius = 15.3;
   lsMakeGeometry<NumericType, D>(

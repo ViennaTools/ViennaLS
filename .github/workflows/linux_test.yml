@@ -1,0 +1,56 @@
+name: Linux
+
+on:
+  pull_request:
+    branches: [master]
+  workflow_run:
+    workflows: [Build Dependencies on Linux]
+    types:
+      - completed
+
+env:
+  BUILD_TYPE: Debug
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Dependency Cache
+        uses: actions/cache@v3
+        id: cache-dependencies
+        with:
+          key: viennals-dependency-cache-${{ runner.os }}-${{env.BUILD_TYPE}}-${{ hashFiles( './external/upstream/**CMakeLists.txt' ) }}
+          path: |
+            ${{github.workspace}}/dependencies/Source
+            ${{github.workspace}}/dependencies/Build
+            ${{github.workspace}}/dependencies/Install
+
+      - name: Configure
+        run: |
+          cmake -B ./build \
+            -D CMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
+            -D VIENNALS_BUILD_TESTS=ON
+
+      - name: Build Tests
+        run: cmake --build ./build
+
+      - name: Run Tests
+        working-directory: ${{github.workspace}}/build
+        # Run all tests that are not labeled as benchmark
+        run: ctest -LE '^benchmark$'
+
+      - name: Trigger Action on ViennaPS Repository
+        if: github.event_name != 'pull_request'
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.PAT_VIENNAPS }}
+          repository: ${{github.repository_owner}}/ViennaPS
+          event-type: viennals-update-linux

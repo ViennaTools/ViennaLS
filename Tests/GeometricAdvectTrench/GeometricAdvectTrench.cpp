@@ -18,7 +18,7 @@ int main() {
 
   double extent = 50;
   double bounds[2 * D] = {-extent, extent, -extent, extent};
-  if (D == 3) {
+  if constexpr (D == 3) {
     bounds[4] = -extent;
     bounds[5] = extent;
   }
@@ -90,7 +90,7 @@ int main() {
   // lsSphereDistribution<NumericType, D> dist(15.0);
   std::cout << "Advecting..." << std::endl;
   std::array<NumericType, 3> box = {1.1, 15};
-  if (D == 3) {
+  if constexpr (D == 3) {
     box[1] = 1.1;
     box[2] = 15;
   }

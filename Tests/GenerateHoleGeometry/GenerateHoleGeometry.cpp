@@ -66,11 +66,11 @@ int main(int argc, char *argv[]) {
         origin, axisDirection, depth, baseRadius, topRadius);
     lsMakeGeometry<NumericType, D>(hole, cylinder).apply();
     {
-    std::cout << "Writing hole" << std::endl;
-    auto mesh = lsSmartPointer<lsMesh<>>::New();
-    lsToSurfaceMesh<NumericType, D>(hole, mesh).apply();
-    lsVTKWriter(mesh, lsFileFormatEnum::VTP, "hole.vtp").apply();
-  }
+      std::cout << "Writing hole" << std::endl;
+      auto mesh = lsSmartPointer<lsMesh<>>::New();
+      lsToSurfaceMesh<NumericType, D>(hole, mesh).apply();
+      lsVTKWriter(mesh, lsFileFormatEnum::VTP, "hole.vtp").apply();
+    }
 
     lsBooleanOperation<NumericType, D>(
         substrate, hole, lsBooleanOperationEnum::RELATIVE_COMPLEMENT)

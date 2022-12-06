@@ -49,14 +49,14 @@ template <class T, int D> class lsConvexHull {
       hrleVectorType<T, D> normal;
       hrleVectorType<T, D> distance = points[i] - points[currentEdge[0]];
       // create surface element and check if all points are to its right
-      if (D == 2) {
+      if constexpr (D == 2) {
         // in 2D normal is a 90 degree rotation
         normal = points[nextIndex] - points[currentEdge[0]];
         if (D == 2) {
           std::swap(normal[0], normal[1]);
           normal[0] = -normal[0];
         }
-      } else if (D == 3) {
+      } else if constexpr (D == 3) {
         auto v1 = points[currentEdge[1]] - points[currentEdge[0]];
         auto v2 = points[nextIndex] - points[currentEdge[0]];
         normal = calculateNormal(v1, v2);
@@ -100,7 +100,7 @@ template <class T, int D> class lsConvexHull {
     for (unsigned i = 0; i < visitedEdges.size(); ++i) {
       // in 2D one match is enough, in 3D both points must be the same
       if (edge[0] == visitedEdges[i][0]) {
-        if (D == 3) {
+        if constexpr (D == 3) {
           if (edge[1] == visitedEdges[i][1]) {
             return true;
           }
@@ -110,7 +110,7 @@ template <class T, int D> class lsConvexHull {
       }
 
       // in 3D, an edge is also the same if they contain the same nodes
-      if (D == 3) {
+      if constexpr (D == 3) {
         if (edge[0] == visitedEdges[i][1] && edge[1] == visitedEdges[i][0]) {
           return true;
         }

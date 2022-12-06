@@ -8,3 +8,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ${VIENNALS_LIBRARIES})
 
 add_dependencies(buildTests ${PROJECT_NAME})
 add_test(NAME ${PROJECT_NAME} COMMAND $<TARGET_FILE:${PROJECT_NAME}>)
+
+# Label this test as a benchmark
+set_tests_properties(${PROJECT_NAME} PROPERTIES LABELS benchmark)
