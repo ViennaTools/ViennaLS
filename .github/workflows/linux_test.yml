@@ -46,7 +46,6 @@ jobs:
         working-directory: ${{github.workspace}}/build
         # Run all tests that are not labeled as benchmark
         run: ctest -LE '^benchmark$'
-
 #      - name: Trigger Action on ViennaPS Repository
 #        if: github.event_name != 'pull_request'
 #        uses: peter-evans/repository-dispatch@v2
