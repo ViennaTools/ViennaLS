@@ -49,7 +49,7 @@ Have a look at the [example repo](https://github.com/ViennaTools/viennals-exampl
 Since this is a header only project, it does not require any installation.
 However, we recommend the following procedure in order to set up all dependencies correctly:
 
-```
+```bash
 git clone github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
 mkdir build && cd build
@@ -63,7 +63,7 @@ This will install the necessary headers and CMake files to the specified path. I
 ## Installing without VTK
 
 In order to install ViennaLS without VTK, run:
-```
+```bash
 git clone github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
 mkdir build && cd build
@@ -97,7 +97,7 @@ For all other Python versions, you have to build the library yourself (see below
 In order to use ViennaLS in python, just download the python shared libraries from the [releases section](https://github.com/ViennaTools/ViennaLS/releases) and put it in your current folder.
 From this folder just import the 2D or the 3D version of the library:
 
-```
+```python
 import viennals2d as vls
 levelset = vls.lsDomain(0.2) # empty level set with grid spacing 0.2
 sphere = vls.lsSphere((0,0,0), 5) # sphere at origin with radius 5
@@ -106,7 +106,7 @@ vls.lsMakeGeometry(levelset, sphere).apply() # create sphere in level set
 
 All functions which are available in C++ are also available in Python. In order to switch to three dimensions, only the import needs to be changed:
 
-```
+```python
 import viennals3d as vls
 ```
 
@@ -114,7 +114,7 @@ import viennals3d as vls
 ## Building the python module
 
 In order to build the python module, set `VIENNALS_BUILD_PYTHON_2` or `VIENNALS_BUILD_PYTHON_3` to `ON`:
-```
+```bash
 cmake .. -DVIENNALS_BUILD_PYTHON_3=ON
 make buildDependencies # this will install pybind11 the first time it is called
 make
@@ -126,7 +126,7 @@ If both options are on, only VIENNALS_BUILD_PYTHON_3 will be used, since only on
 
 If you just want to install all dependencies before doing anything else, run:
 
-```
+```bash
 git clone github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
 mkdir build && cd build
@@ -144,7 +144,7 @@ The dependencies only need to be set up once.
 ViennaLS uses CTest to run its tests.
 In order to check whether ViennaLS runs without issues on your system, you can run:
 
-```
+```bash
 git clone github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
 mkdir build && cd build
@@ -157,7 +157,7 @@ make test # run all tests
 
 The examples can be built using CMake:
 
-```
+```bash
 cmake .. -DVIENNALS_BUILD_EXAMPLES=ON
 make
 ```
@@ -166,7 +166,7 @@ make
 
 In order to use this library in your CMake project, add the following lines to the CMakeLists.txt of your project:
 
-```
+```cmake
 set(ViennaLS_DIR "/path/to/your/custom/install/")
 find_package(ViennaLS REQUIRED PATHS ${ViennaLS_DIR})
 add_executable(myExe mySource.cpp)
@@ -179,12 +179,12 @@ target_link_libraries(myExe ${VIENNALS_LIBRARIES})
 In order to save build time during development, dynamically linked shared libraries can be used
 if ViennaLS was built with them. This is done by precompiling the most common template specialisations.
 In order to use shared libraries, use 
-```
+```bash
 cmake .. -DVIENNALS_PRECOMPILE_HEADERS=ON
 ```
 If ViennaLS was built with shared libraries and you use ViennaLS in your project (see above), CMake will automatically link them to your project. In order to build a release of your own project with better runtime performance, but
 longer build times, use the following CMake option when building a release:
-```
+```bash
 VIENNALS_USE_PRECOMPILED=OFF
 ```
 
