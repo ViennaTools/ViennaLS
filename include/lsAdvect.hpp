@@ -72,6 +72,8 @@ template <class T, int D> class lsAdvect {
   lsSmartPointer<lsVelocityField<T>> velocities = nullptr;
   lsIntegrationSchemeEnum integrationScheme =
       lsIntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER;
+  std::function<T(const hrleVectorType<hrleIndexType, D> &, int)>
+      integrationSchemeOperator;
   double timeStepRatio = 0.4999;
   double dissipationAlpha = 1.0;
   bool calculateNormalVectors = true;
@@ -284,84 +286,7 @@ template <class T, int D> class lsAdvect {
       return std::numeric_limits<double>::max();
     }
 
-    double currentTime = 0.;
-    if (integrationScheme ==
-        lsIntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER) {
-      lsInternal::lsEnquistOsher<T, D, 1>::prepareLS(levelSets.back());
-      auto is = lsInternal::lsEnquistOsher<T, D, 1>(
-          levelSets.back(), velocities, calculateNormalVectors);
-      currentTime = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               lsIntegrationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER) {
-      lsInternal::lsEnquistOsher<T, D, 2>::prepareLS(levelSets.back());
-      auto is = lsInternal::lsEnquistOsher<T, D, 2>(
-          levelSets.back(), velocities, calculateNormalVectors);
-      currentTime = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               lsIntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
-      lsInternal::lsLaxFriedrichs<T, D, 1>::prepareLS(levelSets.back());
-      auto is = lsInternal::lsLaxFriedrichs<T, D, 1>(
-          levelSets.back(), velocities, dissipationAlpha,
-          calculateNormalVectors);
-      currentTime = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               lsIntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER) {
-      lsInternal::lsLaxFriedrichs<T, D, 2>::prepareLS(levelSets.back());
-      auto is = lsInternal::lsLaxFriedrichs<T, D, 2>(
-          levelSets.back(), velocities, dissipationAlpha,
-          calculateNormalVectors);
-      currentTime = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               lsIntegrationSchemeEnum::
-                   LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER) {
-      lsInternal::lsLocalLaxFriedrichsAnalytical<T, D, 1>::prepareLS(
-          levelSets.back());
-      auto is = lsInternal::lsLocalLaxFriedrichsAnalytical<T, D, 1>(
-          levelSets.back(), velocities);
-      currentTime = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               lsIntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-      lsInternal::lsLocalLocalLaxFriedrichs<T, D, 1>::prepareLS(
-          levelSets.back());
-      auto is = lsInternal::lsLocalLocalLaxFriedrichs<T, D, 1>(
-          levelSets.back(), velocities, dissipationAlpha);
-      currentTime = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               lsIntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
-      lsInternal::lsLocalLocalLaxFriedrichs<T, D, 2>::prepareLS(
-          levelSets.back());
-      auto is = lsInternal::lsLocalLocalLaxFriedrichs<T, D, 2>(
-          levelSets.back(), velocities, dissipationAlpha);
-      currentTime = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               lsIntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-      lsInternal::lsLocalLaxFriedrichs<T, D, 1>::prepareLS(levelSets.back());
-      auto is = lsInternal::lsLocalLaxFriedrichs<T, D, 1>(
-          levelSets.back(), velocities, dissipationAlpha);
-      currentTime = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               lsIntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
-      lsInternal::lsLocalLaxFriedrichs<T, D, 2>::prepareLS(levelSets.back());
-      auto is = lsInternal::lsLocalLaxFriedrichs<T, D, 2>(
-          levelSets.back(), velocities, dissipationAlpha);
-      currentTime = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               lsIntegrationSchemeEnum::
-                   STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-      lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>::prepareLS(
-          levelSets.back());
-      auto is = lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>(
-          levelSets.back(), velocities, dissipationAlpha);
-      currentTime = integrateTime(is, maxTimeStep);
-    } else {
-      lsMessage::getInstance()
-          .addWarning("lsAdvect: Integration scheme not found. Not advecting.")
-          .print();
-
-      // if no correct scheme was found return infinity
-      // to stop advection
-      return std::numeric_limits<double>::max();
-    }
+    double currentTime = integrateTime(integrationSchemeOperator, maxTimeStep);
 
     rebuildLS();
 
@@ -748,6 +673,7 @@ public:
 
   /// Perform the advection.
   void apply() {
+    prepareLS();
     if (advectionTime == 0.) {
       advectedTime = advect();
       numberOfTimeSteps = 1;
@@ -761,6 +687,86 @@ public:
           break;
       }
       advectedTime = currentTime;
+    }
+  }
+
+  // Prepare the levelset for advection, based on the provided integration
+  // scheme.
+  void prepareLS() {
+    // check whether a level set have been given
+    if (levelSets.size() < 1) {
+      lsMessage::getInstance()
+          .addWarning("No level sets passed to lsAdvect.")
+          .print();
+      return;
+    }
+
+    if (integrationScheme ==
+        lsIntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER) {
+      lsInternal::lsEnquistOsher<T, D, 1>::prepareLS(levelSets.back());
+      integrationSchemeOperator = lsInternal::lsEnquistOsher<T, D, 1>(
+          levelSets.back(), velocities, calculateNormalVectors);
+    } else if (integrationScheme ==
+               lsIntegrationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER) {
+      lsInternal::lsEnquistOsher<T, D, 2>::prepareLS(levelSets.back());
+      integrationSchemeOperator = lsInternal::lsEnquistOsher<T, D, 2>(
+          levelSets.back(), velocities, calculateNormalVectors);
+    } else if (integrationScheme ==
+               lsIntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
+      lsInternal::lsLaxFriedrichs<T, D, 1>::prepareLS(levelSets.back());
+      integrationSchemeOperator = lsInternal::lsLaxFriedrichs<T, D, 1>(
+          levelSets.back(), velocities, dissipationAlpha,
+          calculateNormalVectors);
+    } else if (integrationScheme ==
+               lsIntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER) {
+      lsInternal::lsLaxFriedrichs<T, D, 2>::prepareLS(levelSets.back());
+      integrationSchemeOperator = lsInternal::lsLaxFriedrichs<T, D, 2>(
+          levelSets.back(), velocities, dissipationAlpha,
+          calculateNormalVectors);
+    } else if (integrationScheme ==
+               lsIntegrationSchemeEnum::
+                   LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER) {
+      lsInternal::lsLocalLaxFriedrichsAnalytical<T, D, 1>::prepareLS(
+          levelSets.back());
+      integrationSchemeOperator =
+          lsInternal::lsLocalLaxFriedrichsAnalytical<T, D, 1>(levelSets.back(),
+                                                              velocities);
+    } else if (integrationScheme ==
+               lsIntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+      lsInternal::lsLocalLocalLaxFriedrichs<T, D, 1>::prepareLS(
+          levelSets.back());
+      integrationSchemeOperator =
+          lsInternal::lsLocalLocalLaxFriedrichs<T, D, 1>(
+              levelSets.back(), velocities, dissipationAlpha);
+    } else if (integrationScheme ==
+               lsIntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
+      lsInternal::lsLocalLocalLaxFriedrichs<T, D, 2>::prepareLS(
+          levelSets.back());
+      integrationSchemeOperator =
+          lsInternal::lsLocalLocalLaxFriedrichs<T, D, 2>(
+              levelSets.back(), velocities, dissipationAlpha);
+    } else if (integrationScheme ==
+               lsIntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+      lsInternal::lsLocalLaxFriedrichs<T, D, 1>::prepareLS(levelSets.back());
+      integrationSchemeOperator = lsInternal::lsLocalLaxFriedrichs<T, D, 1>(
+          levelSets.back(), velocities, dissipationAlpha);
+    } else if (integrationScheme ==
+               lsIntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
+      lsInternal::lsLocalLaxFriedrichs<T, D, 2>::prepareLS(levelSets.back());
+      integrationSchemeOperator = lsInternal::lsLocalLaxFriedrichs<T, D, 2>(
+          levelSets.back(), velocities, dissipationAlpha);
+    } else if (integrationScheme ==
+               lsIntegrationSchemeEnum::
+                   STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+      lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>::prepareLS(
+          levelSets.back());
+      integrationSchemeOperator =
+          lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>(
+              levelSets.back(), velocities, dissipationAlpha);
+    } else {
+      lsMessage::getInstance()
+          .addWarning("lsAdvect: Integration scheme not found. Not advecting.")
+          .print();
     }
   }
 };
