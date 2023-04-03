@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
-project(ViennaLS VERSION 2.0.0)
+project(ViennaLS VERSION 2.1.0)
 
 set(VIENNALS_VERSION
     ${PROJECT_VERSION}
@@ -40,9 +40,8 @@ if(VIENNALS_USE_VTK)
   list(APPEND VIENNALS_DEPENDENCIES "vtk_external")
 endif()
 
-option(VIENNALS_BUILD_PYTHON_2 "Build for python2.x." OFF)
-option(VIENNALS_BUILD_PYTHON_3 "Build for python3.x. Trumps python2.x build." OFF)
-if(VIENNALS_BUILD_PYTHON_2 OR VIENNALS_BUILD_PYTHON_3)
+option(VIENNALS_BUILD_PYTHON "Build for python3.x." OFF)
+if(VIENNALS_BUILD_PYTHON)
   list(APPEND VIENNALS_DEPENDENCIES "pybind11_external")
 endif()
 
@@ -53,7 +52,9 @@ option(VIENNALS_STATIC_BUILD "Build template specialiciations in a way that allo
        OFF)
 
 # build dependencies
-set(DEPENDENCIES_DIR ${CMAKE_SOURCE_DIR}/dependencies)
+option(VIENNALS_DEPENDENCIES_DIR "Folder for installing the dependencies." ${CMAKE_SOURCE_DIR}/dependencies)
+set(DEPENDENCIES_DIR ${VIENNALS_DEPENDENCIES_DIR})
+message(STATUS ${DEPENDENCIES_DIR})
 
 # Include all external dependencies
 include(ExternalProject)
@@ -264,8 +265,8 @@ endif(VIENNALS_BUILD_TESTS)
 # BUILD PYTHON MODULE
 # ##################################################################################################
 # TODO: Properly integrate the python externalproject with this cmake configuration
-if(VIENNALS_BUILD_PYTHON_2 OR VIENNALS_BUILD_PYTHON_3)
-  add_subdirectory(Wrapping)
+if(VIENNALS_BUILD_PYTHON)
+  add_subdirectory(Python)
 endif()
 
 # ##################################################################################################
