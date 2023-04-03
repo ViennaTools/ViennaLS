@@ -113,14 +113,11 @@ import viennals3d as vls
 
 ## Building the python module
 
-In order to build the python module, set `VIENNALS_BUILD_PYTHON_2` or `VIENNALS_BUILD_PYTHON_3` to `ON`:
-```
-cmake .. -DVIENNALS_BUILD_PYTHON_3=ON
-make buildDependencies # this will install pybind11 the first time it is called
-make
-```
+The python module can be installed with the `pip` command:
 
-If both options are on, only VIENNALS_BUILD_PYTHON_3 will be used, since only one version can be built at a time.
+```
+pip install --user .
+```
 
 ## Setting up the dependencies
 
