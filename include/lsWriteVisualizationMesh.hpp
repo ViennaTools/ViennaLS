@@ -27,7 +27,7 @@
 #include <lsMessage.hpp>
 #include <lsPreCompileMacros.hpp>
 
-//#define LS_TO_VISUALIZATION_DEBUG
+// #define LS_TO_VISUALIZATION_DEBUG
 #ifdef LS_TO_VISUALIZATION_DEBUG
 #include <vtkXMLRectilinearGridWriter.h>
 #endif
