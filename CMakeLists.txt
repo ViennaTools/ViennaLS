@@ -159,87 +159,85 @@ else()
 endif()
 
 # ##################################################################################################
-# BUILD SHARED LIBRARIES
+# BUILD PRECOMPILED HEADER LIBRARIES
 # ##################################################################################################
-if(VIENNALS_PRECOMPILE_HEADERS)
-  if(DEPENDENCIES_FOUND)
-    # Add all specialisation source files
-    file(GLOB SPECIALISATION_CPPS "lib/*.cpp")
+if(VIENNALS_PRECOMPILE_HEADERS AND DEPENDENCIES_FOUND)
+  # Add all specialisation source files
+  file(GLOB SPECIALISATION_CPPS "lib/*.cpp")
 
-    # Decide wheter to build the precompiled headers as a static or shared library
-    if(VIENNALS_STATIC_BUILD)
-      add_library(${PROJECT_NAME} STATIC ${SPECIALISATION_CPPS})
+  # Decide wheter to build the precompiled headers as a static or shared library
+  if(VIENNALS_STATIC_BUILD)
+    add_library(${PROJECT_NAME} STATIC ${SPECIALISATION_CPPS})
 
-      # Find paths to all static library targets
-      foreach(_lib ${VIENNALS_LIBRARIES})
-        if(TARGET ${_lib})
-          get_target_property(_target_type ${_lib} TYPE)
-          # message(STATUS "${_lib} ${_target_type}")
-          if(_target_type STREQUAL "STATIC_LIBRARY")
-            list(APPEND static_lib_files $<TARGET_FILE:${_lib}>)
-          elseif(_target_type STREQUAL "SHARED_LIBRARY")
-            message(
-              FATAL_ERROR "Not all required libraries can be statically linked!\n- Caused by ${_lib}")
-          endif()
+    # Find paths to all static library targets
+    foreach(_lib ${VIENNALS_LIBRARIES})
+      if(TARGET ${_lib})
+        get_target_property(_target_type ${_lib} TYPE)
+        # message(STATUS "${_lib} ${_target_type}")
+        if(_target_type STREQUAL "STATIC_LIBRARY")
+          list(APPEND static_lib_files $<TARGET_FILE:${_lib}>)
+        elseif(_target_type STREQUAL "SHARED_LIBRARY")
+          message(
+            FATAL_ERROR "Not all required libraries can be statically linked!\n- Caused by ${_lib}")
         endif()
-      endforeach()
-
-      if(CMAKE_CXX_COMPILER_ID MATCHES "^(Clang|GNU)$")
-        # Create an archiver (ar) script that bundles all static library dependencies into one bundled
-        # static library
-        set(AR_FILE_CONTENT
-            "CREATE ${CMAKE_BINARY_DIR}/libViennaLS.a\nADDLIB ${CMAKE_BINARY_DIR}/libViennaLS.a")
-        foreach(_statlib ${static_lib_files})
-          set(AR_FILE_CONTENT "${AR_FILE_CONTENT}\nADDLIB ${_statlib}")
-        endforeach()
-        set(AR_FILE_CONTENT "${AR_FILE_CONTENT}\nSAVE\nEND\n")
-
-        file(
-          GENERATE
-          OUTPUT "${CMAKE_BINARY_DIR}/bundle.ar"
-          CONTENT "${AR_FILE_CONTENT}")
-
-        # Execute the archiver script after the target has been built
-        add_custom_command(
-          TARGET ${PROJECT_NAME}
-          POST_BUILD
-          COMMAND ${CMAKE_AR} -M < ${CMAKE_BINARY_DIR}/bundle.ar
-          COMMENT "Bundling all static libraries into one."
-          VERBATIM)
-      elseif(CMAKE_CXX_COMPILER_ID MATCHES "^(AppleClang)$")
-        find_program(libtool_bin libtool)
-
-        # TODO: check if libtool found
-
-        add_custom_command(
-          TARGET ${PROJECT_NAME}
-          POST_BUILD
-          COMMAND ${libtool_bin} -static -o libViennaLS.a ${CMAKE_BINARY_DIR}/libViennaLS.a
-                  ${static_lib_files}
-          COMMENT "Bundling all static libraries into one."
-          VERBATIM)
-      else()
-        message(
-          FATAL_ERROR
-            "Building a static version of ${PROJECT_NAME} is currently not supported with the selected build tools."
-        )
       endif()
-    else()
-      # Shared library
-      add_library(${PROJECT_NAME} SHARED ${SPECIALISATION_CPPS})
-    endif()
+    endforeach()
 
-    target_link_libraries(${PROJECT_NAME} ${VIENNALS_LIBRARIES})
-    # Include the project header files and ViennaHRLE
-    target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/include/"
-                                                      ${VIENNAHRLE_INCLUDE_DIRS})
-    # Also include VTK if we enabled VTK support (with VTK 9+ this is done automatically when we link
-    # the vtk targets - the VTK_INCLUDE_DIRS variable is empty in that case)
-    if(VIENNALS_USE_VTK)
-      target_include_directories(${PROJECT_NAME} PRIVATE ${VTK_INCLUDE_DIRS})
+    if(CMAKE_CXX_COMPILER_ID MATCHES "^(Clang|GNU)$")
+      # Create an archiver (ar) script that bundles all static library dependencies into one bundled
+      # static library
+      set(AR_FILE_CONTENT
+          "CREATE ${CMAKE_BINARY_DIR}/libViennaLS.a\nADDLIB ${CMAKE_BINARY_DIR}/libViennaLS.a")
+      foreach(_statlib ${static_lib_files})
+        set(AR_FILE_CONTENT "${AR_FILE_CONTENT}\nADDLIB ${_statlib}")
+      endforeach()
+      set(AR_FILE_CONTENT "${AR_FILE_CONTENT}\nSAVE\nEND\n")
+
+      file(
+        GENERATE
+        OUTPUT "${CMAKE_BINARY_DIR}/bundle.ar"
+        CONTENT "${AR_FILE_CONTENT}")
+
+      # Execute the archiver script after the target has been built
+      add_custom_command(
+        TARGET ${PROJECT_NAME}
+        POST_BUILD
+        COMMAND ${CMAKE_AR} -M < ${CMAKE_BINARY_DIR}/bundle.ar
+        COMMENT "Bundling all static libraries into one."
+        VERBATIM)
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "^(AppleClang)$")
+      find_program(libtool_bin libtool)
+
+      # TODO: check if libtool found
+
+      add_custom_command(
+        TARGET ${PROJECT_NAME}
+        POST_BUILD
+        COMMAND ${libtool_bin} -static -o libViennaLS.a ${CMAKE_BINARY_DIR}/libViennaLS.a
+                ${static_lib_files}
+        COMMENT "Bundling all static libraries into one."
+        VERBATIM)
+    else()
+      message(
+        FATAL_ERROR
+          "Building a static version of ${PROJECT_NAME} is currently not supported with the selected build tools."
+      )
     endif()
-    set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
+  else()
+    # Shared library
+    add_library(${PROJECT_NAME} SHARED ${SPECIALISATION_CPPS})
   endif()
+
+  target_link_libraries(${PROJECT_NAME} ${VIENNALS_LIBRARIES})
+  # Include the project header files and ViennaHRLE
+  target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/include/"
+                                                    ${VIENNAHRLE_INCLUDE_DIRS})
+  # Also include VTK if we enabled VTK support (with VTK 9+ this is done automatically when we link
+  # the vtk targets - the VTK_INCLUDE_DIRS variable is empty in that case)
+  if(VIENNALS_USE_VTK)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${VTK_INCLUDE_DIRS})
+  endif()
+  set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 else()
   # By default, create header only library
   add_library(${PROJECT_NAME} INTERFACE)
