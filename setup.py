@@ -58,8 +58,6 @@ class CMakeBuild(build_ext):
         if "CMAKE_ARGS" in os.environ:
             cmake_args += [item for item in os.environ["CMAKE_ARGS"].split(" ") if item]
 
-        cmake_args += ["-DVIENNALS_BUILD_PYTHON=ON"]
-
         # Install the dependencies alongside the platform libraries
         # dependencies_dir = os.path.join(sysconfig.get_path('platlib'), f"{ext.name}-dependencies")
         # cmake_args += [f"-DVIENNALS_DEPENDENCIES_DIR={dependencies_dir}"]
@@ -121,13 +119,23 @@ class CMakeBuild(build_ext):
         if not build_temp.exists():
             build_temp.mkdir(parents=True)
 
-        print(cmake_args)
         subprocess.run(
             ["cmake", ext.sourcedir, *cmake_args], cwd=build_temp, check=True
         )
+
+        # Build dependencies if neccesary
         subprocess.run(
             ["cmake", "--build", ".", "--target=buildDependencies"], cwd=build_temp, check=True
         )
+
+        cmake_args += ["-DVIENNALS_BUILD_PYTHON=ON"]
+
+        # Run configure again
+        subprocess.run(
+            ["cmake", ext.sourcedir, *cmake_args], cwd=build_temp, check=True
+        )
+
+        # Build python bindings
         subprocess.run(
             ["cmake", "--build", ".", *build_args], cwd=build_temp, check=True
         )
