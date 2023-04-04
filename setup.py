@@ -147,6 +147,9 @@ setup(
     ext_modules=[CMakeExtension("viennals")],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
+    requires=[
+        'numpy',
+    ],
     # extras_require={"test": ["pytest>=6.0"]},
     python_requires=">=3.7",
 )

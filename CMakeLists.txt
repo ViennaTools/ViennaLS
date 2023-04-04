@@ -264,7 +264,6 @@ endif(VIENNALS_BUILD_TESTS)
 # ##################################################################################################
 # BUILD PYTHON MODULE
 # ##################################################################################################
-# TODO: Properly integrate the python externalproject with this cmake configuration
 if(VIENNALS_BUILD_PYTHON)
   add_subdirectory(Python)
 endif()

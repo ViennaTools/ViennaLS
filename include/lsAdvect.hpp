@@ -338,19 +338,17 @@ template <class T, int D> class lsAdvect {
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::
                    STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-          levelSets.back());
-          auto is = lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>(
-              levelSets.back(), velocities, dissipationAlpha);
-          currentTime = integrateTime(is, maxTimeStep);
+      auto is = lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>(
+          levelSets.back(), velocities, dissipationAlpha);
+      currentTime = integrateTime(is, maxTimeStep);
     } else {
-          lsMessage::getInstance()
-              .addWarning(
-                  "lsAdvect: Integration scheme not found. Not advecting.")
-              .print();
+      lsMessage::getInstance()
+          .addWarning("lsAdvect: Integration scheme not found. Not advecting.")
+          .print();
 
-          // if no correct scheme was found return infinity
-          // to stop advection
-          return std::numeric_limits<double>::max();
+      // if no correct scheme was found return infinity
+      // to stop advection
+      return std::numeric_limits<double>::max();
     }
 
     rebuildLS();
@@ -362,11 +360,11 @@ template <class T, int D> class lsAdvect {
     // to allow for two different growth rates of materials
     if (integrationScheme !=
         lsIntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-          for (unsigned i = 0; i < levelSets.size() - 1; ++i) {
-            lsBooleanOperation<T, D>(levelSets[i], levelSets.back(),
-                                     lsBooleanOperationEnum::INTERSECT)
-                .apply();
-          }
+      for (unsigned i = 0; i < levelSets.size() - 1; ++i) {
+        lsBooleanOperation<T, D>(levelSets[i], levelSets.back(),
+                                 lsBooleanOperationEnum::INTERSECT)
+            .apply();
+      }
     }
 
     return currentTime;
@@ -381,11 +379,10 @@ template <class T, int D> class lsAdvect {
   integrateTime(IntegrationSchemeType IntegrationScheme,
                 double maxTimeStep = std::numeric_limits<double>::max()) {
     if (timeStepRatio >= 0.5) {
-          lsMessage::getInstance()
-              .addWarning(
-                  "Integration time step ratio should be smaller than 0.5. "
-                  "Advection might fail!")
-              .print();
+      lsMessage::getInstance()
+          .addWarning("Integration time step ratio should be smaller than 0.5. "
+                      "Advection might fail!")
+          .print();
     }
 
     auto &topDomain = levelSets.back()->getDomain();
@@ -396,154 +393,152 @@ template <class T, int D> class lsAdvect {
 
     typename lsPointData<T>::ScalarDataType *voidMarkerPointer;
     if (ignoreVoids) {
-          lsMarkVoidPoints<T, D>(levelSets.back()).apply();
-          auto &pointData = levelSets.back()->getPointData();
-          voidMarkerPointer =
-              pointData.getScalarData(lsMarkVoidPoints<T, D>::voidPointLabel);
-          if (voidMarkerPointer == nullptr) {
-            lsMessage::getInstance()
-                .addWarning("lsAdvect: Cannot find void point markers. Not "
-                            "ignoring void points.")
-                .print();
-            ignoreVoids = false;
-          }
+      lsMarkVoidPoints<T, D>(levelSets.back()).apply();
+      auto &pointData = levelSets.back()->getPointData();
+      voidMarkerPointer =
+          pointData.getScalarData(lsMarkVoidPoints<T, D>::voidPointLabel);
+      if (voidMarkerPointer == nullptr) {
+        lsMessage::getInstance()
+            .addWarning("lsAdvect: Cannot find void point markers. Not "
+                        "ignoring void points.")
+            .print();
+        ignoreVoids = false;
+      }
     }
 
     const bool ignoreVoidPoints = ignoreVoids;
 
 #pragma omp parallel num_threads((levelSets.back())->getNumberOfSegments())
     {
-          int p = 0;
+      int p = 0;
 #ifdef _OPENMP
-          p = omp_get_thread_num();
+      p = omp_get_thread_num();
 #endif
 
-          hrleVectorType<hrleIndexType, D> startVector =
-              (p == 0) ? grid.getMinGridPoint()
-                       : topDomain.getSegmentation()[p - 1];
+      hrleVectorType<hrleIndexType, D> startVector =
+          (p == 0) ? grid.getMinGridPoint()
+                   : topDomain.getSegmentation()[p - 1];
 
-          hrleVectorType<hrleIndexType, D> endVector =
-              (p != static_cast<int>(topDomain.getNumberOfSegments() - 1))
-                  ? topDomain.getSegmentation()[p]
-                  : grid.incrementIndices(grid.getMaxGridPoint());
+      hrleVectorType<hrleIndexType, D> endVector =
+          (p != static_cast<int>(topDomain.getNumberOfSegments() - 1))
+              ? topDomain.getSegmentation()[p]
+              : grid.incrementIndices(grid.getMaxGridPoint());
 
-          double tempMaxTimeStep = maxTimeStep;
-          auto &tempRates = totalTempRates[p];
-          tempRates.reserve(
-              topDomain.getNumberOfPoints() /
-                  double((levelSets.back())->getNumberOfSegments()) +
-              10);
+      double tempMaxTimeStep = maxTimeStep;
+      auto &tempRates = totalTempRates[p];
+      tempRates.reserve(topDomain.getNumberOfPoints() /
+                            double((levelSets.back())->getNumberOfSegments()) +
+                        10);
 
-          // an iterator for each level set
-          std::vector<hrleSparseIterator<typename lsDomain<T, D>::DomainType>>
-              iterators;
-          for (auto it = levelSets.begin(); it != levelSets.end(); ++it) {
-            iterators.push_back(
-                hrleSparseIterator<typename lsDomain<T, D>::DomainType>(
-                    (*it)->getDomain()));
-          }
+      // an iterator for each level set
+      std::vector<hrleSparseIterator<typename lsDomain<T, D>::DomainType>>
+          iterators;
+      for (auto it = levelSets.begin(); it != levelSets.end(); ++it) {
+        iterators.push_back(
+            hrleSparseIterator<typename lsDomain<T, D>::DomainType>(
+                (*it)->getDomain()));
+      }
 
-          IntegrationSchemeType scheme(IntegrationScheme);
+      IntegrationSchemeType scheme(IntegrationScheme);
 
-          for (hrleSparseIterator<typename lsDomain<T, D>::DomainType> it(
-                   topDomain, startVector);
-               it.getStartIndices() < endVector; ++it) {
+      for (hrleSparseIterator<typename lsDomain<T, D>::DomainType> it(
+               topDomain, startVector);
+           it.getStartIndices() < endVector; ++it) {
 
-            if (!it.isDefined() || std::abs(it.getValue()) > 0.5)
-              continue;
+        if (!it.isDefined() || std::abs(it.getValue()) > 0.5)
+          continue;
 
-            T value = it.getValue();
-            double maxStepTime = 0;
-            double cfl = timeStepRatio;
+        T value = it.getValue();
+        double maxStepTime = 0;
+        double cfl = timeStepRatio;
 
-            for (int currentLevelSetId = levelSets.size() - 1;
-                 currentLevelSetId >= 0; --currentLevelSetId) {
+        for (int currentLevelSetId = levelSets.size() - 1;
+             currentLevelSetId >= 0; --currentLevelSetId) {
 
-              T velocity = 0;
+          T velocity = 0;
 
-              if (!(ignoreVoidPoints &&
-                    (*voidMarkerPointer)[it.getPointId()])) {
-                // check if there is any other levelset at the same point:
-                // if yes, take the velocity of the lowest levelset
-                for (unsigned lowerLevelSetId = 0;
-                     lowerLevelSetId < levelSets.size(); ++lowerLevelSetId) {
-                  // put iterator to same position as the top levelset
-                  iterators[lowerLevelSetId].goToIndicesSequential(
-                      it.getStartIndices());
+          if (!(ignoreVoidPoints && (*voidMarkerPointer)[it.getPointId()])) {
+            // check if there is any other levelset at the same point:
+            // if yes, take the velocity of the lowest levelset
+            for (unsigned lowerLevelSetId = 0;
+                 lowerLevelSetId < levelSets.size(); ++lowerLevelSetId) {
+              // put iterator to same position as the top levelset
+              iterators[lowerLevelSetId].goToIndicesSequential(
+                  it.getStartIndices());
 
-                  // if the lower surface is actually outside, i.e. its LS value
-                  // is lower or equal
-                  if (iterators[lowerLevelSetId].getValue() <=
-                      value + wrappingLayerEpsilon) {
-                    velocity = scheme(it.getStartIndices(), lowerLevelSetId);
-                    break;
-                  }
-                }
-              }
-
-              T valueBelow;
-              // get value of material below (before in levelSets list)
-              if (currentLevelSetId > 0) {
-                iterators[currentLevelSetId - 1].goToIndicesSequential(
-                    it.getStartIndices());
-                valueBelow = iterators[currentLevelSetId - 1].getValue();
-              } else {
-                valueBelow = std::numeric_limits<T>::max();
-              }
-
-              // if velocity is positive, set maximum time step possible without
-              // violating the cfl condition
-              if (velocity > 0.) {
-                maxStepTime += cfl / velocity;
-                tempRates.push_back(
-                    std::make_pair(velocity, -std::numeric_limits<T>::max()));
+              // if the lower surface is actually outside, i.e. its LS value
+              // is lower or equal
+              if (iterators[lowerLevelSetId].getValue() <=
+                  value + wrappingLayerEpsilon) {
+                velocity = scheme(it.getStartIndices(), lowerLevelSetId);
                 break;
-                // if velocity is 0, maximum time step is infinite
-              } else if (velocity == 0.) {
-                maxStepTime = std::numeric_limits<T>::max();
-                tempRates.push_back(
-                    std::make_pair(velocity, std::numeric_limits<T>::max()));
-                break;
-                // if the velocity is negative apply the velocity for as long as
-                // possible without infringing on material below
-              } else {
-                T difference = std::abs(valueBelow - value);
-
-                if (difference >= cfl) {
-                  maxStepTime -= cfl / velocity;
-                  tempRates.push_back(
-                      std::make_pair(velocity, std::numeric_limits<T>::max()));
-                  break;
-                } else {
-                  maxStepTime -= difference / velocity;
-                  // the second part of the pair indicates how far we can move
-                  // in this time step until the end of the material is reached
-                  tempRates.push_back(std::make_pair(velocity, valueBelow));
-                  cfl -= difference;
-                  // use new LS value for next calculations
-                  value = valueBelow;
-                }
               }
             }
-
-            if (maxStepTime < tempMaxTimeStep)
-              tempMaxTimeStep = maxStepTime;
           }
+
+          T valueBelow;
+          // get value of material below (before in levelSets list)
+          if (currentLevelSetId > 0) {
+            iterators[currentLevelSetId - 1].goToIndicesSequential(
+                it.getStartIndices());
+            valueBelow = iterators[currentLevelSetId - 1].getValue();
+          } else {
+            valueBelow = std::numeric_limits<T>::max();
+          }
+
+          // if velocity is positive, set maximum time step possible without
+          // violating the cfl condition
+          if (velocity > 0.) {
+            maxStepTime += cfl / velocity;
+            tempRates.push_back(
+                std::make_pair(velocity, -std::numeric_limits<T>::max()));
+            break;
+            // if velocity is 0, maximum time step is infinite
+          } else if (velocity == 0.) {
+            maxStepTime = std::numeric_limits<T>::max();
+            tempRates.push_back(
+                std::make_pair(velocity, std::numeric_limits<T>::max()));
+            break;
+            // if the velocity is negative apply the velocity for as long as
+            // possible without infringing on material below
+          } else {
+            T difference = std::abs(valueBelow - value);
+
+            if (difference >= cfl) {
+              maxStepTime -= cfl / velocity;
+              tempRates.push_back(
+                  std::make_pair(velocity, std::numeric_limits<T>::max()));
+              break;
+            } else {
+              maxStepTime -= difference / velocity;
+              // the second part of the pair indicates how far we can move
+              // in this time step until the end of the material is reached
+              tempRates.push_back(std::make_pair(velocity, valueBelow));
+              cfl -= difference;
+              // use new LS value for next calculations
+              value = valueBelow;
+            }
+          }
+        }
+
+        if (maxStepTime < tempMaxTimeStep)
+          tempMaxTimeStep = maxStepTime;
+      }
 
 #pragma omp critical
-          {
-            // If scheme is STENCIL_LOCAL_LAX_FRIEDRICHS the time step is
-            // reduced depending on the dissipation coefficients For all
-            // remaining schemes this function is empty.
-            lsInternal::advect::reduceTimeStepHamiltonJacobi<
-                IntegrationSchemeType, T, D>(
-                scheme, tempMaxTimeStep,
-                levelSets.back()->getGrid().getGridDelta());
+      {
+        // If scheme is STENCIL_LOCAL_LAX_FRIEDRICHS the time step is
+        // reduced depending on the dissipation coefficients For all
+        // remaining schemes this function is empty.
+        lsInternal::advect::reduceTimeStepHamiltonJacobi<IntegrationSchemeType,
+                                                         T, D>(
+            scheme, tempMaxTimeStep,
+            levelSets.back()->getGrid().getGridDelta());
 
-            // set global timestep maximum
-            if (tempMaxTimeStep < maxTimeStep)
-              maxTimeStep = tempMaxTimeStep;
-          }
+        // set global timestep maximum
+        if (tempMaxTimeStep < maxTimeStep)
+          maxTimeStep = tempMaxTimeStep;
+      }
     }
 
     // reduce to one layer thickness and apply new values directly to the
@@ -556,68 +551,67 @@ template <class T, int D> class lsAdvect {
 
 #pragma omp parallel num_threads((levelSets.back())->getNumberOfSegments())
     {
-          int p = 0;
+      int p = 0;
 #ifdef _OPENMP
-          p = omp_get_thread_num();
+      p = omp_get_thread_num();
 #endif
 
-          typename std::vector<std::pair<T, T>>::const_iterator itRS =
-              totalTempRates[p].begin();
-          auto &segment = topDomain.getDomainSegment(p);
-          unsigned maxId = segment.getNumberOfPoints();
+      typename std::vector<std::pair<T, T>>::const_iterator itRS =
+          totalTempRates[p].begin();
+      auto &segment = topDomain.getDomainSegment(p);
+      unsigned maxId = segment.getNumberOfPoints();
 
-          if (saveVelocities) {
-            velocityVectors[p].resize(maxId);
-          }
+      if (saveVelocities) {
+        velocityVectors[p].resize(maxId);
+      }
 
-          for (unsigned localId = 0; localId < maxId; ++localId) {
-            T &value = segment.definedValues[localId];
-            double time = maxTimeStep;
+      for (unsigned localId = 0; localId < maxId; ++localId) {
+        T &value = segment.definedValues[localId];
+        double time = maxTimeStep;
 
-            // if there is a change in materials during one time step, deduct
-            // the time taken to advect up to the end of the top material and
-            // set the LS value to the one below
-            while (std::abs(itRS->second - value) <
-                   std::abs(time * itRS->first)) {
-              time -= std::abs((itRS->second - value) / itRS->first);
-              value = itRS->second;
-              ++itRS;
-            }
+        // if there is a change in materials during one time step, deduct
+        // the time taken to advect up to the end of the top material and
+        // set the LS value to the one below
+        while (std::abs(itRS->second - value) < std::abs(time * itRS->first)) {
+          time -= std::abs((itRS->second - value) / itRS->first);
+          value = itRS->second;
+          ++itRS;
+        }
 
-            // now deduct the velocity times the time step we take
-            value -= time * itRS->first;
+        // now deduct the velocity times the time step we take
+        value -= time * itRS->first;
 
-            if (saveVelocities) {
-              velocityVectors[p][localId] = time * itRS->first;
-            }
+        if (saveVelocities) {
+          velocityVectors[p][localId] = time * itRS->first;
+        }
 
-            // this
-            // is run when two materials are close but the velocity is too slow
-            // to actually reach the second material, to get rid of the extra
-            // entry in the TempRatesStop
-            while (std::abs(itRS->second) != std::numeric_limits<T>::max())
-              ++itRS;
+        // this
+        // is run when two materials are close but the velocity is too slow
+        // to actually reach the second material, to get rid of the extra
+        // entry in the TempRatesStop
+        while (std::abs(itRS->second) != std::numeric_limits<T>::max())
+          ++itRS;
 
-            // advance the TempStopRates iterator by one
-            ++itRS;
-          }
+        // advance the TempStopRates iterator by one
+        ++itRS;
+      }
     }
 
     if (saveVelocities) {
-          auto &pointData = levelSets.back()->getPointData();
-          // delete if already exists
-          if (int i = pointData.getScalarDataIndex(velocityLabel); i != -1) {
-            pointData.eraseScalarData(i);
-          }
+      auto &pointData = levelSets.back()->getPointData();
+      // delete if already exists
+      if (int i = pointData.getScalarDataIndex(velocityLabel); i != -1) {
+        pointData.eraseScalarData(i);
+      }
 
-          typename lsPointData<T>::ScalarDataType vels;
+      typename lsPointData<T>::ScalarDataType vels;
 
-          for (unsigned i = 0; i < velocityVectors.size(); ++i) {
-            vels.insert(vels.end(),
-                        std::make_move_iterator(velocityVectors[i].begin()),
-                        std::make_move_iterator(velocityVectors[i].end()));
-          }
-          pointData.insertNextScalarData(std::move(vels), velocityLabel);
+      for (unsigned i = 0; i < velocityVectors.size(); ++i) {
+        vels.insert(vels.end(),
+                    std::make_move_iterator(velocityVectors[i].begin()),
+                    std::make_move_iterator(velocityVectors[i].end()));
+      }
+      pointData.insertNextScalarData(std::move(vels), velocityLabel);
     }
 
     return maxTimeStep;
@@ -745,73 +739,70 @@ public:
   void prepareLS() {
     // check whether a level set and velocites have been given
     if (levelSets.size() < 1) {
-          lsMessage::getInstance()
-              .addWarning("No level sets passed to lsAdvect.")
-              .print();
-          return;
+      lsMessage::getInstance()
+          .addWarning("No level sets passed to lsAdvect.")
+          .print();
+      return;
     }
 
     if (integrationScheme ==
         lsIntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER) {
-          lsInternal::lsEnquistOsher<T, D, 1>::prepareLS(levelSets.back());
+      lsInternal::lsEnquistOsher<T, D, 1>::prepareLS(levelSets.back());
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER) {
-          lsInternal::lsEnquistOsher<T, D, 2>::prepareLS(levelSets.back());
+      lsInternal::lsEnquistOsher<T, D, 2>::prepareLS(levelSets.back());
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
-          lsInternal::lsLaxFriedrichs<T, D, 1>::prepareLS(levelSets.back());
+      lsInternal::lsLaxFriedrichs<T, D, 1>::prepareLS(levelSets.back());
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER) {
-          lsInternal::lsLaxFriedrichs<T, D, 2>::prepareLS(levelSets.back());
+      lsInternal::lsLaxFriedrichs<T, D, 2>::prepareLS(levelSets.back());
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::
                    LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER) {
-          lsInternal::lsLocalLaxFriedrichsAnalytical<T, D, 1>::prepareLS(
-              levelSets.back());
+      lsInternal::lsLocalLaxFriedrichsAnalytical<T, D, 1>::prepareLS(
+          levelSets.back());
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-          lsInternal::lsLocalLocalLaxFriedrichs<T, D, 1>::prepareLS(
-              levelSets.back());
+      lsInternal::lsLocalLocalLaxFriedrichs<T, D, 1>::prepareLS(
+          levelSets.back());
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
-          lsInternal::lsLocalLocalLaxFriedrichs<T, D, 2>::prepareLS(
-              levelSets.back());
+      lsInternal::lsLocalLocalLaxFriedrichs<T, D, 2>::prepareLS(
+          levelSets.back());
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-          lsInternal::lsLocalLaxFriedrichs<T, D, 1>::prepareLS(
-              levelSets.back());
+      lsInternal::lsLocalLaxFriedrichs<T, D, 1>::prepareLS(levelSets.back());
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
-          lsInternal::lsLocalLaxFriedrichs<T, D, 2>::prepareLS(
-              levelSets.back());
+      lsInternal::lsLocalLaxFriedrichs<T, D, 2>::prepareLS(levelSets.back());
     } else if (integrationScheme ==
                lsIntegrationSchemeEnum::
                    STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-          lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>::prepareLS(
-              levelSets.back());
+      lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>::prepareLS(
+          levelSets.back());
     } else {
-          lsMessage::getInstance()
-              .addWarning(
-                  "lsAdvect: Integration scheme not found. Not advecting.")
-              .print();
+      lsMessage::getInstance()
+          .addWarning("lsAdvect: Integration scheme not found. Not advecting.")
+          .print();
     }
   }
 
   /// Perform the advection.
   void apply() {
     if (advectionTime == 0.) {
-          advectedTime = advect();
-          numberOfTimeSteps = 1;
+      advectedTime = advect();
+      numberOfTimeSteps = 1;
     } else {
-          double currentTime = 0.0;
-          numberOfTimeSteps = 0;
-          while (currentTime < advectionTime) {
-            currentTime += advect(advectionTime - currentTime);
-            ++numberOfTimeSteps;
-            if (performOnlySingleStep)
-              break;
-          }
-          advectedTime = currentTime;
+      double currentTime = 0.0;
+      numberOfTimeSteps = 0;
+      while (currentTime < advectionTime) {
+        currentTime += advect(advectionTime - currentTime);
+        ++numberOfTimeSteps;
+        if (performOnlySingleStep)
+          break;
+      }
+      advectedTime = currentTime;
     }
   }
 };

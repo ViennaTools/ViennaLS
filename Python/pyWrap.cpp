@@ -17,6 +17,7 @@
 #include <pybind11/iostream.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 
 // all header files which define API functions
 #include <lsAdvect.hpp>
