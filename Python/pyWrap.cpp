@@ -15,7 +15,6 @@
 #define VIENNALS_MODULE_VERSION STRINGIZE(VIENNALS_VERSION)
 
 #include <pybind11/iostream.h>
-#include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 

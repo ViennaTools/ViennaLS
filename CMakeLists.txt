@@ -37,6 +37,8 @@ endif()
 # ##################################################################################################
 # CONFIGURATION OPTIONS
 # ##################################################################################################
+include(CMakeDependentOption)
+
 # Whether to build ViennaLS with VTK support or not
 option(VIENNALS_USE_VTK "Build with VTK file support." ON)
 
@@ -46,17 +48,13 @@ option(VIENNALS_BUILD_EXAMPLES "Build examples." OFF)
 # Build the included tests
 option(VIENNALS_BUILD_TESTS "Build tests." OFF)
 
-# Build Python bindings
-option(VIENNALS_BUILD_PYTHON "Build for python3.x." OFF)
-
 # Build ViennaLS as a shared library
 option(VIENNALS_PRECOMPILE_HEADERS "Build template specialisations for shorter compile times." OFF)
 
-### Unfortunately we cannot set this as a dependent option, since we might need to compile the
-### dependencies before we can enable the PRECOMPILE_HEADERS option.
+# Build Python bindings (only available when VIENNALS_USE_VTK is enabled)
+CMAKE_DEPENDENT_OPTION(VIENNALS_BUILD_PYTHON "Build for python3.x." OFF "VIENNALS_USE_VTK" OFF)
 
 # Build ViennaLS as a static library (only available when VIENNALS_PRECOMPILE_HEADERS is enabled)
-include(CMakeDependentOption)
 CMAKE_DEPENDENT_OPTION(VIENNALS_STATIC_BUILD "Build template specialiciations in a way that allows static linking." OFF
                        "VIENNALS_PRECOMPILE_HEADERS" OFF)
 
