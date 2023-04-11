@@ -1,6 +1,6 @@
 import viennals3d as vls
 
-## @example GeometricAdvection.py
+# @example GeometricAdvection.py
 #  3D Example showing how to use the library for topography
 # emulation, by creating a trench geometry. A uniform
 # layer of a different material is then grown on top. It is
@@ -11,14 +11,14 @@ extent = 30
 gridDelta = 0.5
 
 bounds = (-extent, extent, -extent, extent, -extent, extent)
-boundaryCons = (0, 0, 1) # 0 = reflective, 1 = infinite, 2 = periodic
+boundaryCons = (0, 0, 1)  # 0 = reflective, 1 = infinite, 2 = periodic
 
 # create level set
 substrate = vls.lsDomain(bounds, boundaryCons, gridDelta)
 
 # create plane
-origin = (0,0,0)
-planeNormal = (0,0,1)
+origin = (0, 0, 0)
+planeNormal = (0, 0, 1)
 
 vls.lsMakeGeometry(substrate, vls.lsPlane(origin, planeNormal)).apply()
 
@@ -31,7 +31,8 @@ vls.lsMakeGeometry(trench, vls.lsBox(minCorner, maxCorner)).apply()
 
 # Create trench geometry
 print("Booling trench")
-vls.lsBooleanOperation(substrate, trench, vls.lsBooleanOperationEnum.RELATIVE_COMPLEMENT).apply()
+vls.lsBooleanOperation(
+    substrate, trench, vls.lsBooleanOperationEnum.RELATIVE_COMPLEMENT).apply()
 
 mesh = vls.lsMesh()
 vls.lsToSurfaceMesh(substrate, mesh).apply()
