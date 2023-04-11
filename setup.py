@@ -178,6 +178,16 @@ class CMakeBuild(build_ext):
             ["cmake", "--build", ".", *build_args], cwd=build_temp, check=True
         )
 
+        # Generate stubs for autocompletion and type hints (*.pyi files)
+        try:
+            import mypy
+            subprocess.run([sys.executable, "-m", "mypy.stubgen", "-o", ".", "-p", "viennals2d"],
+                           cwd=f"{extdir}", check=True)
+            subprocess.run([sys.executable, "-m", "mypy.stubgen", "-o", ".", "-p", "viennals3d"],
+                           cwd=f"{extdir}", check=True)
+        except ImportError:
+            pass
+
 
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
