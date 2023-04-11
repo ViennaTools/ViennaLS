@@ -31,8 +31,8 @@ vls.lsMakeGeometry(trench, vls.lsBox(minCorner, maxCorner)).apply()
 
 # Create trench geometry
 print("Booling trench")
-vls.lsBooleanOperation(
-    substrate, trench, vls.lsBooleanOperationEnum.RELATIVE_COMPLEMENT).apply()
+vls.lsBooleanOperation(substrate, trench,
+                       vls.lsBooleanOperationEnum.RELATIVE_COMPLEMENT).apply()
 
 mesh = vls.lsMesh()
 vls.lsToSurfaceMesh(substrate, mesh).apply()

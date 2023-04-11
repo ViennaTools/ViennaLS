@@ -10,10 +10,10 @@ class velocityField(vls.lsVelocityField):
     # coord and normalVec are lists with 3 elements
     # in 2D coord[2] and normalVec[2] are zero
     # getScalarVelocity must return a scalar
-    def getScalarVelocity(self, coord, material, normal,  pointId):
+    def getScalarVelocity(self, coord, material, normal, pointId):
         return abs(normal[0]) + abs(normal[1])
 
-    def getVectorVelocity(self, coord, material, normal,  pointId):
+    def getVectorVelocity(self, coord, material, normal, pointId):
         return (0.0, 0.0, 0.0)
 
 
@@ -50,8 +50,8 @@ vls.lsVTKWriter(mesh, "box.vtk").apply()
 
 # Create trench geometry
 print("Booling trench")
-vls.lsBooleanOperation(
-    substrate, trench, vls.lsBooleanOperationEnum.RELATIVE_COMPLEMENT).apply()
+vls.lsBooleanOperation(substrate, trench,
+                       vls.lsBooleanOperationEnum.RELATIVE_COMPLEMENT).apply()
 
 # Now grow new material
 
