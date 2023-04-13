@@ -184,23 +184,44 @@ class CMakeBuild(build_ext):
 
         # Generate stubs for autocompletion and type hints (*.pyi files)
         try:
+            import shutil
+
             import mypy
             subprocess.run(
                 [
-                    sys.executable, "-m", "mypy.stubgen", "-o", ".", "-p",
-                    "viennals2d"
+                    sys.executable,
+                    "-m",
+                    "mypy.stubgen",
+                    "-o",
+                    ".",
+                    "-p",
+                    "viennals2d",
                 ],
                 cwd=f"{extdir}",
                 check=True,
+                env=dict(os.environ, **{
+                    "PYTHONDONTWRITEBYTECODE": "1",
+                }),
             )
             subprocess.run(
                 [
-                    sys.executable, "-m", "mypy.stubgen", "-o", ".", "-p",
-                    "viennals3d"
+                    sys.executable,
+                    "-m",
+                    "mypy.stubgen",
+                    "-o",
+                    ".",
+                    "-p",
+                    "viennals3d",
                 ],
                 cwd=f"{extdir}",
                 check=True,
+                env=dict(os.environ, **{
+                    "PYTHONDONTWRITEBYTECODE": "1",
+                }),
             )
+            # Remove mypy_cache, if it exists
+            if os.path.exists(os.path.join(extdir, ".mypy_cache")):
+                shutil.rmtree(os.path.join(extdir, ".mypy_cache"))
         except ImportError:
             pass
 
