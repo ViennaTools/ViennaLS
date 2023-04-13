@@ -41,7 +41,7 @@ endif()
 # ##################################################################################################
 # BUILD 3D PYTHON LIBRARY
 # ##################################################################################################
-set(VIENNALS_PYTHON_MODULE_NAME_3D "${VIENNALS_PYTHON_MODULE_NAME}3d")
+set(VIENNALS_PYTHON_MODULE_NAME_3D "_${VIENNALS_PYTHON_MODULE_NAME}3d")
 
 pybind11_add_module(${VIENNALS_PYTHON_MODULE_NAME_3D} ${VIENNALS_PYTHON_SOURCE})
 target_include_directories(${VIENNALS_PYTHON_MODULE_NAME_3D} PUBLIC ${VIENNALS_INCLUDE_DIRS})
