@@ -24,6 +24,7 @@
 #include <hrleDenseIterator.hpp>
 
 #include <lsDomain.hpp>
+#include <lsMaterialMap.hpp>
 #include <lsMessage.hpp>
 #include <lsPreCompileMacros.hpp>
 
@@ -42,6 +43,7 @@ template <class T, int D> class lsWriteVisualizationMesh {
   typedef typename lsDomain<T, D>::DomainType hrleDomainType;
   using LevelSetsType = std::vector<lsSmartPointer<lsDomain<T, D>>>;
   LevelSetsType levelSets;
+  lsSmartPointer<lsMaterialMap> materialMap = nullptr;
   std::string fileName;
   bool extractVolumeMesh = true;
   bool extractHullMesh = false;
@@ -435,6 +437,10 @@ public:
     extractVolumeMesh = passedExtractVolumeMesh;
   }
 
+  void setMaterialMap(lsSmartPointer<lsMaterialMap> passedMaterialMap) {
+    materialMap = passedMaterialMap;
+  }
+
   void apply() {
     // check if level sets have enough layers
     for (unsigned i = 0; i < levelSets.size(); ++i) {
@@ -581,7 +587,11 @@ public:
 
       materialMeshes.rbegin()[0] = insideClipper->GetOutput();
       materialMeshes.push_back(insideClipper->GetClippedOutput());
-      materialIds.push_back(counter);
+      if (materialMap) {
+        materialIds.push_back(materialMap->getMaterialId(counter));
+      } else {
+        materialIds.push_back(counter);
+      }
 
       ++counter;
     }

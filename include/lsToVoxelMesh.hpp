@@ -89,6 +89,12 @@ public:
 
     calculateBounds();
 
+    // save the extent of the resulting mesh
+    for (unsigned i = 0; i < D; ++i) {
+      mesh->minimumExtent[i] = std::numeric_limits<T>::max();
+      mesh->maximumExtent[i] = std::numeric_limits<T>::lowest();
+    }
+
     std::unordered_map<hrleVectorType<hrleIndexType, D>, size_t,
                        typename hrleVectorType<hrleIndexType, D>::hash>
         pointIdMapping;
@@ -182,6 +188,13 @@ public:
       std::array<T, 3> coords{};
       for (unsigned i = 0; i < D; ++i) {
         coords[i] = gridDelta * it->first[i];
+
+        // save extent
+        if (coords[i] < mesh->minimumExtent[i]) {
+          mesh->minimumExtent[i] = coords[i];
+        } else if (coords[i] > mesh->maximumExtent[i]) {
+          mesh->maximumExtent[i] = coords[i];
+        }
       }
       mesh->nodes[it->second] = coords;
     }
