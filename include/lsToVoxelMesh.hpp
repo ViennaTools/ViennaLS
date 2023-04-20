@@ -116,6 +116,7 @@ public:
 
     // move iterator for lowest material id and then adjust others if they are
     // needed
+    unsigned counter = 0;
     for (; iterators.front().getIndices() < maxIndex;
          iterators.front().next()) {
       // go over all materials
