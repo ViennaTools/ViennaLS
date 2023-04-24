@@ -167,9 +167,9 @@ public:
           break;
         }
       }
-      if (useMaterialMap) 
+      if (useMaterialMap)
         matId = materialMap->getMaterialId(matId);
-      
+
       materialIds.push_back(matId);
 
       // insert vertex

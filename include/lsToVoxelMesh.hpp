@@ -170,7 +170,7 @@ public:
           // create element if inside domain bounds
           if (addVoxel) {
             int material = materialId;
-            if (useMaterialMap) 
+            if (useMaterialMap)
               material = materialMap->getMaterialId(materialId);
 
             if constexpr (D == 3) {
