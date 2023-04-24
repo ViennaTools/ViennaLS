@@ -46,7 +46,7 @@ if(DEFINED VTK_DIR AND NOT DEFINED CACHE{VTK_DIR})
   add_library(vtk_external INTERFACE) # dummy target
 else() # Automatically detect installation
   # First try to locate any local build
-  find_package(VTK QUIET PATHS "${DEPENDENCIES_DIR}/Build/${VTK_EXTERNAL_INSTALL}"
+  find_package(VTK QUIET PATHS "${DEPENDENCIES_DIR}/Install/${VTK_EXTERNAL_INSTALL}"
                COMPONENTS "${VTK_COMPONENTS}" NO_DEFAULT_PATH)
 
   # If that fails look for a system installation
@@ -120,18 +120,17 @@ else() # Automatically detect installation
                  -DVTK_MODULE_ENABLE_VTK_FiltersGeneral:BOOL=YES
                  -DVTK_MODULE_ENABLE_VTK_FiltersGeometry:BOOL=YES
       BUILD_COMMAND ${CMAKE_COMMAND} --build . --parallel ${NPROC}
-      # INSTALL_COMMAND ${CMAKE_COMMAND} --install .
-      INSTALL_COMMAND ""
+      INSTALL_COMMAND ${CMAKE_COMMAND} --install .
       UPDATE_COMMAND ""
       USES_TERMINAL_DOWNLOAD 1
       USES_TERMINAL_UPDATE 1
       GIT_PROGRESS 1)
 
     # Get install directory
-    ExternalProject_Get_Property(vtk_external BINARY_DIR)
+    ExternalProject_Get_Property(vtk_external INSTALL_DIR)
 
     # Set the required variables
-    set(VTK_DIR "${BINARY_DIR}")
+    set(VTK_DIR "${INSTALL_DIR}")
 
     set(VTK_VERSION 9.1)
     set(VTK_INCLUDE_DIRS "${VTK_DIR}/include/vtk-${VTK_VERSION}")

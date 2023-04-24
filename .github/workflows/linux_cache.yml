@@ -54,8 +54,6 @@ jobs:
         with:
           key: ${{env.VIENNALS_CACHE_KEY}}
           path: |
-            ${{github.workspace}}/dependencies/Source
-            ${{github.workspace}}/dependencies/Build
             ${{github.workspace}}/dependencies/Install
 
       - name: Configure
