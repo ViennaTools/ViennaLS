@@ -15,7 +15,7 @@ namespace lsInternal {
 template <class T, int D, int order> class lsLocalLocalLaxFriedrichs {
   lsSmartPointer<lsDomain<T, D>> levelSet;
   lsSmartPointer<lsVelocityField<T>> velocities;
-  hrleSparseStarIterator<hrleDomain<T, D>> neighborIterator;
+  hrleSparseStarIterator<hrleDomain<T, D>, order> neighborIterator;
   const double alphaFactor;
 
   static T pow2(const T &value) { return value * value; }
@@ -30,8 +30,8 @@ public:
                             lsSmartPointer<lsVelocityField<T>> vel,
                             double a = 1.0)
       : levelSet(passedlsDomain), velocities(vel),
-        neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>>(
-            levelSet->getDomain(), order)),
+        neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>, order>(
+            levelSet->getDomain())),
         alphaFactor(a) {}
 
   T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {

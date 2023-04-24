@@ -97,7 +97,7 @@ public:
                 ? newDomain.getSegmentation()[p]
                 : grid.incrementIndices(grid.getMaxGridPoint());
 
-        for (hrleSparseStarIterator<typename lsDomain<T, D>::DomainType>
+        for (hrleSparseStarIterator<typename lsDomain<T, D>::DomainType, 1>
                  neighborIt(domain, startVector);
              neighborIt.getIndices() < endVector; neighborIt.next()) {
 
