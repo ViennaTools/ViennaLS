@@ -182,7 +182,7 @@ class CMakeBuild(build_ext):
                        cwd=build_temp,
                        check=True)
 
-        # Generate stubs for autocompletion and type hints (*.pyi files)
+        # Generate stubs (*.pyi files) for autocompletion and type hints
         try:
             import shutil
 
@@ -244,6 +244,9 @@ setup(
     ext_modules=[CMakeExtension("viennals")],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
+    setup_requires=[
+        'mypy',
+    ],
     requires=[
         'vtk',
     ],

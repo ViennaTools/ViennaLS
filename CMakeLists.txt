@@ -249,16 +249,16 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 endif()
 set(LOCAL_CONFIG_DIR "lib/cmake/${PROJECT_NAME}")
 
+# This variable is used by the example, test, python and precompiled library target, since those are
+# compiled before the project is installed in its proper install location.
+set(VIENNALS_BUILD_INCLUDE_DIRS "${${PROJECT_NAME}_SOURCE_DIR}/include")
+
 # Adding the install interface generator expression makes sure that the include files are installed
 # to the proper location (provided by GNUInstallDirs)
 target_include_directories(
   ${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${VIENNALS_BUILD_INCLUDE_DIRS}>
                             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_11)
-
-# This variable is used by the example, test, python and precompiled library target, since those are
-# compiled before the project is installed in its proper install location.
-set(VIENNALS_BUILD_INCLUDE_DIRS "${${PROJECT_NAME}_SOURCE_DIR}/include")
 
 # ##################################################################################################
 # CMAKE CONFIG FILE SETUP
