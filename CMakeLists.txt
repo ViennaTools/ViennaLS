@@ -52,19 +52,20 @@ option(VIENNALS_BUILD_TESTS "Build tests." OFF)
 option(VIENNALS_PRECOMPILE_HEADERS "Build template specialisations for shorter compile times." OFF)
 
 # Build Python bindings (only available when VIENNALS_USE_VTK is enabled)
-CMAKE_DEPENDENT_OPTION(VIENNALS_BUILD_PYTHON "Build for python3.x." OFF "VIENNALS_USE_VTK" OFF)
+cmake_dependent_option(VIENNALS_BUILD_PYTHON "Build for python3.x." OFF "VIENNALS_USE_VTK" OFF)
 
 # Build ViennaLS as a static library (only available when VIENNALS_PRECOMPILE_HEADERS is enabled)
-CMAKE_DEPENDENT_OPTION(VIENNALS_STATIC_BUILD "Build template specialiciations in a way that allows static linking." OFF
-                       "VIENNALS_PRECOMPILE_HEADERS" OFF)
+cmake_dependent_option(
+  VIENNALS_STATIC_BUILD "Build template specialiciations in a way that allows static linking." OFF
+  "VIENNALS_PRECOMPILE_HEADERS" OFF)
 
 # ##################################################################################################
 # AUTOMATIC DEPENDENCY PREPARATION
 # ##################################################################################################
 
-# With the stampfile mechanism, cmake automatically retriggers the configure step after
-# the buildDependencies targed has been executed. Thus all dependencies that were built
-# with buildDependencies should then be made available by the find_package calls.
+# With the stampfile mechanism, cmake automatically retriggers the configure step after the
+# buildDependencies targed has been executed. Thus all dependencies that were built with
+# buildDependencies should then be made available by the find_package calls.
 set(STAMPFILE ${CMAKE_BINARY_DIR}/target.stamp)
 # When the buildDependencies target is executed, the stamp file is touched
 add_custom_target(buildDependencies COMMAND ${CMAKE_COMMAND} -E touch ${STAMPFILE})
@@ -229,7 +230,7 @@ if(VIENNALS_PRECOMPILE_HEADERS AND DEPENDENCIES_FOUND)
   target_link_libraries(${PROJECT_NAME} ${VIENNALS_LIBRARIES})
   # Include the project header files and ViennaHRLE
   target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/include/"
-                                                    ${VIENNAHRLE_INCLUDE_DIRS})
+                                                     ${VIENNAHRLE_INCLUDE_DIRS})
   # Also include VTK if we enabled VTK support (with VTK 9+ this is done automatically when we link
   # the vtk targets - the VTK_INCLUDE_DIRS variable is empty in that case)
   if(VIENNALS_USE_VTK)
@@ -292,7 +293,7 @@ endif()
 # BUILD PYTHON MODULE
 # ##################################################################################################
 if(VIENNALS_BUILD_PYTHON AND DEPENDENCIES_FOUND)
-    add_subdirectory(Python)
+  add_subdirectory(Python)
 endif()
 
 # ##################################################################################################

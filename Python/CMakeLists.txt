@@ -11,7 +11,8 @@ list(PREPEND VIENNALS_INCLUDE_DIRS ${VIENNALS_BUILD_INCLUDE_DIRS})
 
 message(STATUS "ViennaLS version: ${VIENNALS_VERSION}")
 
-set(PYBIND11_PYTHON_VERSION 3
+set(PYBIND11_PYTHON_VERSION
+    3
     CACHE STRING "Python version")
 
 find_package(pybind11 REQUIRED PATHS ${pybind11_DIR} NO_DEFAULT_PATH)
@@ -27,15 +28,16 @@ set(VIENNALS_PYTHON_MODULE_NAME_2D "_${VIENNALS_PYTHON_MODULE_NAME}2d")
 pybind11_add_module(${VIENNALS_PYTHON_MODULE_NAME_2D} ${VIENNALS_PYTHON_SOURCE})
 target_include_directories(${VIENNALS_PYTHON_MODULE_NAME_2D} PUBLIC ${VIENNALS_INCLUDE_DIRS})
 target_link_libraries(${VIENNALS_PYTHON_MODULE_NAME_2D} PRIVATE ${VIENNALS_LIBRARIES})
-target_compile_definitions(${VIENNALS_PYTHON_MODULE_NAME_2D}
-                            PRIVATE
-                            -DVIENNALS_PYTHON_DIMENSION=2
-                            -DVIENNALS_MODULE_NAME=${VIENNALS_PYTHON_MODULE_NAME_2D})
+target_compile_definitions(
+  ${VIENNALS_PYTHON_MODULE_NAME_2D}
+  PRIVATE -DVIENNALS_PYTHON_DIMENSION=2 -DVIENNALS_MODULE_NAME=${VIENNALS_PYTHON_MODULE_NAME_2D})
 
 if(DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
-    set(MODULE_NAME ${VIENNALS_PYTHON_MODULE_NAME_2D})
-    set_target_properties(${VIENNALS_PYTHON_MODULE_NAME_2D} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/viennals2d)
-    configure_file(__init__.py.in ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/viennals2d/__init__.py)
+  set(MODULE_NAME ${VIENNALS_PYTHON_MODULE_NAME_2D})
+  set_target_properties(
+    ${VIENNALS_PYTHON_MODULE_NAME_2D} PROPERTIES LIBRARY_OUTPUT_DIRECTORY
+                                                 ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/viennals2d)
+  configure_file(__init__.py.in ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/viennals2d/__init__.py)
 endif()
 
 # ##################################################################################################
@@ -46,13 +48,14 @@ set(VIENNALS_PYTHON_MODULE_NAME_3D "_${VIENNALS_PYTHON_MODULE_NAME}3d")
 pybind11_add_module(${VIENNALS_PYTHON_MODULE_NAME_3D} ${VIENNALS_PYTHON_SOURCE})
 target_include_directories(${VIENNALS_PYTHON_MODULE_NAME_3D} PUBLIC ${VIENNALS_INCLUDE_DIRS})
 target_link_libraries(${VIENNALS_PYTHON_MODULE_NAME_3D} PRIVATE ${VIENNALS_LIBRARIES})
-target_compile_definitions(${VIENNALS_PYTHON_MODULE_NAME_3D}
-                            PRIVATE
-                            -DVIENNALS_PYTHON_DIMENSION=3
-                            -DVIENNALS_MODULE_NAME=${VIENNALS_PYTHON_MODULE_NAME_3D})
+target_compile_definitions(
+  ${VIENNALS_PYTHON_MODULE_NAME_3D}
+  PRIVATE -DVIENNALS_PYTHON_DIMENSION=3 -DVIENNALS_MODULE_NAME=${VIENNALS_PYTHON_MODULE_NAME_3D})
 
 if(DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
-    set(MODULE_NAME ${VIENNALS_PYTHON_MODULE_NAME_3D})
-    set_target_properties(${VIENNALS_PYTHON_MODULE_NAME_3D} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/viennals3d)
-    configure_file(__init__.py.in ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/viennals3d/__init__.py)
+  set(MODULE_NAME ${VIENNALS_PYTHON_MODULE_NAME_3D})
+  set_target_properties(
+    ${VIENNALS_PYTHON_MODULE_NAME_3D} PROPERTIES LIBRARY_OUTPUT_DIRECTORY
+                                                 ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/viennals3d)
+  configure_file(__init__.py.in ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/viennals3d/__init__.py)
 endif()
