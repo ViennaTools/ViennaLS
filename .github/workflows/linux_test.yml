@@ -47,10 +47,10 @@ jobs:
         # Run all tests that are not labeled as benchmark
         run: ctest -LE '^benchmark$'
 
-      - name: Trigger Action on ViennaPS Repository
-        if: github.event_name != 'pull_request'
-        uses: peter-evans/repository-dispatch@v2
-        with:
-          token: ${{ secrets.PAT_VIENNAPS }}
-          repository: ${{github.repository_owner}}/ViennaPS
-          event-type: viennals-update-linux
+      # - name: Trigger Action on ViennaPS Repository
+      #   if: github.event_name != 'pull_request'
+      #   uses: peter-evans/repository-dispatch@v2
+      #   with:
+      #     token: ${{ secrets.PAT_VIENNAPS }}
+      #     repository: ${{github.repository_owner}}/ViennaPS
+      #     event-type: viennals-update-linux

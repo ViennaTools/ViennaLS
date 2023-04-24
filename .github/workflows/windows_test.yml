@@ -47,10 +47,10 @@ jobs:
         # Run all tests except those that are labeled as benchmark
         run: ctest -LE "^benchmark$" -j 2 --output-on-failure --timeout 1800 -C ${{env.BUILD_TYPE}}
 
-      - name: Trigger Action on ViennaPS Repository
-        if: github.event_name != 'pull_request'
-        uses: peter-evans/repository-dispatch@v2
-        with:
-          token: ${{ secrets.PAT_VIENNAPS }}
-          repository: ${{github.repository_owner}}/ViennaPS
-          event-type: viennals-update-windows
+      # - name: Trigger Action on ViennaPS Repository
+      #   if: github.event_name != 'pull_request'
+      #   uses: peter-evans/repository-dispatch@v2
+      #   with:
+      #     token: ${{ secrets.PAT_VIENNAPS }}
+      #     repository: ${{github.repository_owner}}/ViennaPS
+      #     event-type: viennals-update-windows

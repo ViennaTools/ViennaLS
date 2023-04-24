@@ -25,12 +25,8 @@ set(VTK_LIBRARY_TARGETS
     VTK::CommonComputationalGeometry;VTK::CommonCore;VTK::CommonDataModel;VTK::CommonExecutionModel;VTK::CommonMath;VTK::CommonMisc;VTK::CommonSystem;VTK::CommonTransforms;VTK::FiltersCore;VTK::FiltersGeneral;VTK::FiltersGeometry;VTK::IOCore;VTK::IOXML;VTK::IOXMLParser;VTK::WrappingTools
 )
 
-# Check if the variable is a cache variable
-get_property(
-  is_cached
-  CACHE VTK_DIR
-  PROPERTY TYPE)
-if("${is_cached}" STREQUAL "" AND DEFINED VTK_DIR)
+# If the path to an installation was provided by the user
+if(DEFINED VTK_DIR AND NOT DEFINED CACHE{VTK_DIR})
   # Required for windows to convert backslashes to forward slashes
   file(TO_CMAKE_PATH "${VTK_DIR}" VTK_DIR)
   set(VTK_DIR

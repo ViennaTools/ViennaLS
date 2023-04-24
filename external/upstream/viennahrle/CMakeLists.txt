@@ -1,12 +1,8 @@
 # ##################################################################################################
 # Check ViennaHRLE Dependency
 # ##################################################################################################
-# Check if the variable is a cache variable
-get_property(
-  is_cached
-  CACHE ViennaHRLE_DIR
-  PROPERTY TYPE)
-if("${is_cached}" STREQUAL "" AND DEFINED ViennaHRLE_DIR)
+# If the path to an installation was provided by the user
+if(DEFINED ViennaHRLE_DIR AND NOT DEFINED CACHE{ViennaHRLE_DIR})
   # Required for windows to convert backslashes to forward slashes
   file(TO_CMAKE_PATH "${ViennaHRLE_DIR}" ViennaHRLE_DIR)
   set(ViennaHRLE_DIR
