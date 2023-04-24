@@ -526,6 +526,7 @@ public:
 #endif
 
     unsigned counter = 1;
+    const bool useMaterialMap = materialMap != nullptr;
 
     // now cut large volume mesh with all the smaller ones
     for (typename LevelSetsType::const_reverse_iterator it =
@@ -587,11 +588,10 @@ public:
 
       materialMeshes.rbegin()[0] = insideClipper->GetOutput();
       materialMeshes.push_back(insideClipper->GetClippedOutput());
-      if (materialMap) {
-        materialIds.push_back(materialMap->getMaterialId(counter));
-      } else {
-        materialIds.push_back(counter);
-      }
+      int material = counter;
+      if (useMaterialMap)
+        material = materialMap->getMaterialId(counter);
+      materialIds.push_back(material);
 
       ++counter;
     }

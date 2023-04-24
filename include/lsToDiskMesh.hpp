@@ -8,6 +8,7 @@
 #include <lsCalculateNormalVectors.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
+#include <lsMaterialMap.hpp>
 #include <lsMesh.hpp>
 #include <unordered_map>
 
@@ -27,6 +28,7 @@ private:
   std::vector<lsSmartPointer<lsDomain<T, D>>> levelSets;
   lsSmartPointer<lsMesh<N>> mesh = nullptr;
   lsSmartPointer<TranslatorType> translator = nullptr;
+  lsSmartPointer<lsMaterialMap> materialMap = nullptr;
   T maxValue = 0.5;
   bool buildTranslator = false;
   static constexpr double wrappingLayerEpsilon = 1e-4;
@@ -67,6 +69,10 @@ public:
   void setTranslator(lsSmartPointer<TranslatorType> passedTranslator) {
     translator = passedTranslator;
     buildTranslator = true;
+  }
+
+  void setMaterialMap(lsSmartPointer<lsMaterialMap> passedMaterialMap) {
+    materialMap = passedMaterialMap;
   }
 
   void setMaxValue(const T passedMaxValue) { maxValue = passedMaxValue; }
@@ -118,6 +124,7 @@ public:
     normals.reserve(normalVectors.size());
     materialIds.reserve(normalVectors.size());
 
+    const bool useMaterialMap = materialMap != nullptr;
     const bool buildTranslatorFlag = buildTranslator;
     unsigned long counter = 0;
     if (buildTranslatorFlag) {
@@ -160,6 +167,9 @@ public:
           break;
         }
       }
+      if (useMaterialMap) 
+        matId = materialMap->getMaterialId(matId);
+      
       materialIds.push_back(matId);
 
       // insert vertex
