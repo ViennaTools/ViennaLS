@@ -64,7 +64,7 @@ int main() {
   std::cout << substrate->getGrid().getMinGridPoint() << std::endl;
   std::cout << substrate->getGrid().getMaxGridPoint() << std::endl;
 
-  // for(hrleConstSparseStarIterator<lsDomain<double, D>::DomainType>
+  // for(hrleConstSparseStarIterator<lsDomain<double, D>::DomainType, 1>
   // it(substrate.getDomain()); !it.isFinished(); it.next()) {
   //   std::cout << it.getIndices() << ": " << it.getCenter().getEndIndices() <<
   //   ", "; for(unsigned i = 0; i< 2*D; ++i) std::cout <<

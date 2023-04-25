@@ -82,7 +82,7 @@ public:
 
     std::ostringstream oss;
 
-    for (hrleConstSparseStarIterator<hrleDomain<T, D>> it(
+    for (hrleConstSparseStarIterator<hrleDomain<T, D>, 1> it(
              levelSet->getDomain());
          !it.isFinished(); it.next()) {
 

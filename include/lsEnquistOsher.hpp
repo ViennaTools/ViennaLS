@@ -16,7 +16,7 @@ namespace lsInternal {
 template <class T, int D, int order> class lsEnquistOsher {
   lsSmartPointer<lsDomain<T, D>> levelSet;
   lsSmartPointer<lsVelocityField<T>> velocities;
-  hrleSparseStarIterator<hrleDomain<T, D>> neighborIterator;
+  hrleSparseStarIterator<hrleDomain<T, D>, order> neighborIterator;
   bool calculateNormalVectors = true;
 
   static T pow2(const T &value) { return value * value; }
@@ -30,8 +30,8 @@ public:
   lsEnquistOsher(lsSmartPointer<lsDomain<T, D>> passedlsDomain,
                  lsSmartPointer<lsVelocityField<T>> vel, bool calcNormal = true)
       : levelSet(passedlsDomain), velocities(vel),
-        neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>>(
-            levelSet->getDomain(), order)),
+        neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>, order>(
+            levelSet->getDomain())),
         calculateNormalVectors(calcNormal) {}
 
   T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {

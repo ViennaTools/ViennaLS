@@ -136,7 +136,7 @@ template <class T, int D> class lsAdvect {
       if (updateData)
         newDataSourceIds[p].reserve(2.5 * domainSegment.getNumberOfPoints());
 
-      for (hrleSparseStarIterator<typename lsDomain<T, D>::DomainType> it(
+      for (hrleSparseStarIterator<typename lsDomain<T, D>::DomainType, 1> it(
                domain, startVector);
            it.getIndices() < endVector; ++it) {
 

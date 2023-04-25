@@ -7,6 +7,7 @@
 
 #include <hrleDenseCellIterator.hpp>
 #include <lsDomain.hpp>
+#include <lsMaterialMap.hpp>
 #include <lsMesh.hpp>
 
 /// Creates a mesh, which consists only of quads/hexas for completely
@@ -18,6 +19,7 @@ template <class T, int D> class lsToVoxelMesh {
 
   std::vector<lsSmartPointer<lsDomain<T, D>>> levelSets;
   lsSmartPointer<lsMesh<T>> mesh = nullptr;
+  lsSmartPointer<lsMaterialMap> materialMap = nullptr;
   hrleVectorType<hrleIndexType, D> minIndex, maxIndex;
 
   void calculateBounds() {
@@ -69,6 +71,10 @@ public:
 
   void setMesh(lsSmartPointer<lsMesh<T>> passedMesh) { mesh = passedMesh; }
 
+  void setMaterialMap(lsSmartPointer<lsMaterialMap> passedMaterialMap) {
+    materialMap = passedMaterialMap;
+  }
+
   void apply() {
     if (levelSets.size() < 1) {
       lsMessage::getInstance()
@@ -89,6 +95,12 @@ public:
 
     calculateBounds();
 
+    // save the extent of the resulting mesh
+    for (unsigned i = 0; i < D; ++i) {
+      mesh->minimumExtent[i] = std::numeric_limits<T>::max();
+      mesh->maximumExtent[i] = std::numeric_limits<T>::lowest();
+    }
+
     std::unordered_map<hrleVectorType<hrleIndexType, D>, size_t,
                        typename hrleVectorType<hrleIndexType, D>::hash>
         pointIdMapping;
@@ -98,6 +110,7 @@ public:
     mesh->cellData.insertNextScalarData(
         typename lsPointData<T>::ScalarDataType(), "Material");
     auto &materialIds = *(mesh->cellData.getScalarData(0));
+    const bool useMaterialMap = materialMap != nullptr;
 
     // set up iterators for all materials
     std::vector<hrleConstDenseCellIterator<typename lsDomain<T, D>::DomainType>>
@@ -110,6 +123,7 @@ public:
 
     // move iterator for lowest material id and then adjust others if they are
     // needed
+    unsigned counter = 0;
     for (; iterators.front().getIndices() < maxIndex;
          iterators.front().next()) {
       // go over all materials
@@ -155,18 +169,22 @@ public:
 
           // create element if inside domain bounds
           if (addVoxel) {
+            int material = materialId;
+            if (useMaterialMap)
+              material = materialMap->getMaterialId(materialId);
+
             if constexpr (D == 3) {
               // reorder elements for hexas to be ordered correctly
               std::array<unsigned, 8> hexa{voxel[0], voxel[1], voxel[3],
                                            voxel[2], voxel[4], voxel[5],
                                            voxel[7], voxel[6]};
               mesh->hexas.push_back(hexa);
-              materialIds.push_back(materialId);
+              materialIds.push_back(material);
             } else {
               std::array<unsigned, 4> tetra{voxel[0], voxel[2], voxel[3],
                                             voxel[1]};
               mesh->tetras.push_back(tetra);
-              materialIds.push_back(materialId);
+              materialIds.push_back(material);
             }
           }
           // jump out of material for loop
@@ -182,6 +200,13 @@ public:
       std::array<T, 3> coords{};
       for (unsigned i = 0; i < D; ++i) {
         coords[i] = gridDelta * it->first[i];
+
+        // save extent
+        if (coords[i] < mesh->minimumExtent[i]) {
+          mesh->minimumExtent[i] = coords[i];
+        } else if (coords[i] > mesh->maximumExtent[i]) {
+          mesh->maximumExtent[i] = coords[i];
+        }
       }
       mesh->nodes[it->second] = coords;
     }
