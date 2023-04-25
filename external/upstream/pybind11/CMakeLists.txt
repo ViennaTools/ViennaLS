@@ -12,7 +12,10 @@ if(DEFINED pybind11_DIR AND NOT DEFINED CACHE{pybind11_DIR})
   message(STATUS "pybind11_DIR: ${pybind11_DIR}")
   add_library(pybind11_external INTERFACE) # dummy target
 else()
-  find_package(pybind11 QUIET)
+  find_package(pybind11 QUIET PATHS "${DEPENDENCIES_DIR}/Install/pybind11_external" NO_DEFAULT_PATH)
+  if(NOT pybind11_FOUND)
+    find_package(pybind11 QUIET)
+  endif()
   if(pybind11_FOUND)
     message(STATUS "Found pybind11 at ${pybind11_DIR}.")
     add_library(pybind11_external INTERFACE) # dummy target
@@ -29,9 +32,8 @@ else()
     ExternalProject_Add(
       pybind11_external
       GIT_REPOSITORY https://github.com/pybind/pybind11.git
-      # Hash of tags/v2.6.2
-      GIT_TAG # v2.6.2
-              8de7772cc72daca8e947b79b83fea46214931604
+      # Hash of tags/v2.10.4
+      GIT_TAG 5b0a6fc2017fcc176545afe3e09c9f9885283242
       # GIT_SHALLOW 1
       CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
                  # -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}

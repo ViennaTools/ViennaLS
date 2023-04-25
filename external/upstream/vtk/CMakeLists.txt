@@ -51,7 +51,7 @@ else() # Automatically detect installation
 
   # If that fails look for a system installation
   if(NOT VTK_FOUND)
-    #find_package(VTK QUIET COMPONENTS "${VTK_COMPONENTS}")
+    find_package(VTK QUIET COMPONENTS "${VTK_COMPONENTS}")
   endif()
 
   if(VIENNALS_STATIC_BUILD)

@@ -13,8 +13,9 @@ if(DEFINED ViennaHRLE_DIR AND NOT DEFINED CACHE{ViennaHRLE_DIR})
   add_library(viennahrle_external INTERFACE) # dummy target
 else()
   # First try to locate any local build
-  find_package(ViennaHRLE QUIET PATHS "${DEPENDENCIES_DIR}/Install/viennahrle_external"
-               NO_DEFAULT_PATH)
+  find_package(
+    ViennaHRLE QUIET PATHS "${DEPENDENCIES_DIR}/Install/viennahrle_external/lib/cmake/ViennaHRLE"
+    NO_DEFAULT_PATH)
   if(NOT ViennaHRLE_FOUND)
     find_package(ViennaHRLE QUIET)
   endif()
