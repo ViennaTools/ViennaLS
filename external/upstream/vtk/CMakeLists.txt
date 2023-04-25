@@ -46,7 +46,7 @@ if(DEFINED VTK_DIR AND NOT DEFINED CACHE{VTK_DIR})
   add_library(vtk_external INTERFACE) # dummy target
 else() # Automatically detect installation
   # First try to locate any local build
-  find_package(VTK QUIET PATHS "${DEPENDENCIES_DIR}/Install/${VTK_EXTERNAL_INSTALL}/lib/cmake/vtk"
+  find_package(VTK QUIET PATHS "${DEPENDENCIES_DIR}/Install/${VTK_EXTERNAL_INSTALL}"
                COMPONENTS "${VTK_COMPONENTS}" NO_DEFAULT_PATH)
 
   # If that fails look for a system installation

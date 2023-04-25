@@ -12,7 +12,9 @@ if(DEFINED pybind11_DIR AND NOT DEFINED CACHE{pybind11_DIR})
   message(STATUS "pybind11_DIR: ${pybind11_DIR}")
   add_library(pybind11_external INTERFACE) # dummy target
 else()
+  # First try to locate any local build
   find_package(pybind11 QUIET PATHS "${DEPENDENCIES_DIR}/Install/pybind11_external" NO_DEFAULT_PATH)
+  # If that fails look for a system installation
   if(NOT pybind11_FOUND)
     find_package(pybind11 QUIET)
   endif()
