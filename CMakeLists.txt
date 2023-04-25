@@ -56,7 +56,7 @@ cmake_dependent_option(VIENNALS_BUILD_PYTHON "Build for python3.x." OFF "VIENNAL
 
 # Statically link dependencies, and if VIENNALS_PRECOMPILE_HEADERS is enabled, ViennaLS will also be
 # built as a static library
-option(VIENNALS_STATIC_BUILD "Build template specialiciations in a way that allows static linking."
+option(VIENNALS_STATIC_BUILD "Build template specialisations in a way that allows static linking."
        OFF)
 
 # ##################################################################################################
@@ -72,7 +72,12 @@ add_custom_target(buildDependencies COMMAND ${CMAKE_COMMAND} -E touch ${STAMPFIL
 
 # Include the external dependencies
 include(ExternalProject)
-set(DEPENDENCIES_DIR ${CMAKE_SOURCE_DIR}/dependencies)
+if(NOT DEFINED DEPENDENCIES_DIR)
+  set(DEPENDENCIES_DIR ${CMAKE_SOURCE_DIR}/dependencies)
+endif()
+set(DEPENDENCIES_DIR
+    ${DEPENDENCIES_DIR}
+    CACHE PATH "Directory for downloading, building and installing external dependencies")
 add_subdirectory(external/upstream)
 
 # Create the initial stamp file
