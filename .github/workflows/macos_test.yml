@@ -28,8 +28,7 @@ jobs:
         id: cache-dependencies
         with:
           key: viennals-dependency-cache-${{ runner.os }}-${{env.BUILD_TYPE}}-${{ hashFiles( './external/upstream/**CMakeLists.txt' ) }}
-          path: |
-            ${{github.workspace}}/dependencies/Install
+          path: ${{github.workspace}}/dependencies/Install
 
       - name: Configure
         run: |

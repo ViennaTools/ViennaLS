@@ -28,8 +28,7 @@ jobs:
         id: viennals-dependency-cache
         with:
           key: viennals-dependency-cache-${{ runner.os }}-${{env.BUILD_TYPE}}-${{ hashFiles( './external/upstream/**CMakeLists.txt' ) }}
-          path: |
-            ${{github.workspace}}/dependencies/Install
+          path: ${{github.workspace}}/dependencies/Install
 
       - name: Configure
         run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DVIENNALS_BUILD_TESTS=ON

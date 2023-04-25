@@ -45,9 +45,7 @@ else()
                  -DBUILD_TESTING=OFF
                  -DBUILD_EXAMPLES=OFF
       BUILD_COMMAND ${CMAKE_COMMAND} --build . --parallel ${NPROC}
-      # # No install needed INSTALL_COMMAND
       INSTALL_COMMAND ${CMAKE_COMMAND} --install .
-      # "cmake --install build"
       UPDATE_COMMAND ""
       USES_TERMINAL_DOWNLOAD 1
       USES_TERMINAL_UPDATE 1
