@@ -88,7 +88,7 @@ else() # Automatically detect installation
       INSTALL_DIR "${DEPENDENCIES_DIR}/Install/${VTK_EXTERNAL_INSTALL}"
       CMAKE_ARGS -DCMAKE_BUILD_TYPE=Release
                  -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
-                 -DCMAKE_SKIP_RPATH=OFF
+                 #-DCMAKE_SKIP_RPATH=OFF
                  #-DCMAKE_SKIP_INSTALL_RPATH=ON
                  -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                  -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
@@ -123,7 +123,7 @@ else() # Automatically detect installation
                  -DVTK_MODULE_ENABLE_VTK_FiltersCore:BOOL=YES
                  -DVTK_MODULE_ENABLE_VTK_FiltersGeneral:BOOL=YES
                  -DVTK_MODULE_ENABLE_VTK_FiltersGeometry:BOOL=YES
-                 -Wno-dev
+                 # -Wno-dev
       BUILD_COMMAND ${CMAKE_COMMAND} --build . --parallel ${NPROC}
       INSTALL_COMMAND ${CMAKE_COMMAND} --install .
       UPDATE_COMMAND ""
