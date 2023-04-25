@@ -89,7 +89,7 @@ else() # Automatically detect installation
       CMAKE_ARGS -DCMAKE_BUILD_TYPE=Release
                  -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
                  -DCMAKE_SKIP_RPATH=OFF
-                 -DCMAKE_SKIP_INSTALL_RPATH=ON
+                 #-DCMAKE_SKIP_INSTALL_RPATH=ON
                  -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                  -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
                  -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
