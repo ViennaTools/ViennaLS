@@ -74,12 +74,13 @@ add_custom_target(buildDependencies COMMAND ${CMAKE_COMMAND} -E touch ${STAMPFIL
 
 # Include the external dependencies
 include(ExternalProject)
-if(NOT DEFINED DEPENDENCIES_DIR)
+if(NOT DEFINED VIENNALS_DEPENDENCIES_DIR)
   set(DEPENDENCIES_DIR ${CMAKE_SOURCE_DIR}/dependencies)
+else()
+  set(DEPENDENCIES_DIR
+      ${VIENNALS_DEPENDENCIES_DIR}
+      CACHE PATH "Directory for downloading, building and installing external dependencies")
 endif()
-set(DEPENDENCIES_DIR
-    ${DEPENDENCIES_DIR}
-    CACHE PATH "Directory for downloading, building and installing external dependencies")
 add_subdirectory(external/upstream)
 
 # Create the initial stamp file
