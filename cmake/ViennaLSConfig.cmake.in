@@ -68,4 +68,8 @@ if(@VIENNALS_PRECOMPILE_HEADERS@)
   endif()
 endif()
 
+if(@VIENNALS_STATIC_BUILD@)
+  set(VIENNALS_STATIC_BUILD ON)
+endif()
+
 check_required_components("@PROJECT_NAME@")

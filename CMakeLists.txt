@@ -56,8 +56,10 @@ cmake_dependent_option(VIENNALS_BUILD_PYTHON "Build for python3.x." OFF "VIENNAL
 
 # Statically link dependencies, and if VIENNALS_PRECOMPILE_HEADERS is enabled, ViennaLS will also be
 # built as a static library
-option(VIENNALS_STATIC_BUILD "Build template specialisations in a way that allows static linking."
-       OFF)
+option(
+  VIENNALS_STATIC_BUILD
+  "Build dependencies as static libraries. If VIENNALS_PRECOMPILE_HEADERS is enabled those will also be built in a way that allows for static linking."
+  OFF)
 
 # ##################################################################################################
 # AUTOMATIC DEPENDENCY PREPARATION
