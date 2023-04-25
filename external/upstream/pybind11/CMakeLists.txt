@@ -35,13 +35,15 @@ else()
       # Hash of tags/v2.10.4
       GIT_TAG 5b0a6fc2017fcc176545afe3e09c9f9885283242
       # GIT_SHALLOW 1
-      CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
-                 # -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+      CMAKE_ARGS -DCMAKE_BUILD_TYPE=Release
+                 -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+                 -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                  -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
                  -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
                  -DCMAKE_CXX_EXTENSIONS=${CMAKE_CXX_EXTENSIONS}
                  -DCMAKE_CXX_STANDARD_REQUIRED=${CMAKE_CXX_STANDARD_REQUIRED}
-                 # -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DBUILD_TESTING=OFF -DBUILD_EXAMPLES=OFF
+                 -DBUILD_TESTING=OFF
+                 -DBUILD_EXAMPLES=OFF
       BUILD_COMMAND ${CMAKE_COMMAND} --build . --parallel ${NPROC}
       # # No install needed INSTALL_COMMAND
       INSTALL_COMMAND ${CMAKE_COMMAND} --install .
@@ -52,7 +54,7 @@ else()
       GIT_PROGRESS 1)
 
     # Get install and build directory
-    ExternalProject_Get_Property(pybind11_external INSTALL_DIR BINARY_DIR)
+    ExternalProject_Get_Property(pybind11_external INSTALL_DIR)
     set(pybind11_DIR "${INSTALL_DIR}")
     # add to buildDependencies target
     add_dependencies(buildDependencies pybind11_external)
