@@ -92,7 +92,6 @@ class CMakeBuild(build_ext):
             f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DCMAKE_BUILD_TYPE={cfg}",  # not used on MSVC, but no harm
             "-DVIENNALS_BUILD_PYTHON=ON",
-            "-DVIENNALS_STATIC_BUILD=ON",
         ]
 
         build_args = []
@@ -102,10 +101,6 @@ class CMakeBuild(build_ext):
             cmake_args += [
                 item for item in os.environ["CMAKE_ARGS"].split(" ") if item
             ]
-
-        # Install the dependencies alongside the platform libraries
-        # dependencies_dir = os.path.join(sysconfig.get_path('platlib'), f"{ext.name}-dependencies")
-        # cmake_args += [f"-DVIENNALS_DEPENDENCIES_DIR={dependencies_dir}"]
 
         if self.compiler.compiler_type != "msvc":
             # Using Ninja-build since it a) is available as a wheel and b)

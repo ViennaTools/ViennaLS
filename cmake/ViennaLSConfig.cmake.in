@@ -8,10 +8,8 @@ set(CMAKE_CXX_STANDARD "17")
 # ##################################################################################################
 # compiler dependent settings for ViennaLS
 # ##################################################################################################
-if(OMP_PARALLELIZE)
-  find_dependency(OpenMP)
-  list(APPEND VIENNALS_LIBRARIES OpenMP::OpenMP_CXX)
-endif()
+find_dependency(OpenMP)
+list(APPEND VIENNALS_LIBRARIES OpenMP::OpenMP_CXX)
 
 # compiler dependent settings
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
