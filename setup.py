@@ -41,7 +41,6 @@ import os
 import re
 import subprocess
 import sys
-import sysconfig
 from pathlib import Path
 
 from setuptools import Extension, setup
