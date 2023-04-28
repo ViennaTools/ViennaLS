@@ -35,8 +35,10 @@ target_compile_definitions(
 if(DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
   set(MODULE_NAME ${VIENNALS_PYTHON_MODULE_NAME_2D})
   set_target_properties(
-    ${VIENNALS_PYTHON_MODULE_NAME_2D} PROPERTIES LIBRARY_OUTPUT_DIRECTORY
-                                                 ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/viennals2d)
+    ${VIENNALS_PYTHON_MODULE_NAME_2D}
+    PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/viennals2d
+               RUNTIME_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/viennals2d)
+
   configure_file(__init__.py.in ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/viennals2d/__init__.py)
 endif()
 
@@ -55,7 +57,8 @@ target_compile_definitions(
 if(DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
   set(MODULE_NAME ${VIENNALS_PYTHON_MODULE_NAME_3D})
   set_target_properties(
-    ${VIENNALS_PYTHON_MODULE_NAME_3D} PROPERTIES LIBRARY_OUTPUT_DIRECTORY
-                                                 ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/viennals3d)
+    ${VIENNALS_PYTHON_MODULE_NAME_3D}
+    PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/viennals3d
+               RUNTIME_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/viennals3d)
   configure_file(__init__.py.in ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/viennals3d/__init__.py)
 endif()
