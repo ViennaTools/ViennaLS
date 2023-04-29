@@ -171,15 +171,14 @@ class CMakeBuild(build_ext):
             for f in pyd_files:
                 print(f)
                 if f.startswith("_viennals2d"):
-                    shutil.move(os.path.abspath(os.path.join(extdir, f)),
-                                os.path.join("viennals2d", f))
+                    shutil.move(src=os.path.join(extdir, f),
+                                dst=os.path.join(extdir, "viennals2d", f))
                 elif f.startswith("_viennals3d"):
-                    shutil.move(os.path.abspath(os.path.join(extdir, f)),
-                                os.path.join("viennals3d", f))
+                    shutil.move(src=os.path.join(extdir, f),
+                                dst=os.path.join(extdir, "viennals3d", f))
 
         # Generate stubs (*.pyi files) for autocompletion and type hints
         try:
-
             import mypy
             subprocess.run(
                 [

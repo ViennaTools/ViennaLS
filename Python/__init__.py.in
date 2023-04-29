@@ -13,6 +13,12 @@ import sys
 extra_dll_dir = os.path.dirname(__file__)
 
 if sys.platform == 'win32' and os.path.isdir(extra_dll_dir):
+    # Add the VTK dll directory
+    os.add_dll_directory(os.path.join(@VTK_DIR@, "bin"))
+    # Add the directory of the python bindings
     os.add_dll_directory(extra_dll_dir)
 
 from .@MODULE_NAME@ import *
+
+# Remove internal symbols
+del extra_dll_dir
