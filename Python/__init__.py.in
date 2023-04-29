@@ -14,7 +14,7 @@ extra_dll_dir = os.path.dirname(__file__)
 
 if sys.platform == 'win32' and os.path.isdir(extra_dll_dir):
     # Add the VTK dll directory
-    os.add_dll_directory(os.path.join("@VTK_DIR@".replace("/lib/cmake/vtk/", ""), "bin"))
+    os.add_dll_directory(os.path.join(os.path.abspath("@VTK_DIR@".replace("/lib/cmake/vtk/", "")), "bin"))
     # Add the directory of the python bindings
     os.add_dll_directory(extra_dll_dir)
 
