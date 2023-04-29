@@ -189,7 +189,7 @@ class CMakeBuild(build_ext):
                     "-p",
                     "viennals2d",
                 ],
-                cwd=f"{extdir}",
+                cwd=os.path.abspath(extdir),
                 check=True,
                 env=dict(os.environ, **{
                     "PYTHONDONTWRITEBYTECODE": "1",
@@ -205,7 +205,7 @@ class CMakeBuild(build_ext):
                     "-p",
                     "viennals3d",
                 ],
-                cwd=f"{extdir}",
+                cwd=os.path.abspath(extdir),
                 check=True,
                 env=dict(os.environ, **{
                     "PYTHONDONTWRITEBYTECODE": "1",
