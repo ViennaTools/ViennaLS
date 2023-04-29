@@ -1,0 +1,35 @@
+name: macOS Python
+
+on:
+  pull_request:
+    branches: [master]
+  workflow_run:
+    workflows: [Build Dependencies on macOS]
+    types:
+      - completed
+
+env:
+  BUILD_TYPE: Debug
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macos-test:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Dependency Cache
+        uses: actions/cache@v3
+        id: cache-dependencies
+        with:
+          key: viennals-dependency-cache-${{ runner.os }}-${{env.BUILD_TYPE}}-${{ hashFiles( './external/upstream/**CMakeLists.txt' ) }}
+          path: ${{github.workspace}}/dependencies/Install
+      
+      - name: Build and install Python module
+        shell: bash
+        run: pip install --user . -v

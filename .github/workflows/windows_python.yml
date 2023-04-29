@@ -1,0 +1,35 @@
+name: Windows Python
+
+on:
+  pull_request:
+    branches: [master]
+  workflow_run:
+    workflows: [Build Dependencies on Windows]
+    types:
+      - completed
+
+env:
+  BUILD_TYPE: Debug
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-test:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Restore build cache
+        uses: actions/cache@v3
+        id: viennals-dependency-cache
+        with:
+          key: viennals-dependency-cache-${{ runner.os }}-${{env.BUILD_TYPE}}-${{ hashFiles( './external/upstream/**CMakeLists.txt' ) }}
+          path: ${{github.workspace}}/dependencies/Install
+
+      - name: Build and install Python module
+        shell: bash
+        run: pip install --user . -v
