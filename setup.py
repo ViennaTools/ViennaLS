@@ -39,6 +39,7 @@
 
 import os
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -75,8 +76,7 @@ class CMakeBuild(build_ext):
         # Using this requires trailing slash for auto-detection & inclusion of
         # auxiliary "native" libs
 
-        debug = int(os.environ.get("DEBUG",
-                                   0)) if self.debug is None else self.debug
+        debug = int(os.environ.get("DEBUG", 0)) if self.debug is None else self.debug
         cfg = "Debug" if debug else "Release"
 
         # CMake lets you override the generator - we need to check this.
@@ -97,9 +97,7 @@ class CMakeBuild(build_ext):
         # Adding CMake arguments set as environment variable
         # (needed e.g. to build for ARM OSx on conda-forge)
         if "CMAKE_ARGS" in os.environ:
-            cmake_args += [
-                item for item in os.environ["CMAKE_ARGS"].split(" ") if item
-            ]
+            cmake_args += [item for item in os.environ["CMAKE_ARGS"].split(" ") if item]
 
         if self.compiler.compiler_type != "msvc":
             # Using Ninja-build since it a) is available as a wheel and b)
@@ -121,8 +119,7 @@ class CMakeBuild(build_ext):
 
         else:
             # Single config generators are handled "normally"
-            single_config = any(x in cmake_generator
-                                for x in {"NMake", "Ninja"})
+            single_config = any(x in cmake_generator for x in {"NMake", "Ninja"})
 
             # CMake allows an arch-in-generator style for backward compatibility
             contains_arch = any(x in cmake_generator for x in {"ARM", "Win64"})
@@ -135,18 +132,14 @@ class CMakeBuild(build_ext):
 
             # Multi-config generators have a different way to specify configs
             if not single_config:
-                cmake_args += [
-                    f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{cfg.upper()}={extdir}"
-                ]
+                cmake_args += [f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{cfg.upper()}={extdir}"]
                 build_args += ["--config", cfg]
 
         if sys.platform.startswith("darwin"):
             # Cross-compile support for macOS - respect ARCHFLAGS if set
             archs = re.findall(r"-arch (\S+)", os.environ.get("ARCHFLAGS", ""))
             if archs:
-                cmake_args += [
-                    "-DCMAKE_OSX_ARCHITECTURES={}".format(";".join(archs))
-                ]
+                cmake_args += ["-DCMAKE_OSX_ARCHITECTURES={}".format(";".join(archs))]
 
         # Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level
         # across all generators.
@@ -162,30 +155,30 @@ class CMakeBuild(build_ext):
             build_temp.mkdir(parents=True)
 
         # Configure the project
-        subprocess.run(["cmake", ext.sourcedir, *cmake_args],
-                       cwd=build_temp,
-                       check=True)
+        subprocess.run(["cmake", ext.sourcedir, *cmake_args], cwd=build_temp, check=True)
 
         # Build dependencies if neccesary
-        subprocess.run(["cmake", "--build", ".", *build_args],
-                       cwd=build_temp,
-                       check=True)
+        subprocess.run(["cmake", "--build", ".", *build_args], cwd=build_temp, check=True)
 
         # Build python bindings
-        subprocess.run(["cmake", "--build", ".", *build_args],
-                       cwd=build_temp,
-                       check=True)
-        
+        subprocess.run(["cmake", "--build", ".", *build_args], cwd=build_temp, check=True)
+
+        # On windows move the generated pyd (dll in disguise) files to the corresponding
+        # folders. Ideally this should be done in CMake, but we have not yet implemented
+        # this.
         if sys.platform == "win32":
             pyd_files = [f for f in os.listdir(extdir) if f.endswith(".pyd")]
             for f in pyd_files:
                 print(f)
-                # if f.startswith("_viennals2d"):
-                #     shutil.move()
+                if f.startswith("_viennals2d"):
+                    shutil.move(os.path.abspath(os.path.join(extdir, f)),
+                                os.path.join("viennals2d", f))
+                elif f.startswith("_viennals3d"):
+                    shutil.move(os.path.abspath(os.path.join(extdir, f)),
+                                os.path.join("viennals3d", f))
 
         # Generate stubs (*.pyi files) for autocompletion and type hints
         try:
-            import shutil
 
             import mypy
             subprocess.run(
