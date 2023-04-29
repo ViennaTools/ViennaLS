@@ -178,42 +178,29 @@ class CMakeBuild(build_ext):
 
         # Generate stubs (*.pyi files) for autocompletion and type hints
         try:
-            import mypy
-            subprocess.run(
-                [
-                    sys.executable,
-                    "-m",
-                    "mypy.stubgen",
-                    "-o",
-                    ".",
-                    "-p",
-                    "viennals2d",
-                ],
-                cwd=os.path.abspath(extdir),
-                check=True,
-                env=dict(os.environ, **{
-                    "PYTHONDONTWRITEBYTECODE": "1",
-                }),
-            )
-            subprocess.run(
-                [
-                    sys.executable,
-                    "-m",
-                    "mypy.stubgen",
-                    "-o",
-                    ".",
-                    "-p",
-                    "viennals3d",
-                ],
-                cwd=os.path.abspath(extdir),
-                check=True,
-                env=dict(os.environ, **{
-                    "PYTHONDONTWRITEBYTECODE": "1",
-                }),
-            )
+            import mypy.stubgen as stubgen
+
+            # Make sure that the extdir is in sys.path so that
+            # stubgen can be run on packages defined there.
+            sys.path.insert(0, str(extdir))
+
+            # Don't create __pycache__ directory
+            sys.dont_write_bytecode = True
+
+            # Initialize the stubgen parser options
+            options = stubgen.parse_options([
+                "-o",
+                str(os.path.abspath(extdir)), "-p", "viennals2d", "-p", "viennals3d"
+            ])
+
+            # Generate the stubs
+            stubgen.generate_stubs(options)
+
             # Remove mypy_cache, if it exists
             if os.path.exists(os.path.join(extdir, ".mypy_cache")):
                 shutil.rmtree(os.path.join(extdir, ".mypy_cache"))
+        except ModuleNotFoundError:
+            pass
         except ImportError:
             pass
 
