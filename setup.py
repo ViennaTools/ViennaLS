@@ -140,6 +140,9 @@ class CMakeBuild(build_ext):
             archs = re.findall(r"-arch (\S+)", os.environ.get("ARCHFLAGS", ""))
             if archs:
                 cmake_args += ["-DCMAKE_OSX_ARCHITECTURES={}".format(";".join(archs))]
+            for var in os.environ:
+                if var.startswith("OpenMP_"):
+                    cmake_args += [f"-D{var}='{os.environ[var]}'"]
 
         # Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level
         # across all generators.
