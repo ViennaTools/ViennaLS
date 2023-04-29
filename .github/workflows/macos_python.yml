@@ -32,4 +32,10 @@ jobs:
       
       - name: Build and install Python module
         shell: bash
-        run: pip3 install --user . -v
+        run: |
+          export OpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include"
+          export OpenMP_CXX_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include"
+          export OpenMP_C_LIB_NAMES="omp"
+          export OpenMP_CXX_LIB_NAMES="omp"
+          export OpenMP_omp_LIBRARY="$(brew --prefix libomp)/lib/libomp.a"
+          pip3 install --user . -v
