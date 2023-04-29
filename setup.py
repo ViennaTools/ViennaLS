@@ -169,7 +169,6 @@ class CMakeBuild(build_ext):
         if sys.platform == "win32":
             pyd_files = [f for f in os.listdir(extdir) if f.endswith(".pyd")]
             for f in pyd_files:
-                print(f)
                 if f.startswith("_viennals2d"):
                     shutil.move(src=os.path.join(extdir, f),
                                 dst=os.path.join(extdir, "viennals2d", f))
