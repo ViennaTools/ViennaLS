@@ -18,3 +18,4 @@ _generate/
 *.py[cod]
 *.egg-info
 *env*
+.mypy_cache/
