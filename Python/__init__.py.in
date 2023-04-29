@@ -7,5 +7,12 @@ topography simulations. The main design goals are simplicity and efficiency,
 tailored towards scientific simulations. ViennaLS can also be used for
 visualisation applications, although this is not the main design target.
 """
+import os
+import sys
+
+extra_dll_dir = os.path.dirname(__file__)
+
+if sys.platform == 'win32' and os.path.isdir(extra_dll_dir):
+    os.add_dll_directory(extra_dll_dir)
 
 from .@MODULE_NAME@ import *

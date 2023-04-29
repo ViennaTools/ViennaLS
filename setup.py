@@ -175,6 +175,13 @@ class CMakeBuild(build_ext):
         subprocess.run(["cmake", "--build", ".", *build_args],
                        cwd=build_temp,
                        check=True)
+        
+        if sys.platform == "win32":
+            pyd_files = [f for f in os.listdir(extdir) if f.endswith(".pyd")]
+            for f in pyd_files:
+                print(f)
+                # if f.startswith("_viennals2d"):
+                #     shutil.move()
 
         # Generate stubs (*.pyi files) for autocompletion and type hints
         try:
