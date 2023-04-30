@@ -50,19 +50,19 @@ jobs:
           token: ${{ secrets.PAT_VIENNAPS }}
           repository: ${{github.repository_owner}}/ViennaPS
           event-type: viennals-update-linux
-    linux-python:
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v3
+  linux-python:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
 
-        - name: Setup Dependency Cache
-          uses: actions/cache@v3
-          id: cache-dependencies
-          with:
-            key: viennals-dependency-cache-${{ runner.os }}-${{env.BUILD_TYPE}}-${{ hashFiles( './external/upstream/**CMakeLists.txt' ) }}
-            path: ${{github.workspace}}/dependencies/Install
-        
-        - name: Build and install Python module
-          shell: bash
-          run: pip3 install --user . -v
+      - name: Setup Dependency Cache
+        uses: actions/cache@v3
+        id: cache-dependencies
+        with:
+          key: viennals-dependency-cache-${{ runner.os }}-${{env.BUILD_TYPE}}-${{ hashFiles( './external/upstream/**CMakeLists.txt' ) }}
+          path: ${{github.workspace}}/dependencies/Install
+      
+      - name: Build and install Python module
+        shell: bash
+        run: pip3 install --user . -v
