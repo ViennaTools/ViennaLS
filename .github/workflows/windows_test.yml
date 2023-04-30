@@ -51,3 +51,20 @@ jobs:
           token: ${{ secrets.PAT_VIENNAPS }}
           repository: ${{github.repository_owner}}/ViennaPS
           event-type: viennals-update-windows
+  windows-python:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Restore build cache
+        uses: actions/cache@v3
+        id: viennals-dependency-cache
+        with:
+          key: viennals-dependency-cache-${{ runner.os }}-${{env.BUILD_TYPE}}-${{ hashFiles( './external/upstream/**CMakeLists.txt' ) }}
+          path: ${{github.workspace}}/dependencies/Install
+
+      - name: Build and install Python module
+        shell: bash
+        run: pip3 install --user . -v
