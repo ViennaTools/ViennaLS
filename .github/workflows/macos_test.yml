@@ -28,10 +28,7 @@ jobs:
         id: cache-dependencies
         with:
           key: viennals-dependency-cache-${{ runner.os }}-${{env.BUILD_TYPE}}-${{ hashFiles( './external/upstream/**CMakeLists.txt' ) }}
-          path: |
-            ${{github.workspace}}/dependencies/Source
-            ${{github.workspace}}/dependencies/Build
-            ${{github.workspace}}/dependencies/Install
+          path: ${{github.workspace}}/dependencies/Install
 
       - name: Configure
         run: |
@@ -51,11 +48,34 @@ jobs:
         working-directory: ${{github.workspace}}/build
         # Run all tests that are not labeled as benchmark
         run: ctest -LE '^benchmark$'
-        
+
       - name: Trigger Action on ViennaPS Repository
-        if: github.event_name != 'pull_request'
+        if: ${{ vars.TRIGGER_VIENNAPS == 'true' && github.event_name != 'schedule' && github.event_name != 'pull_request' }}
         uses: peter-evans/repository-dispatch@v2
         with:
           token: ${{ secrets.PAT_VIENNAPS }}
           repository: ${{github.repository_owner}}/ViennaPS
           event-type: viennals-update-macos
+  macos-python:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Dependency Cache
+        uses: actions/cache@v3
+        id: cache-dependencies
+        with:
+          key: viennals-dependency-cache-${{ runner.os }}-${{env.BUILD_TYPE}}-${{ hashFiles( './external/upstream/**CMakeLists.txt' ) }}
+          path: ${{github.workspace}}/dependencies/Install
+
+      - name: Build and install Python module
+        shell: bash
+        run: |
+          export OpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include"
+          export OpenMP_CXX_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include"
+          export OpenMP_C_LIB_NAMES="omp"
+          export OpenMP_CXX_LIB_NAMES="omp"
+          export OpenMP_omp_LIBRARY="$(brew --prefix libomp)/lib/libomp.a"
+          pip3 install --user . -v

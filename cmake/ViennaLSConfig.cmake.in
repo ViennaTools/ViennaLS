@@ -8,10 +8,8 @@ set(CMAKE_CXX_STANDARD "17")
 # ##################################################################################################
 # compiler dependent settings for ViennaLS
 # ##################################################################################################
-if(OMP_PARALLELIZE)
-  find_dependency(OpenMP)
-  list(APPEND VIENNALS_LIBRARIES OpenMP::OpenMP_CXX)
-endif()
+find_dependency(OpenMP)
+list(APPEND VIENNALS_LIBRARIES OpenMP::OpenMP_CXX)
 
 # compiler dependent settings
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -59,8 +57,6 @@ if(@VIENNALS_USE_VTK@)
   list(APPEND VIENNALS_LIBRARIES ${VTK_LIBRARIES})
 endif()
 
-set(VIENNALS_PYTHON_LIBRARIES ${VIENNALS_LIBRARIES})
-
 if(@VIENNALS_PRECOMPILE_HEADERS@)
   option(VIENNALS_USE_PRECOMPILED "Use precompiled headers" ON)
   if(VIENNALS_USE_PRECOMPILED)
@@ -68,6 +64,10 @@ if(@VIENNALS_PRECOMPILE_HEADERS@)
     link_directories(@CMAKE_INSTALL_PREFIX@/lib)
     list(APPEND VIENNALS_LIBRARIES @PROJECT_NAME@)
   endif()
+endif()
+
+if(@VIENNALS_STATIC_BUILD@)
+  set(VIENNALS_STATIC_BUILD ON)
 endif()
 
 check_required_components("@PROJECT_NAME@")

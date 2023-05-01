@@ -1,32 +1,34 @@
 import viennals2d as vls
 
-## @example AirGapDeposition.py
+# @example AirGapDeposition.py
 #  Example showing how to use the library for topography
 #  simulation, by creating a trench geometry. A layer of a different material is
 #  then grown directionally on top.
 
-class velocityField(vls.lsVelocityField):
-  # coord and normalVec are lists with 3 elements
-  # in 2D coord[2] and normalVec[2] are zero
-  # getScalarVelocity must return a scalar
-  def getScalarVelocity(self, coord, material, normal,  pointId):
-    return abs(normal[0]) + abs(normal[1])
 
-  def getVectorVelocity(self, coord, material, normal,  pointId):
-    return (0,0,0)
+class velocityField(vls.lsVelocityField):
+    # coord and normalVec are lists with 3 elements
+    # in 2D coord[2] and normalVec[2] are zero
+    # getScalarVelocity must return a scalar
+    def getScalarVelocity(self, coord, material, normal, pointId):
+        return abs(normal[0]) + abs(normal[1])
+
+    def getVectorVelocity(self, coord, material, normal, pointId):
+        return (0.0, 0.0, 0.0)
+
 
 extent = 30
 gridDelta = 0.5
 
 bounds = (-extent, extent, -extent, extent)
-boundaryCons = (0, 1, 0) # 0 = reflective, 1 = infinite, 2 = periodic
+boundaryCons = (0, 1, 0)  # 0 = reflective, 1 = infinite, 2 = periodic
 
 # create level set
 substrate = vls.lsDomain(bounds, boundaryCons, gridDelta)
 
 # create plane
-origin = (0,0,0)
-planeNormal = (0,1,0)
+origin = (0, 0, 0)
+planeNormal = (0, 1, 0)
 
 vls.lsMakeGeometry(substrate, vls.lsPlane(origin, planeNormal)).apply()
 
@@ -48,7 +50,8 @@ vls.lsVTKWriter(mesh, "box.vtk").apply()
 
 # Create trench geometry
 print("Booling trench")
-vls.lsBooleanOperation(substrate, trench, vls.lsBooleanOperationEnum.RELATIVE_COMPLEMENT).apply()
+vls.lsBooleanOperation(substrate, trench,
+                       vls.lsBooleanOperationEnum.RELATIVE_COMPLEMENT).apply()
 
 # Now grow new material
 
@@ -76,12 +79,12 @@ advectionKernel.setIgnoreVoids(True)
 passedTime = 0
 numberOfSteps = 60
 for i in range(numberOfSteps):
-  advectionKernel.apply()
-  passedTime += advectionKernel.getAdvectedTime()
+    advectionKernel.apply()
+    passedTime += advectionKernel.getAdvectedTime()
 
-  print("Advection step {} / {}".format(i, numberOfSteps))
+    print("Advection step {} / {}".format(i, numberOfSteps))
 
-  vls.lsToSurfaceMesh(newLayer, mesh).apply()
-  vls.lsVTKWriter(mesh, "trench{}.vtk".format(i)).apply()
+    vls.lsToSurfaceMesh(newLayer, mesh).apply()
+    vls.lsVTKWriter(mesh, "trench{}.vtk".format(i)).apply()
 
 print("Time passed during advection: {}".format(passedTime))

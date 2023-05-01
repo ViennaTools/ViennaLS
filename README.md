@@ -86,41 +86,30 @@ make install
 ```
 If one wants to use a specific installation of one or more of the dependencies, just pass the corresponding _*_DIR_ variable as a configuration option (e.g. -DVTK_DIR=/path/to/vtk/install -Dpybind11_DIR=/path/to/pybind11 -DViennaHRLE_DIR=/path/to/viennahrle)
 
-## Using the viennaLS python module
+## Building the Python package
 
-The Releases only contain the compiled library for the most common Python version per platform:
-* Windows: Python 3.8
-* Linux: Python 3.8
+> __Tip__: On systems that feature a package manager (e.g. Ubuntu/Debian `apt`), the dependencies can be installed beforehand (e.g. using ```sudo apt install libvtk9.1 libvtk9-dev pybind11-dev```), which saves a considerable amount of time during compilation.
 
-For all other Python versions, you have to build the library yourself (see below).
+The Python package can be built and installed using the `pip` command:
 
-In order to use ViennaLS in python, just download the python shared libraries from the [releases section](https://github.com/ViennaTools/ViennaLS/releases) and put it in your current folder.
-From this folder just import the 2D or the 3D version of the library:
-
-```python
-import viennals2d as vls
-levelset = vls.lsDomain(0.2) # empty level set with grid spacing 0.2
-sphere = vls.lsSphere((0,0,0), 5) # sphere at origin with radius 5
-vls.lsMakeGeometry(levelset, sphere).apply() # create sphere in level set
+```bash
+git clone github.com/ViennaTools/ViennaLS.git
+cd ViennaLS
+pip install --user .
 ```
 
-All functions which are available in C++ are also available in Python. In order to switch to three dimensions, only the import needs to be changed:
+## Using the Python package
+
+All functions which are available in C++ are also available in Python. The 2D version of the library can be imported as follows:
+```python
+import viennals2d as vls
+```
+
+In order to switch to three dimensions, only the import needs to be changed:
 
 ```python
 import viennals3d as vls
 ```
-
-
-## Building the python module
-
-In order to build the python module, set `VIENNALS_BUILD_PYTHON_2` or `VIENNALS_BUILD_PYTHON_3` to `ON`:
-```bash
-cmake .. -DVIENNALS_BUILD_PYTHON_3=ON
-make buildDependencies # this will install pybind11 the first time it is called
-make
-```
-
-If both options are on, only VIENNALS_BUILD_PYTHON_3 will be used, since only one version can be built at a time.
 
 ## Setting up the dependencies
 

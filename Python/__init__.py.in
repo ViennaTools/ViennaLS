@@ -1,0 +1,24 @@
+"""
+ViennaLS
+========
+
+ViennaLS is a level set library developed for high performance
+topography simulations. The main design goals are simplicity and efficiency,
+tailored towards scientific simulations. ViennaLS can also be used for
+visualisation applications, although this is not the main design target.
+"""
+import os
+import sys
+
+extra_dll_dir = os.path.dirname(__file__)
+
+if sys.platform == 'win32' and os.path.isdir(extra_dll_dir):
+    # Add the VTK dll directory
+    os.add_dll_directory(os.path.join(os.path.abspath("@VTK_DIR@".replace("/lib/cmake/vtk", "")), "bin"))
+    # Add the directory of the python bindings
+    os.add_dll_directory(extra_dll_dir)
+
+from .@MODULE_NAME@ import *
+
+# Remove internal symbols
+del extra_dll_dir

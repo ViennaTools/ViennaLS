@@ -1,18 +1,20 @@
-cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
-project(ViennaLS VERSION 2.0.0)
+project(ViennaLS VERSION 2.1.0)
 
+# Store version in cache
 set(VIENNALS_VERSION
     ${PROJECT_VERSION}
     CACHE STRING "The version of ViennaLS" FORCE)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-# c++17 for inline constexpr variables
 set(CMAKE_CXX_STANDARD "17")
 
 add_definitions(-DVIENNALS_VERSION=${PROJECT_VERSION})
 
-# set default build type
+include(GNUInstallDirs)
+
+# Setup of default build type
 set(DEFAULT_BUILD_TYPE "Release")
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to '${DEFAULT_BUILD_TYPE}' as none was specified.")
@@ -24,7 +26,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
                                                "RelWithDebInfo")
 endif()
 
-# tell VS to export all symbols to its dll files
+# Tell VS to export all symbols to its dll files
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS
       TRUE
@@ -32,48 +34,68 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   add_compile_definitions(_USE_MATH_DEFINES)
 endif()
 
-list(APPEND VIENNALS_DEPENDENCIES "viennahrle_external")
+# ##################################################################################################
+# CONFIGURATION OPTIONS
+# ##################################################################################################
+include(CMakeDependentOption)
 
-# whether to use VTK or not
+# Whether to build ViennaLS with VTK support or not
 option(VIENNALS_USE_VTK "Build with VTK file support." ON)
-if(VIENNALS_USE_VTK)
-  list(APPEND VIENNALS_DEPENDENCIES "vtk_external")
-endif()
 
-option(VIENNALS_BUILD_PYTHON_2 "Build for python2.x." OFF)
-option(VIENNALS_BUILD_PYTHON_3 "Build for python3.x. Trumps python2.x build." OFF)
-if(VIENNALS_BUILD_PYTHON_2 OR VIENNALS_BUILD_PYTHON_3)
-  list(APPEND VIENNALS_DEPENDENCIES "pybind11_external")
-endif()
+# Build the included examples
+option(VIENNALS_BUILD_EXAMPLES "Build examples." OFF)
 
+# Build the included tests
+option(VIENNALS_BUILD_TESTS "Build tests." OFF)
+
+# Build ViennaLS as a shared library
 option(VIENNALS_PRECOMPILE_HEADERS "Build template specialisations for shorter compile times." OFF)
-# Unfortunately we cannot set this as a dependent option, since we might need to compile the
-# dependencies before we can enable the PRECOMPILE_HEADERS option.
-option(VIENNALS_STATIC_BUILD "Build template specialiciations in a way that allows static linking."
-       OFF)
 
-# build dependencies
-set(DEPENDENCIES_DIR ${CMAKE_SOURCE_DIR}/dependencies)
+# Build Python bindings (only available when VIENNALS_USE_VTK is enabled)
+cmake_dependent_option(VIENNALS_BUILD_PYTHON "Build for python3.x." OFF "VIENNALS_USE_VTK" OFF)
 
-# Include all external dependencies
+# Statically link dependencies, and if VIENNALS_PRECOMPILE_HEADERS is enabled, ViennaLS will also be
+# built as a static library
+option(
+  VIENNALS_STATIC_BUILD
+  "Build dependencies as static libraries. If VIENNALS_PRECOMPILE_HEADERS is enabled those will also be built in a way that allows for static linking."
+  OFF)
+
+# ##################################################################################################
+# AUTOMATIC DEPENDENCY PREPARATION
+# ##################################################################################################
+
+# With the stampfile mechanism, cmake automatically retriggers the configure step after the
+# buildDependencies targed has been executed. Thus all dependencies that were built with
+# buildDependencies should then be made available by the find_package calls.
+set(STAMPFILE ${CMAKE_BINARY_DIR}/target.stamp)
+# When the buildDependencies target is executed, the stamp file is touched
+add_custom_target(buildDependencies COMMAND ${CMAKE_COMMAND} -E touch ${STAMPFILE})
+
+# Include the external dependencies
 include(ExternalProject)
-add_custom_target(buildDependencies)
+if(NOT DEFINED VIENNALS_DEPENDENCIES_DIR)
+  set(DEPENDENCIES_DIR ${CMAKE_SOURCE_DIR}/dependencies)
+else()
+  set(DEPENDENCIES_DIR
+      ${VIENNALS_DEPENDENCIES_DIR}
+      CACHE PATH "Directory for downloading, building and installing external dependencies")
+endif()
 add_subdirectory(external/upstream)
 
-# Save the dependencies in the cache (only required for python externalproject)
-set(VIENNALS_DEPENDENCIES
-    ${VIENNALS_DEPENDENCIES}
-    CACHE INTERNAL "List of dependencies that need to be built before ViennaLS can be used" FORCE)
+# Create the initial stamp file
+file(TOUCH ${STAMPFILE})
+# Include the stamp file, so that cmake is forced to re-run once the file has been touched
+include(${STAMPFILE})
 
-include(GNUInstallDirs)
-
+# Binary store the binary directory for use in subprojects
 set(ViennaLS_BINARY_DIR
     ${PROJECT_BINARY_DIR}
     CACHE PATH "Path to local ViennaLS installation" FORCE)
 
-find_package(OpenMP REQUIRED)
-list(APPEND VIENNALS_LIBRARIES OpenMP::OpenMP_CXX)
-
+# ##################################################################################################
+# VTK CONFIGURATION VARIABLES SETUP
+# ##################################################################################################
 if(VIENNALS_USE_VTK)
   add_compile_definitions(VIENNALS_USE_VTK)
 
@@ -85,7 +107,7 @@ if(VIENNALS_USE_VTK)
     )
     # find_package is only required for populating the VTK_USE_FILE variable. This case is only
     # invoked when an external VTK installation is used since our externalproject build already
-    # provides a newer version of VTK.
+    # provides a newer version of VTK. Thus the find_package call *SHOULD* not fail.
     find_package(VTK CONFIG REQUIRED PATHS ${VTK_DIR} COMPONENTS ${VTK_COMPONENTS} NO_DEFAULT_PATH)
     set(VTK_LIBRARIES
         vtksys;vtkIOCore;vtkexpat;vtklz4;vtkzlib;vtklzma;vtkdoubleconversion;vtkCommonMisc;vtkCommonSystem;vtkIOXML;vtkFiltersCore;vtkFiltersGeneral;vtkFiltersGeometry;vtkCommonExecutionModel;vtkCommonDataModel;vtkCommonColor;vtkIOXMLParser;vtkIOCore;vtkCommonMisc;vtkCommonComputationalGeometry;vtkCommonTransforms;vtkCommonMath
@@ -102,48 +124,51 @@ if(VIENNALS_USE_VTK)
     )
   endif()
   list(APPEND VIENNALS_LIBRARIES ${VTK_LIBRARIES})
-endif(VIENNALS_USE_VTK)
-
-# set the correct paths for installation
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  set(CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME}/")
 endif()
-set(LOCAL_CONFIG_DIR "lib/cmake/${PROJECT_NAME}")
-
-# This variable is only used by the example, test and precompiled library target, since those are
-# compiled before the project is installed in its proper install location.
-set(VIENNALS_BUILD_INCLUDE_DIRS "${${PROJECT_NAME}_SOURCE_DIR}/include")
 
 # ##################################################################################################
-# BUILD SHARED LIBRARIES
+# DEPENDENCY CHECKS
 # ##################################################################################################
-if(VIENNALS_PRECOMPILE_HEADERS)
-  # Check if all dependencies are installed
-  set(DEPENDENCIES_FOUND TRUE)
-  find_package(ViennaHRLE QUIET CONFIG PATHS ${ViennaHRLE_DIR} NO_DEFAULT_PATH)
-  if(NOT ViennaHRLE_FOUND)
+set(DEPENDENCIES_FOUND TRUE)
+
+find_package(OpenMP REQUIRED)
+list(APPEND VIENNALS_LIBRARIES OpenMP::OpenMP_CXX)
+
+list(APPEND VIENNALS_DEPENDENCIES "viennahrle_external")
+find_package(ViennaHRLE QUIET CONFIG PATHS ${ViennaHRLE_DIR} NO_DEFAULT_PATH)
+if(NOT ViennaHRLE_FOUND)
+  set(DEPENDENCIES_FOUND FALSE)
+endif()
+
+if(VIENNALS_USE_VTK)
+  list(APPEND VIENNALS_DEPENDENCIES "vtk_external")
+  find_package(VTK QUIET PATHS ${VTK_DIR} COMPONENTS ${VTK_COMPONENTS} NO_DEFAULT_PATH)
+  if(NOT VTK_FOUND)
     set(DEPENDENCIES_FOUND FALSE)
   endif()
-  if(VIENNALS_USE_VTK)
-    find_package(VTK QUIET PATHS ${VTK_DIR} COMPONENTS ${VTK_COMPONENTS} NO_DEFAULT_PATH)
-    if(NOT VTK_FOUND)
-      set(DEPENDENCIES_FOUND FALSE)
-    endif()
-  endif()
-  # Show a message if one or more of the dependencies are missing
-  if(NOT DEPENDENCIES_FOUND)
-    message(
-      FATAL_ERROR
-        "One of the dependencies hasn't been built yet and thus can't be used by the precompiled libraries target.\n\
-    Try the following steps to fix the problem:\n\
-    1. Turn off precompiled libraries target by disabling the VIENNALS_PRECOMPILE_HEADERS option when configuring the project\n\
-      (e.g. with the `-D VIENNALS_PRECOMPILE_HEADERS=OFF` flag)\n\
-    2. Build the dependencies target: e.g. `make buildDependencies` when using Makefiles\n\
-    3. Turn on precompiled libraries target again by re-enabling the VIENNALS_PRECOMPILE_HEADERS option\n\
-      (e.g. with the `-D VIENNALS_PRECOMPILE_HEADERS=ON` flag)\n\
-    4. Now the configure step should pick up the built dependencies and proceed as intended.")
-  endif()
+endif()
 
+if(VIENNALS_BUILD_PYTHON)
+  list(APPEND VIENNALS_DEPENDENCIES "pybind11_external")
+  find_package(pybind11 QUIET PATHS ${pybind11_DIR} NO_DEFAULT_PATH)
+  if(NOT pybind11_FOUND)
+    set(DEPENDENCIES_FOUND FALSE)
+  endif()
+endif()
+
+if(DEPENDENCIES_FOUND)
+  # Remove the buildDependencies target from the ALL target to prevent unnecessary re-builds
+  set_target_properties(buildDependencies PROPERTIES EXCLUDE_FROM_ALL true)
+else()
+  message(WARNING "Not all dependencies were found. Execute buildDependencies target first.")
+  # Add the buildDependencies target to the ALL target
+  set_target_properties(buildDependencies PROPERTIES EXCLUDE_FROM_ALL false)
+endif()
+
+# ##################################################################################################
+# BUILD PRECOMPILED HEADER LIBRARIES
+# ##################################################################################################
+if(VIENNALS_PRECOMPILE_HEADERS AND DEPENDENCIES_FOUND)
   # Add all specialisation source files
   file(GLOB SPECIALISATION_CPPS "lib/*.cpp")
 
@@ -225,14 +250,28 @@ else()
   add_library(${PROJECT_NAME} INTERFACE)
 endif()
 
+# ##################################################################################################
+# DIRECTORY CONFIGURATIONS
+# ##################################################################################################
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  set(CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME}/")
+endif()
+set(LOCAL_CONFIG_DIR "lib/cmake/${PROJECT_NAME}")
+
+# This variable is used by the example, test, python and precompiled library target, since those are
+# compiled before the project is installed in its proper install location.
+set(VIENNALS_BUILD_INCLUDE_DIRS "${${PROJECT_NAME}_SOURCE_DIR}/include")
+
 # Adding the install interface generator expression makes sure that the include files are installed
 # to the proper location (provided by GNUInstallDirs)
 target_include_directories(
   ${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${VIENNALS_BUILD_INCLUDE_DIRS}>
                             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-
 target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_11)
 
+# ##################################################################################################
+# CMAKE CONFIG FILE SETUP
+# ##################################################################################################
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
   "${PROJECT_NAME}ConfigVersion.cmake"
@@ -246,32 +285,28 @@ configure_package_config_file(
 # ##################################################################################################
 # BUILD EXAMPLES
 # ##################################################################################################
-option(VIENNALS_BUILD_EXAMPLES "Build examples." OFF)
-if(VIENNALS_BUILD_EXAMPLES)
+if(VIENNALS_BUILD_EXAMPLES AND DEPENDENCIES_FOUND)
   add_subdirectory(Examples)
-endif(VIENNALS_BUILD_EXAMPLES)
+endif()
 
 # ##################################################################################################
 # BUILD TESTS (Smaller examples for testing)
 # ##################################################################################################
-option(VIENNALS_BUILD_TESTS "Build tests." OFF)
-if(VIENNALS_BUILD_TESTS)
+if(VIENNALS_BUILD_TESTS AND DEPENDENCIES_FOUND)
   enable_testing()
   add_subdirectory(Tests)
-endif(VIENNALS_BUILD_TESTS)
+endif()
 
 # ##################################################################################################
 # BUILD PYTHON MODULE
 # ##################################################################################################
-# TODO: Properly integrate the python externalproject with this cmake configuration
-if(VIENNALS_BUILD_PYTHON_2 OR VIENNALS_BUILD_PYTHON_3)
-  add_subdirectory(Wrapping)
+if(VIENNALS_BUILD_PYTHON AND DEPENDENCIES_FOUND)
+  add_subdirectory(Python)
 endif()
 
 # ##################################################################################################
 # INSTALL
 # ##################################################################################################
-# install config files locations are provided by GNUInstallDirs
 install(
   TARGETS ${PROJECT_NAME}
   EXPORT ${PROJECT_NAME}_Targets
@@ -288,6 +323,6 @@ install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
               "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
         DESTINATION ${LOCAL_CONFIG_DIR})
 
-# install include files
+# Install include files
 file(GLOB_RECURSE HEADER_FILES "${PROJECT_SOURCE_DIR}/include/*.hpp")
 install(FILES ${HEADER_FILES} DESTINATION include)

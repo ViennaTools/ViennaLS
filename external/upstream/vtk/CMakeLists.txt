@@ -25,12 +25,8 @@ set(VTK_LIBRARY_TARGETS
     VTK::CommonComputationalGeometry;VTK::CommonCore;VTK::CommonDataModel;VTK::CommonExecutionModel;VTK::CommonMath;VTK::CommonMisc;VTK::CommonSystem;VTK::CommonTransforms;VTK::FiltersCore;VTK::FiltersGeneral;VTK::FiltersGeometry;VTK::IOCore;VTK::IOXML;VTK::IOXMLParser;VTK::WrappingTools
 )
 
-# Check if the variable is a cache variable
-get_property(
-  is_cached
-  CACHE VTK_DIR
-  PROPERTY TYPE)
-if("${is_cached}" STREQUAL "" AND DEFINED VTK_DIR)
+# If the path to an installation was provided by the user
+if(DEFINED VTK_DIR AND NOT DEFINED CACHE{VTK_DIR})
   # Required for windows to convert backslashes to forward slashes
   file(TO_CMAKE_PATH "${VTK_DIR}" VTK_DIR)
   set(VTK_DIR
@@ -50,7 +46,7 @@ if("${is_cached}" STREQUAL "" AND DEFINED VTK_DIR)
   add_library(vtk_external INTERFACE) # dummy target
 else() # Automatically detect installation
   # First try to locate any local build
-  find_package(VTK QUIET PATHS "${DEPENDENCIES_DIR}/Build/${VTK_EXTERNAL_INSTALL}"
+  find_package(VTK QUIET PATHS "${DEPENDENCIES_DIR}/Install/${VTK_EXTERNAL_INSTALL}"
                COMPONENTS "${VTK_COMPONENTS}" NO_DEFAULT_PATH)
 
   # If that fails look for a system installation
@@ -82,15 +78,18 @@ else() # Automatically detect installation
     ExternalProject_Add(
       vtk_external
       GIT_REPOSITORY https://gitlab.kitware.com/vtk/vtk.git
-      # Hash of tags/v9.1.0
-      GIT_TAG 285daeedd58eb890cb90d6e907d822eea3d2d092
+      # Hash of tags/v9.2.6
+      GIT_TAG f2c452c9c42005672a3f3ed9218dd9a7fecca79a
       GIT_SHALLOW true
       GIT_SUBMODULES ""
       TMP_DIR "${DEPENDENCIES_DIR}/tmp/${VTK_EXTERNAL_INSTALL}"
       STAMP_DIR "${DEPENDENCIES_DIR}/Stamp/${VTK_EXTERNAL_INSTALL}"
       BINARY_DIR "${DEPENDENCIES_DIR}/Build/${VTK_EXTERNAL_INSTALL}"
       INSTALL_DIR "${DEPENDENCIES_DIR}/Install/${VTK_EXTERNAL_INSTALL}"
-      CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+      CMAKE_ARGS -DCMAKE_BUILD_TYPE=Release
+                 -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+                 -DCMAKE_SKIP_RPATH=OFF
+                 -DCMAKE_SKIP_INSTALL_RPATH=ON
                  -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                  -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
                  -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
@@ -100,6 +99,7 @@ else() # Automatically detect installation
                  -DVTK_BUILD_TESTING=OFF
                  -DVTK_BUILD_EXAMPLES=OFF
                  -DVTK_BUILD_DOCUMENTATION=OFF
+                 -DVTK_VERSIONED_INSTALL=OFF
                  -DVTK_WRAP_PYTHON:BOOL=NO
                  -DVTK_SMP_IMPLEMENTATION_TYPE:STRING="OpenMP"
                  -DVTK_GROUP_ENABLE_Rendering:BOOL=NO
@@ -123,21 +123,21 @@ else() # Automatically detect installation
                  -DVTK_MODULE_ENABLE_VTK_FiltersCore:BOOL=YES
                  -DVTK_MODULE_ENABLE_VTK_FiltersGeneral:BOOL=YES
                  -DVTK_MODULE_ENABLE_VTK_FiltersGeometry:BOOL=YES
-      BUILD_COMMAND ${CMAKE_COMMAND} --build . --parallel ${NPROC}
-      # INSTALL_COMMAND ${CMAKE_COMMAND} --install .
-      INSTALL_COMMAND ""
+                 -Wno-dev
+      BUILD_COMMAND ${CMAKE_COMMAND} --build . --parallel ${NPROC} --config Release
+      INSTALL_COMMAND ${CMAKE_COMMAND} --install .
       UPDATE_COMMAND ""
       USES_TERMINAL_DOWNLOAD 1
       USES_TERMINAL_UPDATE 1
       GIT_PROGRESS 1)
 
     # Get install directory
-    ExternalProject_Get_Property(vtk_external BINARY_DIR)
+    ExternalProject_Get_Property(vtk_external INSTALL_DIR)
 
     # Set the required variables
-    set(VTK_DIR "${BINARY_DIR}")
+    set(VTK_DIR "${INSTALL_DIR}")
 
-    set(VTK_VERSION 9.1)
+    set(VTK_VERSION 9.2)
     set(VTK_INCLUDE_DIRS "${VTK_DIR}/include/vtk-${VTK_VERSION}")
 
     # add to buildDependencies target
