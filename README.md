@@ -50,7 +50,7 @@ Since this is a header only project, it does not require any installation.
 However, we recommend the following procedure in order to set up all dependencies correctly:
 
 ```bash
-git clone github.com/ViennaTools/ViennaLS.git
+git clone https://github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
 mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/
@@ -64,7 +64,7 @@ This will install the necessary headers and CMake files to the specified path. I
 
 In order to install ViennaLS without VTK, run:
 ```bash
-git clone github.com/ViennaTools/ViennaLS.git
+git clone https://github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
 mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/ -DVIENNALS_USE_VTK=OFF
@@ -77,7 +77,7 @@ make install
 The CMake configuration automatically checks if the dependencies are installed. If CMake is unable to find them, the dependencies will be built from source with the _buildDependencies_ target.
 
 ```bash
-git clone github.com/ViennaTools/ViennaLS.git
+git clone https://github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
 mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/
@@ -93,7 +93,7 @@ If one wants to use a specific installation of one or more of the dependencies, 
 The Python package can be built and installed using the `pip` command:
 
 ```bash
-git clone github.com/ViennaTools/ViennaLS.git
+git clone https://github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
 pip install --user .
 ```
@@ -116,7 +116,7 @@ import viennals3d as vls
 If you just want to install all dependencies before doing anything else, run:
 
 ```bash
-git clone github.com/ViennaTools/ViennaLS.git
+git clone https://github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
 mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/
@@ -134,7 +134,7 @@ ViennaLS uses CTest to run its tests.
 In order to check whether ViennaLS runs without issues on your system, you can run:
 
 ```bash
-git clone github.com/ViennaTools/ViennaLS.git
+git clone https://github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
 mkdir build && cd build
 cmake .. -DVIENNALS_BUILD_TESTS=ON
@@ -148,7 +148,7 @@ The examples can be built using CMake:
 
 ```bash
 cmake .. -DVIENNALS_BUILD_EXAMPLES=ON
-make
+make buildExamples
 ```
 
 ## Integration in CMake projects
