@@ -1,16 +1,11 @@
 #ifndef LS_EXTRUDE_HPP
 #define LS_EXTRUDE_HPP
 
-#include <unordered_set>
-
 #include <lsDomain.hpp>
 #include <lsFromSurfaceMesh.hpp>
-#include <lsMakeGeometry.hpp>
-#include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
-#include <lsVTKWriter.hpp>
 
-// Extrude a 2D level-set into a 3D domain
+// Extrude a 2D Level Set into a 3D domain.
 template <class T> class lsExtrude {
   lsSmartPointer<lsDomain<T, 2>> inputLevelSet = nullptr;
   lsSmartPointer<lsDomain<T, 3>> outputLevelSet = nullptr;
@@ -29,12 +24,15 @@ public:
     inputLevelSet = passedInputLS;
   }
 
+  // The 3D output LS will be overwritten by the extruded LS
   void setOutputLevelSet(lsSmartPointer<lsDomain<T, 3>> &passedOutputLS) {
     outputLevelSet = passedOutputLS;
   }
 
+  // Set the min and max extent in the extruded dimension
   void setExtent(std::array<T, 2> passedExtent) { extent = passedExtent; }
 
+  // Set which index of the added dimension (x: 0, y: 1, z: 2)
   void setExtrudeDimension(const int passedExtrudeDim) {
     extrudeDim = passedExtrudeDim;
   }
@@ -54,10 +52,12 @@ public:
       return;
     }
 
-    const T gridDelta = inputLevelSet->getGrid().getGridDelta();
+    // x and y of the input LS get transformed to these indices
     const auto extrudeDims = getExtrudeDims();
 
+    // create new domain based on 2D extent and boundary conditions
     {
+      const T gridDelta = inputLevelSet->getGrid().getGridDelta();
       const auto inputBoundaryConds =
           inputLevelSet->getGrid().getBoundaryConditions();
       auto minBounds = inputLevelSet->getGrid().getMinBounds();
@@ -91,6 +91,7 @@ public:
     auto &nodes = surface->getNodes();
     const unsigned numNodes = nodes.size();
 
+    // add new nodes shifted by the extent
     for (unsigned i = 0; i < numNodes; i++) {
       nodes[i][extrudeDims[1]] = nodes[i][1];
       nodes[i][extrudeDims[0]] = nodes[i][0];
@@ -101,18 +102,18 @@ public:
       nodes[i][extrudeDim] = extent[0];
     }
 
+    // add triangles in places of lines
     for (unsigned i = 0; i < lines.size(); i++) {
       std::array<unsigned, 3> triangle = {lines[i][0], lines[i][1],
                                           lines[i][0] + numNodes};
       surface->insertNextTriangle(triangle);
-
       triangle[0] = lines[i][1];
       triangle[1] = lines[i][1] + numNodes;
       triangle[2] = lines[i][0] + numNodes;
       surface->insertNextTriangle(triangle);
     }
+    surface->template getElements<2>().clear(); // remove lines
 
-    surface->template getElements<2>().clear();
     lsFromSurfaceMesh<T, 3>(outputLevelSet, surface).apply();
   }
 
@@ -135,7 +136,7 @@ private:
     }
   }
 
-  std::array<unsigned, 2> getExtrudeDims() {
+  inline std::array<unsigned, 2> getExtrudeDims() const {
     assert(extrudeDim < 3);
     if (extrudeDim == 0) {
       return {1, 2};
