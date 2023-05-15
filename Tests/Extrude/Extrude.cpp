@@ -61,7 +61,7 @@ int main() {
 
   std::array<double, 2> extrudeExtent = {-5., 5.};
   auto trench_3D = lsSmartPointer<lsDomain<double, 3>>::New();
-  lsExtrude<double>(trench, trench_3D, extrudeExtent, 1).apply();
+  lsExtrude<double>(trench, trench_3D, extrudeExtent, 2).apply();
 
   {
     auto mesh = lsSmartPointer<lsMesh<>>::New();

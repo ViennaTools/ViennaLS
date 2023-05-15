@@ -13,14 +13,14 @@
 // Extrude a 2D level-set into a 3D domain
 template <class T> class lsExtrude {
   lsSmartPointer<lsDomain<T, 2>> inputLevelSet = nullptr;
-  lsSmartPointer<lsDomain<T, 3>> &outputLevelSet = nullptr;
+  lsSmartPointer<lsDomain<T, 3>> outputLevelSet = nullptr;
   std::array<T, 2> extent = {0., 0.};
   int extrudeDim = 0;
 
 public:
   lsExtrude() {}
   lsExtrude(lsSmartPointer<lsDomain<T, 2>> passedInputLS,
-            lsSmartPointer<lsDomain<T, 3>> &passedOutputLS,
+            lsSmartPointer<lsDomain<T, 3>> passedOutputLS,
             std::array<T, 2> passedExtent, const int passedExtrudeDim = 0)
       : inputLevelSet(passedInputLS), outputLevelSet(passedOutputLS),
         extent(passedExtent), extrudeDim(passedExtrudeDim) {}
@@ -79,8 +79,9 @@ public:
       boundaryConds[extrudeDims[1]] =
           convertBoundaryCondition(inputBoundaryConds[extrudeDims[1]]);
 
-      outputLevelSet = lsSmartPointer<lsDomain<T, 3>>::New(
+      auto tmpLevelSet = lsSmartPointer<lsDomain<T, 3>>::New(
           domainBounds, boundaryConds, gridDelta);
+      outputLevelSet->deepCopy(tmpLevelSet);
     }
 
     auto surface = lsSmartPointer<lsMesh<T>>::New();
