@@ -11,14 +11,17 @@ template <class T> class lsExtrude {
   lsSmartPointer<lsDomain<T, 3>> outputLevelSet = nullptr;
   std::array<T, 2> extent = {0., 0.};
   int extrudeDim = 0;
+  std::array<lsBoundaryConditionEnum<3>, 3> boundaryConds;
 
 public:
   lsExtrude() {}
   lsExtrude(lsSmartPointer<lsDomain<T, 2>> passedInputLS,
             lsSmartPointer<lsDomain<T, 3>> passedOutputLS,
-            std::array<T, 2> passedExtent, const int passedExtrudeDim = 0)
+            std::array<T, 2> passedExtent, const int passedExtrudeDim,
+            std::array<lsBoundaryConditionEnum<3>, 3> passedBoundaryConds)
       : inputLevelSet(passedInputLS), outputLevelSet(passedOutputLS),
-        extent(passedExtent), extrudeDim(passedExtrudeDim) {}
+        extent(passedExtent), extrudeDim(passedExtrudeDim),
+        boundaryConds(passedBoundaryConds) {}
 
   void setInputLevelSet(lsSmartPointer<lsDomain<T, 2>> passedInputLS) {
     inputLevelSet = passedInputLS;
@@ -35,6 +38,17 @@ public:
   // Set which index of the added dimension (x: 0, y: 1, z: 2)
   void setExtrudeDimension(const int passedExtrudeDim) {
     extrudeDim = passedExtrudeDim;
+  }
+
+  void setBoundaryConditions(
+      std::array<lsBoundaryConditionEnum<3>, 3> passedBoundaryConds) {
+    boundaryConds = passedBoundaryConds;
+  }
+
+  void
+  setBoundaryConditions(lsBoundaryConditionEnum<3> passedBoundaryConds[3]) {
+    for (int i = 0; i < 3; i++)
+      boundaryConds[i] = passedBoundaryConds[i];
   }
 
   void apply() {
@@ -55,11 +69,9 @@ public:
     // x and y of the input LS get transformed to these indices
     const auto extrudeDims = getExtrudeDims();
 
-    // create new domain based on 2D extent and boundary conditions
+    // create new domain based on 2D extent
     {
       const T gridDelta = inputLevelSet->getGrid().getGridDelta();
-      const auto inputBoundaryConds =
-          inputLevelSet->getGrid().getBoundaryConditions();
       auto minBounds = inputLevelSet->getGrid().getMinBounds();
       auto maxBounds = inputLevelSet->getGrid().getMaxBounds();
 
@@ -71,16 +83,8 @@ public:
       domainBounds[2 * extrudeDims[1]] = gridDelta * minBounds[1];
       domainBounds[2 * extrudeDims[1] + 1] = gridDelta * maxBounds[1];
 
-      lsBoundaryConditionEnum<3> boundaryConds[3];
-      boundaryConds[extrudeDim] =
-          convertBoundaryCondition(inputBoundaryConds[extrudeDims[0]]);
-      boundaryConds[extrudeDims[0]] =
-          convertBoundaryCondition(inputBoundaryConds[extrudeDims[0]]);
-      boundaryConds[extrudeDims[1]] =
-          convertBoundaryCondition(inputBoundaryConds[extrudeDims[1]]);
-
       auto tmpLevelSet = lsSmartPointer<lsDomain<T, 3>>::New(
-          domainBounds, boundaryConds, gridDelta);
+          domainBounds, boundaryConds.data(), gridDelta);
       outputLevelSet->deepCopy(tmpLevelSet);
     }
 
@@ -104,12 +108,18 @@ public:
 
     // add triangles in places of lines
     for (unsigned i = 0; i < lines.size(); i++) {
-      std::array<unsigned, 3> triangle = {lines[i][0], lines[i][1],
+      std::array<unsigned, 3> triangle = {lines[i][1], lines[i][0],
                                           lines[i][0] + numNodes};
+      if (extrudeDim == 1) {
+        std::swap(triangle[0], triangle[2]);
+      }
       surface->insertNextTriangle(triangle);
-      triangle[0] = lines[i][1];
+      triangle[0] = lines[i][0] + numNodes;
       triangle[1] = lines[i][1] + numNodes;
-      triangle[2] = lines[i][0] + numNodes;
+      triangle[2] = lines[i][1];
+      if (extrudeDim == 1) {
+        std::swap(triangle[0], triangle[2]);
+      }
       surface->insertNextTriangle(triangle);
     }
     surface->template getElements<2>().clear(); // remove lines
@@ -118,24 +128,6 @@ public:
   }
 
 private:
-  lsBoundaryConditionEnum<3>
-  convertBoundaryCondition(lsBoundaryConditionEnum<2> boundaryCond) {
-    switch (boundaryCond) {
-    case lsBoundaryConditionEnum<2>::PERIODIC_BOUNDARY:
-      return lsBoundaryConditionEnum<3>::PERIODIC_BOUNDARY;
-    case lsBoundaryConditionEnum<2>::INFINITE_BOUNDARY:
-      return lsBoundaryConditionEnum<3>::INFINITE_BOUNDARY;
-    case lsBoundaryConditionEnum<2>::POS_INFINITE_BOUNDARY:
-      return lsBoundaryConditionEnum<3>::POS_INFINITE_BOUNDARY;
-    case lsBoundaryConditionEnum<2>::NEG_INFINITE_BOUNDARY:
-      return lsBoundaryConditionEnum<3>::NEG_INFINITE_BOUNDARY;
-    case lsBoundaryConditionEnum<2>::REFLECTIVE_BOUNDARY:
-      return lsBoundaryConditionEnum<3>::REFLECTIVE_BOUNDARY;
-    default:
-      return lsBoundaryConditionEnum<3>::INFINITE_BOUNDARY;
-    }
-  }
-
   inline std::array<unsigned, 2> getExtrudeDims() const {
     assert(extrudeDim < 3);
     if (extrudeDim == 0) {
