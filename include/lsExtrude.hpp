@@ -5,7 +5,9 @@
 #include <lsFromSurfaceMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 
-// Extrude a 2D Level Set into a 3D domain.
+/// Extrudes a 2D Level Set into a 3D domain. The axis in which should be
+/// extruded can be set and boundary conditions in the 3D domain must be
+/// specified.
 template <class T> class lsExtrude {
   lsSmartPointer<lsDomain<T, 2>> inputLevelSet = nullptr;
   lsSmartPointer<lsDomain<T, 3>> outputLevelSet = nullptr;

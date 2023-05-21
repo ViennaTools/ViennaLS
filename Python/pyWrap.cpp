@@ -511,24 +511,37 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("apply", &lsExpand<T, D>::apply, "Perform expansion.");
 
   // lsExtrude
-  pybind11::class_<lsExtrude<T>, lsSmartPointer<lsExtrude<T>>>(module,
-                                                               "lsExtrude")
-      // constructors
-      .def(pybind11::init(&lsSmartPointer<lsExtrude<T>>::New<>))
-      .def(pybind11::init(
-          &lsSmartPointer<lsExtrude<T>>::New<lsSmartPointer<lsDomain<T, 2>> &,
-                                             lsSmartPointer<lsDomain<T, 3>> &,
-                                             std::array<T, 2>, const int>))
-      // methods
-      .def("setInputLevelSet", &lsExtrude<T>::setInputLevelSet,
-           "Set 2D input Level Set")
-      .def("setOutputLevelSet", &lsExtrude<T>::setOutputLevelSet,
-           "Set 3D output Level Set")
-      .def("setExtent", &lsExtrude<T>::setExtent,
-           "Set the extent in the extruded dimension")
-      .def("setExtrudeDimension", &lsExtrude<T>::setExtrudeDimension,
-           "Set the dimension which should be extruded")
-      .def("apply", &lsExtrude<T>::apply, "Perform extrusion.");
+  // Does not work in current implementation, because one can not import both 2D
+  // and 3D ViennaLS libraries in Python in the same file
+  //   pybind11::class_<lsExtrude<T>, lsSmartPointer<lsExtrude<T>>>(module,
+  //                                                                "lsExtrude")
+  //       // constructors
+  //       .def(pybind11::init(&lsSmartPointer<lsExtrude<T>>::New<>))
+  //       .def(
+  //           pybind11::init(&lsSmartPointer<lsExtrude<T>>::New<
+  //                          lsSmartPointer<lsDomain<T, 2>> &,
+  //                          lsSmartPointer<lsDomain<T, 3>> &, std::array<T,
+  //                          2>, const int,
+  //                          std::array<lsBoundaryConditionEnum<3>, 3>>))
+  //       // methods
+  //       .def("setInputLevelSet", &lsExtrude<T>::setInputLevelSet,
+  //            "Set 2D input Level Set")
+  //       .def("setOutputLevelSet", &lsExtrude<T>::setOutputLevelSet,
+  //            "Set 3D output Level Set")
+  //       .def("setExtent", &lsExtrude<T>::setExtent,
+  //            "Set the extent in the extruded dimension")
+  //       .def("setExtrudeDimension", &lsExtrude<T>::setExtrudeDimension,
+  //            "Set the dimension which should be extruded")
+  //       .def("setBoundaryConditions",
+  //            pybind11::overload_cast<std::array<lsBoundaryConditionEnum<3>,
+  //            3>>(
+  //                &lsExtrude<T>::setBoundaryConditions),
+  //            "Set the boundary conditions in the 3D extruded domain.")
+  //       .def("setBoundaryConditions",
+  //            pybind11::overload_cast<lsBoundaryConditionEnum<3> *>(
+  //                &lsExtrude<T>::setBoundaryConditions),
+  //            "Set the boundary conditions in the 3D extruded domain.")
+  //       .def("apply", &lsExtrude<T>::apply, "Perform extrusion.");
 
   // lsFileFormats
   pybind11::enum_<lsFileFormatEnum>(module, "lsFileFormatEnum")
