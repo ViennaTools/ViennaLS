@@ -608,29 +608,36 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
   pybind11::class_<lsSphere<T, D>, lsSmartPointer<lsSphere<T, D>>>(module,
                                                                    "lsSphere")
       // constructors
-      .def(pybind11::init(
-          &lsSmartPointer<lsSphere<T, D>>::New<const std::vector<T> &, T>))
-      // methods
-      ;
+      .def(pybind11::init(&lsSmartPointer<lsSphere<T, D>>::New<
+                          const std::vector<T> & /*origin*/, T /*radius*/>),
+           pybind11::arg("origin"), pybind11::arg("radius"));
   // lsPlane
   pybind11::class_<lsPlane<T, D>, lsSmartPointer<lsPlane<T, D>>>(module,
                                                                  "lsPlane")
       // constructors
-      .def(pybind11::init(
-          &lsSmartPointer<lsPlane<T, D>>::New<const std::vector<T> &,
-                                              const std::vector<T> &>))
-      // methods
-      ;
-
+      .def(pybind11::init(&lsSmartPointer<lsPlane<T, D>>::New<
+                          const std::vector<T> & /*origin*/,
+                          const std::vector<T> & /*normal*/>),
+           pybind11::arg("origin"), pybind11::arg("normal"));
   // lsBox
   pybind11::class_<lsBox<T, D>, lsSmartPointer<lsBox<T, D>>>(module, "lsBox")
       // constructors
+      .def(pybind11::init(&lsSmartPointer<lsBox<T, D>>::New<
+                          const std::vector<T> & /*minPoint*/,
+                          const std::vector<T> & /*maxPoint*/>),
+           pybind11::arg("minPoint"), pybind11::arg("maxPoint"));
+  // lsCylinder
+  pybind11::class_<lsCylinder<T, D>, lsSmartPointer<lsCylinder<T, D>>>(
+      module, "lsCylinder")
+      // constructors
       .def(pybind11::init(
-          &lsSmartPointer<lsBox<T, D>>::New<const std::vector<T> &,
-                                            const std::vector<T> &>))
-      // methods
-      ;
-
+               &lsSmartPointer<lsCylinder<T, D>>::New<
+                   const std::vector<T> & /*origin*/,
+                   const std::vector<T> & /*axisDirection*/, const T /*height*/,
+                   const T /*radius*/, const T /*topRadius*/>),
+           pybind11::arg("origin"), pybind11::arg("axisDirection"),
+           pybind11::arg("height"), pybind11::arg("radius"),
+           pybind11::arg("topRadius") = 0.);
   // lsPointCloud
   pybind11::class_<lsPointCloud<T, D>, lsSmartPointer<lsPointCloud<T, D>>>(
       module, "lsPointCloud")
@@ -660,6 +667,9 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
               lsSmartPointer<lsDomain<T, D>> &, lsSmartPointer<lsBox<T, D>> &>))
       .def(pybind11::init(&lsSmartPointer<lsMakeGeometry<T, D>>::New<
                           lsSmartPointer<lsDomain<T, D>> &,
+                          lsSmartPointer<lsCylinder<T, D>> &>))
+      .def(pybind11::init(&lsSmartPointer<lsMakeGeometry<T, D>>::New<
+                          lsSmartPointer<lsDomain<T, D>> &,
                           lsSmartPointer<lsPointCloud<T, D>> &>))
       // methods
       .def("setLevelSet", &lsMakeGeometry<T, D>::setLevelSet,
@@ -672,6 +682,9 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
                lsMakeGeometry<T, D>::setGeometry)
       .def("setGeometry",
            (void(lsMakeGeometry<T, D>::*)(lsSmartPointer<lsBox<T, D>>)) &
+               lsMakeGeometry<T, D>::setGeometry)
+      .def("setGeometry",
+           (void(lsMakeGeometry<T, D>::*)(lsSmartPointer<lsCylinder<T, D>>)) &
                lsMakeGeometry<T, D>::setGeometry)
       .def("setGeometry",
            (void(lsMakeGeometry<T, D>::*)(lsSmartPointer<lsPointCloud<T, D>>)) &
