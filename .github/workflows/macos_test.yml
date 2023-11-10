@@ -41,8 +41,11 @@ jobs:
             -D OpenMP_CXX_LIB_NAMES="omp" \
             -D OpenMP_omp_LIBRARY="$(brew --prefix libomp)/lib/libomp.a"
 
+      - name: Build Dependencies
+        run: cmake --build ./build --target buildDependencies
+
       - name: Build Tests
-        run: cmake --build ./build
+        run: cmake --build ./build --target buildTests
 
       - name: Run Tests
         working-directory: ${{github.workspace}}/build

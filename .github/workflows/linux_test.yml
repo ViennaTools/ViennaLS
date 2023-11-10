@@ -35,8 +35,11 @@ jobs:
             -D CMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
             -D VIENNALS_BUILD_TESTS=ON
 
+      - name: Build Dependencies
+        run: cmake --build ./build --target buildDependencies
+
       - name: Build Tests
-        run: cmake --build ./build
+        run: cmake --build ./build --target buildTests
 
       - name: Run Tests
         working-directory: ${{github.workspace}}/build
