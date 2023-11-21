@@ -161,6 +161,7 @@ endif()
 # --------------------------------------------------------------------------------------------------------
 
 if (VIENNALS_BUILD_PYTHON)
+  message(STATUS "[ViennaLS] Building Python Bindings")
   add_subdirectory(Python)
 endif()
 
@@ -169,6 +170,7 @@ endif()
 # --------------------------------------------------------------------------------------------------------
 
 if (VIENNALS_BUILD_EXAMPLES)
+  message(STATUS "[ViennaLS] Building Examples")
   add_subdirectory(Examples)
 endif()
 
@@ -177,6 +179,8 @@ endif()
 # --------------------------------------------------------------------------------------------------------
 
 if (VIENNALS_BUILD_TESTS)
+  message(STATUS "[ViennaLS] Building Tests")
+
   enable_testing()
   add_subdirectory(Tests)
 endif()
