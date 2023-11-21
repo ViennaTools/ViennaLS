@@ -4,6 +4,7 @@
 #include <lsPreCompileMacros.hpp>
 
 #include <array>
+#include <cstdint>
 #include <vector>
 
 #include <lsConcepts.hpp>
