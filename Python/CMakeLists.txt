@@ -25,6 +25,11 @@ message("${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
 set(VIENNALS_PYTHON_MODULE_NAME "viennals")
 set(VIENNALS_LIBRARY_OUTPUT_DIR ${CMAKE_BINARY_DIR})
 
+if (CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+  set(VIENNALS_LIBRARY_OUTPUT_DIR "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
+  message(STATUS "[ViennaLS] Using Library Output Directory for bindings")
+endif()
+
 # --------------------------------------------------------------------------------------------------------
 # Setup 2D-Bindings
 # --------------------------------------------------------------------------------------------------------
