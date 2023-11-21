@@ -7,6 +7,7 @@ topography simulations. The main design goals are simplicity and efficiency,
 tailored towards scientific simulations. ViennaLS can also be used for
 visualisation applications, although this is not the main design target.
 """
+
 import os
 import sys
 
