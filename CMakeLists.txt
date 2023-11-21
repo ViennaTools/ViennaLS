@@ -10,6 +10,9 @@ option(VIENNALS_USE_VTK             "Build with VTK file support"               
 option(VIENNALS_PRECOMPILE_HEADERS  "Build template specialisations for shorter compile times" OFF)
 option(VIENNALS_STATIC_BUILD        "Build dependencies as static libraries"                   OFF)
 
+option(VIENNALS_ENABLE_SANITIZER    "Enable Sanitizer for debug buidlds"                        ON)
+option(VIENNALS_USE_SANITIZER       "Enable Sanitizer"                                         OFF)
+
 option(VIENNALS_BUILD_EXAMPLES      "Build examples"                                           OFF)
 option(VIENNALS_BUILD_TESTS         "Build tests"                                              OFF)
 
@@ -22,7 +25,7 @@ include(CMakeDependentOption)
 cmake_dependent_option(VIENNALS_BUILD_PYTHON "Build for Python (>=3)" OFF "VIENNALS_USE_VTK" OFF)
 
 # --------------------------------------------------------------------------------------------------------
-# Ensure valid options
+# Configuration
 # --------------------------------------------------------------------------------------------------------
 
 if (VIENNALS_STATIC_BUILD)
@@ -30,9 +33,17 @@ if (VIENNALS_STATIC_BUILD)
   set(VIENNALS_PRECOMPILE_HEADERS ON)
 endif()
 
-# --------------------------------------------------------------------------------------------------------
-# CMake / CPM Options
-# --------------------------------------------------------------------------------------------------------
+if ((VIENNALS_ENABLE_SANITIZER AND CMAKE_BUILD_TYPE STREQUAL "Debug") OR VIENNALS_USE_SANITIZER)
+  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    add_compile_options(-fno-omit-frame-pointer -fsanitize=address -fsanitize=thread -fsanitize=memory)
+    add_link_options(-fno-omit-frame-pointer -fsanitize=address -fsanitize=thread -fsanitize=memory)
+  elseif(MSVC)
+    add_compile_options(/fsanitize=address /fsanitize-address-use-after-return /fno-sanitize-address-vcasan-lib)
+    add_link_options(/fsanitize=address /fsanitize-address-use-after-return /fno-sanitize-address-vcasan-lib)
+  endif()
+
+  message(STATUS "[ViennaLS] Using Sanitizer")
+endif()
 
 if(MSVC)
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
