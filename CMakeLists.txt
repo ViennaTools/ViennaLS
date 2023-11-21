@@ -176,3 +176,19 @@ if (VIENNALS_BUILD_TESTS)
   enable_testing()
   add_subdirectory(Tests)
 endif()
+  
+# --------------------------------------------------------------------------------------------------------
+# Install Target
+# --------------------------------------------------------------------------------------------------------
+
+install(TARGETS ${PROJECT_NAME} 
+        EXPORT  ${PROJECT_NAME}_Targets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+# TOOD: This could be improved if the header files were in a sub-directory
+
+file(GLOB headers "include/*.hpp")
+install(FILES ${headers} DESTINATION include)
