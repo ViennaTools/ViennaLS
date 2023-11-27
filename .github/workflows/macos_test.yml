@@ -32,7 +32,7 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -B ./build \
+          cmake -B build \
             -D CMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
             -D VIENNALS_BUILD_TESTS=ON \
             -D OpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" \
@@ -41,11 +41,8 @@ jobs:
             -D OpenMP_CXX_LIB_NAMES="omp" \
             -D OpenMP_omp_LIBRARY="$(brew --prefix libomp)/lib/libomp.a"
 
-      - name: Build Dependencies
-        run: cmake --build ./build --target buildDependencies
-
-      - name: Build Tests
-        run: cmake --build ./build --target buildTests
+      - name: Build
+        run: cmake --build build
 
       - name: Run Tests
         working-directory: ${{github.workspace}}/build

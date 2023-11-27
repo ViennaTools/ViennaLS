@@ -31,15 +31,12 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -B ./build \
+          cmake -B build \
             -D CMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
             -D VIENNALS_BUILD_TESTS=ON
 
-      - name: Build Dependencies
-        run: cmake --build ./build --target buildDependencies
-
       - name: Build Tests
-        run: cmake --build ./build --target buildTests
+        run: cmake --build build
 
       - name: Run Tests
         working-directory: ${{github.workspace}}/build
@@ -53,6 +50,7 @@ jobs:
           token: ${{ secrets.PAT_VIENNAPS }}
           repository: ${{github.repository_owner}}/ViennaPS
           event-type: viennals-update-linux
+
   linux-python:
     runs-on: ubuntu-latest
     steps:
@@ -65,7 +63,7 @@ jobs:
         with:
           key: viennals-dependency-cache-${{ runner.os }}-${{env.BUILD_TYPE}}-${{ hashFiles( './external/upstream/**CMakeLists.txt' ) }}
           path: ${{github.workspace}}/dependencies/Install
-      
+
       - name: Build and install Python module
         shell: bash
         run: pip3 install --user . -v
