@@ -52,10 +52,9 @@ However, we recommend the following procedure in order to set up all dependencie
 ```bash
 git clone https://github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
-mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/
-make buildDependencies # this will install all dependencies and might take a while
-make install
+
+cmake -B build -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/
+cmake --build build
 ```
 
 This will install the necessary headers and CMake files to the specified path. If DCMAKE_INSTALL_PREFIX is not specified, it will be installed to the standard path for your system, usually /usr/local/ .
@@ -66,10 +65,9 @@ In order to install ViennaLS without VTK, run:
 ```bash
 git clone https://github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
-mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/ -DVIENNALS_USE_VTK=OFF
-make buildDependencies
-make install
+
+cmake -B build -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/ -DVIENNALS_USE_VTK=OFF
+cmake --build build
 ```
 
 ## Installing with dependencies already installed on the system
@@ -79,10 +77,9 @@ The CMake configuration automatically checks if the dependencies are installed. 
 ```bash
 git clone https://github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
-mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/
-make buildDependencies
-make install
+
+cmake -B build -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/
+cmake --build build
 ```
 If one wants to use a specific installation of one or more of the dependencies, just pass the corresponding _*_DIR_ variable as a configuration option (e.g. -DVTK_DIR=/path/to/vtk/install -Dpybind11_DIR=/path/to/pybind11 -DViennaHRLE_DIR=/path/to/viennahrle)
 
@@ -136,10 +133,10 @@ In order to check whether ViennaLS runs without issues on your system, you can r
 ```bash
 git clone https://github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
-mkdir build && cd build
-cmake .. -DVIENNALS_BUILD_TESTS=ON
-make buildTests # build all tests
-make test # run all tests
+
+cmake -B build -DVIENNALS_BUILD_TESTS=ON
+cmake --build build
+ctest -LE '^benchmark$'
 ```
 
 ## Building examples
@@ -147,8 +144,8 @@ make test # run all tests
 The examples can be built using CMake:
 
 ```bash
-cmake .. -DVIENNALS_BUILD_EXAMPLES=ON
-make buildExamples
+cmake -B build -DVIENNALS_BUILD_EXAMPLES=ON
+cmake --build build
 ```
 
 ## Integration in CMake projects
