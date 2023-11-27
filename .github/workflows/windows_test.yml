@@ -47,7 +47,7 @@ jobs:
       - name: Run Tests
         working-directory: ${{github.workspace}}/build
         # Run all tests except those that are labeled as benchmark
-        run: ctest -LE "^benchmark$" -j 2 --output-on-failure --timeout 1800 -C ${{env.BUILD_TYPE}}
+        run: ctest -E "Benchmark|Performance" -j 2 --output-on-failure --timeout 1800 -C ${{env.BUILD_TYPE}}
 
       - name: Trigger Action on ViennaPS Repository
         if: ${{ vars.TRIGGER_VIENNAPS == 'true' && github.event_name != 'schedule' && github.event_name != 'pull_request' }}

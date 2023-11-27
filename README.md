@@ -136,7 +136,7 @@ cd ViennaLS
 
 cmake -B build -DVIENNALS_BUILD_TESTS=ON
 cmake --build build
-ctest -LE '^benchmark$' --test-dir build
+ctest -E "Benchmark|Performance"  --test-dir build
 ```
 
 ## Building examples
