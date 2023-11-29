@@ -96,7 +96,9 @@ target_link_libraries(${PROJECT_NAME} INTERFACE OpenMP::OpenMP_CXX ViennaHRLE)
 if(VIENNALS_USE_VTK)
   CPMAddPackage(
     NAME VTK
-    VERSION 9.3.0
+    # TODO: Change to 9.3.1 as soon as it's released (https://github.com/ViennaTools/ViennaLS/pull/99#issuecomment-1832053715)
+    GIT_TAG 99bd602bdbe8024c55e8382f7cf1013d42a14601
+    VERSION 9.0.0
     GIT_REPOSITORY "https://gitlab.kitware.com/vtk/vtk"
     OPTIONS "VTK_LEGACY_REMOVE ON"
             "VTK_SMP_IMPLEMENTATION_TYPE \"OpenMP\""
