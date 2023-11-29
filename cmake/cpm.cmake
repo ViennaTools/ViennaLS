@@ -222,7 +222,7 @@ function(cpm_find_package NAME VERSION)
       set(VERSION ${${CPM_ARGS_NAME}_VERSION})
     endif()
     cpm_message(STATUS "${CPM_INDENT} Using local package ${CPM_ARGS_NAME}@${VERSION}")
-    cpmregisterpackage(${CPM_ARGS_NAME} "${VERSION}")
+    CPMRegisterPackage(${CPM_ARGS_NAME} "${VERSION}")
     set(CPM_PACKAGE_FOUND
         YES
         PARENT_SCOPE)
@@ -262,7 +262,7 @@ function(CPMFindPackage)
     set(downloadPackage $ENV{CPM_DOWNLOAD_${CPM_ARGS_NAME}})
   endif()
   if(downloadPackage)
-    cpmaddpackage(${ARGN})
+    CPMAddPackage(${ARGN})
     cpm_export_variables(${CPM_ARGS_NAME})
     return()
   endif()
@@ -276,7 +276,7 @@ function(CPMFindPackage)
   cpm_find_package(${CPM_ARGS_NAME} "${CPM_ARGS_VERSION}" ${CPM_ARGS_FIND_PACKAGE_ARGUMENTS})
 
   if(NOT CPM_PACKAGE_FOUND)
-    cpmaddpackage(${ARGN})
+    CPMAddPackage(${ARGN})
     cpm_export_variables(${CPM_ARGS_NAME})
   endif()
 
@@ -285,7 +285,7 @@ endfunction()
 # checks if a package has been added before
 function(cpm_check_if_package_already_added CPM_ARGS_NAME CPM_ARGS_VERSION)
   if("${CPM_ARGS_NAME}" IN_LIST CPM_PACKAGES)
-    cpmgetpackageversion(${CPM_ARGS_NAME} CPM_PACKAGE_VERSION)
+    CPMGetPackageVersion(${CPM_ARGS_NAME} CPM_PACKAGE_VERSION)
     if("${CPM_PACKAGE_VERSION}" VERSION_LESS "${CPM_ARGS_VERSION}")
       message(
         WARNING
@@ -581,23 +581,15 @@ function(CPMAddPackage)
   if(NOT CPM_ARGS_FORCE AND NOT "${CPM_${CPM_ARGS_NAME}_SOURCE}" STREQUAL "")
     set(PACKAGE_SOURCE ${CPM_${CPM_ARGS_NAME}_SOURCE})
     set(CPM_${CPM_ARGS_NAME}_SOURCE "")
-    cpmaddpackage(
-      NAME
-      "${CPM_ARGS_NAME}"
-      SOURCE_DIR
-      "${PACKAGE_SOURCE}"
-      EXCLUDE_FROM_ALL
-      "${CPM_ARGS_EXCLUDE_FROM_ALL}"
-      SYSTEM
-      "${CPM_ARGS_SYSTEM}"
-      OPTIONS
-      "${CPM_ARGS_OPTIONS}"
-      SOURCE_SUBDIR
-      "${CPM_ARGS_SOURCE_SUBDIR}"
-      DOWNLOAD_ONLY
-      "${DOWNLOAD_ONLY}"
-      FORCE
-      True)
+    CPMAddPackage(
+      NAME "${CPM_ARGS_NAME}"
+      SOURCE_DIR "${PACKAGE_SOURCE}"
+      EXCLUDE_FROM_ALL "${CPM_ARGS_EXCLUDE_FROM_ALL}"
+      SYSTEM "${CPM_ARGS_SYSTEM}"
+      OPTIONS "${CPM_ARGS_OPTIONS}"
+      SOURCE_SUBDIR "${CPM_ARGS_SOURCE_SUBDIR}"
+      DOWNLOAD_ONLY "${DOWNLOAD_ONLY}"
+      FORCE True)
     cpm_export_variables(${CPM_ARGS_NAME})
     return()
   endif()
@@ -606,7 +598,7 @@ function(CPMAddPackage)
   if(NOT CPM_ARGS_FORCE AND NOT "${CPM_DECLARATION_${CPM_ARGS_NAME}}" STREQUAL "")
     set(declaration ${CPM_DECLARATION_${CPM_ARGS_NAME}})
     set(CPM_DECLARATION_${CPM_ARGS_NAME} "")
-    cpmaddpackage(${declaration})
+    CPMAddPackage(${declaration})
     cpm_export_variables(${CPM_ARGS_NAME})
     # checking again to ensure version and option compatibility
     cpm_check_if_package_already_added(${CPM_ARGS_NAME} "${CPM_ARGS_VERSION}")
@@ -631,7 +623,7 @@ function(CPMAddPackage)
     endif()
   endif()
 
-  cpmregisterpackage("${CPM_ARGS_NAME}" "${CPM_ARGS_VERSION}")
+  CPMRegisterPackage("${CPM_ARGS_NAME}" "${CPM_ARGS_VERSION}")
 
   if(DEFINED CPM_ARGS_GIT_TAG)
     set(PACKAGE_INFO "${CPM_ARGS_GIT_TAG}")
@@ -777,7 +769,7 @@ endfunction()
 # Fetch a previously declared package
 macro(CPMGetPackage Name)
   if(DEFINED "CPM_DECLARATION_${Name}")
-    cpmaddpackage(NAME ${Name})
+    CPMAddPackage(NAME ${Name})
   else()
     message(SEND_ERROR "${CPM_INDENT} Cannot retrieve package ${Name}: no declaration available")
   endif()

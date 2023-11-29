@@ -9,5 +9,5 @@ find . -type d \( -path ./dependencies -o -path "./build*" \) -prune -false -o -
 
 if command -v cmake-format &> /dev/null
 then
-    find . -type d \( -path ./dependencies -o -path "./build*" \) -prune -false -o -name "*.cmake" -o -name CMakeLists.txt -o -name "*.cmake.in"  | while read -r i; do echo "$i"; cmake-format --line-width 100 -i "$i"; done
+    find . -type d \( -path ./dependencies -o -path "./build*" \) -prune -false -o -name "*.cmake" -o -name CMakeLists.txt -o -name "*.cmake.in"  | while read -r i; do echo "$i"; cmake-format -i "$i"; done
 fi

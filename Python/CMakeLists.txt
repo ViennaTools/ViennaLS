@@ -12,7 +12,10 @@ set(PYBIND11_PYTHON_VERSION
     3
     CACHE STRING "Python version")
 
-cpmaddpackage(NAME pybind11 VERSION 2.11.1 GIT_REPOSITORY "https://github.com/pybind/pybind11")
+CPMAddPackage(
+  NAME pybind11
+  VERSION 2.11.1
+  GIT_REPOSITORY "https://github.com/pybind/pybind11")
 
 # --------------------------------------------------------------------------------------------------------
 # Constants
