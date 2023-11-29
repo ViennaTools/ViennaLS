@@ -87,7 +87,8 @@ include("cmake/cpm.cmake")
 CPMAddPackage(
   NAME ViennaHRLE
   GIT_TAG master
-  GIT_REPOSITORY "https://github.com/ViennaTools/ViennaHRLE")
+  GIT_REPOSITORY "https://github.com/ViennaTools/ViennaHRLE"
+  EXCLUDE_FROM_ALL ON)
 
 find_package(OpenMP REQUIRED)
 target_link_libraries(${PROJECT_NAME} INTERFACE OpenMP::OpenMP_CXX ViennaHRLE)
@@ -119,7 +120,8 @@ if(VIENNALS_USE_VTK)
             "VTK_MODULE_ENABLE_VTK_IOXML YES"
             "VTK_MODULE_ENABLE_VTK_FiltersCore YES"
             "VTK_MODULE_ENABLE_VTK_FiltersGeneral YES"
-            "VTK_MODULE_ENABLE_VTK_FiltersGeometry YES")
+            "VTK_MODULE_ENABLE_VTK_FiltersGeometry YES"
+    EXCLUDE_FROM_ALL ON)
 
   target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_USE_VTK=1)
 
