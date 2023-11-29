@@ -13,7 +13,7 @@ option(VIENNALS_USE_VTK "Build with VTK file support" ON)
 option(VIENNALS_PRECOMPILE_HEADERS "Build template specialisations for shorter compile times" OFF)
 option(VIENNALS_STATIC_BUILD "Build dependencies as static libraries" OFF)
 
-option(VIENNALS_ENABLE_SANITIZER "Enable Sanitizer for debug buidlds" ON)
+option(VIENNALS_ENABLE_SANITIZER "Enable Sanitizer for debug buidlds" OFF)
 option(VIENNALS_USE_SANITIZER "Enable Sanitizer (Requires GCC or Clang)" OFF)
 
 option(VIENNALS_BUILD_EXAMPLES "Build examples" OFF)
