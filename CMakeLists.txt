@@ -49,10 +49,6 @@ if((VIENNALS_ENABLE_SANITIZER AND CMAKE_BUILD_TYPE STREQUAL "Debug") OR VIENNALS
   message(STATUS "[ViennaLS] Using Sanitizer")
 endif()
 
-if(MSVC)
-  set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-endif()
-
 set(CPM_USE_LOCAL_PACKAGES ON)
 
 # --------------------------------------------------------------------------------------------------------
@@ -164,6 +160,7 @@ if(VIENNALS_PRECOMPILE_HEADERS)
 
   target_link_libraries(${PROJECT_NAME}Lib PUBLIC ${PROJECT_NAME})
   target_sources(${PROJECT_NAME}Lib PUBLIC "lib/specialisations.cpp")
+  set_target_properties(${PROJECT_NAME}Lib PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
 # --------------------------------------------------------------------------------------------------------
