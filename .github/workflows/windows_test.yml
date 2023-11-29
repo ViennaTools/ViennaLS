@@ -71,6 +71,11 @@ jobs:
           key: viennals-dependency-cache-${{ runner.os }}-${{env.BUILD_TYPE}}-${{ hashFiles( './external/upstream/**CMakeLists.txt' ) }}
           path: ${{github.workspace}}/dependencies/Install
 
+      - name: Configure Git
+        # Workaround for windows, as the filename is 260 by default, however
+        # VTK has some files that exceed this limit, thus we need this workaround.
+        run: git config --system core.longpaths true
+
       - name: Build and install Python module
         shell: bash
         run: pip3 install --user . -v
