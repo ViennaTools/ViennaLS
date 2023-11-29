@@ -109,6 +109,7 @@ if(VIENNALS_USE_VTK)
             "TK_GROUP_ENABLE_Web NO"
             "VTK_GROUP_ENABLE_Qt NO"
             "VTK_GROUP_ENABLE_MPI NO"
+            "VTK_ENABLE_sqlite NO"
             "VTK_MODULE_ENABLE_VTK_CommonExecutionModel YES"
             "VTK_MODULE_ENABLE_VTK_CommonMisc YES"
             "VTK_MODULE_ENABLE_VTK_CommonSystem YES"
