@@ -1,7 +1,8 @@
 macro(setup_vtk_env TARGET OUTPUT)
 
-  if (NOT WIN32)
-    message(STATUS "[ViennaLS] Skipping VTK-Environment setup for ${TARGET} (Only required on Windows)")
+  if(NOT WIN32)
+    message(
+      STATUS "[ViennaLS] Skipping VTK-Environment setup for ${TARGET} (Only required on Windows)")
     return()
   endif()
 
