@@ -37,9 +37,11 @@ endif()
 
 include("../cmake/vtk.cmake")
 
-if(NOT VTK_DIR)
+if(WIN32 AND NOT VTK_DIR)
   setup_vtk_env(${PROJECT_NAME} vtk_env)
   set(VTK_DIR "${PROJECT_BINARY_DIR}/vtk_env")
+elseif(NOT VTK_DIR)
+  set(VTK_DIR "${VTK_LIBS}")
 endif()
 
 # --------------------------------------------------------------------------------------------------------
