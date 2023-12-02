@@ -23,8 +23,6 @@ CPMFindPackage(
 # Constants
 # --------------------------------------------------------------------------------------------------------
 
-message("${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
-
 set(VIENNALS_PYTHON_MODULE_NAME "viennals")
 set(VIENNALS_LIBRARY_OUTPUT_DIR ${CMAKE_BINARY_DIR})
 
