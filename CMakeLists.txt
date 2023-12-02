@@ -145,7 +145,7 @@ if(VIENNALS_USE_VTK)
   if(MSVC)
     set(VTK_LIBS "${VTK_BINARY_DIR}/bin/$<CONFIG>")
   else()
-    set(VTK_LIBS "${VTK_BINARY_DIR}/bin")
+    set(VTK_LIBS "${VTK_BINARY_DIR}/lib")
   endif()
 endif()
 
