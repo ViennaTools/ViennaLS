@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.14)
 project(ViennaLSPython LANGUAGES CXX)
 
+add_custom_target(${PROJECT_NAME} ALL)
+
 # --------------------------------------------------------------------------------------------------------
 # Setup Dependencies
 # --------------------------------------------------------------------------------------------------------
@@ -12,7 +14,7 @@ set(PYBIND11_PYTHON_VERSION
     3
     CACHE STRING "Python version")
 
-CPMAddPackage(
+CPMFindPackage(
   NAME pybind11
   VERSION 2.11.1
   GIT_REPOSITORY "https://github.com/pybind/pybind11")
@@ -32,6 +34,17 @@ if(CMAKE_LIBRARY_OUTPUT_DIRECTORY)
 endif()
 
 # --------------------------------------------------------------------------------------------------------
+# VTK-Setup
+# --------------------------------------------------------------------------------------------------------
+
+include("../cmake/vtk.cmake")
+
+if(NOT VTK_DIR)
+  setup_vtk_env(${PROJECT_NAME} vtk_env)
+  set(VTK_DIR "${PROJECT_BINARY_DIR}/vtk_env")
+endif()
+
+# --------------------------------------------------------------------------------------------------------
 # Setup 2D-Bindings
 # --------------------------------------------------------------------------------------------------------
 
@@ -39,6 +52,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${VIENNALS_LIBRARY_OUTPUT_DIR}/viennals2d)
 set(VIENNALS_PYTHON_MODULE_NAME_2D "_${VIENNALS_PYTHON_MODULE_NAME}2d")
 
 pybind11_add_module("${VIENNALS_PYTHON_MODULE_NAME_2D}" "pyWrap.cpp")
+add_dependencies(${PROJECT_NAME} ${VIENNALS_PYTHON_MODULE_NAME_2D})
 
 target_link_libraries(${VIENNALS_PYTHON_MODULE_NAME_2D} PUBLIC ViennaLS)
 target_compile_definitions(
@@ -56,6 +70,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${VIENNALS_LIBRARY_OUTPUT_DIR}/viennals3d)
 set(VIENNALS_PYTHON_MODULE_NAME_3D "_${VIENNALS_PYTHON_MODULE_NAME}3d")
 
 pybind11_add_module("${VIENNALS_PYTHON_MODULE_NAME_3D}" "pyWrap.cpp")
+add_dependencies(${PROJECT_NAME} ${VIENNALS_PYTHON_MODULE_NAME_3D})
 
 target_link_libraries(${VIENNALS_PYTHON_MODULE_NAME_3D} PUBLIC ViennaLS)
 target_compile_definitions(

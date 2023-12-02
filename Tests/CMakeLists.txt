@@ -1,3 +1,10 @@
+add_custom_target(ViennaLS_Tests ALL)
+
+if (NOT VTK_DIR)
+  include("../cmake/vtk.cmake")
+  setup_vtk_env(ViennaLS_Tests "tests")
+endif()
+
 file(
   GLOB entries
   LIST_DIRECTORIES true

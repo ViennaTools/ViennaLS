@@ -1,0 +1,9 @@
+macro(setup_vtk_env TARGET OUTPUT)
+  message(STATUS "[ViennaLS] Setting up VTK for ${TARGET}")
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $<1:${PROJECT_BINARY_DIR}/${OUTPUT}>)
+
+  add_custom_command(
+    TARGET ${TARGET}
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${VTK_LIBS} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+endmacro()

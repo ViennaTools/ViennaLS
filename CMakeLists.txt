@@ -49,8 +49,6 @@ if((VIENNALS_ENABLE_SANITIZER AND CMAKE_BUILD_TYPE STREQUAL "Debug") OR VIENNALS
   message(STATUS "[ViennaLS] Using Sanitizer")
 endif()
 
-set(CPM_USE_LOCAL_PACKAGES ON)
-
 # --------------------------------------------------------------------------------------------------------
 # Setup Library
 # --------------------------------------------------------------------------------------------------------
@@ -84,7 +82,7 @@ target_include_directories(${PROJECT_NAME} INTERFACE "include")
 
 include("cmake/cpm.cmake")
 
-CPMAddPackage(
+CPMFindPackage(
   NAME ViennaHRLE
   GIT_TAG master
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaHRLE"
@@ -94,7 +92,7 @@ find_package(OpenMP REQUIRED)
 target_link_libraries(${PROJECT_NAME} INTERFACE OpenMP::OpenMP_CXX ViennaHRLE)
 
 if(VIENNALS_USE_VTK)
-  CPMAddPackage(
+  CPMFindPackage(
     NAME VTK
     # TODO: Change to 9.3.1 as soon as it's released
     # (https://github.com/ViennaTools/ViennaLS/pull/99#issuecomment-1832053715)
@@ -144,8 +142,10 @@ if(VIENNALS_USE_VTK)
               VTK::FiltersGeneral
               VTK::FiltersGeometry)
 
-  if(NOT VTK_DIR)
-    set(VTK_DIR "${VTK_BINARY_DIR}/lib")
+  if(MSVC)
+    set(VTK_LIBS "${VTK_BINARY_DIR}/bin/$<CONFIG>")
+  else()
+    set(VTK_LIBS "${VTK_BINARY_DIR}/bin")
   endif()
 endif()
 
@@ -169,15 +169,6 @@ if(VIENNALS_PRECOMPILE_HEADERS)
 endif()
 
 # --------------------------------------------------------------------------------------------------------
-# Setup Python Bindings
-# --------------------------------------------------------------------------------------------------------
-
-if(VIENNALS_BUILD_PYTHON)
-  message(STATUS "[ViennaLS] Building Python Bindings")
-  add_subdirectory(Python)
-endif()
-
-# --------------------------------------------------------------------------------------------------------
 # Setup Examples
 # --------------------------------------------------------------------------------------------------------
 
@@ -195,6 +186,15 @@ if(VIENNALS_BUILD_TESTS)
 
   enable_testing()
   add_subdirectory(Tests)
+endif()
+
+# --------------------------------------------------------------------------------------------------------
+# Setup Python Bindings
+# --------------------------------------------------------------------------------------------------------
+
+if(VIENNALS_BUILD_PYTHON)
+  message(STATUS "[ViennaLS] Building Python Bindings")
+  add_subdirectory(Python)
 endif()
 
 # --------------------------------------------------------------------------------------------------------
