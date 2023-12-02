@@ -15,5 +15,6 @@ foreach(entry ${entries})
     continue()
   endif()
 
+  message(STATUS "[ViennaLS] Adding Example ${entry}")
   add_subdirectory(${entry})
 endforeach()
