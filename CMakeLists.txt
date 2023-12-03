@@ -160,12 +160,12 @@ if(VIENNALS_PRECOMPILE_HEADERS)
     set(VIENNALS_LINKAGE STATIC)
   endif()
 
-  add_library(${PROJECT_NAME}Lib ${VIENNALS_LINKAGE})
-  add_library(${PROJECT_NAME}::Lib ALIAS ${PROJECT_NAME}Lib)
+  add_library(${PROJECT_NAME}_Lib ${VIENNALS_LINKAGE})
+  add_library(${PROJECT_NAME}::Lib ALIAS ${PROJECT_NAME}_Lib)
 
-  target_link_libraries(${PROJECT_NAME}Lib PUBLIC ${PROJECT_NAME})
-  target_sources(${PROJECT_NAME}Lib PUBLIC "lib/specialisations.cpp")
-  set_target_properties(${PROJECT_NAME}Lib PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+  target_link_libraries(${PROJECT_NAME}_Lib PUBLIC ${PROJECT_NAME})
+  target_sources(${PROJECT_NAME}_Lib PUBLIC "lib/specialisations.cpp")
+  set_target_properties(${PROJECT_NAME}_Lib PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
 # --------------------------------------------------------------------------------------------------------

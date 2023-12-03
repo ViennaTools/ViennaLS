@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(ViennaLSPython LANGUAGES CXX)
+project(ViennaLS_Python LANGUAGES CXX)
 
 add_custom_target(${PROJECT_NAME} ALL)
 
