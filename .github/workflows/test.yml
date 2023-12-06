@@ -26,6 +26,10 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v3
 
+      - name: 📋 Install Dependencies
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: dnf install -y make automake gcc gcc-c++ kernel-devel cmake git
+
       - name: 📋 Install VTK
         if: ${{ matrix.vtk-system }}
         run: dnf install -y vtk vtk-devel
