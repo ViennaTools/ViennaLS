@@ -1,6 +1,8 @@
 <div align="center">
-    
-# <img src="assets/logo.png" height="30"> ViennaLS
+
+![logo](assets/logo.png)
+
+# ViennaLS
 
 [![Linux](https://github.com/ViennaTools/ViennaLS/actions/workflows/linux_test.yml/badge.svg)](https://github.com/ViennaTools/ViennaLS/actions/workflows/linux_test.yml)
 [![macOS](https://github.com/ViennaTools/ViennaLS/actions/workflows/macos_test.yml/badge.svg)](https://github.com/ViennaTools/ViennaLS/actions/workflows/macos_test.yml)
@@ -15,7 +17,7 @@ ViennaLS is a header-only C++ level set library developed for high performance t
 
 ## Support
 
-[Documentation](https://viennatools.github.io/ViennaLS/index.html) and [Examples](./Examples/) can be found online.
+[Documentation](https://viennatools.github.io/ViennaLS/index.html) and [Examples](https://github.com/ViennaTools/ViennaLS/tree/master/Examples) can be found online.
 
 Bug reports and suggestions should be filed on GitHub.
 
