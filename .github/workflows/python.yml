@@ -1,4 +1,4 @@
-name: 🧪 Run Tests
+name: 🐍 Build Bindings
 
 on:
   push:
@@ -6,12 +6,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
+  bindings:
     strategy:
       fail-fast: false
 
       matrix:
-        config: [Release, Debug]
         vtk-system: [true, false]
         os: [ubuntu-latest, windows-latest, macos-latest]
 
@@ -25,7 +24,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.os == 'ubuntu-latest' && 'fedora:38' || null }}
 
-    name: '🧪 Test on ${{ matrix.os }} [Config: "${{ matrix.config }}", VTK installed: "${{ matrix.vtk-system }}"]'
+    name: '🐍 Build Bindings on ${{ matrix.os }} [VTK installed: "${{ matrix.vtk-system }}"]'
 
     steps:
       - name: 📥 Checkout
@@ -37,16 +36,5 @@ jobs:
           container: ${{ matrix.os }}
           install-vtk: ${{ matrix.vtk-system }}
 
-      - name: 🦥 Cache Dependencies
-        uses: actions/cache@v3
-        with:
-          key: ${{ matrix.os }}-${{ matrix.config }}-cache
-          path: |
-            deps-cache
-            build
-
-      - name: 🏗️ Compile
-        run: cmake -DCMAKE_BUILD_TYPE=${{ matrix.config }} -DCPM_SOURCE_CACHE=deps-cache -DVIENNALS_BUILD_TESTS=ON -B build && cmake --build build
-
-      - name: 🧪 Test
-        run: ctest -E "Benchmark|Performance" --test-dir build
+      - name: 🐍 Build Python Module
+        run: pip3 install --user . -v
