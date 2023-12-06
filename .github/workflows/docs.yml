@@ -19,13 +19,13 @@ jobs:
     container: archlinux:base-devel
 
     steps:
+      - name: 📋 Install Dependencies
+        run: pacman --noconfirm -Syu doxygen git
+
       - name: 📥 Checkout
         uses: actions/checkout@v4
         with:
           submodules: "recursive"
-
-      - name: 📋 Install Dependencies
-        run: pacman --noconfirm -Syu doxygen
 
       - name: 🔨 Build
         run: doxygen docs/Doxyfile
