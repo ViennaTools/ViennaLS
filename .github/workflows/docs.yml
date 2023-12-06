@@ -24,8 +24,7 @@ jobs:
         run: sudo apt-get install doxygen
 
       - name: 🔨 Build
-        run: |
-          doxygen docs/Doxyfile
+        run: doxygen docs/Doxyfile
 
       - name: 🚀 Upload Artifact
         uses: actions/upload-pages-artifact@v1
