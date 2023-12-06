@@ -39,11 +39,7 @@ jobs:
       - name: 📋 Setup OpenMP
         if: ${{ matrix.os == 'macos-latest' }}
         run: |
-          export OpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include"
-          export OpenMP_CXX_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include"
-          export OpenMP_C_LIB_NAMES="omp"
-          export OpenMP_CXX_LIB_NAMES="omp"
-          export OpenMP_omp_LIBRARY="$(brew --prefix libomp)/lib/libomp.a"
+          brew reinstall --build-from-source --formula ./.github/homebrew/libomp.rb
 
       - name: 🩹 Enable Long Paths
         # Workaround for windows, as the filename is 260 by default, however
