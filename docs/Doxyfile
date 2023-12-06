@@ -5,6 +5,7 @@ HTML_EXTRA_STYLESHEET  = docs/doxygen-awesome-css/doxygen-awesome.css docs/doxyg
 HTML_EXTRA_FILES  	   = docs/doxygen-awesome-css/doxygen-awesome-darkmode-toggle.js
 HTML_COLORSTYLE        = LIGHT
 HTML_HEADER            = docs/header.html
+IMAGE_PATH			   = assets
 
 PROJECT_NAME           = ViennaLS
 ALWAYS_DETAILED_SEC    = YES

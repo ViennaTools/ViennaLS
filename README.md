@@ -1,8 +1,8 @@
 <div align="center">
 
-![logo](assets/logo.png)
+![](assets/logo.png)
 
-# ViennaLS
+<h1>ViennaLS</h1>
 
 [![Linux](https://github.com/ViennaTools/ViennaLS/actions/workflows/linux_test.yml/badge.svg)](https://github.com/ViennaTools/ViennaLS/actions/workflows/linux_test.yml)
 [![macOS](https://github.com/ViennaTools/ViennaLS/actions/workflows/macos_test.yml/badge.svg)](https://github.com/ViennaTools/ViennaLS/actions/workflows/macos_test.yml)
@@ -145,6 +145,8 @@ We recommend using [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) to consum
 
 * With a local installation
     > In case you have ViennaLS installed in a custom directory, make sure to properly specify the `CMAKE_MODULE_PATH`
+
+    
     ```cmake
     find_package(ViennaLS REQUIRED)
     target_link_libraries(${PROJECT_NAME} ViennaTools::ViennaLS)
