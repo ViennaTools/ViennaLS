@@ -45,6 +45,12 @@ jobs:
           export OpenMP_CXX_LIB_NAMES="omp"
           export OpenMP_omp_LIBRARY="$(brew --prefix libomp)/lib/libomp.a"
 
+      - name: 🩹 Enable Long Paths
+        # Workaround for windows, as the filename is 260 by default, however
+        # VTK has some files that exceed this limit, thus we need this workaround.
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: git config --system core.longpaths true
+
       - name: 🦥 Cache Dependencies
         uses: actions/cache@v3
         with:
@@ -53,7 +59,7 @@ jobs:
             deps-cache
 
       - name: 🏗️ Compile
-        run: cmake -DCMAKE_BUILD_TYPE=${{ matrix.config }} -DCPM_SOURCE_CACHE=deps-cache -B build && cmake --build build
+        run: cmake -DCMAKE_BUILD_TYPE=${{ matrix.config }} -DCPM_SOURCE_CACHE=deps-cache -DVIENNALS_BUILD_TESTS=ON -B build && cmake --build build
 
       - name: 🧪 Test
         run: ctest -E "Benchmark|Performance" --test-dir build
