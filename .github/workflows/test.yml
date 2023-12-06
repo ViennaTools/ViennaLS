@@ -1,0 +1,44 @@
+name: 🧪 Run Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        config: [Release, Debug]
+        vtk-system: [true, false]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+        exclude:
+          - os: macos-latest
+            vtk-system: true
+          - os: windows-latest
+            vtk-system: true
+
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.os == 'ubuntu-latest' && 'fedora:38' || null }}
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v3
+
+      - name: 📋 Install VTK
+        if: ${{ matrix.vtk-system }}
+        run: dnf install -y vtk vtk-devel
+
+      - name: 🦥 Cache Dependencies
+        uses: actions/cache@v3
+        with:
+          key: ${{ matrix.os }}-${{ matrix.config }}-cache
+          path: |
+            deps-cache
+
+      - name: 🏗️ Compile
+        run: cmake -DCMAKE_BUILD_TYPE=${{ matrix.config }} -DCPM_SOURCE_CACHE=deps-cache -B build && cmake --build build
+
+      - name: 🧪 Test
+        run: ctest -E "Benchmark|Performance" --test-dir build
