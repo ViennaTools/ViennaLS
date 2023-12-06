@@ -8,6 +8,8 @@ on:
 jobs:
   test:
     strategy:
+      fail-fast: false
+
       matrix:
         config: [Release, Debug]
         vtk-system: [true, false]
