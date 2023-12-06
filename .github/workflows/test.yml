@@ -18,11 +18,14 @@ jobs:
         exclude:
           - os: macos-latest
             vtk-system: true
+
           - os: windows-latest
             vtk-system: true
 
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.os == 'ubuntu-latest' && 'fedora:38' || null }}
+
+    name: '🧪 Test on ${{ matrix.os }} [Config: "${{ matrix.config }}", VTK installed: "${{ matrix.vtk-system }}"]'
 
     steps:
       - name: 📥 Checkout
