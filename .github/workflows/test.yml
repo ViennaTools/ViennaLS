@@ -49,4 +49,4 @@ jobs:
         run: cmake -DCMAKE_BUILD_TYPE=${{ matrix.config }} -DCPM_SOURCE_CACHE=deps-cache -DVIENNALS_BUILD_TESTS=ON -B build && cmake --build build
 
       - name: 🧪 Test
-        run: ctest -E "Benchmark|Performance" --test-dir build
+        run: ctest -E "Benchmark|Performance" -C ${{ matrix.config }} --test-dir build
