@@ -1,0 +1,40 @@
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+name: 📄 Setup Documentation
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v3
+
+      - name: 📋 Install Dependencies
+        run: sudo apt-get install doxygen
+
+      - name: 🔨 Build
+        run: |
+          doxygen docs/Doxyfile
+
+      - name: 🚀 Upload Artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: html
+
+      - name: 📃 Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: 📦 Deploy
+        id: deployment
+        uses: actions/deploy-pages@v2

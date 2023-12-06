@@ -1,0 +1,24 @@
+GENERATE_TREEVIEW      = YES
+DISABLE_INDEX 		   = NO
+FULL_SIDEBAR 		   = NO
+HTML_EXTRA_STYLESHEET  = docs/doxygen-awesome-css/doxygen-awesome.css docs/doxygen-awesome-css/doxygen-awesome-sidebar-only-darkmode-toggle.css
+HTML_EXTRA_FILES  	   = docs/doxygen-awesome-css/doxygen-awesome-darkmode-toggle.js
+HTML_COLORSTYLE        = LIGHT
+HTML_HEADER            = docs/header.html
+
+PROJECT_NAME           = ViennaLS
+ALWAYS_DETAILED_SEC    = YES
+INLINE_INHERITED_MEMB  = YES
+MULTILINE_CPP_IS_BRIEF = YES
+EXTRACT_ALL            = YES
+EXTRACT_PACKAGE        = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = NO
+GENERATE_TODOLIST      = NO
+
+RECURSIVE              = YES
+EXAMPLE_RECURSIVE      = YES
+EXCLUDE_PATTERNS       = */build/* */docs/* */Python/* */cmake/* */doxygen-awesome-css/*
+
+USE_MDFILE_AS_MAINPAGE = README.md
+PROJECT_LOGO           = assets/logo.png
