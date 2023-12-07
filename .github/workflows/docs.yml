@@ -1,0 +1,43 @@
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+name: 📄 Setup Documentation
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+
+    steps:
+      - name: 📋 Install Dependencies
+        run: pacman --noconfirm -Syu doxygen git
+
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
+
+      - name: 🔨 Build
+        run: doxygen docs/Doxyfile
+
+      - name: 🚀 Upload Artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: html
+
+      - name: 📃 Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: 📦 Deploy
+        id: deployment
+        uses: actions/deploy-pages@v2

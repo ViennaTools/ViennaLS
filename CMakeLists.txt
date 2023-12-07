@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 project(
   ViennaLS
   LANGUAGES CXX
-  VERSION 2.1.0)
+  VERSION 3.0.0)
 
 # --------------------------------------------------------------------------------------------------------
 # Library options
@@ -30,6 +30,8 @@ cmake_dependent_option(VIENNALS_BUILD_PYTHON "Build for Python (>=3)" OFF "VIENN
 # --------------------------------------------------------------------------------------------------------
 # Configuration
 # --------------------------------------------------------------------------------------------------------
+
+include("cmake/openmp.cmake")
 
 if(VIENNALS_STATIC_BUILD)
   message(STATUS "[ViennaLS] Enabling precompiled headers for static build")
