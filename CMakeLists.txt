@@ -76,7 +76,9 @@ endif()
 # Include directories
 # --------------------------------------------------------------------------------------------------------
 
-target_include_directories(${PROJECT_NAME} INTERFACE "include")
+target_include_directories(
+  ${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/viennals>
+                            $<INSTALL_INTERFACE:include/viennals>)
 
 # --------------------------------------------------------------------------------------------------------
 # Setup Dependencies
@@ -205,12 +207,14 @@ endif()
 
 install(
   TARGETS ${PROJECT_NAME}
-  EXPORT ${PROJECT_NAME}_Targets
+  EXPORT ${PROJECT_NAME}-config
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-# TOOD: This could be improved if the header files were in a sub-directory
+install(
+  EXPORT ${PROJECT_NAME}-config
+  FILE ${PROJECT_NAME}-config.cmake
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
 
-file(GLOB headers "include/*.hpp")
-install(FILES ${headers} DESTINATION include)
+install(DIRECTORY "include/viennals" TYPE INCLUDE)
