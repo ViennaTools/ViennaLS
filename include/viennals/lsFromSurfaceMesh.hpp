@@ -217,9 +217,10 @@ public:
                     lsSmartPointer<lsMesh<T>> passedMesh,
                     bool passedRemoveBoundaryTriangles = true)
       : levelSet(passedLevelSet),
-       mesh(passedMesh), removeBoundaryTriangles{passedRemoveBoundaryTriangles,
-                                passedRemoveBoundaryTriangles,
-                                passedRemoveBoundaryTriangles} {}
+        mesh(passedMesh), removeBoundaryTriangles{
+                              passedRemoveBoundaryTriangles,
+                              passedRemoveBoundaryTriangles,
+                              passedRemoveBoundaryTriangles} {}
 
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
