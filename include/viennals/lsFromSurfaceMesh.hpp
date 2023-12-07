@@ -216,8 +216,8 @@ public:
   lsFromSurfaceMesh(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
                     lsSmartPointer<lsMesh<T>> passedMesh,
                     bool passedRemoveBoundaryTriangles = true)
-      : levelSet(passedLevelSet), mesh(passedMesh),
-        removeBoundaryTriangles{passedRemoveBoundaryTriangles,
+      : levelSet(passedLevelSet),
+       mesh(passedMesh), removeBoundaryTriangles{passedRemoveBoundaryTriangles,
                                 passedRemoveBoundaryTriangles,
                                 passedRemoveBoundaryTriangles} {}
 
