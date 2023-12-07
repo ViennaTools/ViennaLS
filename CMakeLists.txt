@@ -31,8 +31,6 @@ cmake_dependent_option(VIENNALS_BUILD_PYTHON "Build for Python (>=3)" OFF "VIENN
 # Configuration
 # --------------------------------------------------------------------------------------------------------
 
-include("cmake/openmp.cmake")
-
 if(VIENNALS_STATIC_BUILD)
   message(STATUS "[ViennaLS] Enabling precompiled headers for static build")
   set(VIENNALS_PRECOMPILE_HEADERS ON)
