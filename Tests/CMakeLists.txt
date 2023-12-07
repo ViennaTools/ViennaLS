@@ -1,19 +1,20 @@
-cmake_minimum_required(VERSION 3.14)
+add_custom_target(ViennaLS_Tests ALL)
 
-project(ViennaLSTests)
+if(NOT VTK_DIR)
+  include("../cmake/vtk.cmake")
+  setup_vtk_env(ViennaLS_Tests "tests")
+endif()
 
-include("${CMAKE_SOURCE_DIR}/cmake/prepare.cmake")
+file(
+  GLOB entries
+  LIST_DIRECTORIES true
+  "*")
 
-# Point find_package to the binary directory instead of the install location
-find_package(ViennaLS REQUIRED CONFIG PATHS ${ViennaLS_BINARY_DIR} NO_DEFAULT_PATH)
+foreach(entry ${entries})
+  if(NOT IS_DIRECTORY ${entry})
+    continue()
+  endif()
 
-list(PREPEND VIENNALS_INCLUDE_DIRS ${VIENNALS_BUILD_INCLUDE_DIRS})
-
-add_custom_target(buildTests DEPENDS ${VIENNALS_DEPENDENCIES})
-
-subdirlist(TEST_DIRS ${CMAKE_CURRENT_LIST_DIR})
-
-# add all tests
-foreach(subdir ${TEST_DIRS})
-  add_subdirectory(${subdir})
+  message(STATUS "[ViennaLS] Adding Test ${entry}")
+  add_subdirectory(${entry})
 endforeach()
