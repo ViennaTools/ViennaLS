@@ -131,8 +131,7 @@ if(VIENNALS_USE_VTK)
             "VTK_MODULE_ENABLE_VTK_FiltersGeneral YES"
             "VTK_MODULE_ENABLE_VTK_FiltersGeometry YES"
             # This fixes an issue with the install script that causes find_package to fail.
-            "CMAKE_PROJECT_NAME VTK"
-  )
+            "CMAKE_PROJECT_NAME VTK")
 
   target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_USE_VTK=1)
 
