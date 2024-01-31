@@ -93,7 +93,7 @@ CPMAddPackage(
 
 CPMFindPackage(
   NAME ViennaHRLE
-  GIT_TAG master
+  VERSION 0.4.0
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaHRLE")
 
 find_package(OpenMP REQUIRED)
@@ -129,7 +129,10 @@ if(VIENNALS_USE_VTK)
             "VTK_MODULE_ENABLE_VTK_IOXML YES"
             "VTK_MODULE_ENABLE_VTK_FiltersCore YES"
             "VTK_MODULE_ENABLE_VTK_FiltersGeneral YES"
-            "VTK_MODULE_ENABLE_VTK_FiltersGeometry YES")
+            "VTK_MODULE_ENABLE_VTK_FiltersGeometry YES"
+            # This fixes an issue with the install script that causes find_package to fail.
+            "CMAKE_PROJECT_NAME VTK"
+  )
 
   target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_USE_VTK=1)
 
@@ -209,8 +212,10 @@ endif()
 # --------------------------------------------------------------------------------------------------------
 
 packageProject(
-  NAME ${PROJECT_NAME}
+  NAME ${PROJECT_NAME} NAMESPACE ViennaTools
   VERSION ${PROJECT_VERSION}
   BINARY_DIR ${PROJECT_BINARY_DIR}
   INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include/viennals
-  INCLUDE_DESTINATION include/viennals-${PROJECT_VERSION})
+  INCLUDE_DESTINATION include/viennals-${PROJECT_VERSION}
+  COMPATIBILITY SameMajorVersion
+  DEPENDENCIES "VTK 9.0.0;ViennaHRLE 0.4.0")

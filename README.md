@@ -4,9 +4,8 @@
 
 <h1>ViennaLS</h1>
 
-[![Linux](https://github.com/ViennaTools/ViennaLS/actions/workflows/linux_test.yml/badge.svg)](https://github.com/ViennaTools/ViennaLS/actions/workflows/linux_test.yml)
-[![macOS](https://github.com/ViennaTools/ViennaLS/actions/workflows/macos_test.yml/badge.svg)](https://github.com/ViennaTools/ViennaLS/actions/workflows/macos_test.yml)
-[![Windows](https://github.com/ViennaTools/ViennaLS/actions/workflows/windows_test.yml/badge.svg)](https://github.com/ViennaTools/ViennaLS/actions/workflows/windows_test.yml)
+[![🧪 Tests](https://github.com/ViennaTools/ViennaLS/actions/workflows/test.yml/badge.svg)](https://github.com/ViennaTools/ViennaLS/actions/workflows/test.yml)
+[![🐍 Build Bindings](https://github.com/ViennaTools/ViennaLS/actions/workflows/python.yml/badge.svg)](https://github.com/ViennaTools/ViennaLS/actions/workflows/python.yml)
 
 </div>
 
@@ -144,12 +143,17 @@ We recommend using [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) to consum
   ```
 
 * With a local installation
-    > In case you have ViennaLS installed in a custom directory, make sure to properly specify the `CMAKE_MODULE_PATH`
+    > In case you have ViennaLS installed in a custom directory, make sure to properly specify the `CMAKE_MODULE_PATH` or `PATHS` in your `find_package` call.
 
-    
     ```cmake
-    find_package(ViennaLS REQUIRED)
-    target_link_libraries(${PROJECT_NAME} ViennaTools::ViennaLS)
+    set(VIENNALS_PATH "/your/local/installation")
+
+    find_package(OpenMP REQUIRED)
+    find_package(VTK        PATHS ${VIENNALS_PATH})
+    find_package(ViennaHRLE PATHS ${VIENNALS_PATH})
+    find_package(ViennaLS   PATHS ${VIENNALS_PATH})
+
+    target_link_libraries(${PROJECT_NAME} PUBLIC ViennaTools::ViennaLS)
     ```
 
 ### Shared Library
@@ -176,7 +180,7 @@ Founder and initial developer: Otmar Ertl
 
 Contact us via: viennats@iue.tuwien.ac.at
 
-ViennaLS was developed under the aegis of the 'Institute for Microelectronics' at the 'TU Wien'.
+ViennaLS was developed under the aegis of the 'Institute for Microelectronics' at the 'TU Wien'.  
 http://www.iue.tuwien.ac.at/
 
 ## License
