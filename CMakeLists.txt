@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaLS
   LANGUAGES CXX
@@ -78,7 +78,7 @@ endif()
 
 target_include_directories(
   ${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/viennals>
-                            $<INSTALL_INTERFACE:include/viennals>)
+                            $<INSTALL_INTERFACE:include/viennals-${PROJECT_VERSION}>)
 
 # --------------------------------------------------------------------------------------------------------
 # Setup Dependencies
@@ -86,11 +86,15 @@ target_include_directories(
 
 include("cmake/cpm.cmake")
 
+CPMAddPackage(
+  NAME PackageProject
+  VERSION 1.11.1
+  GIT_REPOSITORY "https://github.com/TheLartians/PackageProject.cmake")
+
 CPMFindPackage(
   NAME ViennaHRLE
-  GIT_TAG master
-  GIT_REPOSITORY "https://github.com/ViennaTools/ViennaHRLE"
-  EXCLUDE_FROM_ALL ON)
+  VERSION 0.4.0
+  GIT_REPOSITORY "https://github.com/ViennaTools/ViennaHRLE")
 
 find_package(OpenMP REQUIRED)
 target_link_libraries(${PROJECT_NAME} INTERFACE OpenMP::OpenMP_CXX ViennaHRLE)
@@ -126,7 +130,8 @@ if(VIENNALS_USE_VTK)
             "VTK_MODULE_ENABLE_VTK_FiltersCore YES"
             "VTK_MODULE_ENABLE_VTK_FiltersGeneral YES"
             "VTK_MODULE_ENABLE_VTK_FiltersGeometry YES"
-    EXCLUDE_FROM_ALL ON)
+            # This fixes an issue with the install script that causes find_package to fail.
+            "CMAKE_PROJECT_NAME VTK")
 
   target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_USE_VTK=1)
 
@@ -205,16 +210,11 @@ endif()
 # Install Target
 # --------------------------------------------------------------------------------------------------------
 
-install(
-  TARGETS ${PROJECT_NAME}
-  EXPORT ${PROJECT_NAME}-config
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-
-install(
-  EXPORT ${PROJECT_NAME}-config
-  FILE ${PROJECT_NAME}-config.cmake
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
-
-install(DIRECTORY "include/viennals" TYPE INCLUDE)
+packageProject(
+  NAME ${PROJECT_NAME} NAMESPACE ViennaTools
+  VERSION ${PROJECT_VERSION}
+  BINARY_DIR ${PROJECT_BINARY_DIR}
+  INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include/viennals
+  INCLUDE_DESTINATION include/viennals-${PROJECT_VERSION}
+  COMPATIBILITY SameMajorVersion
+  DEPENDENCIES "VTK 9.0.0;ViennaHRLE 0.4.0")
