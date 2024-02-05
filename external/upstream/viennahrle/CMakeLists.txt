@@ -30,6 +30,7 @@ else()
     ExternalProject_Add(
       viennahrle_external
       GIT_REPOSITORY https://github.com/ViennaTools/ViennaHRLE
+      GIT_TAG legacy
       GIT_SHALLOW 1 # use --depth 1 when cloning
       CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR> -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                  -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DVIENNAHRLE_BUILD_EXAMPLES=OFF
