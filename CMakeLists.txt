@@ -100,6 +100,7 @@ find_package(OpenMP REQUIRED)
 target_link_libraries(${PROJECT_NAME} INTERFACE OpenMP::OpenMP_CXX ViennaHRLE)
 
 if(VIENNALS_USE_VTK)
+  enable_language(C)
   CPMFindPackage(
     NAME VTK
     # TODO: Change to 9.3.1 as soon as it's released

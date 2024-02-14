@@ -64,7 +64,7 @@ git clone https://github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
 
 cmake -B build -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/
-cmake --build build
+cmake --install build
 ```
 
 This will install the necessary headers and CMake files to the specified path. If DCMAKE_INSTALL_PREFIX is not specified, it will be installed to the standard path for your system, usually /usr/local/ .
@@ -77,7 +77,7 @@ git clone https://github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
 
 cmake -B build -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/ -DVIENNALS_USE_VTK=OFF
-cmake --build build
+cmake --install build
 ```
 
 ## Installing with dependencies already installed on the system
