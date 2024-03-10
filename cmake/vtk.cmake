@@ -4,5 +4,5 @@ macro(setup_vtk_env TARGET OUTPUT)
   add_custom_command(
     TARGET ${TARGET}
     POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory $<TARGET_FILE_DIR:VTK> ${OUTPUT})
+    COMMAND ${CMAKE_COMMAND} -E copy_directory $<TARGET_FILE_DIR:vtksys> ${OUTPUT})
 endmacro()
