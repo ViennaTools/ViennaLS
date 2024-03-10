@@ -37,11 +37,9 @@ endif()
 
 include("../cmake/vtk.cmake")
 
-if(WIN32 AND NOT VTK_DIR)
-  setup_vtk_env(${PROJECT_NAME} vtk_env)
-  set(VTK_DIR "${PROJECT_BINARY_DIR}/vtk_env")
-elseif(NOT VTK_DIR)
-  set(VTK_DIR "${VTK_LIBS}")
+if(WIN32 AND NOT VIENNALS_SYSTEM_VTK)
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $<1:${PROJECT_BINARY_DIR}/vtk_env>)
+  setup_vtk_env(ViennaLS_Examples ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 endif()
 
 # --------------------------------------------------------------------------------------------------------

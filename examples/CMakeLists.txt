@@ -1,8 +1,8 @@
 add_custom_target(ViennaLS_Examples ALL)
 
-if(NOT VTK_DIR)
-  include("../cmake/vtk.cmake")
-  setup_vtk_env(ViennaLS_Examples "examples")
+if(WIN32 AND NOT VIENNALS_SYSTEM_VTK)
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $<1:${PROJECT_BINARY_DIR}/examples>)
+  setup_vtk_env(ViennaLS_Examples ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 endif()
 
 file(

@@ -77,7 +77,7 @@ endif()
 # --------------------------------------------------------------------------------------------------------
 
 target_include_directories(
-  ${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/viennals>
+  ${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/viennals>
                             $<INSTALL_INTERFACE:include/viennals-${PROJECT_VERSION}>)
 
 # --------------------------------------------------------------------------------------------------------
@@ -85,6 +85,7 @@ target_include_directories(
 # --------------------------------------------------------------------------------------------------------
 
 include("cmake/cpm.cmake")
+include("cmake/vtk.cmake")
 
 CPMAddPackage(
   NAME PackageProject
@@ -101,6 +102,10 @@ target_link_libraries(${PROJECT_NAME} INTERFACE OpenMP::OpenMP_CXX ViennaHRLE)
 
 if(VIENNALS_USE_VTK)
   enable_language(C)
+
+  find_package(VTK QUIET)
+  set(VIENNALS_SYSTEM_VTK ${VTK_FOUND})
+
   CPMFindPackage(
     NAME VTK
     # TODO: Change to 9.3.1 as soon as it's released
@@ -151,12 +156,6 @@ if(VIENNALS_USE_VTK)
               VTK::FiltersCore
               VTK::FiltersGeneral
               VTK::FiltersGeometry)
-
-  if(MSVC)
-    set(VTK_LIBS "${VTK_BINARY_DIR}/bin/$<CONFIG>")
-  else()
-    set(VTK_LIBS "${VTK_BINARY_DIR}/lib")
-  endif()
 endif()
 
 # --------------------------------------------------------------------------------------------------------
@@ -184,7 +183,7 @@ endif()
 
 if(VIENNALS_BUILD_EXAMPLES)
   message(STATUS "[ViennaLS] Building Examples")
-  add_subdirectory(Examples)
+  add_subdirectory(examples)
 endif()
 
 # --------------------------------------------------------------------------------------------------------
@@ -195,7 +194,7 @@ if(VIENNALS_BUILD_TESTS)
   message(STATUS "[ViennaLS] Building Tests")
 
   enable_testing()
-  add_subdirectory(Tests)
+  add_subdirectory(tests)
 endif()
 
 # --------------------------------------------------------------------------------------------------------
@@ -204,7 +203,7 @@ endif()
 
 if(VIENNALS_BUILD_PYTHON)
   message(STATUS "[ViennaLS] Building Python Bindings")
-  add_subdirectory(Python)
+  add_subdirectory(python)
 endif()
 
 # --------------------------------------------------------------------------------------------------------
