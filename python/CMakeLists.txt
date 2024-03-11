@@ -42,6 +42,13 @@ if(WIN32 AND NOT VIENNALS_SYSTEM_VTK)
   setup_vtk_env(${PROJECT_NAME} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 endif()
 
+if (NOT VIENNALS_SYSTEM_VTK)
+  message(STATUS "[ViennaLS] Setting VTK_DIR to previously created environment")
+  # We set `VTK_DIR` to the previously setup environment to ensure
+  # that the python script can find the library files
+  set(VTK_DIR "${PROJECT_BINARY_DIR}/vtk_env")
+endif()
+
 # --------------------------------------------------------------------------------------------------------
 # Setup 2D-Bindings
 # --------------------------------------------------------------------------------------------------------
