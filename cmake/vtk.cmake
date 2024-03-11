@@ -1,14 +1,12 @@
 macro(setup_vtk_env TARGET OUTPUT)
-  if(NOT WIN32)
-    message(
-      STATUS "[ViennaLS] Skipping VTK-Environment setup for ${TARGET} (Only required on Windows)")
-  else()
-    message(STATUS "[ViennaLS] Setting up VTK for ${TARGET}")
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $<1:${PROJECT_BINARY_DIR}/${OUTPUT}>)
+  message(STATUS "[ViennaLS] Setting up VTK-Environment for ${TARGET}")
 
-    add_custom_command(
-      TARGET ${TARGET}
-      POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_directory ${VTK_LIBS} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-  endif()
+  # We expect all of the VTK binaries to be present in the same directory to which "vtksys" is
+  # built. This is currently the case, and has been the case for prior vtk versions - However we
+  # should keep an eye on this.
+
+  add_custom_command(
+    TARGET ${TARGET}
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory $<TARGET_FILE_DIR:vtksys> ${OUTPUT})
 endmacro()
