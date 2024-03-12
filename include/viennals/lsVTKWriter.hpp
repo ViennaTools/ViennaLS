@@ -7,6 +7,7 @@
 #include <lsFileFormats.hpp>
 #include <lsMesh.hpp>
 #include <lsMessage.hpp>
+#include <lsSmartPointer.hpp>
 
 #ifdef VIENNALS_USE_VTK
 #include <vtkCellArray.h>
