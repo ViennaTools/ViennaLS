@@ -11,6 +11,7 @@ project(
 option(VIENNALS_USE_VTK "Build with VTK file support" ON)
 
 option(VIENNALS_PRECOMPILE_HEADERS "Build template specialisations for shorter compile times" OFF)
+option(VIENNALS_EXCLUDE_DEPENDENCIES "Exclude dependencies from install" OFF)
 option(VIENNALS_STATIC_BUILD "Build dependencies as static libraries" OFF)
 
 option(VIENNALS_ENABLE_SANITIZER "Enable Sanitizer for debug buidlds" OFF)
@@ -95,7 +96,8 @@ CPMAddPackage(
 CPMFindPackage(
   NAME ViennaHRLE
   VERSION 0.4.0
-  GIT_REPOSITORY "https://github.com/ViennaTools/ViennaHRLE")
+  GIT_REPOSITORY "https://github.com/ViennaTools/ViennaHRLE"
+  EXCLUDE_FROM_ALL ${VIENNALS_EXCLUDE_DEPENDENCIES})
 
 find_package(OpenMP REQUIRED)
 target_link_libraries(${PROJECT_NAME} INTERFACE OpenMP::OpenMP_CXX ViennaHRLE)
@@ -113,6 +115,7 @@ if(VIENNALS_USE_VTK)
     GIT_TAG 99bd602bdbe8024c55e8382f7cf1013d42a14601
     VERSION 9.0.0
     GIT_REPOSITORY "https://gitlab.kitware.com/vtk/vtk"
+    EXCLUDE_FROM_ALL ${VIENNALS_EXCLUDE_DEPENDENCIES}
     OPTIONS "VTK_LEGACY_REMOVE ON"
             "VTK_SMP_IMPLEMENTATION_TYPE \"OpenMP\""
             "VTK_GROUP_ENABLE_Rendering NO"
