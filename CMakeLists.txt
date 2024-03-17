@@ -21,8 +21,8 @@ option(VIENNALS_BUILD_EXAMPLES "Build examples" OFF)
 option(VIENNALS_BUILD_TESTS "Build tests" OFF)
 
 # --------------------------------------------------------------------------------------------------------
-# Global CMake Configuration └ See:
-# https://github.com/ViennaTools/ViennaPS/blob/c76e371817a797dfe2800691f00cb93317b731fa/CMakeLists.txt#L30
+# Global CMake Configuration 
+# └ See: https://github.com/ViennaTools/ViennaPS/blob/c76e371817a797dfe2800691f00cb93317b731fa/CMakeLists.txt#L30
 # --------------------------------------------------------------------------------------------------------
 
 if(VIENNALS_BUILD_PYTHON)
