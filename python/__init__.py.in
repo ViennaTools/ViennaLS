@@ -8,31 +8,15 @@ tailored towards scientific simulations. ViennaLS can also be used for
 visualisation applications, although this is not the main design target.
 """
 
-import os
 import sys
-
-extra_dll_dir = os.path.dirname(__file__)
-
-if sys.platform == 'win32' and os.path.isdir(extra_dll_dir):
-    # Add the VTK dll directory
-    
-    vtk_path = "@VTK_DIR@".replace("/lib/cmake/vtk", "")
-
-    if vtk_path:
-        os.add_dll_directory(os.path.abspath("@VTK_DIR@"))
-    else:
-        os.add_dll_directory(os.path.join(os.path.abspath("@VTK_DIR@".replace("/lib/cmake/vtk", "")), "bin"))
-
-    # Add the directory of the python bindings
-    
-    os.add_dll_directory(extra_dll_dir)
-
-    # Remove internal symbols
-
-    del vtk_path
-
 from .@MODULE_NAME@ import *
 
-# Remove internal symbols
+def _windows_dll_path():
+    
+    import os
+    import vtk
 
-del extra_dll_dir
+    os.add_dll_directory(vtk.__path__)
+
+if sys.platform == "win32":
+    _windows_dll_path()
