@@ -111,7 +111,7 @@ if(VIENNALS_USE_VTK)
   enable_language(C)
 
   find_package(VTK QUIET)
-  set(VIENNALS_SYSTEM_VTK ${VTK_FOUND})
+  set(VIENNALS_SYSTEM_VTK ${VTK_FOUND} CACHE INTERNAL "")
 
   CPMFindPackage(
     NAME VTK
@@ -146,8 +146,6 @@ if(VIENNALS_USE_VTK)
             "VTK_MODULE_ENABLE_VTK_FiltersGeometry YES"
             # This fixes an issue with the install script that causes find_package to fail.
             "CMAKE_PROJECT_NAME VTK")
-
-  target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_USE_VTK=1)
 
   target_link_libraries(
     ${PROJECT_NAME}
