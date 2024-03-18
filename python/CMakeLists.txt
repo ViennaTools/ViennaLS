@@ -10,8 +10,15 @@ add_custom_target(${PROJECT_NAME} ALL)
 
 set(CMAKE_MACOSX_RPATH ON)
 
-list(APPEND CMAKE_INSTALL_RPATH "$ORIGIN")
-list(APPEND CMAKE_INSTALL_RPATH "$ORIGIN/../vtkmodules")
+if(NOT APPLE)
+  list(APPEND CMAKE_INSTALL_RPATH "$ORIGIN")
+  list(APPEND CMAKE_INSTALL_RPATH "$ORIGIN/../vtkmodules")
+  list(APPEND CMAKE_INSTALL_RPATH "$ORIGIN/../viennals.libs")
+else()
+  list(APPEND CMAKE_INSTALL_RPATH "@loader_path")
+  list(APPEND CMAKE_INSTALL_RPATH "@loader_path/../vtkmodules")
+  list(APPEND CMAKE_INSTALL_RPATH "@loader_path/../viennals.libs")
+endif()
 
 # --------------------------------------------------------------------------------------------------------
 # Setup Dependencies
@@ -64,3 +71,10 @@ endmacro()
 
 setup_binding(viennals2d -DVIENNALS_PYTHON_DIMENSION=2)
 setup_binding(viennals3d -DVIENNALS_PYTHON_DIMENSION=3)
+
+set(VIENNALS_LIB_FOLDER "${VIENNALS_LIBRARY_OUTPUT_DIR}/viennals.libs")
+
+if(WIN32 AND NOT VIENNALS_SYSTEM_VTK)
+  setup_vtk_env(${MODULE_NAME} "${VIENNALS_LIB_FOLDER}")
+  install(DIRECTORY "${VIENNALS_LIB_FOLDER}" DESTINATION .)
+endif()
