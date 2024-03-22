@@ -11,9 +11,16 @@ jobs:
       fail-fast: false
 
       matrix:
-        config: [Release, Debug]
+        config:
+          - Release
+          - Debug
+
+        os:
+          - macos-latest
+          - ubuntu-latest
+          - windows-latest
+
         vtk-system: [true, false]
-        os: [ubuntu-latest, windows-latest, macos-latest]
 
         exclude:
           - os: macos-latest
@@ -25,7 +32,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.os == 'ubuntu-latest' && 'fedora:38' || null }}
 
-    name: '🧪 Test on ${{ matrix.os }} [Config: "${{ matrix.config }}", VTK installed: "${{ matrix.vtk-system }}"]'
+    name: '🧪 Test on ${{ matrix.os }} ["${{ matrix.config }}", VTK: "${{ matrix.vtk-system }}"]'
 
     steps:
       - name: 📥 Checkout
@@ -40,13 +47,11 @@ jobs:
       - name: 🦥 Cache Dependencies
         uses: actions/cache@v3
         with:
-          key: ${{ matrix.os }}-${{ matrix.config }}-cache
-          path: |
-            deps-cache
-            build
+          key: test-${{ matrix.os }}-${{ matrix.config }}-${{ matrix.vtk-system }}
+          path: build
 
       - name: 🏗️ Compile
-        run: cmake -DCMAKE_BUILD_TYPE=${{ matrix.config }} -DCPM_SOURCE_CACHE=deps-cache -DVIENNALS_BUILD_TESTS=ON -B build && cmake --build build
+        run: cmake -DVIENNALS_BUILD_TESTS=ON -B build && cmake --build build --config ${{ matrix.config }}
 
       - name: 🧪 Test
         run: ctest -E "Benchmark|Performance" -C ${{ matrix.config }} --test-dir build

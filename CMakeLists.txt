@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaLS
   LANGUAGES CXX
-  VERSION 3.0.0)
+  VERSION 3.1.0)
 
 # --------------------------------------------------------------------------------------------------------
 # Library options
@@ -16,22 +16,29 @@ option(VIENNALS_STATIC_BUILD "Build dependencies as static libraries" OFF)
 option(VIENNALS_ENABLE_SANITIZER "Enable Sanitizer for debug buidlds" OFF)
 option(VIENNALS_USE_SANITIZER "Enable Sanitizer (Requires GCC or Clang)" OFF)
 
+option(VIENNALS_BUILD_PYTHON "Build python bindings" OFF)
 option(VIENNALS_BUILD_EXAMPLES "Build examples" OFF)
 option(VIENNALS_BUILD_TESTS "Build tests" OFF)
 
 # --------------------------------------------------------------------------------------------------------
-# Conditional Library options
+# Global CMake Configuration └ See:
+# https://github.com/ViennaTools/ViennaPS/blob/c76e371817a797dfe2800691f00cb93317b731fa/CMakeLists.txt#L30
 # --------------------------------------------------------------------------------------------------------
 
-include(CMakeDependentOption)
-
-cmake_dependent_option(VIENNALS_BUILD_PYTHON "Build for Python (>=3)" OFF "VIENNALS_USE_VTK" OFF)
+if(VIENNALS_BUILD_PYTHON)
+  set(CMAKE_PLATFORM_NO_VERSIONED_SONAME ON)
+endif()
 
 # --------------------------------------------------------------------------------------------------------
 # Configuration
 # --------------------------------------------------------------------------------------------------------
 
 include("cmake/openmp.cmake")
+
+if(VIENNALS_BUILD_PYTHON)
+  message(STATUS "[ViennaLS] Using VTK for python bindings")
+  set(VIENNALS_USE_VTK ON)
+endif()
 
 if(VIENNALS_STATIC_BUILD)
   message(STATUS "[ViennaLS] Enabling precompiled headers for static build")
@@ -90,12 +97,14 @@ include("cmake/vtk.cmake")
 CPMAddPackage(
   NAME PackageProject
   VERSION 1.11.1
-  GIT_REPOSITORY "https://github.com/TheLartians/PackageProject.cmake")
+  GIT_REPOSITORY "https://github.com/TheLartians/PackageProject.cmake"
+  EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 
 CPMFindPackage(
   NAME ViennaHRLE
   VERSION 0.4.0
-  GIT_REPOSITORY "https://github.com/ViennaTools/ViennaHRLE")
+  GIT_REPOSITORY "https://github.com/ViennaTools/ViennaHRLE"
+  EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 
 find_package(OpenMP REQUIRED)
 target_link_libraries(${PROJECT_NAME} INTERFACE OpenMP::OpenMP_CXX ViennaHRLE)
@@ -104,7 +113,9 @@ if(VIENNALS_USE_VTK)
   enable_language(C)
 
   find_package(VTK QUIET)
-  set(VIENNALS_SYSTEM_VTK ${VTK_FOUND})
+  set(VIENNALS_SYSTEM_VTK
+      ${VTK_FOUND}
+      CACHE INTERNAL "")
 
   CPMFindPackage(
     NAME VTK
@@ -113,6 +124,7 @@ if(VIENNALS_USE_VTK)
     GIT_TAG 99bd602bdbe8024c55e8382f7cf1013d42a14601
     VERSION 9.0.0
     GIT_REPOSITORY "https://gitlab.kitware.com/vtk/vtk"
+    EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON}
     OPTIONS "VTK_LEGACY_REMOVE ON"
             "VTK_SMP_IMPLEMENTATION_TYPE \"OpenMP\""
             "VTK_GROUP_ENABLE_Rendering NO"
@@ -169,12 +181,12 @@ if(VIENNALS_PRECOMPILE_HEADERS)
     set(VIENNALS_LINKAGE STATIC)
   endif()
 
-  add_library(${PROJECT_NAME}_Lib ${VIENNALS_LINKAGE})
-  add_library(${PROJECT_NAME}::Lib ALIAS ${PROJECT_NAME}_Lib)
+  add_library(${PROJECT_NAME}Lib ${VIENNALS_LINKAGE})
+  add_library(${PROJECT_NAME}::Lib ALIAS ${PROJECT_NAME}Lib)
 
-  target_link_libraries(${PROJECT_NAME}_Lib PUBLIC ${PROJECT_NAME})
-  target_sources(${PROJECT_NAME}_Lib PUBLIC "lib/specialisations.cpp")
-  set_target_properties(${PROJECT_NAME}_Lib PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+  target_link_libraries(${PROJECT_NAME}Lib PUBLIC ${PROJECT_NAME})
+  target_sources(${PROJECT_NAME}Lib PUBLIC "lib/specialisations.cpp")
+  set_target_properties(${PROJECT_NAME}Lib PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
 # --------------------------------------------------------------------------------------------------------
@@ -204,6 +216,7 @@ endif()
 if(VIENNALS_BUILD_PYTHON)
   message(STATUS "[ViennaLS] Building Python Bindings")
   add_subdirectory(python)
+  return()
 endif()
 
 # --------------------------------------------------------------------------------------------------------
