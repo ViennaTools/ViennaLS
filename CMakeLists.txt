@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 project(
   ViennaLS
   LANGUAGES CXX
-  VERSION 3.1.0)
+  VERSION 3.1.1)
 
 # --------------------------------------------------------------------------------------------------------
 # Library options
@@ -73,8 +73,8 @@ set_target_properties(
              CXX_STANDARD_REQUIRED ON)
 
 if(MSVC)
-  # https://learn.microsoft.com/cpp/c-runtime-library/math-constants TODO: In case C++20 is adpoted
-  # any time soon: https://cppreference.com/w/cpp/numeric/constants
+  # https://learn.microsoft.com/cpp/c-runtime-library/math-constants #
+  # TODO: In case C++20 is adpoted any time soon: https://cppreference.com/w/cpp/numeric/constants
 
   target_compile_definitions(${PROJECT_NAME} INTERFACE _USE_MATH_DEFINES=1)
 endif()
