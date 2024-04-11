@@ -4,7 +4,7 @@ project(ViennaLS_Python LANGUAGES CXX)
 add_custom_target(${PROJECT_NAME} ALL)
 
 # --------------------------------------------------------------------------------------------------------
-# Global CMake Configuration 
+# Global CMake Configuration
 # └ See: https://github.com/ViennaTools/ViennaPS/blob/c76e371817a797dfe2800691f00cb93317b731fa/python/CMakeLists.txt#L8
 # --------------------------------------------------------------------------------------------------------
 
