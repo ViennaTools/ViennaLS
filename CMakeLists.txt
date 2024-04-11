@@ -73,8 +73,8 @@ set_target_properties(
              CXX_STANDARD_REQUIRED ON)
 
 if(MSVC)
-  # https://learn.microsoft.com/cpp/c-runtime-library/math-constants TODO: In case C++20 is adpoted
-  # any time soon: https://cppreference.com/w/cpp/numeric/constants
+  # https://learn.microsoft.com/cpp/c-runtime-library/math-constants #
+  # TODO: In case C++20 is adpoted any time soon: https://cppreference.com/w/cpp/numeric/constants
 
   target_compile_definitions(${PROJECT_NAME} INTERFACE _USE_MATH_DEFINES=1)
 endif()
