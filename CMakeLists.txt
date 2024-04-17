@@ -17,6 +17,9 @@ option(VIENNALS_ENABLE_SANITIZER "Enable Sanitizer for debug buidlds" OFF)
 option(VIENNALS_USE_SANITIZER "Enable Sanitizer (Requires GCC or Clang)" OFF)
 
 option(VIENNALS_BUILD_PYTHON "Build python bindings" OFF)
+option(VIENNALS_PYTHON_FORCE_VTK
+       "Include VTK in python bindings installation even if present as system dependency" OFF)
+
 option(VIENNALS_BUILD_EXAMPLES "Build examples" OFF)
 option(VIENNALS_BUILD_TESTS "Build tests" OFF)
 

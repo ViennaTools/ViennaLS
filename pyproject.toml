@@ -18,4 +18,4 @@ Issues = "https://github.com/ViennaTools/ViennaLS/issues"
 
 [tool.scikit-build]
 build-dir = "build"
-cmake.args = ["-DVIENNALS_BUILD_PYTHON=ON"]
+cmake.args = ["-DVIENNALS_BUILD_PYTHON=ON", "-DVIENNALS_PYTHON_FORCE_VTK=ON"]
