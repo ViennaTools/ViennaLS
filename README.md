@@ -4,8 +4,8 @@
 
 <h1>ViennaLS</h1>
 
-[![🧪 Tests](https://github.com/ViennaTools/ViennaLS/actions/workflows/test.yml/badge.svg)](https://github.com/ViennaTools/ViennaLS/actions/workflows/test.yml)
-[![🐍 Build Bindings](https://github.com/ViennaTools/ViennaLS/actions/workflows/python.yml/badge.svg)](https://github.com/ViennaTools/ViennaLS/actions/workflows/python.yml)
+[![🧪 Tests](https://github.com/ViennaTools/ViennaLS/actions/workflows/build.yml/badge.svg)](https://github.com/ViennaTools/ViennaLS/actions/workflows/build.yml)
+[![🐍 Bindings](https://github.com/ViennaTools/ViennaLS/actions/workflows/python.yml/badge.svg)](https://github.com/ViennaTools/ViennaLS/actions/workflows/python.yml)
 
 </div>
 
