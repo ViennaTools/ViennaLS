@@ -28,8 +28,11 @@ option(VIENNALS_BUILD_TESTS "Build tests" OFF)
 # --------------------------------------------------------------------------------------------------------
 
 if(VIENNALS_PACKAGE_PYTHON)
-  message(STATUS "[ViennaLS] Using remote VTK due to 'VIENNALS_PACKAGE_PYTHON', the build will take a long time!")
-  
+  message(
+    STATUS
+      "[ViennaLS] Using remote VTK due to 'VIENNALS_PACKAGE_PYTHON', the build will take a long time!"
+  )
+
   set(CPM_DOWNLOAD_ALL ON)
   set(VIENNALS_BUILD_PYTHON ON)
 endif()
