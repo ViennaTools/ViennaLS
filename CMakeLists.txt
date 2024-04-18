@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaLS
   LANGUAGES CXX
-  VERSION 3.1.1)
+  VERSION 3.2.0)
 
 # --------------------------------------------------------------------------------------------------------
 # Library options
@@ -16,9 +16,8 @@ option(VIENNALS_STATIC_BUILD "Build dependencies as static libraries" OFF)
 option(VIENNALS_ENABLE_SANITIZER "Enable Sanitizer for debug buidlds" OFF)
 option(VIENNALS_USE_SANITIZER "Enable Sanitizer (Requires GCC or Clang)" OFF)
 
+option(VIENNALS_PACKAGE_PYTHON "Build python bindings with intent to publish wheel" OFF)
 option(VIENNALS_BUILD_PYTHON "Build python bindings" OFF)
-option(VIENNALS_PYTHON_FORCE_VTK
-       "Include VTK in python bindings installation even if present as system dependency" OFF)
 
 option(VIENNALS_BUILD_EXAMPLES "Build examples" OFF)
 option(VIENNALS_BUILD_TESTS "Build tests" OFF)
@@ -27,6 +26,13 @@ option(VIENNALS_BUILD_TESTS "Build tests" OFF)
 # Global CMake Configuration
 # └ See: https://github.com/ViennaTools/ViennaPS/blob/c76e371817a797dfe2800691f00cb93317b731fa/CMakeLists.txt#L30
 # --------------------------------------------------------------------------------------------------------
+
+if(VIENNALS_PACKAGE_PYTHON)
+  message(STATUS "[ViennaLS] Using remote VTK due to 'VIENNALS_PACKAGE_PYTHON', the build will take a long time!")
+  
+  set(CPM_DOWNLOAD_ALL ON)
+  set(VIENNALS_BUILD_PYTHON ON)
+endif()
 
 if(VIENNALS_BUILD_PYTHON)
   set(CMAKE_PLATFORM_NO_VERSIONED_SONAME ON)
