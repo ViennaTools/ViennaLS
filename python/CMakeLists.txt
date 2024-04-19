@@ -15,9 +15,11 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH ON)
 
 if(NOT APPLE)
   list(APPEND CMAKE_INSTALL_RPATH "$ORIGIN")
+  list(APPEND CMAKE_INSTALL_RPATH "$ORIGIN/../vtkmodules")
   list(APPEND CMAKE_INSTALL_RPATH "$ORIGIN/../viennals.libs")
 else()
   list(APPEND CMAKE_INSTALL_RPATH "@loader_path")
+  list(APPEND CMAKE_INSTALL_RPATH "@loader_path/../vtkmodules")
   list(APPEND CMAKE_INSTALL_RPATH "@loader_path/../viennals.libs")
 endif()
 
@@ -75,7 +77,7 @@ setup_binding(viennals3d -DVIENNALS_PYTHON_DIMENSION=3)
 
 set(VIENNALS_LIB_FOLDER "${VIENNALS_LIBRARY_OUTPUT_DIR}/viennals.libs")
 
-if(NOT VIENNALS_SYSTEM_VTK OR VIENNALS_PACKAGE_PYTHON)
+if(VIENNALS_VTK_ENV)
   setup_vtk_env(${MODULE_NAME} "${VIENNALS_LIB_FOLDER}")
   install(DIRECTORY "${VIENNALS_LIB_FOLDER}" DESTINATION .)
 endif()

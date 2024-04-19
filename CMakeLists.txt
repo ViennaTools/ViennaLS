@@ -16,6 +16,7 @@ option(VIENNALS_STATIC_BUILD "Build dependencies as static libraries" OFF)
 option(VIENNALS_ENABLE_SANITIZER "Enable Sanitizer for debug buidlds" OFF)
 option(VIENNALS_USE_SANITIZER "Enable Sanitizer (Requires GCC or Clang)" OFF)
 
+option(VIENNALS_VTK_PYTHON_LIBS "Build against shared libraries shipped by VTKs Python library" OFF)
 option(VIENNALS_PACKAGE_PYTHON "Build python bindings with intent to publish wheel" OFF)
 option(VIENNALS_BUILD_PYTHON "Build python bindings" OFF)
 
@@ -85,9 +86,8 @@ set_target_properties(
              CXX_STANDARD_REQUIRED ON)
 
 if(MSVC)
-  # https://learn.microsoft.com/cpp/c-runtime-library/math-constants #
+  # https://learn.microsoft.com/cpp/c-runtime-library/math-constants
   # TODO: In case C++20 is adpoted any time soon: https://cppreference.com/w/cpp/numeric/constants
-
   target_compile_definitions(${PROJECT_NAME} INTERFACE _USE_MATH_DEFINES=1)
 endif()
 
@@ -121,7 +121,10 @@ CPMFindPackage(
 find_package(OpenMP REQUIRED)
 target_link_libraries(${PROJECT_NAME} INTERFACE OpenMP::OpenMP_CXX ViennaHRLE)
 
-if(VIENNALS_USE_VTK)
+if(VIENNALS_USE_VTK AND VIENNALS_VTK_PYTHON_LIBS)
+  import_vtk_python()
+  target_link_libraries(${PROJECT_NAME} INTERFACE VTK::PythonLibs)
+elseif(VIENNALS_USE_VTK)
   enable_language(C)
 
   find_package(VTK QUIET)
@@ -180,6 +183,16 @@ if(VIENNALS_USE_VTK)
               VTK::FiltersCore
               VTK::FiltersGeneral
               VTK::FiltersGeometry)
+endif()
+
+# --------------------------------------------------------------------------------------------------------
+# Check need for environment setups
+# --------------------------------------------------------------------------------------------------------
+
+if(NOT VIENNALS_VTK_PYTHON_LIBS AND (NOT VIENNALS_SYSTEM_VTK OR VIENNALS_PACKAGE_PYTHON))
+  set(VIENNALS_VTK_ENV
+      ON
+      CACHE INTERNAL "")
 endif()
 
 # --------------------------------------------------------------------------------------------------------
