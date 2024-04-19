@@ -54,10 +54,7 @@ macro(import_vtk_python)
     VERSION 9.3.0
     URL "https://archive.archlinux.org/packages/v/vtk/vtk-9.3.0-1-x86_64.pkg.tar.zst")
 
-  if(WIN32 AND MINGW)
-    # MSVC does not support direct linking against dlls, however mingw does (https://sourceware.org/binutils/docs/ld/WIN32.html)
-    file(GLOB vtk-libraries "${VIRTUAL_ENV}/lib/python*/site-packages/vtk.libs/*.dll")
-  elseif(UNIX)
+  if(UNIX)
     file(GLOB vtk-libraries "${VIRTUAL_ENV}/lib/python*/site-packages/vtkmodules/*.[!cpython]*.so")
   else()
     message(
