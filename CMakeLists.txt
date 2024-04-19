@@ -29,7 +29,8 @@ option(VIENNALS_BUILD_TESTS "Build tests" OFF)
 # --------------------------------------------------------------------------------------------------------
 
 if(VIENNALS_VTK_PYTHON_LIBS AND VIENNALS_PACKAGE_PYTHON)
-  message(STATUS "[ViennaLS] Disabling `VIENNALS_PACKAGE_PYTHON` in favor of `VIENNALS_VTK_PYTHON_LIBS`")
+  message(
+    STATUS "[ViennaLS] Disabling `VIENNALS_PACKAGE_PYTHON` in favor of `VIENNALS_VTK_PYTHON_LIBS`")
   set(VIENNALS_PACKAGE_PYTHON OFF)
 endif()
 

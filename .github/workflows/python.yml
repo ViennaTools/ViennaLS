@@ -1,4 +1,4 @@
-name: 🐍 Build Bindings
+name: 🐍 Bindings
 
 on:
   push:
