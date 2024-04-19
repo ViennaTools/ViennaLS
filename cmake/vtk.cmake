@@ -42,7 +42,7 @@ macro(import_vtk_python)
   if(NOT EXISTS "${VIRTUAL_ENV}")
     message(STATUS "[ViennaLS] Setting up VTK-Python Environment")
 
-    find_program(python-bin python3 REQUIRED)
+    find_program(python-bin python REQUIRED)
     message(STATUS "[ViennaLS] Found Python: ${python-bin}")
 
     execute_process(COMMAND "${python-bin}" -m venv "${VIRTUAL_ENV}")
