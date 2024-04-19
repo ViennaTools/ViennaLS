@@ -28,6 +28,11 @@ option(VIENNALS_BUILD_TESTS "Build tests" OFF)
 # └ See: https://github.com/ViennaTools/ViennaPS/blob/c76e371817a797dfe2800691f00cb93317b731fa/CMakeLists.txt#L30
 # --------------------------------------------------------------------------------------------------------
 
+if(VIENNALS_VTK_PYTHON_LIBS AND VIENNALS_PACKAGE_PYTHON)
+  message(STATUS "[ViennaLS] Disabling `VIENNALS_PACKAGE_PYTHON` in favor of `VIENNALS_VTK_PYTHON_LIBS`")
+  set(VIENNALS_PACKAGE_PYTHON OFF)
+endif()
+
 if(VIENNALS_PACKAGE_PYTHON)
   message(
     STATUS

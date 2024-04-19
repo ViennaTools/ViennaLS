@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  bindings:
+  test-bindings:
     strategy:
       fail-fast: false
 
@@ -16,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.os == 'ubuntu-latest' && 'fedora:38' || null }}
 
-    name: "🐍 Build Bindings on ${{ matrix.os }}"
+    name: "🐍 Test Bindings on ${{ matrix.os }}"
 
     steps:
       - name: 📥 Checkout
@@ -54,3 +54,41 @@ jobs:
         with:
           name: Pre-Built (${{ matrix.os }})
           path: venv
+
+  package:
+    strategy:
+      fail-fast: false
+
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.os == 'ubuntu-latest' && 'fedora:38' || null }}
+
+    name: "🐍 Package Bindings on ${{ matrix.os }}"
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v3
+
+      - name: 🖥️ Setup Environment
+        uses: ./.github/actions/setup
+        with:
+          container: ${{ matrix.os }}
+          install-vtk: false
+
+      - uses: actions/setup-python@v3
+
+      - name: 🛞 CIBuildWheel
+        run: python -m pip install cibuildwheel==2.17.0
+
+      - name: 🏗️ Build Wheels
+        run: python -m cibuildwheel --output-dir wheelhouse
+        env:
+          SKBUILD_CONFIGURE_OPTIONS: ${{ matrix.os == 'ubuntu-latest' && '-DVIENNALS_VTK_PYTHON_LIBS=ON' || '-DVIENNALS_PACKAGE_PYTHON=ON' }}
+
+      - name: 📦 Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ matrix.os }}-${{ strategy.job-index }}
+          path: ./wheelhouse/*.whl
