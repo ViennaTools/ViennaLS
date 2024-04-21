@@ -86,7 +86,7 @@ jobs:
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
           CIBW_BUILD: "cp310-* cp311-* cp312-*"
-          SKBUILD_CONFIGURE_OPTIONS: ${{ matrix.os == 'ubuntu-latest' && '-DVIENNALS_VTK_PYTHON_LIBS=ON' || '-DVIENNALS_PACKAGE_PYTHON=ON' }}
+          CIBW_ENVIRONMENT: SKBUILD_CONFIGURE_OPTIONS="${{ matrix.os == 'ubuntu-latest' && '-DVIENNALS_VTK_PYTHON_LIBS=ON' || '-DVIENNALS_PACKAGE_PYTHON=ON' }}"
 
       - name: 📦 Upload Artifact
         uses: actions/upload-artifact@v4
