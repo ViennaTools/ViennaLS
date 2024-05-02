@@ -82,18 +82,27 @@ jobs:
       - name: 🛞 CIBuildWheel
         run: python -m pip install cibuildwheel==2.17.0
 
-      - name: 🛠️ Build VTK
-        if: ${{ matrix.os != 'ubuntu-latest' }}
-        run: sed -i 's/DVIENNALS_BUILD_PYTHON=ON"/\0,"-DVIENNALS_PACKAGE_PYTHON=ON"/g' pyproject.toml
+      - name: 🛠️ Build VTK (Windows)
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: sed -i 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_PACKAGE_PYTHON=ON"/g' pyproject.toml
+
+      - name: 🛠️ Build VTK (MacOs)
+        if: ${{ matrix.os == 'macos-latest' }}
+        run: |
+          sed -i .bak 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_PACKAGE_PYTHON=ON"/g' pyproject.toml
+          cat pyproject.toml
 
       - name: 🛠️ Use VTK-Python Libs
         if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: sed -i 's/DVIENNALS_BUILD_PYTHON=ON"/\0,"-DVIENNALS_VTK_PYTHON_LIBS=ON"/g' pyproject.toml
+        run: |
+          sed -i 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_VTK_PYTHON_LIBS=ON"/g' pyproject.toml
+          cat pyproject.toml
 
       - name: 🏗️ Build Wheels
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
-          CIBW_BUILD: cp310-* cp311-* cp312-*
+          CIBW_BUILD: "cp310-* cp311-* cp312-*"
+          CIBW_REPAIR_WHEEL_COMMAND_LINUX: ""
 
       - name: 📦 Upload Artifact
         uses: actions/upload-artifact@v4
