@@ -82,11 +82,18 @@ jobs:
       - name: 🛞 CIBuildWheel
         run: python -m pip install cibuildwheel==2.17.0
 
+      - name: 🛠️ Build VTK
+        if: ${{ matrix.os != 'ubuntu-latest' }}
+        run: sed -i 's/DVIENNALS_BUILD_PYTHON=ON"/\0,"-DVIENNALS_PACKAGE_PYTHON=ON"/g' pyproject.toml
+
+      - name: 🛠️ Use VTK-Python Libs
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: sed -i 's/DVIENNALS_BUILD_PYTHON=ON"/\0,"-DVIENNALS_VTK_PYTHON_LIBS=ON"/g' pyproject.toml
+
       - name: 🏗️ Build Wheels
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
-          CIBW_BUILD: "cp310-* cp311-* cp312-*"
-          CIBW_ENVIRONMENT: SKBUILD_CONFIGURE_OPTIONS="${{ matrix.os == 'ubuntu-latest' && '-DVIENNALS_VTK_PYTHON_LIBS=ON' || '-DVIENNALS_PACKAGE_PYTHON=ON' }}"
+          CIBW_BUILD: cp310-* cp311-* cp312-*
 
       - name: 📦 Upload Artifact
         uses: actions/upload-artifact@v4

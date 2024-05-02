@@ -19,10 +19,13 @@ runs:
       if: ${{ inputs.container == 'windows-latest' }}
       run: git config --system core.longpaths true
 
+    - name: 🖥️ Enable MSVC Dev Console
+      uses: ilammy/msvc-dev-cmd@v1
+
     - name: 📋 Install Dependencies
       shell: bash
       if: ${{ inputs.container == 'ubuntu-latest' }}
-      run: dnf install -y make automake gcc gcc-c++ kernel-devel cmake git python3 python3-pip python3-devel docker
+      run: dnf install -y make automake gcc gcc-c++ kernel-devel cmake git python3 python3-pip python3-devel docker sed
 
     - name: 📋 Install OpenMP
       shell: bash
