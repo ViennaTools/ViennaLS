@@ -102,6 +102,7 @@ jobs:
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
           CIBW_BUILD: "cp310-* cp311-* cp312-*"
+          CIBW_ARCHS: ${{ matrix.os == 'windows-latest' && 'auto64' || 'auto' }}
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: ""
 
       - name: 📦 Upload Artifact
