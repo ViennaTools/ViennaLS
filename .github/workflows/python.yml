@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 🖥️ Setup Environment
         uses: ./.github/actions/setup
@@ -29,7 +29,7 @@ jobs:
           install-vtk: false
 
       - name: 🦥 Cache Dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: python-${{ matrix.os }}
           path: build
@@ -50,7 +50,7 @@ jobs:
           ./venv/bin/python -c "import viennals2d; print(viennals2d.__doc__)"
 
       - name: 📦 Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Pre-Built (${{ matrix.os }})
           path: venv
@@ -69,7 +69,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 🖥️ Setup Environment
         uses: ./.github/actions/setup
@@ -77,7 +77,8 @@ jobs:
           container: ${{ matrix.os }}
           install-vtk: false
 
-      - uses: actions/setup-python@v3
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
 
       - name: 🛞 CIBuildWheel
         run: python -m pip install cibuildwheel==2.17.0

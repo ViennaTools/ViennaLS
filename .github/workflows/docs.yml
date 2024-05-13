@@ -33,13 +33,12 @@ jobs:
         run: doxygen docs/Doxyfile
 
       - name: 🚀 Upload Artifact
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v3
         with:
           path: html
 
       - name: 📃 Setup Pages
-        uses: actions/configure-pages@v3
+        uses: actions/configure-pages@v5
 
       - name: 📦 Deploy
-        id: deployment
-        uses: actions/deploy-pages@v2
+        uses: actions/deploy-pages@v4
