@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    debug:
+      type: boolean
+      description: Enable Debugging
 
 jobs:
   check-coding-style:
@@ -20,8 +23,19 @@ jobs:
           container: ubuntu-latest
           install-vtk: true
 
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: 📋 Install Dependencies
         run: pip install -U cmakelang pyyaml
+
+      - name: 🐛 Debug Issues
+        if: ${{ github.event.inputs.debug == 'true' }}
+        uses: lhotari/action-upterm@v1
+        with:
+          limit-access-to-actor: true
 
       - name: 🔍 Check Format
         run: |
