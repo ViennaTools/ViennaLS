@@ -32,7 +32,7 @@ jobs:
       image: ${{ matrix.container }}
       credentials:
         username: ${{ github.actor }}
-        password: ${{ secrets.github_token }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
     name: '🧪 Test on ${{ matrix.os }} ["${{ matrix.config }}", VTK: "${{ matrix.vtk-system }}"]'
 
