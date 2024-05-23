@@ -8,9 +8,17 @@ on:
 jobs:
   check-coding-style:
     runs-on: ubuntu-latest
+    container: fedora:41
+
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
+
+      - name: 🖥️ Setup Environment
+        uses: ./.github/actions/setup
+        with:
+          container: ubuntu-latest
+          install-vtk: true
 
       - name: 📋 Install Dependencies
         run: pip install -U cmakelang
