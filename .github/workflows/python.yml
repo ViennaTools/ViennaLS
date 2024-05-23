@@ -23,7 +23,7 @@ jobs:
       image: ${{ matrix.container }}
       credentials:
         username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+        password: ${{ secrets.github_token }}
 
     name: "🐍 Test Bindings on ${{ matrix.os }}"
 
