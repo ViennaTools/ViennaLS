@@ -170,7 +170,13 @@ If ViennaLS was built with shared libraries and you use ViennaLS in your project
 
 Before being able to merge your PR, make sure you have met all points on the checklist in [CONTRIBUTING.md](https://github.com/ViennaTools/viennals/blob/master/CONTRIBUTING.md).
 
-If you want to contribute to ViennaLS, make sure to follow the [LLVM Coding guidelines](https://llvm.org/docs/CodingStandards.html). Before creating a pull request, make sure ALL files have been formatted by clang-format, which can be done using the `format-project.sh` script in the root directory.
+If you want to contribute to ViennaLS, make sure to follow the [LLVM Coding guidelines](https://llvm.org/docs/CodingStandards.html).
+
+Make sure to format all files before creating a pull request:
+```bash
+cmake -B build
+cmake --build build --target format
+```
 
 ## Authors
 
