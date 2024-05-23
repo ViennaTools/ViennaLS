@@ -25,7 +25,7 @@ jobs:
           install-vtk: true
 
       - name: 📋 Install Dependencies
-        run: pip install -U cmakelang pyyaml && sudo dnf install tmate
+        run: pip install -U cmakelang pyyaml && sudo dnf install -y tmate
 
       - name: 🐛 Debug Issues
         if: ${{ github.event.inputs.debug == 'true' }}
