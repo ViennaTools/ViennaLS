@@ -109,8 +109,14 @@ target_include_directories(
 # Setup Dependencies
 # --------------------------------------------------------------------------------------------------------
 
-include("cmake/cpm.cmake")
-include("cmake/vtk.cmake")
+include(cmake/cpm.cmake)
+include(cmake/vtk.cmake)
+
+CPMAddPackage(
+  NAME Core
+  GIT_TAG main # TODO: Create Tag
+  GIT_REPOSITORY "https://github.com/ViennaTools/ViennaCore"
+  OPTIONS "VIENNA_CORE_FORMAT_EXCLUDE docs/")
 
 CPMAddPackage(
   NAME PackageProject
