@@ -12,7 +12,7 @@ runs:
   steps:
     - name: 🩹 Enable Long Paths
       shell: bash
-      if: ${{ inputs.os == 'windows-latest' }}
+      if: ${{ inputs.container == 'windows-latest' }}
       run: git config --system core.longpaths true
 
     - name: 🖥️ Enable MSVC Dev Console
@@ -20,7 +20,7 @@ runs:
 
     - name: 📋 Install OpenMP
       shell: bash
-      if: ${{ inputs.os == 'macos-latest' }}
+      if: ${{ inputs.container == 'macos-latest' }}
       run: |
         brew reinstall --build-from-source --formula ./.github/homebrew/libomp.rb
         echo "OpenMP_ROOT=$(brew --prefix)/opt/libomp" >> $GITHUB_ENV
