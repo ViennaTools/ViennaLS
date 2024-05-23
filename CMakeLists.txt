@@ -40,7 +40,7 @@ if(VIENNALS_PACKAGE_PYTHON)
 
   # CIBUILDWHEEL is absolutely cursed and won't work when this is turned on.
   # I don't know why...
-  if (NOT VIENNALS_IS_CI)
+  if(NOT VIENNALS_IS_CI)
     set(CPM_DOWNLOAD_ALL ON)
   endif()
 
@@ -109,7 +109,7 @@ CPMAddPackage(
 
 CPMAddPackage(
   NAME PackageProject
-  VERSION 1.11.2
+  VERSION 1.12.0
   GIT_REPOSITORY "https://github.com/TheLartians/PackageProject.cmake"
   EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 
