@@ -25,7 +25,7 @@ runs:
     - name: 📋 Install Dependencies
       shell: bash
       if: ${{ inputs.container == 'ubuntu-latest' }}
-      run: dnf install -y gcc gcc-c++ kernel-devel cmake ninja-build git docker sed
+      run: dnf install -y gcc gcc-c++ kernel-devel cmake ninja-build git docker sed clang-tools-extra
 
     - name: 📋 Install OpenMP
       shell: bash
