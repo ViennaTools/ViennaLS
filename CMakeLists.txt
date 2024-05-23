@@ -38,6 +38,8 @@ if(VIENNALS_PACKAGE_PYTHON)
       "[ViennaLS] Using remote VTK due to 'VIENNALS_PACKAGE_PYTHON', the build will take a long time!"
   )
 
+  # CIBUILDWHEEL is absolutely cursed and won't work when this is turned on.
+  # I don't know why...
   if (NOT VIENNALS_IS_CI)
     set(CPM_DOWNLOAD_ALL ON)
   endif()
