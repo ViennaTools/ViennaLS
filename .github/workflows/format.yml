@@ -15,12 +15,7 @@ jobs:
       - name: 📋 Install Dependencies
         run: pip install -U cmakelang
 
-      - name: 🏗️ Format
-        run: ./format-project.sh
-
-      - name: 🔍 Check changes
+      - name: 🔍 Check Format
         run: |
-          if [[ $(git diff-index --name-only --exit-code HEAD) ]]; then
-              git diff
-              exit -1
-          fi
+          cmake -B build
+          cmake --build build --target format-check
