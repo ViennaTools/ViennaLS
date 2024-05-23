@@ -38,7 +38,10 @@ if(VIENNALS_PACKAGE_PYTHON)
       "[ViennaLS] Using remote VTK due to 'VIENNALS_PACKAGE_PYTHON', the build will take a long time!"
   )
 
-  set(CPM_DOWNLOAD_ALL ON)
+  if (NOT VIENNALS_IS_CI)
+    set(CPM_DOWNLOAD_ALL ON)
+  endif()
+
   set(VIENNALS_BUILD_PYTHON ON)
 endif()
 
