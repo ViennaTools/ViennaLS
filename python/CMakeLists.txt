@@ -49,35 +49,29 @@ if(CMAKE_LIBRARY_OUTPUT_DIRECTORY)
 endif()
 
 # --------------------------------------------------------------------------------------------------------
-# Binding macro
-# --------------------------------------------------------------------------------------------------------
-
-macro(setup_binding NAME FLAGS)
-  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${VIENNALS_LIBRARY_OUTPUT_DIR}/${NAME})
-  set(MODULE_NAME "_${NAME}")
-
-  pybind11_add_module("${MODULE_NAME}" "pyWrap.cpp")
-  add_dependencies(${PROJECT_NAME} ${MODULE_NAME})
-
-  target_link_libraries(${MODULE_NAME} PUBLIC ViennaLS)
-  target_compile_definitions(${MODULE_NAME} PRIVATE ${FLAGS} -DVIENNALS_MODULE_NAME=${MODULE_NAME})
-
-  configure_file(__init__.py.in ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/__init__.py)
-
-  install(TARGETS ${MODULE_NAME} LIBRARY DESTINATION ${NAME})
-  install(DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/" DESTINATION ${NAME})
-endmacro()
-
-# --------------------------------------------------------------------------------------------------------
 # Setup Bindings
 # --------------------------------------------------------------------------------------------------------
 
-setup_binding(viennals2d -DVIENNALS_PYTHON_DIMENSION=2)
-setup_binding(viennals3d -DVIENNALS_PYTHON_DIMENSION=3)
+viennacore_setup_binding(viennals2d ${VIENNALS_LIBRARY_OUTPUT_DIR})
+viennacore_setup_binding(viennals3d ${VIENNALS_LIBRARY_OUTPUT_DIR})
 
-set(VIENNALS_LIB_FOLDER "${VIENNALS_LIBRARY_OUTPUT_DIR}/viennals.libs")
+target_link_libraries(viennals2d PRIVATE ViennaLS)
+target_link_libraries(viennals3d PRIVATE ViennaLS)
 
-if(VIENNALS_VTK_ENV)
-  setup_vtk_env(${MODULE_NAME} "${VIENNALS_LIB_FOLDER}")
-  install(DIRECTORY "${VIENNALS_LIB_FOLDER}" DESTINATION .)
+target_compile_definitions(viennals2d PRIVATE -DVIENNALS_PYTHON_DIMENSION=2
+                                              -DVIENNALS_MODULE_NAME=viennals2d)
+target_compile_definitions(viennals3d PRIVATE -DVIENNALS_PYTHON_DIMENSION=3
+                                              -DVIENNALS_MODULE_NAME=viennals3d)
+
+# --------------------------------------------------------------------------------------------------------
+# Setup Lib-Folder
+# --------------------------------------------------------------------------------------------------------
+
+set(VIENNALS_LIB_FOLDER ${VIENNALS_LIBRARY_OUTPUT_DIR}/viennals.libs)
+
+if(NOT VIENNALS_VTK_ENV)
+  return()
 endif()
+
+setup_vtk_env(${MODULE_NAME} ${VIENNALS_LIB_FOLDER})
+install(DIRECTORY ${VIENNALS_LIB_FOLDER} DESTINATION .)
