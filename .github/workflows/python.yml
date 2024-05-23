@@ -103,7 +103,8 @@ jobs:
       - name: 🛠️ Build VTK (MacOs)
         if: ${{ matrix.os == 'macos-latest' }}
         run: |
-          sed -i .bak 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_PACKAGE_PYTHON=ON"/g' pyproject.toml
+          # sed -i .bak 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_PACKAGE_PYTHON=ON"/g' pyproject.toml
+          sed -i .bak 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_PACKAGE_PYTHON=ON", "-DVIENNALS_IS_CI=ON"/g' pyproject.toml
           cat pyproject.toml
 
       - name: 🛠️ Use VTK-Python Libs
