@@ -21,9 +21,17 @@ jobs:
 
         include:
           - os: ubuntu-latest
+            config: Release
+            container: ghcr.io/viennatools/vienna-builder:vtk
+          - os: ubuntu-latest
+            config: Debug
             container: ghcr.io/viennatools/vienna-builder:vtk
 
           - os: ubuntu-latest
+            config: Release
+            container: ghcr.io/viennatools/vienna-builder:stock
+          - os: ubuntu-latest
+            config: Debug
             container: ghcr.io/viennatools/vienna-builder:stock
 
     runs-on: ${{ matrix.os }}
