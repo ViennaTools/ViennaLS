@@ -17,20 +17,22 @@ jobs:
 
         os:
           - macos-latest
-          - ubuntu-latest
           - windows-latest
 
-        vtk-system: [true, false]
+        include:
+          - os: ubuntu-latest
+            container: ghcr.io/viennatools/vienna-builder:vtk
 
-        exclude:
-          - os: macos-latest
-            vtk-system: true
-
-          - os: windows-latest
-            vtk-system: true
+          - os: ubuntu-latest
+            container: ghcr.io/viennatools/vienna-builder:stock
 
     runs-on: ${{ matrix.os }}
-    container: ${{ matrix.os == 'ubuntu-latest' && 'fedora:38' || null }}
+
+    container:
+      image: ${{ matrix.container }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
     name: '🧪 Test on ${{ matrix.os }} ["${{ matrix.config }}", VTK: "${{ matrix.vtk-system }}"]'
 
@@ -41,8 +43,7 @@ jobs:
       - name: 🖥️ Setup Environment
         uses: ./.github/actions/setup
         with:
-          container: ${{ matrix.os }}
-          install-vtk: ${{ matrix.vtk-system }}
+          os: ${{ matrix.os }}
 
       - name: 🦥 Cache Dependencies
         uses: actions/cache@v4

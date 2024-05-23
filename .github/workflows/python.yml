@@ -11,10 +11,19 @@ jobs:
       fail-fast: false
 
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            container: ghcr.io/viennatools/vienna-builder:stock
+          - os: windows-latest
+          - os: macos-latest
 
     runs-on: ${{ matrix.os }}
-    container: ${{ matrix.os == 'ubuntu-latest' && 'fedora:38' || null }}
+
+    container:
+      image: ${{ matrix.container }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
     name: "🐍 Test Bindings on ${{ matrix.os }}"
 
@@ -25,8 +34,7 @@ jobs:
       - name: 🖥️ Setup Environment
         uses: ./.github/actions/setup
         with:
-          container: ${{ matrix.os }}
-          install-vtk: false
+          os: ${{ matrix.os }}
 
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
@@ -65,10 +73,19 @@ jobs:
       fail-fast: false
 
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            container: ghcr.io/viennatools/vienna-builder:stock
+          - os: windows-latest
+          - os: macos-latest
 
     runs-on: ${{ matrix.os }}
-    container: ${{ matrix.os == 'ubuntu-latest' && 'fedora:38' || null }}
+
+    container:
+      image: ${{ matrix.container }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
     name: "🐍 Package Bindings on ${{ matrix.os }}"
 
@@ -79,8 +96,7 @@ jobs:
       - name: 🖥️ Setup Environment
         uses: ./.github/actions/setup
         with:
-          container: ${{ matrix.os }}
-          install-vtk: false
+          os: ${{ matrix.os }}
 
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
