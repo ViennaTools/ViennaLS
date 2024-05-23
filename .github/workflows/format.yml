@@ -15,24 +15,17 @@ jobs:
     container: fedora:41
 
     steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v4
-
       - name: 🖥️ Setup Environment
         uses: ./.github/actions/setup
         with:
           container: ubuntu-latest
           install-vtk: true
 
-      - name: 📋 Install Dependencies
-        run: pip install -U cmakelang pyyaml && sudo dnf install -y tmate
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
 
-      - name: 🐛 Debug Issues
-        if: ${{ github.event.inputs.debug == 'true' }}
-        uses: mxschmitt/action-tmate@v3
-        with:
-          install-dependencies: false
-          limit-access-to-actor: true
+      - name: 📋 Install Dependencies
+        run: pip install -U cmakelang pyyaml
 
       - name: 🔍 Check Format
         run: |
