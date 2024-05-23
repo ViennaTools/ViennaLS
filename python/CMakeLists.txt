@@ -73,5 +73,5 @@ if(NOT VIENNALS_VTK_ENV)
   return()
 endif()
 
-setup_vtk_env(${MODULE_NAME} ${VIENNALS_LIB_FOLDER})
+setup_vtk_env(viennals2d ${VIENNALS_LIB_FOLDER}) # Not required for both targets, one will suffice
 install(DIRECTORY ${VIENNALS_LIB_FOLDER} DESTINATION .)
