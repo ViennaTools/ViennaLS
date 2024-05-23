@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
+        with:
+          set-safe-directory: true
 
       - name: 📋 Install additional dependencies
         if: ${{ github.event.inputs.debug == 'true' }}
