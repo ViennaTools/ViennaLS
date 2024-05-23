@@ -5,16 +5,4 @@ if(WIN32 AND VIENNALS_VTK_ENV)
   setup_vtk_env(ViennaLS_Tests ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 endif()
 
-file(
-  GLOB entries
-  LIST_DIRECTORIES true
-  "*")
-
-foreach(entry ${entries})
-  if(NOT IS_DIRECTORY ${entry})
-    continue()
-  endif()
-
-  message(STATUS "[ViennaLS] Adding Test ${entry}")
-  add_subdirectory(${entry})
-endforeach()
+viennacore_add_subdirs(${CMAKE_CURRENT_LIST_DIR})
