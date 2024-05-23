@@ -12,9 +12,7 @@ option(VIENNALS_USE_VTK "Build with VTK file support" ON)
 
 option(VIENNALS_PRECOMPILE_HEADERS "Build template specialisations for shorter compile times" OFF)
 option(VIENNALS_STATIC_BUILD "Build dependencies as static libraries" OFF)
-
-option(VIENNALS_ENABLE_SANITIZER "Enable Sanitizer for debug buidlds" OFF)
-option(VIENNALS_USE_SANITIZER "Enable Sanitizer (Requires GCC or Clang)" OFF)
+option(VIENNALS_ENABLE_SANITIZER "Enable Sanitizers" OFF)
 
 option(VIENNALS_VTK_PYTHON_LIBS "Build against shared libraries shipped by VTKs Python library" OFF)
 option(VIENNALS_PACKAGE_PYTHON "Build python bindings with intent to publish wheel" OFF)
@@ -63,18 +61,6 @@ if(VIENNALS_STATIC_BUILD)
   message(STATUS "[ViennaLS] Enabling precompiled headers for static build")
   set(VIENNALS_PRECOMPILE_HEADERS ON)
   set(BUILD_SHARED_LIBS OFF)
-endif()
-
-if((VIENNALS_ENABLE_SANITIZER AND CMAKE_BUILD_TYPE STREQUAL "Debug") OR VIENNALS_USE_SANITIZER)
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    add_compile_options(-fno-omit-frame-pointer -fsanitize=address -fsanitize=memory)
-    add_link_options(-fno-omit-frame-pointer -fsanitize=address -fsanitize=memory)
-  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    add_compile_options(-fno-omit-frame-pointer -fsanitize=address -fsanitize=leak)
-    add_link_options(-fno-omit-frame-pointer -fsanitize=address -fsanitize=leak)
-  endif()
-
-  message(STATUS "[ViennaLS] Using Sanitizer")
 endif()
 
 # --------------------------------------------------------------------------------------------------------
@@ -195,6 +181,14 @@ elseif(VIENNALS_USE_VTK)
               VTK::FiltersCore
               VTK::FiltersGeneral
               VTK::FiltersGeometry)
+endif()
+
+# --------------------------------------------------------------------------------------------------------
+# Setup Sanitizer
+# --------------------------------------------------------------------------------------------------------
+
+if(VIENNALS_ENABLE_SANITIZER)
+  viennacore_enable_sanitizer()
 endif()
 
 # --------------------------------------------------------------------------------------------------------
