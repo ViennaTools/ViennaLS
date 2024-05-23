@@ -50,8 +50,6 @@ endif()
 # Configuration
 # --------------------------------------------------------------------------------------------------------
 
-include("cmake/openmp.cmake")
-
 if(VIENNALS_BUILD_PYTHON)
   message(STATUS "[ViennaLS] Using VTK for python bindings")
   set(VIENNALS_USE_VTK ON)
