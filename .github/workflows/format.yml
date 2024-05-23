@@ -21,7 +21,7 @@ jobs:
           install-vtk: true
 
       - name: 📋 Install Dependencies
-        run: pip install -U cmakelang
+        run: pip install -U cmakelang pyyaml
 
       - name: 🔍 Check Format
         run: |
