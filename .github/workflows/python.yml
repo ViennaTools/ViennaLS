@@ -95,7 +95,7 @@ jobs:
         run: sed -i 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_PACKAGE_PYTHON=ON"/g' pyproject.toml
 
       - name: 🛠️ Build VTK (MacOs)
-        if: ${{ matrix.os == 'macos-latest' }}
+        if: ${{ matrix.os == 'macos-latest' || matrix.os == 'ubuntu-latest' }}
         run: |
           sed -i .bak 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_PACKAGE_PYTHON=ON"/g' pyproject.toml
           cat pyproject.toml
@@ -103,7 +103,8 @@ jobs:
       - name: 🛠️ Use VTK-Python Libs
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
-          sed -i 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_VTK_PYTHON_LIBS=ON"/g' pyproject.toml
+          # sed -i 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_VTK_PYTHON_LIBS=ON"/g' pyproject.toml
+          sed -i 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_PACKAGE_PYTHON=ON"/g' pyproject.toml
           cat pyproject.toml
 
       - name: 🏗️ Build Wheels
