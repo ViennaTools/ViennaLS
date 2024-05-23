@@ -12,14 +12,15 @@ on:
 jobs:
   check-coding-style:
     runs-on: ubuntu-latest
-
-    container:
-      image: ghcr.io/viennatools/vienna-builder:vtk
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+    container: fedora:41
 
     steps:
+      - name: 🖥️ Setup Environment
+        uses: ./.github/actions/setup
+        with:
+          container: ubuntu-latest
+          install-vtk: true
+
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
