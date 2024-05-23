@@ -33,5 +33,6 @@ jobs:
 
       - name: 🔍 Check Format
         run: |
+          git config --global --add safe.directory $(pwd) # "set-safe-directory" seems bugged in actions/checkout@v4
           cmake -B build
           cmake --build build --target format-check
