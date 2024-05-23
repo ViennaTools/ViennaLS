@@ -4,9 +4,10 @@ on:
   push:
   pull_request:
   workflow_dispatch:
-    debug:
-      type: boolean
-      description: Enable Debugging
+    inputs:
+      debug:
+        type: boolean
+        description: Enable Debugging
 
 jobs:
   check-coding-style:
