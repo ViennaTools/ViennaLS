@@ -109,9 +109,8 @@ jobs:
       - name: 🏗️ Build Wheels
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
-          CIBW_BUILD: "cp310-* cp311-* cp312-*"
-          CIBW_ARCHS: ${{ matrix.os == 'windows-latest' && 'auto64' || 'auto' }}
-          CIBW_REPAIR_WHEEL_COMMAND_LINUX: ""
+          CIBW_SKIP: "cp36-* cp37-* cp38-* cp39-*"
+          CIBW_ARCHS_WINDOWS: auto64
 
       - name: 📦 Upload Artifact
         uses: actions/upload-artifact@v4
