@@ -18,6 +18,17 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
+      - name: 📋 Install additional dependencies
+        if: ${{ github.event.inputs.debug == 'true' }}
+        run: sudo dnf install -y tmate
+
+      - name: 🐛 Debug Issues
+        if: ${{ github.event.inputs.debug == 'true' }}
+        uses: mxschmitt/action-tmate@v3
+        with:
+          install-dependencies: false
+          limit-access-to-actor: true
+
       - name: 🔍 Check Format
         run: |
           cmake -B build
