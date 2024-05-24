@@ -2,10 +2,11 @@
 
 #include <lsDomain.hpp>
 #include <lsFromVolumeMesh.hpp>
-#include <lsSmartPointer.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKReader.hpp>
 #include <lsVTKWriter.hpp>
+
+namespace ls = viennals;
 
 int main(int argc, char *argv[]) {
 
@@ -20,12 +21,12 @@ int main(int argc, char *argv[]) {
     fileName = "volumeInitial.vtu";
   }
 
-  auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
-  lsVTKReader(mesh, lsFileFormatEnum::VTU, fileName).apply();
+  auto mesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
+  ls::VTKReader(mesh, ls::FileFormatEnum::VTU, fileName).apply();
 
   // reorder numbering
   {
-    typename lsPointData<NumericType>::ScalarDataType *materialData =
+    typename ls::PointData<NumericType>::ScalarDataType *materialData =
         mesh->getCellData().getScalarData("Material");
 
     std::vector<int> translator = {3, 2, 4, 7, 7, 6, 5, 7, 1, 0};
@@ -40,27 +41,27 @@ int main(int argc, char *argv[]) {
 
   mesh->print();
 
-  lsVTKWriter(mesh, lsFileFormatEnum::VTU, "ReadVolumeMesh.vtu").apply();
+  ls::VTKWriter(mesh, ls::FileFormatEnum::VTU, "ReadVolumeMesh.vtu").apply();
 
   double bounds[2 * D] = {-6, 6, 1e-10, 0.078, -0.034, 0.034};
-  lsBoundaryConditionEnum<D> boundaryCons[D];
+  ls::BoundaryConditionEnum<D> boundaryCons[D];
   for (unsigned i = 0; i < D; ++i) {
-    boundaryCons[i] = lsBoundaryConditionEnum<D>::REFLECTIVE_BOUNDARY;
+    boundaryCons[i] = ls::BoundaryConditionEnum<D>::REFLECTIVE_BOUNDARY;
   }
-  boundaryCons[0] = lsBoundaryConditionEnum<D>::INFINITE_BOUNDARY;
+  boundaryCons[0] = ls::BoundaryConditionEnum<D>::INFINITE_BOUNDARY;
 
-  auto domain = lsSmartPointer<lsDomain<NumericType, D>>::New(
+  auto domain = ls::SmartPointer<ls::Domain<NumericType, D>>::New(
       bounds, boundaryCons, gridDelta);
 
   // read in as LS
-  lsFromVolumeMesh<double, D> reader(domain->getGrid(), mesh);
+  ls::FromVolumeMesh<double, D> reader(domain->getGrid(), mesh);
   reader.apply();
   auto levelSets = reader.getLevelSets();
 
   for (unsigned i = 0; i < levelSets.size(); ++i) {
-    auto mesh = lsSmartPointer<lsMesh<>>::New();
-    lsToSurfaceMesh<double, D>(levelSets[i], mesh).apply();
-    lsVTKWriter<double>(mesh, "LSsurface-" + std::to_string(i) + ".vtp")
+    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    ls::ToSurfaceMesh<double, D>(levelSets[i], mesh).apply();
+    ls::VTKWriter<double>(mesh, "LSsurface-" + std::to_string(i) + ".vtp")
         .apply();
   }
 

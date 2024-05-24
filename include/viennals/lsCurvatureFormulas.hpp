@@ -1,11 +1,14 @@
-#ifndef LS_CURVATURE_FORMULAS_HPP
-#define LS_CURVATURE_FORMULAS_HPP
+#pragma once
 
 #include <cmath>
 
 #include <lsDomain.hpp>
 
+#include <vcLogger.hpp>
+
 namespace lsInternal {
+
+using namespace viennacore;
 
 // Formulas for space curves and higher dimension can be found here:
 // https://doi.org/10.1016/j.cagd.2005.06.005
@@ -184,7 +187,7 @@ T gaussianCurvature(It &it, bool bigStencil = false) {
   else
     d = smallStencilFromIterator(it, gridDelta);
   if constexpr (D == 2) {
-    lsMessage::getInstance()
+    Logger::getInstance()
         .addWarning(
             "2D structures do not have a Gaussian Curvature, use "
             "\"meanCurvature(IteratorType & neighborIterator)\" instead!")
@@ -196,5 +199,3 @@ T gaussianCurvature(It &it, bool bigStencil = false) {
 }
 
 } // namespace lsInternal
-
-#endif // LS_CURVATURE_FORMULAS_HPP

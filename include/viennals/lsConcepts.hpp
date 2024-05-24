@@ -1,5 +1,4 @@
-#ifndef LS_CONCEPTS_HPP
-#define LS_CONCEPTS_HPP
+#pragma once
 
 #include <cstddef>
 #include <type_traits>
@@ -25,5 +24,3 @@ using IsFloatingPoint =
     std::enable_if_t<std::is_floating_point<T>::value, AssignType>;
 
 } // namespace lsConcepts
-
-#endif // LS_CONCEPTS_HPP

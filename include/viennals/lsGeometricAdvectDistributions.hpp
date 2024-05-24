@@ -1,22 +1,27 @@
-#ifndef LS_FAST_ADVECT_DISTRIBUTIONS_HPP
-#define LS_FAST_ADVECT_DISTRIBUTIONS_HPP
+#pragma once
 
 #include <hrleVectorType.hpp>
-#include <lsMessage.hpp>
+
+#include <vcLogger.hpp>
+#include <vcVectorUtil.hpp>
+
+namespace viennals {
+
+using namespace viennacore;
 
 /// Base class for distributions used by lsGeometricAdvect.
 /// All functions are pure virtual and must be implemented
 /// by any advection distribution.
-template <class T, int D> class lsGeometricAdvectDistribution {
+template <class T, int D> class GeometricAdvectDistribution {
 public:
-  lsGeometricAdvectDistribution() {}
+  GeometricAdvectDistribution() {}
 
   /// Quick check whether a point relative to the distributions
   /// center is inside the distribution. If there is no quick
   /// check due to the complexity of the distribution, always
   /// return true or do not overload this function.
-  virtual bool isInside(const std::array<hrleCoordType, 3> &initial,
-                        const std::array<hrleCoordType, 3> &candidate,
+  virtual bool isInside(const Triple<hrleCoordType> &initial,
+                        const Triple<hrleCoordType> &candidate,
                         double eps = 0.) const {
     return true;
   }
@@ -24,30 +29,30 @@ public:
   /// Returns the signed distance of a point relative to the distributions
   /// center. This is the signed manhatten distance to the nearest surface
   /// point.
-  virtual T getSignedDistance(const std::array<hrleCoordType, 3> &initial,
-                              const std::array<hrleCoordType, 3> &candidate,
+  virtual T getSignedDistance(const Triple<hrleCoordType> &initial,
+                              const Triple<hrleCoordType> &candidate,
                               unsigned long initialPointId) const = 0;
 
   /// Sets bounds to the bounding box of the distribution.
   virtual std::array<hrleCoordType, 6> getBounds() const = 0;
 
-  virtual ~lsGeometricAdvectDistribution() {}
+  virtual ~GeometricAdvectDistribution() {}
 };
 
-/// Concrete implementation of lsGeometricAdvectDistribution for a spherical
+/// Concrete implementation of GeometricAdvectDistribution for a spherical
 /// advection distribution.
 template <class T, int D>
-class lsSphereDistribution : public lsGeometricAdvectDistribution<T, D> {
+class SphereDistribution : public GeometricAdvectDistribution<T, D> {
 public:
   const T radius = 0.;
   const T radius2;
   const T gridDelta;
 
-  lsSphereDistribution(const T passedRadius, const T delta)
+  SphereDistribution(const T passedRadius, const T delta)
       : radius(passedRadius), radius2(radius * radius), gridDelta(delta) {}
 
-  bool isInside(const std::array<hrleCoordType, 3> &initial,
-                const std::array<hrleCoordType, 3> &candidate,
+  bool isInside(const Triple<hrleCoordType> &initial,
+                const Triple<hrleCoordType> &candidate,
                 double eps = 0.) const override {
     hrleCoordType dot = 0.;
     for (unsigned i = 0; i < D; ++i) {
@@ -61,11 +66,11 @@ public:
       return false;
   }
 
-  T getSignedDistance(const std::array<hrleCoordType, 3> &initial,
-                      const std::array<hrleCoordType, 3> &candidate,
+  T getSignedDistance(const Triple<hrleCoordType> &initial,
+                      const Triple<hrleCoordType> &candidate,
                       unsigned long /*initialPointId*/) const override {
     T distance = std::numeric_limits<T>::max();
-    std::array<hrleCoordType, 3> v{};
+    Triple<hrleCoordType> v{};
     for (unsigned i = 0; i < D; ++i) {
       v[i] = candidate[i] - initial[i];
     }
@@ -106,20 +111,20 @@ public:
   }
 };
 
-/// Concrete implementation of lsGeometricAdvectDistribution
+/// Concrete implementation of GeometricAdvectDistribution
 /// for a rectangular box distribution.
 template <class T, int D>
-class lsBoxDistribution : public lsGeometricAdvectDistribution<T, D> {
+class BoxDistribution : public GeometricAdvectDistribution<T, D> {
 public:
   const hrleVectorType<T, 3> posExtent;
   const T gridDelta;
 
-  lsBoxDistribution(const std::array<T, 3> &halfAxes, const T delta)
+  BoxDistribution(const std::array<T, 3> &halfAxes, const T delta)
       : posExtent(halfAxes), gridDelta(delta) {
     for (unsigned i = 0; i < D; ++i) {
       if (std::abs(posExtent[i]) < gridDelta) {
-        lsMessage::getInstance()
-            .addWarning("One half-axis of lsBoxDistribution is smaller than "
+        Logger::getInstance()
+            .addWarning("One half-axis of BoxDistribution is smaller than "
                         "the grid Delta! This can lead to numerical errors "
                         "breaking the distribution!")
             .print();
@@ -127,8 +132,8 @@ public:
     }
   }
 
-  bool isInside(const std::array<hrleCoordType, 3> &initial,
-                const std::array<hrleCoordType, 3> &candidate,
+  bool isInside(const Triple<hrleCoordType> &initial,
+                const Triple<hrleCoordType> &candidate,
                 double eps = 0.) const override {
     for (unsigned i = 0; i < D; ++i) {
       if (std::abs(candidate[i] - initial[i]) >
@@ -139,8 +144,8 @@ public:
     return true;
   }
 
-  T getSignedDistance(const std::array<hrleCoordType, 3> &initial,
-                      const std::array<hrleCoordType, 3> &candidate,
+  T getSignedDistance(const Triple<hrleCoordType> &initial,
+                      const Triple<hrleCoordType> &candidate,
                       unsigned long /*initialPointId*/) const override {
     T distance = std::numeric_limits<T>::lowest();
     for (unsigned i = 0; i < D; ++i) {
@@ -160,4 +165,4 @@ public:
   }
 };
 
-#endif // LS_FAST_ADVECT_DISTRIBUTIONS_HPP
+} // namespace viennals

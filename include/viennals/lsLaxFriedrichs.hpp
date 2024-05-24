@@ -1,5 +1,4 @@
-#ifndef LS_LAX_FRIEDRICHS_HPP
-#define LS_LAX_FRIEDRICHS_HPP
+#pragma once
 
 #include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
@@ -7,15 +6,19 @@
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 
+#include <vcVectorUtil.hpp>
+
 namespace lsInternal {
+
+using namespace viennals;
 
 /// Lax Friedrichs integration scheme with constant alpha
 /// value for dissipation. This alpha value should be fitted
 /// based on the results of the advection and passed to the
 /// advection Kernel.
-template <class T, int D, int order> class lsLaxFriedrichs {
-  lsSmartPointer<lsDomain<T, D>> levelSet;
-  lsSmartPointer<lsVelocityField<T>> velocities;
+template <class T, int D, int order> class LaxFriedrichs {
+  SmartPointer<Domain<T, D>> levelSet;
+  SmartPointer<VelocityField<T>> velocities;
   hrleSparseStarIterator<hrleDomain<T, D>, order> neighborIterator;
   bool calculateNormalVectors = true;
   const double alpha = 1.0;
@@ -23,14 +26,14 @@ template <class T, int D, int order> class lsLaxFriedrichs {
   static T pow2(const T &value) { return value * value; }
 
 public:
-  static void prepareLS(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+  static void prepareLS(SmartPointer<Domain<T, D>> passedlsDomain) {
     assert(order == 1 || order == 2);
-    lsExpand<T, D>(passedlsDomain, 2 * order + 1).apply();
+    Expand<T, D>(passedlsDomain, 2 * order + 1).apply();
   }
 
-  lsLaxFriedrichs(lsSmartPointer<lsDomain<T, D>> passedlsDomain,
-                  lsSmartPointer<lsVelocityField<T>> vel,
-                  bool calcNormal = true, double a = 1.0)
+  LaxFriedrichs(SmartPointer<Domain<T, D>> passedlsDomain,
+                SmartPointer<VelocityField<T>> vel, bool calcNormal = true,
+                double a = 1.0)
       : levelSet(passedlsDomain), velocities(vel),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>, order>(
             levelSet->getDomain())),
@@ -55,7 +58,7 @@ public:
     T grad = 0.;
     T dissipation = 0.;
 
-    std::array<T, 3> normalVector = {};
+    Triple<T> normalVector = {};
     T normalModulus = 0;
     const bool calcNormals = calculateNormalVectors;
 
@@ -130,12 +133,12 @@ public:
     }
 
     // convert coordinate to std array for interface
-    std::array<T, 3> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
+    Triple<T> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
 
     double scalarVelocity = velocities->getScalarVelocity(
         coordArray, material, normalVector,
         neighborIterator.getCenter().getPointId());
-    std::array<T, 3> vectorVelocity = velocities->getVectorVelocity(
+    Triple<T> vectorVelocity = velocities->getVectorVelocity(
         coordArray, material, normalVector,
         neighborIterator.getCenter().getPointId());
 
@@ -156,5 +159,3 @@ public:
   }
 };
 } // namespace lsInternal
-
-#endif // LS_LAX_FRIEDRICHS_HPP

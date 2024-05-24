@@ -1,5 +1,4 @@
-#ifndef LS_MESH_HPP
-#define LS_MESH_HPP
+#pragma once
 
 #include <lsPreCompileMacros.hpp>
 
@@ -9,28 +8,34 @@
 
 #include <lsPointData.hpp>
 
+#include <vcVectorUtil.hpp>
+
+namespace viennals {
+
+using namespace viennacore;
+
 /// This class holds an explicit mesh, which is always given in 3 dimensions.
 /// If it describes a 2D mesh, the third dimension is set to 0.
 /// Vertices, Lines, Triangles, Tetras & Hexas are supported as geometric
 /// elements.
-template <class T = double> class lsMesh {
+template <class T = double> class Mesh {
 public:
-  std::vector<std::array<T, 3>> nodes;
+  std::vector<Triple<T>> nodes;
   std::vector<std::array<unsigned, 1>> vertices;
   std::vector<std::array<unsigned, 2>> lines;
   std::vector<std::array<unsigned, 3>> triangles;
   std::vector<std::array<unsigned, 4>> tetras;
   std::vector<std::array<unsigned, 8>> hexas;
-  lsPointData<T> pointData;
-  lsPointData<T> cellData;
-  std::array<T, 3> minimumExtent;
-  std::array<T, 3> maximumExtent;
+  PointData<T> pointData;
+  PointData<T> cellData;
+  Triple<T> minimumExtent;
+  Triple<T> maximumExtent;
 
 private:
   // iterator typedef
-  using VectorIt = typename lsPointData<T>::VectorDataType::iterator;
+  using VectorIt = typename PointData<T>::VectorDataType::iterator;
   // find function to avoid including the whole algorithm header
-  VectorIt find(VectorIt first, VectorIt last, const std::array<T, 3> &value) {
+  VectorIt find(VectorIt first, VectorIt last, const Triple<T> &value) {
     for (; first != last; ++first) {
       if (*first == value) {
         return first;
@@ -52,9 +57,9 @@ private:
   };
 
 public:
-  const std::vector<std::array<T, 3>> &getNodes() const { return nodes; }
+  const std::vector<Triple<T>> &getNodes() const { return nodes; }
 
-  std::vector<std::array<T, 3>> &getNodes() { return nodes; }
+  std::vector<Triple<T>> &getNodes() { return nodes; }
 
   template <int D, typename std::enable_if<D == 1, int>::type = 0>
   std::vector<std::array<unsigned, D>> &getElements() {
@@ -81,15 +86,15 @@ public:
     return hexas;
   }
 
-  lsPointData<T> &getPointData() { return pointData; }
+  PointData<T> &getPointData() { return pointData; }
 
-  const lsPointData<T> &getPointData() const { return pointData; }
+  const PointData<T> &getPointData() const { return pointData; }
 
-  lsPointData<T> &getCellData() { return cellData; }
+  PointData<T> &getCellData() { return cellData; }
 
-  const lsPointData<T> &getCellData() const { return cellData; }
+  const PointData<T> &getCellData() const { return cellData; }
 
-  unsigned insertNextNode(const std::array<T, 3> &node) {
+  unsigned insertNextNode(const Triple<T> &node) {
     nodes.push_back(node);
     return nodes.size() - 1;
   }
@@ -145,7 +150,7 @@ public:
   }
 
   void removeDuplicateNodes() {
-    std::vector<std::array<T, 3>> newNodes;
+    std::vector<Triple<T>> newNodes;
     // can just push first point since it cannot be duplicate
     newNodes.push_back(nodes[0]);
     // now check for duplicates
@@ -178,7 +183,7 @@ public:
     }
   }
 
-  void append(const lsMesh<T> &passedMesh) {
+  void append(const Mesh<T> &passedMesh) {
     const unsigned numberOfOldNodes = nodes.size();
 
     // append new nodes
@@ -265,7 +270,7 @@ public:
   }
 
   void print() {
-    std::cout << "lsMesh:" << std::endl;
+    std::cout << "Mesh:" << std::endl;
     std::cout << "Number of Nodes: " << nodes.size() << std::endl;
     if (vertices.size() > 0)
       std::cout << "Number of Vertices: " << vertices.size() << std::endl;
@@ -311,7 +316,7 @@ public:
   }
 };
 
-#endif // LS_MESH_HPP
-
 // add all template specialisations for this class
-PRECOMPILE_PRECISION(lsMesh);
+PRECOMPILE_PRECISION(Mesh);
+
+} // namespace viennals

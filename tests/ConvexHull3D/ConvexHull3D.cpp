@@ -13,6 +13,8 @@
 
 #define PI 3.141592
 
+namespace ls = viennals;
+
 int main() {
 
   constexpr int D = 3;
@@ -23,16 +25,17 @@ int main() {
   // double gridDelta = 1;
   //
   // double bounds[2 * D] = {-extent, extent, -extent, extent};
-  // lsDomain<double, D>::BoundaryType boundaryCons[D];
+  // ls::Domain<double, D>::BoundaryType boundaryCons[D];
   // for (unsigned i = 0; i < D; ++i)
-  //   boundaryCons[i] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
-  // lsDomain<double, D> sphere1(bounds, boundaryCons, gridDelta);
+  //   boundaryCons[i] = ls::Domain<double,
+  //   D>::BoundaryType::REFLECTIVE_BOUNDARY;
+  // ls::Domain<double, D> sphere1(bounds, boundaryCons, gridDelta);
 
   // auto seed = 1572962798; // std::time(nullptr);
   // std::cout << seed << std::endl;
   // std::srand(seed);
 
-  auto cloud = lsSmartPointer<lsPointCloud<double, D>>::New();
+  auto cloud = ls::SmartPointer<ls::PointCloud<double, D>>::New();
 
   // generate a circle of points ----------------------------------------------
   // std::random_device rd;
@@ -98,48 +101,49 @@ int main() {
     cloud->insertNextPoint(hrleVectorType<double, D>(x, y, height));
   }
 
-  auto mesh = lsSmartPointer<lsMesh<>>::New();
-  lsConvexHull<double, D>(mesh, cloud).apply();
+  auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+  ls::ConvexHull<double, D>(mesh, cloud).apply();
 
-  auto pointMesh = lsSmartPointer<lsMesh<>>::New();
+  auto pointMesh = ls::SmartPointer<ls::Mesh<>>::New();
   for (unsigned i = 0; i < cloud->points.size(); ++i) {
     pointMesh->nodes.push_back(std::array<double, 3>{
         cloud->points[i][0], cloud->points[i][1], cloud->points[i][2]});
     pointMesh->vertices.push_back(std::array<unsigned, 1>{i});
   }
   std::cout << "Output point cloud" << std::endl;
-  lsVTKWriter<double>(pointMesh, lsFileFormatEnum::VTP, "points.vtp").apply();
+  ls::VTKWriter<double>(pointMesh, ls::FileFormatEnum::VTP, "points.vtp")
+      .apply();
 
   // std::cout << "Output surface mesh" << std::endl;
   // mesh.print();
-  // lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP, "hull.vtp").apply();
+  // ls::VTKWriter<double>(mesh, ls::FileFormatEnum::VTP, "hull.vtp").apply();
 
   std::cout << "create level set" << std::endl;
-  auto levelSet = lsSmartPointer<lsDomain<double, D>>::New(0.18);
-  lsMakeGeometry<double, D> geom;
+  auto levelSet = ls::SmartPointer<ls::Domain<double, D>>::New(0.18);
+  ls::MakeGeometry<double, D> geom;
   geom.setLevelSet(levelSet);
   geom.setGeometry(cloud);
   geom.apply();
 
   // now make into level set
-  // lsDomain<double, D> levelSet(0.3);
-  // lsFromSurfaceMesh<double, D>(levelSet, mesh).apply();
+  // ls::Domain<double, D> levelSet(0.3);
+  // FromSurfaceMesh<double, D>(levelSet, mesh).apply();
 
-  auto LSMesh = lsSmartPointer<lsMesh<>>::New();
+  auto LSMesh = ls::SmartPointer<ls::Mesh<>>::New();
   std::cout << "Output level set grid" << std::endl;
-  lsToMesh<double, D>(levelSet, LSMesh).apply();
-  lsVTKWriter<double>(LSMesh, lsFileFormatEnum::VTP, "LS.vtp").apply();
+  ls::ToMesh<double, D>(levelSet, LSMesh).apply();
+  ls::VTKWriter<double>(LSMesh, ls::FileFormatEnum::VTP, "LS.vtp").apply();
 
   std::cout << "Output level set surface" << std::endl;
-  lsToSurfaceMesh<double, D>(levelSet, LSMesh).apply();
-  lsVTKWriter<double>(LSMesh, lsFileFormatEnum::VTP, "LSmesh.vtp").apply();
+  ls::ToSurfaceMesh<double, D>(levelSet, LSMesh).apply();
+  ls::VTKWriter<double>(LSMesh, ls::FileFormatEnum::VTP, "LSmesh.vtp").apply();
 
   // {
-  //   lsMesh<> mesh;
+  //   Mesh<> mesh;
   //   std::cout << "Extracting..." << std::endl;
-  //   lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
+  //   ls::ToSurfaceMesh<double, D>(sphere1, mesh).apply();
   //   mesh.print();
-  //   lsVTKWriter<double>(mesh, "after2D.vtk").apply();
+  //   ls::VTKWriter<double>(mesh, "after2D.vtk").apply();
   // }
 
   return 0;

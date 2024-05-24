@@ -1,13 +1,13 @@
-#ifndef LS_VTK_WRITER_HPP
-#define LS_VTK_WRITER_HPP
+#pragma once
 
 #include <fstream>
 #include <string>
 
 #include <lsFileFormats.hpp>
 #include <lsMesh.hpp>
-#include <lsMessage.hpp>
-#include <lsSmartPointer.hpp>
+
+#include <vcLogger.hpp>
+#include <vcSmartPointer.hpp>
 
 #ifdef VIENNALS_USE_VTK
 #include <vtkCellArray.h>
@@ -23,10 +23,14 @@
 #include <vtkXMLUnstructuredGridWriter.h>
 #endif // VIENNALS_USE_VTK
 
-/// Class handling the output of an lsMesh<> to VTK file types.
-template <class T> class lsVTKWriter {
-  lsSmartPointer<lsMesh<T>> mesh = nullptr;
-  lsFileFormatEnum fileFormat = lsFileFormatEnum::VTK_AUTO;
+namespace viennals {
+
+using namespace viennacore;
+
+/// Class handling the output of an Mesh<> to VTK file types.
+template <class T> class VTKWriter {
+  SmartPointer<Mesh<T>> mesh = nullptr;
+  FileFormatEnum fileFormat = FileFormatEnum::VTK_AUTO;
   std::string fileName;
 
 #ifdef VIENNALS_USE_VTK
@@ -62,23 +66,21 @@ template <class T> class lsVTKWriter {
 #endif // VIENNALS_USE_VTK
 
 public:
-  lsVTKWriter() {}
+  VTKWriter() {}
 
-  lsVTKWriter(lsSmartPointer<lsMesh<T>> passedMesh) : mesh(passedMesh) {}
+  VTKWriter(SmartPointer<Mesh<T>> passedMesh) : mesh(passedMesh) {}
 
-  lsVTKWriter(lsSmartPointer<lsMesh<T>> passedMesh, std::string passedFileName)
+  VTKWriter(SmartPointer<Mesh<T>> passedMesh, std::string passedFileName)
       : mesh(passedMesh), fileName(passedFileName) {}
 
-  lsVTKWriter(lsSmartPointer<lsMesh<T>> passedMesh,
-              lsFileFormatEnum passedFormat, std::string passedFileName)
+  VTKWriter(SmartPointer<Mesh<T>> passedMesh, FileFormatEnum passedFormat,
+            std::string passedFileName)
       : mesh(passedMesh), fileFormat(passedFormat), fileName(passedFileName) {}
 
-  void setMesh(lsSmartPointer<lsMesh<T>> passedMesh) { mesh = passedMesh; }
+  void setMesh(SmartPointer<Mesh<T>> passedMesh) { mesh = passedMesh; }
 
   /// set file format for file to write. Defaults to VTK_LEGACY.
-  void setFileFormat(lsFileFormatEnum passedFormat) {
-    fileFormat = passedFormat;
-  }
+  void setFileFormat(FileFormatEnum passedFormat) { fileFormat = passedFormat; }
 
   /// set file name for file to write
   void setFileName(std::string passedFileName) { fileName = passedFileName; }
@@ -86,35 +88,35 @@ public:
   void apply() {
     // check mesh
     if (mesh == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No mesh was passed to lsVTKWriter. Not writing.")
+      Logger::getInstance()
+          .addWarning("No mesh was passed to VTKWriter. Not writing.")
           .print();
       return;
     }
     // check filename
     if (fileName.empty()) {
-      lsMessage::getInstance()
-          .addWarning("No file name specified for lsVTKWriter. Not writing.")
+      Logger::getInstance()
+          .addWarning("No file name specified for VTKWriter. Not writing.")
           .print();
       return;
     }
 
-    if (fileFormat == lsFileFormatEnum::VTK_AUTO) {
+    if (fileFormat == FileFormatEnum::VTK_AUTO) {
       auto dotPos = fileName.rfind('.');
       if (dotPos == std::string::npos) {
-        fileFormat = lsFileFormatEnum::VTP;
+        fileFormat = FileFormatEnum::VTP;
       } else {
         auto ending = fileName.substr(dotPos);
         if (ending == ".vtk") {
-          fileFormat = lsFileFormatEnum::VTK_LEGACY;
+          fileFormat = FileFormatEnum::VTK_LEGACY;
         } else if (ending == ".vtp") {
-          fileFormat = lsFileFormatEnum::VTP;
+          fileFormat = FileFormatEnum::VTP;
         } else if (ending == ".vtu") {
-          fileFormat = lsFileFormatEnum::VTU;
+          fileFormat = FileFormatEnum::VTU;
         } else {
-          lsMessage::getInstance()
+          Logger::getInstance()
               .addWarning("No valid file format found based on the file ending "
-                          "passed to lsVTKWriter. Not writing.")
+                          "passed to VTKWriter. Not writing.")
               .print();
           return;
         }
@@ -123,29 +125,29 @@ public:
 
     // check file format
     switch (fileFormat) {
-    case lsFileFormatEnum::VTK_LEGACY:
+    case FileFormatEnum::VTK_LEGACY:
       writeVTKLegacy(fileName);
       break;
 #ifdef VIENNALS_USE_VTK
-    case lsFileFormatEnum::VTP:
+    case FileFormatEnum::VTP:
       writeVTP(fileName);
       break;
-    case lsFileFormatEnum::VTU:
+    case FileFormatEnum::VTU:
       writeVTU(fileName);
       break;
 #else
-    case lsFileFormatEnum::VTP:
-    case lsFileFormatEnum::VTU:
-      lsMessage::getInstance()
-          .addWarning("lsVTKWriter was built without VTK support. Falling back "
+    case FileFormatEnum::VTP:
+    case FileFormatEnum::VTU:
+      Logger::getInstance()
+          .addWarning("VTKWriter was built without VTK support. Falling back "
                       "to VTK_LEGACY.")
           .print();
       writeVTKLegacy(fileName);
       break;
 #endif
     default:
-      lsMessage::getInstance()
-          .addWarning("No valid file format set for lsVTKWriter. Not writing.")
+      Logger::getInstance()
+          .addWarning("No valid file format set for VTKWriter. Not writing.")
           .print();
     }
   }
@@ -154,8 +156,8 @@ private:
 #ifdef VIENNALS_USE_VTK
   void writeVTP(std::string filename) const {
     if (mesh == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No mesh was passed to lsVTKWriter.")
+      Logger::getInstance()
+          .addWarning("No mesh was passed to VTKWriter.")
           .print();
       return;
     }
@@ -222,8 +224,8 @@ private:
 
   void writeVTU(std::string filename) const {
     if (mesh == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No mesh was passed to lsVTKWriter.")
+      Logger::getInstance()
+          .addWarning("No mesh was passed to VTKWriter.")
           .print();
       return;
     }
@@ -347,8 +349,8 @@ private:
 
   void writeVTKLegacy(std::string filename) {
     if (mesh == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No mesh was passed to lsVTKWriter.")
+      Logger::getInstance()
+          .addWarning("No mesh was passed to VTKWriter.")
           .print();
       return;
     }
@@ -429,7 +431,7 @@ private:
     // WRITE POINT DATA
     if (mesh->pointData.getScalarDataSize() ||
         mesh->pointData.getVectorDataSize()) {
-      lsMessage::getInstance()
+      Logger::getInstance()
           .addWarning("Point data output not supported for legacy VTK output. "
                       "Point data is ignored.")
           .print();
@@ -471,4 +473,4 @@ private:
   }
 };
 
-#endif // LS_VTK_WRITER_HPP
+} // namespace viennals

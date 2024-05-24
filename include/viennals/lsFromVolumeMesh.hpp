@@ -1,5 +1,4 @@
-#ifndef LS_FROM_VOLUME_MESH_HPP
-#define LS_FROM_VOLUME_MESH_HPP
+#pragma once
 
 #include <lsPreCompileMacros.hpp>
 
@@ -8,31 +7,36 @@
 #include <lsDomain.hpp>
 #include <lsFromSurfaceMesh.hpp>
 #include <lsMesh.hpp>
-#include <lsMessage.hpp>
+
+#include <vcLogger.hpp>
+#include <vcSmartPointer.hpp>
+
+namespace viennals {
+
+using namespace viennacore;
 
 /// This class creates a level set from a tetrahedral mesh.
 /// If the mesh contains a scalar data array called "Material",
 /// one level set for each material will be created and stored
-/// in the supplied std::vector<lsDomain<T,D>> object.
-template <class T, int D> class lsFromVolumeMesh {
+/// in the supplied std::vector<Domain<T,D>> object.
+template <class T, int D> class FromVolumeMesh {
 public:
-  using LevelSetType = lsSmartPointer<lsDomain<T, D>>;
+  using LevelSetType = SmartPointer<Domain<T, D>>;
   using LevelSetsType = std::vector<LevelSetType>;
-  using GridType = typename lsDomain<T, D>::GridType;
+  using GridType = typename Domain<T, D>::GridType;
 
 private:
   LevelSetsType levelSets;
-  lsSmartPointer<lsMesh<T>> mesh = nullptr;
+  SmartPointer<Mesh<T>> mesh = nullptr;
   GridType grid;
   bool removeBoundaryTriangles = true;
   bool gridSet = false;
 
 public:
-  lsFromVolumeMesh() {}
+  FromVolumeMesh() {}
 
-  lsFromVolumeMesh(const GridType &passedGrid,
-                   lsSmartPointer<lsMesh<T>> passedMesh,
-                   bool passedRemoveBoundaryTriangles = true)
+  FromVolumeMesh(const GridType &passedGrid, SmartPointer<Mesh<T>> passedMesh,
+                 bool passedRemoveBoundaryTriangles = true)
       : grid(passedGrid), mesh(passedMesh),
         removeBoundaryTriangles(passedRemoveBoundaryTriangles), gridSet(true) {}
 
@@ -41,7 +45,7 @@ public:
     gridSet = true;
   }
 
-  void setMesh(lsSmartPointer<lsMesh<T>> passedMesh) { mesh = passedMesh; }
+  void setMesh(SmartPointer<Mesh<T>> passedMesh) { mesh = passedMesh; }
 
   void setRemoveBoundaryTriangles(bool passedRemoveBoundaryTriangles) {
     removeBoundaryTriangles = passedRemoveBoundaryTriangles;
@@ -51,21 +55,21 @@ public:
 
   void apply() {
     if (!gridSet) {
-      lsMessage::getInstance()
-          .addWarning("No grid has been set in lsFromVolumeMesh.")
+      Logger::getInstance()
+          .addWarning("No grid has been set in FromVolumeMesh.")
           .print();
       return;
     }
     if (mesh == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No mesh was passed to lsFromVolumeMesh.")
+      Logger::getInstance()
+          .addWarning("No mesh was passed to FromVolumeMesh.")
           .print();
       return;
     }
 
     // get the unique material numbers for explicit booling
     std::vector<int> materialInts;
-    typename lsPointData<T>::ScalarDataType *materialData =
+    typename PointData<T>::ScalarDataType *materialData =
         mesh->cellData.getScalarData("Material");
     if (materialData != nullptr) {
       // make unique list of materialIds
@@ -137,7 +141,7 @@ public:
             (it->first == currentSurfaceElement)) {
           if (Orientation(currentElementPoints)) {
             if (it->second.second != materialInts.back() + 1) {
-              lsMessage::getInstance()
+              Logger::getInstance()
                   .addWarning(
                       "Coinciding surface elements with same orientation in "
                       "Element: " +
@@ -148,7 +152,7 @@ public:
                 (materialData == nullptr) ? 0 : (*materialData)[i];
           } else {
             if (it->second.first != materialInts.back() + 1) {
-              lsMessage::getInstance()
+              Logger::getInstance()
                   .addWarning(
                       "Coinciding surface elements with same orientation in "
                       "Element: " +
@@ -195,7 +199,7 @@ public:
     auto levelSetIterator = levelSets.begin();
     for (auto matIt = materialInts.begin(); matIt != materialInts.end();
          ++matIt) {
-      auto currentSurface = lsSmartPointer<lsMesh<T>>::New();
+      auto currentSurface = SmartPointer<Mesh<T>>::New();
       auto &meshElements = currentSurface->template getElements<D>();
       for (auto it = surfaceElements.begin(); it != surfaceElements.end();
            ++it) {
@@ -233,8 +237,8 @@ public:
       }
 
       // create level set from surface
-      lsFromSurfaceMesh<T, D>(*levelSetIterator, currentSurface,
-                              removeBoundaryTriangles)
+      FromSurfaceMesh<T, D>(*levelSetIterator, currentSurface,
+                            removeBoundaryTriangles)
           .apply();
 
       ++levelSetIterator;
@@ -243,6 +247,6 @@ public:
 };
 
 // add all template specialisations for this class
-PRECOMPILE_PRECISION_DIMENSION(lsFromVolumeMesh)
+PRECOMPILE_PRECISION_DIMENSION(FromVolumeMesh)
 
-#endif // LS_FROM_VOLUME_MESH_HPP
+} // namespace viennals

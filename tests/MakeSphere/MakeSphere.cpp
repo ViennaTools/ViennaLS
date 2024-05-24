@@ -18,61 +18,63 @@
   \example MakeSphere.cpp
 */
 
+namespace ls = viennals;
+
 int main() {
   constexpr int D = 2;
 
   omp_set_num_threads(4);
 
-  auto levelSet = lsSmartPointer<lsDomain<double, D>>::New();
-  auto mesh = lsSmartPointer<lsMesh<>>::New();
+  auto levelSet = ls::SmartPointer<ls::Domain<double, D>>::New();
+  auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
 
   const double radius = 27.3;
   const hrleVectorType<double, D> centre(5., 0.);
 
-  lsMakeGeometry<double, 2>(
-      levelSet, lsSmartPointer<lsSphere<double, D>>::New(centre, radius))
+  ls::MakeGeometry<double, 2>(
+      levelSet, ls::SmartPointer<ls::Sphere<double, D>>::New(centre, radius))
       .apply();
 
   std::cout << "Initial: " << std::endl;
   std::cout << "Number of points: " << levelSet->getDomain().getNumberOfPoints()
             << std::endl;
 
-  lsToMesh<double, D>(levelSet, mesh).apply();
-  lsVTKWriter<double>(mesh, "initial.vtk").apply();
+  ls::ToMesh<double, D>(levelSet, mesh).apply();
+  ls::VTKWriter<double>(mesh, "initial.vtk").apply();
 
-  lsPrune<double, D>(levelSet).apply();
+  ls::Prune<double, D>(levelSet).apply();
   std::cout << "After prune: " << std::endl;
   std::cout << "Number of points: " << levelSet->getDomain().getNumberOfPoints()
             << std::endl;
   std::cout << "Width: " << levelSet->getLevelSetWidth() << std::endl;
 
-  lsToMesh<double, D>(levelSet, mesh).apply();
-  lsVTKWriter<double>(mesh, "after_prune.vtk").apply();
+  ls::ToMesh<double, D>(levelSet, mesh).apply();
+  ls::VTKWriter<double>(mesh, "after_prune.vtk").apply();
 
-  lsExpand<double, D>(levelSet, 4).apply();
+  ls::Expand<double, D>(levelSet, 4).apply();
   std::cout << "After Expand: " << std::endl;
   std::cout << "Number of points: " << levelSet->getDomain().getNumberOfPoints()
             << std::endl;
   std::cout << "Width: " << levelSet->getLevelSetWidth() << std::endl;
 
-  lsToMesh<double, D>(levelSet, mesh).apply();
-  lsVTKWriter<double>(mesh, "after_expand.vtk").apply();
+  ls::ToMesh<double, D>(levelSet, mesh).apply();
+  ls::VTKWriter<double>(mesh, "after_expand.vtk").apply();
 
-  lsReduce<double, D>(levelSet, 2).apply();
+  ls::Reduce<double, D>(levelSet, 2).apply();
   std::cout << "After Reduce: " << std::endl;
   std::cout << "Number of points: " << levelSet->getDomain().getNumberOfPoints()
             << std::endl;
   std::cout << "Width: " << levelSet->getLevelSetWidth() << std::endl;
 
-  lsToSurfaceMesh<double, D>(levelSet, mesh).apply();
-  lsVTKWriter<double>(mesh, "Sphere2D.vtk").apply();
+  ls::ToSurfaceMesh<double, D>(levelSet, mesh).apply();
+  ls::VTKWriter<double>(mesh, "Sphere2D.vtk").apply();
 
-  lsToMesh<double, D>(levelSet, mesh).apply();
-  lsVTKWriter<double>(mesh, "after_reduce.vtk").apply();
+  ls::ToMesh<double, D>(levelSet, mesh).apply();
+  ls::VTKWriter<double>(mesh, "after_reduce.vtk").apply();
 
-  lsToVoxelMesh<double, D>(levelSet, mesh).apply();
+  ls::ToVoxelMesh<double, D>(levelSet, mesh).apply();
   mesh->print();
-  lsVTKWriter<double>(mesh, lsFileFormatEnum::VTU, "Sphere.vtu").apply();
+  ls::VTKWriter<double>(mesh, ls::FileFormatEnum::VTU, "Sphere.vtu").apply();
 
   return 0;
 }

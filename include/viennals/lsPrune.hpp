@@ -1,5 +1,4 @@
-#ifndef LS_PRUNE_HPP
-#define LS_PRUNE_HPP
+#pragma once
 
 #include <lsPreCompileMacros.hpp>
 
@@ -8,13 +7,17 @@
 
 #include <lsDomain.hpp>
 
+namespace viennals {
+
+using namespace viennacore;
+
 /// Removes all level set points, which do not have
 /// at least one oppositely signed neighbour (Meaning
 /// they do not lie directly at the interface).
 /// Afterwards the level set will occupy the least memory
 /// possible.
-template <class T, int D> class lsPrune {
-  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
+template <class T, int D> class Prune {
+  SmartPointer<Domain<T, D>> levelSet = nullptr;
   bool updatePointData = true;
   bool removeStrayZeros = false;
 
@@ -51,12 +54,11 @@ template <class T, int D> class lsPrune {
   }
 
 public:
-  lsPrune() {}
+  Prune() {}
 
-  lsPrune(lsSmartPointer<lsDomain<T, D>> passedlsDomain)
-      : levelSet(passedlsDomain) {};
+  Prune(SmartPointer<Domain<T, D>> passedlsDomain) : levelSet(passedlsDomain){};
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+  void setLevelSet(SmartPointer<Domain<T, D>> passedlsDomain) {
     levelSet = passedlsDomain;
   }
 
@@ -73,8 +75,8 @@ public:
   /// returns the number of removed points
   void apply() {
     if (levelSet == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No level set was passed to lsPrune.")
+      Logger::getInstance()
+          .addWarning("No level set was passed to Prune.")
           .print();
       return;
     }
@@ -83,9 +85,9 @@ public:
     }
 
     auto &grid = levelSet->getGrid();
-    auto newlsDomain = lsSmartPointer<lsDomain<T, D>>::New(grid);
-    typename lsDomain<T, D>::DomainType &newDomain = newlsDomain->getDomain();
-    typename lsDomain<T, D>::DomainType &domain = levelSet->getDomain();
+    auto newlsDomain = SmartPointer<Domain<T, D>>::New(grid);
+    typename Domain<T, D>::DomainType &newDomain = newlsDomain->getDomain();
+    typename Domain<T, D>::DomainType &domain = levelSet->getDomain();
 
     newDomain.initialize(domain.getNewSegmentation(), domain.getAllocation());
 
@@ -115,7 +117,7 @@ public:
               ? newDomain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
-      for (hrleSparseStarIterator<typename lsDomain<T, D>::DomainType, 1>
+      for (hrleSparseStarIterator<typename Domain<T, D>::DomainType, 1>
                neighborIt(domain, startVector);
            neighborIt.getIndices() < endVector; neighborIt.next()) {
         auto &centerIt = neighborIt.getCenter();
@@ -169,14 +171,13 @@ public:
             // TODO: it is more efficient to insertNextUndefinedRunType, since
             // we know it already exists
             domainSegment.insertNextUndefinedPoint(
-                neighborIt.getIndices(), centerSign
-                                             ? lsDomain<T, D>::NEG_VALUE
-                                             : lsDomain<T, D>::POS_VALUE);
+                neighborIt.getIndices(),
+                centerSign ? Domain<T, D>::NEG_VALUE : Domain<T, D>::POS_VALUE);
           }
         } else {
           domainSegment.insertNextUndefinedPoint(
-              neighborIt.getIndices(), centerSign ? lsDomain<T, D>::NEG_VALUE
-                                                  : lsDomain<T, D>::POS_VALUE);
+              neighborIt.getIndices(),
+              centerSign ? Domain<T, D>::NEG_VALUE : Domain<T, D>::POS_VALUE);
         }
       }
     }
@@ -196,6 +197,6 @@ public:
 };
 
 // add all template specialisations for this class
-PRECOMPILE_PRECISION_DIMENSION(lsPrune)
+PRECOMPILE_PRECISION_DIMENSION(Prune)
 
-#endif // LS_PRUNE_HPP
+} // namespace viennals

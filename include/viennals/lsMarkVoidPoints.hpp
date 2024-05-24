@@ -1,5 +1,4 @@
-#ifndef LS_MARK_VOID_POINTS_HPP
-#define LS_MARK_VOID_POINTS_HPP
+#pragma once
 
 #include <hrleSparseStarIterator.hpp>
 
@@ -8,6 +7,10 @@
 #include <lsDomain.hpp>
 #include <lsGraph.hpp>
 
+namespace viennals {
+
+using namespace viennacore;
+
 /// Enumeration describing which connected component to use
 /// as top surface during void point detection.
 /// All others points will be set as void poitns.
@@ -15,7 +18,7 @@
 /// lexicographic first or last LS point, while LARGEST
 /// means that the connected component containing the
 /// largest number of points will be chosen.
-enum struct lsVoidTopSurfaceEnum : unsigned {
+enum struct VoidTopSurfaceEnum : unsigned {
   LEX_LOWEST = 0,
   LEX_HIGHEST = 1,
   LARGEST = 2,
@@ -24,10 +27,10 @@ enum struct lsVoidTopSurfaceEnum : unsigned {
 
 /// This class is used to mark points of the level set
 /// which are enclosed in a void.
-template <class T, int D> class lsMarkVoidPoints {
+template <class T, int D> class MarkVoidPoints {
   using IndexType = std::size_t;
 
-  lsSmartPointer<lsDomain<T, D>> domain = nullptr;
+  SmartPointer<Domain<T, D>> domain = nullptr;
   bool reverseVoidDetection = false;
   bool saveComponents = false;
   bool detectLargestSurface = false;
@@ -50,7 +53,7 @@ template <class T, int D> class lsMarkVoidPoints {
       }
     }
 
-    // merge pointsPerComponent acording to the connected components
+    // merge pointsPerComponent according to the connected components
     std::vector<IndexType> pointsPerConnected;
     pointsPerConnected.resize(highestIndex + 1, 0);
     for (unsigned i = 0; i < components.size(); ++i) {
@@ -82,14 +85,14 @@ template <class T, int D> class lsMarkVoidPoints {
 public:
   static constexpr char voidPointLabel[] = "VoidPointMarkers";
 
-  lsMarkVoidPoints() {}
+  MarkVoidPoints() {}
 
-  lsMarkVoidPoints(lsSmartPointer<lsDomain<T, D>> passedlsDomain,
-                   bool passedReverseVoidDetection = false)
+  MarkVoidPoints(SmartPointer<Domain<T, D>> passedlsDomain,
+                 bool passedReverseVoidDetection = false)
       : domain(passedlsDomain),
         reverseVoidDetection(passedReverseVoidDetection) {}
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+  void setLevelSet(SmartPointer<Domain<T, D>> passedlsDomain) {
     domain = passedlsDomain;
   }
 
@@ -113,28 +116,28 @@ public:
 
   /// Set which connected component to use as the top surface
   /// and mark all other components as void points.
-  void setVoidTopSurface(lsVoidTopSurfaceEnum topSurface) {
+  void setVoidTopSurface(VoidTopSurfaceEnum topSurface) {
     switch (topSurface) {
-    case lsVoidTopSurfaceEnum::LEX_LOWEST:
+    case VoidTopSurfaceEnum::LEX_LOWEST:
       reverseVoidDetection = true;
       detectLargestSurface = false;
       break;
-    case lsVoidTopSurfaceEnum::LEX_HIGHEST:
+    case VoidTopSurfaceEnum::LEX_HIGHEST:
       reverseVoidDetection = false;
       detectLargestSurface = false;
       break;
-    case lsVoidTopSurfaceEnum::LARGEST:
+    case VoidTopSurfaceEnum::LARGEST:
       reverseVoidDetection = false;
       detectLargestSurface = true;
       break;
-    case lsVoidTopSurfaceEnum::SMALLEST:
+    case VoidTopSurfaceEnum::SMALLEST:
       reverseVoidDetection = true;
       detectLargestSurface = true;
       break;
 
     default:
-      lsMessage::getInstance()
-          .addWarning("lsMarkVoidPoints: Invalid lsVoidTopSurfaceEnum set. "
+      Logger::getInstance()
+          .addWarning("MarkVoidPoints: Invalid VoidTopSurfaceEnum set. "
                       "Using default values.")
           .print();
       reverseVoidDetection = false;
@@ -149,7 +152,7 @@ public:
   void setSaveComponentIds(bool scid) { saveComponents = scid; }
 
   void apply() {
-    lsInternal::lsGraph graph;
+    lsInternal::Graph graph;
 
     std::vector<std::vector<std::vector<IndexType>>> componentList(
         domain->getNumberOfSegments());
@@ -166,7 +169,7 @@ public:
     std::vector<IndexType> pointsPerComponent;
 
     // cycle through and set up the graph to get connectivity information
-    for (hrleConstSparseStarIterator<typename lsDomain<T, D>::DomainType, 1>
+    for (hrleConstSparseStarIterator<typename Domain<T, D>::DomainType, 1>
              neighborIt(domain->getDomain());
          !neighborIt.isFinished(); neighborIt.next()) {
       auto &center = neighborIt.getCenter();
@@ -258,7 +261,7 @@ public:
       componentMarkers.resize(domain->getNumberOfPoints());
 
     // cycle through again to set correct voidPointMarkers
-    for (hrleConstSparseStarIterator<typename lsDomain<T, D>::DomainType, 1>
+    for (hrleConstSparseStarIterator<typename Domain<T, D>::DomainType, 1>
              neighborIt(domain->getDomain());
          !neighborIt.isFinished(); neighborIt.next()) {
       auto center = neighborIt.getCenter();
@@ -322,4 +325,4 @@ public:
   }
 };
 
-#endif // LS_MARK_VOID_POINTS_HPP
+} // namespace viennals

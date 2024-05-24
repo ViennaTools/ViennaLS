@@ -1,15 +1,16 @@
-#ifndef LS_GRAPH_HPP
-#define LS_GRAPH_HPP
+#pragma once
 
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
-#include <lsMessage.hpp>
+#include <vcLogger.hpp>
 
 namespace lsInternal {
 
-class lsGraph {
+using namespace viennacore;
+
+class Graph {
   // type for indexing components
   using IndexType = std::size_t;
   // edges must be unique
@@ -29,8 +30,8 @@ class lsGraph {
     // cylce through all connected vertices and set their component
     auto vertexListIt = adjacencyList.find(currentVertex);
     if (vertexListIt == adjacencyList.end()) {
-      lsMessage::getInstance().addError(
-          "lsGraph: Vertex " + std::to_string(currentVertex) +
+      Logger::getInstance().addError(
+          "Graph: Vertex " + std::to_string(currentVertex) +
           " could not be found although it should exist!");
     }
 
@@ -100,5 +101,3 @@ public:
   }
 };
 } // namespace lsInternal
-
-#endif // LS_GRAPH_HPP

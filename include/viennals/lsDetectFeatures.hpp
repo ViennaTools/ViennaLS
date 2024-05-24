@@ -1,5 +1,4 @@
-#ifndef LS_FEATURE_DETECTION_HPP
-#define LS_FEATURE_DETECTION_HPP
+#pragma once
 
 #include <hrleCartesianPlaneIterator.hpp>
 #include <hrleSparseBoxIterator.hpp>
@@ -8,7 +7,14 @@
 #include <lsCurvatureFormulas.hpp>
 #include <lsDomain.hpp>
 
-enum struct lsFeatureDetectionEnum : unsigned {
+#include <vcSmartPointer.hpp>
+#include <vcVectorUtil.hpp>
+
+namespace viennals {
+
+using namespace viennacore;
+
+enum struct FeatureDetectionEnum : unsigned {
   CURVATURE = 0,
   NORMALS_ANGLE = 1,
 };
@@ -18,10 +24,10 @@ enum struct lsFeatureDetectionEnum : unsigned {
 /// and based on the angle between surface normals. The curvature-based
 /// algorithm is the default as it leads to more accurate results and should be
 /// preferred in general.
-template <class T, int D> class lsDetectFeatures {
-  typedef typename lsDomain<T, D>::DomainType hrleDomainType;
-  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
-  lsFeatureDetectionEnum method = lsFeatureDetectionEnum::CURVATURE;
+template <class T, int D> class DetectFeatures {
+  typedef typename Domain<T, D>::DomainType hrleDomainType;
+  SmartPointer<Domain<T, D>> levelSet = nullptr;
+  FeatureDetectionEnum method = FeatureDetectionEnum::CURVATURE;
   T flatLimit = 1.;
   T flatLimit2 = 1.;
   std::vector<T> flaggedCells;
@@ -29,17 +35,17 @@ template <class T, int D> class lsDetectFeatures {
 public:
   static constexpr char featureMarkersLabel[] = "FeatureMarkers";
 
-  lsDetectFeatures() {}
+  DetectFeatures() {}
 
-  lsDetectFeatures(lsSmartPointer<lsDomain<T, D>> passedLevelSet)
+  DetectFeatures(SmartPointer<Domain<T, D>> passedLevelSet)
       : levelSet(passedLevelSet) {}
 
-  lsDetectFeatures(lsSmartPointer<lsDomain<T, D>> passedLevelSet, T passedLimit)
+  DetectFeatures(SmartPointer<Domain<T, D>> passedLevelSet, T passedLimit)
       : levelSet(passedLevelSet), flatLimit(passedLimit),
         flatLimit2(flatLimit * flatLimit) {}
 
-  lsDetectFeatures(lsSmartPointer<lsDomain<T, D>> passedLevelSet, T passedLimit,
-                   lsFeatureDetectionEnum passedMethod)
+  DetectFeatures(SmartPointer<Domain<T, D>> passedLevelSet, T passedLimit,
+                 FeatureDetectionEnum passedMethod)
       : levelSet(passedLevelSet), flatLimit(passedLimit),
         flatLimit2(flatLimit * flatLimit), method(passedMethod) {}
 
@@ -51,13 +57,13 @@ public:
   /// Set which algorithm to use to detect features. The curvature-based
   /// algorithm should always be preferred, while the normals-based algorithm is
   /// just provided for experimental use.
-  void setDetectionMethod(lsFeatureDetectionEnum passedMethod) {
+  void setDetectionMethod(FeatureDetectionEnum passedMethod) {
     method = passedMethod;
   }
 
   /// Execute the algorithm.
   void apply() {
-    if (method == lsFeatureDetectionEnum::CURVATURE) {
+    if (method == FeatureDetectionEnum::CURVATURE) {
       FeatureDetectionCurvature();
     } else {
       FeatureDetectionNormals();
@@ -86,7 +92,7 @@ private:
     flaggedCells.clear();
 
     auto grid = levelSet->getGrid();
-    typename lsDomain<T, D>::DomainType &domain = levelSet->getDomain();
+    typename Domain<T, D>::DomainType &domain = levelSet->getDomain();
     std::vector<std::vector<T>> flagsReserve(levelSet->getNumberOfSegments());
 
 #pragma omp parallel num_threads((levelSet)->getNumberOfSegments())
@@ -108,7 +114,7 @@ private:
               ? domain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
-      for (hrleCartesianPlaneIterator<typename lsDomain<T, D>::DomainType>
+      for (hrleCartesianPlaneIterator<typename Domain<T, D>::DomainType>
                neighborIt(levelSet->getDomain(), startVector, 1);
            neighborIt.getIndices() < endVector; neighborIt.next()) {
 
@@ -155,10 +161,10 @@ private:
     T cosAngleTreshold = std::cos(flatLimit);
 
     // CALCULATE NORMALS
-    lsExpand<T, D>(levelSet, 3).apply();
-    lsCalculateNormalVectors<T, D>(levelSet).apply();
+    Expand<T, D>(levelSet, 3).apply();
+    CalculateNormalVectors<T, D>(levelSet).apply();
     const auto &normals = *(levelSet->getPointData().getVectorData(
-        lsCalculateNormalVectors<T, D>::normalVectorsLabel));
+        CalculateNormalVectors<T, D>::normalVectorsLabel));
 
     std::vector<std::vector<T>> flagsReserve(levelSet->getNumberOfSegments());
 
@@ -170,7 +176,7 @@ private:
       p = omp_get_thread_num();
 #endif
 
-      std::array<T, 3> zeroVector{};
+      Triple<T> zeroVector{};
 
       std::vector<T> &flagsSegment = flagsReserve[p];
       flagsSegment.reserve(
@@ -184,8 +190,8 @@ private:
               ? domain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
-      for (hrleSparseBoxIterator<typename lsDomain<T, D>::DomainType>
-               neighborIt(levelSet->getDomain(), startVector, 1);
+      for (hrleSparseBoxIterator<typename Domain<T, D>::DomainType> neighborIt(
+               levelSet->getDomain(), startVector, 1);
            neighborIt.getIndices() < endVector; neighborIt.next()) {
         if (!neighborIt.getCenter().isDefined()) {
           continue;
@@ -194,13 +200,12 @@ private:
           continue;
         }
 
-        std::array<T, 3> centerNormal =
-            normals[neighborIt.getCenter().getPointId()];
+        Triple<T> centerNormal = normals[neighborIt.getCenter().getPointId()];
 
         bool flag = false;
 
         for (unsigned dir = 0; dir < (D * D * D); dir++) {
-          std::array<T, 3> currentNormal =
+          Triple<T> currentNormal =
               normals[neighborIt.getNeighbor(dir).getPointId()];
 
           if (currentNormal != zeroVector) {
@@ -231,4 +236,4 @@ private:
   }
 };
 
-#endif // LS_FEATURE_DETECTION_HPP
+} // namespace viennals

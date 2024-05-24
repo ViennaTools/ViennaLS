@@ -1,5 +1,4 @@
-#ifndef LS_MAKE_GEOMETRY_HPP
-#define LS_MAKE_GEOMETRY_HPP
+#pragma once
 
 #include <cassert>
 
@@ -13,20 +12,23 @@
 #include <lsFromSurfaceMesh.hpp>
 #include <lsGeometries.hpp>
 #include <lsMesh.hpp>
-#include <lsMessage.hpp>
 #include <lsTransformMesh.hpp>
 
 #ifndef NDEBUG
 #include <lsVTKWriter.hpp>
 #endif
 
+namespace viennals {
+
+using namespace viennacore;
+
 /// Create level sets describing basic geometric forms.
-template <class T, int D> class lsMakeGeometry {
-  typedef typename lsDomain<T, D>::PointValueVectorType pointDataType;
+template <class T, int D> class MakeGeometry {
+  typedef typename Domain<T, D>::PointValueVectorType pointDataType;
 
   /// Enumeration for the different types of
-  /// geometries supported by lsMakeGeometry
-  enum struct lsGeometryEnum : unsigned {
+  /// geometries supported by MakeGeometry
+  enum struct GeometryEnum : unsigned {
     SPHERE = 0,
     PLANE = 1,
     BOX = 2,
@@ -34,86 +36,86 @@ template <class T, int D> class lsMakeGeometry {
     CYLINDER = 4
   };
 
-  lsSmartPointer<lsDomain<T, D>> levelSet;
-  lsGeometryEnum geometry = lsGeometryEnum::SPHERE;
-  lsSmartPointer<lsSphere<T, D>> sphere;
-  lsSmartPointer<lsPlane<T, D>> plane;
-  lsSmartPointer<lsBox<T, D>> box;
-  lsSmartPointer<lsCylinder<T, D>> cylinder;
-  lsSmartPointer<lsPointCloud<T, D>> pointCloud;
+  SmartPointer<Domain<T, D>> levelSet;
+  GeometryEnum geometry = GeometryEnum::SPHERE;
+  SmartPointer<Sphere<T, D>> sphere;
+  SmartPointer<Plane<T, D>> plane;
+  SmartPointer<Box<T, D>> box;
+  SmartPointer<Cylinder<T, D>> cylinder;
+  SmartPointer<PointCloud<T, D>> pointCloud;
   const double numericEps = 1e-9;
   // bool ignoreBoundaryConditions = false;
   std::array<bool, 3> ignoreBoundaryConditions{false, false, false};
 
 public:
-  lsMakeGeometry() {}
+  MakeGeometry() {}
 
-  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> passedLevelSet)
+  MakeGeometry(SmartPointer<Domain<T, D>> passedLevelSet)
       : levelSet(passedLevelSet) {}
 
-  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-                 lsSmartPointer<lsSphere<T, D>> passedSphere)
+  MakeGeometry(SmartPointer<Domain<T, D>> passedLevelSet,
+               SmartPointer<Sphere<T, D>> passedSphere)
       : levelSet(passedLevelSet), sphere(passedSphere) {
-    geometry = lsGeometryEnum::SPHERE;
+    geometry = GeometryEnum::SPHERE;
   }
 
-  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-                 lsSmartPointer<lsPlane<T, D>> passedPlane)
+  MakeGeometry(SmartPointer<Domain<T, D>> passedLevelSet,
+               SmartPointer<Plane<T, D>> passedPlane)
       : levelSet(passedLevelSet), plane(passedPlane) {
-    geometry = lsGeometryEnum::PLANE;
+    geometry = GeometryEnum::PLANE;
   }
 
-  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-                 lsSmartPointer<lsBox<T, D>> passedBox)
+  MakeGeometry(SmartPointer<Domain<T, D>> passedLevelSet,
+               SmartPointer<Box<T, D>> passedBox)
       : levelSet(passedLevelSet), box(passedBox) {
-    geometry = lsGeometryEnum::BOX;
+    geometry = GeometryEnum::BOX;
   }
 
-  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-                 lsSmartPointer<lsCylinder<T, D>> passedCylinder)
+  MakeGeometry(SmartPointer<Domain<T, D>> passedLevelSet,
+               SmartPointer<Cylinder<T, D>> passedCylinder)
       : levelSet(passedLevelSet), cylinder(passedCylinder) {
-    geometry = lsGeometryEnum::CYLINDER;
+    geometry = GeometryEnum::CYLINDER;
   }
 
-  lsMakeGeometry(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-                 lsSmartPointer<lsPointCloud<T, D>> passedPointCloud)
+  MakeGeometry(SmartPointer<Domain<T, D>> passedLevelSet,
+               SmartPointer<PointCloud<T, D>> passedPointCloud)
       : levelSet(passedLevelSet), pointCloud(passedPointCloud) {
-    geometry = lsGeometryEnum::CUSTOM;
+    geometry = GeometryEnum::CUSTOM;
   }
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+  void setLevelSet(SmartPointer<Domain<T, D>> passedlsDomain) {
     levelSet = passedlsDomain;
   }
 
   /// Set sphere as geometry to be created in the level set.
-  void setGeometry(lsSmartPointer<lsSphere<T, D>> passedSphere) {
+  void setGeometry(SmartPointer<Sphere<T, D>> passedSphere) {
     sphere = passedSphere;
-    geometry = lsGeometryEnum::SPHERE;
+    geometry = GeometryEnum::SPHERE;
   }
 
   /// Set a plane to be created in the level set.
-  void setGeometry(lsSmartPointer<lsPlane<T, D>> passedPlane) {
+  void setGeometry(SmartPointer<Plane<T, D>> passedPlane) {
     plane = passedPlane;
-    geometry = lsGeometryEnum::PLANE;
+    geometry = GeometryEnum::PLANE;
   }
 
   /// Set a box to be created in the level set.
-  void setGeometry(lsSmartPointer<lsBox<T, D>> passedBox) {
+  void setGeometry(SmartPointer<Box<T, D>> passedBox) {
     box = passedBox;
-    geometry = lsGeometryEnum::BOX;
+    geometry = GeometryEnum::BOX;
   }
 
   /// Set a cylinder to be created in the level set.
-  void setGeometry(lsSmartPointer<lsCylinder<T, D>> passedCylinder) {
+  void setGeometry(SmartPointer<Cylinder<T, D>> passedCylinder) {
     cylinder = passedCylinder;
-    geometry = lsGeometryEnum::CYLINDER;
+    geometry = GeometryEnum::CYLINDER;
   }
 
   /// Set a point cloud, which is used to create
   /// a geometry from its convex hull.
-  void setGeometry(lsSmartPointer<lsPointCloud<T, D>> passedPointCloud) {
+  void setGeometry(SmartPointer<PointCloud<T, D>> passedPointCloud) {
     pointCloud = passedPointCloud;
-    geometry = lsGeometryEnum::CUSTOM;
+    geometry = GeometryEnum::CUSTOM;
   }
 
   /// Ignore boundary conditions, meaning the parts of the generated
@@ -137,31 +139,31 @@ public:
 
   void apply() {
     if (levelSet == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No level set was passed to lsMakeGeometry.")
+      Logger::getInstance()
+          .addWarning("No level set was passed to MakeGeometry.")
           .print();
       return;
     }
 
     switch (geometry) {
-    case lsGeometryEnum::SPHERE:
+    case GeometryEnum::SPHERE:
       makeSphere(sphere->origin, sphere->radius);
       break;
-    case lsGeometryEnum::PLANE:
+    case GeometryEnum::PLANE:
       makePlane(plane->origin, plane->normal);
       break;
-    case lsGeometryEnum::BOX:
+    case GeometryEnum::BOX:
       makeBox(box->minCorner, box->maxCorner);
       break;
-    case lsGeometryEnum::CYLINDER:
+    case GeometryEnum::CYLINDER:
       makeCylinder(cylinder);
       break;
-    case lsGeometryEnum::CUSTOM:
+    case GeometryEnum::CUSTOM:
       makeCustom(pointCloud);
       break;
     default:
-      lsMessage::getInstance()
-          .addWarning("Invalid geometry type was specified for lsMakeGeometry. "
+      Logger::getInstance()
+          .addWarning("Invalid geometry type was specified for MakeGeometry. "
                       "Not creating geometry.")
           .print();
     }
@@ -170,8 +172,8 @@ public:
 private:
   void makeSphere(hrleVectorType<T, D> origin, T radius) {
     if (levelSet == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No level set was passed to lsMakeGeometry.")
+      Logger::getInstance()
+          .addWarning("No level set was passed to MakeGeometry.")
           .print();
       return;
     }
@@ -246,8 +248,8 @@ private:
   void makePlane(hrleVectorType<T, D> origin,
                  hrleVectorType<T, D> passedNormal) {
     if (levelSet == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No level set was passed to lsMakeGeometry.")
+      Logger::getInstance()
+          .addWarning("No level set was passed to MakeGeometry.")
           .print();
       return;
     }
@@ -276,20 +278,20 @@ private:
           i = n;
           infDimSet = true;
         } else {
-          lsMessage::getInstance().addError(
+          Logger::getInstance().addError(
               "Planes can only be created with one Infinite Boundary "
               "Condition. More than one found!");
         }
       }
     }
     if (!infDimSet) {
-      lsMessage::getInstance().addError("Planes require exactly one Infinite "
-                                        "Boundary Condition. None found!");
+      Logger::getInstance().addError("Planes require exactly one Infinite "
+                                     "Boundary Condition. None found!");
     }
 
     if (passedNormal[i] == 0.) {
-      lsMessage::getInstance().addError(
-          "lsMakeGeometry: Plane cannot be parallel to Infinite Boundary "
+      Logger::getInstance().addError(
+          "MakeGeometry: Plane cannot be parallel to Infinite Boundary "
           "direction!");
     }
 
@@ -329,7 +331,7 @@ private:
     }
 
     // now find i coordinate of points
-    auto mesh = lsSmartPointer<lsMesh<T>>::New();
+    auto mesh = SmartPointer<Mesh<T>>::New();
 
     for (unsigned n = 0; n < cornerPoints.size(); ++n) {
       double numerator = (cornerPoints[n][j] - origin[j]) * normal[j];
@@ -359,19 +361,19 @@ private:
 
 #ifndef NDEBUG
     static unsigned planeCounter = 0;
-    lsVTKWriter<T>(mesh, "plane" + std::to_string(planeCounter++) + ".vtk")
+    VTKWriter<T>(mesh, "plane" + std::to_string(planeCounter++) + ".vtk")
         .apply();
 #endif
 
     // now convert mesh to levelset
-    lsFromSurfaceMesh<T, D>(levelSet, mesh).apply();
+    FromSurfaceMesh<T, D>(levelSet, mesh).apply();
   }
 
   // This function creates a box starting in minCorner spanning to maxCorner
   void makeBox(hrleVectorType<T, D> minCorner, hrleVectorType<T, D> maxCorner) {
     if (levelSet == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No level set was passed to lsMakeGeometry.")
+      Logger::getInstance()
+          .addWarning("No level set was passed to MakeGeometry.")
           .print();
       return;
     }
@@ -410,7 +412,7 @@ private:
     }
 
     // now add all corners to mesh
-    auto mesh = lsSmartPointer<lsMesh<T>>::New();
+    auto mesh = SmartPointer<Mesh<T>>::New();
     for (unsigned i = 0; i < corners.size(); ++i) {
       mesh->insertNextNode(corners[i]);
     }
@@ -428,15 +430,15 @@ private:
     }
 
     // now convert mesh to levelset
-    lsFromSurfaceMesh<T, D> mesher(levelSet, mesh);
+    FromSurfaceMesh<T, D> mesher(levelSet, mesh);
     mesher.setRemoveBoundaryTriangles(ignoreBoundaryConditions);
     mesher.apply();
   }
 
-  void makeCylinder(lsSmartPointer<lsCylinder<T, D>> cylinder) {
+  void makeCylinder(SmartPointer<Cylinder<T, D>> cylinder) {
     if (D != 3) {
-      lsMessage::getInstance()
-          .addWarning("lsMakeGeometry: Cylinder can only be created in 3D!")
+      Logger::getInstance()
+          .addWarning("MakeGeometry: Cylinder can only be created in 3D!")
           .print();
       return;
     }
@@ -445,11 +447,11 @@ private:
     // cylinder axis will be (0,0,1)
     auto gridDelta = levelSet->getGrid().getGridDelta();
 
-    auto points = lsSmartPointer<lsPointCloud<T, D>>::New();
+    auto points = SmartPointer<PointCloud<T, D>>::New();
     unsigned numPoints = std::ceil(2 * M_PI * cylinder->radius / gridDelta);
     double smallAngle = 2.0 * M_PI / double(numPoints);
 
-    auto mesh = lsSmartPointer<lsMesh<T>>::New();
+    auto mesh = SmartPointer<Mesh<T>>::New();
     // insert midpoint at base
     mesh->insertNextNode(std::array<T, 3>{0.0, 0.0, 0.0});
     {
@@ -527,7 +529,7 @@ private:
     T rotationAngle = std::acos(cylinderAxis[2]);
 
     // rotate mesh
-    lsTransformMesh<T>(mesh, lsTransformEnum::ROTATION, rotAxis, rotationAngle)
+    TransformMesh<T>(mesh, TransformEnum::ROTATION, rotAxis, rotationAngle)
         .apply();
 
     // translate mesh
@@ -535,28 +537,28 @@ private:
     for (unsigned i = 0; i < 3; ++i) {
       translationVector[i] = cylinder->origin[i];
     }
-    lsTransformMesh<T>(mesh, lsTransformEnum::TRANSLATION, translationVector)
+    TransformMesh<T>(mesh, TransformEnum::TRANSLATION, translationVector)
         .apply();
 
     // read mesh from surface
-    lsFromSurfaceMesh<T, D> mesher(levelSet, mesh);
+    FromSurfaceMesh<T, D> mesher(levelSet, mesh);
     mesher.setRemoveBoundaryTriangles(ignoreBoundaryConditions);
     mesher.apply();
   }
 
-  void makeCustom(lsSmartPointer<lsPointCloud<T, D>> pointCloud) {
+  void makeCustom(SmartPointer<PointCloud<T, D>> pointCloud) {
     // create mesh from point cloud
-    auto mesh = lsSmartPointer<lsMesh<T>>::New();
-    lsConvexHull<T, D>(mesh, pointCloud).apply();
+    auto mesh = SmartPointer<Mesh<T>>::New();
+    ConvexHull<T, D>(mesh, pointCloud).apply();
 
     // read mesh from surface
-    lsFromSurfaceMesh<T, D> mesher(levelSet, mesh);
+    FromSurfaceMesh<T, D> mesher(levelSet, mesh);
     mesher.setRemoveBoundaryTriangles(ignoreBoundaryConditions);
     mesher.apply();
   }
 };
 
 // add all template specialisations for this class
-PRECOMPILE_PRECISION_DIMENSION(lsMakeGeometry)
+PRECOMPILE_PRECISION_DIMENSION(MakeGeometry)
 
-#endif // LS_MAKE_GEOMETRY_HPP
+} // namespace viennals

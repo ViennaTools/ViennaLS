@@ -1,5 +1,4 @@
-#ifndef LS_DOMAIN_HPP
-#define LS_DOMAIN_HPP
+#pragma once
 
 #include <lsPreCompileMacros.hpp>
 
@@ -10,27 +9,33 @@
 #include <hrleVectorType.hpp>
 
 #include <lsPointData.hpp>
-#include <lsSmartPointer.hpp>
+
+#include <vcLogger.hpp>
+#include <vcSmartPointer.hpp>
 
 #define LS_DOMAIN_SERIALIZATION_VERSION 0
 
+namespace viennals {
+
+using namespace viennacore;
+
 // Boundary condition alias for easier access
 template <int D>
-using lsBoundaryConditionEnum = typename hrleGrid<D>::boundaryType;
+using BoundaryConditionEnum = typename hrleGrid<D>::boundaryType;
 
 ///  Class containing all information about the level set, including
 ///  the dimensions of the domain, boundary conditions and all data.
-template <class T, int D> class lsDomain {
+template <class T, int D> class Domain {
 public:
   // TYPEDEFS
   typedef T ValueType;
   typedef hrleGrid<D> GridType;
   typedef hrleDomain<T, D> DomainType;
-  typedef lsBoundaryConditionEnum<D> BoundaryType;
+  typedef BoundaryConditionEnum<D> BoundaryType;
   typedef typename std::vector<std::pair<hrleVectorType<hrleIndexType, D>, T>>
       PointValueVectorType;
   typedef typename std::vector<std::array<T, D>> NormalVectorType;
-  typedef lsPointData<T> PointDataType;
+  typedef PointData<T> PointDataType;
   typedef typename std::vector<bool> VoidPointMarkersType;
 
 private:
@@ -49,8 +54,8 @@ public:
   static constexpr T POS_VALUE = std::numeric_limits<T>::max();
   static constexpr T NEG_VALUE = std::numeric_limits<T>::lowest();
 
-  /// initalise an empty infinite lsDomain
-  lsDomain(hrleCoordType gridDelta = 1.0) {
+  /// initalise an empty infinite Domain
+  Domain(hrleCoordType gridDelta = 1.0) {
     hrleIndexType gridMin[D], gridMax[D];
     BoundaryType boundaryCons[D];
     for (unsigned i = 0; i < D; ++i) {
@@ -63,8 +68,8 @@ public:
     domain.deepCopy(grid, DomainType(grid, T(POS_VALUE)));
   }
 
-  lsDomain(hrleCoordType *bounds, BoundaryType *boundaryConditions,
-           hrleCoordType gridDelta = 1.0) {
+  Domain(hrleCoordType *bounds, BoundaryType *boundaryConditions,
+         hrleCoordType gridDelta = 1.0) {
     hrleIndexType gridMin[D], gridMax[D];
     for (unsigned i = 0; i < D; ++i) {
       gridMin[i] = std::floor(bounds[2 * i] / gridDelta);
@@ -75,34 +80,34 @@ public:
     domain.deepCopy(grid, DomainType(grid, T(POS_VALUE)));
   }
 
-  lsDomain(std::vector<hrleCoordType> bounds,
-           std::vector<unsigned> boundaryConditions,
-           hrleCoordType gridDelta = 1.0) {
+  Domain(std::vector<hrleCoordType> bounds,
+         std::vector<unsigned> boundaryConditions,
+         hrleCoordType gridDelta = 1.0) {
     BoundaryType boundaryCons[D];
     for (unsigned i = 0; i < D; ++i) {
       boundaryCons[i] = static_cast<BoundaryType>(boundaryConditions[i]);
     }
-    auto newDomain = lsSmartPointer<lsDomain<T, D>>::New(
-        bounds.data(), boundaryCons, gridDelta);
+    auto newDomain =
+        SmartPointer<Domain<T, D>>::New(bounds.data(), boundaryCons, gridDelta);
     this->deepCopy(newDomain);
   }
 
-  /// initialise lsDomain with domain size "bounds", filled with point/value
+  /// initialise Domain with domain size "bounds", filled with point/value
   /// pairs in pointData
-  lsDomain(PointValueVectorType pointData, hrleCoordType *bounds,
-           BoundaryType *boundaryConditions, hrleCoordType gridDelta = 1.0) {
-    auto newDomain = lsSmartPointer<lsDomain<T, D>>::New(
-        bounds, boundaryConditions, gridDelta);
+  Domain(PointValueVectorType pointData, hrleCoordType *bounds,
+         BoundaryType *boundaryConditions, hrleCoordType gridDelta = 1.0) {
+    auto newDomain =
+        SmartPointer<Domain<T, D>>::New(bounds, boundaryConditions, gridDelta);
     this->deepCopy(newDomain);
     hrleFillDomainWithSignedDistance(domain, pointData, T(NEG_VALUE),
                                      T(POS_VALUE));
   }
 
-  lsDomain(GridType passedGrid) : grid(passedGrid) {
+  Domain(GridType passedGrid) : grid(passedGrid) {
     domain.deepCopy(grid, DomainType(grid, T(POS_VALUE)));
   }
 
-  lsDomain(lsSmartPointer<lsDomain> passedDomain) { deepCopy(passedDomain); }
+  Domain(SmartPointer<Domain> passedDomain) { deepCopy(passedDomain); }
 
   /// this function sets a new levelset width and finalizes the levelset, so it
   /// is ready for use by other algorithms
@@ -112,15 +117,15 @@ public:
   /// algorithms
   void finalize() {}
 
-  /// copy all values of "passedlsDomain" to this lsDomain
-  void deepCopy(const lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
-    grid = passedlsDomain->grid;
-    domain.deepCopy(grid, passedlsDomain->domain);
-    levelSetWidth = passedlsDomain->levelSetWidth;
-    pointData = passedlsDomain->pointData;
+  /// copy all values of "passedDomain" to this Domain
+  void deepCopy(const SmartPointer<Domain<T, D>> passedDomain) {
+    grid = passedDomain->grid;
+    domain.deepCopy(grid, passedDomain->domain);
+    levelSetWidth = passedDomain->levelSetWidth;
+    pointData = passedDomain->pointData;
   }
 
-  /// re-initalise lsDomain with the point/value pairs in pointData
+  /// re-initalise Domain with the point/value pairs in pointData
   /// This is similar to lsFromMesh with the difference that pointData
   /// contains (INDEX, Value) pairs, while lsFromMesh expects coordinates
   /// rather than indices
@@ -169,7 +174,7 @@ public:
   /// prints basic information and all memebers of the levelset structure
   void print(std::ostream &out = std::cout) {
     out << "Grid pointer: " << &grid << std::endl;
-    out << "Domain: " << &domain << std::endl;
+    out << "lsDomain: " << &domain << std::endl;
     out << "DomainSegments: " << std::endl;
     for (unsigned i = 0; i < getNumberOfSegments(); ++i) {
       out << &(domain.getDomainSegment(i)) << std::endl;
@@ -177,9 +182,9 @@ public:
     domain.print(out);
   }
 
-  /// Serializes the lsDomain into a binary stream
+  /// Serializes the Domain into a binary stream
   std::ostream &serialize(std::ostream &stream) {
-    // Save header to identify lsDomain
+    // Save header to identify Domain
     stream << "lsDomain";
 
     // now write format version number
@@ -192,13 +197,13 @@ public:
     // serialize hrleDomain which saves LS values
     domain.serialize(stream);
 
-    // serialize lsDomain members
+    // serialize Domain members
     // level set width as 32bit uint
     const uint32_t width = levelSetWidth;
     stream.write(reinterpret_cast<const char *>(&width), sizeof(uint32_t));
 
     // serialize pointData if there is any point data associated with this
-    // lsDomain mark whether there is point data or not (1/0)
+    // Domain mark whether there is point data or not (1/0)
     char hasPointData = (pointData.empty()) ? 0 : 1;
     stream.write(&hasPointData, 1);
     if (hasPointData == 1) {
@@ -208,15 +213,15 @@ public:
     return stream;
   }
 
-  /// Deserialize lsDomain from binary stream
+  /// Deserialize Domain from binary stream
   std::istream &deserialize(std::istream &stream) {
     // Check identifier
     char identifier[8];
     stream.read(identifier, 8);
     if (std::string(identifier).compare(0, 8, "lsDomain")) {
-      lsMessage::getInstance()
+      Logger::getInstance()
           .addWarning(
-              "Reading lsDomain from stream failed. Header could not be found.")
+              "Reading Domain from stream failed. Header could not be found.")
           .print();
       return stream;
     }
@@ -225,9 +230,9 @@ public:
     char formatVersion;
     stream.read(&formatVersion, 1);
     if (formatVersion > LS_DOMAIN_SERIALIZATION_VERSION) {
-      lsMessage::getInstance()
+      Logger::getInstance()
           .addWarning(
-              "Reading lsDomain of version " + std::to_string(formatVersion) +
+              "Reading Domain of version " + std::to_string(formatVersion) +
               " with reader of version " +
               std::to_string(LS_DOMAIN_SERIALIZATION_VERSION) + " failed.")
           .print();
@@ -261,6 +266,6 @@ public:
 };
 
 // add all template specialisations for this class
-PRECOMPILE_PRECISION_DIMENSION(lsDomain)
+PRECOMPILE_PRECISION_DIMENSION(Domain)
 
-#endif // LS_DOMAIN_HPP
+} // namespace viennals

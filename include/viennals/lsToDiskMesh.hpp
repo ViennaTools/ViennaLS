@@ -1,5 +1,4 @@
-#ifndef LS_TO_DISK_MESH_HPP
-#define LS_TO_DISK_MESH_HPP
+#pragma once
 
 #include <lsPreCompileMacros.hpp>
 
@@ -12,66 +11,70 @@
 #include <lsMesh.hpp>
 #include <unordered_map>
 
+namespace viennals {
+
+using namespace viennacore;
+
 /// This class creates a mesh from the level set
 /// with all grid points with a level set value <= 0.5.
 /// These grid points are shifted in space towards the
 /// direction of their normal vector by grid delta * LS value.
 /// Grid delta and the origin grid point are saved for each point.
 /// This allows for a simple setup of disks for ray tracing.
-template <class T, int D, class N = T> class lsToDiskMesh {
-  typedef typename lsDomain<T, D>::DomainType hrleDomainType;
+template <class T, int D, class N = T> class ToDiskMesh {
+  typedef typename Domain<T, D>::DomainType hrleDomainType;
 
 public:
   using TranslatorType = std::unordered_map<unsigned long, unsigned long>;
 
 private:
-  std::vector<lsSmartPointer<lsDomain<T, D>>> levelSets;
-  lsSmartPointer<lsMesh<N>> mesh = nullptr;
-  lsSmartPointer<TranslatorType> translator = nullptr;
-  lsSmartPointer<lsMaterialMap> materialMap = nullptr;
+  std::vector<SmartPointer<Domain<T, D>>> levelSets;
+  SmartPointer<Mesh<N>> mesh = nullptr;
+  SmartPointer<TranslatorType> translator = nullptr;
+  SmartPointer<MaterialMap> materialMap = nullptr;
   T maxValue = 0.5;
   bool buildTranslator = false;
   static constexpr double wrappingLayerEpsilon = 1e-4;
 
 public:
-  lsToDiskMesh() {}
+  ToDiskMesh() {}
 
-  lsToDiskMesh(lsSmartPointer<lsMesh<N>> passedMesh, T passedMaxValue = 0.5)
+  ToDiskMesh(SmartPointer<Mesh<N>> passedMesh, T passedMaxValue = 0.5)
       : mesh(passedMesh), maxValue(passedMaxValue) {}
 
-  lsToDiskMesh(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-               lsSmartPointer<lsMesh<N>> passedMesh, T passedMaxValue = 0.5)
+  ToDiskMesh(SmartPointer<Domain<T, D>> passedLevelSet,
+             SmartPointer<Mesh<N>> passedMesh, T passedMaxValue = 0.5)
       : mesh(passedMesh), maxValue(passedMaxValue) {
     levelSets.push_back(passedLevelSet);
   }
 
-  lsToDiskMesh(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-               lsSmartPointer<lsMesh<N>> passedMesh,
-               lsSmartPointer<TranslatorType> passedTranslator,
-               T passedMaxValue = 0.5)
+  ToDiskMesh(SmartPointer<Domain<T, D>> passedLevelSet,
+             SmartPointer<Mesh<N>> passedMesh,
+             SmartPointer<TranslatorType> passedTranslator,
+             T passedMaxValue = 0.5)
       : mesh(passedMesh), translator(passedTranslator),
         maxValue(passedMaxValue) {
     levelSets.push_back(passedLevelSet);
     buildTranslator = true;
   }
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
+  void setLevelSet(SmartPointer<Domain<T, D>> passedLevelSet) {
     levelSets.push_back(passedLevelSet);
   }
 
   /// Pushes the passed level set to the back of the list of level sets
-  void insertNextLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
+  void insertNextLevelSet(SmartPointer<Domain<T, D>> passedLevelSet) {
     levelSets.push_back(passedLevelSet);
   }
 
-  void setMesh(lsSmartPointer<lsMesh<N>> passedMesh) { mesh = passedMesh; }
+  void setMesh(SmartPointer<Mesh<N>> passedMesh) { mesh = passedMesh; }
 
-  void setTranslator(lsSmartPointer<TranslatorType> passedTranslator) {
+  void setTranslator(SmartPointer<TranslatorType> passedTranslator) {
     translator = passedTranslator;
     buildTranslator = true;
   }
 
-  void setMaterialMap(lsSmartPointer<lsMaterialMap> passedMaterialMap) {
+  void setMaterialMap(SmartPointer<MaterialMap> passedMaterialMap) {
     materialMap = passedMaterialMap;
   }
 
@@ -79,33 +82,33 @@ public:
 
   void apply() {
     if (levelSets.size() < 1) {
-      lsMessage::getInstance()
-          .addWarning("No level sets passed to lsToDiskMesh.")
+      Logger::getInstance()
+          .addWarning("No level sets passed to ToDiskMesh.")
           .print();
       return;
     }
     if (mesh == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No mesh was passed to lsToDiskMesh.")
+      Logger::getInstance()
+          .addWarning("No mesh was passed to ToDiskMesh.")
           .print();
       return;
     }
     if (buildTranslator && translator == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No translator was passed to lsToDiskMesh.")
+      Logger::getInstance()
+          .addWarning("No translator was passed to ToDiskMesh.")
           .print();
     }
 
     mesh->clear();
 
     // expand top levelset
-    lsExpand<T, D>(levelSets.back(), (maxValue * 4) + 1).apply();
-    lsCalculateNormalVectors<T, D>(levelSets.back(), maxValue).apply();
+    Expand<T, D>(levelSets.back(), (maxValue * 4) + 1).apply();
+    CalculateNormalVectors<T, D>(levelSets.back(), maxValue).apply();
 
     const T gridDelta = levelSets.back()->getGrid().getGridDelta();
     const auto &normalVectors =
         *(levelSets.back()->getPointData().getVectorData(
-            lsCalculateNormalVectors<T, D>::normalVectorsLabel));
+            CalculateNormalVectors<T, D>::normalVectorsLabel));
 
     // set up data arrays
     std::vector<N> values;
@@ -223,10 +226,10 @@ public:
     {
       auto &pointData = levelSets.back()->getPointData();
       auto index = pointData.getVectorDataIndex(
-          lsCalculateNormalVectors<T, D>::normalVectorsLabel);
+          CalculateNormalVectors<T, D>::normalVectorsLabel);
       if (index < 0) {
-        lsMessage::getInstance()
-            .addWarning("lsToDiskMesh: Internal error: Could not find normal "
+        Logger::getInstance()
+            .addWarning("ToDiskMesh: Internal error: Could not find normal "
                         "vector data.")
             .print();
       } else {
@@ -242,4 +245,4 @@ public:
   }
 };
 
-#endif // LS_TO_DISK_MESH_HPP
+} // namespace viennals

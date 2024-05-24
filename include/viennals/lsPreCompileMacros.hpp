@@ -1,5 +1,4 @@
-#ifndef LS_PRE_COMPILE_MACROS_HPP
-#define LS_PRE_COMPILE_MACROS_HPP
+#pragma once
 
 #ifdef VIENNALS_USE_PRECOMPILED
 
@@ -43,5 +42,3 @@
 #define PRECOMPILE_SPECIALIZE_PRECISION(className)                             \
   template class className<double>;                                            \
   template class className<float>;
-
-#endif // LS_PRE_COMPILE_MACROS_HPP

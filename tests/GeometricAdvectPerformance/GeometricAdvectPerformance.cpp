@@ -12,7 +12,9 @@
 #include <lsVTKWriter.hpp>
 #include <lsVelocityField.hpp>
 
-class velocityField : public lsVelocityField<double> {
+namespace ls = viennals;
+
+class velocityField : public ls::VelocityField<double> {
   double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
                            int /*material*/,
                            const std::array<double, 3> & /*normalVector*/,
@@ -33,36 +35,37 @@ int main() {
     bounds[5] = 10;
   }
 
-  typename lsDomain<NumericType, D>::BoundaryType boundaryCons[D];
+  typename ls::Domain<NumericType, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D - 1; ++i) {
     boundaryCons[i] =
-        lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+        ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   }
   boundaryCons[D - 1] =
-      lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
+      ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  auto substrate =
-      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  auto substrate = ls::SmartPointer<ls::Domain<double, D>>::New(
+      bounds, boundaryCons, gridDelta);
 
   double origin[3] = {0., 0., 0.};
   double planeNormal[3] = {0., D == 2, D == 3};
 
-  lsMakeGeometry<double, D>(
-      substrate, lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal))
+  ls::MakeGeometry<double, D>(
+      substrate,
+      ls::SmartPointer<ls::Plane<double, D>>::New(origin, planeNormal))
       .apply();
 
   {
     std::cout << "Extracting..." << std::endl;
-    auto mesh = lsSmartPointer<lsMesh<>>::New();
-    lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter<double>(mesh, "plane.vtk").apply();
+    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    ls::ToSurfaceMesh<double, D>(substrate, mesh).apply();
+    ls::VTKWriter<double>(mesh, "plane.vtk").apply();
   }
 
   {
     // create layer used for booling
     std::cout << "Creating box..." << std::endl;
-    auto trench = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
-                                                           gridDelta);
+    auto trench = ls::SmartPointer<ls::Domain<double, D>>::New(
+        bounds, boundaryCons, gridDelta);
     double minCorner[3] = {-extent - 1, -7.5, -15.};
     double maxCorner[3] = {extent + 1, 7.5, 1.0};
     if (D == 2) {
@@ -71,42 +74,42 @@ int main() {
       maxCorner[0] = maxCorner[1];
       maxCorner[1] = maxCorner[2];
     }
-    lsMakeGeometry<double, D>(
-        trench, lsSmartPointer<lsBox<double, D>>::New(minCorner, maxCorner))
+    ls::MakeGeometry<double, D>(
+        trench, ls::SmartPointer<ls::Box<double, D>>::New(minCorner, maxCorner))
         .apply();
 
     {
       std::cout << "Extracting..." << std::endl;
-      auto mesh = lsSmartPointer<lsMesh<>>::New();
-      lsToMesh<double, D>(trench, mesh).apply();
-      lsVTKWriter<double>(mesh, "box.vtk").apply();
+      auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+      ls::ToMesh<double, D>(trench, mesh).apply();
+      ls::VTKWriter<double>(mesh, "box.vtk").apply();
     }
 
     // Create trench geometry
     std::cout << "Booling trench..." << std::endl;
-    lsBooleanOperation<double, D>(substrate, trench,
-                                  lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
+    ls::BooleanOperation<double, D>(
+        substrate, trench, ls::BooleanOperationEnum::RELATIVE_COMPLEMENT)
         .apply();
   }
 
-  auto mesh = lsSmartPointer<lsMesh<>>::New();
+  auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
 
-  lsToMesh<NumericType, D>(substrate, mesh).apply();
-  lsVTKWriter<double>(mesh, "points.vtk").apply();
-  lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-  lsVTKWriter<double>(mesh, "surface.vtk").apply();
+  ls::ToMesh<NumericType, D>(substrate, mesh).apply();
+  ls::VTKWriter<double>(mesh, "points.vtk").apply();
+  ls::ToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
+  ls::VTKWriter<double>(mesh, "surface.vtk").apply();
 
   // Distance to advect to
   double depositionDistance = 4.0;
 
   // set up spherical advection dist
-  auto dist = lsSmartPointer<lsSphereDistribution<NumericType, D>>::New(
+  auto dist = ls::SmartPointer<ls::SphereDistribution<NumericType, D>>::New(
       depositionDistance, gridDelta);
 
-  auto newLayer = lsSmartPointer<lsDomain<double, D>>::New(substrate);
+  auto newLayer = ls::SmartPointer<ls::Domain<double, D>>::New(substrate);
 
   std::cout << "GeometricAdvecting" << std::endl;
-  lsGeometricAdvect<NumericType, D> fastAdvectKernel(newLayer, dist);
+  ls::GeometricAdvect<NumericType, D> fastAdvectKernel(newLayer, dist);
 
   {
     auto start = std::chrono::high_resolution_clock::now();
@@ -118,10 +121,10 @@ int main() {
     std::cout << "Fast Advect: " << diff << "ms" << std::endl;
   }
 
-  lsToSurfaceMesh<double, D>(newLayer, mesh).apply();
-  lsVTKWriter<double>(mesh, "GeometricAdvect.vtk").apply();
-  // lsToSurfaceMesh<double, D>(newLayer, mesh).apply();
-  // lsVTKWriter<double>(mesh, "finalSurface.vtk").apply();
+  ls::ToSurfaceMesh<double, D>(newLayer, mesh).apply();
+  ls::VTKWriter<double>(mesh, "GeometricAdvect.vtk").apply();
+  // ls::ToSurfaceMesh<double, D>(newLayer, mesh).apply();
+  // ls::VTKWriter<double>(mesh, "finalSurface.vtk").apply();
 
   // now rund lsAdvect for all other advection schemes
   // last scheme is SLLFS with i == 9
@@ -129,15 +132,15 @@ int main() {
     if (i == 4) {
       continue;
     }
-    lsAdvect<double, D> advectionKernel;
-    auto nextLayer = lsSmartPointer<lsDomain<double, D>>::New(substrate);
+    ls::Advect<double, D> advectionKernel;
+    auto nextLayer = ls::SmartPointer<ls::Domain<double, D>>::New(substrate);
     advectionKernel.insertNextLevelSet(nextLayer);
 
-    auto velocities = lsSmartPointer<velocityField>::New();
+    auto velocities = ls::SmartPointer<velocityField>::New();
     advectionKernel.setVelocityField(velocities);
     advectionKernel.setAdvectionTime(depositionDistance);
     advectionKernel.setIntegrationScheme(
-        static_cast<lsIntegrationSchemeEnum>(i));
+        static_cast<ls::IntegrationSchemeEnum>(i));
     {
       auto start = std::chrono::high_resolution_clock::now();
       advectionKernel.apply();
@@ -148,8 +151,8 @@ int main() {
       std::cout << "Advect " << i << ": " << diff << "ms" << std::endl;
     }
 
-    lsToSurfaceMesh<double, D>(nextLayer, mesh).apply();
-    lsVTKWriter<double>(mesh, "Advect-" + std::to_string(i) + ".vtk").apply();
+    ls::ToSurfaceMesh<double, D>(nextLayer, mesh).apply();
+    ls::VTKWriter<double>(mesh, "Advect-" + std::to_string(i) + ".vtk").apply();
   }
 
   return 0;

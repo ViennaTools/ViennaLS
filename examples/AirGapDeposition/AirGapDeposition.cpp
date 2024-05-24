@@ -16,10 +16,12 @@
   then grown directionally on top. \example AirGapDeposition.cpp
 */
 
+namespace ls = viennals;
+
 using NumericType = float;
 
 // implement own velocity field
-class velocityField : public lsVelocityField<NumericType> {
+class velocityField : public ls::VelocityField<NumericType> {
 public:
   NumericType
   getScalarVelocity(const std::array<NumericType, 3> & /*coordinate*/,
@@ -50,11 +52,12 @@ int main() {
   NumericType gridDelta = 0.5;
 
   hrleCoordType bounds[2 * D] = {-extent, extent, -extent, extent};
-  lsDomain<NumericType, D>::BoundaryType boundaryCons[D];
-  boundaryCons[0] = lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
-  boundaryCons[1] = lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
+  ls::Domain<NumericType, D>::BoundaryType boundaryCons[D];
+  boundaryCons[0] =
+      ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+  boundaryCons[1] = ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  auto substrate = lsSmartPointer<lsDomain<NumericType, D>>::New(
+  auto substrate = ls::SmartPointer<ls::Domain<NumericType, D>>::New(
       bounds, boundaryCons, gridDelta);
 
   NumericType origin[2] = {0., 0.};
@@ -62,39 +65,40 @@ int main() {
 
   {
     auto plane =
-        lsSmartPointer<lsPlane<NumericType, D>>::New(origin, planeNormal);
-    lsMakeGeometry<NumericType, D>(substrate, plane).apply();
+        ls::SmartPointer<ls::Plane<NumericType, D>>::New(origin, planeNormal);
+    ls::MakeGeometry<NumericType, D>(substrate, plane).apply();
   }
 
   {
     std::cout << "Extracting..." << std::endl;
-    auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
-    lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-    lsVTKWriter<NumericType>(mesh, "plane.vtp").apply();
+    auto mesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
+    ls::ToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
+    ls::VTKWriter<NumericType>(mesh, "plane.vtp").apply();
   }
 
   {
     // create layer used for booling
     std::cout << "Creating box..." << std::endl;
-    auto trench = lsSmartPointer<lsDomain<NumericType, D>>::New(
+    auto trench = ls::SmartPointer<ls::Domain<NumericType, D>>::New(
         bounds, boundaryCons, gridDelta);
     NumericType xlimit = extent / 6.;
     NumericType minCorner[D] = {-xlimit, -25.};
     NumericType maxCorner[D] = {xlimit, 1.};
-    auto box = lsSmartPointer<lsBox<NumericType, D>>::New(minCorner, maxCorner);
-    lsMakeGeometry<NumericType, D>(trench, box).apply();
+    auto box =
+        ls::SmartPointer<ls::Box<NumericType, D>>::New(minCorner, maxCorner);
+    ls::MakeGeometry<NumericType, D>(trench, box).apply();
 
     {
       std::cout << "Extracting..." << std::endl;
-      auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
-      lsToMesh<NumericType, D>(trench, mesh).apply();
-      lsVTKWriter<NumericType>(mesh, "box.vtp").apply();
+      auto mesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
+      ls::ToMesh<NumericType, D>(trench, mesh).apply();
+      ls::VTKWriter<NumericType>(mesh, "box.vtp").apply();
     }
 
     // Create trench geometry
     std::cout << "Booling trench..." << std::endl;
-    lsBooleanOperation<NumericType, D>(
-        substrate, trench, lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
+    ls::BooleanOperation<NumericType, D>(
+        substrate, trench, ls::BooleanOperationEnum::RELATIVE_COMPLEMENT)
         .apply();
   }
 
@@ -103,12 +107,12 @@ int main() {
   // create new levelset for new material, which will be grown
   // since it has to wrap around the substrate, just copy it
   std::cout << "Creating new layer..." << std::endl;
-  auto newLayer = lsSmartPointer<lsDomain<NumericType, D>>::New(substrate);
+  auto newLayer = ls::SmartPointer<ls::Domain<NumericType, D>>::New(substrate);
 
-  auto velocities = lsSmartPointer<velocityField>::New();
+  auto velocities = ls::SmartPointer<velocityField>::New();
 
   std::cout << "Advecting" << std::endl;
-  lsAdvect<NumericType, D> advectionKernel;
+  ls::Advect<NumericType, D> advectionKernel;
 
   // the level set to be advected has to be inserted last
   // the other could be taken as a mask layer for advection
@@ -129,9 +133,9 @@ int main() {
 
     std::cout << "\rAdvection step " + std::to_string(i) + " / "
               << numberOfSteps << std::flush;
-    auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
-    lsToSurfaceMesh<NumericType, D>(newLayer, mesh).apply();
-    lsVTKWriter<NumericType>(mesh, "trench" + std::to_string(i) + ".vtp")
+    auto mesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
+    ls::ToSurfaceMesh<NumericType, D>(newLayer, mesh).apply();
+    ls::VTKWriter<NumericType>(mesh, "trench" + std::to_string(i) + ".vtp")
         .apply();
   }
   std::cout << std::endl;

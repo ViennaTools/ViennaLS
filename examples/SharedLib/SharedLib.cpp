@@ -19,6 +19,8 @@
   "lsPreCompileMacros.hpp" \example SharedLib.cpp
 */
 
+namespace ls = viennals;
+
 int main() {
 
   // do not need to define dimension
@@ -28,50 +30,50 @@ int main() {
 
   double gridDelta = 0.25;
 
-  // Usually we would use lsDomain<float, D>.
+  // Usually we would use ls::Domain<float, D>.
   // Since we want to make sure we get an error
   // if we do not use a pre-built type, we use
   // the specialization typedef
-  auto sphere1 = lsSmartPointer<lsDomain_float_3>::New(gridDelta);
-  auto sphere2 = lsSmartPointer<lsDomain_float_3>::New(gridDelta);
+  auto sphere1 = ls::SmartPointer<ls::Domain_float_3>::New(gridDelta);
+  auto sphere2 = ls::SmartPointer<ls::Domain_float_3>::New(gridDelta);
 
   float origin[3] = {5., 0., 0.};
   float radius = 7.3;
 
   {
     // these typedefs are available for all templated classes
-    auto sphere = lsSmartPointer<lsSphere_float_3>::New(origin, radius);
-    lsMakeGeometry_float_3(sphere1, sphere).apply();
+    auto sphere = ls::SmartPointer<ls::Sphere_float_3>::New(origin, radius);
+    ls::MakeGeometry_float_3(sphere1, sphere).apply();
     origin[0] = -5.0;
     radius = 9.5;
-    sphere = lsSmartPointer<lsSphere_float_3>::New(origin, radius);
-    lsMakeGeometry_float_3(sphere2, sphere).apply();
+    sphere = ls::SmartPointer<ls::Sphere_float_3>::New(origin, radius);
+    ls::MakeGeometry_float_3(sphere2, sphere).apply();
   }
 
   {
-    auto mesh1 = lsSmartPointer<lsMesh<float>>::New();
-    auto mesh2 = lsSmartPointer<lsMesh<float>>::New();
+    auto mesh1 = ls::SmartPointer<ls::Mesh<float>>::New();
+    auto mesh2 = ls::SmartPointer<ls::Mesh<float>>::New();
 
     std::cout << "Extracting..." << std::endl;
-    lsToSurfaceMesh_float_3(sphere1, mesh1).apply();
-    lsToSurfaceMesh_float_3(sphere2, mesh2).apply();
+    ls::ToSurfaceMesh_float_3(sphere1, mesh1).apply();
+    ls::ToSurfaceMesh_float_3(sphere2, mesh2).apply();
 
-    lsVTKWriter<float>(mesh1, "sphere1.vtp").apply();
-    lsVTKWriter<float>(mesh2, "sphere2.vtp").apply();
+    ls::VTKWriter<float>(mesh1, "sphere1.vtp").apply();
+    ls::VTKWriter<float>(mesh2, "sphere2.vtp").apply();
   }
 
   // Perform a boolean operation
-  lsBooleanOperation_float_3(sphere1, sphere2,
-                             lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
+  ls::BooleanOperation_float_3(sphere1, sphere2,
+                               ls::BooleanOperationEnum::RELATIVE_COMPLEMENT)
       .apply();
 
   std::cout << "Extracting..." << std::endl;
-  auto mesh = lsSmartPointer<lsMesh<float>>::New();
-  lsToSurfaceMesh_float_3(sphere1, mesh).apply();
+  auto mesh = ls::SmartPointer<ls::Mesh<float>>::New();
+  ls::ToSurfaceMesh_float_3(sphere1, mesh).apply();
 
   mesh->print();
 
-  lsVTKWriter<float>(mesh, "after.vtp").apply();
+  ls::VTKWriter<float>(mesh, "after.vtp").apply();
 
   return 0;
 }

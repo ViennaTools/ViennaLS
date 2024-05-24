@@ -9,6 +9,8 @@
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
+namespace ls = viennals;
+
 int main() {
   omp_set_num_threads(12);
 
@@ -23,36 +25,37 @@ int main() {
     bounds[5] = extent;
   }
 
-  typename lsDomain<NumericType, D>::BoundaryType boundaryCons[D];
+  typename ls::Domain<NumericType, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D - 1; ++i) {
     boundaryCons[i] =
-        lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+        ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   }
   boundaryCons[D - 1] =
-      lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
+      ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  auto substrate =
-      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  auto substrate = ls::SmartPointer<ls::Domain<double, D>>::New(
+      bounds, boundaryCons, gridDelta);
 
   double origin[3] = {0., 0., 0.};
   double planeNormal[3] = {0., D == 2, D == 3};
 
-  lsMakeGeometry<double, D>(
-      substrate, lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal))
+  ls::MakeGeometry<double, D>(
+      substrate,
+      ls::SmartPointer<ls::Plane<double, D>>::New(origin, planeNormal))
       .apply();
 
   {
     std::cout << "Extracting..." << std::endl;
-    auto mesh = lsSmartPointer<lsMesh<>>::New();
-    lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter<double>(mesh, "plane.vtk").apply();
+    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    ls::ToSurfaceMesh<double, D>(substrate, mesh).apply();
+    ls::VTKWriter<double>(mesh, "plane.vtk").apply();
   }
 
   {
     // create layer used for booling
     std::cout << "Creating box..." << std::endl;
-    auto trench = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
-                                                           gridDelta);
+    auto trench = ls::SmartPointer<ls::Domain<double, D>>::New(
+        bounds, boundaryCons, gridDelta);
     double minCorner[3] = {-extent - 1, -extent / 4., -15.};
     double maxCorner[3] = {extent + 1, extent / 4., 1.0};
     if (D == 2) {
@@ -61,30 +64,30 @@ int main() {
       maxCorner[0] = maxCorner[1];
       maxCorner[1] = maxCorner[2];
     }
-    lsMakeGeometry<double, D>(
-        trench, lsSmartPointer<lsBox<double, D>>::New(minCorner, maxCorner))
+    ls::MakeGeometry<double, D>(
+        trench, ls::SmartPointer<ls::Box<double, D>>::New(minCorner, maxCorner))
         .apply();
 
     {
       std::cout << "Extracting..." << std::endl;
-      auto mesh = lsSmartPointer<lsMesh<>>::New();
-      lsToMesh<double, D>(trench, mesh).apply();
-      lsVTKWriter<double>(mesh, "box.vtk").apply();
+      auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+      ls::ToMesh<double, D>(trench, mesh).apply();
+      ls::VTKWriter<double>(mesh, "box.vtk").apply();
     }
 
     // Create trench geometry
     std::cout << "Booling trench..." << std::endl;
-    lsBooleanOperation<double, D>(substrate, trench,
-                                  lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
+    ls::BooleanOperation<double, D>(
+        substrate, trench, ls::BooleanOperationEnum::RELATIVE_COMPLEMENT)
         .apply();
   }
 
-  auto mesh = lsSmartPointer<lsMesh<>>::New();
+  auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
 
-  lsToMesh<NumericType, D>(substrate, mesh).apply();
-  lsVTKWriter<double>(mesh, "points.vtk").apply();
-  lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-  lsVTKWriter<double>(mesh, "surface.vtk").apply();
+  ls::ToMesh<NumericType, D>(substrate, mesh).apply();
+  ls::VTKWriter<double>(mesh, "points.vtk").apply();
+  ls::ToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
+  ls::VTKWriter<double>(mesh, "surface.vtk").apply();
 
   // set up spherical advection dist
   // lsSphereDistribution<NumericType, D> dist(15.0);
@@ -94,16 +97,16 @@ int main() {
     box[1] = 1.1;
     box[2] = 15;
   }
-  auto dist =
-      lsSmartPointer<lsBoxDistribution<NumericType, D>>::New(box, gridDelta);
-  lsGeometricAdvect<NumericType, D>(substrate, dist).apply();
+  auto dist = ls::SmartPointer<ls::BoxDistribution<NumericType, D>>::New(
+      box, gridDelta);
+  ls::GeometricAdvect<NumericType, D>(substrate, dist).apply();
 
   std::cout << "Writing results..." << std::endl;
-  lsToMesh<NumericType, D>(substrate, mesh).apply();
-  lsVTKWriter<double>(mesh, "finalLS.vtk").apply();
+  ls::ToMesh<NumericType, D>(substrate, mesh).apply();
+  ls::VTKWriter<double>(mesh, "finalLS.vtk").apply();
 
-  lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-  lsVTKWriter<double>(mesh, "finalSurface.vtk").apply();
+  ls::ToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
+  ls::VTKWriter<double>(mesh, "finalSurface.vtk").apply();
 
   std::cout << "Done" << std::endl;
 

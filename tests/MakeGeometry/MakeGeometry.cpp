@@ -7,6 +7,8 @@
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
+namespace ls = viennals;
+
 int main() {
   omp_set_num_threads(1);
 
@@ -21,15 +23,15 @@ int main() {
     bounds[5] = 20;
   }
 
-  typename lsDomain<NumericType, D>::BoundaryType boundaryCons[D];
+  typename ls::Domain<NumericType, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D - 1; ++i) {
     boundaryCons[i] =
-        lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+        ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   }
   boundaryCons[D - 1] =
-      lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
+      ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  auto substrate = lsSmartPointer<lsDomain<NumericType, D>>::New(
+  auto substrate = ls::SmartPointer<ls::Domain<NumericType, D>>::New(
       bounds, boundaryCons, gridDelta);
 
   // create a sphere in the level set
@@ -37,30 +39,31 @@ int main() {
   if constexpr (D == 3)
     origin[2] = 0;
   NumericType radius = 15.3;
-  lsMakeGeometry<NumericType, D>(
-      substrate, lsSmartPointer<lsSphere<NumericType, D>>::New(origin, radius))
+  ls::MakeGeometry<NumericType, D>(
+      substrate,
+      ls::SmartPointer<ls::Sphere<NumericType, D>>::New(origin, radius))
       .apply();
 
   origin[0] = 15.0;
   radius = 8.7;
   auto secondSphere =
-      lsSmartPointer<lsDomain<NumericType, D>>::New(substrate->getGrid());
-  lsMakeGeometry<NumericType, D>(
+      ls::SmartPointer<ls::Domain<NumericType, D>>::New(substrate->getGrid());
+  ls::MakeGeometry<NumericType, D>(
       secondSphere,
-      lsSmartPointer<lsSphere<NumericType, D>>::New(origin, radius))
+      ls::SmartPointer<ls::Sphere<NumericType, D>>::New(origin, radius))
       .apply();
 
-  lsBooleanOperation<NumericType, D>(substrate, secondSphere,
-                                     lsBooleanOperationEnum::UNION)
+  ls::BooleanOperation<NumericType, D>(substrate, secondSphere,
+                                       ls::BooleanOperationEnum::UNION)
       .apply();
 
-  auto mesh = lsSmartPointer<lsMesh<>>::New();
-  lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-  lsVTKWriter<double>(mesh, "twoSpheres.vtk").apply();
+  auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+  ls::ToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
+  ls::VTKWriter<double>(mesh, "twoSpheres.vtk").apply();
 
   substrate->getDomain().print();
 
-  // for(hrleConstSparseIterator<lsDomain<NumericType, D>::DomainType>
+  // for(hrleConstSparseIterator<Domain<NumericType, D>::DomainType>
   // it(substrate->getDomain()); !it.isFinished(); ++it) {
   //   std::cout << it.getStartIndices() << std::endl;
   // }

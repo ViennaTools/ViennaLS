@@ -102,7 +102,7 @@ include(cmake/cpm.cmake)
 include(cmake/vtk.cmake)
 
 CPMAddPackage(
-  NAME Core
+  NAME ViennaCore
   GIT_TAG main # TODO: Create Tag
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaCore"
   OPTIONS "VIENNA_CORE_FORMAT_EXCLUDE docs/")
@@ -120,7 +120,7 @@ CPMFindPackage(
   EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 
 find_package(OpenMP REQUIRED)
-target_link_libraries(${PROJECT_NAME} INTERFACE OpenMP::OpenMP_CXX ViennaHRLE)
+target_link_libraries(${PROJECT_NAME} INTERFACE OpenMP::OpenMP_CXX ViennaHRLE ViennaCore)
 
 if(VIENNALS_USE_VTK AND VIENNALS_VTK_PYTHON_LIBS)
   import_vtk_python()

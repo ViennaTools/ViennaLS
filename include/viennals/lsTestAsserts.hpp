@@ -19,7 +19,7 @@
 
 #define LSTEST_ASSERT_VALID_LS(levelSet, NumericType, D)                       \
   {                                                                            \
-    auto check = lsCheck<NumericType, D>(levelSet);                            \
+    auto check = viennals::Check<NumericType, D>(levelSet);                    \
     check.apply();                                                             \
     if (check.isValid()) {                                                     \
       std::cout << "SUCCESS" << std::endl;                                     \

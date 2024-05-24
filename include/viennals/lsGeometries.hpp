@@ -1,5 +1,4 @@
-#ifndef LS_GEOMETRIES_HPP
-#define LS_GEOMETRIES_HPP
+#pragma once
 
 #include <cassert>
 #include <vector>
@@ -8,76 +7,77 @@
 
 #include <lsPreCompileMacros.hpp>
 
+namespace viennals {
+
 /// Class describing a sphere via origin and radius.
-template <class T, int D> class lsSphere {
+template <class T, int D> class Sphere {
 public:
   hrleVectorType<T, D> origin = hrleVectorType<T, D>(T(0));
   T radius = 0.;
 
-  lsSphere() {}
+  Sphere() {}
 
-  lsSphere(hrleVectorType<T, D> passedOrigin, T passedRadius)
+  Sphere(hrleVectorType<T, D> passedOrigin, T passedRadius)
       : origin(passedOrigin), radius(passedRadius) {}
 
-  lsSphere(T *passedOrigin, T passedRadius) : radius(passedRadius) {
+  Sphere(T *passedOrigin, T passedRadius) : radius(passedRadius) {
     for (unsigned i = 0; i < D; ++i) {
       origin[i] = passedOrigin[i];
     }
   }
 
-  lsSphere(const std::vector<T> &passedOrigin, T passedRadius)
+  Sphere(const std::vector<T> &passedOrigin, T passedRadius)
       : origin(passedOrigin), radius(passedRadius) {}
 };
 
 /// Class describing a plane via a point in it and the plane normal.
-template <class T, int D> class lsPlane {
+template <class T, int D> class Plane {
 public:
   hrleVectorType<T, D> origin = hrleVectorType<T, D>(T(0));
   hrleVectorType<T, D> normal = hrleVectorType<T, D>(T(0));
 
-  lsPlane() {}
+  Plane() {}
 
-  lsPlane(hrleVectorType<T, D> passedOrigin, hrleVectorType<T, D> passedNormal)
+  Plane(hrleVectorType<T, D> passedOrigin, hrleVectorType<T, D> passedNormal)
       : origin(passedOrigin), normal(passedNormal) {}
 
-  lsPlane(const T *passedOrigin, const T *passedNormal) {
+  Plane(const T *passedOrigin, const T *passedNormal) {
     for (unsigned i = 0; i < D; ++i) {
       origin[i] = passedOrigin[i];
       normal[i] = passedNormal[i];
     }
   }
 
-  lsPlane(const std::vector<T> &passedOrigin,
-          const std::vector<T> &passedNormal)
+  Plane(const std::vector<T> &passedOrigin, const std::vector<T> &passedNormal)
       : origin(passedOrigin), normal(passedNormal) {}
 };
 
 /// Class describing a square box from one coordinate to another.
-template <class T, int D> class lsBox {
+template <class T, int D> class Box {
 public:
   hrleVectorType<T, D> minCorner = hrleVectorType<T, D>(T(0));
   hrleVectorType<T, D> maxCorner = hrleVectorType<T, D>(T(0));
 
-  lsBox() {}
+  Box() {}
 
-  lsBox(hrleVectorType<T, D> passedMinCorner,
-        hrleVectorType<T, D> passedMaxCorner)
+  Box(hrleVectorType<T, D> passedMinCorner,
+      hrleVectorType<T, D> passedMaxCorner)
       : minCorner(passedMinCorner), maxCorner(passedMaxCorner) {}
 
-  lsBox(const T *passedMinCorner, const T *passedMaxCorner) {
+  Box(const T *passedMinCorner, const T *passedMaxCorner) {
     for (unsigned i = 0; i < D; ++i) {
       minCorner[i] = passedMinCorner[i];
       maxCorner[i] = passedMaxCorner[i];
     }
   }
 
-  lsBox(const std::vector<T> &passedMinCorner,
-        const std::vector<T> &passedMaxCorner)
+  Box(const std::vector<T> &passedMinCorner,
+      const std::vector<T> &passedMaxCorner)
       : minCorner(passedMinCorner), maxCorner(passedMaxCorner) {}
 };
 
 /// Class describing a square box from one coordinate to another.
-template <class T, int D> class lsCylinder {
+template <class T, int D> class Cylinder {
 public:
   /// This is the location of the center of the base of the cylinder
   hrleVectorType<T, 3> origin = hrleVectorType<T, 3>(T(0));
@@ -90,18 +90,18 @@ public:
   /// radius of the top of the cylinder
   T topRadius = 0.;
 
-  lsCylinder() {}
+  Cylinder() {}
 
-  lsCylinder(hrleVectorType<T, D> passedOrigin,
-             hrleVectorType<T, D> passedAxisDirection, T passedHeight,
-             T passedRadius, T passedTopRadius = 0)
+  Cylinder(hrleVectorType<T, D> passedOrigin,
+           hrleVectorType<T, D> passedAxisDirection, T passedHeight,
+           T passedRadius, T passedTopRadius = 0)
       : origin(passedOrigin), axisDirection(passedAxisDirection),
         height(passedHeight), radius(passedRadius), topRadius(passedTopRadius) {
   }
 
-  lsCylinder(const T *passedOrigin, const T *passedAxisDirection,
-             const T passedHeight, const T passedRadius,
-             const T passedTopRadius = 0)
+  Cylinder(const T *passedOrigin, const T *passedAxisDirection,
+           const T passedHeight, const T passedRadius,
+           const T passedTopRadius = 0)
       : height(passedHeight), radius(passedRadius), topRadius(passedTopRadius) {
     for (unsigned i = 0; i < D; ++i) {
       origin[i] = passedOrigin[i];
@@ -109,8 +109,8 @@ public:
     }
   }
 
-  lsCylinder(std::vector<T> passedOrigin, std::vector<T> passedAxisDirection,
-             T passedHeight, T passedRadius, T passedTopRadius = 0)
+  Cylinder(std::vector<T> passedOrigin, std::vector<T> passedAxisDirection,
+           T passedHeight, T passedRadius, T passedTopRadius = 0)
       : origin(passedOrigin), axisDirection(passedAxisDirection),
         height(passedHeight), radius(passedRadius), topRadius(passedTopRadius) {
   }
@@ -118,16 +118,16 @@ public:
 
 /// Class describing a point cloud, which can be used to
 /// create geometries from its convex hull mesh.
-template <class T, int D> class lsPointCloud {
+template <class T, int D> class PointCloud {
 public:
   std::vector<hrleVectorType<T, D>> points;
 
-  lsPointCloud() {}
+  PointCloud() {}
 
-  lsPointCloud(std::vector<hrleVectorType<T, D>> passedPoints)
+  PointCloud(std::vector<hrleVectorType<T, D>> passedPoints)
       : points(passedPoints) {}
 
-  lsPointCloud(const std::vector<std::vector<T>> &passedPoints) {
+  PointCloud(const std::vector<std::vector<T>> &passedPoints) {
     for (auto point : passedPoints) {
       hrleVectorType<T, D> p(point);
       points.push_back(p);
@@ -177,9 +177,9 @@ public:
 };
 
 // add all template specialisations for this class
-PRECOMPILE_PRECISION_DIMENSION(lsSphere)
-PRECOMPILE_PRECISION_DIMENSION(lsPlane)
-PRECOMPILE_PRECISION_DIMENSION(lsBox)
-PRECOMPILE_PRECISION_DIMENSION(lsPointCloud)
+PRECOMPILE_PRECISION_DIMENSION(Sphere)
+PRECOMPILE_PRECISION_DIMENSION(Plane)
+PRECOMPILE_PRECISION_DIMENSION(Box)
+PRECOMPILE_PRECISION_DIMENSION(PointCloud)
 
-#endif // LS_GEOMETRIES_HPP
+} // namespace viennals

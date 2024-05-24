@@ -9,17 +9,19 @@
   \example ReadFromFile.cpp
 */
 
+namespace ls = viennals;
+
 int main(int argc, char **argv) {
   if (argc == 1 || argc > 2) {
     std::cout << "Usage: <invocation> filename.vtk" << std::endl;
     return 0;
   }
 
-  auto mesh = lsSmartPointer<lsMesh<>>::New();
+  auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
 
-  lsVTKReader<double>(mesh, std::string(argv[1])).apply();
+  ls::VTKReader<double>(mesh, std::string(argv[1])).apply();
 
-  lsVTKWriter<double>(mesh, "test.vtk").apply();
+  ls::VTKWriter<double>(mesh, "test.vtk").apply();
 
   return 0;
 }

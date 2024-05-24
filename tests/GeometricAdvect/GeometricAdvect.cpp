@@ -9,6 +9,8 @@
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
+namespace ls = viennals;
+
 int main() {
   omp_set_num_threads(8);
 
@@ -23,63 +25,64 @@ int main() {
     bounds[5] = extent;
   }
 
-  typename lsDomain<NumericType, D>::BoundaryType boundaryCons[D];
+  typename ls::Domain<NumericType, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D - 1; ++i) {
     boundaryCons[i] =
-        lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+        ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   }
   boundaryCons[D - 1] =
-      lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
+      ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  auto levelSet =
-      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  auto levelSet = ls::SmartPointer<ls::Domain<double, D>>::New(
+      bounds, boundaryCons, gridDelta);
   // create a sphere in the level set
   NumericType origin[D] = {0., 0.};
   if constexpr (D == 3)
     origin[2] = 0;
   NumericType radius = 8.0;
-  lsMakeGeometry<NumericType, D>(
-      levelSet, lsSmartPointer<lsSphere<NumericType, D>>::New(origin, radius))
+  ls::MakeGeometry<NumericType, D>(
+      levelSet,
+      ls::SmartPointer<ls::Sphere<NumericType, D>>::New(origin, radius))
       .apply();
 
-  auto sphere =
-      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  auto sphere = ls::SmartPointer<ls::Domain<double, D>>::New(
+      bounds, boundaryCons, gridDelta);
 
   origin[1] = 10.0;
-  lsMakeGeometry<NumericType, D>(
-      sphere, lsSmartPointer<lsSphere<NumericType, D>>::New(origin, radius))
+  ls::MakeGeometry<NumericType, D>(
+      sphere, ls::SmartPointer<ls::Sphere<NumericType, D>>::New(origin, radius))
       .apply();
 
-  lsBooleanOperation<NumericType, D>(levelSet, sphere,
-                                     lsBooleanOperationEnum::UNION)
+  ls::BooleanOperation<NumericType, D>(levelSet, sphere,
+                                       ls::BooleanOperationEnum::UNION)
       .apply();
 
-  auto mesh = lsSmartPointer<lsMesh<>>::New();
+  auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
 
-  lsToMesh<NumericType, D>(levelSet, mesh).apply();
-  lsVTKWriter<double>(mesh, "points.vtk").apply();
-  lsToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
-  lsVTKWriter<double>(mesh, "surface.vtk").apply();
+  ls::ToMesh<NumericType, D>(levelSet, mesh).apply();
+  ls::VTKWriter<double>(mesh, "points.vtk").apply();
+  ls::ToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
+  ls::VTKWriter<double>(mesh, "surface.vtk").apply();
 
   // set up spherical advection dist
   auto dist =
-      lsSmartPointer<lsSphereDistribution<double, D>>::New(20.0, gridDelta);
-  lsGeometricAdvect<NumericType, D>(levelSet, dist).apply();
+      ls::SmartPointer<ls::SphereDistribution<double, D>>::New(20.0, gridDelta);
+  ls::GeometricAdvect<NumericType, D>(levelSet, dist).apply();
 
-  lsToMesh<NumericType, D>(levelSet, mesh).apply();
-  lsVTKWriter<double>(mesh, "afterDepoLS.vtk").apply();
-  lsToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
-  lsVTKWriter<double>(mesh, "afterDepo.vtk").apply();
+  ls::ToMesh<NumericType, D>(levelSet, mesh).apply();
+  ls::VTKWriter<double>(mesh, "afterDepoLS.vtk").apply();
+  ls::ToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
+  ls::VTKWriter<double>(mesh, "afterDepo.vtk").apply();
 
   // now remove the same again using spherical distribution
-  auto etch = lsSmartPointer<lsSphereDistribution<NumericType, D>>::New(
+  auto etch = ls::SmartPointer<ls::SphereDistribution<NumericType, D>>::New(
       -20.0, gridDelta);
-  lsGeometricAdvect<NumericType, D>(levelSet, etch).apply();
+  ls::GeometricAdvect<NumericType, D>(levelSet, etch).apply();
 
-  lsToMesh<NumericType, D>(levelSet, mesh).apply();
-  lsVTKWriter<double>(mesh, "afterEtchLS.vtk").apply();
-  lsToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
-  lsVTKWriter<double>(mesh, "afterEtch.vtk").apply();
+  ls::ToMesh<NumericType, D>(levelSet, mesh).apply();
+  ls::VTKWriter<double>(mesh, "afterEtchLS.vtk").apply();
+  ls::ToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
+  ls::VTKWriter<double>(mesh, "afterEtch.vtk").apply();
 
   return 0;
 }

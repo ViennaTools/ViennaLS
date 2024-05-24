@@ -1,11 +1,12 @@
-#ifndef LS_FINITE_DIFFERENCES_HPP
-#define LS_FINITE_DIFFERENCES_HPP
+#pragma once
 
 #include <hrleVectorType.hpp>
 
-#include <lsMessage.hpp>
+#include <vcLogger.hpp>
 
 namespace lsInternal {
+
+using namespace viennacore;
 
 // Numerical scheme definitions, central is default
 enum class DifferentiationSchemeEnum : unsigned {
@@ -17,11 +18,11 @@ enum class DifferentiationSchemeEnum : unsigned {
 
 template <class T, DifferentiationSchemeEnum scheme =
                        DifferentiationSchemeEnum::FIRST_ORDER>
-class lsFiniteDifferences {
+class FiniteDifferences {
   template <class V> static V square(V x) { return x * x; }
 
 public:
-  lsFiniteDifferences() {};
+  FiniteDifferences(){};
 
   static unsigned getNumberOfValues(DifferentiationSchemeEnum s) {
     switch (s) {
@@ -33,7 +34,7 @@ public:
     case DifferentiationSchemeEnum::WENO5:
       return 7;
     default:
-      lsMessage::getInstance().addError("Invalid finite differences scheme!");
+      Logger::getInstance().addError("Invalid finite differences scheme!");
       return 0;
     }
   }
@@ -49,14 +50,14 @@ public:
 
     T result = 0;
     if (plus) {
-      T rp = (eps + lsFiniteDifferences::square(dx[3] - dx[2])) /
-             (eps + lsFiniteDifferences::square(dx[2] - dx[1]));
-      T wp = 1.0 / (1 + 2.0 * lsFiniteDifferences::square(rp));
+      T rp = (eps + FiniteDifferences::square(dx[3] - dx[2])) /
+             (eps + FiniteDifferences::square(dx[2] - dx[1]));
+      T wp = 1.0 / (1 + 2.0 * FiniteDifferences::square(rp));
       result = dx[1] + dx[2] - wp * (dx[3] - 2.0 * dx[2] + dx[1]);
     } else {
-      T rp = (eps + lsFiniteDifferences::square(dx[1] - dx[0])) /
-             (eps + lsFiniteDifferences::square(dx[2] - dx[1]));
-      T wp = 1.0 / (1 + 2.0 * lsFiniteDifferences::square(rp));
+      T rp = (eps + FiniteDifferences::square(dx[1] - dx[0])) /
+             (eps + FiniteDifferences::square(dx[2] - dx[1]));
+      T wp = 1.0 / (1 + 2.0 * FiniteDifferences::square(rp));
       result = dx[1] + dx[2] - wp * (dx[0] - 2.0 * dx[1] + dx[2]);
     }
 
@@ -79,12 +80,12 @@ public:
       T p2 = -v2 / 6.0 + 5 * v3 / 6.0 + v4 / 3.0;
       T p3 = v3 / 3.0 + 5 * v4 / 6.0 - v5 / 6.0;
 
-      T s1 = 13 / 12.0 * lsFiniteDifferences::square(v1 - 2 * v2 + v3) +
-             1 / 4.0 * lsFiniteDifferences::square(v1 - 4 * v2 + 3 * v3);
-      T s2 = 13 / 12.0 * lsFiniteDifferences::square(v2 - 2 * v3 + v4) +
-             1 / 4.0 * lsFiniteDifferences::square(v2 - v4);
-      T s3 = 13 / 12.0 * lsFiniteDifferences::square(v3 - 2 * v4 + v5) +
-             1 / 4.0 * lsFiniteDifferences::square(3 * v3 - 4 * v4 + v5);
+      T s1 = 13 / 12.0 * FiniteDifferences::square(v1 - 2 * v2 + v3) +
+             1 / 4.0 * FiniteDifferences::square(v1 - 4 * v2 + 3 * v3);
+      T s2 = 13 / 12.0 * FiniteDifferences::square(v2 - 2 * v3 + v4) +
+             1 / 4.0 * FiniteDifferences::square(v2 - v4);
+      T s3 = 13 / 12.0 * FiniteDifferences::square(v3 - 2 * v4 + v5) +
+             1 / 4.0 * FiniteDifferences::square(3 * v3 - 4 * v4 + v5);
 
       T al1 = 0.1 / (eps + s1);
       T al2 = 0.6 / (eps + s2);
@@ -108,12 +109,12 @@ public:
       T p2 = -v2 / 6.0 + 5 * v3 / 6.0 + v4 / 3.0;
       T p3 = v3 / 3.0 + 5 * v4 / 6.0 - v5 / 6.0;
 
-      T s1 = 13 / 12.0 * lsFiniteDifferences::square(v1 - 2 * v2 + v3) +
-             1 / 4.0 * lsFiniteDifferences::square(v1 - 4 * v2 + 3 * v3);
-      T s2 = 13 / 12.0 * lsFiniteDifferences::square(v2 - 2 * v3 + v4) +
-             1 / 4.0 * lsFiniteDifferences::square(v2 - v4);
-      T s3 = 13 / 12.0 * lsFiniteDifferences::square(v3 - 2 * v4 + v5) +
-             1 / 4.0 * lsFiniteDifferences::square(3 * v3 - 4 * v4 + v5);
+      T s1 = 13 / 12.0 * FiniteDifferences::square(v1 - 2 * v2 + v3) +
+             1 / 4.0 * FiniteDifferences::square(v1 - 4 * v2 + 3 * v3);
+      T s2 = 13 / 12.0 * FiniteDifferences::square(v2 - 2 * v3 + v4) +
+             1 / 4.0 * FiniteDifferences::square(v2 - v4);
+      T s3 = 13 / 12.0 * FiniteDifferences::square(v3 - 2 * v4 + v5) +
+             1 / 4.0 * FiniteDifferences::square(3 * v3 - 4 * v4 + v5);
 
       T al1 = 0.1 / (eps + s1);
       T al2 = 0.6 / (eps + s2);
@@ -146,7 +147,7 @@ public:
     } else if (scheme == DifferentiationSchemeEnum::WENO5) {
       return weno5(values, delta, false);
     } else {
-      lsMessage::getInstance().addError("Invalid finite differences scheme!");
+      Logger::getInstance().addError("Invalid finite differences scheme!");
     }
   }
 
@@ -166,7 +167,7 @@ public:
     } else if (scheme == DifferentiationSchemeEnum::WENO5) {
       return weno5(values, delta, true);
     } else {
-      lsMessage::getInstance().addError("Invalid finite differences scheme!");
+      Logger::getInstance().addError("Invalid finite differences scheme!");
     }
   }
 
@@ -189,5 +190,3 @@ public:
 };
 
 } // namespace lsInternal
-
-#endif // LS_FINITE_DIFFERENCES_HPP

@@ -1,5 +1,4 @@
-#ifndef LS_BOOLEAN_OPERATION_HPP
-#define LS_BOOLEAN_OPERATION_HPP
+#pragma once
 
 #include <lsPreCompileMacros.hpp>
 
@@ -7,8 +6,14 @@
 #include <hrleVectorType.hpp>
 
 #include <lsDomain.hpp>
-#include <lsMessage.hpp>
 #include <lsPrune.hpp>
+
+#include <vcLogger.hpp>
+#include <vcSmartPointer.hpp>
+
+namespace viennals {
+
+using namespace viennacore;
 
 /// Enumeration for the different types
 /// of boolean operations which are
@@ -17,7 +22,7 @@
 /// When CUSTOM, the user has to supply a valid
 /// function pointer of the form const T (*comp)(const T &, const T &).
 /// For CUSTOM only the first level set pointer is checked for validity.
-enum struct lsBooleanOperationEnum : unsigned {
+enum struct BooleanOperationEnum : unsigned {
   INTERSECT = 0,
   UNION = 1,
   RELATIVE_COMPLEMENT = 2,
@@ -35,24 +40,24 @@ enum struct lsBooleanOperationEnum : unsigned {
 ///  always return the smaller of the two values.
 ///  The function signature for the comparator is defined in the public
 ///  ComparatorType.
-template <class T, int D> class lsBooleanOperation {
+template <class T, int D> class BooleanOperation {
 public:
   using ComparatorType = std::pair<T, bool> (*)(const T &, const T &);
 
 private:
-  typedef typename lsDomain<T, D>::DomainType hrleDomainType;
-  lsSmartPointer<lsDomain<T, D>> levelSetA = nullptr;
-  lsSmartPointer<lsDomain<T, D>> levelSetB = nullptr;
-  lsBooleanOperationEnum operation = lsBooleanOperationEnum::INTERSECT;
+  typedef typename Domain<T, D>::DomainType hrleDomainType;
+  SmartPointer<Domain<T, D>> levelSetA = nullptr;
+  SmartPointer<Domain<T, D>> levelSetB = nullptr;
+  BooleanOperationEnum operation = BooleanOperationEnum::INTERSECT;
   ComparatorType operationComp = nullptr;
   bool updatePointData = true;
   bool pruneResult = true;
 
   void booleanOpInternal(ComparatorType comp) {
     auto &grid = levelSetA->getGrid();
-    auto newlsDomain = lsSmartPointer<lsDomain<T, D>>::New(grid);
-    typename lsDomain<T, D>::DomainType &newDomain = newlsDomain->getDomain();
-    typename lsDomain<T, D>::DomainType &domain = levelSetA->getDomain();
+    auto newlsDomain = SmartPointer<Domain<T, D>>::New(grid);
+    typename Domain<T, D>::DomainType &newDomain = newlsDomain->getDomain();
+    typename Domain<T, D>::DomainType &domain = levelSetA->getDomain();
 
     newDomain.initialize(domain.getNewSegmentation(), domain.getAllocation());
 
@@ -93,8 +98,8 @@ private:
         const auto &comparison = comp(itA.getValue(), itB.getValue());
         const auto &currentValue = comparison.first;
 
-        if (currentValue != lsDomain<T, D>::NEG_VALUE &&
-            currentValue != lsDomain<T, D>::POS_VALUE) {
+        if (currentValue != Domain<T, D>::NEG_VALUE &&
+            currentValue != Domain<T, D>::POS_VALUE) {
           domainSegment.insertNextDefinedPoint(currentVector, currentValue);
           if (updateData) {
             // if taken from A, set to true
@@ -106,8 +111,8 @@ private:
           }
         } else {
           domainSegment.insertNextUndefinedPoint(
-              currentVector, (currentValue < 0) ? lsDomain<T, D>::NEG_VALUE
-                                                : lsDomain<T, D>::POS_VALUE);
+              currentVector, (currentValue < 0) ? Domain<T, D>::NEG_VALUE
+                                                : Domain<T, D>::POS_VALUE);
         }
 
         switch (compare(itA.getEndIndices(), itB.getEndIndices())) {
@@ -149,7 +154,7 @@ private:
         if (BPointer != nullptr) {
           auto APointer = AData.getScalarData(i);
           // copy all data into the new scalarData
-          typename lsDomain<T, D>::PointDataType::ScalarDataType scalars;
+          typename Domain<T, D>::PointDataType::ScalarDataType scalars;
           scalars.resize(newlsDomain->getNumberOfPoints());
           for (unsigned j = 0; j < newlsDomain->getNumberOfPoints(); ++j) {
             scalars[j] = (newDataLS[0][j])
@@ -167,7 +172,7 @@ private:
         if (BPointer != nullptr) {
           auto APointer = AData.getVectorData(i);
           // copy all data into the new vectorData
-          typename lsDomain<T, D>::PointDataType::VectorDataType vectors;
+          typename Domain<T, D>::PointDataType::VectorDataType vectors;
           vectors.resize(newlsDomain->getNumberOfPoints());
           for (unsigned j = 0; j < newlsDomain->getNumberOfPoints(); ++j) {
             vectors[j] = (newDataLS[0][j])
@@ -184,12 +189,12 @@ private:
     newlsDomain->setLevelSetWidth(levelSetA->getLevelSetWidth());
 
     if (pruneResult) {
-      auto pruner = lsPrune<T, D>(newlsDomain);
+      auto pruner = Prune<T, D>(newlsDomain);
       pruner.setRemoveStrayZeros(true);
       pruner.apply();
 
       // now we need to prune, to remove stray defined points
-      lsPrune<T, D>(newlsDomain).apply();
+      Prune<T, D>(newlsDomain).apply();
     }
 
     levelSetA->deepCopy(newlsDomain);
@@ -212,13 +217,13 @@ private:
 
       // add undefined values if missing
       if (domainSegment.undefinedValues.size() < 1) {
-        domainSegment.undefinedValues.push_back(T(lsDomain<T, D>::NEG_VALUE));
+        domainSegment.undefinedValues.push_back(T(Domain<T, D>::NEG_VALUE));
       }
       if (domainSegment.undefinedValues.size() < 2) {
-        if (domainSegment.undefinedValues[0] == lsDomain<T, D>::NEG_VALUE) {
-          domainSegment.undefinedValues.push_back(T(lsDomain<T, D>::POS_VALUE));
+        if (domainSegment.undefinedValues[0] == Domain<T, D>::NEG_VALUE) {
+          domainSegment.undefinedValues.push_back(T(Domain<T, D>::POS_VALUE));
         } else {
-          domainSegment.undefinedValues.push_back(T(lsDomain<T, D>::NEG_VALUE));
+          domainSegment.undefinedValues.push_back(T(Domain<T, D>::NEG_VALUE));
         }
       }
 
@@ -260,33 +265,33 @@ private:
   }
 
 public:
-  lsBooleanOperation() {}
+  BooleanOperation() {}
 
-  lsBooleanOperation(
-      lsSmartPointer<lsDomain<T, D>> passedlsDomain,
-      lsBooleanOperationEnum passedOperation = lsBooleanOperationEnum::INVERT)
+  BooleanOperation(
+      SmartPointer<Domain<T, D>> passedlsDomain,
+      BooleanOperationEnum passedOperation = BooleanOperationEnum::INVERT)
       : levelSetA(passedlsDomain), operation(passedOperation) {}
 
-  lsBooleanOperation(lsSmartPointer<lsDomain<T, D>> passedlsDomainA,
-                     lsSmartPointer<lsDomain<T, D>> passedlsDomainB,
-                     lsBooleanOperationEnum passedOperation =
-                         lsBooleanOperationEnum::INTERSECT)
+  BooleanOperation(
+      SmartPointer<Domain<T, D>> passedlsDomainA,
+      SmartPointer<Domain<T, D>> passedlsDomainB,
+      BooleanOperationEnum passedOperation = BooleanOperationEnum::INTERSECT)
       : levelSetA(passedlsDomainA), levelSetB(passedlsDomainB),
-        operation(passedOperation) {};
+        operation(passedOperation){};
 
   /// Set which level set to perform the boolean operation on.
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+  void setLevelSet(SmartPointer<Domain<T, D>> passedlsDomain) {
     levelSetA = passedlsDomain;
   }
 
   /// Set the level set which will be used to modify the
   /// first level set.
-  void setSecondLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+  void setSecondLevelSet(SmartPointer<Domain<T, D>> passedlsDomain) {
     levelSetB = passedlsDomain;
   }
 
-  /// Set which of the operations of lsBooleanOperationEnum to perform.
-  void setBooleanOperation(lsBooleanOperationEnum passedOperation) {
+  /// Set which of the operations of BooleanOperationEnum to perform.
+  void setBooleanOperation(BooleanOperationEnum passedOperation) {
     operation = passedOperation;
   }
 
@@ -306,8 +311,8 @@ public:
   /// Perform operation.
   void apply() {
     if (levelSetA == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No level set was passed to lsBooleanOperation. Not "
+      Logger::getInstance()
+          .addWarning("No level set was passed to BooleanOperation. Not "
                       "performing operation.")
           .print();
       return;
@@ -315,8 +320,8 @@ public:
 
     if (static_cast<unsigned>(operation) < 3) {
       if (levelSetB == nullptr) {
-        lsMessage::getInstance()
-            .addWarning("Only one level set was passed to lsBooleanOperation, "
+        Logger::getInstance()
+            .addWarning("Only one level set was passed to BooleanOperation, "
                         "although two were required. Not performing operation.")
             .print();
         return;
@@ -324,22 +329,22 @@ public:
     }
 
     switch (operation) {
-    case lsBooleanOperationEnum::INTERSECT:
-      booleanOpInternal(&lsBooleanOperation::maxComp);
+    case BooleanOperationEnum::INTERSECT:
+      booleanOpInternal(&BooleanOperation::maxComp);
       break;
-    case lsBooleanOperationEnum::UNION:
-      booleanOpInternal(&lsBooleanOperation::minComp);
+    case BooleanOperationEnum::UNION:
+      booleanOpInternal(&BooleanOperation::minComp);
       break;
-    case lsBooleanOperationEnum::RELATIVE_COMPLEMENT:
-      booleanOpInternal(&lsBooleanOperation::relativeComplementComp);
+    case BooleanOperationEnum::RELATIVE_COMPLEMENT:
+      booleanOpInternal(&BooleanOperation::relativeComplementComp);
       break;
-    case lsBooleanOperationEnum::INVERT:
+    case BooleanOperationEnum::INVERT:
       invert();
       break;
-    case lsBooleanOperationEnum::CUSTOM:
+    case BooleanOperationEnum::CUSTOM:
       if (operationComp == nullptr) {
-        lsMessage::getInstance()
-            .addWarning("No comparator supplied to custom lsBooleanOperation. "
+        Logger::getInstance()
+            .addWarning("No comparator supplied to custom BooleanOperation. "
                         "Not performing operation.")
             .print();
         return;
@@ -350,6 +355,6 @@ public:
 };
 
 // add all template specialisations for this class
-PRECOMPILE_PRECISION_DIMENSION(lsBooleanOperation)
+PRECOMPILE_PRECISION_DIMENSION(BooleanOperation)
 
-#endif // LS_BOOLEAN_OPERATION_HPP
+} // namespace viennals

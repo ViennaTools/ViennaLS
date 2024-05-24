@@ -11,6 +11,8 @@
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
+namespace ls = viennals;
+
 /**
   Example of boolean operations on level sets
   using two spheres.
@@ -28,32 +30,32 @@ int main() {
     bounds[4] = -20;
     bounds[5] = 20;
   }
-  typename lsDomain<double, D>::BoundaryType boundaryCons[D];
+  typename ls::Domain<double, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D - 1; ++i) {
-    boundaryCons[i] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+    boundaryCons[i] = ls::Domain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   }
-  boundaryCons[D - 1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
+  boundaryCons[D - 1] = ls::Domain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  auto sphere1 =
-      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
-  auto sphere2 =
-      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  auto sphere1 = ls::SmartPointer<ls::Domain<double, D>>::New(
+      bounds, boundaryCons, gridDelta);
+  auto sphere2 = ls::SmartPointer<ls::Domain<double, D>>::New(
+      bounds, boundaryCons, gridDelta);
 
   double origin[3] = {0., 0., 0.};
   double radius = 15.7;
 
-  lsMakeGeometry<double, D>(
-      sphere1, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
+  ls::MakeGeometry<double, D>(
+      sphere1, ls::SmartPointer<ls::Sphere<double, D>>::New(origin, radius))
       .apply();
   origin[0] = 15.0;
   radius = 9.5;
-  lsMakeGeometry<double, D>(
-      sphere2, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
+  ls::MakeGeometry<double, D>(
+      sphere2, ls::SmartPointer<ls::Sphere<double, D>>::New(origin, radius))
       .apply();
 
   // put some data into either LS
   {
-    using ScalarDataType = lsDomain<double, D>::PointDataType::ScalarDataType;
+    using ScalarDataType = ls::Domain<double, D>::PointDataType::ScalarDataType;
     ScalarDataType scalars1(sphere1->getNumberOfPoints(), 0.);
     sphere1->getPointData().insertNextScalarData(std::move(scalars1),
                                                  "originID");
@@ -64,33 +66,34 @@ int main() {
   }
 
   // {
-  //   auto mesh1 = lsSmartPointer<lsMesh<>>::New();
-  //   auto mesh2 = lsSmartPointer<lsMesh<>>::New();
+  //   auto mesh1 = ls::ls::SmartPointer<ls::Mesh<>>::New();
+  //   auto mesh2 = ls::ls::SmartPointer<ls::Mesh<>>::New();
 
   //   std::cout << "Extracting..." << std::endl;
-  //   lsToSurfaceMesh<double, D>(sphere1, mesh1).apply();
-  //   lsToSurfaceMesh<double, D>(sphere2, mesh2).apply();
+  //   ls::ToSurfaceMesh<double, D>(sphere1, mesh1).apply();
+  //   ls::ToSurfaceMesh<double, D>(sphere2, mesh2).apply();
 
-  //   lsVTKWriter<double>(mesh1, "sphere1.vtk").apply();
-  //   lsVTKWriter<double>(mesh2, "sphere2.vtk").apply();
+  //   ls::VTKWriter<double>(mesh1, "sphere1.vtk").apply();
+  //   ls::VTKWriter<double>(mesh2, "sphere2.vtk").apply();
 
-  //   lsToMesh<double, D>(sphere1, mesh1).apply();
-  //   lsToMesh<double, D>(sphere2, mesh2).apply();
+  //   ls::ToMesh<double, D>(sphere1, mesh1).apply();
+  //   ls::ToMesh<double, D>(sphere2, mesh2).apply();
 
-  //   lsVTKWriter<double>(mesh1, "LS1.vtk").apply();
-  //   lsVTKWriter<double>(mesh2, "LS2.vtk").apply();
+  //   ls::VTKWriter<double>(mesh1, "LS1.vtk").apply();
+  //   ls::VTKWriter<double>(mesh2, "LS2.vtk").apply();
   // }
 
   // Perform a boolean operation
-  lsBooleanOperation<double, D>(sphere1, sphere2, lsBooleanOperationEnum::UNION)
+  ls::BooleanOperation<double, D>(sphere1, sphere2,
+                                  ls::BooleanOperationEnum::UNION)
       .apply();
 
   LSTEST_ASSERT_VALID_LS(sphere1, double, D)
 
   // std::cout << "Extracting..." << std::endl;
-  // auto mesh = lsSmartPointer<lsMesh<>>::New();
-  // lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
-  // lsVTKWriter<double>(mesh, "after.vtp").apply();
+  // auto mesh = ls::ls::SmartPointer<ls::Mesh<>>::New();
+  // ls::ToSurfaceMesh<double, D>(sphere1, mesh).apply();
+  // ls::VTKWriter<double>(mesh, "after.vtp").apply();
 
   return 0;
 }

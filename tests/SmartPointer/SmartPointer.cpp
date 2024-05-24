@@ -1,6 +1,7 @@
 #include <iostream>
 #include <lsDomain.hpp>
-#include <lsSmartPointer.hpp>
+
+namespace ls = viennals;
 
 constexpr int D = 3;
 typedef double NumericType;
@@ -15,27 +16,27 @@ auto makeLSDomain() {
     bounds[5] = extent;
   }
 
-  typename lsDomain<NumericType, D>::BoundaryType boundaryCons[D];
+  typename ls::Domain<NumericType, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D - 1; ++i) {
     boundaryCons[i] =
-        lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+        ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   }
   boundaryCons[D - 1] =
-      lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
+      ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  return lsSmartPointer<lsDomain<double, 3>>::New(bounds, boundaryCons,
-                                                  gridDelta);
+  return ls::SmartPointer<ls::Domain<double, 3>>::New(bounds, boundaryCons,
+                                                      gridDelta);
 }
 
 unsigned long
-getNumberOfPoints(lsSmartPointer<const lsDomain<NumericType, D>> domain) {
+getNumberOfPoints(ls::SmartPointer<const ls::Domain<NumericType, D>> domain) {
   return domain->getNumberOfPoints();
 }
 
 int main() {
   auto domain = makeLSDomain();
 
-  // lsSmartPointer<const lsDomain<NumericType, D>> constDomain = domain;
+  // ls::SmartPointer<const ls::Domain<NumericType, D>> constDomain = domain;
 
   std::cout << getNumberOfPoints(domain) << std::endl;
 

@@ -16,17 +16,19 @@
   positive numbers \example BooleanOperationExactZero1.cpp
 */
 
+namespace ls = viennals;
+
 using NumericType = double;
 constexpr int D = 2;
 
-using LSType = lsSmartPointer<lsDomain<NumericType, D>>;
+using LSType = ls::SmartPointer<ls::Domain<NumericType, D>>;
 
 // void writeLS(LSType levelSet, std::string fileName) {
-//   auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
+//   auto mesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
 //   lsToMesh(levelSet, mesh).apply();
-//   lsVTKWriter(mesh, fileName).apply();
+//   ls::VTKWriter(mesh, fileName).apply();
 //   lsToSurfaceMesh(levelSet, mesh).apply();
-//   lsVTKWriter(mesh, "surf_" + fileName).apply();
+//   ls::VTKWriter(mesh, "surf_" + fileName).apply();
 // }
 
 int main() {
@@ -38,20 +40,21 @@ int main() {
     double extent = 10;
     double bounds[2 * D] = {-extent, extent, -extent, extent};
 
-    typename lsDomain<NumericType, D>::BoundaryType boundaryCons[D];
+    typename ls::Domain<NumericType, D>::BoundaryType boundaryCons[D];
     boundaryCons[0] =
-        lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
-    boundaryCons[1] = lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
+        ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+    boundaryCons[1] =
+        ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
     if constexpr (D == 3) {
       boundaryCons[1] =
-          lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+          ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
       boundaryCons[2] =
-          lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
+          ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
     }
 
-    mask = lsSmartPointer<lsDomain<NumericType, D>>::New(bounds, boundaryCons,
-                                                         gridDelta);
+    mask = ls::SmartPointer<ls::Domain<NumericType, D>>::New(
+        bounds, boundaryCons, gridDelta);
   }
 
   constexpr double yVal = 0.5;
@@ -66,7 +69,8 @@ int main() {
     //   max[1] = 5.;
     //   max[2] = 10.;
     // }
-    lsMakeGeometry(mask, lsSmartPointer<lsBox<NumericType, D>>::New(min, max))
+    ls::MakeGeometry(mask,
+                     ls::SmartPointer<ls::Box<NumericType, D>>::New(min, max))
         .apply();
     // writeLS(mask, "mask_initial.vtp");
   }
@@ -82,30 +86,30 @@ int main() {
     //   max[1] = 5.;
     //   max[2] = 10.;
     // }
-    lsMakeGeometry(substrate,
-                   lsSmartPointer<lsBox<NumericType, D>>::New(min, max))
+    ls::MakeGeometry(substrate,
+                     ls::SmartPointer<ls::Box<NumericType, D>>::New(min, max))
         .apply();
     // writeLS(substrate, "subs_initial.vtp");
   }
 
-  lsBooleanOperation<NumericType, D> boolOp(substrate, mask,
-                                            lsBooleanOperationEnum::UNION);
+  ls::BooleanOperation<NumericType, D> boolOp(substrate, mask,
+                                              ls::BooleanOperationEnum::UNION);
   boolOp.setPruneResult(false);
   boolOp.apply();
 
   // writeLS(substrate, "subs_afterBool.vtp");
 
-  lsPrune<NumericType, D> pruner(substrate);
+  ls::Prune<NumericType, D> pruner(substrate);
   pruner.setRemoveStrayZeros(true);
   pruner.apply();
 
   // writeLS(substrate, "subs_afterPrune1.vtp");
 
-  lsPrune(substrate).apply();
+  ls::Prune(substrate).apply();
 
   // writeLS(substrate, "subs_afterPrune2.vtp");
 
-  lsCheck<NumericType, D> checker(substrate);
+  ls::Check<NumericType, D> checker(substrate);
   checker.apply();
   LSTEST_ASSERT(checker.isValid());
 

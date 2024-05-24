@@ -9,13 +9,15 @@
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
+namespace ls = viennals;
+
 /**
   This example measures the time it takes for several advection steps to run.
   \example AdvectionBenchmark.cpp
 */
 
 // implement own velocity field
-class velocityField : public lsVelocityField<double> {
+class velocityField : public ls::VelocityField<double> {
   std::vector<double> &data_;
 
 public:
@@ -55,25 +57,25 @@ int main() {
 
   double gridDelta = 0.25;
 
-  auto sphere1 = lsSmartPointer<lsDomain<double, D>>::New(gridDelta);
+  auto sphere1 = ls::SmartPointer<ls::Domain<double, D>>::New(gridDelta);
 
   double origin[3] = {5., 0., 0.};
   double radius = 7.3;
 
-  lsMakeGeometry<double, D>(
-      sphere1, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
+  ls::MakeGeometry<double, D>(
+      sphere1, ls::SmartPointer<ls::Sphere<double, D>>::New(origin, radius))
       .apply();
 
   {
     std::cout << "Extracting..." << std::endl;
-    auto mesh = lsSmartPointer<lsMesh<>>::New();
-    lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter<double>(mesh, "before.vtk").apply();
+    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    ls::ToSurfaceMesh<double, D>(sphere1, mesh).apply();
+    ls::VTKWriter<double>(mesh, "before.vtk").apply();
   }
 
   // instantiate velocities
   std::vector<double> vels(sphere1->getNumberOfPoints() * 100, 0.31415);
-  auto velocities = lsSmartPointer<velocityField>::New(vels);
+  auto velocities = ls::SmartPointer<velocityField>::New(vels);
 
   std::cout << "Advecting" << std::endl;
 
@@ -82,12 +84,12 @@ int main() {
   for (unsigned cores = 1; cores < 33; cores *= 2) {
     omp_set_num_threads(cores);
 
-    auto levelSet = lsSmartPointer<lsDomain<double, D>>::New(gridDelta);
+    auto levelSet = ls::SmartPointer<ls::Domain<double, D>>::New(gridDelta);
     levelSet->deepCopy(sphere1);
 
     levelSet->getDomain().segment();
 
-    lsAdvect<double, D> advectionKernel;
+    ls::Advect<double, D> advectionKernel;
     advectionKernel.insertNextLevelSet(levelSet);
     advectionKernel.setVelocityField(velocities);
 
@@ -102,9 +104,10 @@ int main() {
                      .count()
               << "\n";
 
-    auto mesh = lsSmartPointer<lsMesh<>>::New();
-    lsToSurfaceMesh<double, D>(levelSet, mesh).apply();
-    lsVTKWriter<double>(mesh, "cores" + std::to_string(cores) + ".vtk").apply();
+    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    ls::ToSurfaceMesh<double, D>(levelSet, mesh).apply();
+    ls::VTKWriter<double>(mesh, "cores" + std::to_string(cores) + ".vtk")
+        .apply();
   }
 
   return 0;

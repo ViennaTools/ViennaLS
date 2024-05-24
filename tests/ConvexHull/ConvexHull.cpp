@@ -9,6 +9,8 @@
 
 #define PI 3.141592
 
+namespace ls = viennals;
+
 int main() {
 
   constexpr int D = 2;
@@ -19,16 +21,17 @@ int main() {
   // double gridDelta = 1;
   //
   // double bounds[2 * D] = {-extent, extent, -extent, extent};
-  // lsDomain<double, D>::BoundaryType boundaryCons[D];
+  // ls::Domain<double, D>::BoundaryType boundaryCons[D];
   // for (unsigned i = 0; i < D; ++i)
-  //   boundaryCons[i] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
-  // lsDomain<double, D> sphere1(bounds, boundaryCons, gridDelta);
+  //   boundaryCons[i] = ls::Domain<double,
+  //   D>::BoundaryType::REFLECTIVE_BOUNDARY;
+  // ls::Domain<double, D> sphere1(bounds, boundaryCons, gridDelta);
 
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_real_distribution<> dis(0., 1.);
 
-  auto cloud = lsSmartPointer<lsPointCloud<double, D>>::New();
+  auto cloud = ls::SmartPointer<ls::PointCloud<double, D>>::New();
 
   // generate a circle of points
   int numberOfPoints = 10000;
@@ -51,26 +54,27 @@ int main() {
   // cloud.insertNextPoint(hrleVectorType<double, D>(0.1, 0.5));
   // cloud.insertNextPoint(hrleVectorType<double, D>(-1, 0.2));
 
-  auto pointMesh = lsSmartPointer<lsMesh<>>::New();
+  auto pointMesh = ls::SmartPointer<ls::Mesh<>>::New();
   for (unsigned i = 0; i < cloud->points.size(); ++i) {
     pointMesh->nodes.push_back(
         std::array<double, 3>{cloud->points[i][0], cloud->points[i][1], 0.});
     pointMesh->vertices.push_back(std::array<unsigned, 1>{i});
   }
-  lsVTKWriter<double>(pointMesh, lsFileFormatEnum::VTP, "points.vtp").apply();
+  ls::VTKWriter<double>(pointMesh, ls::FileFormatEnum::VTP, "points.vtp")
+      .apply();
 
-  lsMakeGeometry<double, D> geom;
-  auto levelSet = lsSmartPointer<lsDomain<double, D>>::New();
+  ls::MakeGeometry<double, D> geom;
+  auto levelSet = ls::SmartPointer<ls::Domain<double, D>>::New();
   geom.setLevelSet(levelSet);
   geom.setGeometry(cloud);
   geom.apply();
 
   {
-    auto mesh = lsSmartPointer<lsMesh<>>::New();
+    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
     std::cout << "Extracting..." << std::endl;
-    lsToSurfaceMesh<double, D>(levelSet, mesh).apply();
+    ls::ToSurfaceMesh<double, D>(levelSet, mesh).apply();
     mesh->print();
-    lsVTKWriter<double>(mesh, "LSMesh.vtk").apply();
+    ls::VTKWriter<double>(mesh, "LSMesh.vtk").apply();
   }
 
   return 0;

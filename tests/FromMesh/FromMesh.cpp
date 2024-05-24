@@ -6,6 +6,8 @@
 #include <lsVTKReader.hpp>
 #include <lsVTKWriter.hpp>
 
+namespace ls = viennals;
+
 int main() {
   constexpr int D = 2;
 
@@ -15,39 +17,39 @@ int main() {
   double gridDelta = 0.5;
 
   double bounds[2 * D] = {-extent, extent, -extent, extent};
-  lsDomain<double, D>::BoundaryType boundaryCons[D];
+  ls::Domain<double, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D; ++i)
-    boundaryCons[i] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+    boundaryCons[i] = ls::Domain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
 
-  auto sphere1 =
-      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  auto sphere1 = ls::SmartPointer<ls::Domain<double, D>>::New(
+      bounds, boundaryCons, gridDelta);
 
   double origin[D] = {5., 0.};
   double radius = 7.3;
 
-  lsMakeGeometry<double, D>(
-      sphere1, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
+  ls::MakeGeometry<double, D>(
+      sphere1, ls::SmartPointer<ls::Sphere<double, D>>::New(origin, radius))
       .apply();
 
   std::cout << "Writing" << std::endl;
   {
-    auto mesh = lsSmartPointer<lsMesh<>>::New();
-    lsToMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter<double>(mesh, "sphere.vtk").apply();
+    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    ls::ToMesh<double, D>(sphere1, mesh).apply();
+    ls::VTKWriter<double>(mesh, "sphere.vtk").apply();
   }
 
   std::cout << "Reading" << std::endl;
   {
-    auto mesh = lsSmartPointer<lsMesh<>>::New();
-    lsVTKReader<double>(mesh, "sphere.vtk").apply();
-    auto newLS = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
-                                                          gridDelta);
-    lsFromMesh<double, D>(newLS, mesh).apply();
+    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    ls::VTKReader<double>(mesh, "sphere.vtk").apply();
+    auto newLS = ls::SmartPointer<ls::Domain<double, D>>::New(
+        bounds, boundaryCons, gridDelta);
+    ls::FromMesh<double, D>(newLS, mesh).apply();
 
     std::cout << "Writing new" << std::endl;
-    auto newMesh = lsSmartPointer<lsMesh<>>::New();
-    lsToMesh<double, D>(newLS, newMesh).apply();
-    lsVTKWriter<double>(mesh, "newMesh.vtk").apply();
+    auto newMesh = ls::SmartPointer<ls::Mesh<>>::New();
+    ls::ToMesh<double, D>(newLS, newMesh).apply();
+    ls::VTKWriter<double>(mesh, "newMesh.vtk").apply();
   }
 
   return 0;

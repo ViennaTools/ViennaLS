@@ -1,5 +1,4 @@
-#ifndef LS_STENCIL_LOCAL_LACHS_FRIEDRICHS_SCALAR_HPP
-#define LS_STENCIL_LOCAL_LACHS_FRIEDRICHS_SCALAR_HPP
+#pragma once
 
 #include <hrleSparseBoxIterator.hpp>
 #include <hrleVectorType.hpp>
@@ -10,18 +9,20 @@
 
 namespace lsInternal {
 
+using namespace viennals;
+
 /// Stencil Local Lax Friedrichs Integration Scheme.
 /// It uses a stencil of order around active points, in order to
 /// evaluate dissipation values for each point, taking into account
 /// the mathematical nature of the speed function.
 /// see Toifl et al., 2019. ISBN: 978-1-7281-0938-1;
 /// DOI: 10.1109/SISPAD.2019.8870443
-template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
-  using LevelSetType = lsSmartPointer<lsDomain<T, D>>;
+template <class T, int D, int order> class StencilLocalLaxFriedrichsScalar {
+  using LevelSetType = SmartPointer<Domain<T, D>>;
   using LevelSetsType = std::vector<LevelSetType>;
 
   LevelSetType levelSet;
-  lsSmartPointer<lsVelocityField<T>> velocities;
+  SmartPointer<VelocityField<T>> velocities;
   const DifferentiationSchemeEnum finiteDifferenceScheme =
       DifferentiationSchemeEnum::FIRST_ORDER;
   hrleSparseBoxIterator<hrleDomain<T, D>> neighborIterator;
@@ -49,7 +50,7 @@ template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
         index[i] = startIndex + j;
         values.push_back(neighborIterator.getNeighbor(index).getValue());
       }
-      normal[i] = lsFiniteDifferences<T>::calculateGradient(
+      normal[i] = FiniteDifferences<T>::calculateGradient(
           &(values[0]), levelSet->getGrid().getGridDelta());
       modulus += normal[i] * normal[i];
     }
@@ -65,7 +66,7 @@ template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
     hrleVectorType<T, D> gradient;
 
     const unsigned numValues =
-        lsFiniteDifferences<T>::getNumberOfValues(finiteDifferenceScheme);
+        FiniteDifferences<T>::getNumberOfValues(finiteDifferenceScheme);
     const int startIndex = -std::floor(numValues / 2);
 
     for (unsigned i = 0; i < D; ++i) {
@@ -78,14 +79,14 @@ template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
 
       if (finiteDifferenceScheme == DifferentiationSchemeEnum::FIRST_ORDER) {
         gradient[i] =
-            lsFiniteDifferences<T, DifferentiationSchemeEnum::FIRST_ORDER>::
+            FiniteDifferences<T, DifferentiationSchemeEnum::FIRST_ORDER>::
                 calculateGradient(&(values[0]),
                                   levelSet->getGrid().getGridDelta());
       } else if (finiteDifferenceScheme == DifferentiationSchemeEnum::WENO3) {
-        gradient[i] = lsFiniteDifferences<T, DifferentiationSchemeEnum::WENO3>::
+        gradient[i] = FiniteDifferences<T, DifferentiationSchemeEnum::WENO3>::
             calculateGradient(&(values[0]), levelSet->getGrid().getGridDelta());
       } else if (finiteDifferenceScheme == DifferentiationSchemeEnum::WENO5)
-        gradient[i] = lsFiniteDifferences<T, DifferentiationSchemeEnum::WENO5>::
+        gradient[i] = FiniteDifferences<T, DifferentiationSchemeEnum::WENO5>::
             calculateGradient(&(values[0]), levelSet->getGrid().getGridDelta());
     }
 
@@ -96,7 +97,7 @@ template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
     hrleVectorType<T, D> gradient;
 
     const unsigned numValues =
-        lsFiniteDifferences<T>::getNumberOfValues(finiteDifferenceScheme);
+        FiniteDifferences<T>::getNumberOfValues(finiteDifferenceScheme);
     const int startIndex = -std::floor(numValues / 2);
 
     for (unsigned i = 0; i < D; ++i) {
@@ -109,15 +110,15 @@ template <class T, int D, int order> class lsStencilLocalLaxFriedrichsScalar {
 
       if (finiteDifferenceScheme == DifferentiationSchemeEnum::FIRST_ORDER) {
         gradient[i] =
-            lsFiniteDifferences<T, DifferentiationSchemeEnum::FIRST_ORDER>::
+            FiniteDifferences<T, DifferentiationSchemeEnum::FIRST_ORDER>::
                 calculateGradientDiff(&(values[0]),
                                       levelSet->getGrid().getGridDelta());
       } else if (finiteDifferenceScheme == DifferentiationSchemeEnum::WENO3) {
-        gradient[i] = lsFiniteDifferences<T, DifferentiationSchemeEnum::WENO3>::
+        gradient[i] = FiniteDifferences<T, DifferentiationSchemeEnum::WENO3>::
             calculateGradientDiff(&(values[0]),
                                   levelSet->getGrid().getGridDelta());
       } else if (finiteDifferenceScheme == DifferentiationSchemeEnum::WENO5)
-        gradient[i] = lsFiniteDifferences<T, DifferentiationSchemeEnum::WENO5>::
+        gradient[i] = FiniteDifferences<T, DifferentiationSchemeEnum::WENO5>::
             calculateGradientDiff(&(values[0]),
                                   levelSet->getGrid().getGridDelta());
     }
@@ -131,11 +132,11 @@ public:
   static void prepareLS(LevelSetType passedlsDomain) {
     // Expansion of sparse field must depend on spatial derivative order
     // AND  slf stencil order! --> currently assume scheme = 3rd order always
-    lsExpand<T, D>(passedlsDomain, 2 * (order + 1) + 4).apply();
+    Expand<T, D>(passedlsDomain, 2 * (order + 1) + 4).apply();
   }
 
-  lsStencilLocalLaxFriedrichsScalar(
-      LevelSetType passedlsDomain, lsSmartPointer<lsVelocityField<T>> vel,
+  StencilLocalLaxFriedrichsScalar(
+      LevelSetType passedlsDomain, SmartPointer<VelocityField<T>> vel,
       double a = 1.0,
       DifferentiationSchemeEnum scheme = DifferentiationSchemeEnum::FIRST_ORDER)
       : levelSet(passedlsDomain), velocities(vel),
@@ -331,7 +332,7 @@ namespace advect {
 template <
     class IntegrationSchemeType, class T, int D,
     lsConcepts::IsSame<IntegrationSchemeType,
-                       lsInternal::lsStencilLocalLaxFriedrichsScalar<T, D, 1>> =
+                       lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>> =
         lsConcepts::assignable>
 void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &scheme,
                                   double &MaxTimeStep,
@@ -351,6 +352,10 @@ void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &scheme,
 } // namespace advect
 } // namespace lsInternal
 
+namespace viennals {
+
+using namespace viennacore;
+
 /// This function creates the specialized layer wrapping which
 /// produces better results for the SSLF integration scheme.
 /// isDepo must contain whether the corresponding level sets
@@ -363,13 +368,13 @@ void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &scheme,
 /// after advection instead of trying to deal with numerous
 /// separate masking layers.
 template <class T, int D>
-void lsPrepareStencilLocalLaxFriedrichs(
-    std::vector<lsSmartPointer<lsDomain<T, D>>> &levelSets,
+void PrepareStencilLocalLaxFriedrichs(
+    std::vector<SmartPointer<Domain<T, D>>> &levelSets,
     std::vector<bool> isDepo) {
   if (isDepo.size() < levelSets.size()) {
-    lsMessage::getInstance()
+    Logger::getInstance()
         .addWarning(
-            "lsPrepareStencilLocalLaxFriedrichs: isDepo does not have enough "
+            "PrepareStencilLocalLaxFriedrichs: isDepo does not have enough "
             "elements. Assuming all higher layers are not depo layers.")
         .print();
   }
@@ -380,7 +385,7 @@ void lsPrepareStencilLocalLaxFriedrichs(
   auto layerIt = levelSets.rbegin();
 
   // make empty LS which will contain the final top layer
-  auto finalTop = lsSmartPointer<lsDomain<T, D>>::New(levelSets[0]->getGrid());
+  auto finalTop = SmartPointer<Domain<T, D>>::New(levelSets[0]->getGrid());
 
   bool layerAboveIsDepo = false;
   auto depoIt = isDepo.rbegin();
@@ -397,15 +402,15 @@ void lsPrepareStencilLocalLaxFriedrichs(
     } else {
       // no depo on this layer
       if (layerAboveIsDepo) {
-        auto layerAbove = lsSmartPointer<lsDomain<T, D>>::New(*layerIt);
-        lsBooleanOperation<T, D>(layerAbove, *maskIt,
-                                 lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
+        auto layerAbove = SmartPointer<Domain<T, D>>::New(*layerIt);
+        BooleanOperation<T, D>(layerAbove, *maskIt,
+                               BooleanOperationEnum::RELATIVE_COMPLEMENT)
             .apply();
 
-        lsBooleanOperation<T, D>(finalTop, layerAbove,
-                                 lsBooleanOperationEnum::UNION)
+        BooleanOperation<T, D>(finalTop, layerAbove,
+                               BooleanOperationEnum::UNION)
             .apply();
-        lsPrune<T, D>(finalTop).apply();
+        Prune<T, D>(finalTop).apply();
       }
       layerAboveIsDepo = false;
     }
@@ -414,25 +419,25 @@ void lsPrepareStencilLocalLaxFriedrichs(
 
   // If the lowest layer is a depo substrate, add it to the final top layer
   if (layerAboveIsDepo) {
-    lsBooleanOperation<T, D>(finalTop, *layerIt, lsBooleanOperationEnum::UNION)
+    BooleanOperation<T, D>(finalTop, *layerIt, BooleanOperationEnum::UNION)
         .apply();
   }
 
-  lsBooleanOperation<T, D>(finalTop, lsBooleanOperationEnum::INVERT).apply();
+  BooleanOperation<T, D>(finalTop, BooleanOperationEnum::INVERT).apply();
   levelSets.back()->deepCopy(finalTop);
 }
 
 /// After advection using the SLLF layer wrapping approach is done,
 /// restore the original layer wrapping used everywhere else.
 template <class T, int D>
-void lsFinalizeStencilLocalLaxFriedrichs(
-    std::vector<lsSmartPointer<lsDomain<T, D>>> &levelSets) {
+void FinalizeStencilLocalLaxFriedrichs(
+    std::vector<SmartPointer<Domain<T, D>>> &levelSets) {
   auto layerIt = levelSets.rbegin();
   auto lastIt = ++levelSets.rbegin();
 
-  lsBooleanOperation<T, D>(*layerIt, lsBooleanOperationEnum::INVERT).apply();
-  lsBooleanOperation<T, D>(*layerIt, *lastIt, lsBooleanOperationEnum::UNION)
+  BooleanOperation<T, D>(*layerIt, BooleanOperationEnum::INVERT).apply();
+  BooleanOperation<T, D>(*layerIt, *lastIt, BooleanOperationEnum::UNION)
       .apply();
 }
 
-#endif // LS_STENCIL_LOCAL_LACHS_FRIEDRICHS_SCALAR_HPP
+} // namespace viennals

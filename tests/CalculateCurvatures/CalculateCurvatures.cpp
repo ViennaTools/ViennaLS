@@ -19,6 +19,8 @@
   \example calculateCurvatures.cpp
 */
 
+namespace ls = viennals;
+
 constexpr int D = 3;
 typedef double NumericType;
 
@@ -28,22 +30,22 @@ int main() {
 
   NumericType gridDelta = 0.5;
 
-  auto sphere = lsSmartPointer<lsDomain<NumericType, D>>::New(gridDelta);
+  auto sphere = ls::SmartPointer<ls::Domain<NumericType, D>>::New(gridDelta);
   NumericType origin[3] = {5., 0., 0.};
   NumericType radius = 10.0;
 
-  lsMakeGeometry<NumericType, D>(
-      sphere, lsSmartPointer<lsSphere<NumericType, D>>::New(origin, radius))
+  ls::MakeGeometry<NumericType, D>(
+      sphere, ls::SmartPointer<ls::Sphere<NumericType, D>>::New(origin, radius))
       .apply();
 
-  lsExpand<NumericType, D>(sphere, 5).apply();
+  ls::Expand<NumericType, D>(sphere, 5).apply();
 
-  lsCalculateCurvatures<NumericType, D> calcCurve(sphere);
+  ls::CalculateCurvatures<NumericType, D> calcCurve(sphere);
 
   if (D == 2) {
-    calcCurve.setCurvatureType(lsCurvatureEnum::MEAN_CURVATURE);
+    calcCurve.setCurvatureType(ls::CurvatureEnum::MEAN_CURVATURE);
   } else {
-    calcCurve.setCurvatureType(lsCurvatureEnum::MEAN_AND_GAUSSIAN_CURVATURE);
+    calcCurve.setCurvatureType(ls::CurvatureEnum::MEAN_AND_GAUSSIAN_CURVATURE);
   }
 
   calcCurve.apply();
@@ -55,7 +57,7 @@ int main() {
   double analyticCurvature = 1. / radius;
   hrleSizeType numberOfActivePoints = 0;
   double sum = 0.;
-  for (hrleConstSparseIterator<typename lsDomain<NumericType, D>::DomainType>
+  for (hrleConstSparseIterator<typename ls::Domain<NumericType, D>::DomainType>
            it(sphere->getDomain());
        !it.isFinished(); ++it) {
     if (NumericType value = it.getValue();
@@ -74,12 +76,12 @@ int main() {
   // sphere->getPointData().insertNextScalarData(analytic,
   // "analyticCurvatures");
 
-  // auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
+  // auto mesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
   // lsToSurfaceMesh(sphere, mesh).apply();
-  // lsVTKWriter(mesh, "curvatures.vtp").apply();
+  // ls::VTKWriter(mesh, "curvatures.vtp").apply();
 
-  // lsToMesh<NumericType, D>(sphere, mesh, true, true).apply();
-  // auto writer = lsVTKWriter<NumericType>();
+  // ls::ToMesh<NumericType, D>(sphere, mesh, true, true).apply();
+  // auto writer = ls::VTKWriter<NumericType>();
   // writer.setMesh(mesh);
   // writer.setFileName("curvatures.vtk");
   // writer.apply();
