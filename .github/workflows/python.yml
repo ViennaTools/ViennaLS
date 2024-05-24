@@ -116,5 +116,5 @@ jobs:
       - name: 📦 Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: wheel-${{ matrix.os }}-${{ strategy.job-index }}
+          name: Wheels (${{ matrix.os }})
           path: ./wheelhouse/*.whl
