@@ -257,7 +257,7 @@ public:
     // identifier: "PointData"
     // 4 byte: number of scalar data sets
     // 4 byte: number of vector data sets
-    stream << "PointData";
+    stream << "lsPointData";
     uint32_t numberOfScalarData = scalarData.size();
     uint32_t numberOfVectorData = vectorData.size();
     stream.write(reinterpret_cast<const char *>(&numberOfScalarData),
@@ -318,7 +318,7 @@ public:
   std::istream &deserialize(std::istream &stream) {
     char identifier[11];
     stream.read(identifier, 11);
-    if (std::string(identifier).compare(0, 11, "PointData")) {
+    if (std::string(identifier).compare(0, 11, "lsPointData")) {
       Logger::getInstance()
           .addWarning("Reading PointData from stream failed. Header could "
                       "not be found.")

@@ -6,7 +6,7 @@ import viennals3d as vls
 #  layer of a different material is then grown on top.
 
 
-class velocityField(vls.lsVelocityField):
+class velocityField(vls.VelocityField):
     # coord and normalVec are lists with 3 elements
     # in 2D coord[2] and normalVec[2] are zero
     # getScalarVelocity must return a scalar
@@ -27,37 +27,38 @@ bounds = (-extent, extent, -extent, extent, -extent, extent)
 boundaryCons = (0, 0, 1)  # 0 = reflective, 1 = infinite, 2 = periodic
 
 # create level set
-substrate = vls.lsDomain(bounds, boundaryCons, gridDelta)
+substrate = vls.Domain(bounds, boundaryCons, gridDelta)
 
 # create plane
 origin = (0, 0, 0)
 planeNormal = (0, 0, 1)
 
-vls.lsMakeGeometry(substrate, vls.lsPlane(origin, planeNormal)).apply()
+vls.MakeGeometry(substrate, vls.Plane(origin, planeNormal)).apply()
 
 # create layer used for booling
 print("Creating box...")
-trench = vls.lsDomain(bounds, boundaryCons, gridDelta)
-minCorner = (-extent - 1, -extent / 4., -15.)
-maxCorner = (extent + 1, extent / 4., 1.)
-vls.lsMakeGeometry(trench, vls.lsBox(minCorner, maxCorner)).apply()
+trench = vls.Domain(bounds, boundaryCons, gridDelta)
+minCorner = (-extent - 1, -extent / 4.0, -15.0)
+maxCorner = (extent + 1, extent / 4.0, 1.0)
+vls.MakeGeometry(trench, vls.Box(minCorner, maxCorner)).apply()
 
 # Create trench geometry
 print("Booling trench")
-vls.lsBooleanOperation(substrate, trench,
-                       vls.lsBooleanOperationEnum.RELATIVE_COMPLEMENT).apply()
+vls.BooleanOperation(
+    substrate, trench, vls.BooleanOperationEnum.RELATIVE_COMPLEMENT
+).apply()
 
 # Now grow new material
 
 # create new levelset for new material, which will be grown
 # since it has to wrap around the substrate, just copy it
 print("Creating new layer...")
-newLayer = vls.lsDomain(substrate)
+newLayer = vls.Domain(substrate)
 
 velocities = velocityField()
 
 print("Advecting")
-advectionKernel = vls.lsAdvect()
+advectionKernel = vls.Advect()
 
 # the level set to be advected has to be inserted last
 # the other could be taken as a mask layer for advection
@@ -70,16 +71,16 @@ advectionKernel.setVelocityField(velocities)
 counter = 1
 passedTime = 0
 
-mesh = vls.lsMesh()
+mesh = vls.Mesh()
 while passedTime < 4:
     advectionKernel.apply()
     passedTime += advectionKernel.getAdvectedTime()
 
-    vls.lsToSurfaceMesh(newLayer, mesh).apply()
-    vls.lsVTKWriter(mesh, "trench-{}.vtk".format(counter)).apply()
+    vls.ToSurfaceMesh(newLayer, mesh).apply()
+    vls.VTKWriter(mesh, "trench-{}.vtp".format(counter)).apply()
 
-    vls.lsToMesh(newLayer, mesh).apply()
-    vls.lsVTKWriter(mesh, "LS-{}.vtk".format(counter)).apply()
+    vls.ToMesh(newLayer, mesh).apply()
+    vls.VTKWriter(mesh, "LS-{}.vtp".format(counter)).apply()
 
     counter = counter + 1
 
