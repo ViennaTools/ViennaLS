@@ -8,7 +8,7 @@ name = "ViennaLS_Python"
 readme = "README.md"
 license = {file = "LICENSE"}
 description = "A high performance sparse level set library"
-dependencies = ['vtk >= 9.0.0, < 10']
+# dependencies = ['vtk >= 9.0.0, < 10']
 
 [project.urls]
 Homepage = "https://viennatools.github.io/ViennaLS/"

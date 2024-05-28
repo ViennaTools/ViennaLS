@@ -12,7 +12,7 @@ on:
 jobs:
   check-coding-style:
     runs-on: ubuntu-latest
-    container: ghcr.io/viennatools/vienna-builder:vtk
+    container: ghcr.io/viennatools/vienna-builder:vtk-python
 
     steps:
       - name: 📥 Checkout
@@ -22,7 +22,7 @@ jobs:
 
       - name: 📋 Install additional dependencies
         if: ${{ github.event.inputs.debug == 'true' }}
-        run: sudo dnf install -y tmate
+        run: apk add tmate
 
       - name: 🐛 Debug Issues
         if: ${{ github.event.inputs.debug == 'true' }}
