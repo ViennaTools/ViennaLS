@@ -14,16 +14,16 @@ using namespace viennacore;
 template <class T> class Extrude {
   SmartPointer<Domain<T, 2>> inputLevelSet = nullptr;
   SmartPointer<Domain<T, 3>> outputLevelSet = nullptr;
-  Pair<T> extent = {0., 0.};
+  Vec2D<T> extent = {0., 0.};
   int extrudeDim = 0;
-  Triple<BoundaryConditionEnum<3>> boundaryConds;
+  std::array<BoundaryConditionEnum<3>, 3> boundaryConds;
 
 public:
   Extrude() {}
   Extrude(SmartPointer<Domain<T, 2>> passedInputLS,
-          SmartPointer<Domain<T, 3>> passedOutputLS, Pair<T> passedExtent,
+          SmartPointer<Domain<T, 3>> passedOutputLS, Vec2D<T> passedExtent,
           const int passedExtrudeDim,
-          Triple<BoundaryConditionEnum<3>> passedBoundaryConds)
+          std::array<BoundaryConditionEnum<3>, 3> passedBoundaryConds)
       : inputLevelSet(passedInputLS), outputLevelSet(passedOutputLS),
         extent(passedExtent), extrudeDim(passedExtrudeDim),
         boundaryConds(passedBoundaryConds) {}
@@ -38,15 +38,15 @@ public:
   }
 
   // Set the min and max extent in the extruded dimension
-  void setExtent(Pair<T> passedExtent) { extent = passedExtent; }
+  void setExtent(Vec2D<T> passedExtent) { extent = passedExtent; }
 
   // Set which index of the added dimension (x: 0, y: 1, z: 2)
   void setExtrudeDimension(const int passedExtrudeDim) {
     extrudeDim = passedExtrudeDim;
   }
 
-  void
-  setBoundaryConditions(Triple<BoundaryConditionEnum<3>> passedBoundaryConds) {
+  void setBoundaryConditions(
+      std::array<BoundaryConditionEnum<3>, 3> passedBoundaryConds) {
     boundaryConds = passedBoundaryConds;
   }
 

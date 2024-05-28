@@ -20,7 +20,7 @@ using namespace viennacore;
 /// elements.
 template <class T = double> class Mesh {
 public:
-  std::vector<Triple<T>> nodes;
+  std::vector<Vec3D<T>> nodes;
   std::vector<std::array<unsigned, 1>> vertices;
   std::vector<std::array<unsigned, 2>> lines;
   std::vector<std::array<unsigned, 3>> triangles;
@@ -28,14 +28,14 @@ public:
   std::vector<std::array<unsigned, 8>> hexas;
   PointData<T> pointData;
   PointData<T> cellData;
-  Triple<T> minimumExtent;
-  Triple<T> maximumExtent;
+  Vec3D<T> minimumExtent;
+  Vec3D<T> maximumExtent;
 
 private:
   // iterator typedef
   using VectorIt = typename PointData<T>::VectorDataType::iterator;
   // find function to avoid including the whole algorithm header
-  VectorIt find(VectorIt first, VectorIt last, const Triple<T> &value) {
+  VectorIt find(VectorIt first, VectorIt last, const Vec3D<T> &value) {
     for (; first != last; ++first) {
       if (*first == value) {
         return first;
@@ -57,9 +57,9 @@ private:
   };
 
 public:
-  const std::vector<Triple<T>> &getNodes() const { return nodes; }
+  const std::vector<Vec3D<T>> &getNodes() const { return nodes; }
 
-  std::vector<Triple<T>> &getNodes() { return nodes; }
+  std::vector<Vec3D<T>> &getNodes() { return nodes; }
 
   template <int D, typename std::enable_if<D == 1, int>::type = 0>
   std::vector<std::array<unsigned, D>> &getElements() {
@@ -94,7 +94,7 @@ public:
 
   const PointData<T> &getCellData() const { return cellData; }
 
-  unsigned insertNextNode(const Triple<T> &node) {
+  unsigned insertNextNode(const Vec3D<T> &node) {
     nodes.push_back(node);
     return nodes.size() - 1;
   }
@@ -150,7 +150,7 @@ public:
   }
 
   void removeDuplicateNodes() {
-    std::vector<Triple<T>> newNodes;
+    std::vector<Vec3D<T>> newNodes;
     // can just push first point since it cannot be duplicate
     newNodes.push_back(nodes[0]);
     // now check for duplicates

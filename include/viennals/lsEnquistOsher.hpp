@@ -118,7 +118,7 @@ public:
 
     // Calculate normal vector for velocity calculation
     // use std::array since it will be exposed to interface
-    Triple<T> normalVector = {};
+    Vec3D<T> normalVector = {};
     if (calculateNormalVectors) {
       T denominator = 0;
       for (int i = 0; i < D; i++) {
@@ -136,12 +136,12 @@ public:
     }
 
     // convert coordinate to std array for interface
-    Triple<T> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
+    Vec3D<T> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
 
     double scalarVelocity = velocities->getScalarVelocity(
         coordArray, material, normalVector,
         neighborIterator.getCenter().getPointId());
-    Triple<T> vectorVelocity = velocities->getVectorVelocity(
+    Vec3D<T> vectorVelocity = velocities->getVectorVelocity(
         coordArray, material, normalVector,
         neighborIterator.getCenter().getPointId());
 

@@ -16,19 +16,18 @@ public:
 
   /// Should return a scalar value for the velocity at coordinate
   /// for a point of material with the given normalVector.
-  virtual T getScalarVelocity(const Triple<T> & /*coordinate*/,
-                              int /*material*/,
-                              const Triple<T> & /*normalVector*/,
+  virtual T getScalarVelocity(const Vec3D<T> & /*coordinate*/, int /*material*/,
+                              const Vec3D<T> & /*normalVector*/,
                               unsigned long /*pointId*/) {
     return 0;
   }
 
   /// Like getScalarVelocity, but returns a velocity value for each
   /// cartesian direction.
-  virtual Triple<T> getVectorVelocity(const Triple<T> & /*coordinate*/,
-                                      int /*material*/,
-                                      const Triple<T> & /*normalVector*/,
-                                      unsigned long /*pointId*/) {
+  virtual Vec3D<T> getVectorVelocity(const Vec3D<T> & /*coordinate*/,
+                                     int /*material*/,
+                                     const Vec3D<T> & /*normalVector*/,
+                                     unsigned long /*pointId*/) {
     return {0, 0, 0};
   }
 
@@ -36,7 +35,7 @@ public:
   /// this is called to provide the analytical solution for the alpha
   /// values, needed for stable integration.
   virtual T getDissipationAlpha(int /*direction*/, int /*material*/,
-                                const Triple<T> & /*centralDifferences*/) {
+                                const Vec3D<T> & /*centralDifferences*/) {
     return 0;
   }
 

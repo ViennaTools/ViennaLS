@@ -176,7 +176,7 @@ private:
       p = omp_get_thread_num();
 #endif
 
-      Triple<T> zeroVector{};
+      Vec3D<T> zeroVector{};
 
       std::vector<T> &flagsSegment = flagsReserve[p];
       flagsSegment.reserve(
@@ -200,12 +200,12 @@ private:
           continue;
         }
 
-        Triple<T> centerNormal = normals[neighborIt.getCenter().getPointId()];
+        Vec3D<T> centerNormal = normals[neighborIt.getCenter().getPointId()];
 
         bool flag = false;
 
         for (unsigned dir = 0; dir < (D * D * D); dir++) {
-          Triple<T> currentNormal =
+          Vec3D<T> currentNormal =
               normals[neighborIt.getNeighbor(dir).getPointId()];
 
           if (currentNormal != zeroVector) {

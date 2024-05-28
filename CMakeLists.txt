@@ -105,11 +105,11 @@ CPMAddPackage(
   NAME ViennaCore
   GIT_TAG main # TODO: Create Tag
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaCore"
-  OPTIONS "VIENNA_CORE_FORMAT_EXCLUDE docs/")
+  OPTIONS "VIENNACORE_FORMAT_EXCLUDE docs/")
 
 CPMAddPackage(
   NAME PackageProject
-  VERSION 1.12.0
+  VERSION 1.11.1
   GIT_REPOSITORY "https://github.com/TheLartians/PackageProject.cmake"
   EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 

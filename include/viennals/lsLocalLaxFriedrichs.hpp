@@ -70,7 +70,7 @@ public:
     neighborIterator.goToIndicesSequential(indices);
 
     // convert coordinate to std array for interface
-    Triple<T> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
+    Vec3D<T> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
 
     T gradPos[D];
     T gradNeg[D];
@@ -78,7 +78,7 @@ public:
     T grad = 0.;
     T dissipation = 0.;
 
-    Triple<T> normalVector = {};
+    Vec3D<T> normalVector = {};
     T normalModulus = 0;
 
     for (int i = 0; i < D; i++) { // iterate over dimensions
@@ -156,7 +156,7 @@ public:
     double scalarVelocity = velocities->getScalarVelocity(
         coordArray, material, normalVector,
         neighborIterator.getCenter().getPointId());
-    Triple<T> vectorVelocity = velocities->getVectorVelocity(
+    Vec3D<T> vectorVelocity = velocities->getVectorVelocity(
         coordArray, material, normalVector,
         neighborIterator.getCenter().getPointId());
 
@@ -184,11 +184,11 @@ public:
 
       hrleVectorType<hrleIndexType, D> neighborIndex(minIndex);
       for (unsigned i = 0; i < numNeighbors; ++i) {
-        Triple<T> coords;
+        Vec3D<T> coords;
         for (unsigned dir = 0; dir < D; ++dir) {
           coords[dir] = coordinate[dir] + neighborIndex[dir] * gridDelta;
         }
-        Triple<T> normal = {};
+        Vec3D<T> normal = {};
         double normalModulus = 0.;
         auto center = neighborIterator.getNeighbor(neighborIndex).getValue();
         for (unsigned dir = 0; dir < D; ++dir) {

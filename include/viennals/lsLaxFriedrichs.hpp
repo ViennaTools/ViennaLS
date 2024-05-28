@@ -58,7 +58,7 @@ public:
     T grad = 0.;
     T dissipation = 0.;
 
-    Triple<T> normalVector = {};
+    Vec3D<T> normalVector = {};
     T normalModulus = 0;
     const bool calcNormals = calculateNormalVectors;
 
@@ -133,12 +133,12 @@ public:
     }
 
     // convert coordinate to std array for interface
-    Triple<T> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
+    Vec3D<T> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
 
     double scalarVelocity = velocities->getScalarVelocity(
         coordArray, material, normalVector,
         neighborIterator.getCenter().getPointId());
-    Triple<T> vectorVelocity = velocities->getVectorVelocity(
+    Vec3D<T> vectorVelocity = velocities->getVectorVelocity(
         coordArray, material, normalVector,
         neighborIterator.getCenter().getPointId());
 

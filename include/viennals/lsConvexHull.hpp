@@ -407,9 +407,9 @@ public:
 
         // if insertion took place, add the point to the nodes
         if (insertion.second) {
-          Triple<T> node{points[hullElements[i][j]][0],
-                         points[hullElements[i][j]][1],
-                         (D == 2) ? T(0.) : points[hullElements[i][j]][2]};
+          Vec3D<T> node{points[hullElements[i][j]][0],
+                        points[hullElements[i][j]][1],
+                        (D == 2) ? T(0.) : points[hullElements[i][j]][2]};
           mesh->nodes.push_back(node);
         }
 

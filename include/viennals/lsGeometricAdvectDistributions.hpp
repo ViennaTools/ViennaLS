@@ -20,8 +20,8 @@ public:
   /// center is inside the distribution. If there is no quick
   /// check due to the complexity of the distribution, always
   /// return true or do not overload this function.
-  virtual bool isInside(const Triple<hrleCoordType> &initial,
-                        const Triple<hrleCoordType> &candidate,
+  virtual bool isInside(const Vec3D<hrleCoordType> &initial,
+                        const Vec3D<hrleCoordType> &candidate,
                         double eps = 0.) const {
     return true;
   }
@@ -29,8 +29,8 @@ public:
   /// Returns the signed distance of a point relative to the distributions
   /// center. This is the signed manhatten distance to the nearest surface
   /// point.
-  virtual T getSignedDistance(const Triple<hrleCoordType> &initial,
-                              const Triple<hrleCoordType> &candidate,
+  virtual T getSignedDistance(const Vec3D<hrleCoordType> &initial,
+                              const Vec3D<hrleCoordType> &candidate,
                               unsigned long initialPointId) const = 0;
 
   /// Sets bounds to the bounding box of the distribution.
@@ -51,8 +51,8 @@ public:
   SphereDistribution(const T passedRadius, const T delta)
       : radius(passedRadius), radius2(radius * radius), gridDelta(delta) {}
 
-  bool isInside(const Triple<hrleCoordType> &initial,
-                const Triple<hrleCoordType> &candidate,
+  bool isInside(const Vec3D<hrleCoordType> &initial,
+                const Vec3D<hrleCoordType> &candidate,
                 double eps = 0.) const override {
     hrleCoordType dot = 0.;
     for (unsigned i = 0; i < D; ++i) {
@@ -66,11 +66,11 @@ public:
       return false;
   }
 
-  T getSignedDistance(const Triple<hrleCoordType> &initial,
-                      const Triple<hrleCoordType> &candidate,
+  T getSignedDistance(const Vec3D<hrleCoordType> &initial,
+                      const Vec3D<hrleCoordType> &candidate,
                       unsigned long /*initialPointId*/) const override {
     T distance = std::numeric_limits<T>::max();
-    Triple<hrleCoordType> v{};
+    Vec3D<hrleCoordType> v{};
     for (unsigned i = 0; i < D; ++i) {
       v[i] = candidate[i] - initial[i];
     }
@@ -132,8 +132,8 @@ public:
     }
   }
 
-  bool isInside(const Triple<hrleCoordType> &initial,
-                const Triple<hrleCoordType> &candidate,
+  bool isInside(const Vec3D<hrleCoordType> &initial,
+                const Vec3D<hrleCoordType> &candidate,
                 double eps = 0.) const override {
     for (unsigned i = 0; i < D; ++i) {
       if (std::abs(candidate[i] - initial[i]) >
@@ -144,8 +144,8 @@ public:
     return true;
   }
 
-  T getSignedDistance(const Triple<hrleCoordType> &initial,
-                      const Triple<hrleCoordType> &candidate,
+  T getSignedDistance(const Vec3D<hrleCoordType> &initial,
+                      const Vec3D<hrleCoordType> &candidate,
                       unsigned long /*initialPointId*/) const override {
     T distance = std::numeric_limits<T>::lowest();
     for (unsigned i = 0; i < D; ++i) {

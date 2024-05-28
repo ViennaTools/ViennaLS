@@ -57,7 +57,7 @@ public:
           .print();
     }
 
-    std::vector<std::vector<Triple<T>>> normalVectorsVector(
+    std::vector<std::vector<Vec3D<T>>> normalVectorsVector(
         levelSet->getNumberOfSegments());
     double pointsPerSegment =
         double(2 * levelSet->getDomain().getNumberOfPoints()) /
@@ -94,12 +94,12 @@ public:
           continue;
         } else if (std::abs(center.getValue()) > maxValue) {
           // push an empty vector to keep ordering correct
-          Triple<T> tmp = {};
+          Vec3D<T> tmp = {};
           normalVectors.push_back(tmp);
           continue;
         }
 
-        Triple<T> n;
+        Vec3D<T> n;
 
         T denominator = 0;
         for (int i = 0; i < D; i++) {
