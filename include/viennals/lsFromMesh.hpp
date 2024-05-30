@@ -18,7 +18,7 @@ template <class T, int D> class lsFromMesh {
   bool sortPointList = true;
 
 public:
-  lsFromMesh(){};
+  lsFromMesh() {};
 
   lsFromMesh(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
              const lsSmartPointer<lsMesh<T>> passedMesh)

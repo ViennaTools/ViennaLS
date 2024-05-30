@@ -54,7 +54,7 @@ public:
   lsPrune() {}
 
   lsPrune(lsSmartPointer<lsDomain<T, D>> passedlsDomain)
-      : levelSet(passedlsDomain){};
+      : levelSet(passedlsDomain) {};
 
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     levelSet = passedlsDomain;
