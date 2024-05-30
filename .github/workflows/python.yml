@@ -49,7 +49,7 @@ jobs:
         if: ${{ matrix.os != 'windows-latest' }}
         run: |
           python -m venv venv
-          ./venv/bin/pip install .
+          CMAKE_ARGS=-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF ./venv/bin/pip install . # Alpine does not like LTO
           ./venv/bin/python -c "import viennals2d; print(viennals2d.__doc__)"
 
       - name: 📦 Upload Artifact
@@ -89,21 +89,18 @@ jobs:
       - name: 🛠️ Build VTK (Windows)
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
-          # sed -i 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_PACKAGE_PYTHON=ON"/g' pyproject.toml
           sed -i 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_PACKAGE_PYTHON=ON","-DVIENNALS_IS_CI=ON"/g' pyproject.toml
           type pyproject.toml
 
       - name: 🛠️ Build VTK (MacOs)
         if: ${{ matrix.os == 'macos-latest' }}
         run: |
-          # sed -i .bak 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_PACKAGE_PYTHON=ON"/g' pyproject.toml
           sed -i .bak 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_PACKAGE_PYTHON=ON","-DVIENNALS_IS_CI=ON"/g' pyproject.toml
           cat pyproject.toml
 
       - name: 🛠️ Use VTK-Python Libs
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
-          # sed -i 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_VTK_PYTHON_LIBS=ON"/g' pyproject.toml
           sed -i 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_PACKAGE_PYTHON=ON","-DVIENNALS_IS_CI=ON"/g' pyproject.toml
           cat pyproject.toml
 
