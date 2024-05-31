@@ -37,6 +37,7 @@
 #include <lsGeometries.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsMarkVoidPoints.hpp>
+#include <lsMaterialMap.hpp>
 #include <lsMesh.hpp>
 #include <lsPointData.hpp>
 #include <lsPrune.hpp>
@@ -746,6 +747,20 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            (PointData<T>::VectorDataType * (PointData<T>::*)(std::string)) &
                PointData<T>::getVectorData)
       .def("getVectorDataLabel", &PointData<T>::getVectorDataLabel);
+
+  // MaterialMap
+  pybind11::class_<MaterialMap, SmartPointer<MaterialMap>>(module,
+                                                           "MaterialMap")
+      // constructors
+      .def(pybind11::init(&SmartPointer<MaterialMap>::New<>))
+      // methods
+      .def("insertNextMaterial", &MaterialMap::insertNextMaterial,
+           "Insert a new material into the map.")
+      .def("setMaterialId", &MaterialMap::setMaterialId)
+      .def("getNumberOfLayers", &MaterialMap::getNumberOfLayers,
+           "Get the number of level-sets in the material map.")
+      .def("getNumberOfMaterials", &MaterialMap::getNumberOfMaterials)
+      .def("getMaterialId", &MaterialMap::getMaterialId);
 
   // Mesh<T>
   pybind11::class_<Mesh<T>, SmartPointer<Mesh<T>>>(module, "Mesh")
