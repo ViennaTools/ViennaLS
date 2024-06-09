@@ -109,7 +109,7 @@ CPMAddPackage(
 
 CPMAddPackage(
   NAME PackageProject
-  VERSION 1.12.0
+  VERSION 1.11.2
   GIT_REPOSITORY "https://github.com/TheLartians/PackageProject.cmake"
   EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 
