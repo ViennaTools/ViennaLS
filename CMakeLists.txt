@@ -128,11 +128,6 @@ if(VIENNALS_USE_VTK AND VIENNALS_VTK_PYTHON_LIBS)
 elseif(VIENNALS_USE_VTK)
   enable_language(C)
 
-  find_package(VTK QUIET)
-  set(VIENNALS_SYSTEM_VTK
-      ${VTK_FOUND}
-      CACHE INTERNAL "")
-
   CPMFindPackage(
     NAME VTK
     # TODO: Change to 9.3.1 as soon as it's released
@@ -192,16 +187,6 @@ endif()
 
 if(VIENNALS_ENABLE_SANITIZER)
   viennacore_enable_sanitizer()
-endif()
-
-# --------------------------------------------------------------------------------------------------------
-# Check need for environment setups
-# --------------------------------------------------------------------------------------------------------
-
-if(NOT VIENNALS_VTK_PYTHON_LIBS AND (NOT VIENNALS_SYSTEM_VTK OR VIENNALS_PACKAGE_PYTHON))
-  set(VIENNALS_VTK_ENV
-      ON
-      CACHE INTERNAL "")
 endif()
 
 # --------------------------------------------------------------------------------------------------------
