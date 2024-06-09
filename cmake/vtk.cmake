@@ -1,7 +1,7 @@
 macro(setup_vtk_env TARGET OUTPUT)
   message(STATUS "[ViennaLS] Setting up VTK-Environment for ${TARGET}")
 
-  if (NOT TARGET vtksys)
+  if(NOT TARGET vtksys)
     message(WARNING "[ViennaLS] Could not find VTK-Target")
     return()
   endif()

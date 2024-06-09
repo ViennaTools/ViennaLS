@@ -72,4 +72,7 @@ set(VIENNALS_LIB_FOLDER ${VIENNALS_LIBRARY_OUTPUT_DIR}/viennals.libs)
 # Not required for both targets, one will suffice
 setup_vtk_env(viennals2d ${VIENNALS_LIB_FOLDER})
 
-install(DIRECTORY ${VIENNALS_LIB_FOLDER} DESTINATION . OPTIONAL)
+install(
+  DIRECTORY ${VIENNALS_LIB_FOLDER}
+  DESTINATION .
+  OPTIONAL)
