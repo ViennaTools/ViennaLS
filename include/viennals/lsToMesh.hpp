@@ -23,7 +23,7 @@ template <class T, int D> class lsToMesh {
   static constexpr long long maxDomainExtent = 1e6;
 
 public:
-  lsToMesh() {};
+  lsToMesh(){};
 
   lsToMesh(const lsSmartPointer<lsDomain<T, D>> passedLevelSet,
            lsSmartPointer<lsMesh<T>> passedMesh, bool passedOnlyDefined = true,

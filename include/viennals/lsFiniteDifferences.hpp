@@ -21,7 +21,7 @@ class lsFiniteDifferences {
   template <class V> static V square(V x) { return x * x; }
 
 public:
-  lsFiniteDifferences() {};
+  lsFiniteDifferences(){};
 
   static unsigned getNumberOfValues(DifferentiationSchemeEnum s) {
     switch (s) {

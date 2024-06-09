@@ -272,7 +272,7 @@ public:
                      lsBooleanOperationEnum passedOperation =
                          lsBooleanOperationEnum::INTERSECT)
       : levelSetA(passedlsDomainA), levelSetB(passedlsDomainB),
-        operation(passedOperation) {};
+        operation(passedOperation){};
 
   /// Set which level set to perform the boolean operation on.
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {

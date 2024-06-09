@@ -21,12 +21,12 @@ public:
   lsReduce() {}
 
   lsReduce(lsSmartPointer<lsDomain<T, D>> passedlsDomain)
-      : levelSet(passedlsDomain) {};
+      : levelSet(passedlsDomain){};
 
   lsReduce(lsSmartPointer<lsDomain<T, D>> passedlsDomain, int passedWidth,
            bool passedNoNewSegment = false)
       : levelSet(passedlsDomain), width(passedWidth),
-        noNewSegment(passedNoNewSegment) {};
+        noNewSegment(passedNoNewSegment){};
 
   void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
     levelSet = passedlsDomain;
