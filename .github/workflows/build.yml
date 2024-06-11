@@ -22,10 +22,10 @@ jobs:
         include:
           - os: ubuntu-latest
             config: Release
-            container: ghcr.io/viennatools/vienna-builder:vtk
+            container: ghcr.io/viennatools/vienna-builder:suite
           - os: ubuntu-latest
             config: Debug
-            container: ghcr.io/viennatools/vienna-builder:vtk
+            container: ghcr.io/viennatools/vienna-builder:suite
 
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
@@ -51,4 +51,4 @@ jobs:
         run: cmake -DVIENNALS_BUILD_TESTS=ON -B build && cmake --build build --config ${{ matrix.config }}
 
       - name: 🧪 Test
-        run: ctest -E "Benchmark|Performance" -C ${{ matrix.config }} --test-dir build
+        run: ctest --output-on-failure -E "Benchmark|Performance" -C ${{ matrix.config }} --test-dir build

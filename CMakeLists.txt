@@ -109,7 +109,7 @@ CPMAddPackage(
 
 CPMAddPackage(
   NAME PackageProject
-  VERSION 1.11.1
+  VERSION 1.11.2
   GIT_REPOSITORY "https://github.com/TheLartians/PackageProject.cmake"
   EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 
@@ -127,11 +127,6 @@ if(VIENNALS_USE_VTK AND VIENNALS_VTK_PYTHON_LIBS)
   target_link_libraries(${PROJECT_NAME} INTERFACE VTK::PythonLibs)
 elseif(VIENNALS_USE_VTK)
   enable_language(C)
-
-  find_package(VTK QUIET)
-  set(VIENNALS_SYSTEM_VTK
-      ${VTK_FOUND}
-      CACHE INTERNAL "")
 
   CPMFindPackage(
     NAME VTK
@@ -192,16 +187,6 @@ endif()
 
 if(VIENNALS_ENABLE_SANITIZER)
   viennacore_enable_sanitizer()
-endif()
-
-# --------------------------------------------------------------------------------------------------------
-# Check need for environment setups
-# --------------------------------------------------------------------------------------------------------
-
-if(NOT VIENNALS_VTK_PYTHON_LIBS AND (NOT VIENNALS_SYSTEM_VTK OR VIENNALS_PACKAGE_PYTHON))
-  set(VIENNALS_VTK_ENV
-      ON
-      CACHE INTERNAL "")
 endif()
 
 # --------------------------------------------------------------------------------------------------------

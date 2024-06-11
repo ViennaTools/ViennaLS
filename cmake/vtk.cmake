@@ -1,6 +1,11 @@
 macro(setup_vtk_env TARGET OUTPUT)
   message(STATUS "[ViennaLS] Setting up VTK-Environment for ${TARGET}")
 
+  if(NOT TARGET vtksys)
+    message(WARNING "[ViennaLS] Could not find VTK-Target")
+    return()
+  endif()
+
   # We expect all of the VTK binaries to be present in the same directory to which "vtksys" is
   # built. This is currently the case, and has been the case for prior vtk versions - However we
   # should keep an eye on this.

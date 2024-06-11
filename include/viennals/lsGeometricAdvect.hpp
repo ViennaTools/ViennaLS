@@ -469,7 +469,7 @@ public:
           }
         }
       } // domainBounds for
-    } // parallel region
+    }   // parallel region
 
     // copy all points into the first vector
     {
