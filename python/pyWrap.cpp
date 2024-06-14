@@ -54,6 +54,7 @@
 #include <lsWriteVisualizationMesh.hpp>
 #include <lsWriter.hpp>
 
+#include <vcLogger.hpp>
 #include <vcSmartPointer.hpp>
 
 using namespace viennals;
@@ -146,6 +147,33 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
 
   // wrap omp_set_num_threads to control number of threads
   module.def("setNumThreads", &omp_set_num_threads);
+
+  // Logger
+  pybind11::enum_<LogLevel>(module, "LogLevel", pybind11::module_local())
+      .value("ERROR", LogLevel::ERROR)
+      .value("WARNING", LogLevel::WARNING)
+      .value("INFO", LogLevel::INFO)
+      .value("TIMING", LogLevel::TIMING)
+      .value("INTERMEDIATE", LogLevel::INTERMEDIATE)
+      .value("DEBUG", LogLevel::DEBUG)
+      .export_values();
+
+  pybind11::class_<Logger, SmartPointer<Logger>>(module, "Logger",
+                                                 pybind11::module_local())
+      .def_static("setLogLevel", &Logger::setLogLevel)
+      .def_static("getLogLevel", &Logger::getLogLevel)
+      .def_static("getInstance", &Logger::getInstance,
+                  pybind11::return_value_policy::reference)
+      .def("addDebug", &Logger::addDebug)
+      .def("addTiming",
+           (Logger & (Logger::*)(std::string, double)) & Logger::addTiming)
+      .def("addTiming", (Logger & (Logger::*)(std::string, double, double)) &
+                            Logger::addTiming)
+      .def("addInfo", &Logger::addInfo)
+      .def("addWarning", &Logger::addWarning)
+      .def("addError", &Logger::addError, pybind11::arg("s"),
+           pybind11::arg("shouldAbort") = true)
+      .def("print", [](Logger &instance) { instance.print(std::cout); });
 
   // Advect
   pybind11::class_<Advect<T, D>, SmartPointer<Advect<T, D>>>(module, "Advect")

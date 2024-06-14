@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaLS
   LANGUAGES CXX
-  VERSION 3.2.0)
+  VERSION 4.0.0)
 
 # --------------------------------------------------------------------------------------------------------
 # Library options
@@ -103,9 +103,10 @@ include(cmake/vtk.cmake)
 
 CPMAddPackage(
   NAME ViennaCore
-  GIT_TAG main # TODO: Create Tag
+  GIT_TAG v1.0.0
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaCore"
-  OPTIONS "VIENNACORE_FORMAT_EXCLUDE docs/")
+  OPTIONS "VIENNACORE_FORMAT_EXCLUDE docs/"
+  EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 
 CPMAddPackage(
   NAME PackageProject

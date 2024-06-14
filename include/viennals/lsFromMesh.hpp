@@ -21,7 +21,7 @@ template <class T, int D> class FromMesh {
   bool sortPointList = true;
 
 public:
-  FromMesh(){};
+  FromMesh() {};
 
   FromMesh(SmartPointer<Domain<T, D>> passedLevelSet,
            const SmartPointer<Mesh<T>> passedMesh)

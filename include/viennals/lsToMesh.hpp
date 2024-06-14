@@ -26,7 +26,7 @@ template <class T, int D> class ToMesh {
   static constexpr long long maxDomainExtent = 1e6;
 
 public:
-  ToMesh(){};
+  ToMesh() {};
 
   ToMesh(const SmartPointer<Domain<T, D>> passedLevelSet,
          SmartPointer<Mesh<T>> passedMesh, bool passedOnlyDefined = true,
