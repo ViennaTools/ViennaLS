@@ -54,7 +54,7 @@ public:
     }
 
     auto voidMarkers =
-        levelSet->getPointData().getScalarData("VoidPointMarkers");
+        levelSet->getPointData().getScalarData("VoidPointMarkers", true);
     if (voidMarkers == nullptr) {
       Logger::getInstance()
           .addWarning("RemoveStrayPoints: No scalar data for void point "

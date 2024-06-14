@@ -398,7 +398,7 @@ template <class T, int D> class Advect {
       MarkVoidPoints<T, D>(levelSets.back()).apply();
       auto &pointData = levelSets.back()->getPointData();
       voidMarkerPointer =
-          pointData.getScalarData(MarkVoidPoints<T, D>::voidPointLabel);
+          pointData.getScalarData(MarkVoidPoints<T, D>::voidPointLabel, true);
       if (voidMarkerPointer == nullptr) {
         Logger::getInstance()
             .addWarning("Advect: Cannot find void point markers. Not "

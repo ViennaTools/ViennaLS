@@ -303,7 +303,7 @@ public:
     }
 
     auto &pointData = domain->getPointData();
-    auto voidMarkersPointer = pointData.getScalarData(voidPointLabel);
+    auto voidMarkersPointer = pointData.getScalarData(voidPointLabel, true);
     // if vector data does not exist
     if (voidMarkersPointer == nullptr) {
       pointData.insertNextScalarData(voidPointMarkers, voidPointLabel);
@@ -313,7 +313,7 @@ public:
 
     if (saveComponents) {
       auto componentMarkersPointer =
-          pointData.getScalarData("ConnectedComponentId");
+          pointData.getScalarData("ConnectedComponentId", true);
       // if vector data does not exist
       if (componentMarkersPointer == nullptr) {
         pointData.insertNextScalarData(componentMarkers,

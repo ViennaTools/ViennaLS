@@ -30,9 +30,7 @@ int main(int argc, char *argv[]) {
         mesh->getCellData().getScalarData("Material");
 
     std::vector<int> translator = {3, 2, 4, 7, 7, 6, 5, 7, 1, 0};
-    if (materialData == nullptr) {
-      std::cout << "Could not get material data" << std::endl;
-    } else {
+    if (materialData != nullptr) {
       for (auto &cell : *materialData) {
         cell = translator[std::round(cell)];
       }

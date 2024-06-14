@@ -71,7 +71,7 @@ public:
 
     // insert into pointData of levelSet
     auto &pointData = levelSet->getPointData();
-    auto vectorDataPointer = pointData.getScalarData(featureMarkersLabel);
+    auto vectorDataPointer = pointData.getScalarData(featureMarkersLabel, true);
     // if it does not exist, insert new feature vector
     if (vectorDataPointer == nullptr) {
       pointData.insertNextScalarData(flaggedCells, featureMarkersLabel);

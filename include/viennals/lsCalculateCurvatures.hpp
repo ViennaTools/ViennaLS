@@ -173,7 +173,8 @@ public:
     // insert into pointData of levelSet
     if (calculateMean) {
       auto &pointData = levelSet->getPointData();
-      auto scalarDataPointer = pointData.getScalarData(meanCurvatureLabel);
+      auto scalarDataPointer =
+          pointData.getScalarData(meanCurvatureLabel, true);
       // if it does not exist, insert new normals vector
       if (scalarDataPointer == nullptr) {
         pointData.insertNextScalarData(meanCurvaturesVector[0],
@@ -186,7 +187,8 @@ public:
 
     if (calculateGauss) {
       auto &pointData = levelSet->getPointData();
-      auto scalarDataPointer = pointData.getScalarData(gaussianCurvatureLabel);
+      auto scalarDataPointer =
+          pointData.getScalarData(gaussianCurvatureLabel, true);
       // if it does not exist, insert new normals vector
       if (scalarDataPointer == nullptr) {
         pointData.insertNextScalarData(gaussCurvaturesVector[0],

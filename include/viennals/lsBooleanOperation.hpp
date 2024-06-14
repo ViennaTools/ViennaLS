@@ -150,7 +150,7 @@ private:
       // scalars
       for (unsigned i = 0; i < AData.getScalarDataSize(); ++i) {
         auto scalarDataLabel = AData.getScalarDataLabel(i);
-        auto BPointer = BData.getScalarData(scalarDataLabel);
+        auto BPointer = BData.getScalarData(scalarDataLabel, true);
         if (BPointer != nullptr) {
           auto APointer = AData.getScalarData(i);
           // copy all data into the new scalarData

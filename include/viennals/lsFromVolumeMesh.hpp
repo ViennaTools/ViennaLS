@@ -70,7 +70,7 @@ public:
     // get the unique material numbers for explicit booling
     std::vector<int> materialInts;
     typename PointData<T>::ScalarDataType *materialData =
-        mesh->cellData.getScalarData("Material");
+        mesh->cellData.getScalarData("Material", true);
     if (materialData != nullptr) {
       // make unique list of materialIds
       materialInts =

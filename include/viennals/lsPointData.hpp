@@ -95,27 +95,31 @@ public:
     return indexPointerOrNull(scalarData, index);
   }
 
-  ScalarDataType *getScalarData(std::string searchLabel) {
+  ScalarDataType *getScalarData(std::string searchLabel,
+                                bool noWarning = false) {
     if (int i = getScalarDataIndex(searchLabel); i != -1) {
       return &(scalarData[i]);
     }
-    Logger::getInstance()
-        .addWarning("PointData attempted to access scalar data labeled '" +
-                    searchLabel +
-                    "', which does not exist. Returning nullptr instead.")
-        .print();
+    if (!noWarning)
+      Logger::getInstance()
+          .addWarning("PointData attempted to access scalar data labeled '" +
+                      searchLabel +
+                      "', which does not exist. Returning nullptr instead.")
+          .print();
     return nullptr;
   }
 
-  const ScalarDataType *getScalarData(std::string searchLabel) const {
+  const ScalarDataType *getScalarData(std::string searchLabel,
+                                      bool noWarning = false) const {
     if (int i = getScalarDataIndex(searchLabel); i != -1) {
       return &(scalarData[i]);
     }
-    Logger::getInstance()
-        .addWarning("PointData attempted to access scalar data labeled '" +
-                    searchLabel +
-                    "', which does not exist. Returning nullptr instead.")
-        .print();
+    if (!noWarning)
+      Logger::getInstance()
+          .addWarning("PointData attempted to access scalar data labeled '" +
+                      searchLabel +
+                      "', which does not exist. Returning nullptr instead.")
+          .print();
     return nullptr;
   }
 
@@ -152,27 +156,31 @@ public:
     return indexPointerOrNull(vectorData, index);
   }
 
-  VectorDataType *getVectorData(std::string searchLabel) {
+  VectorDataType *getVectorData(std::string searchLabel,
+                                bool noWarning = false) {
     if (int i = getVectorDataIndex(searchLabel); i != -1) {
       return &(vectorData[i]);
     }
-    Logger::getInstance()
-        .addWarning("PointData attempted to access scalar data labeled '" +
-                    searchLabel +
-                    "', which does not exist. Returning nullptr instead.")
-        .print();
+    if (!noWarning)
+      Logger::getInstance()
+          .addWarning("PointData attempted to access vector data labeled '" +
+                      searchLabel +
+                      "', which does not exist. Returning nullptr instead.")
+          .print();
     return nullptr;
   }
 
-  const VectorDataType *getVectorData(std::string searchLabel) const {
+  const VectorDataType *getVectorData(std::string searchLabel,
+                                      bool noWarning = false) const {
     if (int i = getVectorDataIndex(searchLabel); i != -1) {
       return &(vectorData[i]);
     }
-    Logger::getInstance()
-        .addWarning("PointData attempted to access scalar data labeled '" +
-                    searchLabel +
-                    "', which does not exist. Returning nullptr instead.")
-        .print();
+    if (!noWarning)
+      Logger::getInstance()
+          .addWarning("PointData attempted to access vector data labeled '" +
+                      searchLabel +
+                      "', which does not exist. Returning nullptr instead.")
+          .print();
     return nullptr;
   }
 
