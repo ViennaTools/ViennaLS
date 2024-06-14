@@ -764,16 +764,16 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("getScalarData",
            (PointData<T>::ScalarDataType * (PointData<T>::*)(int)) &
                PointData<T>::getScalarData)
-      .def("getScalarData",
-           (PointData<T>::ScalarDataType * (PointData<T>::*)(std::string)) &
-               PointData<T>::getScalarData)
+      .def("getScalarData", (PointData<T>::ScalarDataType *
+                             (PointData<T>::*)(std::string, bool)) &
+                                PointData<T>::getScalarData)
       .def("getScalarDataLabel", &PointData<T>::getScalarDataLabel)
       .def("getVectorData",
            (PointData<T>::VectorDataType * (PointData<T>::*)(int)) &
                PointData<T>::getVectorData)
-      .def("getVectorData",
-           (PointData<T>::VectorDataType * (PointData<T>::*)(std::string)) &
-               PointData<T>::getVectorData)
+      .def("getVectorData", (PointData<T>::VectorDataType *
+                             (PointData<T>::*)(std::string, bool)) &
+                                PointData<T>::getVectorData)
       .def("getVectorDataLabel", &PointData<T>::getVectorDataLabel);
 
   // MaterialMap

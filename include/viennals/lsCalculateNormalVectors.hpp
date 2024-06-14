@@ -142,7 +142,7 @@ public:
 
     // insert into pointData of levelSet
     auto &pointData = levelSet->getPointData();
-    auto vectorDataPointer = pointData.getVectorData(normalVectorsLabel);
+    auto vectorDataPointer = pointData.getVectorData(normalVectorsLabel, true);
     // if it does not exist, insert new normals vector
     if (vectorDataPointer == nullptr) {
       pointData.insertNextVectorData(normalVectorsVector[0],

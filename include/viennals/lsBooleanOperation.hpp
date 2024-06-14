@@ -168,7 +168,7 @@ private:
       // vectors
       for (unsigned i = 0; i < AData.getVectorDataSize(); ++i) {
         auto vectorDataLabel = AData.getVectorDataLabel(i);
-        auto BPointer = BData.getVectorData(vectorDataLabel);
+        auto BPointer = BData.getVectorData(vectorDataLabel, true);
         if (BPointer != nullptr) {
           auto APointer = AData.getVectorData(i);
           // copy all data into the new vectorData
