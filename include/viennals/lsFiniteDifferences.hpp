@@ -22,7 +22,7 @@ class FiniteDifferences {
   template <class V> static V square(V x) { return x * x; }
 
 public:
-  FiniteDifferences() {};
+  FiniteDifferences(){};
 
   static unsigned getNumberOfValues(DifferentiationSchemeEnum s) {
     switch (s) {
