@@ -1,5 +1,4 @@
-#ifndef LS_TO_MESH_HPP
-#define LS_TO_MESH_HPP
+#pragma once
 
 #include <lsPreCompileMacros.hpp>
 
@@ -9,33 +8,37 @@
 #include <lsDomain.hpp>
 #include <lsMesh.hpp>
 
+namespace viennals {
+
+using namespace viennacore;
+
 /// Extract the regular grid, on which the level set values are
-/// defined, to an explicit lsMesh<>. The Vertices will contain
+/// defined, to an explicit Mesh<>. The Vertices will contain
 /// the level set value stored at its location. (This is very useful
 /// for debugging)
-template <class T, int D> class lsToMesh {
-  typedef typename lsDomain<T, D>::DomainType hrleDomainType;
+template <class T, int D> class ToMesh {
+  typedef typename Domain<T, D>::DomainType hrleDomainType;
 
-  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
-  lsSmartPointer<lsMesh<T>> mesh = nullptr;
+  SmartPointer<Domain<T, D>> levelSet = nullptr;
+  SmartPointer<Mesh<T>> mesh = nullptr;
   bool onlyDefined = true;
   bool onlyActive = false;
   static constexpr long long maxDomainExtent = 1e6;
 
 public:
-  lsToMesh(){};
+  ToMesh(){};
 
-  lsToMesh(const lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-           lsSmartPointer<lsMesh<T>> passedMesh, bool passedOnlyDefined = true,
-           bool passedOnlyActive = false)
+  ToMesh(const SmartPointer<Domain<T, D>> passedLevelSet,
+         SmartPointer<Mesh<T>> passedMesh, bool passedOnlyDefined = true,
+         bool passedOnlyActive = false)
       : levelSet(passedLevelSet), mesh(passedMesh),
         onlyDefined(passedOnlyDefined), onlyActive(passedOnlyActive) {}
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+  void setLevelSet(SmartPointer<Domain<T, D>> passedlsDomain) {
     levelSet = passedlsDomain;
   }
 
-  void setMesh(lsSmartPointer<lsMesh<T>> passedMesh) { mesh = passedMesh; }
+  void setMesh(SmartPointer<Mesh<T>> passedMesh) { mesh = passedMesh; }
 
   void setOnlyDefined(bool passedOnlyDefined) {
     onlyDefined = passedOnlyDefined;
@@ -45,15 +48,13 @@ public:
 
   void apply() {
     if (levelSet == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No level set was passed to lsToMesh.")
+      Logger::getInstance()
+          .addWarning("No level set was passed to ToMesh.")
           .print();
       return;
     }
     if (mesh == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No mesh was passed to lsToMesh.")
-          .print();
+      Logger::getInstance().addWarning("No mesh was passed to ToMesh.").print();
       return;
     }
 
@@ -69,7 +70,7 @@ public:
     std::vector<T> subLS;
     // point data
     const auto &pointData = levelSet->getPointData();
-    using DomainType = lsDomain<T, D>;
+    using DomainType = Domain<T, D>;
     using ScalarDataType = typename DomainType::PointDataType::ScalarDataType;
     using VectorDataType = typename DomainType::PointDataType::VectorDataType;
 
@@ -128,8 +129,8 @@ public:
           const auto &currentData = *dataPointer;
           scalarData[i].push_back(currentData[it.getPointId()]);
         } else {
-          lsMessage::getInstance()
-              .addWarning("lsToMesh: Tried to access out of bounds scalarData! "
+          Logger::getInstance()
+              .addWarning("ToMesh: Tried to access out of bounds scalarData! "
                           "Ignoring.")
               .print();
           break;
@@ -142,8 +143,8 @@ public:
           const auto &currentData = *dataPointer;
           vectorData[i].push_back(currentData[it.getPointId()]);
         } else {
-          lsMessage::getInstance()
-              .addWarning("lsToMesh: Tried to access out of bounds vectorData! "
+          Logger::getInstance()
+              .addWarning("ToMesh: Tried to access out of bounds vectorData! "
                           "Ignoring.")
               .print();
           break;
@@ -169,6 +170,6 @@ public:
 };
 
 // add all template specialisations for this class
-PRECOMPILE_PRECISION_DIMENSION(lsToMesh)
+PRECOMPILE_PRECISION_DIMENSION(ToMesh)
 
-#endif // LS_TO_MESH_HPP
+} // namespace viennals

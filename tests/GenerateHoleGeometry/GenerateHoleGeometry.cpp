@@ -11,6 +11,8 @@
 #include <lsVTKWriter.hpp>
 #include <lsWriteVisualizationMesh.hpp>
 
+namespace ls = viennals;
+
 int main(int argc, char *argv[]) {
   constexpr int D = 3;
   typedef double NumericType;
@@ -28,15 +30,15 @@ int main(int argc, char *argv[]) {
     bounds[5] = extent;
   }
 
-  typename lsDomain<NumericType, D>::BoundaryType boundaryCons[D];
+  typename ls::Domain<NumericType, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D - 1; ++i) {
     boundaryCons[i] =
-        lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+        ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   }
   boundaryCons[D - 1] =
-      lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
+      ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  auto substrate = lsSmartPointer<lsDomain<NumericType, D>>::New(
+  auto substrate = ls::SmartPointer<ls::Domain<NumericType, D>>::New(
       bounds, boundaryCons, gridDelta);
 
   {
@@ -45,42 +47,42 @@ int main(int argc, char *argv[]) {
     planeNormal[D - 1] = 1.;
 
     auto plane =
-        lsSmartPointer<lsPlane<NumericType, D>>::New(origin, planeNormal);
-    lsMakeGeometry<NumericType, D>(substrate, plane).apply();
+        ls::SmartPointer<ls::Plane<NumericType, D>>::New(origin, planeNormal);
+    ls::MakeGeometry<NumericType, D>(substrate, plane).apply();
   }
   {
     std::cout << "Writing substrate" << std::endl;
-    auto mesh = lsSmartPointer<lsMesh<>>::New();
-    lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, lsFileFormatEnum::VTP, "substrate.vtp").apply();
+    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    ls::ToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
+    ls::VTKWriter(mesh, ls::FileFormatEnum::VTP, "substrate.vtp").apply();
   }
   {
     // make LS from trench mesh and remove from substrate
-    auto hole = lsSmartPointer<lsDomain<NumericType, D>>::New(
+    auto hole = ls::SmartPointer<ls::Domain<NumericType, D>>::New(
         bounds, boundaryCons, gridDelta);
 
     NumericType origin[D] = {0., 0., -depth};
     NumericType axisDirection[D] = {0., 0., 1.};
 
-    auto cylinder = lsSmartPointer<lsCylinder<NumericType, D>>::New(
+    auto cylinder = ls::SmartPointer<ls::Cylinder<NumericType, D>>::New(
         origin, axisDirection, depth, baseRadius, topRadius);
-    lsMakeGeometry<NumericType, D>(hole, cylinder).apply();
+    ls::MakeGeometry<NumericType, D>(hole, cylinder).apply();
     {
       std::cout << "Writing hole" << std::endl;
-      auto mesh = lsSmartPointer<lsMesh<>>::New();
-      lsToSurfaceMesh<NumericType, D>(hole, mesh).apply();
-      lsVTKWriter(mesh, lsFileFormatEnum::VTP, "hole.vtp").apply();
+      auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+      ls::ToSurfaceMesh<NumericType, D>(hole, mesh).apply();
+      ls::VTKWriter(mesh, ls::FileFormatEnum::VTP, "hole.vtp").apply();
     }
 
-    lsBooleanOperation<NumericType, D>(
-        substrate, hole, lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
+    ls::BooleanOperation<NumericType, D>(
+        substrate, hole, ls::BooleanOperationEnum::RELATIVE_COMPLEMENT)
         .apply();
   }
   {
     std::cout << "Writing output" << std::endl;
-    auto mesh = lsSmartPointer<lsMesh<>>::New();
-    lsToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-    lsVTKWriter(mesh, lsFileFormatEnum::VTP, "surface_i.vtp").apply();
+    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    ls::ToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
+    ls::VTKWriter(mesh, ls::FileFormatEnum::VTP, "surface_i.vtp").apply();
   }
 
   return 0;

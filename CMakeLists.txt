@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaLS
   LANGUAGES CXX
-  VERSION 3.2.0)
+  VERSION 4.0.0)
 
 # --------------------------------------------------------------------------------------------------------
 # Library options
@@ -102,10 +102,11 @@ include(cmake/cpm.cmake)
 include(cmake/vtk.cmake)
 
 CPMAddPackage(
-  NAME Core
-  GIT_TAG main # TODO: Create Tag
+  NAME ViennaCore
+  GIT_TAG v1.0.0
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaCore"
-  OPTIONS "VIENNA_CORE_FORMAT_EXCLUDE docs/")
+  OPTIONS "VIENNACORE_FORMAT_EXCLUDE docs/"
+  EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 
 CPMAddPackage(
   NAME PackageProject
@@ -120,7 +121,7 @@ CPMFindPackage(
   EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 
 find_package(OpenMP REQUIRED)
-target_link_libraries(${PROJECT_NAME} INTERFACE OpenMP::OpenMP_CXX ViennaHRLE)
+target_link_libraries(${PROJECT_NAME} INTERFACE OpenMP::OpenMP_CXX ViennaHRLE ViennaCore)
 
 if(VIENNALS_USE_VTK AND VIENNALS_VTK_PYTHON_LIBS)
   import_vtk_python()

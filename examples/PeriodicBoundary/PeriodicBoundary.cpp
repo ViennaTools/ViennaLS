@@ -17,8 +17,10 @@
   \example PeriodicBoundary.cpp
 */
 
+namespace ls = viennals;
+
 // implement own velocity field
-class velocityField : public lsVelocityField<double> {
+class velocityField : public ls::VelocityField<double> {
 public:
   double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
                            int /*material*/,
@@ -46,48 +48,50 @@ int main() {
   double gridDelta = 0.5;
 
   double bounds[2 * D] = {-extent, extent, -extent, extent, -extent, extent};
-  lsDomain<double, D>::BoundaryType boundaryCons[D];
-  boundaryCons[0] = lsDomain<double, D>::BoundaryType::PERIODIC_BOUNDARY;
-  boundaryCons[1] = lsDomain<double, D>::BoundaryType::PERIODIC_BOUNDARY;
-  boundaryCons[2] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
+  ls::Domain<double, D>::BoundaryType boundaryCons[D];
+  boundaryCons[0] = ls::Domain<double, D>::BoundaryType::PERIODIC_BOUNDARY;
+  boundaryCons[1] = ls::Domain<double, D>::BoundaryType::PERIODIC_BOUNDARY;
+  boundaryCons[2] = ls::Domain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  auto substrate =
-      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  auto substrate = ls::SmartPointer<ls::Domain<double, D>>::New(
+      bounds, boundaryCons, gridDelta);
 
   {
     double origin[3] = {0., 0., 0.};
     double planeNormal[3] = {0., 0., 1.};
-    auto plane = lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal);
-    lsMakeGeometry<double, D>(substrate, plane).apply();
+    auto plane =
+        ls::SmartPointer<ls::Plane<double, D>>::New(origin, planeNormal);
+    ls::MakeGeometry<double, D>(substrate, plane).apply();
   }
 
   {
     // create spheres used for booling
     std::cout << "Creating pillar..." << std::endl;
-    auto pillar = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
-                                                           gridDelta);
+    auto pillar = ls::SmartPointer<ls::Domain<double, D>>::New(
+        bounds, boundaryCons, gridDelta);
     double lowerCorner[D] = {15, 15, -1};
     double upperCorner[D] = {25, 25, 10};
-    auto box = lsSmartPointer<lsBox<double, D>>::New(lowerCorner, upperCorner);
-    lsMakeGeometry<double, D>(pillar, box).apply();
-    auto mesh = lsSmartPointer<lsMesh<>>::New();
-    lsToSurfaceMesh<double, D>(pillar, mesh).apply();
-    lsVTKWriter<double>(mesh, "pillar.vtp").apply();
-    lsBooleanOperation<double, D> boolOp(substrate, pillar,
-                                         lsBooleanOperationEnum::UNION);
+    auto box =
+        ls::SmartPointer<ls::Box<double, D>>::New(lowerCorner, upperCorner);
+    ls::MakeGeometry<double, D>(pillar, box).apply();
+    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    ls::ToSurfaceMesh<double, D>(pillar, mesh).apply();
+    ls::VTKWriter<double>(mesh, "pillar.vtp").apply();
+    ls::BooleanOperation<double, D> boolOp(substrate, pillar,
+                                           ls::BooleanOperationEnum::UNION);
     boolOp.apply();
   }
 
   // Now etch the substrate isotropically
-  auto velocities = lsSmartPointer<velocityField>::New();
+  auto velocities = ls::SmartPointer<velocityField>::New();
 
   std::cout << "Advecting" << std::endl;
 
-  lsAdvect<double, D> advectionKernel;
+  ls::Advect<double, D> advectionKernel;
   advectionKernel.insertNextLevelSet(substrate);
   advectionKernel.setVelocityField(velocities);
   advectionKernel.setIntegrationScheme(
-      lsIntegrationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER);
+      ls::IntegrationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER);
 
   // Now advect the level set 50 times, outputting every
   // advection step. Save the physical time that
@@ -97,9 +101,9 @@ int main() {
   for (unsigned i = 0; i < numberOfSteps; ++i) {
     std::cout << "\rAdvection step " + std::to_string(i) + " / "
               << numberOfSteps << std::flush;
-    auto mesh = lsSmartPointer<lsMesh<>>::New();
-    lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-    lsVTKWriter<double>(mesh, "pillar-" + std::to_string(i) + ".vtp").apply();
+    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    ls::ToSurfaceMesh<double, D>(substrate, mesh).apply();
+    ls::VTKWriter<double>(mesh, "pillar-" + std::to_string(i) + ".vtp").apply();
 
     advectionKernel.apply();
     passedTime += advectionKernel.getAdvectedTime();

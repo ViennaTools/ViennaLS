@@ -1,25 +1,26 @@
-#ifndef LS_TRANSFORM_MESH_HPP
-#define LS_TRANSFORM_MESH_HPP
+#pragma once
 
 #include <cmath>
 
 #include <hrleVectorType.hpp>
 
 #include <lsMesh.hpp>
-#include <lsMessage.hpp>
-#include <lsSmartPointer.hpp>
+
+namespace viennals {
+
+using namespace viennacore;
 
 /// Enumeration for the different types of
 /// transformation operations
-enum struct lsTransformEnum : unsigned {
+enum struct TransformEnum : unsigned {
   TRANSLATION = 0,
   ROTATION = 1,
   SCALE = 2
 };
 
-template <class T> class lsTransformMesh {
-  lsSmartPointer<lsMesh<T>> mesh = nullptr;
-  lsTransformEnum transform = lsTransformEnum::TRANSLATION;
+template <class T> class TransformMesh {
+  SmartPointer<Mesh<T>> mesh = nullptr;
+  TransformEnum transform = TransformEnum::TRANSLATION;
   hrleVectorType<double, 3> transformVector{};
   double angle = 0.0;
   double numericEps = 1e-6;
@@ -79,8 +80,8 @@ template <class T> class lsTransformMesh {
 
   void scaleMesh() {
     if (!isValidVector()) {
-      lsMessage::getInstance()
-          .addWarning("lsTransformMesh: TransformVector is not valid!")
+      Logger::getInstance()
+          .addWarning("TransformMesh: TransformVector is not valid!")
           .print();
       return;
     }
@@ -92,46 +93,44 @@ template <class T> class lsTransformMesh {
   }
 
 public:
-  lsTransformMesh(
-      lsSmartPointer<lsMesh<T>> passedMesh,
-      lsTransformEnum passedTransform = lsTransformEnum::TRANSLATION,
-      std::array<double, 3> passedTransformVector = {},
-      double passedAngle = 0.0)
+  TransformMesh(SmartPointer<Mesh<T>> passedMesh,
+                TransformEnum passedTransform = TransformEnum::TRANSLATION,
+                std::array<double, 3> passedTransformVector = {},
+                double passedAngle = 0.0)
       : mesh(passedMesh), transform(passedTransform),
         transformVector(passedTransformVector), angle(passedAngle) {}
 
-  lsTransformMesh(
-      lsSmartPointer<lsMesh<T>> passedMesh,
-      lsTransformEnum passedTransform = lsTransformEnum::TRANSLATION,
-      hrleVectorType<double, 3> passedTransformVector = {},
-      double passedAngle = 0.0)
+  TransformMesh(SmartPointer<Mesh<T>> passedMesh,
+                TransformEnum passedTransform = TransformEnum::TRANSLATION,
+                hrleVectorType<double, 3> passedTransformVector = {},
+                double passedAngle = 0.0)
       : mesh(passedMesh), transform(passedTransform),
         transformVector(passedTransformVector), angle(passedAngle) {}
 
   void apply() {
     if (mesh == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No mesh passed to lsTransformMesh. Not transforming!")
+      Logger::getInstance()
+          .addWarning("No mesh passed to TransformMesh. Not transforming!")
           .print();
     }
 
     switch (transform) {
-    case lsTransformEnum::TRANSLATION:
+    case TransformEnum::TRANSLATION:
       translateMesh();
       break;
-    case lsTransformEnum::ROTATION:
+    case TransformEnum::ROTATION:
       rotateMesh();
       break;
-    case lsTransformEnum::SCALE:
+    case TransformEnum::SCALE:
       scaleMesh();
       break;
     default:
-      lsMessage::getInstance()
+      Logger::getInstance()
           .addWarning(
-              "Invalid tranform passed to lsTransformMesh. Not transforming!")
+              "Invalid transform passed to TransformMesh. Not transforming!")
           .print();
     }
   }
 };
 
-#endif // LS_TRANSFORM_MESH_HPP
+} // namespace viennals

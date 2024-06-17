@@ -7,9 +7,11 @@
 #include <lsVTKWriter.hpp>
 
 /**
-  Minimal example showing how to rotate an lsMesh<>
+  Minimal example showing how to rotate an Mesh<>
   \example RotateMesh.cpp
 */
+
+namespace ls = viennals;
 
 int main() {
   using NumericType = double;
@@ -17,32 +19,32 @@ int main() {
 
   omp_set_num_threads(4);
 
-  auto levelSet = lsSmartPointer<lsDomain<NumericType, D>>::New();
-  auto mesh = lsSmartPointer<lsMesh<>>::New();
+  auto levelSet = ls::SmartPointer<ls::Domain<NumericType, D>>::New();
+  auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
 
   const NumericType radius = 7.3;
   const hrleVectorType<NumericType, D> min(-50, -25., -25.);
   const hrleVectorType<NumericType, D> max(0., 0., 0.);
-  lsMakeGeometry<NumericType, D>(
-      levelSet, lsSmartPointer<lsBox<double, D>>::New(min, max))
+  ls::MakeGeometry<NumericType, D>(
+      levelSet, ls::SmartPointer<ls::Box<double, D>>::New(min, max))
       .apply();
 
   // const hrleVectorType<NumericType, D> centre(5., 10., 0.);
-  // lsMakeGeometry<NumericType, D>(
-  //     levelSet, lsSmartPointer<lsSphere<double, D>>::New(centre, radius))
+  // ls::MakeGeometry<NumericType, D>(
+  //     levelSet, ls::SmartPointer<ls::Sphere<double, D>>::New(centre, radius))
   //     .apply();
 
-  lsToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
+  ls::ToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
 
-  lsVTKWriter<double>(mesh, "Initial.vtk").apply();
+  ls::VTKWriter<double>(mesh, "Initial.vtk").apply();
 
-  // auto mesh = lsSmartPointer<lsMesh<>>::New();
+  // auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
   // mesh->insertNextNode({1., 0., 1.});
   hrleVectorType<hrleCoordType, 3> rotAxis{0., 1., 1.};
-  lsTransformMesh<double>(mesh, lsTransformEnum::ROTATION, rotAxis, M_PI_4)
+  ls::TransformMesh<double>(mesh, ls::TransformEnum::ROTATION, rotAxis, M_PI_4)
       .apply();
 
-  lsVTKWriter<double>(mesh, "Rotated.vtk").apply();
+  ls::VTKWriter<double>(mesh, "Rotated.vtk").apply();
 
   return 0;
 }

@@ -1,5 +1,4 @@
-#ifndef LS_REDUCE_HPP
-#define LS_REDUCE_HPP
+#pragma once
 
 #include <lsPreCompileMacros.hpp>
 
@@ -7,28 +6,32 @@
 #include <hrleVectorType.hpp>
 #include <lsDomain.hpp>
 
+namespace viennals {
+
+using namespace viennacore;
+
 /// Reduce the level set size to the specified width.
 /// This means all level set points with value <= 0.5*width
 /// are removed, reducing the memory footprint of the lsDomain.
-template <class T, int D> class lsReduce {
-  typedef typename lsDomain<T, D>::GridType GridType;
-  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
+template <class T, int D> class Reduce {
+  typedef typename Domain<T, D>::GridType GridType;
+  SmartPointer<Domain<T, D>> levelSet = nullptr;
   int width = 0;
   bool noNewSegment = false;
   bool updatePointData = true;
 
 public:
-  lsReduce() {}
+  Reduce() {}
 
-  lsReduce(lsSmartPointer<lsDomain<T, D>> passedlsDomain)
+  Reduce(SmartPointer<Domain<T, D>> passedlsDomain)
       : levelSet(passedlsDomain){};
 
-  lsReduce(lsSmartPointer<lsDomain<T, D>> passedlsDomain, int passedWidth,
-           bool passedNoNewSegment = false)
+  Reduce(SmartPointer<Domain<T, D>> passedlsDomain, int passedWidth,
+         bool passedNoNewSegment = false)
       : levelSet(passedlsDomain), width(passedWidth),
         noNewSegment(passedNoNewSegment){};
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+  void setLevelSet(SmartPointer<Domain<T, D>> passedlsDomain) {
     levelSet = passedlsDomain;
   }
 
@@ -53,8 +56,8 @@ public:
   /// Returns the number of added points
   void apply() {
     if (levelSet == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No level set was passed to lsReduce.")
+      Logger::getInstance()
+          .addWarning("No level set was passed to Reduce.")
           .print();
       return;
     }
@@ -65,9 +68,9 @@ public:
     const T valueLimit = width * 0.5;
 
     auto &grid = levelSet->getGrid();
-    auto newlsDomain = lsSmartPointer<lsDomain<T, D>>::New(levelSet->getGrid());
-    typename lsDomain<T, D>::DomainType &newDomain = newlsDomain->getDomain();
-    typename lsDomain<T, D>::DomainType &domain = levelSet->getDomain();
+    auto newlsDomain = SmartPointer<Domain<T, D>>::New(levelSet->getGrid());
+    typename Domain<T, D>::DomainType &newDomain = newlsDomain->getDomain();
+    typename Domain<T, D>::DomainType &domain = levelSet->getDomain();
 
     if (noNewSegment)
       newDomain.initialize(domain.getSegmentation(), domain.getAllocation());
@@ -99,7 +102,7 @@ public:
               ? newDomain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
-      for (hrleSparseIterator<typename lsDomain<T, D>::DomainType> it(
+      for (hrleSparseIterator<typename Domain<T, D>::DomainType> it(
                domain, startVector);
            it.getStartIndices() < endVector; ++it) {
         T currentValue = it.getValue();
@@ -110,10 +113,10 @@ public:
             newDataSourceIds[p].push_back(it.getPointId());
         } else {
           // TODO: use insertNextUndefinedRunType
-          domainSegment.insertNextUndefinedPoint(
-              it.getStartIndices(), (currentValue < 0)
-                                        ? lsDomain<T, D>::NEG_VALUE
-                                        : lsDomain<T, D>::POS_VALUE);
+          domainSegment.insertNextUndefinedPoint(it.getStartIndices(),
+                                                 (currentValue < 0)
+                                                     ? Domain<T, D>::NEG_VALUE
+                                                     : Domain<T, D>::POS_VALUE);
         }
       }
     }
@@ -134,6 +137,6 @@ public:
 };
 
 // add all template specialisations for this class
-PRECOMPILE_PRECISION_DIMENSION(lsReduce)
+PRECOMPILE_PRECISION_DIMENSION(Reduce)
 
-#endif // LS_REDUCE_HPP
+} // namespace viennals

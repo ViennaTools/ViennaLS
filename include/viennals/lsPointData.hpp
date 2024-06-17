@@ -1,5 +1,4 @@
-#ifndef LS_POINT_DATA_HPP
-#define LS_POINT_DATA_HPP
+#pragma once
 
 #include <lsPreCompileMacros.hpp>
 
@@ -8,12 +7,17 @@
 #include <vector>
 
 #include <lsConcepts.hpp>
-#include <lsMessage.hpp>
+
+#include <vcLogger.hpp>
+
+namespace viennals {
+
+using namespace viennacore;
 
 /// This class holds data associated with points in space.
 template <class T = double,
           lsConcepts::IsFloatingPoint<T> = lsConcepts::assignable>
-class lsPointData {
+class PointData {
 public:
   typedef std::vector<T> ScalarDataType;
   typedef std::vector<std::array<T, 3>> VectorDataType;
@@ -32,8 +36,8 @@ private:
     if (index >= 0 && index < v.size())
       return &(v[index]);
     else
-      lsMessage::getInstance()
-          .addWarning("lsPointData: Tried to access out of bounds index! "
+      Logger::getInstance()
+          .addWarning("PointData: Tried to access out of bounds index! "
                       "Returned nullptr instead.")
           .print();
     return nullptr;
@@ -91,17 +95,31 @@ public:
     return indexPointerOrNull(scalarData, index);
   }
 
-  ScalarDataType *getScalarData(std::string searchLabel) {
+  ScalarDataType *getScalarData(std::string searchLabel,
+                                bool noWarning = false) {
     if (int i = getScalarDataIndex(searchLabel); i != -1) {
       return &(scalarData[i]);
     }
+    if (!noWarning)
+      Logger::getInstance()
+          .addWarning("PointData attempted to access scalar data labeled '" +
+                      searchLabel +
+                      "', which does not exist. Returning nullptr instead.")
+          .print();
     return nullptr;
   }
 
-  const ScalarDataType *getScalarData(std::string searchLabel) const {
+  const ScalarDataType *getScalarData(std::string searchLabel,
+                                      bool noWarning = false) const {
     if (int i = getScalarDataIndex(searchLabel); i != -1) {
       return &(scalarData[i]);
     }
+    if (!noWarning)
+      Logger::getInstance()
+          .addWarning("PointData attempted to access scalar data labeled '" +
+                      searchLabel +
+                      "', which does not exist. Returning nullptr instead.")
+          .print();
     return nullptr;
   }
 
@@ -138,17 +156,31 @@ public:
     return indexPointerOrNull(vectorData, index);
   }
 
-  VectorDataType *getVectorData(std::string searchLabel) {
+  VectorDataType *getVectorData(std::string searchLabel,
+                                bool noWarning = false) {
     if (int i = getVectorDataIndex(searchLabel); i != -1) {
       return &(vectorData[i]);
     }
+    if (!noWarning)
+      Logger::getInstance()
+          .addWarning("PointData attempted to access vector data labeled '" +
+                      searchLabel +
+                      "', which does not exist. Returning nullptr instead.")
+          .print();
     return nullptr;
   }
 
-  const VectorDataType *getVectorData(std::string searchLabel) const {
+  const VectorDataType *getVectorData(std::string searchLabel,
+                                      bool noWarning = false) const {
     if (int i = getVectorDataIndex(searchLabel); i != -1) {
       return &(vectorData[i]);
     }
+    if (!noWarning)
+      Logger::getInstance()
+          .addWarning("PointData attempted to access vector data labeled '" +
+                      searchLabel +
+                      "', which does not exist. Returning nullptr instead.")
+          .print();
     return nullptr;
   }
 
@@ -177,8 +209,8 @@ public:
     vectorDataLabels.erase(vectorDataLabels.begin() + index);
   }
 
-  /// Append the passed lsPointData to this one.
-  void append(const lsPointData &passedData) {
+  /// Append the passed PointData to this one.
+  void append(const PointData &passedData) {
     scalarData.insert(scalarData.end(), passedData.scalarData.begin(),
                       passedData.scalarData.end());
     scalarDataLabels.insert(scalarDataLabels.end(),
@@ -195,7 +227,7 @@ public:
   /// indices passed. The index of the indices vector corresponds to the index
   /// of this data, while the values of indices correspond to the index in
   /// source.
-  void translateFromData(const lsPointData &source,
+  void translateFromData(const PointData &source,
                          const std::vector<unsigned> &indices) {
     // scalars
     for (unsigned j = 0; j < source.getScalarDataSize(); ++j) {
@@ -215,7 +247,7 @@ public:
   /// Same as translateFromData, but the indices are given as a vector, as
   /// is the case when collecting indices during parallel algorithms.
   void translateFromMultiData(
-      const lsPointData &source,
+      const PointData &source,
       const std::vector<std::vector<unsigned>> &indicesVector) {
     // scalars
     for (unsigned j = 0; j < source.getScalarDataSize(); ++j) {
@@ -247,10 +279,10 @@ public:
   /// Return whether this object is empty.
   bool empty() { return scalarData.empty() && vectorData.empty(); }
 
-  /// Serialize lsPointData into a binary stream.
+  /// Serialize PointData into a binary stream.
   std::ostream &serialize(std::ostream &stream) {
     // HEADER
-    // identifier: "lsPointData"
+    // identifier: "PointData"
     // 4 byte: number of scalar data sets
     // 4 byte: number of vector data sets
     stream << "lsPointData";
@@ -310,13 +342,13 @@ public:
     return stream;
   }
 
-  /// Deserialize lsPointData from a binary stream.
+  /// Deserialize PointData from a binary stream.
   std::istream &deserialize(std::istream &stream) {
     char identifier[11];
     stream.read(identifier, 11);
     if (std::string(identifier).compare(0, 11, "lsPointData")) {
-      lsMessage::getInstance()
-          .addWarning("Reading lsPointData from stream failed. Header could "
+      Logger::getInstance()
+          .addWarning("Reading PointData from stream failed. Header could "
                       "not be found.")
           .print();
       return stream;
@@ -345,7 +377,7 @@ public:
         stream.read(reinterpret_cast<char *>(&value),
                     sizeof(typename ScalarDataType::value_type));
       }
-      // now add this scalar data to current lsPointData
+      // now add this scalar data to current PointData
       insertNextScalarData(scalarData,
                            std::string(dataLabel.begin(), dataLabel.end()));
     }
@@ -367,7 +399,7 @@ public:
                       sizeof(typename VectorDataType::value_type::value_type));
         }
       }
-      // now add this scalar data to current lsPointData
+      // now add this scalar data to current PointData
       insertNextVectorData(vectorData,
                            std::string(dataLabel.begin(), dataLabel.end()));
     }
@@ -377,6 +409,6 @@ public:
 };
 
 // add all template specialisations for this class
-PRECOMPILE_PRECISION(lsPointData);
+PRECOMPILE_PRECISION(PointData);
 
-#endif // LS_POINT_DATA_HPP
+} // namespace viennals

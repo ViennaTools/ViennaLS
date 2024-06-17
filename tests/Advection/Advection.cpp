@@ -11,6 +11,8 @@
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
+namespace ls = viennals;
+
 /**
   This example shows how to use lsAdvect to create an egg
   shape from a spherical level set using directional growth rates.
@@ -18,7 +20,7 @@
 */
 
 // implement own velocity field
-class velocityField : public lsVelocityField<double> {
+class velocityField : public ls::VelocityField<double> {
 public:
   double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
                            int /*material*/,
@@ -47,40 +49,40 @@ int main() {
 
   double gridDelta = 0.4999999;
 
-  auto sphere1 = lsSmartPointer<lsDomain<double, D>>::New(gridDelta);
+  auto sphere1 = ls::SmartPointer<ls::Domain<double, D>>::New(gridDelta);
 
   double origin[3] = {5., 0., 0.};
   double radius = 7.3;
 
-  lsMakeGeometry<double, D>(
-      sphere1, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
+  ls::MakeGeometry<double, D>(
+      sphere1, ls::SmartPointer<ls::Sphere<double, D>>::New(origin, radius))
       .apply();
 
   // {
   //   std::cout << "Extracting..." << std::endl;
-  //   auto mesh = lsSmartPointer<lsMesh<>>::New();
-  //   lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
-  //   lsVTKWriter<double>(mesh, "before.vtk").apply();
+  //   auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+  //   ls::ToSurfaceMesh<double, D>(sphere1, mesh).apply();
+  //   ls::VTKWriter<double>(mesh, "before.vtk").apply();
   // }
 
   // instantiate velocities
-  auto velocities = lsSmartPointer<velocityField>::New();
+  auto velocities = ls::SmartPointer<velocityField>::New();
 
   // std::cout << "Advecting" << std::endl;
 
   // Fill point data with original point IDs to see how LS changed
   {
-    typename lsPointData<double>::ScalarDataType pointIDs(
+    typename ls::PointData<double>::ScalarDataType pointIDs(
         sphere1->getNumberOfPoints());
     std::iota(std::begin(pointIDs), std::end(pointIDs), 0);
     sphere1->getPointData().insertNextScalarData(pointIDs, "originalIDs");
   }
 
-  lsAdvect<double, D> advectionKernel;
+  ls::Advect<double, D> advectionKernel;
   advectionKernel.insertNextLevelSet(sphere1);
   advectionKernel.setVelocityField(velocities);
   advectionKernel.setIntegrationScheme(
-      lsIntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
+      ls::IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
   advectionKernel.setSaveAdvectionVelocities(true);
 
   double time = 0.;
@@ -89,26 +91,26 @@ int main() {
     time += advectionKernel.getAdvectedTime();
 
     // std::string fileName = std::to_string(i) + ".vtp";
-    // auto mesh = lsSmartPointer<lsMesh<>>::New();
-    // lsToMesh<double, D>(sphere1, mesh).apply();
-    // lsVTKWriter<double>(mesh, "points_" + fileName).apply();
-    // lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
-    // lsVTKWriter(mesh, "surface_" + fileName).apply();
+    // auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    // ls::ToMesh<double, D>(sphere1, mesh).apply();
+    // ls::VTKWriter<double>(mesh, "points_" + fileName).apply();
+    // ls::ToSurfaceMesh<double, D>(sphere1, mesh).apply();
+    // ls::VTKWriter(mesh, "surface_" + fileName).apply();
   }
 
   LSTEST_ASSERT_VALID_LS(sphere1, double, D)
 
   // std::cout << sphere1->getNumberOfPoints() << std::endl;
 
-  // lsPrune<double, D>(sphere1).apply();
-  // lsExpand<double, D>(sphere1, 2).apply();
+  // Prune<double, D>(sphere1).apply();
+  // ls::Expand<double, D>(sphere1, 2).apply();
 
   // {
   //   std::cout << "Extracting..." << std::endl;
-  //   auto mesh = lsSmartPointer<lsMesh<>>::New();
-  //   lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
+  //   auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+  //   ls::ToSurfaceMesh<double, D>(sphere1, mesh).apply();
   //   mesh->print();
-  //   lsVTKWriter<double>(mesh, "after.vtk").apply();
+  //   ls::VTKWriter<double>(mesh, "after.vtk").apply();
   // }
 
   return 0;

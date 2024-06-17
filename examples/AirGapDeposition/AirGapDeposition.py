@@ -6,7 +6,7 @@ import viennals2d as vls
 #  then grown directionally on top.
 
 
-class velocityField(vls.lsVelocityField):
+class velocityField(vls.VelocityField):
     # coord and normalVec are lists with 3 elements
     # in 2D coord[2] and normalVec[2] are zero
     # getScalarVelocity must return a scalar
@@ -24,46 +24,47 @@ bounds = (-extent, extent, -extent, extent)
 boundaryCons = (0, 1, 0)  # 0 = reflective, 1 = infinite, 2 = periodic
 
 # create level set
-substrate = vls.lsDomain(bounds, boundaryCons, gridDelta)
+substrate = vls.Domain(bounds, boundaryCons, gridDelta)
 
 # create plane
 origin = (0, 0, 0)
 planeNormal = (0, 1, 0)
 
-vls.lsMakeGeometry(substrate, vls.lsPlane(origin, planeNormal)).apply()
+vls.MakeGeometry(substrate, vls.Plane(origin, planeNormal)).apply()
 
 print("Extracting")
-mesh = vls.lsMesh()
-vls.lsToSurfaceMesh(substrate, mesh).apply()
-vls.lsVTKWriter(mesh, "plane.vtk").apply()
+mesh = vls.Mesh()
+vls.ToSurfaceMesh(substrate, mesh).apply()
+vls.VTKWriter(mesh, "plane.vtp").apply()
 
 # create layer used for booling
 print("Creating box...")
-trench = vls.lsDomain(bounds, boundaryCons, gridDelta)
-minCorner = (-extent / 6., -25.)
-maxCorner = (extent / 6., 1.)
-vls.lsMakeGeometry(trench, vls.lsBox(minCorner, maxCorner)).apply()
+trench = vls.Domain(bounds, boundaryCons, gridDelta)
+minCorner = (-extent / 6.0, -25.0)
+maxCorner = (extent / 6.0, 1.0)
+vls.MakeGeometry(trench, vls.Box(minCorner, maxCorner)).apply()
 
 print("Extracting")
-vls.lsToMesh(trench, mesh).apply()
-vls.lsVTKWriter(mesh, "box.vtk").apply()
+vls.ToMesh(trench, mesh).apply()
+vls.VTKWriter(mesh, "box.vtp").apply()
 
 # Create trench geometry
 print("Booling trench")
-vls.lsBooleanOperation(substrate, trench,
-                       vls.lsBooleanOperationEnum.RELATIVE_COMPLEMENT).apply()
+vls.BooleanOperation(
+    substrate, trench, vls.BooleanOperationEnum.RELATIVE_COMPLEMENT
+).apply()
 
 # Now grow new material
 
 # create new levelset for new material, which will be grown
 # since it has to wrap around the substrate, just copy it
 print("Creating new layer...")
-newLayer = vls.lsDomain(substrate)
+newLayer = vls.Domain(substrate)
 
 velocities = velocityField()
 
 print("Advecting")
-advectionKernel = vls.lsAdvect()
+advectionKernel = vls.Advect()
 
 # the level set to be advected has to be inserted last
 # the other could be taken as a mask layer for advection
@@ -84,7 +85,7 @@ for i in range(numberOfSteps):
 
     print("Advection step {} / {}".format(i, numberOfSteps))
 
-    vls.lsToSurfaceMesh(newLayer, mesh).apply()
-    vls.lsVTKWriter(mesh, "trench{}.vtk".format(i)).apply()
+    vls.ToSurfaceMesh(newLayer, mesh).apply()
+    vls.VTKWriter(mesh, "trench{}.vtp".format(i)).apply()
 
 print("Time passed during advection: {}".format(passedTime))

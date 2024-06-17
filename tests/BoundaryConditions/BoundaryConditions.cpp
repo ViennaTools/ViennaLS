@@ -14,6 +14,8 @@
   \example BoundaryConditions.cpp
 */
 
+namespace ls = viennals;
+
 int main() {
 
   constexpr int D = 3;
@@ -23,27 +25,28 @@ int main() {
   double extent = 15;
 
   double bounds[2 * D] = {-extent, extent, -extent, extent, -extent, extent};
-  lsDomain<double, D>::BoundaryType boundaryCons[3];
+  ls::Domain<double, D>::BoundaryType boundaryCons[3];
   for (unsigned i = 0; i < D - 1; ++i)
-    boundaryCons[i] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+    boundaryCons[i] = ls::Domain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
 
-  boundaryCons[2] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
+  boundaryCons[2] = ls::Domain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  auto levelSet =
-      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  auto levelSet = ls::SmartPointer<ls::Domain<double, D>>::New(
+      bounds, boundaryCons, gridDelta);
 
   hrleVectorType<double, D> origin(0., 0., 0.);
   hrleVectorType<double, D> normalVector(0., 1., 1.);
 
-  lsMakeGeometry<double, D>(
-      levelSet, lsSmartPointer<lsPlane<double, D>>::New(origin, normalVector))
+  ls::MakeGeometry<double, D>(
+      levelSet,
+      ls::SmartPointer<ls::Plane<double, D>>::New(origin, normalVector))
       .apply();
 
   // {
   //   std::cout << "Extracting..." << std::endl;
-  //   auto mesh = lsSmartPointer<lsMesh<>>::New();
-  //   lsToSurfaceMesh<double, D>(levelSet, mesh).apply();
-  //   lsVTKWriter<double>(mesh, "plane.vtk").apply();
+  //   auto mesh = ls::ls::SmartPointer<ls::Mesh<>>::New();
+  //   ls::ToSurfaceMesh<double, D>(levelSet, mesh).apply();
+  //   ls::VTKWriter<double>(mesh, "plane.vtk").apply();
   // }
 
   LSTEST_ASSERT_VALID_LS(levelSet, double, D)

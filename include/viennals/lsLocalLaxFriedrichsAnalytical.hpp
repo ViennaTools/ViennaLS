@@ -1,5 +1,4 @@
-#ifndef LS_LOCAL_LAX_FRIEDRICHS_ANALYTICAL_HPP
-#define LS_LOCAL_LAX_FRIEDRICHS_ANALYTICAL_HPP
+#pragma once
 
 #include <hrleSparseBoxIterator.hpp>
 #include <hrleVectorType.hpp>
@@ -7,16 +6,20 @@
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 
+#include <vcVectorUtil.hpp>
+
 namespace lsInternal {
+
+using namespace viennals;
 
 /// Lax Friedrichs integration scheme, which uses alpha values
 /// provided by the user in getDissipationAlphas in lsVelocityField.
 /// If it is possible to derive analytical solutions for the velocityField
 /// and the alpha values, this integration scheme should be used and never
 /// otherwise.
-template <class T, int D, int order> class lsLocalLaxFriedrichsAnalytical {
-  lsSmartPointer<lsDomain<T, D>> levelSet;
-  lsSmartPointer<lsVelocityField<T>> velocities;
+template <class T, int D, int order> class LocalLaxFriedrichsAnalytical {
+  SmartPointer<Domain<T, D>> levelSet;
+  SmartPointer<VelocityField<T>> velocities;
   hrleSparseBoxIterator<hrleDomain<T, D>> neighborIterator;
 
   static T pow2(const T &value) { return value * value; }
@@ -39,16 +42,16 @@ template <class T, int D, int order> class lsLocalLaxFriedrichsAnalytical {
   }
 
 public:
-  static void prepareLS(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+  static void prepareLS(SmartPointer<Domain<T, D>> passedlsDomain) {
     assert(order == 1 || order == 2);
     // at least order+1 layers since we need neighbor neighbors for
     // dissipation alpha calculation
-    lsExpand<T, D>(passedlsDomain, 2 * (order + 2) + 1).apply();
+    Expand<T, D>(passedlsDomain, 2 * (order + 2) + 1).apply();
   }
 
   // neighboriterator always needs order 2 for alpha calculation
-  lsLocalLaxFriedrichsAnalytical(lsSmartPointer<lsDomain<T, D>> passedlsDomain,
-                                 lsSmartPointer<lsVelocityField<T>> vel)
+  LocalLaxFriedrichsAnalytical(SmartPointer<Domain<T, D>> passedlsDomain,
+                               SmartPointer<VelocityField<T>> vel)
       : levelSet(passedlsDomain), velocities(vel),
         neighborIterator(levelSet->getDomain(), 2) {}
 
@@ -66,7 +69,7 @@ public:
     neighborIterator.goToIndicesSequential(indices);
 
     // convert coordinate to std array for interface
-    std::array<T, 3> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
+    Vec3D<T> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
 
     T gradPos[D];
     T gradNeg[D];
@@ -74,7 +77,7 @@ public:
     T grad = 0.;
     T dissipation = 0.;
 
-    std::array<T, 3> normalVector = {};
+    Vec3D<T> normalVector = {};
     T normalModulus = 0;
 
     for (int i = 0; i < D; i++) { // iterate over dimensions
@@ -152,7 +155,7 @@ public:
     double scalarVelocity = velocities->getScalarVelocity(
         coordArray, material, normalVector,
         neighborIterator.getCenter().getPointId());
-    std::array<T, 3> vectorVelocity = velocities->getVectorVelocity(
+    Vec3D<T> vectorVelocity = velocities->getVectorVelocity(
         coordArray, material, normalVector,
         neighborIterator.getCenter().getPointId());
 
@@ -181,7 +184,7 @@ public:
       hrleVectorType<hrleIndexType, D> neighborIndex(minIndex);
       for (unsigned i = 0; i < numNeighbors; ++i) {
 
-        std::array<T, 3> normal = {};
+        Vec3D<T> normal = {};
         auto center = neighborIterator.getNeighbor(neighborIndex).getValue();
         for (unsigned dir = 0; dir < D; ++dir) {
           hrleVectorType<hrleIndexType, D> unity(0);
@@ -215,5 +218,3 @@ public:
   }
 };
 } // namespace lsInternal
-
-#endif // LS_LOCAL_LAX_FRIEDRICHS_ANALYTICAL_HPP

@@ -1,5 +1,4 @@
-#ifndef LS_TO_SURFACE_MESH_HPP
-#define LS_TO_SURFACE_MESH_HPP
+#pragma once
 
 #include <lsPreCompileMacros.hpp>
 
@@ -10,45 +9,48 @@
 #include <lsDomain.hpp>
 #include <lsMarchingCubes.hpp>
 #include <lsMesh.hpp>
-#include <lsMessage.hpp>
 
-/// Extract an explicit lsMesh<> instance from an lsDomain.
+namespace viennals {
+
+using namespace viennacore;
+
+/// Extract an explicit Mesh<> instance from an lsDomain.
 /// The interface is then described by explciit surface elements:
 /// Lines in 2D, Triangles in 3D.
-template <class T, int D> class lsToSurfaceMesh {
-  typedef typename lsDomain<T, D>::DomainType hrleDomainType;
+template <class T, int D> class ToSurfaceMesh {
+  typedef typename Domain<T, D>::DomainType hrleDomainType;
 
-  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
-  lsSmartPointer<lsMesh<T>> mesh = nullptr;
+  SmartPointer<Domain<T, D>> levelSet = nullptr;
+  SmartPointer<Mesh<T>> mesh = nullptr;
   // std::vector<hrleIndexType> meshNodeToPointIdMapping;
   const T epsilon;
   bool updatePointData = true;
 
 public:
-  lsToSurfaceMesh(double eps = 1e-12) : epsilon(eps) {}
+  ToSurfaceMesh(double eps = 1e-12) : epsilon(eps) {}
 
-  lsToSurfaceMesh(const lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-                  lsSmartPointer<lsMesh<T>> passedMesh, double eps = 1e-12)
+  ToSurfaceMesh(const SmartPointer<Domain<T, D>> passedLevelSet,
+                SmartPointer<Mesh<T>> passedMesh, double eps = 1e-12)
       : levelSet(passedLevelSet), mesh(passedMesh), epsilon(eps) {}
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+  void setLevelSet(SmartPointer<Domain<T, D>> passedlsDomain) {
     levelSet = passedlsDomain;
   }
 
-  void setMesh(lsSmartPointer<lsMesh<T>> passedMesh) { mesh = passedMesh; }
+  void setMesh(SmartPointer<Mesh<T>> passedMesh) { mesh = passedMesh; }
 
   void setUpdatePointData(bool update) { updatePointData = update; }
 
   void apply() {
     if (levelSet == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No level set was passed to lsToSurfaceMesh.")
+      Logger::getInstance()
+          .addWarning("No level set was passed to ToSurfaceMesh.")
           .print();
       return;
     }
     if (mesh == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No mesh was passed to lsToSurfaceMesh.")
+      Logger::getInstance()
+          .addWarning("No mesh was passed to ToSurfaceMesh.")
           .print();
       return;
     }
@@ -65,7 +67,7 @@ public:
     // test if level set function consists of at least 2 layers of
     // defined grid points
     if (levelSet->getLevelSetWidth() < 2) {
-      lsMessage::getInstance()
+      Logger::getInstance()
           .addWarning("Levelset is less than 2 layers wide. Export might fail!")
           .print();
     }
@@ -77,9 +79,9 @@ public:
 
     typename nodeContainerType::iterator nodeIt;
 
-    lsInternal::lsMarchingCubes marchingCubes;
+    lsInternal::MarchingCubes marchingCubes;
 
-    using DomainType = lsDomain<T, D>;
+    using DomainType = Domain<T, D>;
     using ScalarDataType = typename DomainType::PointDataType::ScalarDataType;
     using VectorDataType = typename DomainType::PointDataType::VectorDataType;
 
@@ -201,6 +203,6 @@ public:
 };
 
 // add all template specialisations for this class
-PRECOMPILE_PRECISION_DIMENSION(lsToSurfaceMesh)
+PRECOMPILE_PRECISION_DIMENSION(ToSurfaceMesh)
 
-#endif // LS_TO_SURFACE_MESH_HPP
+} // namespace viennals

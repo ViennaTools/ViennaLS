@@ -1,12 +1,13 @@
-#ifndef LS_VTK_READER_HPP
-#define LS_VTK_READER_HPP
+#pragma once
 
 #include <fstream>
 #include <string>
 
 #include <lsFileFormats.hpp>
 #include <lsMesh.hpp>
-#include <lsMessage.hpp>
+
+#include <vcLogger.hpp>
+#include <vcSmartPointer.hpp>
 
 #ifdef VIENNALS_USE_VTK
 #include <vtkCellData.h>
@@ -19,34 +20,36 @@
 #include <vtkXMLUnstructuredGridReader.h>
 #endif // VIENNALS_USE_VTK
 
+namespace viennals {
+
+using namespace viennacore;
+
 /// Class handling the import of VTK file types.
-template <class T = double> class lsVTKReader {
-  lsSmartPointer<lsMesh<T>> mesh = nullptr;
-  lsFileFormatEnum fileFormat = lsFileFormatEnum::VTK_AUTO;
+template <class T = double> class VTKReader {
+  SmartPointer<Mesh<T>> mesh = nullptr;
+  FileFormatEnum fileFormat = FileFormatEnum::VTK_AUTO;
   std::string fileName;
 
   unsigned vtk_nodes_for_cell_type[15] = {0, 1, 0, 2, 0, 3, 0, 0,
                                           4, 4, 4, 8, 8, 6, 5};
 
 public:
-  lsVTKReader() {}
+  VTKReader() {}
 
-  lsVTKReader(lsSmartPointer<lsMesh<T>> passedMesh) : mesh(passedMesh) {}
+  VTKReader(SmartPointer<Mesh<T>> passedMesh) : mesh(passedMesh) {}
 
-  lsVTKReader(lsSmartPointer<lsMesh<T>> passedMesh, std::string passedFileName)
+  VTKReader(SmartPointer<Mesh<T>> passedMesh, std::string passedFileName)
       : mesh(passedMesh), fileName(passedFileName) {}
 
-  lsVTKReader(lsSmartPointer<lsMesh<>> passedMesh,
-              lsFileFormatEnum passedFormat, std::string passedFileName)
+  VTKReader(SmartPointer<Mesh<>> passedMesh, FileFormatEnum passedFormat,
+            std::string passedFileName)
       : mesh(passedMesh), fileFormat(passedFormat), fileName(passedFileName) {}
 
   /// set the mesh the file should be read into
-  void setMesh(lsSmartPointer<lsMesh<>> passedMesh) { mesh = passedMesh; }
+  void setMesh(SmartPointer<Mesh<>> passedMesh) { mesh = passedMesh; }
 
   /// set file format for file to read. Defaults to VTK_LEGACY.
-  void setFileFormat(lsFileFormatEnum passedFormat) {
-    fileFormat = passedFormat;
-  }
+  void setFileFormat(FileFormatEnum passedFormat) { fileFormat = passedFormat; }
 
   /// set file name for file to read
   void setFileName(std::string passedFileName) { fileName = passedFileName; }
@@ -54,39 +57,39 @@ public:
   void apply() {
     // check mesh
     if (mesh == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No mesh was passed to lsVTKReader. Not reading.")
+      Logger::getInstance()
+          .addWarning("No mesh was passed to VTKReader. Not reading.")
           .print();
       return;
     }
     // check filename
     if (fileName.empty()) {
-      lsMessage::getInstance()
-          .addWarning("No file name specified for lsVTKReader. Not reading.")
+      Logger::getInstance()
+          .addWarning("No file name specified for VTKReader. Not reading.")
           .print();
       return;
     }
 
-    if (fileFormat == lsFileFormatEnum::VTK_AUTO) {
+    if (fileFormat == FileFormatEnum::VTK_AUTO) {
       auto dotPos = fileName.rfind('.');
       if (dotPos == std::string::npos) {
-        lsMessage::getInstance()
+        Logger::getInstance()
             .addWarning("No valid file format found based on the file ending "
-                        "passed to lsVTKReader. Not reading.")
+                        "passed to VTKReader. Not reading.")
             .print();
         return;
       }
       auto ending = fileName.substr(dotPos);
       if (ending == ".vtk") {
-        fileFormat = lsFileFormatEnum::VTK_LEGACY;
+        fileFormat = FileFormatEnum::VTK_LEGACY;
       } else if (ending == ".vtp") {
-        fileFormat = lsFileFormatEnum::VTP;
+        fileFormat = FileFormatEnum::VTP;
       } else if (ending == ".vtu") {
-        fileFormat = lsFileFormatEnum::VTU;
+        fileFormat = FileFormatEnum::VTU;
       } else {
-        lsMessage::getInstance()
+        Logger::getInstance()
             .addWarning("No valid file format found based on the file ending "
-                        "passed to lsVTKReader. Not reading.")
+                        "passed to VTKReader. Not reading.")
             .print();
         return;
       }
@@ -94,28 +97,28 @@ public:
 
     // check file format
     switch (fileFormat) {
-    case lsFileFormatEnum::VTK_LEGACY:
+    case FileFormatEnum::VTK_LEGACY:
       readVTKLegacy(fileName);
       break;
 #ifdef VIENNALS_USE_VTK
-    case lsFileFormatEnum::VTP:
+    case FileFormatEnum::VTP:
       readVTP(fileName);
       break;
-    case lsFileFormatEnum::VTU:
+    case FileFormatEnum::VTU:
       readVTU(fileName);
       break;
 #else
-    case lsFileFormatEnum::VTP:
-    case lsFileFormatEnum::VTU:
-      lsMessage::getInstance()
+    case FileFormatEnum::VTP:
+    case FileFormatEnum::VTU:
+      Logger::getInstance()
           .addWarning(
-              "lsVTKReader was built without VTK support. Only VTK_LEGACY "
+              "VTKReader was built without VTK support. Only VTK_LEGACY "
               "can be used. File not read.")
           .print();
 #endif
     default:
-      lsMessage::getInstance()
-          .addWarning("No valid file format set for lsVTKReader. Not reading.")
+      Logger::getInstance()
+          .addWarning("No valid file format set for VTKReader. Not reading.")
           .print();
     }
   }
@@ -124,8 +127,8 @@ private:
 #ifdef VIENNALS_USE_VTK
   void readVTP(std::string filename) {
     if (mesh == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No mesh was passed to lsVTKReader.")
+      Logger::getInstance()
+          .addWarning("No mesh was passed to VTKReader.")
           .print();
       return;
     }
@@ -202,7 +205,7 @@ private:
       dataArray = pointData->GetArray(i);
       if (dataArray->GetNumberOfComponents() == 1) {
         mesh->pointData.insertNextScalarData(
-            typename lsPointData<T>::ScalarDataType(),
+            typename PointData<T>::ScalarDataType(),
             std::string(pointData->GetArrayName(i)));
         auto &scalars = *(mesh->pointData.getScalarData(i));
         scalars.resize(pointData->GetNumberOfTuples());
@@ -211,7 +214,7 @@ private:
         }
       } else if (dataArray->GetNumberOfComponents() == 3) {
         mesh->pointData.insertNextVectorData(
-            typename lsPointData<T>::VectorDataType(),
+            typename PointData<T>::VectorDataType(),
             std::string(pointData->GetArrayName(i)));
         auto &vectors = *(mesh->pointData.getVectorData(i));
         vectors.resize(pointData->GetNumberOfTuples());
@@ -233,7 +236,7 @@ private:
       dataArray = cellData->GetArray(i);
       if (cellData->GetNumberOfComponents() == 1) {
         mesh->cellData.insertNextScalarData(
-            typename lsPointData<T>::ScalarDataType(),
+            typename PointData<T>::ScalarDataType(),
             std::string(cellData->GetArrayName(i)));
         auto &scalars = *(mesh->cellData.getScalarData(i));
         scalars.resize(cellData->GetNumberOfTuples());
@@ -242,7 +245,7 @@ private:
         }
       } else if (cellData->GetNumberOfComponents() == 3) {
         mesh->cellData.insertNextVectorData(
-            typename lsPointData<T>::VectorDataType(),
+            typename PointData<T>::VectorDataType(),
             std::string(cellData->GetArrayName(i)));
         auto &vectors = *(mesh->cellData.getVectorData(i));
         vectors.resize(cellData->GetNumberOfTuples());
@@ -257,8 +260,8 @@ private:
 
   void readVTU(std::string filename) {
     if (mesh == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No mesh was passed to lsVTKReader.")
+      Logger::getInstance()
+          .addWarning("No mesh was passed to VTKReader.")
           .print();
       return;
     }
@@ -340,7 +343,7 @@ private:
       dataArray = pointData->GetArray(i);
       if (dataArray->GetNumberOfComponents() == 1) {
         mesh->pointData.insertNextScalarData(
-            typename lsPointData<T>::ScalarDataType(),
+            typename PointData<T>::ScalarDataType(),
             std::string(pointData->GetArrayName(i)));
         auto &scalars = *(mesh->pointData.getScalarData(i));
         scalars.resize(pointData->GetNumberOfTuples());
@@ -349,7 +352,7 @@ private:
         }
       } else if (dataArray->GetNumberOfComponents() == 3) {
         mesh->pointData.insertNextVectorData(
-            typename lsPointData<T>::VectorDataType(),
+            typename PointData<T>::VectorDataType(),
             std::string(pointData->GetArrayName(i)));
         auto &vectors = *(mesh->pointData.getVectorData(i));
         vectors.resize(pointData->GetNumberOfTuples());
@@ -371,7 +374,7 @@ private:
       dataArray = cellData->GetArray(i);
       if (cellData->GetNumberOfComponents() == 1) {
         mesh->cellData.insertNextScalarData(
-            typename lsPointData<T>::ScalarDataType(),
+            typename PointData<T>::ScalarDataType(),
             std::string(cellData->GetArrayName(i)));
         auto &scalars = *(mesh->cellData.getScalarData(i));
         scalars.resize(cellData->GetNumberOfTuples());
@@ -380,7 +383,7 @@ private:
         }
       } else if (cellData->GetNumberOfComponents() == 3) {
         mesh->cellData.insertNextVectorData(
-            typename lsPointData<T>::VectorDataType(),
+            typename PointData<T>::VectorDataType(),
             std::string(cellData->GetArrayName(i)));
         auto &vectors = *(mesh->cellData.getVectorData(i));
         vectors.resize(cellData->GetNumberOfTuples());
@@ -397,8 +400,8 @@ private:
 
   void readVTKLegacy(std::string filename) {
     if (mesh == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No mesh was passed to lsVTKReader.")
+      Logger::getInstance()
+          .addWarning("No mesh was passed to VTKReader.")
           .print();
       return;
     }
@@ -407,7 +410,7 @@ private:
     // open geometry file
     std::ifstream f(filename.c_str());
     if (!f)
-      lsMessage::getInstance().addError("Could not open geometry file!");
+      Logger::getInstance().addError("Could not open geometry file!");
     std::string temp;
 
     // Check if geometry is an unstructured grid as required
@@ -416,7 +419,7 @@ private:
         break;
     }
     if (temp.find("UNSTRUCTURED_GRID") == std::string::npos) {
-      lsMessage::getInstance().addError("DATASET is not an UNSTRUCTURED_GRID!");
+      Logger::getInstance().addError("DATASET is not an UNSTRUCTURED_GRID!");
     }
 
     // Find POINTS in file to know number of nodes to read in
@@ -465,7 +468,7 @@ private:
     int num_cell_types = atoi(&temp[temp.find(" ") + 1]);
     // need a cell_type for each cell
     if (num_elems != num_cell_types) {
-      lsMessage::getInstance().addError(
+      Logger::getInstance().addError(
           "Corrupt input geometry! Number of CELLS and CELL_TYPES "
           "is different!");
     }
@@ -567,14 +570,14 @@ private:
           std::ostringstream oss;
           oss << "VTK Cell type " << cell_type
               << " is not supported. Cell ignored..." << std::endl;
-          lsMessage::getInstance().addWarning(oss.str()).print();
+          Logger::getInstance().addWarning(oss.str()).print();
         }
       } else {
         std::ostringstream oss;
         oss << "INVALID CELL TYPE! Expected number of nodes: " << number_nodes
             << ", Found number of nodes: " << elems_fake
             << "; Ignoring element...";
-        lsMessage::getInstance().addError(oss.str());
+        Logger::getInstance().addError(oss.str());
         // ignore rest of lines
         f.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
       }
@@ -613,7 +616,7 @@ private:
       // consume one line, which defines the lookup table
       std::getline(f, temp);
       if (temp.compare("LOOKUP_TABLE default") != 0) {
-        lsMessage::getInstance()
+        Logger::getInstance()
             .addWarning("Wrong lookup table for VTKLegacy: " + temp)
             .print();
       }
@@ -634,4 +637,4 @@ private:
   }
 };
 
-#endif // LS_VTK_READER_HPP
+} // namespace viennals

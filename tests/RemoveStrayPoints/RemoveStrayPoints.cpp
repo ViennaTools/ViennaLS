@@ -11,6 +11,8 @@
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
+namespace ls = viennals;
+
 int main() {
   constexpr int D = 2;
   // omp_set_num_threads(1);
@@ -19,31 +21,31 @@ int main() {
   double gridDelta = 1;
 
   double bounds[2 * D] = {-extent, extent, -extent, extent};
-  lsDomain<double, D>::BoundaryType boundaryCons[D];
+  ls::Domain<double, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D; ++i)
-    boundaryCons[i] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+    boundaryCons[i] = ls::Domain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
 
-  boundaryCons[1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
+  boundaryCons[1] = ls::Domain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  auto substrate =
-      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  auto substrate = ls::SmartPointer<ls::Domain<double, D>>::New(
+      bounds, boundaryCons, gridDelta);
 
   double origin[D] = {0., 0.};
   double normal[D] = {0., 1.};
 
-  lsMakeGeometry<double, D>(
-      substrate, lsSmartPointer<lsPlane<double, D>>::New(origin, normal))
+  ls::MakeGeometry<double, D>(
+      substrate, ls::SmartPointer<ls::Plane<double, D>>::New(origin, normal))
       .apply();
   {
-    auto hole = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
-                                                         gridDelta);
+    auto hole = ls::SmartPointer<ls::Domain<double, D>>::New(
+        bounds, boundaryCons, gridDelta);
     origin[1] = -5.;
-    lsMakeGeometry<double, D>(
-        hole, lsSmartPointer<lsSphere<double, D>>::New(origin, 3.))
+    ls::MakeGeometry<double, D>(
+        hole, ls::SmartPointer<ls::Sphere<double, D>>::New(origin, 3.))
         .apply();
 
-    lsBooleanOperation<double, D>(substrate, hole,
-                                  lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
+    ls::BooleanOperation<double, D>(
+        substrate, hole, ls::BooleanOperationEnum::RELATIVE_COMPLEMENT)
         .apply();
   }
 
@@ -53,25 +55,26 @@ int main() {
   //   marker.setVoidTopSurface(lsVoidTopSurfaceEnum::LEX_HIGHEST);
   //   marker.setSaveComponentIds(true);
   //   marker.apply();
-  //   auto explMesh = lsSmartPointer<lsMesh<>>::New();
-  //   lsToMesh<double, D>(substrate, explMesh).apply();
-  //   lsVTKWriter<double>(explMesh, lsFileFormatEnum::VTP,
+  //   auto explMesh = ls::SmartPointer<ls::Mesh<>>::New();
+  //   ls::ToMesh<double, D>(substrate, explMesh).apply();
+  //   ls::VTKWriter<double>(explMesh, ls::FileFormatEnum::VTP,
   //   "before.vtp").apply();
   // }
 
   // Remove the stray points
-  lsRemoveStrayPoints<double, D> cleaner;
+  ls::RemoveStrayPoints<double, D> cleaner;
   cleaner.setLevelSet(substrate);
-  cleaner.setVoidTopSurface(lsVoidTopSurfaceEnum::LEX_HIGHEST);
+  cleaner.setVoidTopSurface(ls::VoidTopSurfaceEnum::LEX_HIGHEST);
   cleaner.apply();
 
   // check if the correct surface was removed
   LSTEST_ASSERT(substrate->getNumberOfPoints() == 42)
 
   // {
-  //   auto mesh = lsSmartPointer<lsMesh<>>::New();
-  //   lsToMesh<double, D>(substrate, mesh).apply();
-  //   lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP, "after.vtp").apply();
+  //   auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+  //   ls::ToMesh<double, D>(substrate, mesh).apply();
+  //   ls::VTKWriter<double>(mesh, ls::FileFormatEnum::VTP,
+  //   "after.vtp").apply();
   // }
 
   return 0;

@@ -19,38 +19,40 @@
   \example MakePlane.cpp
 */
 
+namespace ls = viennals;
+
 int main() {
   constexpr int D = 3;
   double extent = 15.7;
   double gridDelta = 2.8;
 
   double bounds[2 * D] = {-extent, extent, -extent, extent, -extent, extent};
-  lsDomain<double, D>::BoundaryType boundaryCons[3];
+  ls::Domain<double, D>::BoundaryType boundaryCons[3];
   for (unsigned i = 0; i < D - 1; ++i)
-    // boundaryCons[i] = lsDomain<double, D>::BoundaryType::PERIODIC_BOUNDARY;
-    boundaryCons[i] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+    // boundaryCons[i] = ls::Domain<double, D>::BoundaryType::PERIODIC_BOUNDARY;
+    boundaryCons[i] = ls::Domain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
 
-  boundaryCons[2] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
+  boundaryCons[2] = ls::Domain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  auto levelSet =
-      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
-  auto mesh = lsSmartPointer<lsMesh<>>::New();
+  auto levelSet = ls::SmartPointer<ls::Domain<double, D>>::New(
+      bounds, boundaryCons, gridDelta);
+  auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
 
   const hrleVectorType<double, D> origin(0., 0., 0.);
   // const hrleVectorType<double, D> normal(0., 0., 1.);
   const hrleVectorType<double, D> normal(1., 1., 1.);
 
-  lsMakeGeometry<double, D>(
-      levelSet, lsSmartPointer<lsPlane<double, D>>::New(origin, normal))
+  ls::MakeGeometry<double, D>(
+      levelSet, ls::SmartPointer<ls::Plane<double, D>>::New(origin, normal))
       .apply();
 
   LSTEST_ASSERT_VALID_LS(levelSet, double, D)
 
-  // lsToSurfaceMesh<double, D>(levelSet, mesh).apply();
-  // lsVTKWriter<double>(mesh, "Plane.vtk").apply();
+  // ls::ToSurfaceMesh<double, D>(levelSet, mesh).apply();
+  // ls::VTKWriter<double>(mesh, "Plane.vtk").apply();
 
-  // lsToMesh<double, D>(levelSet, mesh).apply();
-  // lsVTKWriter<double>(mesh, "PlanePoints.vtk").apply();
+  // ls::ToMesh<double, D>(levelSet, mesh).apply();
+  // ls::VTKWriter<double>(mesh, "PlanePoints.vtk").apply();
 
   return 0;
 }

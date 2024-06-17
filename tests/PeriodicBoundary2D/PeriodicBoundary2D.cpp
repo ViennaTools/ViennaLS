@@ -18,8 +18,10 @@
   \example VoidEtching.cpp
 */
 
+namespace ls = viennals;
+
 // implement own velocity field
-class velocityField : public lsVelocityField<double> {
+class velocityField : public ls::VelocityField<double> {
 public:
   double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
                            int /*material*/,
@@ -47,24 +49,25 @@ int main() {
   double gridDelta = 1;
 
   double bounds[2 * D] = {-extent, extent, -extent, extent};
-  lsDomain<double, D>::BoundaryType boundaryCons[D];
-  boundaryCons[0] = lsDomain<double, D>::BoundaryType::PERIODIC_BOUNDARY;
-  boundaryCons[1] = lsDomain<double, D>::BoundaryType::INFINITE_BOUNDARY;
+  ls::Domain<double, D>::BoundaryType boundaryCons[D];
+  boundaryCons[0] = ls::Domain<double, D>::BoundaryType::PERIODIC_BOUNDARY;
+  boundaryCons[1] = ls::Domain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  auto substrate =
-      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  auto substrate = ls::SmartPointer<ls::Domain<double, D>>::New(
+      bounds, boundaryCons, gridDelta);
 
   double origin[D] = {0., 0.};
   double planeNormal[D] = {0., 1.};
 
-  lsMakeGeometry<double, D>(
-      substrate, lsSmartPointer<lsPlane<double, D>>::New(origin, planeNormal))
+  ls::MakeGeometry<double, D>(
+      substrate,
+      ls::SmartPointer<ls::Plane<double, D>>::New(origin, planeNormal))
       .apply();
 
   std::cout << substrate->getGrid().getMinGridPoint() << std::endl;
   std::cout << substrate->getGrid().getMaxGridPoint() << std::endl;
 
-  // for(hrleConstSparseStarIterator<lsDomain<double, D>::DomainType, 1>
+  // for(hrleConstSparseStarIterator<Domain<double, D>::DomainType, 1>
   // it(substrate.getDomain()); !it.isFinished(); it.next()) {
   //   std::cout << it.getIndices() << ": " << it.getCenter().getEndIndices() <<
   //   ", "; for(unsigned i = 0; i< 2*D; ++i) std::cout <<
@@ -74,49 +77,51 @@ int main() {
   //   << " -- " << it.getNeighbor(0).getValue() << std::endl;
   // }
 
-  // for(hrleConstSparseIterator<lsDomain<double, D>::DomainType>
+  // for(hrleConstSparseIterator<Domain<double, D>::DomainType>
   // it(substrate.getDomain()); !it.isFinished(); it.next()) {
   //   std::cout << it.getStartIndices() << " -- " << it.getEndIndices() <<
   //   std::endl;
   // }
 
-  auto mesh = lsSmartPointer<lsMesh<>>::New();
-  lsToMesh<double, D>(substrate, mesh).apply();
-  lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP, "normal.vtp").apply();
+  auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+  ls::ToMesh<double, D>(substrate, mesh).apply();
+  ls::VTKWriter<double>(mesh, ls::FileFormatEnum::VTP, "normal.vtp").apply();
 
-  // lsExpand<double, D>(substrate, 4).apply();
-  // lsToMesh<double, D>(substrate, mesh).apply();
-  // lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP, "expanded.vtp").apply();
+  // ls::Expand<double, D>(substrate, 4).apply();
+  // ls::ToMesh<double, D>(substrate, mesh).apply();
+  // ls::VTKWriter<double>(mesh, ls::FileFormatEnum::VTP,
+  // "expanded.vtp").apply();
 
-  // lsPrune<double, D>(substrate).apply();
-  // lsToMesh<double, D>(substrate, mesh).apply();
-  // lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP, "pruned.vtp").apply();
+  // Prune<double, D>(substrate).apply();
+  // ls::ToMesh<double, D>(substrate, mesh).apply();
+  // ls::VTKWriter<double>(mesh, ls::FileFormatEnum::VTP, "pruned.vtp").apply();
   // -----------------------------------------------------
 
   {
     // create spheres used for booling
     std::cout << "Creating pillar..." << std::endl;
-    auto pillar = lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons,
-                                                           gridDelta);
+    auto pillar = ls::SmartPointer<ls::Domain<double, D>>::New(
+        bounds, boundaryCons, gridDelta);
     double lowerCorner[D] = {5, -1};
     double upperCorner[D] = {15, 10};
-    lsMakeGeometry<double, D>(
-        pillar, lsSmartPointer<lsBox<double, D>>::New(lowerCorner, upperCorner))
+    ls::MakeGeometry<double, D>(
+        pillar,
+        ls::SmartPointer<ls::Box<double, D>>::New(lowerCorner, upperCorner))
         .apply();
-    auto mesh = lsSmartPointer<lsMesh<>>::New();
-    lsToSurfaceMesh<double, D>(pillar, mesh).apply();
-    lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP, "pillar.vtp").apply();
-    lsBooleanOperation<double, D> boolOp(substrate, pillar,
-                                         lsBooleanOperationEnum::UNION);
+    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    ls::ToSurfaceMesh<double, D>(pillar, mesh).apply();
+    ls::VTKWriter<double>(mesh, ls::FileFormatEnum::VTP, "pillar.vtp").apply();
+    ls::BooleanOperation<double, D> boolOp(substrate, pillar,
+                                           ls::BooleanOperationEnum::UNION);
     boolOp.apply();
   }
 
   // Now etch the substrate isotropically
-  auto velocities = lsSmartPointer<velocityField>::New();
+  auto velocities = ls::SmartPointer<velocityField>::New();
 
   std::cout << "Advecting" << std::endl;
 
-  lsAdvect<double, D> advectionKernel;
+  ls::Advect<double, D> advectionKernel;
   advectionKernel.insertNextLevelSet(substrate);
   advectionKernel.setVelocityField(velocities);
 
@@ -129,15 +134,15 @@ int main() {
     if (true) {
       std::cout << "\rAdvection step " + std::to_string(i) + " / "
                 << numberOfSteps << std::flush;
-      auto mesh = lsSmartPointer<lsMesh<>>::New();
-      lsToSurfaceMesh<double, D>(substrate, mesh).apply();
-      lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP,
-                          "pillar-" + std::to_string(i) + ".vtp")
+      auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+      ls::ToSurfaceMesh<double, D>(substrate, mesh).apply();
+      ls::VTKWriter<double>(mesh, ls::FileFormatEnum::VTP,
+                            "pillar-" + std::to_string(i) + ".vtp")
           .apply();
 
-      lsToMesh<double, D>(substrate, mesh).apply();
-      lsVTKWriter<double>(mesh, lsFileFormatEnum::VTP,
-                          "LS-" + std::to_string(i) + ".vtp")
+      ls::ToMesh<double, D>(substrate, mesh).apply();
+      ls::VTKWriter<double>(mesh, ls::FileFormatEnum::VTP,
+                            "LS-" + std::to_string(i) + ".vtp")
           .apply();
     }
 

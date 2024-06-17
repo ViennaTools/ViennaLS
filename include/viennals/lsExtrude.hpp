@@ -1,41 +1,44 @@
-#ifndef LS_EXTRUDE_HPP
-#define LS_EXTRUDE_HPP
+#pragma once
 
 #include <lsDomain.hpp>
 #include <lsFromSurfaceMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 
+namespace viennals {
+
+using namespace viennacore;
+
 /// Extrudes a 2D Level Set into a 3D domain. The axis in which should be
 /// extruded can be set and boundary conditions in the 3D domain must be
 /// specified.
-template <class T> class lsExtrude {
-  lsSmartPointer<lsDomain<T, 2>> inputLevelSet = nullptr;
-  lsSmartPointer<lsDomain<T, 3>> outputLevelSet = nullptr;
-  std::array<T, 2> extent = {0., 0.};
+template <class T> class Extrude {
+  SmartPointer<Domain<T, 2>> inputLevelSet = nullptr;
+  SmartPointer<Domain<T, 3>> outputLevelSet = nullptr;
+  Vec2D<T> extent = {0., 0.};
   int extrudeDim = 0;
-  std::array<lsBoundaryConditionEnum<3>, 3> boundaryConds;
+  std::array<BoundaryConditionEnum<3>, 3> boundaryConds;
 
 public:
-  lsExtrude() {}
-  lsExtrude(lsSmartPointer<lsDomain<T, 2>> passedInputLS,
-            lsSmartPointer<lsDomain<T, 3>> passedOutputLS,
-            std::array<T, 2> passedExtent, const int passedExtrudeDim,
-            std::array<lsBoundaryConditionEnum<3>, 3> passedBoundaryConds)
+  Extrude() {}
+  Extrude(SmartPointer<Domain<T, 2>> passedInputLS,
+          SmartPointer<Domain<T, 3>> passedOutputLS, Vec2D<T> passedExtent,
+          const int passedExtrudeDim,
+          std::array<BoundaryConditionEnum<3>, 3> passedBoundaryConds)
       : inputLevelSet(passedInputLS), outputLevelSet(passedOutputLS),
         extent(passedExtent), extrudeDim(passedExtrudeDim),
         boundaryConds(passedBoundaryConds) {}
 
-  void setInputLevelSet(lsSmartPointer<lsDomain<T, 2>> passedInputLS) {
+  void setInputLevelSet(SmartPointer<Domain<T, 2>> passedInputLS) {
     inputLevelSet = passedInputLS;
   }
 
   // The 3D output LS will be overwritten by the extruded LS
-  void setOutputLevelSet(lsSmartPointer<lsDomain<T, 3>> &passedOutputLS) {
+  void setOutputLevelSet(SmartPointer<Domain<T, 3>> &passedOutputLS) {
     outputLevelSet = passedOutputLS;
   }
 
   // Set the min and max extent in the extruded dimension
-  void setExtent(std::array<T, 2> passedExtent) { extent = passedExtent; }
+  void setExtent(Vec2D<T> passedExtent) { extent = passedExtent; }
 
   // Set which index of the added dimension (x: 0, y: 1, z: 2)
   void setExtrudeDimension(const int passedExtrudeDim) {
@@ -43,27 +46,25 @@ public:
   }
 
   void setBoundaryConditions(
-      std::array<lsBoundaryConditionEnum<3>, 3> passedBoundaryConds) {
+      std::array<BoundaryConditionEnum<3>, 3> passedBoundaryConds) {
     boundaryConds = passedBoundaryConds;
   }
 
-  void
-  setBoundaryConditions(lsBoundaryConditionEnum<3> passedBoundaryConds[3]) {
+  void setBoundaryConditions(BoundaryConditionEnum<3> passedBoundaryConds[3]) {
     for (int i = 0; i < 3; i++)
       boundaryConds[i] = passedBoundaryConds[i];
   }
 
   void apply() {
     if (inputLevelSet == nullptr) {
-      lsMessage::getInstance()
-          .addWarning(
-              "No input Level Set supplied to lsExtrude! Not converting.")
+      Logger::getInstance()
+          .addWarning("No input Level Set supplied to Extrude! Not converting.")
           .print();
     }
     if (outputLevelSet == nullptr) {
-      lsMessage::getInstance()
+      Logger::getInstance()
           .addWarning(
-              "No output Level Set supplied to lsExtrude! Not converting.")
+              "No output Level Set supplied to Extrude! Not converting.")
           .print();
       return;
     }
@@ -85,13 +86,13 @@ public:
       domainBounds[2 * extrudeDims[1]] = gridDelta * minBounds[1];
       domainBounds[2 * extrudeDims[1] + 1] = gridDelta * maxBounds[1];
 
-      auto tmpLevelSet = lsSmartPointer<lsDomain<T, 3>>::New(
+      auto tmpLevelSet = SmartPointer<Domain<T, 3>>::New(
           domainBounds, boundaryConds.data(), gridDelta);
       outputLevelSet->deepCopy(tmpLevelSet);
     }
 
-    auto surface = lsSmartPointer<lsMesh<T>>::New();
-    lsToSurfaceMesh<T, 2>(inputLevelSet, surface).apply();
+    auto surface = SmartPointer<Mesh<T>>::New();
+    ToSurfaceMesh<T, 2>(inputLevelSet, surface).apply();
 
     auto &lines = surface->template getElements<2>();
     auto &nodes = surface->getNodes();
@@ -126,7 +127,7 @@ public:
     }
     surface->template getElements<2>().clear(); // remove lines
 
-    lsFromSurfaceMesh<T, 3>(outputLevelSet, surface).apply();
+    FromSurfaceMesh<T, 3>(outputLevelSet, surface).apply();
   }
 
 private:
@@ -142,4 +143,4 @@ private:
   }
 };
 
-#endif // LS_EXTRUDE_HPP
+} // namespace viennals

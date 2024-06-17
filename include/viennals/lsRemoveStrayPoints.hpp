@@ -2,38 +2,41 @@
 
 #include <lsDomain.hpp>
 #include <lsMarkVoidPoints.hpp>
-#include <lsSmartPointer.hpp>
+
+namespace viennals {
+
+using namespace viennacore;
 
 /// This algorithm can be used to remove all LS values
 /// which are not part of a so-called top surface.
-/// This surface is detected using the lsMarkVoidPoints
+/// This surface is detected using the MarkVoidPoints
 /// algorithm, according to the method chosen by the user.
 /// This method is set using setVoidTopSurface, which
 /// is equivalent to the corresponding member function
 /// of lsMarkVoidPoints.
-template <class T, int D> class lsRemoveStrayPoints {
-  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
-  lsVoidTopSurfaceEnum voidTopSurface = lsVoidTopSurfaceEnum::LARGEST;
+template <class T, int D> class RemoveStrayPoints {
+  SmartPointer<Domain<T, D>> levelSet = nullptr;
+  VoidTopSurfaceEnum voidTopSurface = VoidTopSurfaceEnum::LARGEST;
 
 public:
-  lsRemoveStrayPoints() {}
+  RemoveStrayPoints() {}
 
-  lsRemoveStrayPoints(lsSmartPointer<lsDomain<T, D>> passedLevelSet)
+  RemoveStrayPoints(SmartPointer<Domain<T, D>> passedLevelSet)
       : levelSet(passedLevelSet) {}
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
+  void setLevelSet(SmartPointer<Domain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
   }
 
   /// Set how the algorithm should pick the surface which will not
   /// be removed. Defaults to the surface with the most LS points.
-  void setVoidTopSurface(lsVoidTopSurfaceEnum topSurface) {
+  void setVoidTopSurface(VoidTopSurfaceEnum topSurface) {
     voidTopSurface = topSurface;
   }
 
   void apply() {
     if (levelSet == nullptr) {
-      lsMessage::getInstance()
+      Logger::getInstance()
           .addWarning("No level set was passed to lsPrune.")
           .print();
       return;
@@ -44,30 +47,30 @@ public:
 
     // Mark which points are voids
     {
-      lsMarkVoidPoints<T, D> marker;
+      MarkVoidPoints<T, D> marker;
       marker.setLevelSet(levelSet);
       marker.setVoidTopSurface(voidTopSurface);
       marker.apply();
     }
 
     auto voidMarkers =
-        levelSet->getPointData().getScalarData("VoidPointMarkers");
+        levelSet->getPointData().getScalarData("VoidPointMarkers", true);
     if (voidMarkers == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("lsRemoveStrayPoints: No scalar data for void point "
+      Logger::getInstance()
+          .addWarning("RemoveStrayPoints: No scalar data for void point "
                       "markers found. Cannot remove stray points.")
           .print();
     }
 
     // now iterate through the domain and remove points which are void points
     auto &grid = levelSet->getGrid();
-    auto newlsDomain = lsSmartPointer<lsDomain<T, D>>::New(grid);
-    typename lsDomain<T, D>::DomainType &newDomain = newlsDomain->getDomain();
-    typename lsDomain<T, D>::DomainType &domain = levelSet->getDomain();
+    auto newlsDomain = SmartPointer<Domain<T, D>>::New(grid);
+    typename Domain<T, D>::DomainType &newDomain = newlsDomain->getDomain();
+    typename Domain<T, D>::DomainType &domain = levelSet->getDomain();
 
     newDomain.initialize(domain.getNewSegmentation(), domain.getAllocation());
 
-    std::vector<typename lsDomain<T, D>::PointValueVectorType> newPoints;
+    std::vector<typename Domain<T, D>::PointValueVectorType> newPoints;
     newPoints.resize(newDomain.getNumberOfSegments());
 
 #pragma omp parallel num_threads(newDomain.getNumberOfSegments())
@@ -88,7 +91,7 @@ public:
               ? newDomain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
-      for (hrleConstSparseIterator<typename lsDomain<T, D>::DomainType> it(
+      for (hrleConstSparseIterator<typename Domain<T, D>::DomainType> it(
                domain, startVector);
            it.getStartIndices() < endVector; it.next()) {
         if (it.isDefined() && !voidMarkers->at(it.getPointId())) {
@@ -113,3 +116,5 @@ public:
     levelSet->finalize(2);
   }
 };
+
+} // namespace viennals

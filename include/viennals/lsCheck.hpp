@@ -1,5 +1,4 @@
-#ifndef LS_CHECK_HPP
-#define LS_CHECK_HPP
+#pragma once
 
 #include <ostream>
 #include <string>
@@ -8,7 +7,11 @@
 
 #include <lsDomain.hpp>
 
-enum struct lsCheckStatusEnum : unsigned {
+namespace viennals {
+
+using namespace viennacore;
+
+enum struct CheckStatusEnum : unsigned {
   SUCCESS = 0,
   FAILED = 1,
   UNCHECKED = 2
@@ -16,9 +19,9 @@ enum struct lsCheckStatusEnum : unsigned {
 
 ///  This class is used to find errors in the underlying level set
 ///  structure, like invalid neighbours of different signs.
-template <class T, int D> class lsCheck {
-  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
-  lsCheckStatusEnum status = lsCheckStatusEnum::UNCHECKED;
+template <class T, int D> class Check {
+  SmartPointer<Domain<T, D>> levelSet = nullptr;
+  CheckStatusEnum status = CheckStatusEnum::UNCHECKED;
   std::string errors = "Level Set has not been checked yet!";
   bool printMessage = false;
 
@@ -37,8 +40,8 @@ template <class T, int D> class lsCheck {
     } else if (i == 2) {
       result += "z";
     } else {
-      lsMessage::getInstance().addError("lsCheck: " + std::to_string(i) +
-                                        " is not a valid direction index!");
+      Logger::getInstance().addError("Check: " + std::to_string(i) +
+                                     " is not a valid direction index!");
     }
     return result;
   }
@@ -55,27 +58,27 @@ template <class T, int D> class lsCheck {
   }
 
 public:
-  lsCheck() {}
+  Check() {}
 
-  lsCheck(lsSmartPointer<lsDomain<T, D>> passedLevelSet, bool print = false)
+  Check(SmartPointer<Domain<T, D>> passedLevelSet, bool print = false)
       : levelSet(passedLevelSet), printMessage(print) {}
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
+  void setLevelSet(SmartPointer<Domain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
   }
 
   void setPrintMessage(bool print) { printMessage = print; }
 
-  lsCheckStatusEnum getStatus() const { return status; }
+  CheckStatusEnum getStatus() const { return status; }
 
-  bool isValid() const { return status == lsCheckStatusEnum::SUCCESS; }
+  bool isValid() const { return status == CheckStatusEnum::SUCCESS; }
 
   std::string what() const { return errors; }
 
   void apply() {
     if (levelSet == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No level set was passed to lsCheck.")
+      Logger::getInstance()
+          .addWarning("No level set was passed to Check.")
           .print();
       return;
     }
@@ -137,17 +140,17 @@ public:
 
     // output any faults as error
     if (std::string s = oss.str(); !s.empty()) {
-      status = lsCheckStatusEnum::FAILED;
+      status = CheckStatusEnum::FAILED;
       errors = s;
       if (printMessage) {
-        std::string message = "Report from lsCheck:\n" + s;
-        lsMessage::getInstance().addError(s);
+        std::string message = "Report from Check:\n" + s;
+        Logger::getInstance().addError(s);
       }
     } else {
-      status = lsCheckStatusEnum::SUCCESS;
+      status = CheckStatusEnum::SUCCESS;
       errors = "";
     }
   }
 };
 
-#endif // LS_CHECK_HPP
+} // namespace viennals

@@ -1,36 +1,37 @@
-#ifndef LS_FROM_MESH_HPP
-#define LS_FROM_MESH_HPP
+#pragma once
 
 #include <lsPreCompileMacros.hpp>
 
 #include <lsDomain.hpp>
 #include <lsMesh.hpp>
 
+namespace viennals {
+
+using namespace viennacore;
+
 /// Import the regular grid, on which the level set values are
-/// defined, from an explicit lsMesh<>. The Vertices must be defined,
+/// defined, from an explicit Mesh<>. The Vertices must be defined,
 /// as well as a scalar data field "LSValues". If used for custom
 /// read-in, make sure all vertices are lexicographically sorted.
-template <class T, int D> class lsFromMesh {
-  typedef typename lsDomain<T, D>::DomainType hrleDomainType;
+template <class T, int D> class FromMesh {
+  typedef typename Domain<T, D>::DomainType hrleDomainType;
 
-  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
-  lsSmartPointer<lsMesh<T>> mesh = nullptr;
+  SmartPointer<Domain<T, D>> levelSet = nullptr;
+  SmartPointer<Mesh<T>> mesh = nullptr;
   bool sortPointList = true;
 
 public:
-  lsFromMesh(){};
+  FromMesh(){};
 
-  lsFromMesh(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-             const lsSmartPointer<lsMesh<T>> passedMesh)
+  FromMesh(SmartPointer<Domain<T, D>> passedLevelSet,
+           const SmartPointer<Mesh<T>> passedMesh)
       : levelSet(passedLevelSet), mesh(passedMesh) {}
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+  void setLevelSet(SmartPointer<Domain<T, D>> passedlsDomain) {
     levelSet = passedlsDomain;
   }
 
-  void setMesh(const lsSmartPointer<lsMesh<T>> passedMesh) {
-    mesh = passedMesh;
-  }
+  void setMesh(const SmartPointer<Mesh<T>> passedMesh) { mesh = passedMesh; }
 
   void setSortPointList(bool passedSortPointList) {
     sortPointList = passedSortPointList;
@@ -38,24 +39,24 @@ public:
 
   void apply() {
     if (levelSet == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No level set was passed to lsFromMesh.")
+      Logger::getInstance()
+          .addWarning("No level set was passed to FromMesh.")
           .print();
       return;
     }
     if (mesh == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No lsMesh<> was supplied to lsFromMesh.")
+      Logger::getInstance()
+          .addWarning("No Mesh<> was supplied to FromMesh.")
           .print();
       return;
     }
 
     auto &domain = levelSet->getDomain();
     auto &nodes = mesh->getNodes();
-    auto values = mesh->cellData.getScalarData("LSValues");
+    auto values = mesh->cellData.getScalarData("LSValues", true);
 
     if (values == nullptr) {
-      lsMessage::getInstance()
+      Logger::getInstance()
           .addWarning("Mesh does not contain level set values (\"LSValues\").")
           .print();
       return;
@@ -74,8 +75,8 @@ public:
     if (hrleVectorType<T, D>(nodes.front()) != grid.getMinGridPoint()) {
       domain.insertNextUndefinedPoint(0, grid.getMinGridPoint(),
                                       (values->front() < 0)
-                                          ? lsDomain<T, D>::NEG_VALUE
-                                          : lsDomain<T, D>::POS_VALUE);
+                                          ? Domain<T, D>::NEG_VALUE
+                                          : Domain<T, D>::POS_VALUE);
     }
 
     hrleVectorType<hrleIndexType, D> lastIndex(nodes.front());
@@ -166,8 +167,8 @@ public:
           break;
 
         domain.insertNextUndefinedPoint(0, tmp,
-                                        signs[q] ? lsDomain<T, D>::NEG_VALUE
-                                                 : lsDomain<T, D>::POS_VALUE);
+                                        signs[q] ? Domain<T, D>::NEG_VALUE
+                                                 : Domain<T, D>::POS_VALUE);
       }
     }
 
@@ -176,6 +177,6 @@ public:
 };
 
 // add all template specialisations for this class
-PRECOMPILE_PRECISION_DIMENSION(lsFromMesh)
+PRECOMPILE_PRECISION_DIMENSION(FromMesh)
 
-#endif // LS_FROM_MESH_HPP
+} // namespace viennals

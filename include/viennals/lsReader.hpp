@@ -1,26 +1,28 @@
-#ifndef LS_READER_HPP
-#define LS_READER_HPP
+#pragma once
 
 #include <fstream>
 
 #include <lsDomain.hpp>
 #include <lsPreCompileMacros.hpp>
 
-template <class T, int D> class lsReader {
-  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
+namespace viennals {
+
+using namespace viennacore;
+
+template <class T, int D> class Reader {
+  SmartPointer<Domain<T, D>> levelSet = nullptr;
   std::string fileName;
 
 public:
-  lsReader() {}
+  Reader() {}
 
-  lsReader(lsSmartPointer<lsDomain<T, D>> passedLevelSet)
+  Reader(SmartPointer<Domain<T, D>> passedLevelSet)
       : levelSet(passedLevelSet) {}
 
-  lsReader(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-           std::string passedFileName)
+  Reader(SmartPointer<Domain<T, D>> passedLevelSet, std::string passedFileName)
       : levelSet(passedLevelSet), fileName(passedFileName) {}
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
+  void setLevelSet(SmartPointer<Domain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
   }
 
@@ -30,20 +32,20 @@ public:
   void apply() {
     // check mesh
     if (levelSet == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No mesh was passed to lsReader. Not writing.")
+      Logger::getInstance()
+          .addWarning("No mesh was passed to Reader. Not writing.")
           .print();
       return;
     }
     // check filename
     if (fileName.empty()) {
-      lsMessage::getInstance()
-          .addWarning("No file name specified for lsReader. Not writing.")
+      Logger::getInstance()
+          .addWarning("No file name specified for Reader. Not writing.")
           .print();
       return;
     }
     if (fileName.find(".lvst") != fileName.length() - 5) {
-      lsMessage::getInstance()
+      Logger::getInstance()
           .addWarning("File name does not end in '.lvst', appending it.")
           .print();
       fileName.append(".lvst");
@@ -59,6 +61,6 @@ public:
 };
 
 // add all template specialisations for this class
-PRECOMPILE_PRECISION_DIMENSION(lsReader)
+PRECOMPILE_PRECISION_DIMENSION(Reader)
 
-#endif // LS_READER_HPP
+} // namespace viennals

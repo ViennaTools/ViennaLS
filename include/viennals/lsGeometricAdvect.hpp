@@ -1,5 +1,4 @@
-#ifndef LS_FAST_ADVECT_HPP
-#define LS_FAST_ADVECT_HPP
+#pragma once
 
 #include <unordered_map>
 
@@ -8,22 +7,27 @@
 #include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
 
-#include <lsMessage.hpp>
-#include <lsPreCompileMacros.hpp>
-
 #include <lsBooleanOperation.hpp>
 #include <lsConcepts.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsFromMesh.hpp>
 #include <lsGeometricAdvectDistributions.hpp>
+#include <lsPreCompileMacros.hpp>
 #include <lsToDiskMesh.hpp>
+
+#include <vcLogger.hpp>
+#include <vcSmartPointer.hpp>
 
 #ifndef NDEBUG // if in debug build
 #include <lsCheck.hpp>
 #include <lsToMesh.hpp>
 #include <lsVTKWriter.hpp>
 #endif
+
+namespace viennals {
+
+using namespace viennacore;
 
 /// This class advects the level set according to a given distribution.
 /// This distribution is overlayed at every grid point of the old surface. All
@@ -32,10 +36,10 @@
 /// shifted long distances in one step. This algorithm is therefore preferable
 /// to normal advection if there is growth/reduction by a purely geometric
 /// directional distribution.
-template <class T, int D> class lsGeometricAdvect {
-  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
-  lsSmartPointer<lsDomain<T, D>> maskLevelSet = nullptr;
-  lsSmartPointer<const lsGeometricAdvectDistribution<hrleCoordType, D>> dist =
+template <class T, int D> class GeometricAdvect {
+  SmartPointer<Domain<T, D>> levelSet = nullptr;
+  SmartPointer<Domain<T, D>> maskLevelSet = nullptr;
+  SmartPointer<const GeometricAdvectDistribution<hrleCoordType, D>> dist =
       nullptr;
   static constexpr T cutoffValue =
       T(1.) + std::numeric_limits<T>::epsilon() * T(100);
@@ -62,67 +66,66 @@ template <class T, int D> class lsGeometricAdvect {
   }
 
 public:
-  lsGeometricAdvect() {}
+  GeometricAdvect() {}
 
-  template <class DistType, lsConcepts::IsBaseOf<
-                                lsGeometricAdvectDistribution<hrleCoordType, D>,
-                                DistType> = lsConcepts::assignable>
-  lsGeometricAdvect(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-                    lsSmartPointer<DistType> passedDist,
-                    lsSmartPointer<lsDomain<T, D>> passedMaskLevelSet = nullptr)
+  template <class DistType,
+            lsConcepts::IsBaseOf<GeometricAdvectDistribution<hrleCoordType, D>,
+                                 DistType> = lsConcepts::assignable>
+  GeometricAdvect(SmartPointer<Domain<T, D>> passedLevelSet,
+                  SmartPointer<DistType> passedDist,
+                  SmartPointer<Domain<T, D>> passedMaskLevelSet = nullptr)
       : levelSet(passedLevelSet), maskLevelSet(passedMaskLevelSet) {
     dist = std::dynamic_pointer_cast<
-        lsGeometricAdvectDistribution<hrleCoordType, D>>(passedDist);
+        GeometricAdvectDistribution<hrleCoordType, D>>(passedDist);
   }
 
   /// Set the levelset which should be advected.
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
+  void setLevelSet(SmartPointer<Domain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
   }
 
   /// Set which advection distribution to use. Must be derived from
-  /// lsGeometricAdvectDistribution.
-  template <class DistType, lsConcepts::IsBaseOf<
-                                lsGeometricAdvectDistribution<hrleCoordType, D>,
-                                DistType> = lsConcepts::assignable>
-  void setAdvectionDistribution(lsSmartPointer<DistType> passedDist) {
+  /// GeometricAdvectDistribution.
+  template <class DistType,
+            lsConcepts::IsBaseOf<GeometricAdvectDistribution<hrleCoordType, D>,
+                                 DistType> = lsConcepts::assignable>
+  void setAdvectionDistribution(SmartPointer<DistType> passedDist) {
     dist = std::dynamic_pointer_cast<
-        lsGeometricAdvectDistribution<hrleCoordType, D>>(passedDist);
+        GeometricAdvectDistribution<hrleCoordType, D>>(passedDist);
   }
 
   /// Set the levelset, which should be used as a mask. This level set
   /// has to be wrapped by the levelset set by setLevelSet, so the mask
   /// is entirely inside the advected level set.
-  void setMaskLevelSet(lsSmartPointer<lsDomain<T, D>> passedMaskLevelSet) {
+  void setMaskLevelSet(SmartPointer<Domain<T, D>> passedMaskLevelSet) {
     maskLevelSet = passedMaskLevelSet;
   }
 
   /// Perform geometrical advection.
   void apply() {
     if (levelSet == nullptr) {
-      lsMessage::getInstance()
-          .addWarning(
-              "No level set passed to lsGeometricAdvect. Not Advecting.")
+      Logger::getInstance()
+          .addWarning("No level set passed to GeometricAdvect. Not Advecting.")
           .print();
       return;
     }
     if (dist == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No lsGeometricAdvectDistribution passed to "
-                      "lsGeometricAdvect. Not "
+      Logger::getInstance()
+          .addWarning("No GeometricAdvectDistribution passed to "
+                      "GeometricAdvect. Not "
                       "Advecting.")
           .print();
       return;
     }
 
     // levelSet must have at least a width of 3
-    lsExpand<T, D>(levelSet, 3).apply();
+    Expand<T, D>(levelSet, 3).apply();
 
     if (maskLevelSet != nullptr) {
-      lsExpand<T, D>(maskLevelSet, 3).apply();
+      Expand<T, D>(maskLevelSet, 3).apply();
     }
 
-    typedef typename lsDomain<T, D>::DomainType DomainType;
+    typedef typename Domain<T, D>::DomainType DomainType;
 
     auto &domain = levelSet->getDomain();
 
@@ -131,10 +134,10 @@ public:
 
     // Extract the original surface as a point cloud of grid
     // points shifted to the surface (disk mesh)
-    auto surfaceMesh = lsSmartPointer<lsMesh<hrleCoordType>>::New();
+    auto surfaceMesh = SmartPointer<Mesh<hrleCoordType>>::New();
     auto pointIdTranslator =
-        lsSmartPointer<typename lsToDiskMesh<T, D>::TranslatorType>::New();
-    lsToDiskMesh<T, D, hrleCoordType>(levelSet, surfaceMesh, pointIdTranslator)
+        SmartPointer<typename ToDiskMesh<T, D>::TranslatorType>::New();
+    ToDiskMesh<T, D, hrleCoordType>(levelSet, surfaceMesh, pointIdTranslator)
         .apply();
     *pointIdTranslator = inverseTranslator(*pointIdTranslator);
 
@@ -208,8 +211,8 @@ public:
       auto values = surfaceMesh->cellData.getScalarData("LSValues");
       auto valueIt = values->begin();
 
-      auto newSurfaceMesh = lsSmartPointer<lsMesh<hrleCoordType>>::New();
-      typename lsPointData<hrleCoordType>::ScalarDataType newValues;
+      auto newSurfaceMesh = SmartPointer<Mesh<hrleCoordType>>::New();
+      typename PointData<hrleCoordType>::ScalarDataType newValues;
       hrleConstSparseIterator<DomainType> maskIt(maskDomain);
       for (auto &node : surfaceMesh->getNodes()) {
         hrleVectorType<hrleIndexType, D> index;
@@ -239,22 +242,22 @@ public:
 
 #ifndef NDEBUG // if in debug build
     {
-      lsMessage::getInstance()
+      Logger::getInstance()
           .addDebug("GeomAdvect: Writing debug meshes")
           .print();
-      lsVTKWriter<hrleCoordType>(surfaceMesh, lsFileFormatEnum::VTP,
-                                 "DEBUG_lsGeomAdvectMesh_contributewoMask.vtp")
+      VTKWriter<hrleCoordType>(surfaceMesh, FileFormatEnum::VTP,
+                               "DEBUG_lsGeomAdvectMesh_contributewoMask.vtp")
           .apply();
-      auto mesh = lsSmartPointer<lsMesh<T>>::New();
+      auto mesh = SmartPointer<Mesh<T>>::New();
       if (maskLevelSet != nullptr) {
-        lsToMesh<T, D>(maskLevelSet, mesh).apply();
-        lsVTKWriter<T>(mesh, lsFileFormatEnum::VTP,
-                       "DEBUG_lsGeomAdvectMesh_mask.vtp")
+        ToMesh<T, D>(maskLevelSet, mesh).apply();
+        VTKWriter<T>(mesh, FileFormatEnum::VTP,
+                     "DEBUG_lsGeomAdvectMesh_mask.vtp")
             .apply();
       }
-      lsToMesh<T, D>(levelSet, mesh).apply();
-      lsVTKWriter<T>(mesh, lsFileFormatEnum::VTP,
-                     "DEBUG_lsGeomAdvectMesh_initial.vtp")
+      ToMesh<T, D>(levelSet, mesh).apply();
+      VTKWriter<T>(mesh, FileFormatEnum::VTP,
+                   "DEBUG_lsGeomAdvectMesh_initial.vtp")
           .apply();
     }
 
@@ -300,7 +303,7 @@ public:
     {
       std::ostringstream oss;
       oss << "GeomAdvect: Min: " << min << ", Max: " << max << std::endl;
-      lsMessage::getInstance().addDebug(oss.str()).print();
+      Logger::getInstance().addDebug(oss.str()).print();
     }
 #endif
 // set up multithreading
@@ -328,9 +331,9 @@ public:
                                                   startVector);
 
       // Mask iterator for checking whether inside mask or not
-      lsSmartPointer<hrleConstSparseIterator<DomainType>> maskIt = nullptr;
+      SmartPointer<hrleConstSparseIterator<DomainType>> maskIt = nullptr;
       if (maskLevelSet != nullptr) {
-        maskIt = lsSmartPointer<hrleConstSparseIterator<DomainType>>::New(
+        maskIt = SmartPointer<hrleConstSparseIterator<DomainType>>::New(
             maskLevelSet->getDomain(), startVector);
       }
 
@@ -481,7 +484,7 @@ public:
       }
     }
 
-    auto mesh = lsSmartPointer<lsMesh<T>>::New();
+    auto mesh = SmartPointer<Mesh<T>>::New();
     // output all points directly to mesh
     {
       std::vector<T> scalarData;
@@ -501,36 +504,30 @@ public:
     }
 
 #ifndef NDEBUG // if in debug build
-    lsMessage::getInstance()
-        .addDebug("GeomAdvect: Writing final mesh...")
-        .print();
-    lsVTKWriter<T>(mesh, lsFileFormatEnum::VTP,
-                   "DEBUG_lsGeomAdvectMesh_final.vtp")
+    Logger::getInstance().addDebug("GeomAdvect: Writing final mesh...").print();
+    VTKWriter<T>(mesh, FileFormatEnum::VTP, "DEBUG_lsGeomAdvectMesh_final.vtp")
         .apply();
 #endif
 
-    lsFromMesh<T, D>(levelSet, mesh).apply();
+    FromMesh<T, D>(levelSet, mesh).apply();
 
 #ifndef NDEBUG // if in debug build
-    lsMessage::getInstance()
-        .addDebug("GeomAdvect: Writing final LS...")
-        .print();
-    lsToMesh<T, D>(levelSet, mesh).apply();
-    lsVTKWriter<T>(mesh, lsFileFormatEnum::VTP,
-                   "DEBUG_lsGeomAdvectLS_final.vtp")
+    Logger::getInstance().addDebug("GeomAdvect: Writing final LS...").print();
+    ToMesh<T, D>(levelSet, mesh).apply();
+    VTKWriter<T>(mesh, FileFormatEnum::VTP, "DEBUG_lsGeomAdvectLS_final.vtp")
         .apply();
 #endif
 
-    lsPrune<T, D>(levelSet).apply();
+    Prune<T, D>(levelSet).apply();
 
     levelSet->getDomain().segment();
     levelSet->finalize(1);
 
-    lsExpand<T, D>(levelSet, 2).apply();
+    Expand<T, D>(levelSet, 2).apply();
   }
 };
 
 // add all template specialisations for this class
-PRECOMPILE_PRECISION_DIMENSION(lsGeometricAdvect)
+PRECOMPILE_PRECISION_DIMENSION(GeometricAdvect)
 
-#endif // LS_FAST_ADVECT_HPP
+} // namespace viennals

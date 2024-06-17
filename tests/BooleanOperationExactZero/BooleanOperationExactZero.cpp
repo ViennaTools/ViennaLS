@@ -18,15 +18,17 @@
   \example BooleanOperationExactZero.cpp
 */
 
+namespace ls = viennals;
+
 using NumericType = double;
 constexpr int D = 2;
 
-using LSType = lsSmartPointer<lsDomain<NumericType, D>>;
+using LSType = ls::SmartPointer<ls::Domain<NumericType, D>>;
 
 void writeLS(LSType levelSet, std::string fileName) {
-  auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
-  lsToMesh(levelSet, mesh, false).apply();
-  lsVTKWriter(mesh, fileName).apply();
+  auto mesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
+  ls::ToMesh(levelSet, mesh, false).apply();
+  ls::VTKWriter(mesh, fileName).apply();
 }
 
 int main() {
@@ -38,20 +40,21 @@ int main() {
     double extent = 10;
     double bounds[2 * D] = {-extent, extent, -extent, extent};
 
-    typename lsDomain<NumericType, D>::BoundaryType boundaryCons[D];
+    typename ls::Domain<NumericType, D>::BoundaryType boundaryCons[D];
     boundaryCons[0] =
-        lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
-    boundaryCons[1] = lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
+        ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+    boundaryCons[1] =
+        ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
     if constexpr (D == 3) {
       boundaryCons[1] =
-          lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+          ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
       boundaryCons[2] =
-          lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
+          ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
     }
 
-    mask = lsSmartPointer<lsDomain<NumericType, D>>::New(bounds, boundaryCons,
-                                                         gridDelta);
+    mask = ls::SmartPointer<ls::Domain<NumericType, D>>::New(
+        bounds, boundaryCons, gridDelta);
   }
 
   // make mask geometry ( just a simple box )
@@ -64,7 +67,8 @@ int main() {
       max[1] = 5.;
       max[2] = 10.;
     }
-    lsMakeGeometry(mask, lsSmartPointer<lsBox<NumericType, D>>::New(min, max))
+    ls::MakeGeometry(mask,
+                     ls::SmartPointer<ls::Box<NumericType, D>>::New(min, max))
         .apply();
     // writeLS(mask, "mask_initial.vtp");
   }
@@ -76,19 +80,21 @@ int main() {
     double normal[D] = {};
     origin[D - 1] = 1.;
     normal[D - 1] = 1.;
-    lsMakeGeometry(substrate,
-                   lsSmartPointer<lsPlane<NumericType, D>>::New(origin, normal))
+    ls::MakeGeometry(
+        substrate,
+        ls::SmartPointer<ls::Plane<NumericType, D>>::New(origin, normal))
         .apply();
     // writeLS(substrate, "subs_initial.vtp");
   }
 
-  lsBooleanOperation(substrate, mask, lsBooleanOperationEnum::UNION).apply();
+  ls::BooleanOperation(substrate, mask, ls::BooleanOperationEnum::UNION)
+      .apply();
 
   // writeLS(substrate, "subs_afterBool.vtp");
 
   // iterate through all values and check if they are correct
   unsigned counter = 0;
-  for (hrleConstSparseIterator<typename lsDomain<double, D>::DomainType> it(
+  for (hrleConstSparseIterator<typename ls::Domain<double, D>::DomainType> it(
            substrate->getDomain());
        !it.isFinished(); ++it) {
     auto indices = it.getStartIndices();

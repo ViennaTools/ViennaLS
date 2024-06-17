@@ -1,5 +1,4 @@
-#ifndef LS_FROM_SURFACE_MESH_HPP
-#define LS_FROM_SURFACE_MESH_HPP
+#pragma once
 
 #include <lsPreCompileMacros.hpp>
 
@@ -7,10 +6,13 @@
 
 #include <lsDomain.hpp>
 #include <lsMesh.hpp>
-#include <lsMessage.hpp>
+
+namespace viennals {
+
+using namespace viennacore;
 
 /// Construct a level set from an explicit mesh.
-template <class T, int D> class lsFromSurfaceMesh {
+template <class T, int D> class FromSurfaceMesh {
 
   /// Class defining a box used in ray tracing optimisation
   class box {
@@ -93,9 +95,8 @@ template <class T, int D> class lsFromSurfaceMesh {
     };
   };
 
-  lsSmartPointer<lsDomain<T, D>> levelSet =
-      lsSmartPointer<lsDomain<T, D>>::New();
-  lsSmartPointer<lsMesh<T>> mesh = lsSmartPointer<lsMesh<T>>::New();
+  SmartPointer<Domain<T, D>> levelSet = SmartPointer<Domain<T, D>>::New();
+  SmartPointer<Mesh<T>> mesh = SmartPointer<Mesh<T>>::New();
   // bool removeBoundaryTriangles = true;
   std::array<bool, 3> removeBoundaryTriangles{true, true, true};
   T boundaryEps = 1e-5;
@@ -211,21 +212,21 @@ template <class T, int D> class lsFromSurfaceMesh {
   }
 
 public:
-  lsFromSurfaceMesh() {}
+  FromSurfaceMesh() {}
 
-  lsFromSurfaceMesh(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-                    lsSmartPointer<lsMesh<T>> passedMesh,
-                    bool passedRemoveBoundaryTriangles = true)
+  FromSurfaceMesh(SmartPointer<Domain<T, D>> passedLevelSet,
+                  SmartPointer<Mesh<T>> passedMesh,
+                  bool passedRemoveBoundaryTriangles = true)
       : levelSet(passedLevelSet), mesh(passedMesh),
         removeBoundaryTriangles{passedRemoveBoundaryTriangles,
                                 passedRemoveBoundaryTriangles,
                                 passedRemoveBoundaryTriangles} {}
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
+  void setLevelSet(SmartPointer<Domain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
   }
 
-  void setMesh(lsSmartPointer<lsMesh<T>> passedMesh) { mesh = passedMesh; }
+  void setMesh(SmartPointer<Mesh<T>> passedMesh) { mesh = passedMesh; }
 
   /// Set whether all triangles outside of the domain should be ignored (=true)
   /// or whether boundary conditions should be applied correctly to such
@@ -248,14 +249,14 @@ public:
 
   void apply() {
     if (levelSet == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No level set was passed to lsFromSurfaceMesh.")
+      Logger::getInstance()
+          .addWarning("No level set was passed to FromSurfaceMesh.")
           .print();
       return;
     }
     if (mesh == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No mesh was passed to lsFromSurfaceMesh.")
+      Logger::getInstance()
+          .addWarning("No mesh was passed to FromSurfaceMesh.")
           .print();
       return;
     }
@@ -487,6 +488,6 @@ public:
 };
 
 // add all template specialisations for this class
-PRECOMPILE_PRECISION_DIMENSION(lsFromSurfaceMesh)
+PRECOMPILE_PRECISION_DIMENSION(FromSurfaceMesh)
 
-#endif // LS_FROM_SURFACE_MESH_HPP
+} // namespace viennals

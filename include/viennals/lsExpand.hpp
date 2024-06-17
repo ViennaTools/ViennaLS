@@ -1,32 +1,34 @@
-#ifndef LS_EXPAND_HPP
-#define LS_EXPAND_HPP
+#pragma once
 
 #include <lsPreCompileMacros.hpp>
 
 #include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
 #include <lsDomain.hpp>
-#include <lsMessage.hpp>
+
+namespace viennals {
+
+using namespace viennacore;
 
 /// Expands the leveleSet to the specified number of layers.
 /// The largest value in the levelset is thus width*0.5
 /// Returns the number of added points
-template <class T, int D> class lsExpand {
-  typedef typename lsDomain<T, D>::GridType GridType;
-  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
+template <class T, int D> class Expand {
+  typedef typename Domain<T, D>::GridType GridType;
+  SmartPointer<Domain<T, D>> levelSet = nullptr;
   int width = 0;
   bool updatePointData = true;
 
 public:
-  lsExpand() {}
+  Expand() {}
 
-  lsExpand(lsSmartPointer<lsDomain<T, D>> passedlsDomain)
+  Expand(SmartPointer<Domain<T, D>> passedlsDomain)
       : levelSet(passedlsDomain) {}
 
-  lsExpand(lsSmartPointer<lsDomain<T, D>> passedlsDomain, int passedWidth)
+  Expand(SmartPointer<Domain<T, D>> passedlsDomain, int passedWidth)
       : levelSet(passedlsDomain), width(passedWidth) {}
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+  void setLevelSet(SmartPointer<Domain<T, D>> passedlsDomain) {
     levelSet = passedlsDomain;
   }
 
@@ -41,8 +43,8 @@ public:
   /// Apply the expansion to the specified width
   void apply() {
     if (levelSet == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No level set passed to lsExpand. Not expanding.")
+      Logger::getInstance()
+          .addWarning("No level set passed to Expand. Not expanding.")
           .print();
       return;
     }
@@ -65,9 +67,9 @@ public:
       const T limit = (startWidth + currentCycle + 1) * T(0.5);
 
       auto &grid = levelSet->getGrid();
-      auto newlsDomain = lsSmartPointer<lsDomain<T, D>>::New(grid);
-      typename lsDomain<T, D>::DomainType &newDomain = newlsDomain->getDomain();
-      typename lsDomain<T, D>::DomainType &domain = levelSet->getDomain();
+      auto newlsDomain = SmartPointer<Domain<T, D>>::New(grid);
+      typename Domain<T, D>::DomainType &newDomain = newlsDomain->getDomain();
+      typename Domain<T, D>::DomainType &domain = levelSet->getDomain();
 
       newDomain.initialize(domain.getNewSegmentation(),
                            domain.getAllocation() * allocationFactor);
@@ -97,7 +99,7 @@ public:
                 ? newDomain.getSegmentation()[p]
                 : grid.incrementIndices(grid.getMaxGridPoint());
 
-        for (hrleSparseStarIterator<typename lsDomain<T, D>::DomainType, 1>
+        for (hrleSparseStarIterator<typename Domain<T, D>::DomainType, 1>
                  neighborIt(domain, startVector);
              neighborIt.getIndices() < endVector; neighborIt.next()) {
 
@@ -109,7 +111,7 @@ public:
               newDataSourceIds[p].push_back(centerIt.getPointId());
           } else {
             if (centerIt.getValue() > -std::numeric_limits<T>::epsilon()) {
-              T distance = lsDomain<T, D>::POS_VALUE;
+              T distance = Domain<T, D>::POS_VALUE;
               int neighbor = -1;
               for (int i = 0; i < 2 * D; i++) {
                 T newValue = neighborIt.getNeighbor(i).getValue() + T(1);
@@ -126,11 +128,11 @@ public:
                       neighborIt.getNeighbor(neighbor).getPointId());
               } else {
                 // TODO: use insertNextUndefinedRunType
-                domainSegment.insertNextUndefinedPoint(
-                    neighborIt.getIndices(), lsDomain<T, D>::POS_VALUE);
+                domainSegment.insertNextUndefinedPoint(neighborIt.getIndices(),
+                                                       Domain<T, D>::POS_VALUE);
               }
             } else {
-              T distance = lsDomain<T, D>::NEG_VALUE;
+              T distance = Domain<T, D>::NEG_VALUE;
               int neighbor = -1;
               for (int i = 0; i < 2 * D; i++) {
                 T newValue = neighborIt.getNeighbor(i).getValue() - T(1);
@@ -147,8 +149,8 @@ public:
                       neighborIt.getNeighbor(neighbor).getPointId());
               } else {
                 // TODO: use insertNextUndefinedRunType
-                domainSegment.insertNextUndefinedPoint(
-                    neighborIt.getIndices(), lsDomain<T, D>::NEG_VALUE);
+                domainSegment.insertNextUndefinedPoint(neighborIt.getIndices(),
+                                                       Domain<T, D>::NEG_VALUE);
               }
             }
           }
@@ -170,6 +172,6 @@ public:
 };
 
 // add all template specialisations for this class
-PRECOMPILE_PRECISION_DIMENSION(lsExpand)
+PRECOMPILE_PRECISION_DIMENSION(Expand)
 
-#endif // LS_EXPAND_HPP
+} // namespace viennals

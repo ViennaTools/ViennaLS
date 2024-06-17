@@ -16,6 +16,8 @@
   \example Make3DSphere.cpp
 */
 
+namespace ls = viennals;
+
 int main() {
 
   constexpr int D = 3;
@@ -24,45 +26,47 @@ int main() {
 
   double gridDelta = 0.4;
 
-  auto sphere1 =
-      lsSmartPointer<lsDomain<double, D>>::New(gridDelta); //, boundaryCons);
+  auto sphere1 = ls::SmartPointer<ls::Domain<double, D>>::New(
+      gridDelta); //, boundaryCons);
 
-  auto sphere2 =
-      lsSmartPointer<lsDomain<double, D>>::New(gridDelta); //, boundaryCons);
+  auto sphere2 = ls::SmartPointer<ls::Domain<double, D>>::New(
+      gridDelta); //, boundaryCons);
   double origin[3] = {5., 0., 0.};
   double radius = 7.3;
 
-  lsMakeGeometry<double, D>(
-      sphere1, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
+  ls::MakeGeometry<double, D>(
+      sphere1, ls::SmartPointer<ls::Sphere<double, D>>::New(origin, radius))
       .apply();
   origin[0] = -5.;
-  lsMakeGeometry<double, D>(
-      sphere2, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
+  ls::MakeGeometry<double, D>(
+      sphere2, ls::SmartPointer<ls::Sphere<double, D>>::New(origin, radius))
       .apply();
 
   std::cout << "Number of points: " << sphere1->getDomain().getNumberOfPoints()
             << std::endl;
-  auto mesh = lsSmartPointer<lsMesh<>>::New();
+  auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
 
   std::cout << "Expanding..." << std::endl;
-  lsExpand<double, D>(sphere1, 2).apply();
-  lsExpand<double, D>(sphere2, 2).apply();
+  ls::Expand<double, D>(sphere1, 2).apply();
+  ls::Expand<double, D>(sphere2, 2).apply();
 
   std::cout << "Booling..." << std::endl;
-  lsBooleanOperation<double, D>(sphere1, sphere2, lsBooleanOperationEnum::UNION)
+  ls::BooleanOperation<double, D>(sphere1, sphere2,
+                                  ls::BooleanOperationEnum::UNION)
       .apply();
 
   std::cout << "Extracting..." << std::endl;
-  lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
+  ls::ToSurfaceMesh<double, D>(sphere1, mesh).apply();
 
   mesh->print();
 
-  lsVTKWriter<double>(mesh, "test-" + std::to_string(radius) + ".vtk").apply();
+  ls::VTKWriter<double>(mesh, "test-" + std::to_string(radius) + ".vtk")
+      .apply();
 
   // write voxelised volume mesh
   {
-    auto voxelMesh = lsSmartPointer<lsMesh<>>::New();
-    auto voxelMesher = lsToVoxelMesh<double, D>(voxelMesh);
+    auto voxelMesh = ls::SmartPointer<ls::Mesh<>>::New();
+    auto voxelMesher = ls::ToVoxelMesh<double, D>(voxelMesh);
 
     voxelMesher.insertNextLevelSet(sphere2);
     voxelMesher.insertNextLevelSet(sphere1);
@@ -79,7 +83,7 @@ int main() {
     std::cout << "voxelMesh: " << std::endl;
     voxelMesh->print();
 
-    lsVTKWriter<double>(voxelMesh, lsFileFormatEnum::VTU, "voxelMesh.vtu")
+    ls::VTKWriter<double>(voxelMesh, ls::FileFormatEnum::VTU, "voxelMesh.vtu")
         .apply();
   }
 

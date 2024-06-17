@@ -1,11 +1,10 @@
-#ifndef LS_FILE_FORMATS_HPP
-#define LS_FILE_FORMATS_HPP
+#pragma once
 
-enum struct lsFileFormatEnum : unsigned {
+namespace viennals {
+enum struct FileFormatEnum : unsigned {
   VTK_LEGACY = 0,
   VTP = 1,
   VTU = 2,
   VTK_AUTO = 3
 };
-
-#endif
+}

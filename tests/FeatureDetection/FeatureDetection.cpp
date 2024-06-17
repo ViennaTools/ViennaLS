@@ -19,6 +19,8 @@
   \example calculateCurvatures.cpp
 */
 
+namespace ls = viennals;
+
 constexpr int D = 3;
 typedef double NumericType;
 
@@ -40,28 +42,28 @@ int main() {
     bounds[5] = extent;
   }
 
-  typename lsDomain<NumericType, D>::BoundaryType boundaryCons[D];
+  typename ls::Domain<NumericType, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D - 1; ++i) {
     boundaryCons[i] =
-        lsDomain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+        ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   }
   boundaryCons[D - 1] =
-      lsDomain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
+      ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
-  auto levelSet = lsSmartPointer<lsDomain<NumericType, D>>::New(
+  auto levelSet = ls::SmartPointer<ls::Domain<NumericType, D>>::New(
       bounds, boundaryCons, gridDelta);
 
   {
     auto plane =
-        lsSmartPointer<lsPlane<NumericType, D>>::New(origin, planeNormal);
-    lsMakeGeometry<NumericType, D>(levelSet, plane).apply();
+        ls::SmartPointer<ls::Plane<NumericType, D>>::New(origin, planeNormal);
+    ls::MakeGeometry<NumericType, D>(levelSet, plane).apply();
   }
 
   {
     // create layer used for booling
     std::cout << "Creating box..." << std::endl;
 
-    auto trench = lsSmartPointer<lsDomain<NumericType, D>>::New(
+    auto trench = ls::SmartPointer<ls::Domain<NumericType, D>>::New(
         bounds, boundaryCons, gridDelta);
 
     if constexpr (D == 3) {
@@ -70,20 +72,20 @@ int main() {
       NumericType maxCorner[3] = {(NumericType)(extent / 4.),
                                   (NumericType)extent + 1, 5.0};
       auto box =
-          lsSmartPointer<lsBox<NumericType, D>>::New(minCorner, maxCorner);
-      lsMakeGeometry<NumericType, D>(trench, box).apply();
+          ls::SmartPointer<ls::Box<NumericType, D>>::New(minCorner, maxCorner);
+      ls::MakeGeometry<NumericType, D>(trench, box).apply();
     } else {
       NumericType minCorner[2] = {(NumericType)(-extent / 4.), -49.8};
       NumericType maxCorner[2] = {(NumericType)(extent / 4.), 5.0};
       auto box =
-          lsSmartPointer<lsBox<NumericType, D>>::New(minCorner, maxCorner);
-      lsMakeGeometry<NumericType, D>(trench, box).apply();
+          ls::SmartPointer<ls::Box<NumericType, D>>::New(minCorner, maxCorner);
+      ls::MakeGeometry<NumericType, D>(trench, box).apply();
     }
 
     // Create trench geometry
     std::cout << "Booling trench..." << std::endl;
-    lsBooleanOperation<NumericType, D>(
-        levelSet, trench, lsBooleanOperationEnum::RELATIVE_COMPLEMENT)
+    ls::BooleanOperation<NumericType, D>(
+        levelSet, trench, ls::BooleanOperationEnum::RELATIVE_COMPLEMENT)
         .apply();
   }
 
@@ -91,14 +93,14 @@ int main() {
 
   std::cout << "Expanding..." << std::endl;
 
-  lsExpand<NumericType, D> expander(levelSet, 5);
+  ls::Expand<NumericType, D> expander(levelSet, 5);
 
   expander.apply();
 
   std::cout << "Flagging Curvatures..." << std::endl;
 
-  lsDetectFeatures<NumericType, D> CurvatureFlagger(
-      levelSet, 1e-3, lsFeatureDetectionEnum::CURVATURE);
+  ls::DetectFeatures<NumericType, D> CurvatureFlagger(
+      levelSet, 1e-3, ls::FeatureDetectionEnum::CURVATURE);
 
   CurvatureFlagger.apply();
 
@@ -112,17 +114,17 @@ int main() {
 
   std::cout << "Flagging Normals..." << std::endl;
 
-  lsDetectFeatures<NumericType, D> NormalsFlagger(
-      levelSet, 1e-3, lsFeatureDetectionEnum::NORMALS_ANGLE);
+  ls::DetectFeatures<NumericType, D> NormalsFlagger(
+      levelSet, 1e-3, ls::FeatureDetectionEnum::NORMALS_ANGLE);
 
   NormalsFlagger.apply();
 
   std::cout << "Writing Output..." << std::endl;
 
-  auto mesh = lsSmartPointer<lsMesh<NumericType>>::New();
-  lsToMesh<NumericType, D>(levelSet, mesh, true, true).apply();
+  auto mesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
+  ls::ToMesh<NumericType, D>(levelSet, mesh, true, true).apply();
 
-  auto writer = lsVTKWriter<NumericType>();
+  auto writer = ls::VTKWriter<NumericType>();
   writer.setMesh(mesh);
   writer.setFileName("Features.vtk");
   writer.apply();

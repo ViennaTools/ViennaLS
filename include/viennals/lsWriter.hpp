@@ -1,26 +1,28 @@
-#ifndef LS_WRITER_HPP
-#define LS_WRITER_HPP
+#pragma once
 
 #include <fstream>
 
 #include <lsDomain.hpp>
 #include <lsPreCompileMacros.hpp>
 
-template <class T, int D> class lsWriter {
-  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
+namespace viennals {
+
+using namespace viennacore;
+
+template <class T, int D> class Writer {
+  SmartPointer<Domain<T, D>> levelSet = nullptr;
   std::string fileName;
 
 public:
-  lsWriter() {}
+  Writer() {}
 
-  lsWriter(lsSmartPointer<lsDomain<T, D>> passedLevelSet)
+  Writer(SmartPointer<Domain<T, D>> passedLevelSet)
       : levelSet(passedLevelSet) {}
 
-  lsWriter(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-           std::string passedFileName)
+  Writer(SmartPointer<Domain<T, D>> passedLevelSet, std::string passedFileName)
       : levelSet(passedLevelSet), fileName(passedFileName) {}
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
+  void setLevelSet(SmartPointer<Domain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
   }
 
@@ -30,21 +32,21 @@ public:
   void apply() {
     // check mesh
     if (levelSet == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No mesh was passed to lsWriter. Not writing.")
+      Logger::getInstance()
+          .addWarning("No mesh was passed to Writer. Not writing.")
           .print();
       return;
     }
     // check filename
     if (fileName.empty()) {
-      lsMessage::getInstance()
-          .addWarning("No file name specified for lsWriter. Not writing.")
+      Logger::getInstance()
+          .addWarning("No file name specified for Writer. Not writing.")
           .print();
       return;
     }
 
     if (fileName.find(".lvst") != fileName.length() - 5) {
-      lsMessage::getInstance()
+      Logger::getInstance()
           .addWarning("File name does not end in '.lvst', appending it.")
           .print();
       fileName.append(".lvst");
@@ -60,6 +62,6 @@ public:
 };
 
 // add all template specialisations for this class
-PRECOMPILE_PRECISION_DIMENSION(lsWriter)
+PRECOMPILE_PRECISION_DIMENSION(Writer)
 
-#endif // LS_WRITER_HPP
+} // namespace viennals

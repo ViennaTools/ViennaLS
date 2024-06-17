@@ -1,5 +1,4 @@
-#ifndef LS_ENQUIST_OSHER_SV_HPP
-#define LS_ENQUIST_OSHER_SV_HPP
+#pragma once
 
 #include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
@@ -8,27 +7,31 @@
 #include <lsExpand.hpp>
 #include <lsVelocityField.hpp>
 
+#include <vcVectorUtil.hpp>
+
 namespace lsInternal {
+
+using namespace viennals;
 
 /// Engquist osher integration scheme based on the
 /// upwind integration scheme. Offers high performance
 /// but lower accuracy for complex velocity fields.
-template <class T, int D, int order> class lsEnquistOsher {
-  lsSmartPointer<lsDomain<T, D>> levelSet;
-  lsSmartPointer<lsVelocityField<T>> velocities;
+template <class T, int D, int order> class EnquistOsher {
+  SmartPointer<Domain<T, D>> levelSet;
+  SmartPointer<VelocityField<T>> velocities;
   hrleSparseStarIterator<hrleDomain<T, D>, order> neighborIterator;
   bool calculateNormalVectors = true;
 
   static T pow2(const T &value) { return value * value; }
 
 public:
-  static void prepareLS(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+  static void prepareLS(SmartPointer<Domain<T, D>> passedlsDomain) {
     assert(order == 1 || order == 2);
-    lsExpand<T, D>(passedlsDomain, 2 * order + 1).apply();
+    Expand<T, D>(passedlsDomain, 2 * order + 1).apply();
   }
 
-  lsEnquistOsher(lsSmartPointer<lsDomain<T, D>> passedlsDomain,
-                 lsSmartPointer<lsVelocityField<T>> vel, bool calcNormal = true)
+  EnquistOsher(SmartPointer<Domain<T, D>> passedlsDomain,
+               SmartPointer<VelocityField<T>> vel, bool calcNormal = true)
       : levelSet(passedlsDomain), velocities(vel),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>, order>(
             levelSet->getDomain())),
@@ -115,7 +118,7 @@ public:
 
     // Calculate normal vector for velocity calculation
     // use std::array since it will be exposed to interface
-    std::array<T, 3> normalVector = {};
+    Vec3D<T> normalVector = {};
     if (calculateNormalVectors) {
       T denominator = 0;
       for (int i = 0; i < D; i++) {
@@ -133,12 +136,12 @@ public:
     }
 
     // convert coordinate to std array for interface
-    std::array<T, 3> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
+    Vec3D<T> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
 
     double scalarVelocity = velocities->getScalarVelocity(
         coordArray, material, normalVector,
         neighborIterator.getCenter().getPointId());
-    std::array<T, 3> vectorVelocity = velocities->getVectorVelocity(
+    Vec3D<T> vectorVelocity = velocities->getVectorVelocity(
         coordArray, material, normalVector,
         neighborIterator.getCenter().getPointId());
 
@@ -161,5 +164,3 @@ public:
 };
 
 } // namespace lsInternal
-
-#endif // LS_ENQUIST_OSHER_SV_HPP

@@ -14,28 +14,31 @@
   \example Serialize.cpp
 */
 
+namespace ls = viennals;
+
 int main() {
   constexpr int D = 2;
 
   omp_set_num_threads(4);
 
-  auto levelSet = lsSmartPointer<lsDomain<double, D>>::New();
-  auto mesh = lsSmartPointer<lsMesh<>>::New();
+  auto levelSet = ls::SmartPointer<ls::Domain<double, D>>::New();
+  auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
 
   const double radius = 7.3;
   const hrleVectorType<double, D> centre(5., 0.);
 
-  lsMakeGeometry<double, 2>(
-      levelSet, lsSmartPointer<lsSphere<double, D>>::New(centre, radius))
+  ls::MakeGeometry<double, 2>(
+      levelSet, ls::SmartPointer<ls::Sphere<double, D>>::New(centre, radius))
       .apply();
 
-  lsPointData<double> &data = levelSet->getPointData();
-  typename lsPointData<double>::ScalarDataType scalars;
-  typename lsPointData<double>::VectorDataType vectors;
+  ls::PointData<double> &data = levelSet->getPointData();
+  typename ls::PointData<double>::ScalarDataType scalars;
+  typename ls::PointData<double>::VectorDataType vectors;
   for (unsigned i = 0; i < levelSet->getNumberOfPoints(); ++i) {
     scalars.push_back(i);
     vectors.push_back(
-        typename lsPointData<double>::VectorDataType::value_type({double(i)}));
+        typename ls::PointData<double>::VectorDataType::value_type(
+            {double(i)}));
   }
 
   data.insertNextScalarData(scalars, "myScalars");
@@ -45,7 +48,7 @@ int main() {
   levelSet->serialize(stream);
 
   {
-    auto newLevelSet = lsSmartPointer<lsDomain<double, D>>::New();
+    auto newLevelSet = ls::SmartPointer<ls::Domain<double, D>>::New();
     newLevelSet->deserialize(stream);
 
     if (newLevelSet->getNumberOfPoints() != levelSet->getNumberOfPoints()) {
@@ -54,7 +57,7 @@ int main() {
       return EXIT_FAILURE;
     }
 
-    lsPointData<double> &newData = newLevelSet->getPointData();
+    ls::PointData<double> &newData = newLevelSet->getPointData();
     auto scalarDataSize = newData.getScalarDataSize();
     if (scalarDataSize != levelSet->getPointData().getScalarDataSize()) {
       std::cout << "Scalar data was not properly deserialized" << std::endl;

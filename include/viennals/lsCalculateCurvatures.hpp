@@ -1,11 +1,17 @@
-#ifndef LS_CALCULATE_CURVATURES_HPP
-#define LS_CALCULATE_CURVATURES_HPP
+#pragma once
 
 #include <hrleCartesianPlaneIterator.hpp>
 #include <lsCurvatureFormulas.hpp>
 #include <lsDomain.hpp>
 
-enum struct lsCurvatureEnum : unsigned {
+#include <vcLogger.hpp>
+#include <vcSmartPointer.hpp>
+
+namespace viennals {
+
+using namespace viennacore;
+
+enum struct CurvatureEnum : unsigned {
   MEAN_CURVATURE = 0,
   GAUSSIAN_CURVATURE = 1,
   MEAN_AND_GAUSSIAN_CURVATURE = 2
@@ -14,36 +20,36 @@ enum struct lsCurvatureEnum : unsigned {
 // Calculates the Mean Curvature and/or Gaussian Curvature (3D)
 // for the passed lsDomain for all points with level set values <= 0.5. The
 // result is saved in the lsDomain.
-template <class T, int D> class lsCalculateCurvatures {
-  lsSmartPointer<lsDomain<T, D>> levelSet = nullptr;
+template <class T, int D> class CalculateCurvatures {
+  SmartPointer<Domain<T, D>> levelSet = nullptr;
   T maxValue = 0.5;
-  lsCurvatureEnum type = lsCurvatureEnum::MEAN_CURVATURE;
+  CurvatureEnum type = CurvatureEnum::MEAN_CURVATURE;
 
 public:
   static constexpr char meanCurvatureLabel[] = "MeanCurvatures";
   static constexpr char gaussianCurvatureLabel[] = "GaussianCurvatures";
 
-  lsCalculateCurvatures() {}
+  CalculateCurvatures() {}
 
-  lsCalculateCurvatures(lsSmartPointer<lsDomain<T, D>> passedLevelSet)
+  CalculateCurvatures(SmartPointer<Domain<T, D>> passedLevelSet)
       : levelSet(passedLevelSet) {}
 
-  lsCalculateCurvatures(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-                        lsCurvatureEnum method)
+  CalculateCurvatures(SmartPointer<Domain<T, D>> passedLevelSet,
+                      CurvatureEnum method)
       : levelSet(passedLevelSet), type(method) {}
 
-  void setLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
+  void setLevelSet(SmartPointer<Domain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
   }
 
-  void setCurvatureType(lsCurvatureEnum passedType) {
+  void setCurvatureType(CurvatureEnum passedType) {
     // in 2D there is only one option so ignore
     if constexpr (D == 3) {
       type = passedType;
     } else {
       if (passedType != type) {
-        lsMessage::getInstance().addWarning(
-            "lsCalculateCurvatures: Could not set curvature type because 2D "
+        Logger::getInstance().addWarning(
+            "CalculateCurvatures: Could not set curvature type because 2D "
             "only supports mean curvature.");
       }
     }
@@ -53,16 +59,16 @@ public:
 
   void apply() {
     if (levelSet == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No level set was passed to lsCalculateCurvatures.")
+      Logger::getInstance()
+          .addWarning("No level set was passed to CalculateCurvatures.")
           .print();
     }
 
     // need second neighbours
     if (unsigned minWidth = std::ceil((maxValue * 8) + 1);
         levelSet->getLevelSetWidth() < minWidth) {
-      lsMessage::getInstance()
-          .addWarning("lsCalculateCurvatures: Level set width must be "
+      Logger::getInstance()
+          .addWarning("CalculateCurvatures: Level set width must be "
                       "at least " +
                       std::to_string(minWidth) + " !")
           .print();
@@ -75,11 +81,11 @@ public:
 
     auto grid = levelSet->getGrid();
     const bool calculateMean =
-        (type == lsCurvatureEnum::MEAN_CURVATURE) ||
-        (type == lsCurvatureEnum::MEAN_AND_GAUSSIAN_CURVATURE);
+        (type == CurvatureEnum::MEAN_CURVATURE) ||
+        (type == CurvatureEnum::MEAN_AND_GAUSSIAN_CURVATURE);
     const bool calculateGauss =
-        (type == lsCurvatureEnum::GAUSSIAN_CURVATURE) ||
-        (type == lsCurvatureEnum::MEAN_AND_GAUSSIAN_CURVATURE);
+        (type == CurvatureEnum::GAUSSIAN_CURVATURE) ||
+        (type == CurvatureEnum::MEAN_AND_GAUSSIAN_CURVATURE);
 
     //! Calculate Curvatures
 #pragma omp parallel num_threads(levelSet->getNumberOfSegments())
@@ -110,7 +116,7 @@ public:
               ? levelSet->getDomain().getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
-      for (hrleCartesianPlaneIterator<typename lsDomain<T, D>::DomainType>
+      for (hrleCartesianPlaneIterator<typename Domain<T, D>::DomainType>
                neighborIt(levelSet->getDomain(), startVector);
            neighborIt.getIndices() < endVector; neighborIt.next()) {
 
@@ -167,7 +173,8 @@ public:
     // insert into pointData of levelSet
     if (calculateMean) {
       auto &pointData = levelSet->getPointData();
-      auto scalarDataPointer = pointData.getScalarData(meanCurvatureLabel);
+      auto scalarDataPointer =
+          pointData.getScalarData(meanCurvatureLabel, true);
       // if it does not exist, insert new normals vector
       if (scalarDataPointer == nullptr) {
         pointData.insertNextScalarData(meanCurvaturesVector[0],
@@ -180,7 +187,8 @@ public:
 
     if (calculateGauss) {
       auto &pointData = levelSet->getPointData();
-      auto scalarDataPointer = pointData.getScalarData(gaussianCurvatureLabel);
+      auto scalarDataPointer =
+          pointData.getScalarData(gaussianCurvatureLabel, true);
       // if it does not exist, insert new normals vector
       if (scalarDataPointer == nullptr) {
         pointData.insertNextScalarData(gaussCurvaturesVector[0],
@@ -193,4 +201,4 @@ public:
   }
 };
 
-#endif // LS_CALCULATE_CURVATURES_HPP
+} // namespace viennals

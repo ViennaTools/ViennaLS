@@ -3,14 +3,16 @@
 #include <set>
 #include <vector>
 
-class lsMaterialMap {
+namespace viennals {
+
+class MaterialMap {
   std::vector<int> materialMap;
   std::set<int> materials;
 
 public:
-  lsMaterialMap() = default;
-  lsMaterialMap(lsMaterialMap &) = default;
-  lsMaterialMap(lsMaterialMap &&) = default;
+  MaterialMap() = default;
+  MaterialMap(MaterialMap &) = default;
+  MaterialMap(MaterialMap &&) = default;
 
   void insertNextMaterial(const int passedMaterialId) {
     materialMap.push_back(passedMaterialId);
@@ -35,3 +37,5 @@ public:
     return materialMap[index];
   }
 };
+
+} // namespace viennals

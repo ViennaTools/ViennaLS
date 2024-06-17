@@ -139,7 +139,7 @@ We recommend using [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) to consum
 
 * Installation with CPM
   ```cmake
-  CPMAddPackage("gh:viennatools/viennals@3.0.0")
+  CPMAddPackage("gh:viennatools/viennals@4.0.0")
   ```
 
 * With a local installation
@@ -180,11 +180,11 @@ cmake --build build --target format
 
 ## Authors
 
-Current contributors: Lado Filipovic, Paul Manstetten, Xaver Klemenschits and Josef Weinbub
+Current contributors: Tobias Reiter, Noah Karnel
 
 Founder and initial developer: Otmar Ertl
 
-Contact us via: viennats@iue.tuwien.ac.at
+Contact us via: viennatools@iue.tuwien.ac.at
 
 ViennaLS was developed under the aegis of the 'Institute for Microelectronics' at the 'TU Wien'.  
 http://www.iue.tuwien.ac.at/

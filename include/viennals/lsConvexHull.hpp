@@ -1,5 +1,4 @@
-#ifndef LS_CONVEX_HULL_HPP
-#define LS_CONVEX_HULL_HPP
+#pragma once
 
 #include <lsPreCompileMacros.hpp>
 
@@ -11,17 +10,23 @@
 
 #include <lsGeometries.hpp>
 #include <lsMesh.hpp>
-#include <lsMessage.hpp>
-#include <lsSmartPointer.hpp>
+
+#include <vcLogger.hpp>
+#include <vcSmartPointer.hpp>
+#include <vcVectorUtil.hpp>
+
+namespace viennals {
+
+using namespace viennacore;
 
 /// This algorithm creates a convex hull mesh from a
 /// point cloud. This is done using the gift wrapping approach.
 /// The points in the point cloud MUST be unique, otherwise this will fail.
-template <class T, int D> class lsConvexHull {
+template <class T, int D> class ConvexHull {
   typedef hrleVectorType<unsigned, D - 1> EdgeType;
 
-  lsSmartPointer<lsMesh<T>> mesh = nullptr;
-  lsSmartPointer<lsPointCloud<T, D>> pointCloud = nullptr;
+  SmartPointer<Mesh<T>> mesh = nullptr;
+  SmartPointer<PointCloud<T, D>> pointCloud = nullptr;
   std::vector<EdgeType> visitedEdges;
   std::vector<hrleVectorType<unsigned, D>> hullElements;
   std::list<EdgeType> remainingEdges;
@@ -265,28 +270,28 @@ template <class T, int D> class lsConvexHull {
   }
 
 public:
-  lsConvexHull() {}
+  ConvexHull() {}
 
-  lsConvexHull(lsSmartPointer<lsMesh<T>> passedMesh,
-               lsSmartPointer<lsPointCloud<T, D>> passedPointCloud)
+  ConvexHull(SmartPointer<Mesh<T>> passedMesh,
+             SmartPointer<PointCloud<T, D>> passedPointCloud)
       : mesh(passedMesh), pointCloud(passedPointCloud) {}
 
-  void setMesh(lsSmartPointer<lsMesh<T>> passedMesh) { mesh = passedMesh; }
+  void setMesh(SmartPointer<Mesh<T>> passedMesh) { mesh = passedMesh; }
 
-  void setPointCloud(lsSmartPointer<lsPointCloud<T, D>> passedPointCloud) {
+  void setPointCloud(SmartPointer<PointCloud<T, D>> passedPointCloud) {
     pointCloud = passedPointCloud;
   }
 
   void apply() {
     if (mesh == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No mesh was passed to lsConvexHull.")
+      Logger::getInstance()
+          .addWarning("No mesh was passed to ConvexHull.")
           .print();
       return;
     }
     if (pointCloud == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No point cloud was passed to lsConvexHull.")
+      Logger::getInstance()
+          .addWarning("No point cloud was passed to ConvexHull.")
           .print();
       return;
     }
@@ -402,9 +407,9 @@ public:
 
         // if insertion took place, add the point to the nodes
         if (insertion.second) {
-          std::array<T, 3> node{
-              points[hullElements[i][j]][0], points[hullElements[i][j]][1],
-              (D == 2) ? T(0.) : points[hullElements[i][j]][2]};
+          Vec3D<T> node{points[hullElements[i][j]][0],
+                        points[hullElements[i][j]][1],
+                        (D == 2) ? T(0.) : points[hullElements[i][j]][2]};
           mesh->nodes.push_back(node);
         }
 
@@ -417,6 +422,6 @@ public:
 };
 
 // add all template specialisations for this class
-PRECOMPILE_PRECISION_DIMENSION(lsConvexHull)
+PRECOMPILE_PRECISION_DIMENSION(ConvexHull)
 
-#endif // LS_CONVEX_HULL_HPP
+} // namespace viennals

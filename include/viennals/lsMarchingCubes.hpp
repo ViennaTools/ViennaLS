@@ -1,10 +1,9 @@
-#ifndef LS_MARCHING_CUBES_HPP
-#define LS_MARCHING_CUBES_HPP
+#pragma once
 
 namespace lsInternal {
 
 /// Helper class for lsToSurfaceMesh. Should not be used directly.
-class lsMarchingCubes {
+class MarchingCubes {
 
   // const unsigned int edgeTable2[16] = {0x0, 0x9, 0x3, 0xa, 0x6, 0xf,
   //                                             0x5, 0xc, 0xc, 0x5, 0xf, 0x6,
@@ -334,5 +333,3 @@ public:
 };
 
 } // namespace lsInternal
-
-#endif // LS_MARCHING_CUBES_HPP

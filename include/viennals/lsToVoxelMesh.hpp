@@ -1,5 +1,4 @@
-#ifndef LS_TO_VOXEL_MESH_HPP
-#define LS_TO_VOXEL_MESH_HPP
+#pragma once
 
 #include <unordered_map>
 
@@ -10,16 +9,20 @@
 #include <lsMaterialMap.hpp>
 #include <lsMesh.hpp>
 
+namespace viennals {
+
+using namespace viennacore;
+
 /// Creates a mesh, which consists only of quads/hexas for completely
 /// filled grid cells in the level set. Interfaces will not be smooth
 /// but stepped. (This can be used to create meshes for finite difference
 /// algorithms)
-template <class T, int D> class lsToVoxelMesh {
-  typedef typename lsDomain<T, D>::DomainType hrleDomainType;
+template <class T, int D> class ToVoxelMesh {
+  typedef typename Domain<T, D>::DomainType hrleDomainType;
 
-  std::vector<lsSmartPointer<lsDomain<T, D>>> levelSets;
-  lsSmartPointer<lsMesh<T>> mesh = nullptr;
-  lsSmartPointer<lsMaterialMap> materialMap = nullptr;
+  std::vector<SmartPointer<Domain<T, D>>> levelSets;
+  SmartPointer<Mesh<T>> mesh = nullptr;
+  SmartPointer<MaterialMap> materialMap = nullptr;
   hrleVectorType<hrleIndexType, D> minIndex, maxIndex;
 
   void calculateBounds() {
@@ -44,19 +47,18 @@ template <class T, int D> class lsToVoxelMesh {
   }
 
 public:
-  lsToVoxelMesh() {}
+  ToVoxelMesh() {}
 
-  lsToVoxelMesh(lsSmartPointer<lsMesh<T>> passedMesh) : mesh(passedMesh) {}
+  ToVoxelMesh(SmartPointer<Mesh<T>> passedMesh) : mesh(passedMesh) {}
 
-  lsToVoxelMesh(lsSmartPointer<lsDomain<T, D>> passedLevelSet,
-                lsSmartPointer<lsMesh<T>> passedMesh)
+  ToVoxelMesh(SmartPointer<Domain<T, D>> passedLevelSet,
+              SmartPointer<Mesh<T>> passedMesh)
       : mesh(passedMesh) {
     levelSets.push_back(passedLevelSet);
   }
 
-  lsToVoxelMesh(
-      const std::vector<lsSmartPointer<lsDomain<T, D>>> passedLevelSets,
-      lsSmartPointer<lsMesh<T>> passedMesh)
+  ToVoxelMesh(const std::vector<SmartPointer<Domain<T, D>>> passedLevelSets,
+              SmartPointer<Mesh<T>> passedMesh)
       : mesh(passedMesh) {
     levelSets = passedLevelSets;
   }
@@ -65,26 +67,25 @@ public:
   /// If more than one are specified, the voxels will be marked
   /// using a material number for each level set and output into
   /// a single mesh.
-  void insertNextLevelSet(lsSmartPointer<lsDomain<T, D>> passedLevelSet) {
+  void insertNextLevelSet(SmartPointer<Domain<T, D>> passedLevelSet) {
     levelSets.push_back(passedLevelSet);
   }
 
-  void setMesh(lsSmartPointer<lsMesh<T>> passedMesh) { mesh = passedMesh; }
+  void setMesh(SmartPointer<Mesh<T>> passedMesh) { mesh = passedMesh; }
 
-  void setMaterialMap(lsSmartPointer<lsMaterialMap> passedMaterialMap) {
+  void setMaterialMap(SmartPointer<MaterialMap> passedMaterialMap) {
     materialMap = passedMaterialMap;
   }
 
   void apply() {
     if (levelSets.size() < 1) {
-      lsMessage::getInstance()
-          .addWarning(
-              "No Level Sets supplied to lsToVoxelMesh! Not converting.")
+      Logger::getInstance()
+          .addWarning("No Level Sets supplied to ToVoxelMesh! Not converting.")
           .print();
     }
     if (mesh == nullptr) {
-      lsMessage::getInstance()
-          .addWarning("No mesh was passed to lsToVoxelMesh.")
+      Logger::getInstance()
+          .addWarning("No mesh was passed to ToVoxelMesh.")
           .print();
       return;
     }
@@ -107,17 +108,17 @@ public:
     size_t currentPointId = 0;
 
     // prepare mesh for material ids
-    mesh->cellData.insertNextScalarData(
-        typename lsPointData<T>::ScalarDataType(), "Material");
+    mesh->cellData.insertNextScalarData(typename PointData<T>::ScalarDataType(),
+                                        "Material");
     auto &materialIds = *(mesh->cellData.getScalarData(0));
     const bool useMaterialMap = materialMap != nullptr;
 
     // set up iterators for all materials
-    std::vector<hrleConstDenseCellIterator<typename lsDomain<T, D>::DomainType>>
+    std::vector<hrleConstDenseCellIterator<typename Domain<T, D>::DomainType>>
         iterators;
     for (auto it = levelSets.begin(); it != levelSets.end(); ++it) {
       iterators.push_back(
-          hrleConstDenseCellIterator<typename lsDomain<T, D>::DomainType>(
+          hrleConstDenseCellIterator<typename Domain<T, D>::DomainType>(
               (*it)->getDomain(), minIndex));
     }
 
@@ -213,7 +214,7 @@ public:
   }
 };
 
-// add all template specialisations for this class
-PRECOMPILE_PRECISION_DIMENSION(lsToVoxelMesh)
+// add all template specializations for this class
+PRECOMPILE_PRECISION_DIMENSION(ToVoxelMesh)
 
-#endif // LS_TO_VOXEL_MESH_HPP
+} // namespace viennals

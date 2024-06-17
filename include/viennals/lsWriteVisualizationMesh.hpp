@@ -1,7 +1,6 @@
-#ifdef VIENNALS_USE_VTK // this class needs vtk support
+#pragma once
 
-#ifndef LS_TO_VISUALIZATION_MESH_HPP
-#define LS_TO_VISUALIZATION_MESH_HPP
+#ifdef VIENNALS_USE_VTK // this class needs vtk support
 
 #include <vtkAppendFilter.h>
 #include <vtkAppendPolyData.h>
@@ -25,7 +24,6 @@
 
 #include <lsDomain.hpp>
 #include <lsMaterialMap.hpp>
-#include <lsMessage.hpp>
 #include <lsPreCompileMacros.hpp>
 
 // #define LS_TO_VISUALIZATION_DEBUG
@@ -33,17 +31,21 @@
 #include <vtkXMLRectilinearGridWriter.h>
 #endif
 
+namespace viennals {
+
+using namespace viennacore;
+
 /// This algorithm is used to extract tetrahedral volume meshes and triangle
 /// hull meshes with material numbers sorted by order of input of level sets. It
 /// should ONLY BE USED FOR VISUALIZATION because the algorithm does not
 /// guarantee manifold meshes, which should not be a problem for visualization.
 /// In order to obtain a hull triangle mesh from the outline of each material,
 /// use setExtractHull(true).
-template <class T, int D> class lsWriteVisualizationMesh {
-  typedef typename lsDomain<T, D>::DomainType hrleDomainType;
-  using LevelSetsType = std::vector<lsSmartPointer<lsDomain<T, D>>>;
+template <class T, int D> class WriteVisualizationMesh {
+  typedef typename Domain<T, D>::DomainType hrleDomainType;
+  using LevelSetsType = std::vector<SmartPointer<Domain<T, D>>>;
   LevelSetsType levelSets;
-  lsSmartPointer<lsMaterialMap> materialMap = nullptr;
+  SmartPointer<MaterialMap> materialMap = nullptr;
   std::string fileName;
   bool extractVolumeMesh = true;
   bool extractHullMesh = false;
@@ -224,7 +226,7 @@ template <class T, int D> class lsWriteVisualizationMesh {
   // boundary conditions
   template <bool removeBottom = false, int gridExtraPoints = 0>
   vtkSmartPointer<vtkRectilinearGrid>
-  LS2RectiLinearGrid(lsSmartPointer<lsDomain<T, D>> levelSet,
+  LS2RectiLinearGrid(SmartPointer<Domain<T, D>> levelSet,
                      const double LSOffset = 0.,
                      int infiniteMinimum = std::numeric_limits<int>::max(),
                      int infiniteMaximum = -std::numeric_limits<int>::max()) {
@@ -244,7 +246,7 @@ template <class T, int D> class lsWriteVisualizationMesh {
       coords[i] = vtkSmartPointer<vtkFloatArray>::New();
 
       if (grid.getBoundaryConditions(i) ==
-          lsDomain<T, D>::BoundaryType::INFINITE_BOUNDARY) {
+          Domain<T, D>::BoundaryType::INFINITE_BOUNDARY) {
         // add one to gridMin and gridMax for numerical stability
         gridMin = std::min(domain.getMinRunBreak(i), infiniteMinimum) -
                   1; // choose the smaller number so that for first levelset the
@@ -286,7 +288,7 @@ template <class T, int D> class lsWriteVisualizationMesh {
 
     // typename levelSetType::const_iterator_runs it_l(levelSet);
     // use dense iterator to got to every index location
-    hrleConstDenseIterator<typename lsDomain<T, D>::DomainType> it(
+    hrleConstDenseIterator<typename Domain<T, D>::DomainType> it(
         levelSet->getDomain());
 
     // need to save the current position one dimension above open boundary
@@ -320,9 +322,9 @@ template <class T, int D> class lsWriteVisualizationMesh {
             signedDistances->GetDataTypeValueMax());
       } else {
         // if inside domain just write the correct value
-        if (it.getValue() == lsDomain<T, D>::POS_VALUE || it.isFinished()) {
+        if (it.getValue() == Domain<T, D>::POS_VALUE || it.isFinished()) {
           value = numLayers;
-        } else if (it.getValue() == lsDomain<T, D>::NEG_VALUE) {
+        } else if (it.getValue() == Domain<T, D>::NEG_VALUE) {
           value = -numLayers;
         } else {
           value = it.getValue() + LSOffset;
@@ -412,14 +414,14 @@ template <class T, int D> class lsWriteVisualizationMesh {
   }
 
 public:
-  lsWriteVisualizationMesh() {}
+  WriteVisualizationMesh() {}
 
-  lsWriteVisualizationMesh(lsSmartPointer<lsDomain<T, D>> levelSet) {
+  WriteVisualizationMesh(SmartPointer<Domain<T, D>> levelSet) {
     levelSets.push_back(levelSet);
   }
 
   /// Level sets wrapping other level sets have to be inserted last.
-  void insertNextLevelSet(lsSmartPointer<lsDomain<T, D>> levelSet) {
+  void insertNextLevelSet(SmartPointer<Domain<T, D>> levelSet) {
     levelSets.push_back(levelSet);
   }
 
@@ -437,7 +439,7 @@ public:
     extractVolumeMesh = passedExtractVolumeMesh;
   }
 
-  void setMaterialMap(lsSmartPointer<lsMaterialMap> passedMaterialMap) {
+  void setMaterialMap(SmartPointer<MaterialMap> passedMaterialMap) {
     materialMap = passedMaterialMap;
   }
 
@@ -445,9 +447,9 @@ public:
     // check if level sets have enough layers
     for (unsigned i = 0; i < levelSets.size(); ++i) {
       if (levelSets[i]->getLevelSetWidth() < 2) {
-        lsMessage::getInstance()
+        Logger::getInstance()
             .addWarning(
-                "lsWriteVisualizationMesh: Level Set " + std::to_string(i) +
+                "WriteVisualizationMesh: Level Set " + std::to_string(i) +
                 " should have a width greater than 1! Conversion might fail!")
             .print();
       }
@@ -469,7 +471,7 @@ public:
       auto &domain = it->getDomain();
       for (unsigned i = 0; i < D; ++i) {
         if (grid.getBoundaryConditions(i) ==
-            lsDomain<T, D>::BoundaryType::INFINITE_BOUNDARY) {
+            Domain<T, D>::BoundaryType::INFINITE_BOUNDARY) {
           totalMinimum = std::min(totalMinimum, domain.getMinRunBreak(i));
           totalMaximum = std::max(totalMaximum, domain.getMaxRunBreak(i));
         }
@@ -720,7 +722,8 @@ public:
 };
 
 // add all template specialisations for this class
-PRECOMPILE_PRECISION_DIMENSION(lsWriteVisualizationMesh)
+PRECOMPILE_PRECISION_DIMENSION(WriteVisualizationMesh)
 
-#endif // LS_TO_VISUALIZATION_MESH_HPP
+} // namespace viennals
+
 #endif // VIENNALS_USE_VTK

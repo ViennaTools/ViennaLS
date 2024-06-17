@@ -1,5 +1,4 @@
-#ifndef LS_LOCAL_LOCAL_LAX_FRIEDRICHS_HPP
-#define LS_LOCAL_LOCAL_LAX_FRIEDRICHS_HPP
+#pragma once
 
 #include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
@@ -7,28 +6,31 @@
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 
+#include <vcVectorUtil.hpp>
+
 namespace lsInternal {
+
+using namespace viennals;
 
 /// Lax Friedrichs integration scheme, which considers only the current
 /// point for alpha calculation. Faster than lsLocalLaxFriedrichs but
 /// not as accurate.
-template <class T, int D, int order> class lsLocalLocalLaxFriedrichs {
-  lsSmartPointer<lsDomain<T, D>> levelSet;
-  lsSmartPointer<lsVelocityField<T>> velocities;
+template <class T, int D, int order> class LocalLocalLaxFriedrichs {
+  SmartPointer<Domain<T, D>> levelSet;
+  SmartPointer<VelocityField<T>> velocities;
   hrleSparseStarIterator<hrleDomain<T, D>, order> neighborIterator;
   const double alphaFactor;
 
   static T pow2(const T &value) { return value * value; }
 
 public:
-  static void prepareLS(lsSmartPointer<lsDomain<T, D>> passedlsDomain) {
+  static void prepareLS(SmartPointer<Domain<T, D>> passedlsDomain) {
     assert(order == 1 || order == 2);
-    lsExpand<T, D>(passedlsDomain, 2 * order + 1).apply();
+    Expand<T, D>(passedlsDomain, 2 * order + 1).apply();
   }
 
-  lsLocalLocalLaxFriedrichs(lsSmartPointer<lsDomain<T, D>> passedlsDomain,
-                            lsSmartPointer<lsVelocityField<T>> vel,
-                            double a = 1.0)
+  LocalLocalLaxFriedrichs(SmartPointer<Domain<T, D>> passedlsDomain,
+                          SmartPointer<VelocityField<T>> vel, double a = 1.0)
       : levelSet(passedlsDomain), velocities(vel),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>, order>(
             levelSet->getDomain())),
@@ -48,7 +50,7 @@ public:
     neighborIterator.goToIndicesSequential(indices);
 
     // convert coordinate to std array for interface
-    std::array<T, 3> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
+    Vec3D<T> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
 
     T gradPos[D];
     T gradNeg[D];
@@ -56,7 +58,7 @@ public:
     T grad = 0.;
     T dissipation = 0.;
 
-    std::array<T, 3> normalVector = {};
+    Vec3D<T> normalVector = {};
     T normalModulus = 0;
 
     for (int i = 0; i < D; i++) { // iterate over dimensions
@@ -129,7 +131,7 @@ public:
     double scalarVelocity = velocities->getScalarVelocity(
         coordArray, material, normalVector,
         neighborIterator.getCenter().getPointId());
-    std::array<T, 3> vectorVelocity = velocities->getVectorVelocity(
+    Vec3D<T> vectorVelocity = velocities->getVectorVelocity(
         coordArray, material, normalVector,
         neighborIterator.getCenter().getPointId());
 
@@ -159,5 +161,3 @@ public:
   }
 };
 } // namespace lsInternal
-
-#endif // LS_LOCAL_LOCAL_LAX_FRIEDRICHS_HPP

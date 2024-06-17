@@ -16,6 +16,8 @@
 #include <lsVTKReader.hpp>
 #include <lsVTKWriter.hpp>
 
+namespace ls = viennals;
+
 /**
   This example shows how to use lsAdvect to isotropically
   grow a 2D circle with reflective/symmetric boundary conditions.
@@ -23,7 +25,7 @@
 */
 
 // implement own velocity field
-class velocityField : public lsVelocityField<double> {
+class velocityField : public ls::VelocityField<double> {
 public:
   double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
                            int /*material*/,
@@ -51,48 +53,48 @@ int main() {
   double gridDelta = 0.5;
 
   double bounds[2 * D] = {-extent, extent, -extent, extent};
-  lsDomain<double, D>::BoundaryType boundaryCons[D];
+  ls::Domain<double, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D; ++i) {
-    boundaryCons[i] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+    boundaryCons[i] = ls::Domain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   }
 
-  auto sphere1 =
-      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  auto sphere1 = ls::SmartPointer<ls::Domain<double, D>>::New(
+      bounds, boundaryCons, gridDelta);
 
   double origin[D] = {5., 0.};
   double radius = 7.3;
 
-  lsMakeGeometry<double, D>(
-      sphere1, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
+  ls::MakeGeometry<double, D>(
+      sphere1, ls::SmartPointer<ls::Sphere<double, D>>::New(origin, radius))
       .apply();
   // {
-  //   auto mesh = lsSmartPointer<lsMesh<>>::New();
-  //   lsToMesh<double, D>(sphere1, mesh).apply();
-  //   lsVTKWriter<double>(mesh, "sphere.vtk").apply();
+  //   auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+  //   ls::ToMesh<double, D>(sphere1, mesh).apply();
+  //   ls::VTKWriter<double>(mesh, "sphere.vtk").apply();
 
-  //   lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
-  //   lsVTKWriter<double>(mesh, "before2D.vtk").apply();
+  //   ls::ToSurfaceMesh<double, D>(sphere1, mesh).apply();
+  //   ls::VTKWriter<double>(mesh, "before2D.vtk").apply();
   // }
   // lsExpand(sphere1, 3).apply();
 
   // Fill point data with original point IDs to see how LS changed
   {
-    typename lsPointData<double>::ScalarDataType pointIDs(
+    typename ls::PointData<double>::ScalarDataType pointIDs(
         sphere1->getNumberOfPoints());
     std::iota(std::begin(pointIDs), std::end(pointIDs), 0);
     sphere1->getPointData().insertNextScalarData(pointIDs, "originalIDs");
   }
 
   // {
-  //   auto mesh = lsSmartPointer<lsMesh<double>>::New();
+  //   auto mesh = ls::SmartPointer<ls::Mesh<double>>::New();
   //   lsToMesh(sphere1, mesh, true, true).apply();
-  //   lsVTKWriter(mesh, "initial.vtp").apply();
+  //   ls::VTKWriter(mesh, "initial.vtp").apply();
   //   lsToSurfaceMesh(sphere1, mesh).apply();
-  //   lsVTKWriter(mesh, "surface_initial.vtp").apply();
+  //   ls::VTKWriter(mesh, "surface_initial.vtp").apply();
   // }
 
   // Advect the sphere
-  auto velocities = lsSmartPointer<velocityField>::New();
+  auto velocities = ls::SmartPointer<velocityField>::New();
 
   // std::cout << "Number of points: " <<
   // sphere1->getDomain().getNumberOfPoints()
@@ -100,11 +102,11 @@ int main() {
 
   // std::cout << "Advecting" << std::endl;
 
-  lsAdvect<double, D> advectionKernel;
+  ls::Advect<double, D> advectionKernel;
   advectionKernel.insertNextLevelSet(sphere1);
   advectionKernel.setVelocityField(velocities);
   advectionKernel.setIntegrationScheme(
-      lsIntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER);
+      ls::IntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER);
   advectionKernel.setAdvectionTime(20.);
   advectionKernel.apply();
 
@@ -118,24 +120,24 @@ int main() {
   // lsExpand(sphere1, 5).apply();
 
   // {
-  //   auto mesh = lsSmartPointer<lsMesh<double>>::New();
+  //   auto mesh = ls::SmartPointer<ls::Mesh<double>>::New();
   //   lsToMesh(sphere1, mesh).apply();
-  //   lsVTKWriter(mesh, "final.vtp").apply();
+  //   ls::VTKWriter(mesh, "final.vtp").apply();
   //   lsToSurfaceMesh(sphere1, mesh).apply();
-  //   lsVTKWriter(mesh, "surface_final.vtp").apply();
+  //   ls::VTKWriter(mesh, "surface_final.vtp").apply();
   // }
 
   // std::cout << "Pruning" << std::endl;
-  // lsPrune<double, D>(sphere1).apply();
+  // Prune<double, D>(sphere1).apply();
   // std::cout << "Expanding" << std::endl;
-  // lsExpand<double, D>(sphere1, 2).apply();
+  // ls::Expand<double, D>(sphere1, 2).apply();
 
   // {
-  //   auto mesh = lsSmartPointer<lsMesh<>>::New();
+  //   auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
   //   std::cout << "Extracting..." << std::endl;
-  //   lsToSurfaceMesh<double, D>(sphere1, mesh).apply();
+  //   ls::ToSurfaceMesh<double, D>(sphere1, mesh).apply();
   //   mesh->print();
-  //   lsVTKWriter<double>(mesh, "after2D.vtk").apply();
+  //   ls::VTKWriter<double>(mesh, "after2D.vtk").apply();
   // }
 
   return 0;

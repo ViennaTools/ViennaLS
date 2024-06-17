@@ -15,6 +15,8 @@
   \example Expand.cpp
 */
 
+namespace ls = viennals;
+
 int main() {
   constexpr int D = 2;
 
@@ -24,35 +26,35 @@ int main() {
   double gridDelta = 0.5;
 
   double bounds[2 * D] = {-extent, extent, -extent, extent};
-  lsDomain<double, D>::BoundaryType boundaryCons[D];
+  ls::Domain<double, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D; ++i)
-    boundaryCons[i] = lsDomain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+    boundaryCons[i] = ls::Domain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
 
-  auto sphere1 =
-      lsSmartPointer<lsDomain<double, D>>::New(bounds, boundaryCons, gridDelta);
+  auto sphere1 = ls::SmartPointer<ls::Domain<double, D>>::New(
+      bounds, boundaryCons, gridDelta);
 
   double origin[D] = {5., 0.};
   double radius = 7.3;
 
-  lsMakeGeometry<double, D>(
-      sphere1, lsSmartPointer<lsSphere<double, D>>::New(origin, radius))
+  ls::MakeGeometry<double, D>(
+      sphere1, ls::SmartPointer<ls::Sphere<double, D>>::New(origin, radius))
       .apply();
 
   {
-    auto mesh = lsSmartPointer<lsMesh<>>::New();
-    lsToMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter<double>(mesh, "sphere.vtk").apply();
+    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    ls::ToMesh<double, D>(sphere1, mesh).apply();
+    ls::VTKWriter<double>(mesh, "sphere.vtk").apply();
   }
 
   {
-    auto mesh = lsSmartPointer<lsMesh<>>::New();
-    lsExpand<double, D>(sphere1, 5).apply();
-    lsToMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter<double>(mesh, "sphereExpanded.vtk").apply();
+    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    ls::Expand<double, D>(sphere1, 5).apply();
+    ls::ToMesh<double, D>(sphere1, mesh).apply();
+    ls::VTKWriter<double>(mesh, "sphereExpanded.vtk").apply();
 
-    lsReduce<double, D>(sphere1, 1).apply();
-    lsToMesh<double, D>(sphere1, mesh).apply();
-    lsVTKWriter<double>(mesh, "sphereReduced.vtk").apply();
+    ls::Reduce<double, D>(sphere1, 1).apply();
+    ls::ToMesh<double, D>(sphere1, mesh).apply();
+    ls::VTKWriter<double>(mesh, "sphereReduced.vtk").apply();
   }
 
   return 0;
