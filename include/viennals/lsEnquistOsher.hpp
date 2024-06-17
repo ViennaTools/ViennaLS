@@ -11,27 +11,28 @@
 
 namespace lsInternal {
 
-using namespace viennals;
+using namespace viennacore;
 
 /// Engquist osher integration scheme based on the
 /// upwind integration scheme. Offers high performance
 /// but lower accuracy for complex velocity fields.
 template <class T, int D, int order> class EnquistOsher {
-  SmartPointer<Domain<T, D>> levelSet;
-  SmartPointer<VelocityField<T>> velocities;
+  SmartPointer<viennals::Domain<T, D>> levelSet;
+  SmartPointer<viennals::VelocityField<T>> velocities;
   hrleSparseStarIterator<hrleDomain<T, D>, order> neighborIterator;
   bool calculateNormalVectors = true;
 
   static T pow2(const T &value) { return value * value; }
 
 public:
-  static void prepareLS(SmartPointer<Domain<T, D>> passedlsDomain) {
+  static void prepareLS(SmartPointer<viennals::Domain<T, D>> passedlsDomain) {
     assert(order == 1 || order == 2);
-    Expand<T, D>(passedlsDomain, 2 * order + 1).apply();
+    viennals::Expand<T, D>(passedlsDomain, 2 * order + 1).apply();
   }
 
-  EnquistOsher(SmartPointer<Domain<T, D>> passedlsDomain,
-               SmartPointer<VelocityField<T>> vel, bool calcNormal = true)
+  EnquistOsher(SmartPointer<viennals::Domain<T, D>> passedlsDomain,
+               SmartPointer<viennals::VelocityField<T>> vel,
+               bool calcNormal = true)
       : levelSet(passedlsDomain), velocities(vel),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>, order>(
             levelSet->getDomain())),

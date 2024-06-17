@@ -5,32 +5,34 @@
 
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
+#include <lsVelocityField.hpp>
 
 #include <vcVectorUtil.hpp>
 
 namespace lsInternal {
 
-using namespace viennals;
+using namespace viennacore;
 
 /// Lax Friedrichs integration scheme, which considers only the current
 /// point for alpha calculation. Faster than lsLocalLaxFriedrichs but
 /// not as accurate.
 template <class T, int D, int order> class LocalLocalLaxFriedrichs {
-  SmartPointer<Domain<T, D>> levelSet;
-  SmartPointer<VelocityField<T>> velocities;
+  SmartPointer<viennals::Domain<T, D>> levelSet;
+  SmartPointer<viennals::VelocityField<T>> velocities;
   hrleSparseStarIterator<hrleDomain<T, D>, order> neighborIterator;
   const double alphaFactor;
 
   static T pow2(const T &value) { return value * value; }
 
 public:
-  static void prepareLS(SmartPointer<Domain<T, D>> passedlsDomain) {
+  static void prepareLS(SmartPointer<viennals::Domain<T, D>> passedlsDomain) {
     assert(order == 1 || order == 2);
-    Expand<T, D>(passedlsDomain, 2 * order + 1).apply();
+    viennals::Expand<T, D>(passedlsDomain, 2 * order + 1).apply();
   }
 
-  LocalLocalLaxFriedrichs(SmartPointer<Domain<T, D>> passedlsDomain,
-                          SmartPointer<VelocityField<T>> vel, double a = 1.0)
+  LocalLocalLaxFriedrichs(SmartPointer<viennals::Domain<T, D>> passedlsDomain,
+                          SmartPointer<viennals::VelocityField<T>> vel,
+                          double a = 1.0)
       : levelSet(passedlsDomain), velocities(vel),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>, order>(
             levelSet->getDomain())),

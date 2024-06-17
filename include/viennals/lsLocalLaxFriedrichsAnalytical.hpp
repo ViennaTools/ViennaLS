@@ -5,12 +5,13 @@
 
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
+#include <lsVelocityField.hpp>
 
 #include <vcVectorUtil.hpp>
 
 namespace lsInternal {
 
-using namespace viennals;
+using namespace viennacore;
 
 /// Lax Friedrichs integration scheme, which uses alpha values
 /// provided by the user in getDissipationAlphas in lsVelocityField.
@@ -18,8 +19,8 @@ using namespace viennals;
 /// and the alpha values, this integration scheme should be used and never
 /// otherwise.
 template <class T, int D, int order> class LocalLaxFriedrichsAnalytical {
-  SmartPointer<Domain<T, D>> levelSet;
-  SmartPointer<VelocityField<T>> velocities;
+  SmartPointer<viennals::Domain<T, D>> levelSet;
+  SmartPointer<viennals::VelocityField<T>> velocities;
   hrleSparseBoxIterator<hrleDomain<T, D>> neighborIterator;
 
   static T pow2(const T &value) { return value * value; }
@@ -42,16 +43,17 @@ template <class T, int D, int order> class LocalLaxFriedrichsAnalytical {
   }
 
 public:
-  static void prepareLS(SmartPointer<Domain<T, D>> passedlsDomain) {
+  static void prepareLS(SmartPointer<viennals::Domain<T, D>> passedlsDomain) {
     assert(order == 1 || order == 2);
     // at least order+1 layers since we need neighbor neighbors for
     // dissipation alpha calculation
-    Expand<T, D>(passedlsDomain, 2 * (order + 2) + 1).apply();
+    viennals::Expand<T, D>(passedlsDomain, 2 * (order + 2) + 1).apply();
   }
 
   // neighboriterator always needs order 2 for alpha calculation
-  LocalLaxFriedrichsAnalytical(SmartPointer<Domain<T, D>> passedlsDomain,
-                               SmartPointer<VelocityField<T>> vel)
+  LocalLaxFriedrichsAnalytical(
+      SmartPointer<viennals::Domain<T, D>> passedlsDomain,
+      SmartPointer<viennals::VelocityField<T>> vel)
       : levelSet(passedlsDomain), velocities(vel),
         neighborIterator(levelSet->getDomain(), 2) {}
 

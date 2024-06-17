@@ -6,10 +6,11 @@
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsFiniteDifferences.hpp>
+#include <lsVelocityField.hpp>
 
 namespace lsInternal {
 
-using namespace viennals;
+using namespace viennacore;
 
 /// Stencil Local Lax Friedrichs Integration Scheme.
 /// It uses a stencil of order around active points, in order to
@@ -18,11 +19,11 @@ using namespace viennals;
 /// see Toifl et al., 2019. ISBN: 978-1-7281-0938-1;
 /// DOI: 10.1109/SISPAD.2019.8870443
 template <class T, int D, int order> class StencilLocalLaxFriedrichsScalar {
-  using LevelSetType = SmartPointer<Domain<T, D>>;
+  using LevelSetType = SmartPointer<viennals::Domain<T, D>>;
   using LevelSetsType = std::vector<LevelSetType>;
 
   LevelSetType levelSet;
-  SmartPointer<VelocityField<T>> velocities;
+  SmartPointer<viennals::VelocityField<T>> velocities;
   const DifferentiationSchemeEnum finiteDifferenceScheme =
       DifferentiationSchemeEnum::FIRST_ORDER;
   hrleSparseBoxIterator<hrleDomain<T, D>> neighborIterator;
@@ -132,11 +133,11 @@ public:
   static void prepareLS(LevelSetType passedlsDomain) {
     // Expansion of sparse field must depend on spatial derivative order
     // AND  slf stencil order! --> currently assume scheme = 3rd order always
-    Expand<T, D>(passedlsDomain, 2 * (order + 1) + 4).apply();
+    viennals::Expand<T, D>(passedlsDomain, 2 * (order + 1) + 4).apply();
   }
 
   StencilLocalLaxFriedrichsScalar(
-      LevelSetType passedlsDomain, SmartPointer<VelocityField<T>> vel,
+      LevelSetType passedlsDomain, SmartPointer<viennals::VelocityField<T>> vel,
       double a = 1.0,
       DifferentiationSchemeEnum scheme = DifferentiationSchemeEnum::FIRST_ORDER)
       : levelSet(passedlsDomain), velocities(vel),

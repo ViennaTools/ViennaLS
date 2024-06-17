@@ -10,15 +10,15 @@
 
 namespace lsInternal {
 
-using namespace viennals;
+using namespace viennacore;
 
 /// Lax Friedrichs integration scheme with constant alpha
 /// value for dissipation. This alpha value should be fitted
 /// based on the results of the advection and passed to the
 /// advection Kernel.
 template <class T, int D, int order> class LaxFriedrichs {
-  SmartPointer<Domain<T, D>> levelSet;
-  SmartPointer<VelocityField<T>> velocities;
+  SmartPointer<viennals::Domain<T, D>> levelSet;
+  SmartPointer<viennals::VelocityField<T>> velocities;
   hrleSparseStarIterator<hrleDomain<T, D>, order> neighborIterator;
   bool calculateNormalVectors = true;
   const double alpha = 1.0;
@@ -26,14 +26,14 @@ template <class T, int D, int order> class LaxFriedrichs {
   static T pow2(const T &value) { return value * value; }
 
 public:
-  static void prepareLS(SmartPointer<Domain<T, D>> passedlsDomain) {
+  static void prepareLS(SmartPointer<viennals::Domain<T, D>> passedlsDomain) {
     assert(order == 1 || order == 2);
-    Expand<T, D>(passedlsDomain, 2 * order + 1).apply();
+    viennals::Expand<T, D>(passedlsDomain, 2 * order + 1).apply();
   }
 
-  LaxFriedrichs(SmartPointer<Domain<T, D>> passedlsDomain,
-                SmartPointer<VelocityField<T>> vel, bool calcNormal = true,
-                double a = 1.0)
+  LaxFriedrichs(SmartPointer<viennals::Domain<T, D>> passedlsDomain,
+                SmartPointer<viennals::VelocityField<T>> vel,
+                bool calcNormal = true, double a = 1.0)
       : levelSet(passedlsDomain), velocities(vel),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>, order>(
             levelSet->getDomain())),
