@@ -1,9 +1,16 @@
 name: 🐍 Bindings
 
 on:
+  release:
+    types:
+      - published
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      publish:
+        type: boolean
+        description: Publish on PyPi
 
 jobs:
   test-bindings:
@@ -119,5 +126,25 @@ jobs:
       - name: 📦 Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Wheels (${{ matrix.os }})
+          name: wheels-${{ matrix.os }}
           path: ./wheelhouse/*.whl
+
+  deploy:
+    if: ${{ github.event_name == 'release' }} || ${{ github.event.inputs.publish == 'true' }}
+    needs: [package]
+
+    runs-on: ubuntu-latest
+    name: "🐍 Publish Bindings"
+
+    steps:
+      - name: 📦 Download Wheels
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          path: wheels
+          merge-multiple: true
+
+      - name: 🚀 Publish Wheels
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
