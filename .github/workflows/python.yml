@@ -144,7 +144,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: wheels-*
-          path: wheels
+          path: dist
           merge-multiple: true
 
       - name: 🚀 Publish Wheels
