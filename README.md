@@ -1,7 +1,6 @@
 <div align="center">
 
-![](assets/logo.png)
-
+<img src="assets/logo.svg" height="100" />
 <h1>ViennaLS</h1>
 
 [![🧪 Tests](https://github.com/ViennaTools/ViennaLS/actions/workflows/build.yml/badge.svg)](https://github.com/ViennaTools/ViennaLS/actions/workflows/build.yml)
