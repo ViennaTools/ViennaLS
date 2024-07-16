@@ -1,21 +1,3 @@
-macro(setup_vtk_env TARGET OUTPUT)
-  message(STATUS "[ViennaLS] Setting up VTK-Environment for ${TARGET}")
-
-  if(NOT TARGET vtksys)
-    message(WARNING "[ViennaLS] Could not find VTK-Target")
-    return()
-  endif()
-
-  # We expect all of the VTK binaries to be present in the same directory to which "vtksys" is
-  # built. This is currently the case, and has been the case for prior vtk versions - However we
-  # should keep an eye on this.
-
-  add_custom_command(
-    TARGET ${TARGET}
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory $<TARGET_FILE_DIR:vtksys> ${OUTPUT})
-endmacro()
-
 # --------------------------------------------------------------------------------------------------------
 # This is one of the most, if not the most, *cursed* workaround I've ever deployed.
 # In an effort to reduce build times and to deduplicate VTK library files,

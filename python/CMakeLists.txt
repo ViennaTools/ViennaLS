@@ -70,7 +70,7 @@ target_compile_definitions(viennals3d PRIVATE -DVIENNALS_PYTHON_DIMENSION=3
 set(VIENNALS_LIB_FOLDER ${VIENNALS_LIBRARY_OUTPUT_DIR}/viennals.libs)
 
 # Not required for both targets, one will suffice
-setup_vtk_env(viennals2d ${VIENNALS_LIB_FOLDER})
+viennacore_setup_vtk_env(viennals2d ${VIENNALS_LIB_FOLDER})
 
 install(
   DIRECTORY ${VIENNALS_LIB_FOLDER}
