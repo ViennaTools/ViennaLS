@@ -133,6 +133,9 @@ jobs:
     if: ${{ github.event_name == 'release' }} || ${{ github.event.inputs.publish == 'true' }}
     needs: [package]
 
+    permissions:
+      id-token: write
+
     runs-on: ubuntu-latest
     name: "🐍 Publish Bindings"
 
