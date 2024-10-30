@@ -97,7 +97,7 @@ jobs:
           os: ${{ matrix.os }}
 
       - name: 🛞 CIBuildWheel
-        run: pip install cibuildwheel==2.17.0 --break-system-packages
+        run: pip install cibuildwheel==2.21.3 --break-system-packages
 
       - name: 🛠️ Build VTK (Windows)
         if: ${{ matrix.os == 'windows-latest' }}
