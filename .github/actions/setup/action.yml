@@ -22,5 +22,5 @@ runs:
       shell: bash
       if: ${{ inputs.os == 'macos-latest' }}
       run: |
-        brew reinstall --build-from-source --formula ./.github/homebrew/libomp.rb
+        brew reinstall --build-from-source libomp
         echo "OpenMP_ROOT=$(brew --prefix)/opt/libomp" >> $GITHUB_ENV
