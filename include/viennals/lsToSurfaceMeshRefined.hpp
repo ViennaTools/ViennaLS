@@ -24,9 +24,9 @@ class ToSurfaceMeshRefined {
   typedef typename Domain<LsNT, D>::DomainType hrleDomainType;
   typedef KDTree<LsNT, std::array<LsNT, 3>> kdTreeType;
 
-  std::vector<SmartPointer<lsDomainType>> levelSets;
-  SmartPointer<Mesh<MeshNT>> mesh{nullptr};
-  SmartPointer<kdTreeType> kdTree{nullptr};
+  SmartPointer<lsDomainType> levelSet = nullptr;
+  SmartPointer<Mesh<MeshNT>> mesh = nullptr;
+  SmartPointer<kdTreeType> kdTree = nullptr;
 
   const MeshNT epsilon;
   const MeshNT minNodeDistanceFactor = 0.2;
@@ -38,17 +38,16 @@ public:
                        SmartPointer<Mesh<MeshNT>> passedMesh,
                        SmartPointer<kdTreeType> passedKdTree = nullptr,
                        double eps = 1e-12)
-      : mesh(passedMesh), epsilon(eps), kdTree(passedKdTree) {
-    levelSets.push_back(passedLevelSet);
-  }
+      : levelSet(passedLevelSet), mesh(passedMesh), kdTree(passedKdTree),
+        epsilon(eps) {}
 
   ToSurfaceMeshRefined(SmartPointer<Mesh<MeshNT>> passedMesh,
                        SmartPointer<kdTreeType> passedKdTree = nullptr,
                        double eps = 1e-12)
-      : mesh(passedMesh), epsilon(eps), kdTree(passedKdTree) {}
+      : mesh(passedMesh), kdTree(passedKdTree), epsilon(eps) {}
 
-  void insertNextLevelSet(SmartPointer<lsDomainType> passedLevelSet) {
-    levelSets.push_back(passedLevelSet);
+  void setLevelSet(SmartPointer<lsDomainType> passedLevelSet) {
+    levelSet = passedLevelSet;
   }
 
   void setMesh(SmartPointer<Mesh<MeshNT>> passedMesh) { mesh = passedMesh; }
@@ -62,9 +61,9 @@ public:
   }
 
   void apply() {
-    if (levelSets.empty()) {
+    if (levelSet == nullptr) {
       Logger::getInstance()
-          .addWarning("No level sets were passed to ToSurfaceMeshRefined.")
+          .addWarning("No level set was passed to ToSurfaceMeshRefined.")
           .print();
       return;
     }
@@ -76,7 +75,7 @@ public:
     }
 
     mesh->clear();
-    const auto gridDelta = levelSets.back()->getGrid().getGridDelta();
+    const auto gridDelta = levelSet->getGrid().getGridDelta();
     const MeshNT minNodeDistance = gridDelta * minNodeDistanceFactor;
     mesh->minimumExtent = Vec3D<MeshNT>{std::numeric_limits<MeshNT>::max(),
                                         std::numeric_limits<MeshNT>::max(),
@@ -91,7 +90,7 @@ public:
 
     // test if level set function consists of at least 2 layers of
     // defined grid points
-    if (levelSets.back()->getLevelSetWidth() < 2) {
+    if (levelSet->getLevelSetWidth() < 2) {
       Logger::getInstance()
           .addWarning("Levelset is less than 2 layers wide. Export might fail!")
           .print();
@@ -111,7 +110,7 @@ public:
 
     // iterate over all active surface points
     for (hrleConstSparseCellIterator<hrleDomainType> cellIt(
-             levelSets.back()->getDomain());
+             levelSet->getDomain());
          !cellIt.isFinished(); cellIt.next()) {
 
       for (int u = 0; u < D; u++) {
