@@ -18,7 +18,7 @@ public:
       int passedOpenBoundaryDirection, bool passedIsOpenBoundaryNegative)
       : levelSet(passedLevelSet),
         openBoundaryDirection(passedOpenBoundaryDirection),
-        isOpenBoundaryNegative(passedIsOpenBoundaryDirection) {}
+        isOpenBoundaryNegative(passedIsOpenBoundaryNegative) {}
 
   void apply() {
 
