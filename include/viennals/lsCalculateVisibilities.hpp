@@ -15,7 +15,8 @@ public:
 
   CalculateVisibilities(
       const SmartPointer<Domain<NumericType, D>> &passedLevelSet,
-      int passedOpenBoundaryDirection, bool passedIsOpenBoundaryNegative)
+      int passedOpenBoundaryDirection = D - 1,
+      bool passedIsOpenBoundaryNegative = false)
       : levelSet(passedLevelSet),
         openBoundaryDirection(passedOpenBoundaryDirection),
         isOpenBoundaryNegative(passedIsOpenBoundaryNegative) {}
