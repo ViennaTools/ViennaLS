@@ -45,7 +45,7 @@ public:
 
     hrleSizeType id = 0;
 
-    hrleSparseIterator<typename ls::Domain<NumericType, D>::DomainType> it(
+    hrleSparseIterator<typename Domain<NumericType, D>::DomainType> it(
         domain, !isOpenBoundaryNegative);
     while (!it.isFinished()) {
 
