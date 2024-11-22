@@ -88,8 +88,12 @@ public:
       }
     }
 
-    levelSet->getPointData().insertNextScalarData(visibilities,
-                                                  visibilitiesLabel);
+    auto &pointData = levelSet->getPointData();
+    // delete if already exists
+    if (int i = pointData.getScalarDataIndex(visibilitiesLabel); i != -1) {
+      pointData.eraseScalarData(i);
+    }
+    pointData.insertNextScalarData(visibilities, visibilitiesLabel);
 
     assert(id == numDefinedPoints);
   }
