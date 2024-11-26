@@ -57,79 +57,98 @@ public:
     auto numDefinedPoints = domain.getNumberOfPoints();
     std::vector<NumericType> visibilities(numDefinedPoints);
 
-    // std::vector<Vec3D<hrleIndexType>> visitedCells;
+#pragma omp parallel num_threads(levelSet->getNumberOfSegments())
+    {
+      int p = 0;
+#ifdef _OPENMP
+      p = omp_get_thread_num();
+#endif
 
-    hrleSizeType id = 0;
-    hrleSparseIterator<typename Domain<NumericType, D>::DomainType> it(domain);
+      hrleVectorType<hrleIndexType, D> startVector =
+          (p == 0) ? grid.getMinGridPoint() : domain.getSegmentation()[p - 1];
 
-    while (!it.isFinished()) {
-      if (!it.isDefined()) {
-        it.next();
-        continue;
+      hrleVectorType<hrleIndexType, D> endVector =
+          (p != static_cast<int>(domain.getNumberOfSegments() - 1))
+              ? domain.getSegmentation()[p]
+              : grid.incrementIndices(grid.getMaxGridPoint());
+
+      // Calculate the starting index for the visibility vector
+      hrleSizeType id = 0;
+      for (int i = 0; i < p; ++i) {
+        id += domain.getDomainSegment(i).getNumberOfPoints();
       }
 
-      // Starting position of the point
-      Vec3D<NumericType> currentPos;
-      for (int i = 0; i < D; ++i) {
-        currentPos[i] = it.getStartIndices(i);
-      }
+      for (hrleSparseIterator<typename Domain<NumericType, D>::DomainType> it(
+               domain, startVector);
+           it.getStartIndices() < endVector; ++it) {
 
-      // Start tracing the ray
-      NumericType minLevelSetValue = it.getValue(); // Starting level set value
-      Vec3D<NumericType> rayPos = currentPos;
-      bool visibility = true;
+        if (!it.isDefined())
+          continue;
 
-      while (1) {
-        // Update the ray position
+        // Starting position of the point
+        Vec3D<NumericType> currentPos;
         for (int i = 0; i < D; ++i) {
-          rayPos[i] += dir[i];
+          currentPos[i] = it.getStartIndices(i);
         }
 
-        // Determine the nearest grid cell (round to nearest index)
-        Vec3D<hrleIndexType> nearestCell;
-        for (int i = 0; i < D; ++i) {
-          nearestCell[i] = static_cast<hrleIndexType>(rayPos[i]);
-        }
+        // Start tracing the ray
+        NumericType minLevelSetValue =
+            it.getValue(); // Starting level set value
+        Vec3D<NumericType> rayPos = currentPos;
+        bool visibility = true;
 
-        // // Before adding a cell, check if it's already visited
-        // if (std::find(visitedCells.begin(), visitedCells.end(), nearestCell)
-        // == visitedCells.end()) {
-        //     visitedCells.push_back(nearestCell);
-        // }
+        while (1) {
+          // Update the ray position
+          for (int i = 0; i < D; ++i) {
+            rayPos[i] += dir[i];
+          }
 
-        // Check if the nearest cell is within bounds
-        bool outOfBounds = false;
-        for (int i = 0; i < D; ++i) {
-          if (nearestCell[i] < minDefinedPoint[i] ||
-              nearestCell[i] > maxDefinedPoint[i]) {
-            outOfBounds = true;
+          // Determine the nearest grid cell (round to nearest index)
+          Vec3D<hrleIndexType> nearestCell;
+          for (int i = 0; i < D; ++i) {
+            nearestCell[i] = static_cast<hrleIndexType>(rayPos[i]);
+          }
+
+          // // Before adding a cell, check if it's already visited
+          // if (std::find(visitedCells.begin(), visitedCells.end(),
+          // nearestCell)
+          // == visitedCells.end()) {
+          //     visitedCells.push_back(nearestCell);
+          // }
+
+          // Check if the nearest cell is within bounds
+          bool outOfBounds = false;
+          for (int i = 0; i < D; ++i) {
+            if (nearestCell[i] < minDefinedPoint[i] ||
+                nearestCell[i] > maxDefinedPoint[i]) {
+              outOfBounds = true;
+              break;
+            }
+          }
+
+          if (outOfBounds) {
+            break; // Ray is outside the grid
+          }
+
+          // Access the level set value at the nearest cell
+          NumericType neighborValue = std::numeric_limits<NumericType>::max();
+          hrleSparseIterator<typename Domain<NumericType, D>::DomainType>
+              neighborIt(domain);
+          neighborIt.goToIndices(nearestCell);
+          if (neighborIt.isDefined()) {
+            neighborValue = neighborIt.getValue();
+          }
+
+          // Update the minimum value encountered
+          if (neighborValue < minLevelSetValue) {
+            visibility = false;
             break;
           }
         }
 
-        if (outOfBounds) {
-          break; // Ray is outside the grid
-        }
-
-        // Access the level set value at the nearest cell
-        NumericType neighborValue = std::numeric_limits<NumericType>::max();
-        hrleSparseIterator<typename Domain<NumericType, D>::DomainType>
-            neighborIt(domain);
-        neighborIt.goToIndices(nearestCell);
-        if (neighborIt.isDefined()) {
-          neighborValue = neighborIt.getValue();
-        }
-
-        // Update the minimum value encountered
-        if (neighborValue < minLevelSetValue) {
-          visibility = false;
-          break;
-        }
+        // Update visibility for this point
+        visibilities[id++] = visibility ? 1.0 : 0.0;
       }
-
-      // Update visibility for this point
-      visibilities[id++] = visibility ? 1.0 : 0.0;
-      it.next();
     }
 
     auto &pointData = levelSet->getPointData();
@@ -138,8 +157,6 @@ public:
       pointData.eraseScalarData(i);
     }
     pointData.insertNextScalarData(visibilities, visibilitiesLabel);
-
-    assert(id == numDefinedPoints);
   }
 };
 
