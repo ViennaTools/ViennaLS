@@ -52,7 +52,7 @@ public:
     //****************************
 
     // Invert the vector
-    auto dir = Normalize(Inv(direction)) * domiain.getGrid().getGridDelta();
+    auto dir = Normalize(Inv(direction)) * domain.getGrid().getGridDelta();
 
     auto numDefinedPoints = domain.getNumberOfPoints();
     std::vector<NumericType> visibilities(numDefinedPoints);
