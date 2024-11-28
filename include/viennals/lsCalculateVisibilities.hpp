@@ -135,9 +135,7 @@ public:
           hrleSparseIterator<typename Domain<NumericType, D>::DomainType>
               neighborIt(domain);
           neighborIt.goToIndices(nearestCell);
-          if (neighborIt.isDefined()) {
-            neighborValue = neighborIt.getValue();
-          }
+          neighborValue = neighborIt.getValue();
 
           // Update the minimum value encountered
           if (neighborValue < minLevelSetValue) {
