@@ -102,8 +102,8 @@ public:
   }
 
   /// insert or replace vector data array
-  void insertNextVectorData(const VectorDataType &vectors,
-                            std::string label = "Vectors") {
+  void insertReplaceVectorData(const VectorDataType &vectors,
+                               std::string label = "Vectors") {
     if (int i = getVectorDataIndex(label); i != -1) {
       vectorData[i] = vectors;
     } else {
@@ -112,8 +112,8 @@ public:
   }
 
   /// insert new vector data array
-  void insertNextVectorData(VectorDataType &&vectors,
-                            std::string label = "Vectors") {
+  void insertReplaceVectorData(VectorDataType &&vectors,
+                               std::string label = "Vectors") {
     if (int i = getVectorDataIndex(label); i != -1) {
       vectorData[i] = std::move(vectors);
     } else {
