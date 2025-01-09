@@ -20,6 +20,7 @@ using namespace viennacore;
 
 template <class LsNT, class MeshNT = LsNT, int D = 3>
 class ToSurfaceMeshRefined {
+
   typedef Domain<LsNT, D> lsDomainType;
   typedef typename Domain<LsNT, D>::DomainType hrleDomainType;
   typedef KDTree<LsNT, std::array<LsNT, 3>> kdTreeType;
@@ -29,9 +30,34 @@ class ToSurfaceMeshRefined {
   SmartPointer<kdTreeType> kdTree = nullptr;
 
   const MeshNT epsilon;
-  const MeshNT minNodeDistanceFactor = 0.2;
+
+  bool checkNodeDistance = true;
+
+  struct compareNodes {
+    bool operator()(const Vec3D<MeshNT> &nodeA,
+                    const Vec3D<MeshNT> &nodeB) const {
+      if (nodeA[0] < nodeB[0] - minNodeDistance)
+        return true;
+      if (nodeA[0] > nodeB[0] + minNodeDistance)
+        return false;
+
+      if (nodeA[1] < nodeB[1] - minNodeDistance)
+        return true;
+      if (nodeA[1] > nodeB[1] + minNodeDistance)
+        return false;
+
+      if (nodeA[2] < nodeB[2] - minNodeDistance)
+        return true;
+      if (nodeA[2] > nodeB[2] + minNodeDistance)
+        return false;
+
+      return false;
+    }
+  };
 
 public:
+  static MeshNT minNodeDistance;
+
   ToSurfaceMeshRefined(double eps = 1e-12) : epsilon(eps) {}
 
   ToSurfaceMeshRefined(SmartPointer<lsDomainType> passedLevelSet,
@@ -56,9 +82,11 @@ public:
     kdTree = passedKdTree;
   }
 
-  void setMinNodeDistanceFactor(MeshNT factor) {
-    minNodeDistanceFactor = factor;
-  }
+  // void setMinNodeDistanceFactor(MeshNT factor) {
+  //   minNodeDistanceFactor = factor;
+  // }
+
+  void setCheckNodeDistance(bool check) { checkNodeDistance = check; }
 
   void apply() {
     if (levelSet == nullptr) {
@@ -76,7 +104,6 @@ public:
 
     mesh->clear();
     const auto gridDelta = levelSet->getGrid().getGridDelta();
-    const MeshNT minNodeDistance = gridDelta * minNodeDistanceFactor;
     mesh->minimumExtent = Vec3D<MeshNT>{std::numeric_limits<MeshNT>::max(),
                                         std::numeric_limits<MeshNT>::max(),
                                         std::numeric_limits<MeshNT>::max()};
@@ -100,6 +127,8 @@ public:
         nodeContainerType;
 
     nodeContainerType nodes[D];
+    minNodeDistance = gridDelta * 0.01;
+    std::map<Vec3D<MeshNT>, unsigned, compareNodes> nodeCoordinates;
 
     typename nodeContainerType::iterator nodeIt;
     lsInternal::MarchingCubes marchingCubes;
@@ -107,6 +136,7 @@ public:
     std::vector<Vec3D<MeshNT>> triangleCenters;
     std::vector<Vec3D<MeshNT>> normals;
     const bool buildKdTreeFlag = kdTree != nullptr;
+    const bool checkNodeFlag = checkNodeDistance;
 
     // iterate over all active surface points
     for (hrleConstSparseCellIterator<hrleDomainType> cellIt(
@@ -156,7 +186,8 @@ public:
           nodeIt = nodes[dir].find(d);
           if (nodeIt != nodes[dir].end()) {
             nod_numbers[n] = nodeIt->second;
-          } else { // if node does not exist yet
+          } else {
+            // if node does not exist yet
             // calculate coordinate of new node
             Vec3D<MeshNT> cc{}; // initialise with zeros
             for (int z = 0; z < D; z++) {
@@ -167,10 +198,10 @@ public:
                     cellIt.getIndices(z) +
                     BitMaskToVector<D, hrleIndexType>(p0)[z]);
               } else {
-                MeshNT d0, d1;
-
-                d0 = static_cast<MeshNT>(cellIt.getCorner(p0).getValue());
-                d1 = static_cast<MeshNT>(cellIt.getCorner(p1).getValue());
+                MeshNT d0 =
+                    static_cast<MeshNT>(cellIt.getCorner(p0).getValue());
+                MeshNT d1 =
+                    static_cast<MeshNT>(cellIt.getCorner(p1).getValue());
 
                 // calculate the surface-grid intersection point
                 if (d0 == -d1) { // includes case where d0=d1=0
@@ -190,14 +221,22 @@ public:
               cc[z] = gridDelta * cc[z];
             }
 
-            int nodeIdx = checkIfNodeExists(cc, minNodeDistance);
+            int nodeIdx = -1;
+            if (checkNodeFlag) {
+              auto checkNode = nodeCoordinates.find(cc);
+              if (checkNode != nodeCoordinates.end()) {
+                nodeIdx = checkNode->second;
+              }
+            }
             if (nodeIdx >= 0) {
-              // node exists or close node exists
               nod_numbers[n] = nodeIdx;
             } else {
               // insert new node
               nod_numbers[n] =
                   mesh->insertNextNode(cc); // insert new surface node
+              nodes[dir][d] = nod_numbers[n];
+              nodeCoordinates[cc] = nod_numbers[n];
+
               for (int a = 0; a < D; a++) {
                 if (cc[a] < mesh->minimumExtent[a])
                   mesh->minimumExtent[a] = cc[a];
@@ -214,7 +253,7 @@ public:
                                         mesh->nodes[nod_numbers[2]]);
           LsNT norm = std::sqrt(normal[0] * normal[0] + normal[1] * normal[1] +
                                 normal[2] * normal[2]);
-          if (norm > gridDelta * gridDelta * 1e-4) {
+          if (norm > epsilon) {
             mesh->insertNextElement(nod_numbers); // insert new surface element
             for (int d = 0; d < D; d++) {
               normal[d] /= norm;
@@ -249,55 +288,6 @@ public:
     }
   }
 
-  int checkIfNodeExists(const Vec3D<MeshNT> &node,
-                        const MeshNT minNodeDistance) {
-    const auto &nodes = mesh->getNodes();
-    const uint N = nodes.size();
-    const int maxThreads = omp_get_max_threads();
-    const int numThreads = maxThreads > N / (10 * maxThreads) ? 1 : maxThreads;
-    std::vector<int> threadLocal(numThreads, -1);
-    std::atomic<bool> foundPoint(false);
-    const uint numPointsPerThread = N / numThreads;
-
-#pragma omp parallel shared(node, nodes, threadLocal) num_threads(numThreads)
-    {
-      int threadId = omp_get_thread_num();
-
-      uint i = threadId * numPointsPerThread;
-      const uint endPointIdx =
-          threadId == numThreads - 1 ? N : (threadId + 1) * numPointsPerThread;
-
-      while (i < endPointIdx && !foundPoint) {
-        if (nodeClose(node, nodes[i], minNodeDistance)) {
-          threadLocal[threadId] = i;
-          foundPoint = true;
-        }
-        i++;
-      }
-    }
-
-    int idx = -1;
-    for (size_t i = 0; i < threadLocal.size(); i++) {
-      if (threadLocal[i] >= 0) {
-        idx = threadLocal[i];
-        break;
-      }
-    }
-
-    return idx;
-  }
-
-  static bool nodeClose(const Vec3D<MeshNT> &nodeA, const Vec3D<MeshNT> &nodeB,
-                        const MeshNT distance) {
-    const auto nodeDist = std::abs(nodeA[0] - nodeB[0]) +
-                          std::abs(nodeA[1] - nodeB[1]) +
-                          std::abs(nodeA[2] - nodeB[2]);
-    if (nodeDist < distance)
-      return true;
-
-    return false;
-  }
-
   static bool inline triangleMisformed(
       const std::array<unsigned, D> &nod_numbers) {
     if constexpr (D == 3) {
@@ -320,5 +310,8 @@ public:
             U[0] * V[1] - U[1] * V[0]};
   }
 };
+
+template <class LsNT, class MeshNT, int D>
+MeshNT ToSurfaceMeshRefined<LsNT, MeshNT, D>::minNodeDistance = 0.1;
 
 } // namespace viennals
