@@ -844,7 +844,9 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("removeDuplicateNodes", &Mesh<T>::removeDuplicateNodes,
            "Remove nodes which occur twice in the mesh, and replace their IDs "
            "in the mesh elements.")
-      .def("print", &Mesh<T>::print, "Print basic information about the mesh.");
+      .def("append", &Mesh<T>::append, "Append another mesh to this mesh.")
+      .def("print", &Mesh<T>::print, "Print basic information about the mesh.")
+      .def("clear", &Mesh<T>::clear, "Clear all data in the mesh.");
 
   // Prune
   pybind11::class_<Prune<T, D>, SmartPointer<Prune<T, D>>>(module, "Prune")
