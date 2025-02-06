@@ -540,7 +540,7 @@ public:
       // create grid of next LS with slight offset and project into current mesh
       vtkSmartPointer<vtkRectilinearGrid> rgrid =
           vtkSmartPointer<vtkRectilinearGrid>::New();
-      if (bottomRemoved) {
+      if (bottomRemoved || counter == levelSets.size() - 1) {
         rgrid = LS2RectiLinearGrid<true, 1>(*it, -LSEpsilon * counter,
                                             totalMinimum, totalMaximum);
       } else {
