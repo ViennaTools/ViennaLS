@@ -322,6 +322,8 @@ template <class T, int D> class WriteVisualizationMesh {
             signedDistances->GetDataTypeValueMax());
       } else {
         // if inside domain just write the correct value
+        it.goToIndices(indices);
+
         if (it.getValue() == Domain<T, D>::POS_VALUE || it.isFinished()) {
           value = numLayers;
         } else if (it.getValue() == Domain<T, D>::NEG_VALUE) {
@@ -345,30 +347,23 @@ template <class T, int D> class WriteVisualizationMesh {
       }
 
       // move iterator if point was visited
-      if (it.isFinished()) { // when iterator is done just fill all the
-                             // remaining points
-        ++pointId;
-      } else {
-        while (it.getIndices() <= indices) {
-          it.next();
-        }
 
-        ++pointId;
+      ++pointId;
 
-        // // advance iterator until it is at correct point
-        // while (compare(it_l.end_indices(), indices) < 0) {
-        //   it_l.next();
-        //   if (it_l.is_finished())
-        //     break;
-        // }
-        // // now move iterator with pointId to get to next point
-        // switch (compare(it_l.end_indices(), indices)) {
-        // case 0:
-        //   it_l.next();
-        // default:
-        //   ++pointId;
-        // }
-      }
+      // // advance iterator until it is at correct point
+      // while (compare(it_l.end_indices(), indices) < 0) {
+      //   it_l.next();
+      //   if (it_l.is_finished())
+      //     break;
+      // }
+      // // now move iterator with pointId to get to next point
+      // switch (compare(it_l.end_indices(), indices)) {
+      // case 0:
+      //   it_l.next();
+      // default:
+      //   ++pointId;
+      // }
+      // }
     }
 
     // now need to go through again to fix border points, this is done by
@@ -540,7 +535,7 @@ public:
       // create grid of next LS with slight offset and project into current mesh
       vtkSmartPointer<vtkRectilinearGrid> rgrid =
           vtkSmartPointer<vtkRectilinearGrid>::New();
-      if (bottomRemoved || counter == levelSets.size() - 1) {
+      if (bottomRemoved) {
         rgrid = LS2RectiLinearGrid<true, 1>(*it, -LSEpsilon * counter,
                                             totalMinimum, totalMaximum);
       } else {
