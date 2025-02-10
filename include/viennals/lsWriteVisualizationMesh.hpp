@@ -224,7 +224,7 @@ template <class T, int D> class WriteVisualizationMesh {
   // The full domain contains values, which are capped at numLayers * gridDelta
   // gridExtraPoints layers of grid points are added to the domain according to
   // boundary conditions
-  template <bool removeBottom = false, int gridExtraPoints = 0>
+  template <int gridExtraPoints = 0>
   vtkSmartPointer<vtkRectilinearGrid>
   LS2RectiLinearGrid(SmartPointer<Domain<T, D>> levelSet,
                      const double LSOffset = 0.,
@@ -239,7 +239,8 @@ template <class T, int D> class WriteVisualizationMesh {
     vtkSmartPointer<vtkFloatArray>
         coords[3]; // needs to be 3 because vtk only knows 3D
     int gridMin = 0, gridMax = 0;
-    int openJumpDirection = -1; // direction above the open boundary direction
+    // int openJumpDirection = -1; // direction above the open boundary
+    // direction
 
     // fill grid with offset depending on orientation
     for (unsigned i = 0; i < D; ++i) {
@@ -253,8 +254,7 @@ template <class T, int D> class WriteVisualizationMesh {
                      // overall minimum can be chosen
         gridMax = std::max(domain.getMaxRunBreak(i), infiniteMaximum) + 1;
 
-        openJumpDirection = i + 1;
-
+        // openJumpDirection = i + 1;
       } else {
         gridMin = grid.getMinGridPoint(i) - gridExtraPoints;
         gridMax = grid.getMaxGridPoint(i) + gridExtraPoints;
@@ -281,48 +281,52 @@ template <class T, int D> class WriteVisualizationMesh {
     rgrid->SetYCoordinates(coords[1]);
     rgrid->SetZCoordinates(coords[2]);
 
-    // now iterate over grid and fill with LS values
-    // initialise iterator over levelset and pointId to start at gridMin
-    vtkIdType pointId = 0;
-    bool fixBorderPoints = (gridExtraPoints != 0);
-
-    // typename levelSetType::const_iterator_runs it_l(levelSet);
-    // use dense iterator to got to every index location
-    hrleConstDenseIterator<typename Domain<T, D>::DomainType> it(
-        levelSet->getDomain());
+    // bool fixBorderPoints = (gridExtraPoints != 0);
 
     // need to save the current position one dimension above open boundary
     // direction, so we can register a jump in the open boundary direction when
     // it occurs, so we can fix the LS value as follows: if remove_bottom==true,
     // we need to flip the sign otherwise the sign stays the same
-    int currentOpenIndex =
-        it.getIndices()[(openJumpDirection < D) ? openJumpDirection : 0];
+    // int currentOpenIndex =
+    //     it.getIndices()[(openJumpDirection < D) ? openJumpDirection : 0];
 
     // Make array to store signed distance function
+    auto const numGridPoints = rgrid->GetNumberOfPoints();
     vtkSmartPointer<vtkFloatArray> signedDistances =
         vtkSmartPointer<vtkFloatArray>::New();
     signedDistances->SetNumberOfComponents(1);
+    signedDistances->SetNumberOfTuples(numGridPoints);
     signedDistances->SetName("SignedDistances");
 
-    // iterate until all grid points have a signed distance value
-    while ((pointId < rgrid->GetNumberOfPoints())) {
-      double p[3];
-      rgrid->GetPoint(pointId, p);
-      // create index vector
-      hrleVectorType<hrleIndexType, D> indices(
-          grid.globalCoordinates2GlobalIndices(p));
+#pragma omp parallel
+    {
+      // use dense iterator to got to every index location
+      hrleConstDenseIterator<typename Domain<T, D>::DomainType> it(
+          levelSet->getDomain());
 
-      // write the corresponding LSValue
-      T value;
+#pragma omp for
+      for (vtkIdType pointId = 0; pointId < numGridPoints; ++pointId) {
+        // iterate until all grid points have a signed distance value
 
-      // if indices are outside of domain mark point with max value type
-      if (grid.isOutsideOfDomain(indices)) {
-        fixBorderPoints = true;
-        signedDistances->InsertNextValue(
-            signedDistances->GetDataTypeValueMax());
-      } else {
-        // if inside domain just write the correct value
-        if (it.getValue() == Domain<T, D>::POS_VALUE || it.isFinished()) {
+        double p[3];
+        rgrid->GetPoint(pointId, p);
+        // create index vector
+        hrleVectorType<hrleIndexType, D> indices(
+            grid.globalCoordinates2GlobalIndices(p));
+
+        // write the corresponding LSValue
+        T value;
+
+        // if indices are outside of domain map to local indices
+        if (grid.isOutsideOfDomain(indices)) {
+          indices = grid.globalIndices2LocalIndices(indices);
+          // fixBorderPoints = true;
+          // signedDistances->InsertNextValue(
+          // signedDistances->GetDataTypeValueMax());
+        }
+
+        it.goToIndices(indices);
+        if (it.getValue() == Domain<T, D>::POS_VALUE) {
           value = numLayers;
         } else if (it.getValue() == Domain<T, D>::NEG_VALUE) {
           value = -numLayers;
@@ -330,82 +334,72 @@ template <class T, int D> class WriteVisualizationMesh {
           value = it.getValue() + LSOffset;
         }
 
-        if (removeBottom) {
-          // if we jump from one end of the domain to the other and are not
-          // already in the new run, we need to fix the sign of the run
-          if (currentOpenIndex != indices[openJumpDirection]) {
-            currentOpenIndex = indices[openJumpDirection];
-            if (indices >= it.getIndices()) {
-              value = -value;
-            }
-          }
-        }
+        // if (removeBottom) {
+        //   // if we jump from one end of the domain to the other and are not
+        //   // already in the new run, we need to fix the sign of the run
+        //   if (currentOpenIndex != indices[openJumpDirection]) {
+        //     currentOpenIndex = indices[openJumpDirection];
+        //     if (indices >= it.getIndices()) {
+        //       value = -value;
+        //     }
+        //   }
+        // }
 
-        signedDistances->InsertNextValue(value * gridDelta);
+        signedDistances->SetValue(pointId, value * gridDelta);
+        // signedDistances->InsertNextValue(value * gridDelta);
       }
 
-      // move iterator if point was visited
-      if (it.isFinished()) { // when iterator is done just fill all the
-                             // remaining points
-        ++pointId;
-      } else {
-        while (it.getIndices() <= indices) {
-          it.next();
-        }
-
-        ++pointId;
-
-        // // advance iterator until it is at correct point
-        // while (compare(it_l.end_indices(), indices) < 0) {
-        //   it_l.next();
-        //   if (it_l.is_finished())
-        //     break;
-        // }
-        // // now move iterator with pointId to get to next point
-        // switch (compare(it_l.end_indices(), indices)) {
-        // case 0:
-        //   it_l.next();
-        // default:
-        //   ++pointId;
-        // }
-      }
+      // // advance iterator until it is at correct point
+      // while (compare(it_l.end_indices(), indices) < 0) {
+      //   it_l.next();
+      //   if (it_l.is_finished())
+      //     break;
+      // }
+      // // now move iterator with pointId to get to next point
+      // switch (compare(it_l.end_indices(), indices)) {
+      // case 0:
+      //   it_l.next();
+      // default:
+      //   ++pointId;
+      // }
+      // }
     }
 
     // now need to go through again to fix border points, this is done by
     // mapping existing points onto the points outside of the domain according
     // to the correct boundary conditions
-    if (fixBorderPoints) {
-      pointId = 0;
-      while ((pointId < rgrid->GetNumberOfPoints())) {
-        if (signedDistances->GetValue(pointId) ==
-            signedDistances->GetDataTypeValueMax()) {
-          double p[3];
-          rgrid->GetPoint(pointId, p);
+    // if (fixBorderPoints) {
+    //   vtkIdType pointId = 0;
+    //   while ((pointId < rgrid->GetNumberOfPoints())) {
+    //     if (signedDistances->GetValue(pointId) ==
+    //         signedDistances->GetDataTypeValueMax()) {
+    //       double p[3];
+    //       rgrid->GetPoint(pointId, p);
 
-          // create index vector
-          hrleVectorType<hrleIndexType, D> indices(
-              grid.globalCoordinates2GlobalIndices(p));
+    //       // create index vector
+    //       hrleVectorType<hrleIndexType, D> indices(
+    //           grid.globalCoordinates2GlobalIndices(p));
 
-          // vector for mapped point inside domain
-          hrleVectorType<hrleIndexType, D> localIndices =
-              grid.globalIndices2LocalIndices(indices);
+    //       // vector for mapped point inside domain
+    //       hrleVectorType<hrleIndexType, D> localIndices =
+    //           grid.globalIndices2LocalIndices(indices);
 
-          // now find Id of point we need to take value from
-          int originalPointId = 0;
-          for (int i = D - 1; i >= 0; --i) {
-            originalPointId *=
-                coords[i]->GetNumberOfTuples(); // extent in direction
-            originalPointId += localIndices[i] - indices[i];
-          }
-          originalPointId += pointId;
+    //       // now find Id of point we need to take value from
+    //       int originalPointId = 0;
+    //       for (int i = D - 1; i >= 0; --i) {
+    //         originalPointId *=
+    //             coords[i]->GetNumberOfTuples(); // extent in direction
+    //         originalPointId += localIndices[i] - indices[i];
+    //       }
+    //       originalPointId += pointId;
 
-          // now put value of mapped point in global point
-          signedDistances->SetValue(pointId,
-                                    signedDistances->GetValue(originalPointId));
-        }
-        ++pointId;
-      }
-    }
+    //       // now put value of mapped point in global point
+    //       signedDistances->SetValue(pointId,
+    //                                 signedDistances->GetValue(originalPointId));
+    //     }
+    //     ++pointId;
+    //   }
+    // }
 
     // Add the SignedDistances to the grid
     rgrid->GetPointData()->SetScalars(signedDistances);
@@ -483,13 +477,14 @@ public:
     vtkSmartPointer<vtkTableBasedClipDataSet> clipper =
         vtkSmartPointer<vtkTableBasedClipDataSet>::New();
     auto topGrid = vtkSmartPointer<vtkRectilinearGrid>::New();
-    if (bottomRemoved) {
-      topGrid = LS2RectiLinearGrid<true>(levelSets.back(), 0, totalMinimum,
-                                         totalMaximum);
-    } else {
-      topGrid = LS2RectiLinearGrid<false>(levelSets.back(), 0, totalMinimum,
-                                          totalMaximum);
-    }
+    // if (bottomRemoved) {
+    topGrid =
+        LS2RectiLinearGrid(levelSets.back(), 0, totalMinimum, totalMaximum);
+    // } else {
+    //   topGrid = LS2RectiLinearGrid<false>(levelSets.back(), 0,
+    //   totalMinimum,
+    //                                       totalMaximum);
+    // }
 #ifdef LS_TO_VISUALIZATION_DEBUG
     {
       auto gwriter = vtkSmartPointer<vtkXMLRectilinearGridWriter>::New();
@@ -537,16 +532,17 @@ public:
       if (it->get()->getNumberOfPoints() == 0)
         continue; // ignore empty levelSets
 
-      // create grid of next LS with slight offset and project into current mesh
+      // create grid of next LS with slight offset and project into current
+      // mesh
       vtkSmartPointer<vtkRectilinearGrid> rgrid =
           vtkSmartPointer<vtkRectilinearGrid>::New();
-      if (bottomRemoved || counter == levelSets.size() - 1) {
-        rgrid = LS2RectiLinearGrid<true, 1>(*it, -LSEpsilon * counter,
-                                            totalMinimum, totalMaximum);
-      } else {
-        rgrid = LS2RectiLinearGrid<false, 1>(*it, -LSEpsilon * counter,
-                                             totalMinimum, totalMaximum);
-      }
+      // if (bottomRemoved) {
+      rgrid = LS2RectiLinearGrid<1>(*it, -LSEpsilon * counter, totalMinimum,
+                                    totalMaximum);
+      // } else {
+      //   rgrid = LS2RectiLinearGrid<false, 1>(*it, -LSEpsilon * counter,
+      //                                        totalMinimum, totalMaximum);
+      // }
 
 #ifdef LS_TO_VISUALIZATION_DEBUG
       {
@@ -588,7 +584,7 @@ public:
       insideClipper->GenerateClippedOutputOn();
       insideClipper->Update();
 
-      materialMeshes.rbegin()[0] = insideClipper->GetOutput();
+      materialMeshes.back() = insideClipper->GetOutput();
       materialMeshes.push_back(insideClipper->GetClippedOutput());
       int material = counter;
       if (useMaterialMap)
@@ -621,9 +617,9 @@ public:
           materialNumberArray);
 
       // delete all point data, so it is not in ouput
-      // TODO this includes signed distance information which could be conserved
-      // for debugging also includes wheter a cell was vaild for cutting by the
-      // grid
+      // TODO this includes signed distance information which could be
+      // conserved for debugging also includes wheter a cell was vaild for
+      // cutting by the grid
       vtkSmartPointer<vtkPointData> pointData =
           materialMeshes[materialMeshes.size() - 1 - i]->GetPointData();
       const int numberOfArrays = pointData->GetNumberOfArrays();
@@ -650,8 +646,8 @@ public:
     if (extractVolumeMesh) {
       appendFilter->Update();
 
-      // remove degenerate points and remove cells which collapse to zero volume
-      // then
+      // remove degenerate points and remove cells which collapse to zero
+      // volume then
       volumeVTK = appendFilter->GetOutput();
 #ifdef LS_TO_VISUALIZATION_DEBUG
       {
@@ -666,8 +662,8 @@ public:
       }
 #endif
 
-      // use 1/1000th of grid spacing for contraction of two similar points, so
-      // that tetrahedralisation works correctly
+      // use 1/1000th of grid spacing for contraction of two similar points,
+      // so that tetrahedralisation works correctly
       removeDuplicatePoints(volumeVTK, 1e-3 * gridDelta);
 
 #ifdef LS_TO_VISUALIZATION_DEBUG
@@ -719,7 +715,7 @@ public:
       writer->Write();
     }
   }
-};
+}; // namespace viennals
 
 // add all template specialisations for this class
 PRECOMPILE_PRECISION_DIMENSION(WriteVisualizationMesh)
