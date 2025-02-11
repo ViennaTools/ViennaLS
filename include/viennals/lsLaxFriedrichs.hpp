@@ -176,27 +176,95 @@ public:
     timeStep = alpha_maxCFL / timeStep;
     MaxTimeStep = std::min(timeStep, MaxTimeStep);
   }
+
+  hrleVectorType<T, 3> alpha(const hrleVectorType<hrleIndexType, D> &indices,
+                             int material) {
+    auto &grid = levelSet->getGrid();
+    double gridDelta = grid.getGridDelta();
+
+    // move neighborIterator to current position
+    neighborIterator.goToIndicesSequential(indices);
+
+    Vec3D<T> coords;
+    for (unsigned i = 0; i < D; ++i) {
+      coords[i] = indices[i] * gridDelta;
+    }
+
+    const T deltaPos = gridDelta;
+    const T deltaNeg = -gridDelta;
+
+    Vec3D<T> normal = {};
+    double normalModulus = 0.;
+    const T phi0 = neighborIterator.getCenter().getValue();
+    for (unsigned i = 0; i < D; ++i) {
+      const T phiPos = neighborIterator.getNeighbor(i).getValue();
+      const T phiNeg = neighborIterator.getNeighbor(i + D).getValue();
+
+      T diffPos = (phiPos - phi0) / deltaPos;
+      T diffNeg = (phiNeg - phi0) / deltaNeg;
+
+      normal[i] = (diffNeg + diffPos) * 0.5;
+      normalModulus += normal[i] * normal[i];
+    }
+    normalModulus = std::sqrt(normalModulus);
+    // normalise normal vector
+    for (unsigned i = 0; i < D; ++i)
+      normal[i] /= normalModulus;
+
+    T scaVel = velocities->getScalarVelocity(
+        coords, material, normal, neighborIterator.getCenter().getPointId());
+    auto vecVel = velocities->getVectorVelocity(
+        coords, material, normal, neighborIterator.getCenter().getPointId());
+
+    for (unsigned i = 0; i < D; ++i) {
+      T tempAlpha = std::abs((scaVel + vecVel[i]) * normal[i]);
+      finalAlphas[i] = std::max(finalAlphas[i], tempAlpha);
+    }
+  }
 };
 
-// namespace advect {
-// template <class IntegrationSchemeType, class T, int D,
-//           lsConcepts::IsSame<IntegrationSchemeType,
-//                              lsInternal::LaxFriedrichs<T, D, 1>> =
-//               lsConcepts::assignable>
-// void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &scheme,
-//                                   double &MaxTimeStep,
-//                                   hrleCoordType gridDelta) {
-//   const double alpha_maxCFL = 1.0;
-//   // second time step test, based on alphas
-//   hrleVectorType<T, 3> alphas = scheme.getFinalAlphas();
+namespace advect {
+using namespace viennals;
+template <class IntegrationSchemeType, class T, int D,
+          lsConcepts::IsSame<IntegrationSchemeType,
+                             lsInternal::LaxFriedrichs<T, D, 1>> =
+              lsConcepts::assignable>
+void findGlobalAlpha(IntegrationSchemeType &scheme,
+                     std::vector<SmartPointer<Domain<T, D>>> &levelSets) {
 
-//   double timeStep = 0;
-//   for (int i = 0; i < D; ++i) {
-//     timeStep += alphas[i] / gridDelta;
-//   }
+  // an iterator for each level set
+  std::vector<hrleSparseIterator<typename Domain<T, D>::DomainType>> iterators;
+  for (auto it = levelSets.begin(); it != levelSets.end(); ++it) {
+    iterators.push_back(hrleSparseIterator<typename Domain<T, D>::DomainType>(
+        (*it)->getDomain()));
+  }
 
-//   timeStep = alpha_maxCFL / timeStep;
-//   MaxTimeStep = std::min(timeStep, MaxTimeStep);
-// }
-// } // namespace advect
+  for (hrleSparseIterator<typename Domain<T, D>::DomainType> it(topDomain);
+       !it.isFinished(); ++it) {
+    if (!it.isDefined() || std::abs(it.getValue()) > 0.5)
+      continue;
+
+    T value = it.getValue();
+
+    for (int currentLevelSetId = levelSets.size() - 1; currentLevelSetId >= 0;
+         --currentLevelSetId) {
+
+      // check if there is any other levelset at the same point:
+      // if yes, take the velocity of the lowest levelset
+      for (unsigned lowerLevelSetId = 0; lowerLevelSetId < levelSets.size();
+           ++lowerLevelSetId) {
+        // put iterator to same position as the top levelset
+        iterators[lowerLevelSetId].goToIndicesSequential(it.getStartIndices());
+
+        // if the lower surface is actually outside, i.e. its LS value
+        // is lower or equal
+        if (iterators[lowerLevelSetId].getValue() <= value + 1e-4) {
+          scheme.alpha(it.getStartIndices(), lowerLevelSetId);
+          break;
+        }
+      }
+    }
+  }
+}
+} // namespace advect
 } // namespace lsInternal

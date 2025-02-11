@@ -37,10 +37,10 @@
 namespace lsInternal::advect {
 template <class IntegrationSchemeType, class T, int D,
           lsConcepts::IsNotSame<IntegrationSchemeType,
-                                lsInternal::StencilLocalLaxFriedrichsScalar<
-                                    T, D, 1>> = lsConcepts::assignable>
-void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &, double &,
-                                  hrleCoordType) {}
+                                lsInternal::LaxFriedrichs<T, D, 1>> =
+              lsConcepts::assignable>
+void findGlobalAlpha(IntegrationSchemeType &,
+                     std::vector<SmartPointer<viennals::Domain<T, D>>> &) {}
 } // namespace lsInternal::advect
 
 namespace viennals {
@@ -407,6 +407,9 @@ template <class T, int D> class Advect {
         ignoreVoids = false;
       }
     }
+
+    lsInternal::advect::findGlobalAlpha<IntegrationSchemeType, T, D>(
+        IntegrationScheme, levelSets);
 
     const bool ignoreVoidPoints = ignoreVoids;
 
