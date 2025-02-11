@@ -128,8 +128,6 @@ template <class T, int D, int order> class StencilLocalLaxFriedrichsScalar {
   }
 
 public:
-  const hrleVectorType<T, 3> &getFinalAlphas() const { return finalAlphas; }
-
   static void prepareLS(LevelSetType passedlsDomain) {
     // Expansion of sparse field must depend on spatial derivative order
     // AND  slf stencil order! --> currently assume scheme = 3rd order always
@@ -327,30 +325,21 @@ public:
       return hamiltonian - dissipation;
     }
   }
-};
 
-namespace advect {
-template <
-    class IntegrationSchemeType, class T, int D,
-    lsConcepts::IsSame<IntegrationSchemeType,
-                       lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>> =
-        lsConcepts::assignable>
-void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &scheme,
-                                  double &MaxTimeStep,
-                                  hrleCoordType gridDelta) {
-  const double alpha_maxCFL = 1.0;
-  // second time step test, based on alphas
-  hrleVectorType<T, 3> alphas = scheme.getFinalAlphas();
+  void reduceTimeStepHamiltonJacobi(double &MaxTimeStep,
+                                    hrleCoordType gridDelta) {
+    const double alpha_maxCFL = 1.0;
+    // second time step test, based on alphas
 
-  double timeStep = 0;
-  for (int i = 0; i < D; ++i) {
-    timeStep += alphas[i] / gridDelta;
+    double timeStep = 0;
+    for (int i = 0; i < D; ++i) {
+      timeStep += finalAlphas[i] / gridDelta;
+    }
+
+    timeStep = alpha_maxCFL / timeStep;
+    MaxTimeStep = std::min(timeStep, MaxTimeStep);
   }
-
-  timeStep = alpha_maxCFL / timeStep;
-  MaxTimeStep = std::min(timeStep, MaxTimeStep);
-}
-} // namespace advect
+};
 } // namespace lsInternal
 
 namespace viennals {

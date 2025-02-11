@@ -529,13 +529,11 @@ template <class T, int D> class Advect {
 
 #pragma omp critical
       {
-        // If scheme is STENCIL_LOCAL_LAX_FRIEDRICHS the time step is
-        // reduced depending on the dissipation coefficients For all
-        // remaining schemes this function is empty.
-        lsInternal::advect::reduceTimeStepHamiltonJacobi<IntegrationSchemeType,
-                                                         T, D>(
-            scheme, tempMaxTimeStep,
-            levelSets.back()->getGrid().getGridDelta());
+        // If a Lax Friedrichs scheme is selected the time step is
+        // reduced depending on the dissipation coefficients
+        // For Engquist Osher scheme this function is empty.
+        scheme.reduceTimeStepHamiltonJacobi(
+            tempMaxTimeStep, levelSets.back()->getGrid().getGridDelta());
 
         // set global timestep maximum
         if (tempMaxTimeStep < maxTimeStep)

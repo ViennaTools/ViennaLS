@@ -22,6 +22,7 @@ template <class T, int D, int order> class LocalLaxFriedrichsAnalytical {
   SmartPointer<viennals::Domain<T, D>> levelSet;
   SmartPointer<viennals::VelocityField<T>> velocities;
   hrleSparseBoxIterator<hrleDomain<T, D>> neighborIterator;
+  hrleVectorType<T, 3> finalAlphas;
 
   static T pow2(const T &value) { return value * value; }
 
@@ -55,7 +56,11 @@ public:
       SmartPointer<viennals::Domain<T, D>> passedlsDomain,
       SmartPointer<viennals::VelocityField<T>> vel)
       : levelSet(passedlsDomain), velocities(vel),
-        neighborIterator(levelSet->getDomain(), 2) {}
+        neighborIterator(levelSet->getDomain(), 2) {
+    for (int i = 0; i < 3; ++i) {
+      finalAlphas[i] = 0;
+    }
+  }
 
   T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {
 
@@ -181,7 +186,7 @@ public:
       // alpha calculation is always on order 1 stencil
       const hrleIndexType minIndex = -1;
       const hrleIndexType maxIndex = 1;
-      const unsigned numNeighbors = std::pow((maxIndex - minIndex), D);
+      const unsigned numNeighbors = std::pow((maxIndex - minIndex) + 1, D);
 
       hrleVectorType<hrleIndexType, D> neighborIndex(minIndex);
       for (unsigned i = 0; i < numNeighbors; ++i) {
@@ -201,6 +206,7 @@ public:
         for (unsigned dir = 0; dir < D; ++dir) {
           T tempAlpha = velocities->getDissipationAlpha(dir, material, normal);
           alpha[dir] = std::max(alpha[dir], tempAlpha);
+          finalAlphas[dir] = std::max(finalAlphas[dir], tempAlpha);
         }
 
         // advance to next index
@@ -217,6 +223,20 @@ public:
     // std::cout << neighborIterator.getCenter().getPointId() << " dissipation:
     // " << dissipation << std::endl;
     return totalGrad - ((totalGrad != 0.) ? dissipation : 0);
+  }
+
+  void reduceTimeStepHamiltonJacobi(double &MaxTimeStep,
+                                    hrleCoordType gridDelta) {
+    const double alpha_maxCFL = 1.0;
+    // second time step test, based on alphas
+
+    double timeStep = 0;
+    for (int i = 0; i < D; ++i) {
+      timeStep += finalAlphas[i] / gridDelta;
+    }
+
+    timeStep = alpha_maxCFL / timeStep;
+    MaxTimeStep = std::min(timeStep, MaxTimeStep);
   }
 };
 } // namespace lsInternal

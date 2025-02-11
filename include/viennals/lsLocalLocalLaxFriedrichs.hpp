@@ -21,6 +21,7 @@ template <class T, int D, int order> class LocalLocalLaxFriedrichs {
   SmartPointer<viennals::VelocityField<T>> velocities;
   hrleSparseStarIterator<hrleDomain<T, D>, order> neighborIterator;
   const double alphaFactor;
+  hrleVectorType<T, 3> finalAlphas;
 
   static T pow2(const T &value) { return value * value; }
 
@@ -36,7 +37,11 @@ public:
       : levelSet(passedlsDomain), velocities(vel),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>, order>(
             levelSet->getDomain())),
-        alphaFactor(a) {}
+        alphaFactor(a) {
+    for (int i = 0; i < 3; ++i) {
+      finalAlphas[i] = 0;
+    }
+  }
 
   T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {
 
@@ -156,10 +161,25 @@ public:
     for (unsigned i = 0; i < D; ++i) {
       T alpha =
           std::abs((scalarVelocity + vectorVelocity[i]) * normalVector[i]);
+      finalAlphas[i] = std::max(finalAlphas[i], alpha);
       dissipation += alphaFactor * alpha * (gradNeg[i] - gradPos[i]) * 0.5;
     }
 
     return totalGrad - ((totalGrad != 0.) ? dissipation : 0);
+  }
+
+  void reduceTimeStepHamiltonJacobi(double &MaxTimeStep,
+                                    hrleCoordType gridDelta) {
+    const double alpha_maxCFL = 1.0;
+    // second time step test, based on alphas
+
+    double timeStep = 0;
+    for (int i = 0; i < D; ++i) {
+      timeStep += finalAlphas[i] / gridDelta;
+    }
+
+    timeStep = alpha_maxCFL / timeStep;
+    MaxTimeStep = std::min(timeStep, MaxTimeStep);
   }
 };
 } // namespace lsInternal

@@ -21,7 +21,8 @@ template <class T, int D, int order> class LaxFriedrichs {
   SmartPointer<viennals::VelocityField<T>> velocities;
   hrleSparseStarIterator<hrleDomain<T, D>, order> neighborIterator;
   bool calculateNormalVectors = true;
-  const double alpha = 1.0;
+  const double alphaFactor = 1.0;
+  hrleVectorType<T, 3> finalAlphas;
 
   static T pow2(const T &value) { return value * value; }
 
@@ -37,7 +38,11 @@ public:
       : levelSet(passedlsDomain), velocities(vel),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>, order>(
             levelSet->getDomain())),
-        calculateNormalVectors(calcNormal), alpha(a) {}
+        calculateNormalVectors(calcNormal), alphaFactor(a) {
+    for (int i = 0; i < 3; ++i) {
+      finalAlphas[i] = 1.0;
+    }
+  }
 
   T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {
 
@@ -122,7 +127,7 @@ public:
       }
 
       grad += pow2((diffNeg + diffPos) * 0.5);
-      dissipation += (diffPos - diffNeg) * 0.5;
+      dissipation += finalAlphas[i] * (diffPos - diffNeg) * 0.5;
     }
 
     if (calcNormals) {
@@ -155,7 +160,43 @@ public:
       }
     }
 
-    return totalGrad - ((totalGrad != 0.) ? alpha * dissipation : 0);
+    return totalGrad - ((totalGrad != 0.) ? alphaFactor * dissipation : 0);
+  }
+
+  void reduceTimeStepHamiltonJacobi(double &MaxTimeStep,
+                                    hrleCoordType gridDelta) {
+    const double alpha_maxCFL = 1.0;
+    // second time step test, based on alphas
+
+    double timeStep = 0;
+    for (int i = 0; i < D; ++i) {
+      timeStep += finalAlphas[i] / gridDelta;
+    }
+
+    timeStep = alpha_maxCFL / timeStep;
+    MaxTimeStep = std::min(timeStep, MaxTimeStep);
   }
 };
+
+// namespace advect {
+// template <class IntegrationSchemeType, class T, int D,
+//           lsConcepts::IsSame<IntegrationSchemeType,
+//                              lsInternal::LaxFriedrichs<T, D, 1>> =
+//               lsConcepts::assignable>
+// void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &scheme,
+//                                   double &MaxTimeStep,
+//                                   hrleCoordType gridDelta) {
+//   const double alpha_maxCFL = 1.0;
+//   // second time step test, based on alphas
+//   hrleVectorType<T, 3> alphas = scheme.getFinalAlphas();
+
+//   double timeStep = 0;
+//   for (int i = 0; i < D; ++i) {
+//     timeStep += alphas[i] / gridDelta;
+//   }
+
+//   timeStep = alpha_maxCFL / timeStep;
+//   MaxTimeStep = std::min(timeStep, MaxTimeStep);
+// }
+// } // namespace advect
 } // namespace lsInternal

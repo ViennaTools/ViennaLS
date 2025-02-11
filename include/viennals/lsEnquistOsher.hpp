@@ -162,6 +162,9 @@ public:
 
     return vel_grad;
   }
+
+  void reduceTimeStepHamiltonJacobi(double &MaxTimeStep,
+                                    hrleCoordType gridDelta) {}
 };
 
 } // namespace lsInternal
