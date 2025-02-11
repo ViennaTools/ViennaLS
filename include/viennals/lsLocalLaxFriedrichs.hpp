@@ -182,7 +182,7 @@ public:
       // alpha calculation is always on order 1 stencil
       const hrleIndexType minIndex = -1;
       const hrleIndexType maxIndex = 1;
-      const unsigned numNeighbors = std::pow((maxIndex - minIndex) - 1, D);
+      const unsigned numNeighbors = std::pow((maxIndex - minIndex) + 1, D);
 
       hrleVectorType<hrleIndexType, D> neighborIndex(minIndex);
       for (unsigned i = 0; i < numNeighbors; ++i) {
@@ -204,6 +204,8 @@ public:
           normalModulus += normal[dir] * normal[dir];
         }
         normalModulus = std::sqrt(normalModulus);
+        for (unsigned dir = 0; dir < D; ++dir)
+          normal[dir] /= normalModulus;
 
         T scaVel = velocities->getScalarVelocity(
             coords, material, normal,
@@ -214,8 +216,7 @@ public:
 
         for (unsigned dir = 0; dir < D; ++dir) {
           // normalise normal vector
-          normal[i] /= normalModulus;
-          T tempAlpha = std::abs((scaVel + vecVel[i]) * normal[i]);
+          T tempAlpha = std::abs((scaVel + vecVel[dir]) * normal[dir]);
           alpha[dir] = std::max(alpha[dir], tempAlpha);
         }
 
