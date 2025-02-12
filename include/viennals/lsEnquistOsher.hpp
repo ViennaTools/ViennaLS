@@ -165,6 +165,8 @@ public:
 
   void setFinalAlphas(const hrleVectorType<T, 3> &) {}
 
+  void setNormals(const std::vector<Vec3D<T>> &) {}
+
   void reduceTimeStepHamiltonJacobi(double &MaxTimeStep,
                                     hrleCoordType gridDelta) {}
 };
