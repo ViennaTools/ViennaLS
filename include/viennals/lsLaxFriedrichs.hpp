@@ -235,7 +235,7 @@ template <class IntegrationSchemeType, class T, int D,
           lsConcepts::IsSame<IntegrationSchemeType,
                              lsInternal::LaxFriedrichs<T, D, 1>> =
               lsConcepts::assignable>
-void findGlobalAlpha(IntegrationSchemeType &scheme,
+void findGlobalAlpha(IntegrationSchemeType &integrationScheme,
                      std::vector<SmartPointer<Domain<T, D>>> &levelSets) {
 
   auto &topDomain = levelSets.back()->getDomain();
@@ -250,6 +250,7 @@ void findGlobalAlpha(IntegrationSchemeType &scheme,
 #endif
 
     hrleVectorType<T, 3> localAlphas(0., 0., 0.);
+    IntegrationSchemeType scheme(integrationScheme);
 
     hrleVectorType<hrleIndexType, D> startVector =
         (p == 0) ? grid.getMinGridPoint() : topDomain.getSegmentation()[p - 1];
@@ -303,7 +304,7 @@ void findGlobalAlpha(IntegrationSchemeType &scheme,
     }
   } // end of parallel section
 
-  scheme.setFinalAlphas(finalAlphas);
+  integrationScheme.setFinalAlphas(finalAlphas);
 }
 } // namespace advect
 } // namespace lsInternal
