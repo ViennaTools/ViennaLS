@@ -27,6 +27,7 @@ template <class T, int D, int order> class LaxFriedrichs {
   static T pow2(const T &value) { return value * value; }
 
 public:
+  static const int order_ = order;
   static void prepareLS(SmartPointer<viennals::Domain<T, D>> passedlsDomain) {
     assert(order == 1 || order == 2);
     viennals::Expand<T, D>(passedlsDomain, 2 * order + 1).apply();
@@ -231,15 +232,18 @@ public:
 
 namespace advect {
 using namespace viennals;
-template <class IntegrationSchemeType, class T, int D,
-          lsConcepts::IsSame<IntegrationSchemeType,
-                             lsInternal::LaxFriedrichs<T, D, 1>> =
-              lsConcepts::assignable>
+template <class IntegrationSchemeType, class T, int D, int order>
 void findGlobalAlpha(IntegrationSchemeType &integrationScheme,
-                     std::vector<SmartPointer<Domain<T, D>>> &levelSets) {
+                     std::vector<SmartPointer<Domain<T, D>>> &levelSets,
+                     SmartPointer<VelocityField<T>> velocities) {
 
   auto &topDomain = levelSets.back()->getDomain();
   auto &grid = levelSets.back()->getGrid();
+
+  const T gridDelta = grid.getGridDelta();
+  const T deltaPos = gridDelta;
+  const T deltaNeg = -gridDelta;
+
   hrleVectorType<T, 3> finalAlphas(0., 0., 0.);
 
 #pragma omp parallel num_threads((levelSets.back())->getNumberOfSegments())
@@ -250,7 +254,6 @@ void findGlobalAlpha(IntegrationSchemeType &integrationScheme,
 #endif
 
     hrleVectorType<T, 3> localAlphas(0., 0., 0.);
-    IntegrationSchemeType scheme(integrationScheme);
 
     hrleVectorType<hrleIndexType, D> startVector =
         (p == 0) ? grid.getMinGridPoint() : topDomain.getSegmentation()[p - 1];
@@ -268,6 +271,9 @@ void findGlobalAlpha(IntegrationSchemeType &integrationScheme,
           (*it)->getDomain()));
     }
 
+    // neighborIterator for the top level set
+    hrleSparseStarIterator<hrleDomain<T, D>, order> neighborIterator(topDomain);
+
     for (hrleSparseIterator<typename Domain<T, D>::DomainType> it(topDomain,
                                                                   startVector);
          it.getStartIndices() < endVector; ++it) {
@@ -282,15 +288,50 @@ void findGlobalAlpha(IntegrationSchemeType &integrationScheme,
       for (unsigned lowerLevelSetId = 0; lowerLevelSetId < levelSets.size();
            ++lowerLevelSetId) {
         // put iterator to same position as the top levelset
-        iterators[lowerLevelSetId].goToIndicesSequential(it.getStartIndices());
+        auto indices = it.getStartIndices();
+        iterators[lowerLevelSetId].goToIndicesSequential(indices);
 
         // if the lower surface is actually outside, i.e. its LS value
         // is lower or equal
         if (iterators[lowerLevelSetId].getValue() <= value + 1e-4) {
-          auto alpha = scheme.calcAlpha(it.getStartIndices(), lowerLevelSetId);
+
+          // move neighborIterator to current position
+          neighborIterator.goToIndicesSequential(indices);
+
+          Vec3D<T> coords;
           for (unsigned i = 0; i < D; ++i) {
-            finalAlphas[i] = std::max(finalAlphas[i], alpha[i]);
+            coords[i] = indices[i] * gridDelta;
           }
+
+          Vec3D<T> normal = {};
+          T normalModulus = 0.;
+          const T phi0 = neighborIterator.getCenter().getValue();
+          for (unsigned i = 0; i < D; ++i) {
+            const T phiPos = neighborIterator.getNeighbor(i).getValue();
+            const T phiNeg = neighborIterator.getNeighbor(i + D).getValue();
+
+            T diffPos = (phiPos - phi0) / deltaPos;
+            T diffNeg = (phiNeg - phi0) / deltaNeg;
+
+            normal[i] = (diffNeg + diffPos) * 0.5;
+            normalModulus += normal[i] * normal[i];
+          }
+          normalModulus = std::sqrt(normalModulus);
+          for (unsigned i = 0; i < D; ++i)
+            normal[i] /= normalModulus;
+
+          T scaVel = velocities->getScalarVelocity(
+              coords, lowerLevelSetId, normal,
+              neighborIterator.getCenter().getPointId());
+          auto vecVel = velocities->getVectorVelocity(
+              coords, lowerLevelSetId, normal,
+              neighborIterator.getCenter().getPointId());
+
+          for (unsigned i = 0; i < D; ++i) {
+            T tempAlpha = std::abs((scaVel + vecVel[i]) * normal[i]);
+            localAlphas[i] = std::max(localAlphas[i], tempAlpha);
+          }
+
           break;
         }
       }

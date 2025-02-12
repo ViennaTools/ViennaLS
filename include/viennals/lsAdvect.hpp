@@ -34,15 +34,6 @@
 #include <lsVTKWriter.hpp>
 #endif
 
-namespace lsInternal::advect {
-template <class IntegrationSchemeType, class T, int D,
-          lsConcepts::IsNotSame<IntegrationSchemeType,
-                                lsInternal::LaxFriedrichs<T, D, 1>> =
-              lsConcepts::assignable>
-void findGlobalAlpha(IntegrationSchemeType &,
-                     std::vector<SmartPointer<viennals::Domain<T, D>>> &) {}
-} // namespace lsInternal::advect
-
 namespace viennals {
 
 using namespace viennacore;
@@ -408,10 +399,15 @@ template <class T, int D> class Advect {
       }
     }
 
-    // This function is only defined for the Lax-Friedrichs scheme.
     // The global alpha values are stored in the integration scheme.
-    lsInternal::advect::findGlobalAlpha<IntegrationSchemeType, T, D>(
-        IntegrationScheme, levelSets);
+    if (integrationScheme == IntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
+      lsInternal::advect::findGlobalAlpha<IntegrationSchemeType, T, D, 1>(
+          IntegrationScheme, levelSets, velocities);
+    } else if (integrationScheme ==
+               IntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER) {
+      lsInternal::advect::findGlobalAlpha<IntegrationSchemeType, T, D, 2>(
+          IntegrationScheme, levelSets, velocities);
+    }
 
     const bool ignoreVoidPoints = ignoreVoids;
 

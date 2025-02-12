@@ -62,6 +62,10 @@ public:
     }
   }
 
+  void setFinalAlphas(const hrleVectorType<T, 3> &alphas) {
+    finalAlphas = alphas;
+  }
+
   T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {
 
     auto &grid = levelSet->getGrid();
