@@ -20,7 +20,6 @@ template <class T, int D, int order> class LaxFriedrichs {
   SmartPointer<viennals::Domain<T, D>> levelSet;
   SmartPointer<viennals::VelocityField<T>> velocities;
   hrleSparseStarIterator<hrleDomain<T, D>, order> neighborIterator;
-  std::vector<Vec3D<T>> normals;
   bool calculateNormalVectors = true;
   const double alphaFactor = 1.0;
   hrleVectorType<T, 3> finalAlphas;
@@ -50,10 +49,7 @@ public:
     finalAlphas = alphas;
   }
 
-  void setNormals(const std::vector<Vec3D<T>> &norms) { normals = norms; }
-
   T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {
-    assert(normals.size() > 0);
 
     auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
@@ -71,6 +67,10 @@ public:
 
     T grad = 0.;
     T dissipation = 0.;
+
+    Vec3D<T> normalVector = {};
+    T normalModulus = 0;
+    const bool calcNormals = calculateNormalVectors;
 
     for (int i = 0; i < D; i++) { // iterate over dimensions
 
@@ -126,18 +126,31 @@ public:
       gradPos[i] = diffNeg;
       gradNeg[i] = diffPos;
 
+      if (calcNormals) {
+        normalVector[i] = (diffNeg + diffPos) * 0.5;
+        normalModulus += normalVector[i] * normalVector[i];
+      }
+
       grad += pow2((diffNeg + diffPos) * 0.5);
       dissipation += finalAlphas[i] * (diffPos - diffNeg) * 0.5;
+    }
+
+    if (calcNormals) {
+      normalModulus = std::sqrt(normalModulus);
+      for (unsigned i = 0; i < D; ++i) {
+        normalVector[i] /= normalModulus;
+      }
     }
 
     // convert coordinate to std array for interface
     Vec3D<T> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
 
-    auto pointId = neighborIterator.getCenter().getPointId();
     double scalarVelocity = velocities->getScalarVelocity(
-        coordArray, material, normals[pointId], pointId);
+        coordArray, material, normalVector,
+        neighborIterator.getCenter().getPointId());
     Vec3D<T> vectorVelocity = velocities->getVectorVelocity(
-        coordArray, material, normals[pointId], pointId);
+        coordArray, material, normalVector,
+        neighborIterator.getCenter().getPointId());
 
     T totalGrad = 0.;
     if (scalarVelocity != 0.) {
@@ -168,6 +181,53 @@ public:
     timeStep = alpha_maxCFL / timeStep;
     MaxTimeStep = std::min(timeStep, MaxTimeStep);
   }
+
+  hrleVectorType<T, 3>
+  calcAlpha(const hrleVectorType<hrleIndexType, D> &indices, int material) {
+    const T gridDelta = levelSet->getGrid().getGridDelta();
+
+    // move neighborIterator to current position
+    neighborIterator.goToIndicesSequential(indices);
+
+    Vec3D<T> coords;
+    for (unsigned i = 0; i < D; ++i) {
+      coords[i] = indices[i] * gridDelta;
+    }
+
+    const T deltaPos = gridDelta;
+    const T deltaNeg = -gridDelta;
+
+    Vec3D<T> normal = {};
+    T normalModulus = 0.;
+    const T phi0 = neighborIterator.getCenter().getValue();
+    for (unsigned i = 0; i < D; ++i) {
+      const T phiPos = neighborIterator.getNeighbor(i).getValue();
+      const T phiNeg = neighborIterator.getNeighbor(i + D).getValue();
+
+      T diffPos = (phiPos - phi0) / deltaPos;
+      T diffNeg = (phiNeg - phi0) / deltaNeg;
+
+      normal[i] = (diffNeg + diffPos) * 0.5;
+      normalModulus += normal[i] * normal[i];
+    }
+    normalModulus = std::sqrt(normalModulus);
+    // normalise normal vector
+    for (unsigned i = 0; i < D; ++i)
+      normal[i] /= normalModulus;
+
+    T scaVel = velocities->getScalarVelocity(
+        coords, material, normal, neighborIterator.getCenter().getPointId());
+    auto vecVel = velocities->getVectorVelocity(
+        coords, material, normal, neighborIterator.getCenter().getPointId());
+
+    hrleVectorType<T, 3> alpha(0., 0., 0.);
+    for (unsigned i = 0; i < D; ++i) {
+      T tempAlpha = std::abs((scaVel + vecVel[i]) * normal[i]);
+      alpha[i] = std::max(alpha[i], tempAlpha);
+    }
+
+    return alpha;
+  }
 };
 
 namespace advect {
@@ -185,7 +245,6 @@ void findGlobalAlpha(IntegrationSchemeType &integrationScheme,
   const T deltaNeg = -gridDelta;
 
   hrleVectorType<T, 3> finalAlphas(0., 0., 0.);
-  std::vector<Vec3D<T>> normals(topDomain.getNumberOfPoints());
 
 #pragma omp parallel num_threads((levelSets.back())->getNumberOfSegments())
   {
@@ -261,12 +320,12 @@ void findGlobalAlpha(IntegrationSchemeType &integrationScheme,
           for (unsigned i = 0; i < D; ++i)
             normal[i] /= normalModulus;
 
-          auto pointId = neighborIterator.getCenter().getPointId();
-          T scaVel = velocities->getScalarVelocity(coords, lowerLevelSetId,
-                                                   normal, pointId);
-          auto vecVel = velocities->getVectorVelocity(coords, lowerLevelSetId,
-                                                      normal, pointId);
-          normals[pointId] = normal; // store normal for later use
+          T scaVel = velocities->getScalarVelocity(
+              coords, lowerLevelSetId, normal,
+              neighborIterator.getCenter().getPointId());
+          auto vecVel = velocities->getVectorVelocity(
+              coords, lowerLevelSetId, normal,
+              neighborIterator.getCenter().getPointId());
 
           for (unsigned i = 0; i < D; ++i) {
             T tempAlpha = std::abs((scaVel + vecVel[i]) * normal[i]);
@@ -287,7 +346,6 @@ void findGlobalAlpha(IntegrationSchemeType &integrationScheme,
   } // end of parallel section
 
   integrationScheme.setFinalAlphas(finalAlphas);
-  integrationScheme.setNormals(normals);
 }
 } // namespace advect
 } // namespace lsInternal

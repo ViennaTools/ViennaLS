@@ -66,8 +66,6 @@ public:
     finalAlphas = alphas;
   }
 
-  void setNormals(const std::vector<Vec3D<T>> &) {}
-
   T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {
 
     auto &grid = levelSet->getGrid();
