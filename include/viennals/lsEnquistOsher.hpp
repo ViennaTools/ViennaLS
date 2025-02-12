@@ -162,6 +162,11 @@ public:
 
     return vel_grad;
   }
+
+  void setFinalAlphas(const hrleVectorType<T, 3> &) {}
+
+  void reduceTimeStepHamiltonJacobi(double &MaxTimeStep,
+                                    hrleCoordType gridDelta) {}
 };
 
 } // namespace lsInternal

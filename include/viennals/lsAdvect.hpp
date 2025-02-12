@@ -34,15 +34,6 @@
 #include <lsVTKWriter.hpp>
 #endif
 
-namespace lsInternal::advect {
-template <class IntegrationSchemeType, class T, int D,
-          lsConcepts::IsNotSame<IntegrationSchemeType,
-                                lsInternal::StencilLocalLaxFriedrichsScalar<
-                                    T, D, 1>> = lsConcepts::assignable>
-void reduceTimeStepHamiltonJacobi(IntegrationSchemeType &, double &,
-                                  hrleCoordType) {}
-} // namespace lsInternal::advect
-
 namespace viennals {
 
 using namespace viennacore;
@@ -408,6 +399,16 @@ template <class T, int D> class Advect {
       }
     }
 
+    // The global alpha values are stored in the integration scheme.
+    if (integrationScheme == IntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
+      lsInternal::advect::findGlobalAlpha<IntegrationSchemeType, T, D, 1>(
+          IntegrationScheme, levelSets, velocities);
+    } else if (integrationScheme ==
+               IntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER) {
+      lsInternal::advect::findGlobalAlpha<IntegrationSchemeType, T, D, 2>(
+          IntegrationScheme, levelSets, velocities);
+    }
+
     const bool ignoreVoidPoints = ignoreVoids;
 
 #pragma omp parallel num_threads((levelSets.back())->getNumberOfSegments())
@@ -529,13 +530,11 @@ template <class T, int D> class Advect {
 
 #pragma omp critical
       {
-        // If scheme is STENCIL_LOCAL_LAX_FRIEDRICHS the time step is
-        // reduced depending on the dissipation coefficients For all
-        // remaining schemes this function is empty.
-        lsInternal::advect::reduceTimeStepHamiltonJacobi<IntegrationSchemeType,
-                                                         T, D>(
-            scheme, tempMaxTimeStep,
-            levelSets.back()->getGrid().getGridDelta());
+        // If a Lax Friedrichs scheme is selected the time step is
+        // reduced depending on the dissipation coefficients
+        // For Engquist Osher scheme this function is empty.
+        scheme.reduceTimeStepHamiltonJacobi(
+            tempMaxTimeStep, levelSets.back()->getGrid().getGridDelta());
 
         // set global timestep maximum
         if (tempMaxTimeStep < maxTimeStep)

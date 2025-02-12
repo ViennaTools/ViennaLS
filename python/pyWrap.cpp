@@ -48,6 +48,7 @@
 #include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsToVoxelMesh.hpp>
+#include <lsTransformMesh.hpp>
 #include <lsVTKReader.hpp>
 #include <lsVTKWriter.hpp>
 #include <lsVelocityField.hpp>
@@ -847,6 +848,27 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("append", &Mesh<T>::append, "Append another mesh to this mesh.")
       .def("print", &Mesh<T>::print, "Print basic information about the mesh.")
       .def("clear", &Mesh<T>::clear, "Clear all data in the mesh.");
+
+  // TransformEnum
+  pybind11::enum_<TransformEnum>(module, "TransformEnum")
+      .value("TRANSLATION", TransformEnum::TRANSLATION)
+      .value("ROTATION", TransformEnum::ROTATION)
+      .value("SCALE", TransformEnum::SCALE);
+
+  // TransformMesh
+  pybind11::class_<TransformMesh<T>, SmartPointer<TransformMesh<T>>>(
+      module, "TransformMesh")
+      // constructors
+      .def(pybind11::init([](SmartPointer<Mesh<T>> &mesh, TransformEnum op,
+                             Vec3D<T> vec, double angle) {
+             return SmartPointer<TransformMesh<T>>::New(mesh, op, vec, angle);
+           }),
+           pybind11::arg("mesh"),
+           pybind11::arg("transform") = TransformEnum::TRANSLATION,
+           pybind11::arg("transformVector") = Vec3D<T>{0., 0., 0.},
+           pybind11::arg("angle") = 0.)
+      // methods
+      .def("apply", &TransformMesh<T>::apply, "Apply the transformation.");
 
   // Prune
   pybind11::class_<Prune<T, D>, SmartPointer<Prune<T, D>>>(module, "Prune")

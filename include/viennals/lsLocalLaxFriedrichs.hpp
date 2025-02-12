@@ -23,6 +23,7 @@ template <class T, int D, int order> class LocalLaxFriedrichs {
   SmartPointer<viennals::VelocityField<T>> velocities;
   hrleSparseBoxIterator<hrleDomain<T, D>> neighborIterator;
   const double alphaFactor;
+  hrleVectorType<T, 3> finalAlphas;
 
   static T pow2(const T &value) { return value * value; }
 
@@ -56,7 +57,15 @@ public:
                      SmartPointer<viennals::VelocityField<T>> vel,
                      double a = 1.0)
       : levelSet(passedlsDomain), velocities(vel),
-        neighborIterator(levelSet->getDomain(), 2), alphaFactor(a) {}
+        neighborIterator(levelSet->getDomain(), 2), alphaFactor(a) {
+    for (int i = 0; i < 3; ++i) {
+      finalAlphas[i] = 0;
+    }
+  }
+
+  void setFinalAlphas(const hrleVectorType<T, 3> &alphas) {
+    finalAlphas = alphas;
+  }
 
   T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {
 
@@ -182,7 +191,7 @@ public:
       // alpha calculation is always on order 1 stencil
       const hrleIndexType minIndex = -1;
       const hrleIndexType maxIndex = 1;
-      const unsigned numNeighbors = std::pow((maxIndex - minIndex) - 1, D);
+      const unsigned numNeighbors = std::pow((maxIndex - minIndex) + 1, D);
 
       hrleVectorType<hrleIndexType, D> neighborIndex(minIndex);
       for (unsigned i = 0; i < numNeighbors; ++i) {
@@ -204,6 +213,8 @@ public:
           normalModulus += normal[dir] * normal[dir];
         }
         normalModulus = std::sqrt(normalModulus);
+        for (unsigned dir = 0; dir < D; ++dir)
+          normal[dir] /= normalModulus;
 
         T scaVel = velocities->getScalarVelocity(
             coords, material, normal,
@@ -214,9 +225,9 @@ public:
 
         for (unsigned dir = 0; dir < D; ++dir) {
           // normalise normal vector
-          normal[i] /= normalModulus;
-          T tempAlpha = std::abs((scaVel + vecVel[i]) * normal[i]);
+          T tempAlpha = std::abs((scaVel + vecVel[dir]) * normal[dir]);
           alpha[dir] = std::max(alpha[dir], tempAlpha);
+          finalAlphas[dir] = std::max(finalAlphas[dir], tempAlpha);
         }
 
         // advance to next index
@@ -233,6 +244,20 @@ public:
     // std::cout << neighborIterator.getCenter().getPointId() << " dissipation:
     // " << dissipation << std::endl;
     return totalGrad - ((totalGrad != 0.) ? dissipation : 0);
+  }
+
+  void reduceTimeStepHamiltonJacobi(double &MaxTimeStep,
+                                    hrleCoordType gridDelta) {
+    const double alpha_maxCFL = 1.0;
+    // second time step test, based on alphas
+
+    double timeStep = 0;
+    for (int i = 0; i < D; ++i) {
+      timeStep += finalAlphas[i] / gridDelta;
+    }
+
+    timeStep = alpha_maxCFL / timeStep;
+    MaxTimeStep = std::min(timeStep, MaxTimeStep);
   }
 };
 } // namespace lsInternal
