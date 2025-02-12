@@ -95,8 +95,7 @@ template <class T> class TransformMesh {
 public:
   TransformMesh(SmartPointer<Mesh<T>> passedMesh,
                 TransformEnum passedTransform = TransformEnum::TRANSLATION,
-                std::array<double, 3> passedTransformVector = {},
-                double passedAngle = 0.0)
+                Vec3D<T> passedTransformVector = {}, double passedAngle = 0.0)
       : mesh(passedMesh), transform(passedTransform),
         transformVector(passedTransformVector), angle(passedAngle) {}
 
