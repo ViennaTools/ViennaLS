@@ -44,6 +44,10 @@ public:
     }
   }
 
+  void setFinalAlphas(const hrleVectorType<T, 3> &alphas) {
+    finalAlphas = alphas;
+  }
+
   T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {
 
     auto &grid = levelSet->getGrid();
@@ -177,10 +181,9 @@ public:
     MaxTimeStep = std::min(timeStep, MaxTimeStep);
   }
 
-  hrleVectorType<T, 3> alpha(const hrleVectorType<hrleIndexType, D> &indices,
-                             int material) {
-    auto &grid = levelSet->getGrid();
-    double gridDelta = grid.getGridDelta();
+  hrleVectorType<T, 3>
+  calcAlpha(const hrleVectorType<hrleIndexType, D> &indices, int material) {
+    const T gridDelta = levelSet->getGrid().getGridDelta();
 
     // move neighborIterator to current position
     neighborIterator.goToIndicesSequential(indices);
@@ -194,7 +197,7 @@ public:
     const T deltaNeg = -gridDelta;
 
     Vec3D<T> normal = {};
-    double normalModulus = 0.;
+    T normalModulus = 0.;
     const T phi0 = neighborIterator.getCenter().getValue();
     for (unsigned i = 0; i < D; ++i) {
       const T phiPos = neighborIterator.getNeighbor(i).getValue();
@@ -216,10 +219,13 @@ public:
     auto vecVel = velocities->getVectorVelocity(
         coords, material, normal, neighborIterator.getCenter().getPointId());
 
+    hrleVectorType<T, 3> alpha(0., 0., 0.);
     for (unsigned i = 0; i < D; ++i) {
       T tempAlpha = std::abs((scaVel + vecVel[i]) * normal[i]);
-      finalAlphas[i] = std::max(finalAlphas[i], tempAlpha);
+      alpha[i] = std::max(alpha[i], tempAlpha);
     }
+
+    return alpha;
   }
 };
 
@@ -232,22 +238,43 @@ template <class IntegrationSchemeType, class T, int D,
 void findGlobalAlpha(IntegrationSchemeType &scheme,
                      std::vector<SmartPointer<Domain<T, D>>> &levelSets) {
 
-  // an iterator for each level set
-  std::vector<hrleSparseIterator<typename Domain<T, D>::DomainType>> iterators;
-  for (auto it = levelSets.begin(); it != levelSets.end(); ++it) {
-    iterators.push_back(hrleSparseIterator<typename Domain<T, D>::DomainType>(
-        (*it)->getDomain()));
-  }
+  auto &topDomain = levelSets.back()->getDomain();
+  auto &grid = levelSets.back()->getGrid();
+  hrleVectorType<T, 3> finalAlphas(0., 0., 0.);
 
-  for (hrleSparseIterator<typename Domain<T, D>::DomainType> it(topDomain);
-       !it.isFinished(); ++it) {
-    if (!it.isDefined() || std::abs(it.getValue()) > 0.5)
-      continue;
+#pragma omp parallel num_threads((levelSets.back())->getNumberOfSegments())
+  {
+    int p = 0;
+#ifdef _OPENMP
+    p = omp_get_thread_num();
+#endif
 
-    T value = it.getValue();
+    hrleVectorType<T, 3> localAlphas(0., 0., 0.);
 
-    for (int currentLevelSetId = levelSets.size() - 1; currentLevelSetId >= 0;
-         --currentLevelSetId) {
+    hrleVectorType<hrleIndexType, D> startVector =
+        (p == 0) ? grid.getMinGridPoint() : topDomain.getSegmentation()[p - 1];
+
+    hrleVectorType<hrleIndexType, D> endVector =
+        (p != static_cast<int>(topDomain.getNumberOfSegments() - 1))
+            ? topDomain.getSegmentation()[p]
+            : grid.incrementIndices(grid.getMaxGridPoint());
+
+    // an iterator for each level set
+    std::vector<hrleSparseIterator<typename Domain<T, D>::DomainType>>
+        iterators;
+    for (auto it = levelSets.begin(); it != levelSets.end(); ++it) {
+      iterators.push_back(hrleSparseIterator<typename Domain<T, D>::DomainType>(
+          (*it)->getDomain()));
+    }
+
+    for (hrleSparseIterator<typename Domain<T, D>::DomainType> it(topDomain,
+                                                                  startVector);
+         it.getStartIndices() < endVector; ++it) {
+
+      if (!it.isDefined() || std::abs(it.getValue()) > 0.5)
+        continue;
+
+      T value = it.getValue();
 
       // check if there is any other levelset at the same point:
       // if yes, take the velocity of the lowest levelset
@@ -259,12 +286,24 @@ void findGlobalAlpha(IntegrationSchemeType &scheme,
         // if the lower surface is actually outside, i.e. its LS value
         // is lower or equal
         if (iterators[lowerLevelSetId].getValue() <= value + 1e-4) {
-          scheme.alpha(it.getStartIndices(), lowerLevelSetId);
+          auto alpha = scheme.calcAlpha(it.getStartIndices(), lowerLevelSetId);
+          for (unsigned i = 0; i < D; ++i) {
+            finalAlphas[i] = std::max(finalAlphas[i], alpha[i]);
+          }
           break;
         }
       }
     }
-  }
+
+#pragma omp critical
+    {
+      for (unsigned i = 0; i < D; ++i) {
+        finalAlphas[i] = std::max(finalAlphas[i], localAlphas[i]);
+      }
+    }
+  } // end of parallel section
+
+  scheme.setFinalAlphas(finalAlphas);
 }
 } // namespace advect
 } // namespace lsInternal

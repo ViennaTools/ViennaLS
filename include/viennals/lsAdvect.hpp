@@ -408,6 +408,8 @@ template <class T, int D> class Advect {
       }
     }
 
+    // This function is only defined for the Lax-Friedrichs scheme.
+    // The global alpha values are stored in the integration scheme.
     lsInternal::advect::findGlobalAlpha<IntegrationSchemeType, T, D>(
         IntegrationScheme, levelSets);
 
