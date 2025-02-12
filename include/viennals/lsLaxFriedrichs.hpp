@@ -34,8 +34,8 @@ public:
   }
 
   LaxFriedrichs(SmartPointer<viennals::Domain<T, D>> passedlsDomain,
-                SmartPointer<viennals::VelocityField<T>> vel,
-                bool calcNormal = true, double a = 1.0)
+                SmartPointer<viennals::VelocityField<T>> vel, double a = 1.0,
+                bool calcNormal = true)
       : levelSet(passedlsDomain), velocities(vel),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>, order>(
             levelSet->getDomain())),
