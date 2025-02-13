@@ -116,8 +116,7 @@ CPMAddPackage(
 
 CPMFindPackage(
   NAME ViennaHRLE
-  VERSION 0.4.0
-  GIT_TAG boundary-enum
+  VERSION 0.5.0
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaHRLE"
   EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 
@@ -251,4 +250,4 @@ packageProject(
   INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include/viennals
   INCLUDE_DESTINATION include/viennals-${PROJECT_VERSION}
   COMPATIBILITY SameMajorVersion
-  DEPENDENCIES "VTK 9.0.0;ViennaHRLE 0.4.0")
+  DEPENDENCIES "VTK 9.0.0;ViennaHRLE 0.5.0")
