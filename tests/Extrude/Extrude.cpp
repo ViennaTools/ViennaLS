@@ -62,10 +62,10 @@ int main() {
   }
 
   std::array<double, 2> extrudeExtent = {-5., 5.};
-  std::array<ls::BoundaryConditionEnum<3>, 3> boundaryConds{
-      ls::BoundaryConditionEnum<3>::REFLECTIVE_BOUNDARY,
-      ls::BoundaryConditionEnum<3>::INFINITE_BOUNDARY,
-      ls::BoundaryConditionEnum<3>::REFLECTIVE_BOUNDARY};
+  std::array<ls::BoundaryConditionEnum, 3> boundaryConds{
+      ls::BoundaryConditionEnum::REFLECTIVE_BOUNDARY,
+      ls::BoundaryConditionEnum::INFINITE_BOUNDARY,
+      ls::BoundaryConditionEnum::REFLECTIVE_BOUNDARY};
   auto trench_3D = ls::SmartPointer<ls::Domain<double, 3>>::New();
   ls::Extrude<double>(trench, trench_3D, extrudeExtent, 2, boundaryConds)
       .apply();

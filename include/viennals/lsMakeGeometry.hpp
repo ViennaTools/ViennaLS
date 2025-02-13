@@ -273,7 +273,7 @@ private:
     bool infDimSet = false;
     for (unsigned n = 0; n < D; ++n) {
       if (grid.getBoundaryConditions(n) ==
-          hrleGrid<D>::boundaryType::INFINITE_BOUNDARY) {
+          hrleBoundaryType::INFINITE_BOUNDARY) {
         if (!infDimSet) {
           i = n;
           infDimSet = true;

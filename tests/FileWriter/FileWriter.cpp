@@ -26,7 +26,7 @@ int main() {
   for (unsigned i = 0; i < D; ++i) {
     boundaryCons[i] = ls::Domain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   }
-  boundaryCons[D - 1] = ls::BoundaryConditionEnum<D>::INFINITE_BOUNDARY;
+  boundaryCons[D - 1] = ls::BoundaryConditionEnum::INFINITE_BOUNDARY;
 
   auto levelSet = ls::SmartPointer<ls::Domain<double, D>>::New(
       bounds, boundaryCons, gridDelta);
