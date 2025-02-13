@@ -38,7 +38,8 @@ public:
             levelSet->getDomain())),
         calculateNormalVectors(calcNormal) {}
 
-  T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {
+  std::pair<T, T> operator()(const hrleVectorType<hrleIndexType, D> &indices,
+                             int material) {
     auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
 
@@ -160,7 +161,7 @@ public:
       }
     }
 
-    return vel_grad;
+    return {vel_grad, 0.};
   }
 
   void reduceTimeStepHamiltonJacobi(double &MaxTimeStep,

@@ -148,7 +148,8 @@ public:
     }
   }
 
-  T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {
+  std::pair<T, T> operator()(const hrleVectorType<hrleIndexType, D> &indices,
+                             int material) {
     auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
 
@@ -199,7 +200,7 @@ public:
     }
 
     if (scalarVelocity == T(0)) {
-      return 0;
+      return {0, 0};
     }
 
     T hamiltonian =
@@ -321,7 +322,7 @@ public:
         dissipation += maxAlpha * gradientDiff[d];
       }
 
-      return hamiltonian - dissipation;
+      return {hamiltonian, dissipation};
     }
   }
 

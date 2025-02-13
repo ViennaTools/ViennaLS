@@ -499,7 +499,7 @@ template <class T, int D> class Advect {
     auto &topDomain = levelSets.back()->getDomain();
     auto &grid = levelSets.back()->getGrid();
 
-    std::vector<std::vector<std::pair<T, T>>> totalTempRates;
+    std::vector<std::vector<std::pair<std::pair<T, T>, T>>> totalTempRates;
     totalTempRates.resize((levelSets.back())->getNumberOfSegments());
 
     typename PointData<T>::ScalarDataType *voidMarkerPointer;
@@ -566,7 +566,7 @@ template <class T, int D> class Advect {
         for (int currentLevelSetId = levelSets.size() - 1;
              currentLevelSetId >= 0; --currentLevelSetId) {
 
-          T velocity = 0;
+          std::pair<T, T> gradNDissipation;
 
           if (!(ignoreVoidPoints && (*voidMarkerPointer)[it.getPointId()])) {
             // check if there is any other levelset at the same point:
@@ -581,7 +581,8 @@ template <class T, int D> class Advect {
               // is lower or equal
               if (iterators[lowerLevelSetId].getValue() <=
                   value + wrappingLayerEpsilon) {
-                velocity = scheme(it.getStartIndices(), lowerLevelSetId);
+                gradNDissipation =
+                    scheme(it.getStartIndices(), lowerLevelSetId);
                 break;
               }
             }
@@ -599,16 +600,17 @@ template <class T, int D> class Advect {
 
           // if velocity is positive, set maximum time step possible without
           // violating the cfl condition
+          T velocity = gradNDissipation.first - gradNDissipation.second;
           if (velocity > 0.) {
             maxStepTime += cfl / velocity;
-            tempRates.push_back(
-                std::make_pair(velocity, -std::numeric_limits<T>::max()));
+            tempRates.push_back(std::make_pair(gradNDissipation,
+                                               -std::numeric_limits<T>::max()));
             break;
             // if velocity is 0, maximum time step is infinite
           } else if (velocity == 0.) {
             maxStepTime = std::numeric_limits<T>::max();
-            tempRates.push_back(
-                std::make_pair(velocity, std::numeric_limits<T>::max()));
+            tempRates.push_back(std::make_pair(gradNDissipation,
+                                               std::numeric_limits<T>::max()));
             break;
             // if the velocity is negative apply the velocity for as long as
             // possible without infringing on material below
@@ -617,14 +619,14 @@ template <class T, int D> class Advect {
 
             if (difference >= cfl) {
               maxStepTime -= cfl / velocity;
-              tempRates.push_back(
-                  std::make_pair(velocity, std::numeric_limits<T>::max()));
+              tempRates.push_back(std::make_pair(
+                  gradNDissipation, std::numeric_limits<T>::max()));
               break;
             } else {
               maxStepTime -= difference / velocity;
               // the second part of the pair indicates how far we can move
               // in this time step until the end of the material is reached
-              tempRates.push_back(std::make_pair(velocity, valueBelow));
+              tempRates.push_back(std::make_pair(gradNDissipation, valueBelow));
               cfl -= difference;
               // use new LS value for next calculations
               value = valueBelow;
@@ -648,13 +650,15 @@ template <class T, int D> class Advect {
         if (tempMaxTimeStep < maxTimeStep)
           maxTimeStep = tempMaxTimeStep;
       }
-    }
+    } // end of parallel section
 
     // reduce to one layer thickness and apply new values directly to the
     // domain segments --> DO NOT CHANGE SEGMENTATION HERE (true parameter)
     Reduce<T, D>(levelSets.back(), 1, true).apply();
 
     const bool saveVelocities = saveAdvectionVelocities;
+    std::vector<std::vector<double>> dissipationVectors(
+        levelSets.back()->getNumberOfSegments());
     std::vector<std::vector<double>> velocityVectors(
         levelSets.back()->getNumberOfSegments());
 
@@ -665,13 +669,13 @@ template <class T, int D> class Advect {
       p = omp_get_thread_num();
 #endif
 
-      typename std::vector<std::pair<T, T>>::const_iterator itRS =
-          totalTempRates[p].begin();
+      auto itRS = totalTempRates[p].cbegin();
       auto &segment = topDomain.getDomainSegment(p);
       unsigned maxId = segment.getNumberOfPoints();
 
       if (saveVelocities) {
         velocityVectors[p].resize(maxId);
+        dissipationVectors[p].resize(maxId);
       }
 
       for (unsigned localId = 0; localId < maxId; ++localId) {
@@ -681,17 +685,20 @@ template <class T, int D> class Advect {
         // if there is a change in materials during one time step, deduct
         // the time taken to advect up to the end of the top material and
         // set the LS value to the one below
-        while (std::abs(itRS->second - value) < std::abs(time * itRS->first)) {
-          time -= std::abs((itRS->second - value) / itRS->first);
+        T velocity = itRS->first.first - itRS->first.second;
+        T rate = time * velocity;
+        while (std::abs(itRS->second - value) < std::abs(rate)) {
+          time -= std::abs((itRS->second - value) / velocity);
           value = itRS->second;
           ++itRS;
         }
 
         // now deduct the velocity times the time step we take
-        value -= time * itRS->first;
+        value -= rate;
 
         if (saveVelocities) {
-          velocityVectors[p][localId] = time * itRS->first;
+          velocityVectors[p][localId] = rate;
+          dissipationVectors[p][localId] = itRS->first.second;
         }
 
         // this
@@ -708,19 +715,20 @@ template <class T, int D> class Advect {
 
     if (saveVelocities) {
       auto &pointData = levelSets.back()->getPointData();
-      // delete if already exists
-      if (int i = pointData.getScalarDataIndex(velocityLabel); i != -1) {
-        pointData.eraseScalarData(i);
-      }
 
       typename PointData<T>::ScalarDataType vels;
+      typename PointData<T>::ScalarDataType diss;
 
       for (unsigned i = 0; i < velocityVectors.size(); ++i) {
         vels.insert(vels.end(),
                     std::make_move_iterator(velocityVectors[i].begin()),
                     std::make_move_iterator(velocityVectors[i].end()));
+        diss.insert(diss.end(),
+                    std::make_move_iterator(dissipationVectors[i].begin()),
+                    std::make_move_iterator(dissipationVectors[i].end()));
       }
-      pointData.insertNextScalarData(std::move(vels), velocityLabel);
+      pointData.insertReplaceScalarData(std::move(vels), velocityLabel);
+      pointData.insertReplaceScalarData(std::move(diss), dissipationLabel);
     }
 
     return maxTimeStep;
@@ -728,6 +736,7 @@ template <class T, int D> class Advect {
 
 public:
   static constexpr char velocityLabel[] = "AdvectionVelocities";
+  static constexpr char dissipationLabel[] = "Dissipation";
 
   Advect() {}
 

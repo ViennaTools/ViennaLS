@@ -42,7 +42,8 @@ public:
         alphaFactor(alpha), finalAlphas(alphas),
         calculateNormalVectors(calcNormal) {}
 
-  T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {
+  std::pair<T, T> operator()(const hrleVectorType<hrleIndexType, D> &indices,
+                             int material) {
 
     auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
@@ -124,7 +125,7 @@ public:
       }
 
       grad += pow2((diffNeg + diffPos) * 0.5);
-      dissipation += finalAlphas[i] * (diffPos - diffNeg) * 0.5;
+      dissipation += alphaFactor * finalAlphas[i] * (diffPos - diffNeg) * 0.5;
     }
 
     if (calculateNormalVectors) {
@@ -157,7 +158,7 @@ public:
       }
     }
 
-    return totalGrad - ((totalGrad != 0.) ? alphaFactor * dissipation : 0);
+    return {totalGrad, ((totalGrad != 0.) ? dissipation : 0)};
   }
 
   void reduceTimeStepHamiltonJacobi(double &MaxTimeStep,

@@ -50,14 +50,14 @@ int main() {
   double gridDelta = 0.6999999;
 
   std::vector<ls::IntegrationSchemeEnum> integrationSchemes = {
-      ls::IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER,
-      ls::IntegrationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER,
-      ls::IntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER,
-      ls::IntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER,
-      ls::IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
-      ls::IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER,
-      ls::IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
-      ls::IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER};
+      // ls::IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER,
+      // ls::IntegrationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER,
+      ls::IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER};
+  // ls::IntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER,
+  // ls::IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
+  // ls::IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER,
+  // ls::IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
+  // ls::IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER};
 
   for (auto integrationScheme : integrationSchemes) {
     auto sphere1 = ls::SmartPointer<ls::Domain<double, D>>::New(gridDelta);
@@ -93,19 +93,19 @@ int main() {
     advectionKernel.insertNextLevelSet(sphere1);
     advectionKernel.setVelocityField(velocities);
     advectionKernel.setIntegrationScheme(integrationScheme);
-    // advectionKernel.setSaveAdvectionVelocities(true);
+    advectionKernel.setSaveAdvectionVelocities(true);
 
     double time = 0.;
     for (unsigned i = 0; time < 1.0 && i < 1e2; ++i) {
       advectionKernel.apply();
       time += advectionKernel.getAdvectedTime();
 
-      // std::string fileName = std::to_string(i) + ".vtp";
-      // auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
-      // ls::ToMesh<double, D>(sphere1, mesh).apply();
-      // ls::VTKWriter<double>(mesh, "points_" + fileName).apply();
-      // ls::ToSurfaceMesh<double, D>(sphere1, mesh).apply();
-      // ls::VTKWriter(mesh, "surface_" + fileName).apply();
+      std::string fileName = std::to_string(i) + ".vtp";
+      auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+      ls::ToMesh<double, D>(sphere1, mesh).apply();
+      ls::VTKWriter<double>(mesh, "points_" + fileName).apply();
+      ls::ToSurfaceMesh<double, D>(sphere1, mesh).apply();
+      ls::VTKWriter(mesh, "surface_" + fileName).apply();
     }
 
     LSTEST_ASSERT_VALID_LS(sphere1, double, D)

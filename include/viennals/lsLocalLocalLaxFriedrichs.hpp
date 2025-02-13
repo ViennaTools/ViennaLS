@@ -43,7 +43,8 @@ public:
     }
   }
 
-  T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {
+  std::pair<T, T> operator()(const hrleVectorType<hrleIndexType, D> &indices,
+                             int material) {
 
     auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
@@ -165,7 +166,7 @@ public:
       dissipation += alphaFactor * alpha * (gradNeg[i] - gradPos[i]) * 0.5;
     }
 
-    return totalGrad - ((totalGrad != 0.) ? dissipation : 0);
+    return {totalGrad, ((totalGrad != 0.) ? dissipation : 0)};
   }
 
   void reduceTimeStepHamiltonJacobi(double &MaxTimeStep,
