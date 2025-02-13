@@ -45,14 +45,14 @@ public:
 int main() {
 
   constexpr int D = 3;
-  omp_set_num_threads(4);
+  omp_set_num_threads(1);
 
   double gridDelta = 0.6999999;
 
   std::vector<ls::IntegrationSchemeEnum> integrationSchemes = {
       // ls::IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER,
       // ls::IntegrationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER,
-      ls::IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER};
+      ls::IntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER};
   // ls::IntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER,
   // ls::IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
   // ls::IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER,

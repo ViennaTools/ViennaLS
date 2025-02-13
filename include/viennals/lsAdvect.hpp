@@ -77,6 +77,7 @@ template <class T, int D> class Advect {
   unsigned numberOfTimeSteps = 0;
   bool saveAdvectionVelocities = false;
   bool updatePointData = true;
+  bool checkDissipation = false;
   static constexpr double wrappingLayerEpsilon = 1e-4;
 
   hrleVectorType<T, 3> findGlobalAlphas() const {
@@ -662,6 +663,8 @@ template <class T, int D> class Advect {
     std::vector<std::vector<double>> velocityVectors(
         levelSets.back()->getNumberOfSegments());
 
+    const bool checkDiss = checkDissipation;
+
 #pragma omp parallel num_threads((levelSets.back())->getNumberOfSegments())
     {
       int p = 0;
@@ -686,6 +689,10 @@ template <class T, int D> class Advect {
         // the time taken to advect up to the end of the top material and
         // set the LS value to the one below
         T velocity = itRS->first.first - itRS->first.second;
+        if (checkDiss && (itRS->first.first < 0 && velocity > 0) ||
+            (itRS->first.first > 0 && velocity < 0)) {
+          velocity = 0;
+        }
         T rate = time * velocity;
         while (std::abs(itRS->second - value) < std::abs(rate)) {
           time -= std::abs((itRS->second - value) / velocity);
@@ -711,7 +718,7 @@ template <class T, int D> class Advect {
         // advance the TempStopRates iterator by one
         ++itRS;
       }
-    }
+    } // end of parallel section
 
     if (saveVelocities) {
       auto &pointData = levelSets.back()->getPointData();
@@ -829,6 +836,9 @@ public:
   /// For all other LaxFriedrichs schemes it is used as a
   /// scaling factor for the calculated alpha values.
   void setDissipationAlpha(const double &a) { dissipationAlpha = a; }
+
+  // Sets the velocity to 0 if the dissipation is too high
+  void setCheckDissipation(bool check) { checkDissipation = check; }
 
   /// Set whether the point data in the old LS should
   /// be translated to the advected LS. Defaults to true.
