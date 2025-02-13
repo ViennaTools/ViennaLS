@@ -128,14 +128,14 @@ template <class T, int D> class Advect {
         if (!it.isDefined() || std::abs(it.getValue()) > 0.5)
           continue;
 
-        T value = it.getValue();
+        const T value = it.getValue();
+        const auto indices = it.getStartIndices();
 
         // check if there is any other levelset at the same point:
         // if yes, take the velocity of the lowest levelset
         for (unsigned lowerLevelSetId = 0; lowerLevelSetId < levelSets.size();
              ++lowerLevelSetId) {
           // put iterator to same position as the top levelset
-          auto indices = it.getStartIndices();
           iterators[lowerLevelSetId].goToIndicesSequential(indices);
 
           // if the lower surface is actually outside, i.e. its LS value
@@ -153,13 +153,12 @@ template <class T, int D> class Advect {
 
             Vec3D<T> normal = {};
             T normalModulus = 0.;
-            const T phi0 = neighborIterator.getCenter().getValue();
             for (unsigned i = 0; i < D; ++i) {
               const T phiPos = neighborIterator.getNeighbor(i).getValue();
               const T phiNeg = neighborIterator.getNeighbor(i + D).getValue();
 
-              T diffPos = (phiPos - phi0) / deltaPos;
-              T diffNeg = (phiNeg - phi0) / deltaNeg;
+              T diffPos = (phiPos - value) / deltaPos;
+              T diffNeg = (phiNeg - value) / deltaNeg;
 
               normal[i] = (diffNeg + diffPos) * 0.5;
               normalModulus += normal[i] * normal[i];

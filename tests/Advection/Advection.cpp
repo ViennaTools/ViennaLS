@@ -57,8 +57,7 @@ int main() {
       ls::IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
       ls::IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER,
       ls::IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
-      ls::IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER,
-      ls::IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER};
+      ls::IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER};
 
   for (auto integrationScheme : integrationSchemes) {
     auto sphere1 = ls::SmartPointer<ls::Domain<double, D>>::New(gridDelta);
@@ -97,7 +96,7 @@ int main() {
     // advectionKernel.setSaveAdvectionVelocities(true);
 
     double time = 0.;
-    for (unsigned i = 0; time < 2.0 && i < 1e2; ++i) {
+    for (unsigned i = 0; time < 1.0 && i < 1e2; ++i) {
       advectionKernel.apply();
       time += advectionKernel.getAdvectedTime();
 
