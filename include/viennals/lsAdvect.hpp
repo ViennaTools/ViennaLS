@@ -79,6 +79,123 @@ template <class T, int D> class Advect {
   bool updatePointData = true;
   static constexpr double wrappingLayerEpsilon = 1e-4;
 
+  hrleVectorType<T, 3> findGlobalAlphas() const {
+
+    auto &topDomain = levelSets.back()->getDomain();
+    auto &grid = levelSets.back()->getGrid();
+
+    const T gridDelta = grid.getGridDelta();
+    const T deltaPos = gridDelta;
+    const T deltaNeg = -gridDelta;
+
+    hrleVectorType<T, 3> finalAlphas(0., 0., 0.);
+
+#pragma omp parallel num_threads((levelSets.back())->getNumberOfSegments())
+    {
+      int p = 0;
+#ifdef _OPENMP
+      p = omp_get_thread_num();
+#endif
+
+      hrleVectorType<T, 3> localAlphas(0., 0., 0.);
+
+      hrleVectorType<hrleIndexType, D> startVector =
+          (p == 0) ? grid.getMinGridPoint()
+                   : topDomain.getSegmentation()[p - 1];
+
+      hrleVectorType<hrleIndexType, D> endVector =
+          (p != static_cast<int>(topDomain.getNumberOfSegments() - 1))
+              ? topDomain.getSegmentation()[p]
+              : grid.incrementIndices(grid.getMaxGridPoint());
+
+      // an iterator for each level set
+      std::vector<hrleConstSparseIterator<typename Domain<T, D>::DomainType>>
+          iterators;
+      for (auto it = levelSets.begin(); it != levelSets.end(); ++it) {
+        iterators.push_back(
+            hrleConstSparseIterator<typename Domain<T, D>::DomainType>(
+                (*it)->getDomain()));
+      }
+
+      // neighborIterator for the top level set
+      hrleConstSparseStarIterator<hrleDomain<T, D>, 1> neighborIterator(
+          topDomain);
+
+      for (hrleSparseIterator<typename Domain<T, D>::DomainType> it(
+               topDomain, startVector);
+           it.getStartIndices() < endVector; ++it) {
+
+        if (!it.isDefined() || std::abs(it.getValue()) > 0.5)
+          continue;
+
+        T value = it.getValue();
+
+        // check if there is any other levelset at the same point:
+        // if yes, take the velocity of the lowest levelset
+        for (unsigned lowerLevelSetId = 0; lowerLevelSetId < levelSets.size();
+             ++lowerLevelSetId) {
+          // put iterator to same position as the top levelset
+          auto indices = it.getStartIndices();
+          iterators[lowerLevelSetId].goToIndicesSequential(indices);
+
+          // if the lower surface is actually outside, i.e. its LS value
+          // is lower or equal
+          if (iterators[lowerLevelSetId].getValue() <=
+              value + wrappingLayerEpsilon) {
+
+            // move neighborIterator to current position
+            neighborIterator.goToIndicesSequential(indices);
+
+            Vec3D<T> coords;
+            for (unsigned i = 0; i < D; ++i) {
+              coords[i] = indices[i] * gridDelta;
+            }
+
+            Vec3D<T> normal = {};
+            T normalModulus = 0.;
+            const T phi0 = neighborIterator.getCenter().getValue();
+            for (unsigned i = 0; i < D; ++i) {
+              const T phiPos = neighborIterator.getNeighbor(i).getValue();
+              const T phiNeg = neighborIterator.getNeighbor(i + D).getValue();
+
+              T diffPos = (phiPos - phi0) / deltaPos;
+              T diffNeg = (phiNeg - phi0) / deltaNeg;
+
+              normal[i] = (diffNeg + diffPos) * 0.5;
+              normalModulus += normal[i] * normal[i];
+            }
+            normalModulus = std::sqrt(normalModulus);
+            for (unsigned i = 0; i < D; ++i)
+              normal[i] /= normalModulus;
+
+            T scaVel = velocities->getScalarVelocity(
+                coords, lowerLevelSetId, normal,
+                neighborIterator.getCenter().getPointId());
+            auto vecVel = velocities->getVectorVelocity(
+                coords, lowerLevelSetId, normal,
+                neighborIterator.getCenter().getPointId());
+
+            for (unsigned i = 0; i < D; ++i) {
+              T tempAlpha = std::abs((scaVel + vecVel[i]) * normal[i]);
+              localAlphas[i] = std::max(localAlphas[i], tempAlpha);
+            }
+
+            break;
+          }
+        }
+      }
+
+#pragma omp critical
+      {
+        for (unsigned i = 0; i < D; ++i) {
+          finalAlphas[i] = std::max(finalAlphas[i], localAlphas[i]);
+        }
+      }
+    } // end of parallel section
+
+    return finalAlphas;
+  }
+
   void rebuildLS() {
     // TODO: this function uses manhatten distances for renormalisation,
     // since this is the quickest. For visualisation applications, better
@@ -293,14 +410,16 @@ template <class T, int D> class Advect {
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                IntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
+      auto alphas = findGlobalAlphas();
       auto is = lsInternal::LaxFriedrichs<T, D, 1>(levelSets.back(), velocities,
-                                                   dissipationAlpha,
+                                                   dissipationAlpha, alphas,
                                                    calculateNormalVectors);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                IntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER) {
+      auto alphas = findGlobalAlphas();
       auto is = lsInternal::LaxFriedrichs<T, D, 2>(levelSets.back(), velocities,
-                                                   dissipationAlpha,
+                                                   dissipationAlpha, alphas,
                                                    calculateNormalVectors);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
@@ -397,16 +516,6 @@ template <class T, int D> class Advect {
             .print();
         ignoreVoids = false;
       }
-    }
-
-    // The global alpha values are stored in the integration scheme.
-    if (integrationScheme == IntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
-      lsInternal::advect::findGlobalAlpha<IntegrationSchemeType, T, D, 1>(
-          IntegrationScheme, levelSets, velocities);
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER) {
-      lsInternal::advect::findGlobalAlpha<IntegrationSchemeType, T, D, 2>(
-          IntegrationScheme, levelSets, velocities);
     }
 
     const bool ignoreVoidPoints = ignoreVoids;

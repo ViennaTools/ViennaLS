@@ -63,10 +63,6 @@ public:
     }
   }
 
-  void setFinalAlphas(const hrleVectorType<T, 3> &alphas) {
-    finalAlphas = alphas;
-  }
-
   T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {
 
     auto &grid = levelSet->getGrid();
@@ -241,8 +237,6 @@ public:
       dissipation += alphaFactor * alpha[i] * (gradNeg[i] - gradPos[i]) * 0.5;
     }
 
-    // std::cout << neighborIterator.getCenter().getPointId() << " dissipation:
-    // " << dissipation << std::endl;
     return totalGrad - ((totalGrad != 0.) ? dissipation : 0);
   }
 
