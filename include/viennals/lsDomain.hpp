@@ -20,8 +20,7 @@ namespace viennals {
 using namespace viennacore;
 
 // Boundary condition alias for easier access
-template <int D>
-using BoundaryConditionEnum = typename hrleGrid<D>::boundaryType;
+using BoundaryConditionEnum = hrleBoundaryType;
 
 ///  Class containing all information about the level set, including
 ///  the dimensions of the domain, boundary conditions and all data.
@@ -31,7 +30,7 @@ public:
   typedef T ValueType;
   typedef hrleGrid<D> GridType;
   typedef hrleDomain<T, D> DomainType;
-  typedef BoundaryConditionEnum<D> BoundaryType;
+  typedef BoundaryConditionEnum BoundaryType;
   typedef typename std::vector<std::pair<hrleVectorType<hrleIndexType, D>, T>>
       PointValueVectorType;
   typedef typename std::vector<std::array<T, D>> NormalVectorType;

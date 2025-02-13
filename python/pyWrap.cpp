@@ -436,15 +436,14 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
           }, pybind11::arg("stream") = pybind11::module::import("sys").attr("stdout"));
 
   // enums
-  pybind11::enum_<BoundaryConditionEnum<D>>(module, "BoundaryConditionEnum")
-      .value("REFLECTIVE_BOUNDARY",
-             BoundaryConditionEnum<D>::REFLECTIVE_BOUNDARY)
-      .value("INFINITE_BOUNDARY", BoundaryConditionEnum<D>::INFINITE_BOUNDARY)
-      .value("PERIODIC_BOUNDARY", BoundaryConditionEnum<D>::PERIODIC_BOUNDARY)
+  pybind11::enum_<BoundaryConditionEnum>(module, "BoundaryConditionEnum")
+      .value("REFLECTIVE_BOUNDARY", BoundaryConditionEnum::REFLECTIVE_BOUNDARY)
+      .value("INFINITE_BOUNDARY", BoundaryConditionEnum::INFINITE_BOUNDARY)
+      .value("PERIODIC_BOUNDARY", BoundaryConditionEnum::PERIODIC_BOUNDARY)
       .value("POS_INFINITE_BOUNDARY",
-             BoundaryConditionEnum<D>::POS_INFINITE_BOUNDARY)
+             BoundaryConditionEnum::POS_INFINITE_BOUNDARY)
       .value("NEG_INFINITE_BOUNDARY",
-             BoundaryConditionEnum<D>::NEG_INFINITE_BOUNDARY);
+             BoundaryConditionEnum::NEG_INFINITE_BOUNDARY);
 
   // GeometricAdvect
   pybind11::class_<GeometricAdvect<T, D>, SmartPointer<GeometricAdvect<T, D>>>(

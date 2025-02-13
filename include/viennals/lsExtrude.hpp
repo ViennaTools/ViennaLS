@@ -16,14 +16,14 @@ template <class T> class Extrude {
   SmartPointer<Domain<T, 3>> outputLevelSet = nullptr;
   Vec2D<T> extent = {0., 0.};
   int extrudeDim = 0;
-  std::array<BoundaryConditionEnum<3>, 3> boundaryConds;
+  std::array<BoundaryConditionEnum, 3> boundaryConds;
 
 public:
   Extrude() {}
   Extrude(SmartPointer<Domain<T, 2>> passedInputLS,
           SmartPointer<Domain<T, 3>> passedOutputLS, Vec2D<T> passedExtent,
           const int passedExtrudeDim,
-          std::array<BoundaryConditionEnum<3>, 3> passedBoundaryConds)
+          std::array<BoundaryConditionEnum, 3> passedBoundaryConds)
       : inputLevelSet(passedInputLS), outputLevelSet(passedOutputLS),
         extent(passedExtent), extrudeDim(passedExtrudeDim),
         boundaryConds(passedBoundaryConds) {}
@@ -46,11 +46,11 @@ public:
   }
 
   void setBoundaryConditions(
-      std::array<BoundaryConditionEnum<3>, 3> passedBoundaryConds) {
+      std::array<BoundaryConditionEnum, 3> passedBoundaryConds) {
     boundaryConds = passedBoundaryConds;
   }
 
-  void setBoundaryConditions(BoundaryConditionEnum<3> passedBoundaryConds[3]) {
+  void setBoundaryConditions(BoundaryConditionEnum passedBoundaryConds[3]) {
     for (int i = 0; i < 3; i++)
       boundaryConds[i] = passedBoundaryConds[i];
   }

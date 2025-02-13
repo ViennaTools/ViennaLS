@@ -42,11 +42,11 @@ int main(int argc, char *argv[]) {
   ls::VTKWriter(mesh, ls::FileFormatEnum::VTU, "ReadVolumeMesh.vtu").apply();
 
   double bounds[2 * D] = {-6, 6, 1e-10, 0.078, -0.034, 0.034};
-  ls::BoundaryConditionEnum<D> boundaryCons[D];
+  ls::BoundaryConditionEnum boundaryCons[D];
   for (unsigned i = 0; i < D; ++i) {
-    boundaryCons[i] = ls::BoundaryConditionEnum<D>::REFLECTIVE_BOUNDARY;
+    boundaryCons[i] = ls::BoundaryConditionEnum::REFLECTIVE_BOUNDARY;
   }
-  boundaryCons[0] = ls::BoundaryConditionEnum<D>::INFINITE_BOUNDARY;
+  boundaryCons[0] = ls::BoundaryConditionEnum::INFINITE_BOUNDARY;
 
   auto domain = ls::SmartPointer<ls::Domain<NumericType, D>>::New(
       bounds, boundaryCons, gridDelta);
