@@ -50,7 +50,7 @@ template <class T, int D> class WriteVisualizationMesh {
   bool extractVolumeMesh = true;
   bool extractHullMesh = false;
   bool bottomRemoved = false;
-  static constexpr double LSEpsilon = 1e-2;
+  double LSEpsilon = 1e-2;
 
   /// This function removes duplicate points and agjusts the pointIDs in the
   /// cells
@@ -226,8 +226,7 @@ template <class T, int D> class WriteVisualizationMesh {
   // boundary conditions
   template <int gridExtraPoints = 0>
   vtkSmartPointer<vtkRectilinearGrid>
-  LS2RectiLinearGrid(SmartPointer<Domain<T, D>> levelSet,
-                     const double LSOffset = 0.,
+  LS2RectiLinearGrid(SmartPointer<Domain<T, D>> levelSet, const double LSOffset,
                      int infiniteMinimum = std::numeric_limits<int>::max(),
                      int infiniteMaximum = -std::numeric_limits<int>::max()) {
 
@@ -436,6 +435,8 @@ public:
   void setMaterialMap(SmartPointer<MaterialMap> passedMaterialMap) {
     materialMap = passedMaterialMap;
   }
+
+  void setWrappingLayerEpsilon(double epsilon) { LSEpsilon = epsilon; }
 
   void apply() {
     // check if level sets have enough layers
