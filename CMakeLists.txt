@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaLS
   LANGUAGES CXX
-  VERSION 4.1.2)
+  VERSION 4.1.3)
 
 # --------------------------------------------------------------------------------------------------------
 # Library options

@@ -45,60 +45,71 @@ public:
 int main() {
 
   constexpr int D = 3;
-  omp_set_num_threads(4);
+  omp_set_num_threads(1);
 
-  double gridDelta = 0.4999999;
+  double gridDelta = 0.6999999;
 
-  auto sphere1 = ls::SmartPointer<ls::Domain<double, D>>::New(gridDelta);
+  std::vector<ls::IntegrationSchemeEnum> integrationSchemes = {
+      // ls::IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER,
+      // ls::IntegrationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER,
+      ls::IntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER};
+  // ls::IntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER,
+  // ls::IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
+  // ls::IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER,
+  // ls::IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
+  // ls::IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER};
 
-  double origin[3] = {5., 0., 0.};
-  double radius = 7.3;
+  for (auto integrationScheme : integrationSchemes) {
+    auto sphere1 = ls::SmartPointer<ls::Domain<double, D>>::New(gridDelta);
 
-  ls::MakeGeometry<double, D>(
-      sphere1, ls::SmartPointer<ls::Sphere<double, D>>::New(origin, radius))
-      .apply();
+    double origin[3] = {5., 0., 0.};
+    double radius = 7.3;
 
-  // {
-  //   std::cout << "Extracting..." << std::endl;
-  //   auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
-  //   ls::ToSurfaceMesh<double, D>(sphere1, mesh).apply();
-  //   ls::VTKWriter<double>(mesh, "before.vtk").apply();
-  // }
+    ls::MakeGeometry<double, D>(
+        sphere1, ls::SmartPointer<ls::Sphere<double, D>>::New(origin, radius))
+        .apply();
 
-  // instantiate velocities
-  auto velocities = ls::SmartPointer<velocityField>::New();
+    // {
+    //   std::cout << "Extracting..." << std::endl;
+    //   auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    //   ls::ToSurfaceMesh<double, D>(sphere1, mesh).apply();
+    //   ls::VTKWriter<double>(mesh, "before.vtk").apply();
+    // }
 
-  // std::cout << "Advecting" << std::endl;
+    // instantiate velocities
+    auto velocities = ls::SmartPointer<velocityField>::New();
 
-  // Fill point data with original point IDs to see how LS changed
-  {
-    typename ls::PointData<double>::ScalarDataType pointIDs(
-        sphere1->getNumberOfPoints());
-    std::iota(std::begin(pointIDs), std::end(pointIDs), 0);
-    sphere1->getPointData().insertNextScalarData(pointIDs, "originalIDs");
+    // std::cout << "Advecting" << std::endl;
+
+    // Fill point data with original point IDs to see how LS changed
+    {
+      typename ls::PointData<double>::ScalarDataType pointIDs(
+          sphere1->getNumberOfPoints());
+      std::iota(std::begin(pointIDs), std::end(pointIDs), 0);
+      sphere1->getPointData().insertNextScalarData(pointIDs, "originalIDs");
+    }
+
+    ls::Advect<double, D> advectionKernel;
+    advectionKernel.insertNextLevelSet(sphere1);
+    advectionKernel.setVelocityField(velocities);
+    advectionKernel.setIntegrationScheme(integrationScheme);
+    advectionKernel.setSaveAdvectionVelocities(true);
+
+    double time = 0.;
+    for (unsigned i = 0; time < 1.0 && i < 1e2; ++i) {
+      advectionKernel.apply();
+      time += advectionKernel.getAdvectedTime();
+
+      std::string fileName = std::to_string(i) + ".vtp";
+      auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+      ls::ToMesh<double, D>(sphere1, mesh).apply();
+      ls::VTKWriter<double>(mesh, "points_" + fileName).apply();
+      ls::ToSurfaceMesh<double, D>(sphere1, mesh).apply();
+      ls::VTKWriter(mesh, "surface_" + fileName).apply();
+    }
+
+    LSTEST_ASSERT_VALID_LS(sphere1, double, D)
   }
-
-  ls::Advect<double, D> advectionKernel;
-  advectionKernel.insertNextLevelSet(sphere1);
-  advectionKernel.setVelocityField(velocities);
-  advectionKernel.setIntegrationScheme(
-      ls::IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
-  advectionKernel.setSaveAdvectionVelocities(true);
-
-  double time = 0.;
-  for (unsigned i = 0; time < 2.0 && i < 1e3; ++i) {
-    advectionKernel.apply();
-    time += advectionKernel.getAdvectedTime();
-
-    // std::string fileName = std::to_string(i) + ".vtp";
-    // auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
-    // ls::ToMesh<double, D>(sphere1, mesh).apply();
-    // ls::VTKWriter<double>(mesh, "points_" + fileName).apply();
-    // ls::ToSurfaceMesh<double, D>(sphere1, mesh).apply();
-    // ls::VTKWriter(mesh, "surface_" + fileName).apply();
-  }
-
-  LSTEST_ASSERT_VALID_LS(sphere1, double, D)
 
   // std::cout << sphere1->getNumberOfPoints() << std::endl;
 

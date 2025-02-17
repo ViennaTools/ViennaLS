@@ -62,11 +62,8 @@ public:
     }
   }
 
-  void setFinalAlphas(const hrleVectorType<T, 3> &alphas) {
-    finalAlphas = alphas;
-  }
-
-  T operator()(const hrleVectorType<hrleIndexType, D> &indices, int material) {
+  std::pair<T, T> operator()(const hrleVectorType<hrleIndexType, D> &indices,
+                             int material) {
 
     auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
@@ -224,9 +221,7 @@ public:
       dissipation += alpha[i] * (gradNeg[i] - gradPos[i]) * 0.5;
     }
 
-    // std::cout << neighborIterator.getCenter().getPointId() << " dissipation:
-    // " << dissipation << std::endl;
-    return totalGrad - ((totalGrad != 0.) ? dissipation : 0);
+    return {totalGrad, ((totalGrad != 0.) ? dissipation : 0)};
   }
 
   void reduceTimeStepHamiltonJacobi(double &MaxTimeStep,

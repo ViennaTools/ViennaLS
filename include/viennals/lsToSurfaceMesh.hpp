@@ -190,7 +190,8 @@ public:
           }
         }
 
-        mesh->insertNextElement(nod_numbers); // insert new surface element
+        if (!triangleMisformed(nod_numbers))
+          mesh->insertNextElement(nod_numbers); // insert new surface element
       }
     }
 
@@ -198,6 +199,18 @@ public:
     if (updateData) {
       mesh->getPointData().translateFromMultiData(levelSet->getPointData(),
                                                   newDataSourceIds);
+    }
+  }
+
+private:
+  static bool inline triangleMisformed(
+      const std::array<unsigned, D> &nodeNumbers) {
+    if constexpr (D == 3) {
+      return nodeNumbers[0] == nodeNumbers[1] ||
+             nodeNumbers[0] == nodeNumbers[2] ||
+             nodeNumbers[1] == nodeNumbers[2];
+    } else {
+      return nodeNumbers[0] == nodeNumbers[1];
     }
   }
 };

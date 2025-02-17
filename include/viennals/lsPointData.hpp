@@ -81,6 +81,46 @@ public:
     vectorDataLabels.push_back(label);
   }
 
+  /// insert or replace scalar data array
+  void insertReplaceScalarData(const ScalarDataType &scalars,
+                               std::string label = "Scalars") {
+    if (int i = getScalarDataIndex(label); i != -1) {
+      scalarData[i] = scalars;
+    } else {
+      insertNextScalarData(scalars, label);
+    }
+  }
+
+  /// insert or replace scalar data array
+  void insertReplaceScalarData(ScalarDataType &&scalars,
+                               std::string label = "Scalars") {
+    if (int i = getScalarDataIndex(label); i != -1) {
+      scalarData[i] = std::move(scalars);
+    } else {
+      insertNextScalarData(std::move(scalars), label);
+    }
+  }
+
+  /// insert or replace vector data array
+  void insertReplaceVectorData(const VectorDataType &vectors,
+                               std::string label = "Vectors") {
+    if (int i = getVectorDataIndex(label); i != -1) {
+      vectorData[i] = vectors;
+    } else {
+      insertNextVectorData(vectors, label);
+    }
+  }
+
+  /// insert new vector data array
+  void insertReplaceVectorData(VectorDataType &&vectors,
+                               std::string label = "Vectors") {
+    if (int i = getVectorDataIndex(label); i != -1) {
+      vectorData[i] = std::move(vectors);
+    } else {
+      insertNextVectorData(std::move(vectors), label);
+    }
+  }
+
   /// get the number of different scalar data arrays saved
   unsigned getScalarDataSize() const { return scalarData.size(); }
 
