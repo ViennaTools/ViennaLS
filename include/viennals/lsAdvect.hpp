@@ -77,7 +77,7 @@ template <class T, int D> class Advect {
   unsigned numberOfTimeSteps = 0;
   bool saveAdvectionVelocities = false;
   bool updatePointData = true;
-  bool checkDissipation = false;
+  bool checkDissipation = true;
   static constexpr double wrappingLayerEpsilon = 1e-4;
 
   hrleVectorType<T, 3> findGlobalAlphas() const {
