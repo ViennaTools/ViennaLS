@@ -144,7 +144,9 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       "is not the main design target.";
 
   // set version string of python module
-  module.attr("__version__") = VIENNALS_MODULE_VERSION;
+  module.attr("__version__") =
+      VIENNALS_MODULE_VERSION; // for some reason this string does not show
+  module.attr("version") = VIENNALS_MODULE_VERSION;
 
   // wrap omp_set_num_threads to control number of threads
   module.def("setNumThreads", &omp_set_num_threads);
