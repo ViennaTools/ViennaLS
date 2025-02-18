@@ -144,7 +144,9 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       "is not the main design target.";
 
   // set version string of python module
-  module.attr("__version__") = VIENNALS_MODULE_VERSION;
+  module.attr("__version__") =
+      VIENNALS_MODULE_VERSION; // for some reason this string does not show
+  module.attr("version") = VIENNALS_MODULE_VERSION;
 
   // wrap omp_set_num_threads to control number of threads
   module.def("setNumThreads", &omp_set_num_threads);
@@ -156,8 +158,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .value("INFO", LogLevel::INFO)
       .value("TIMING", LogLevel::TIMING)
       .value("INTERMEDIATE", LogLevel::INTERMEDIATE)
-      .value("DEBUG", LogLevel::DEBUG)
-      .export_values();
+      .value("DEBUG", LogLevel::DEBUG);
 
   pybind11::class_<Logger, SmartPointer<Logger>>(module, "Logger",
                                                  pybind11::module_local())
@@ -383,29 +384,39 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .value("NORMALS_ANGLE", FeatureDetectionEnum::NORMALS_ANGLE);
 
   // lsDomain
-  pybind11::class_<Domain<T, D>,  SmartPointer< Domain<T, D>>>(module,
-                                                                   "Domain")
+  pybind11::class_<Domain<T, D>, SmartPointer<Domain<T, D>>>(module, "Domain")
       // constructors
-      .def(pybind11::init(& SmartPointer< Domain<T, D>>::New<>))
-      .def(pybind11::init(& SmartPointer< Domain<T, D>>::New<hrleCoordType>))
+      .def(pybind11::init(&SmartPointer<Domain<T, D>>::New<>))
+      .def(pybind11::init(&SmartPointer<Domain<T, D>>::New<hrleCoordType>),
+           pybind11::arg("gridDelta") = 1.0)
+      //  .def(pybind11::init(
+      //      &SmartPointer<Domain<T, D>>::New<hrleCoordType *,
+      //                                       BoundaryConditionEnum *>))
+      .def(pybind11::init([](std::array<hrleCoordType, 2 * D> bounds,
+                             std::array<BoundaryConditionEnum, D> bcs,
+                             hrleCoordType gridDelta) {
+             return SmartPointer<Domain<T, D>>::New(bounds.data(), bcs.data(),
+                                                    gridDelta);
+           }),
+           pybind11::arg("bounds"), pybind11::arg("boundaryConditions"),
+           pybind11::arg("gridDelta") = 1.0)
       .def(pybind11::init(
-          & SmartPointer< Domain<T, D>>::New<hrleCoordType *,
-                                               Domain<T, D>::BoundaryType *>))
+               &SmartPointer<Domain<T, D>>::New<std::vector<hrleCoordType>,
+                                                std::vector<unsigned>,
+                                                hrleCoordType>),
+           pybind11::arg("bounds"), pybind11::arg("boundaryConditions"),
+           pybind11::arg("gridDelta") = 1.0)
+      //  .def(pybind11::init(
+      //      &SmartPointer<Domain<T, D>>::New<Domain<T,
+      //      D>::PointValueVectorType,
+      //                                       hrleCoordType *,
+      //                                       BoundaryConditionEnum *>))
+      //  .def(pybind11::init(&SmartPointer<Domain<T, D>>::New<
+      //                      Domain<T, D>::PointValueVectorType, hrleCoordType
+      //                      *, BoundaryConditionEnum *, hrleCoordType>))
       .def(pybind11::init(
-          & SmartPointer< Domain<T, D>>::New<
-              hrleCoordType *, Domain<T, D>::BoundaryType *, hrleCoordType>))
-      .def(pybind11::init(
-          & SmartPointer< Domain<T, D>>::New<std::vector<hrleCoordType>,
-                                               std::vector<unsigned>,
-                                               hrleCoordType>))
-      .def(pybind11::init(& SmartPointer< Domain<T, D>>::New<
-                          Domain<T, D>::PointValueVectorType, hrleCoordType *,
-                          Domain<T, D>::BoundaryType *>))
-      .def(pybind11::init(& SmartPointer< Domain<T, D>>::New<
-                          Domain<T, D>::PointValueVectorType, hrleCoordType *,
-                          Domain<T, D>::BoundaryType *, hrleCoordType>))
-      .def(pybind11::init(& SmartPointer< Domain<T, D>>::New<
-                           SmartPointer< Domain<T, D>> &>))
+          &SmartPointer<Domain<T, D>>::New<SmartPointer<Domain<T, D>> &>))
+      .def(pybind11::init(&SmartPointer<Domain<T, D>>::New<hrleGrid<D> &>))
       // methods
       .def("deepCopy", &Domain<T, D>::deepCopy,
            "Copy lsDomain in this lsDomain.")
@@ -423,17 +434,23 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("clearMetaData", &Domain<T, D>::clearMetaData,
            "Clear all metadata stored in the level set.")
       // allow filehandle to be passed and default to python standard output
-      .def("print", [](Domain<T, D>& d, pybind11::object fileHandle) {
-          if (!(pybind11::hasattr(fileHandle,"write") &&
-          pybind11::hasattr(fileHandle,"flush") )){
-               throw pybind11::type_error("MyClass::read_from_file_like_object(file): incompatible function argument:  `file` must be a file-like object, but `"
-                                        +(std::string)(pybind11::repr(fileHandle))+"` provided"
-               );
-          }
-          pybind11::detail::pythonbuf buf(fileHandle);
-          std::ostream stream(&buf);
-          d.print(stream);
-          }, pybind11::arg("stream") = pybind11::module::import("sys").attr("stdout"));
+      .def(
+          "print",
+          [](Domain<T, D> &d, pybind11::object fileHandle) {
+            if (!(pybind11::hasattr(fileHandle, "write") &&
+                  pybind11::hasattr(fileHandle, "flush"))) {
+              throw pybind11::type_error(
+                  "MyClass::read_from_file_like_object(file): incompatible "
+                  "function argument:  `file` must be a file-like object, but "
+                  "`" +
+                  (std::string)(pybind11::repr(fileHandle)) + "` provided");
+            }
+            pybind11::detail::pythonbuf buf(fileHandle);
+            std::ostream stream(&buf);
+            d.print(stream);
+          },
+          pybind11::arg("stream") =
+              pybind11::module::import("sys").attr("stdout"));
 
   // enums
   pybind11::enum_<BoundaryConditionEnum>(module, "BoundaryConditionEnum")
@@ -799,10 +816,6 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            (std::vector<std::array<double, 3>> & (Mesh<T>::*)()) &
                Mesh<T>::getNodes,
            "Get all nodes of the mesh as a list.")
-      .def("getNodes",
-           (std::vector<std::array<double, 3>> & (Mesh<T>::*)()) &
-               Mesh<T>::getNodes,
-           "Get all nodes of the mesh as a list.")
       .def("getVerticies",
            (std::vector<std::array<unsigned, 1>> & (Mesh<T>::*)()) &
                Mesh<T>::getElements<1>,
@@ -1106,4 +1119,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("apply", &WriteVisualizationMesh<T, D>::apply,
            "Make and write mesh.");
 #endif
+
+  // Also wrap hrleGrid so it can be used to create new LevelSets
+  pybind11::class_<hrleGrid<D>>(module, "hrleGrid");
 }
