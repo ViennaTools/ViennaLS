@@ -58,12 +58,12 @@ viennacore_setup_binding(viennals3d ${VIENNALS_LIBRARY_OUTPUT_DIR})
 target_link_libraries(viennals2d PRIVATE ViennaLS)
 target_link_libraries(viennals3d PRIVATE ViennaLS)
 
-target_compile_definitions(viennals2d PRIVATE -DVIENNALS_PYTHON_DIMENSION=2
-                                              -DVIENNALS_MODULE_NAME=viennals2d
-                                              -DVIENNALS_VERSION=${CMAKE_PROJECT_VERSION})
-target_compile_definitions(viennals3d PRIVATE -DVIENNALS_PYTHON_DIMENSION=3
-                                              -DVIENNALS_MODULE_NAME=viennals3d
-                                              -DVIENNALS_VERSION=${CMAKE_PROJECT_VERSION})
+target_compile_definitions(
+  viennals2d PRIVATE -DVIENNALS_PYTHON_DIMENSION=2 -DVIENNALS_MODULE_NAME=viennals2d
+                     -DVIENNALS_VERSION=${CMAKE_PROJECT_VERSION})
+target_compile_definitions(
+  viennals3d PRIVATE -DVIENNALS_PYTHON_DIMENSION=3 -DVIENNALS_MODULE_NAME=viennals3d
+                     -DVIENNALS_VERSION=${CMAKE_PROJECT_VERSION})
 
 # --------------------------------------------------------------------------------------------------------
 # Setup Lib-Folder
