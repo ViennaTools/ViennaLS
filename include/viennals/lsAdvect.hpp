@@ -698,6 +698,13 @@ template <class T, int D> class Advect {
           time -= std::abs((itRS->second - value) / velocity);
           value = itRS->second;
           ++itRS;
+          // recalculate velocity and rate
+          velocity = itRS->first.first - itRS->first.second;
+          if (checkDiss && (itRS->first.first < 0 && velocity > 0) ||
+              (itRS->first.first > 0 && velocity < 0)) {
+            velocity = 0;
+          }
+          rate = time * velocity;
         }
 
         // now deduct the velocity times the time step we take
