@@ -4,6 +4,7 @@
 
 #include <lsDomain.hpp>
 #include <lsPreCompileMacros.hpp>
+#include <utility>
 
 namespace viennals {
 
@@ -14,20 +15,22 @@ template <class T, int D> class Writer {
   std::string fileName;
 
 public:
-  Writer() {}
+  Writer() = default;
 
   Writer(SmartPointer<Domain<T, D>> passedLevelSet)
       : levelSet(passedLevelSet) {}
 
   Writer(SmartPointer<Domain<T, D>> passedLevelSet, std::string passedFileName)
-      : levelSet(passedLevelSet), fileName(passedFileName) {}
+      : levelSet(passedLevelSet), fileName(std::move(passedFileName)) {}
 
   void setLevelSet(SmartPointer<Domain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
   }
 
   /// set file name for file to write
-  void setFileName(std::string passedFileName) { fileName = passedFileName; }
+  void setFileName(std::string passedFileName) {
+    fileName = std::move(passedFileName);
+  }
 
   void apply() {
     // check mesh

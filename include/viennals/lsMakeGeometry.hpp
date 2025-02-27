@@ -48,7 +48,7 @@ template <class T, int D> class MakeGeometry {
   std::array<bool, 3> ignoreBoundaryConditions{false, false, false};
 
 public:
-  MakeGeometry() {}
+  MakeGeometry() = default;
 
   MakeGeometry(SmartPointer<Domain<T, D>> passedLevelSet)
       : levelSet(passedLevelSet) {}
@@ -191,7 +191,7 @@ private:
       endIndex[i] = (origin[i] + radius) / gridDelta + 1;
     }
 
-    const double initialWidth = 2.;
+    constexpr double initialWidth = 2.;
     const T valueLimit = initialWidth * 0.5 * gridDelta + 1e-5;
     const T radius2 = radius * radius;
 
@@ -199,7 +199,7 @@ private:
     const hrleVectorType<hrleIndexType, D> minIndex = index;
 
     while (index < endIndex) {
-      // take shortest manhatten distance to gridline intersection
+      // take the shortest manhattan distance to gridline intersection
       T distance = std::numeric_limits<T>::max();
       for (unsigned i = 0; i < D; ++i) {
         T y = (index[(i + 1) % D] * gridDelta) - origin[(i + 1) % D];
@@ -419,14 +419,14 @@ private:
 
     if (D == 2) {
       std::array<unsigned, 2> lines[4] = {{0, 2}, {2, 3}, {3, 1}, {1, 0}};
-      for (unsigned i = 0; i < 4; ++i)
-        mesh->insertNextLine(lines[i]);
+      for (auto &line : lines)
+        mesh->insertNextLine(line);
     } else {
       std::array<unsigned, 3> triangles[12] = {
           {0, 3, 1}, {0, 2, 3}, {0, 1, 5}, {0, 5, 4}, {0, 4, 2}, {4, 6, 2},
           {7, 6, 4}, {7, 4, 5}, {7, 2, 6}, {7, 3, 2}, {1, 3, 5}, {3, 7, 5}};
-      for (unsigned i = 0; i < 12; ++i)
-        mesh->insertNextTriangle(triangles[i]);
+      for (auto &triangle : triangles)
+        mesh->insertNextTriangle(triangle);
     }
 
     // now convert mesh to levelset
@@ -448,8 +448,9 @@ private:
     auto gridDelta = levelSet->getGrid().getGridDelta();
 
     auto points = SmartPointer<PointCloud<T, D>>::New();
-    unsigned numPoints = std::ceil(2 * M_PI * cylinder->radius / gridDelta);
-    double smallAngle = 2.0 * M_PI / double(numPoints);
+    const unsigned numPoints =
+        std::ceil(2 * M_PI * cylinder->radius / gridDelta);
+    const double smallAngle = 2.0 * M_PI / static_cast<double>(numPoints);
 
     auto mesh = SmartPointer<Mesh<T>>::New();
     // insert midpoint at base
@@ -476,7 +477,7 @@ private:
       double angle = 0;
       for (unsigned i = 0; i < numPoints; ++i) {
         // create triangles at base
-        std::array<unsigned, 3> triangle;
+        std::array<unsigned, 3> triangle{};
         triangle[0] = (i + 1) % numPoints + 1;
         triangle[1] = i + 1;
         triangle[2] = 0;
@@ -502,7 +503,7 @@ private:
 
       // insert sidewall triangles
       for (unsigned i = 0; i < numPoints; ++i) {
-        std::array<unsigned, 3> triangle;
+        std::array<unsigned, 3> triangle{};
         triangle[0] = i + 1;
         triangle[1] = (i + 1) % numPoints + 1;
         triangle[2] = i + numPoints + 2;

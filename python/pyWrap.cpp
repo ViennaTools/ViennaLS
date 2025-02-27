@@ -22,6 +22,7 @@
 #include <lsBooleanOperation.hpp>
 #include <lsCalculateCurvatures.hpp>
 #include <lsCalculateNormalVectors.hpp>
+#include <lsCalculateVisibilities.hpp>
 #include <lsCheck.hpp>
 #include <lsConvexHull.hpp>
 #include <lsDetectFeatures.hpp>
@@ -223,7 +224,8 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            pybind11::call_guard<pybind11::gil_scoped_release>(),
            "Perform advection.");
   // enums
-  pybind11::enum_<IntegrationSchemeEnum>(module, "IntegrationSchemeEnum")
+  pybind11::enum_<IntegrationSchemeEnum>(module, "IntegrationSchemeEnum",
+                                         pybind11::module_local())
       .value("ENGQUIST_OSHER_1ST_ORDER",
              IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER)
       .value("ENGQUIST_OSHER_2ND_ORDER",
@@ -277,7 +279,8 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("apply", &BooleanOperation<T, D>::apply,
            "Perform the boolean operation.");
   // enums
-  pybind11::enum_<BooleanOperationEnum>(module, "BooleanOperationEnum")
+  pybind11::enum_<BooleanOperationEnum>(module, "BooleanOperationEnum",
+                                        pybind11::module_local())
       .value("INTERSECT", BooleanOperationEnum::INTERSECT)
       .value("UNION", BooleanOperationEnum::UNION)
       .value("RELATIVE_COMPLEMENT", BooleanOperationEnum::RELATIVE_COMPLEMENT)
@@ -308,7 +311,8 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Perform normal vector calculation.");
 
   // enums
-  pybind11::enum_<CurvatureEnum>(module, "CurvatureEnum")
+  pybind11::enum_<CurvatureEnum>(module, "CurvatureEnum",
+                                 pybind11::module_local())
       .value("MEAN_CURVATURE", CurvatureEnum::MEAN_CURVATURE)
       .value("GAUSSIAN_CURVATURE", CurvatureEnum::GAUSSIAN_CURVATURE)
       .value("MEAN_AND_GAUSSIAN_CURVATURE",
@@ -327,6 +331,15 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Set levelset for which to calculate normal vectors.")
       .def("apply", &CalculateNormalVectors<T, D>::apply,
            "Perform normal vector calculation.");
+
+  // CalculateVisibilities
+  pybind11::class_<CalculateVisibilities<T, D>,
+                   SmartPointer<CalculateVisibilities<T, D>>>(
+      module, "CalculateVisibilities")
+      .def(pybind11::init(
+          &SmartPointer<CalculateVisibilities<T, D>>::New<
+              SmartPointer<Domain<T, D>> &, const Vec3D<T> &, std::string>))
+      .def("apply", &CalculateVisibilities<T, D>::apply);
 
   // Check
   pybind11::class_<Check<T, D>, SmartPointer<Check<T, D>>>(module, "Check")
@@ -379,7 +392,8 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("apply", &DetectFeatures<T, D>::apply, "Detect features.");
 
   // enums
-  pybind11::enum_<FeatureDetectionEnum>(module, "FeatureDetectionEnum")
+  pybind11::enum_<FeatureDetectionEnum>(module, "FeatureDetectionEnum",
+                                        pybind11::module_local())
       .value("CURVATURE", FeatureDetectionEnum::CURVATURE)
       .value("NORMALS_ANGLE", FeatureDetectionEnum::NORMALS_ANGLE);
 
@@ -576,12 +590,13 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
   //       .def("apply", &lsExtrude<T>::apply, "Perform extrusion.");
 
   // lsFileFormats
-  pybind11::enum_<FileFormatEnum>(module, "FileFormatEnum")
+  pybind11::enum_<FileFormatEnum>(module, "FileFormatEnum",
+                                  pybind11::module_local())
       .value("VTK_LEGACY", FileFormatEnum::VTK_LEGACY)
       .value("VTP", FileFormatEnum::VTP)
       .value("VTU", FileFormatEnum::VTU);
 
-  // lsFromSurfaceMesh
+  // FromSurfaceMesh
   pybind11::class_<FromSurfaceMesh<T, D>, SmartPointer<FromSurfaceMesh<T, D>>>(
       module, "FromSurfaceMesh")
       // constructors
@@ -632,6 +647,17 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "domain.")
       .def("apply", &FromVolumeMesh<T, D>::apply,
            "Construct a levelset from a volume mesh.");
+
+  // FromMesh
+  pybind11::class_<FromMesh<T, D>, SmartPointer<FromMesh<T, D>>>(module,
+                                                                 "FromMesh")
+      .def(pybind11::init(&SmartPointer<FromMesh<T, D>>::New<>))
+      .def(pybind11::init(
+          &SmartPointer<FromMesh<T, D>>::New<SmartPointer<Domain<T, D>> &,
+                                             SmartPointer<Mesh<T>> &>))
+      .def("setMesh", &FromMesh<T, D>::setMesh, "Set the mesh to read from.")
+      .def("setSortPointList", &FromMesh<T, D>::setSortPointList)
+      .def("apply", &FromMesh<T, D>::apply);
 
   // lsGeometries
   // Sphere
@@ -754,7 +780,8 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("apply", &MarkVoidPoints<T, D>::apply, "Mark void points.");
 
   // VoidTopSurfaceEnum
-  pybind11::enum_<VoidTopSurfaceEnum>(module, "VoidTopSurfaceEnum")
+  pybind11::enum_<VoidTopSurfaceEnum>(module, "VoidTopSurfaceEnum",
+                                      pybind11::module_local())
       .value("LEX_LOWEST", VoidTopSurfaceEnum::LEX_LOWEST)
       .value("LEX_HIGHEST", VoidTopSurfaceEnum::LEX_HIGHEST)
       .value("LARGEST", VoidTopSurfaceEnum::LARGEST)
@@ -768,12 +795,12 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       // methods
       .def("insertNextScalarData",
            (void(PointData<T>::*)(const PointData<T>::ScalarDataType &,
-                                  std::string)) &
+                                  const std::string &)) &
                PointData<T>::insertNextScalarData,
            pybind11::arg("scalars"), pybind11::arg("label") = "Scalars")
       .def("insertNextVectorData",
            (void(PointData<T>::*)(const PointData<T>::VectorDataType &,
-                                  std::string)) &
+                                  const std::string &)) &
                PointData<T>::insertNextVectorData,
            pybind11::arg("vectors"), pybind11::arg("label") = "Vectors")
       .def("getScalarDataSize", &PointData<T>::getScalarDataSize)
@@ -782,14 +809,14 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            (PointData<T>::ScalarDataType * (PointData<T>::*)(int)) &
                PointData<T>::getScalarData)
       .def("getScalarData", (PointData<T>::ScalarDataType *
-                             (PointData<T>::*)(std::string, bool)) &
+                             (PointData<T>::*)(const std::string &, bool)) &
                                 PointData<T>::getScalarData)
       .def("getScalarDataLabel", &PointData<T>::getScalarDataLabel)
       .def("getVectorData",
            (PointData<T>::VectorDataType * (PointData<T>::*)(int)) &
                PointData<T>::getVectorData)
       .def("getVectorData", (PointData<T>::VectorDataType *
-                             (PointData<T>::*)(std::string, bool)) &
+                             (PointData<T>::*)(const std::string &, bool)) &
                                 PointData<T>::getVectorData)
       .def("getVectorDataLabel", &PointData<T>::getVectorDataLabel);
 
@@ -862,7 +889,8 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("clear", &Mesh<T>::clear, "Clear all data in the mesh.");
 
   // TransformEnum
-  pybind11::enum_<TransformEnum>(module, "TransformEnum")
+  pybind11::enum_<TransformEnum>(module, "TransformEnum",
+                                 pybind11::module_local())
       .value("TRANSLATION", TransformEnum::TRANSLATION)
       .value("ROTATION", TransformEnum::ROTATION)
       .value("SCALE", TransformEnum::SCALE);

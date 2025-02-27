@@ -16,10 +16,10 @@ template <class T> class Extrude {
   SmartPointer<Domain<T, 3>> outputLevelSet = nullptr;
   Vec2D<T> extent = {0., 0.};
   int extrudeDim = 0;
-  std::array<BoundaryConditionEnum, 3> boundaryConds;
+  std::array<BoundaryConditionEnum, 3> boundaryConds = {};
 
 public:
-  Extrude() {}
+  Extrude() = default;
   Extrude(SmartPointer<Domain<T, 2>> passedInputLS,
           SmartPointer<Domain<T, 3>> passedOutputLS, Vec2D<T> passedExtent,
           const int passedExtrudeDim,

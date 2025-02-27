@@ -47,7 +47,7 @@ template <class T, int D> class ToVoxelMesh {
   }
 
 public:
-  ToVoxelMesh() {}
+  ToVoxelMesh() = default;
 
   ToVoxelMesh(SmartPointer<Mesh<T>> passedMesh) : mesh(passedMesh) {}
 
@@ -124,7 +124,6 @@ public:
 
     // move iterator for lowest material id and then adjust others if they are
     // needed
-    unsigned counter = 0;
     for (; iterators.front().getIndices() < maxIndex;
          iterators.front().next()) {
       // go over all materials
@@ -143,7 +142,7 @@ public:
 
         if (centerValue <= 0.) {
           std::array<unsigned, 1 << D> voxel;
-          bool addVoxel;
+          bool addVoxel = false;
           // now insert all points of voxel into pointList
           for (unsigned i = 0; i < (1 << D); ++i) {
             hrleVectorType<hrleIndexType, D> index;

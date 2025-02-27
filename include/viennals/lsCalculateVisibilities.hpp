@@ -15,8 +15,8 @@ template <class NumericType, int D> class CalculateVisibilities {
 public:
   CalculateVisibilities(
       const SmartPointer<Domain<NumericType, D>> &passedLevelSet,
-      const Vec3D<NumericType> passedDirection,
-      const std::string label = "Visibilities")
+      const Vec3D<NumericType> &passedDirection,
+      std::string label = "Visibilities")
       : levelSet(passedLevelSet), direction(passedDirection),
         visibilitiesLabel(std::move(label)) {}
 

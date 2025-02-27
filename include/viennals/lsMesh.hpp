@@ -35,7 +35,7 @@ private:
   // iterator typedef
   using VectorIt = typename PointData<T>::VectorDataType::iterator;
   // find function to avoid including the whole algorithm header
-  VectorIt find(VectorIt first, VectorIt last, const Vec3D<T> &value) {
+  static VectorIt find(VectorIt first, VectorIt last, const Vec3D<T> &value) {
     for (; first != last; ++first) {
       if (*first == value) {
         return first;
@@ -46,7 +46,8 @@ private:
 
   // helper function for duplicate removal
   template <class ElementType>
-  void replaceNode(ElementType &elements, std::pair<unsigned, unsigned> node) {
+  static void replaceNode(ElementType &elements,
+                          std::pair<unsigned, unsigned> node) {
     for (unsigned i = 0; i < elements.size(); ++i) {
       for (unsigned j = 0; j < elements[i].size(); ++j) {
         if (elements[i][j] == node.first) {
@@ -61,27 +62,27 @@ public:
 
   std::vector<Vec3D<T>> &getNodes() { return nodes; }
 
-  template <int D, typename std::enable_if<D == 1, int>::type = 0>
+  template <int D, std::enable_if_t<D == 1, int> = 0>
   std::vector<std::array<unsigned, D>> &getElements() {
     return vertices;
   }
 
-  template <int D, typename std::enable_if<D == 2, int>::type = 0>
+  template <int D, std::enable_if_t<D == 2, int> = 0>
   std::vector<std::array<unsigned, D>> &getElements() {
     return lines;
   }
 
-  template <int D, typename std::enable_if<D == 3, int>::type = 0>
+  template <int D, std::enable_if_t<D == 3, int> = 0>
   std::vector<std::array<unsigned, D>> &getElements() {
     return triangles;
   }
 
-  template <int D, typename std::enable_if<D == 4, int>::type = 0>
+  template <int D, std::enable_if_t<D == 4, int> = 0>
   std::vector<std::array<unsigned, D>> &getElements() {
     return tetras;
   }
 
-  template <int D, typename std::enable_if<D == 8, int>::type = 0>
+  template <int D, std::enable_if_t<D == 8, int> = 0>
   std::vector<std::array<unsigned, D>> &getElements() {
     return hexas;
   }
@@ -163,7 +164,7 @@ public:
         adjusted = true;
         // if duplicate point, save it to be replaced
         unsigned nodeId = std::distance(newNodes.begin(), it);
-        duplicates.push_back(std::make_pair(i, nodeId));
+        duplicates.emplace_back(i, nodeId);
       } else {
         if (adjusted)
           duplicates.push_back(std::make_pair(i, newNodes.size()));
@@ -174,12 +175,12 @@ public:
 
     // now replace in vertices
     // TODO also need to shift down all other nodes
-    for (unsigned i = 0; i < duplicates.size(); ++i) {
-      replaceNode(vertices, duplicates[i]);
-      replaceNode(lines, duplicates[i]);
-      replaceNode(triangles, duplicates[i]);
-      replaceNode(tetras, duplicates[i]);
-      replaceNode(hexas, duplicates[i]);
+    for (auto &duplicate : duplicates) {
+      replaceNode(vertices, duplicate);
+      replaceNode(lines, duplicate);
+      replaceNode(triangles, duplicate);
+      replaceNode(tetras, duplicate);
+      replaceNode(hexas, duplicate);
     }
   }
 
@@ -272,15 +273,15 @@ public:
   void print() {
     std::cout << "Mesh:" << std::endl;
     std::cout << "Number of Nodes: " << nodes.size() << std::endl;
-    if (vertices.size() > 0)
+    if (!vertices.empty())
       std::cout << "Number of Vertices: " << vertices.size() << std::endl;
-    if (lines.size() > 0)
+    if (!lines.empty())
       std::cout << "Number of Lines: " << lines.size() << std::endl;
-    if (triangles.size() > 0)
+    if (!triangles.empty())
       std::cout << "Number of Triangles: " << triangles.size() << std::endl;
-    if (tetras.size() > 0)
+    if (!tetras.empty())
       std::cout << "Number of Tetrahedrons: " << tetras.size() << std::endl;
-    if (hexas.size() > 0)
+    if (!hexas.empty())
       std::cout << "Number of Hexas: " << hexas.size() << std::endl;
     // pointData
     if (pointData.getScalarDataSize() > 0) {

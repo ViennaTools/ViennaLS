@@ -17,8 +17,7 @@
 #include <lsReduce.hpp>
 
 // Integration schemes
-#include <lsConcepts.hpp>
-#include <lsEnquistOsher.hpp>
+#include <lsEngquistOsher.hpp>
 #include <lsLaxFriedrichs.hpp>
 #include <lsLocalLaxFriedrichs.hpp>
 #include <lsLocalLaxFriedrichsAnalytical.hpp>
@@ -54,7 +53,7 @@ enum struct IntegrationSchemeEnum : unsigned {
 };
 
 /// This class is used to advance level sets over time.
-/// Level sets are passed to the constructor in an std::vector, with
+/// Level sets are passed to the constructor in a std::vector, with
 /// the last element being the level set to advect, or "top level set", while
 /// the others are then adjusted afterwards. In order to ensure that advection
 /// works correctly, the "top level set" has to include all lower level sets:
@@ -383,7 +382,7 @@ template <class T, int D> class Advect {
   /// with the chosen integrationScheme
   double advect(double maxTimeStep = std::numeric_limits<double>::max()) {
     // check whether a level set and velocites have been given
-    if (levelSets.size() < 1) {
+    if (levelSets.empty()) {
       Logger::getInstance()
           .addWarning("No level sets passed to Advect. Not advecting.")
           .print();
@@ -400,13 +399,13 @@ template <class T, int D> class Advect {
 
     double currentTime = 0.;
     if (integrationScheme == IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER) {
-      auto is = lsInternal::EnquistOsher<T, D, 1>(levelSets.back(), velocities,
-                                                  calculateNormalVectors);
+      auto is = lsInternal::EngquistOsher<T, D, 1>(levelSets.back(), velocities,
+                                                   calculateNormalVectors);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                IntegrationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER) {
-      auto is = lsInternal::EnquistOsher<T, D, 2>(levelSets.back(), velocities,
-                                                  calculateNormalVectors);
+      auto is = lsInternal::EngquistOsher<T, D, 2>(levelSets.back(), velocities,
+                                                   calculateNormalVectors);
       currentTime = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                IntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
@@ -538,9 +537,10 @@ template <class T, int D> class Advect {
 
       double tempMaxTimeStep = maxTimeStep;
       auto &tempRates = totalTempRates[p];
-      tempRates.reserve(topDomain.getNumberOfPoints() /
-                            double((levelSets.back())->getNumberOfSegments()) +
-                        10);
+      tempRates.reserve(
+          topDomain.getNumberOfPoints() /
+              static_cast<double>((levelSets.back())->getNumberOfSegments()) +
+          10);
 
       // an iterator for each level set
       std::vector<hrleSparseIterator<typename Domain<T, D>::DomainType>>
@@ -752,9 +752,9 @@ public:
   static constexpr char velocityLabel[] = "AdvectionVelocities";
   static constexpr char dissipationLabel[] = "Dissipation";
 
-  Advect() {}
+  Advect() = default;
 
-  Advect(SmartPointer<Domain<T, D>> passedlsDomain) {
+  explicit Advect(SmartPointer<Domain<T, D>> passedlsDomain) {
     levelSets.push_back(passedlsDomain);
   }
 
@@ -821,16 +821,16 @@ public:
 
   /// Get by how much the physical time was advanced during the last apply()
   /// call.
-  double getAdvectedTime() { return advectedTime; }
+  double getAdvectedTime() const { return advectedTime; }
 
   /// Get how many advection steps were performed during the last apply() call.
-  unsigned getNumberOfTimeSteps() { return numberOfTimeSteps; }
+  unsigned getNumberOfTimeSteps() const { return numberOfTimeSteps; }
 
   /// Get the value of the CFL number.
-  double getTimeStepRatio() { return timeStepRatio; }
+  double getTimeStepRatio() const { return timeStepRatio; }
 
-  /// Get whether normal vectors were caluclated.
-  bool getCalculateNormalVectors() { return calculateNormalVectors; }
+  /// Get whether normal vectors were calculated.
+  bool getCalculateNormalVectors() const { return calculateNormalVectors; }
 
   /// Set which integration scheme should be used out of the ones specified
   /// in IntegrationSchemeEnum.
@@ -855,7 +855,7 @@ public:
   // scheme.
   void prepareLS() {
     // check whether a level set and velocities have been given
-    if (levelSets.size() < 1) {
+    if (levelSets.empty()) {
       Logger::getInstance()
           .addWarning("No level sets passed to Advect.")
           .print();
@@ -863,10 +863,10 @@ public:
     }
 
     if (integrationScheme == IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER) {
-      lsInternal::EnquistOsher<T, D, 1>::prepareLS(levelSets.back());
+      lsInternal::EngquistOsher<T, D, 1>::prepareLS(levelSets.back());
     } else if (integrationScheme ==
                IntegrationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER) {
-      lsInternal::EnquistOsher<T, D, 2>::prepareLS(levelSets.back());
+      lsInternal::EngquistOsher<T, D, 2>::prepareLS(levelSets.back());
     } else if (integrationScheme ==
                IntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
       lsInternal::LaxFriedrichs<T, D, 1>::prepareLS(levelSets.back());

@@ -37,7 +37,7 @@ private:
   static constexpr double wrappingLayerEpsilon = 1e-4;
 
 public:
-  ToDiskMesh() {}
+  ToDiskMesh() = default;
 
   ToDiskMesh(SmartPointer<Mesh<N>> passedMesh, T passedMaxValue = 0.5)
       : mesh(passedMesh), maxValue(passedMaxValue) {}
@@ -81,7 +81,7 @@ public:
   void setMaxValue(const T passedMaxValue) { maxValue = passedMaxValue; }
 
   void apply() {
-    if (levelSets.size() < 1) {
+    if (levelSets.empty()) {
       Logger::getInstance()
           .addWarning("No level sets passed to ToDiskMesh.")
           .print();
@@ -176,7 +176,7 @@ public:
       materialIds.push_back(matId);
 
       // insert vertex
-      std::array<unsigned, 1> vertex;
+      std::array<unsigned, 1> vertex{};
       vertex[0] = mesh->nodes.size();
       mesh->insertNextVertex(vertex);
 
@@ -244,5 +244,7 @@ public:
     mesh->maximumExtent = maximumExtent;
   }
 };
+
+PRECOMPILE_PRECISION_DIMENSION(ToDiskMesh)
 
 } // namespace viennals

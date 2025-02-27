@@ -26,7 +26,7 @@ template <class T> class TransformMesh {
   double numericEps = 1e-6;
 
   // check vector for all zeros
-  bool isValidVector() {
+  bool isValidVector() const {
     if (DotProduct(transformVector, transformVector) < numericEps) {
       return false;
     } else {
@@ -35,7 +35,7 @@ template <class T> class TransformMesh {
   }
 
   void translateMesh() {
-    // if vector is 0, just dont do anything
+    // if vector is 0, just don't do anything
     if (!isValidVector()) {
       return;
     }

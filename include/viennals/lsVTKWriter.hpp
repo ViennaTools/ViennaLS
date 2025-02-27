@@ -6,12 +6,12 @@
 #include <lsFileFormats.hpp>
 #include <lsMesh.hpp>
 
+#include <utility>
 #include <vcLogger.hpp>
 #include <vcSmartPointer.hpp>
 
 #ifdef VIENNALS_USE_VTK
 #include <vtkCellArray.h>
-#include <vtkCellData.h>
 #include <vtkFloatArray.h>
 #include <vtkPointData.h>
 #include <vtkPoints.h>
@@ -66,16 +66,17 @@ template <class T> class VTKWriter {
 #endif // VIENNALS_USE_VTK
 
 public:
-  VTKWriter() {}
+  VTKWriter() = default;
 
   VTKWriter(SmartPointer<Mesh<T>> passedMesh) : mesh(passedMesh) {}
 
   VTKWriter(SmartPointer<Mesh<T>> passedMesh, std::string passedFileName)
-      : mesh(passedMesh), fileName(passedFileName) {}
+      : mesh(passedMesh), fileName(std::move(passedFileName)) {}
 
   VTKWriter(SmartPointer<Mesh<T>> passedMesh, FileFormatEnum passedFormat,
             std::string passedFileName)
-      : mesh(passedMesh), fileFormat(passedFormat), fileName(passedFileName) {}
+      : mesh(passedMesh), fileFormat(passedFormat),
+        fileName(std::move(passedFileName)) {}
 
   void setMesh(SmartPointer<Mesh<T>> passedMesh) { mesh = passedMesh; }
 
@@ -83,7 +84,9 @@ public:
   void setFileFormat(FileFormatEnum passedFormat) { fileFormat = passedFormat; }
 
   /// set file name for file to write
-  void setFileName(std::string passedFileName) { fileName = passedFileName; }
+  void setFileName(std::string passedFileName) {
+    fileName = std::move(passedFileName);
+  }
 
   void apply() {
     // check mesh
@@ -347,7 +350,7 @@ private:
 
 #endif // VIENNALS_USE_VTK
 
-  void writeVTKLegacy(std::string filename) {
+  void writeVTKLegacy(const std::string &filename) {
     if (mesh == nullptr) {
       Logger::getInstance()
           .addWarning("No mesh was passed to VTKWriter.")

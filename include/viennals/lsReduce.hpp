@@ -2,7 +2,6 @@
 
 #include <lsPreCompileMacros.hpp>
 
-#include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
 #include <lsDomain.hpp>
 
@@ -21,15 +20,15 @@ template <class T, int D> class Reduce {
   bool updatePointData = true;
 
 public:
-  Reduce() {}
+  Reduce() = default;
 
   Reduce(SmartPointer<Domain<T, D>> passedlsDomain)
-      : levelSet(passedlsDomain){};
+      : levelSet(passedlsDomain) {};
 
   Reduce(SmartPointer<Domain<T, D>> passedlsDomain, int passedWidth,
          bool passedNoNewSegment = false)
       : levelSet(passedlsDomain), width(passedWidth),
-        noNewSegment(passedNoNewSegment){};
+        noNewSegment(passedNoNewSegment) {};
 
   void setLevelSet(SmartPointer<Domain<T, D>> passedlsDomain) {
     levelSet = passedlsDomain;

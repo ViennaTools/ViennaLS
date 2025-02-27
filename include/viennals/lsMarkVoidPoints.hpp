@@ -2,8 +2,6 @@
 
 #include <hrleSparseStarIterator.hpp>
 
-#include <lsPreCompileMacros.hpp>
-
 #include <lsDomain.hpp>
 #include <lsGraph.hpp>
 
@@ -36,13 +34,13 @@ template <class T, int D> class MarkVoidPoints {
   bool detectLargestSurface = false;
 
   // two points are connected if they have the same sign
-  bool areConnected(const T &value1, const T &value2) {
+  static bool areConnected(const T &value1, const T &value2) {
     return (value1 >= 0) == (value2 >= 0);
   }
 
-  std::vector<IndexType>
-  mergeComponentCounts(const std::vector<IndexType> &components,
-                       const std::vector<IndexType> &pointsPerComponent) {
+  std::vector<IndexType> static mergeComponentCounts(
+      const std::vector<IndexType> &components,
+      const std::vector<IndexType> &pointsPerComponent) {
     // find number of connected components after merge
     // TODO: the last element in the components vector is very likely
     // the highest index, so could just set it instead of checking all values
@@ -63,8 +61,9 @@ template <class T, int D> class MarkVoidPoints {
     return pointsPerConnected;
   }
 
-  IndexType calculateTopID(const std::vector<IndexType> &components,
-                           const std::vector<IndexType> &pointsPerConnected) {
+  IndexType
+  calculateTopID(const std::vector<IndexType> &components,
+                 const std::vector<IndexType> &pointsPerConnected) const {
     // check which component has the most points
     IndexType topId = 0;
     // use first component, which contains more than 0 points
@@ -85,7 +84,7 @@ template <class T, int D> class MarkVoidPoints {
 public:
   static constexpr char voidPointLabel[] = "VoidPointMarkers";
 
-  MarkVoidPoints() {}
+  MarkVoidPoints() = default;
 
   MarkVoidPoints(SmartPointer<Domain<T, D>> passedlsDomain,
                  bool passedReverseVoidDetection = false)

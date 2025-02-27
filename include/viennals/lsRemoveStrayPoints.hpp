@@ -19,7 +19,7 @@ template <class T, int D> class RemoveStrayPoints {
   VoidTopSurfaceEnum voidTopSurface = VoidTopSurfaceEnum::LARGEST;
 
 public:
-  RemoveStrayPoints() {}
+  RemoveStrayPoints() = default;
 
   RemoveStrayPoints(SmartPointer<Domain<T, D>> passedLevelSet)
       : levelSet(passedLevelSet) {}

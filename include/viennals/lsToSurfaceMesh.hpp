@@ -15,7 +15,7 @@ namespace viennals {
 using namespace viennacore;
 
 /// Extract an explicit Mesh<> instance from an lsDomain.
-/// The interface is then described by explciit surface elements:
+/// The interface is then described by explicit surface elements:
 /// Lines in 2D, Triangles in 3D.
 template <class T, int D> class ToSurfaceMesh {
   typedef typename Domain<T, D>::DomainType hrleDomainType;
@@ -27,7 +27,7 @@ template <class T, int D> class ToSurfaceMesh {
   bool updatePointData = true;
 
 public:
-  ToSurfaceMesh(double eps = 1e-12) : epsilon(eps) {}
+  explicit ToSurfaceMesh(double eps = 1e-12) : epsilon(eps) {}
 
   ToSurfaceMesh(const SmartPointer<Domain<T, D>> passedLevelSet,
                 SmartPointer<Mesh<T>> passedMesh, double eps = 1e-12)
@@ -72,19 +72,11 @@ public:
           .print();
     }
 
-    typedef typename std::map<hrleVectorType<hrleIndexType, D>, unsigned>
+    typedef std::map<hrleVectorType<hrleIndexType, D>, unsigned>
         nodeContainerType;
 
     nodeContainerType nodes[D];
-
     typename nodeContainerType::iterator nodeIt;
-
-    lsInternal::MarchingCubes marchingCubes;
-
-    using DomainType = Domain<T, D>;
-    using ScalarDataType = typename DomainType::PointDataType::ScalarDataType;
-    using VectorDataType = typename DomainType::PointDataType::VectorDataType;
-
     const bool updateData = updatePointData;
 
     // save how data should be transferred to new level set
@@ -119,8 +111,9 @@ public:
         continue;
 
       // for each element
-      const int *Triangles = (D == 2) ? marchingCubes.polygonize2d(signs)
-                                      : marchingCubes.polygonize3d(signs);
+      const int *Triangles =
+          (D == 2) ? lsInternal::MarchingCubes::polygonize2d(signs)
+                   : lsInternal::MarchingCubes::polygonize3d(signs);
 
       for (; Triangles[0] != -1; Triangles += D) {
         std::array<unsigned, D> nod_numbers;
@@ -133,7 +126,7 @@ public:
           unsigned p1 = corner1[edge];
 
           // determine direction of edge
-          int dir = direction[edge];
+          auto dir = direction[edge];
 
           // look for existing surface node
           hrleVectorType<hrleIndexType, D> d(cellIt.getIndices());
@@ -151,8 +144,9 @@ public:
               if (z != dir) {
                 // TODO might not need BitMaskToVector here, just check if z bit
                 // is set
-                cc[z] = double(cellIt.getIndices(z) +
-                               BitMaskToVector<D, hrleIndexType>(p0)[z]);
+                cc[z] = static_cast<double>(
+                    cellIt.getIndices(z) +
+                    BitMaskToVector<D, hrleIndexType>(p0)[z]);
               } else {
                 T d0, d1;
 
@@ -203,8 +197,7 @@ public:
   }
 
 private:
-  static bool inline triangleMisformed(
-      const std::array<unsigned, D> &nodeNumbers) {
+  static bool triangleMisformed(const std::array<unsigned, D> &nodeNumbers) {
     if constexpr (D == 3) {
       return nodeNumbers[0] == nodeNumbers[1] ||
              nodeNumbers[0] == nodeNumbers[2] ||

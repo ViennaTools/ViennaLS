@@ -1,7 +1,5 @@
 #pragma once
 
-#include <array>
-
 #include <vcVectorUtil.hpp>
 
 namespace viennals {
@@ -12,7 +10,7 @@ using namespace viennacore;
 /// the velocity field used during advection using lsAdvect.
 template <class T> class VelocityField {
 public:
-  VelocityField() {}
+  VelocityField() = default;
 
   /// Should return a scalar value for the velocity at coordinate
   /// for a point of material with the given normalVector.
@@ -39,7 +37,7 @@ public:
     return 0;
   }
 
-  virtual ~VelocityField() {}
+  virtual ~VelocityField() = default;
 };
 
 } // namespace viennals

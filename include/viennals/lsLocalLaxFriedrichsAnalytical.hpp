@@ -32,7 +32,7 @@ template <class T, int D, int order> class LocalLaxFriedrichsAnalytical {
     return (diffPos + diffNeg) * 0.5;
   }
 
-  void incrementIndices(hrleVectorType<hrleIndexType, D> &index,
+ static void incrementIndices(hrleVectorType<hrleIndexType, D> &index,
                         hrleIndexType minIndex, hrleIndexType maxIndex) {
     unsigned dir = 0;
     for (; dir < D - 1; ++dir) {
@@ -226,7 +226,7 @@ public:
 
   void reduceTimeStepHamiltonJacobi(double &MaxTimeStep,
                                     hrleCoordType gridDelta) {
-    const double alpha_maxCFL = 1.0;
+    constexpr double alpha_maxCFL = 1.0;
     // second time step test, based on alphas
 
     double timeStep = 0;

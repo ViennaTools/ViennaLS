@@ -1,7 +1,5 @@
 #pragma once
 
-#include <hrleVectorType.hpp>
-
 #include <vcLogger.hpp>
 
 namespace lsInternal {
@@ -22,7 +20,7 @@ class FiniteDifferences {
   template <class V> static V square(V x) { return x * x; }
 
 public:
-  FiniteDifferences(){};
+  FiniteDifferences() = default;
 
   static unsigned getNumberOfValues(DifferentiationSchemeEnum s) {
     switch (s) {
@@ -142,12 +140,15 @@ public:
       return (values[1] - values[0]) / delta;
     } else if (scheme == DifferentiationSchemeEnum::SECOND_ORDER) {
       // TODO: implement second order integration here
+      Logger::getInstance().addError("Second order scheme not implemented!");
+      return 0;
     } else if (scheme == DifferentiationSchemeEnum::WENO3) {
       return weno3(values, delta, false);
     } else if (scheme == DifferentiationSchemeEnum::WENO5) {
       return weno5(values, delta, false);
     } else {
       Logger::getInstance().addError("Invalid finite differences scheme!");
+      return 0;
     }
   }
 
@@ -162,12 +163,15 @@ public:
       return (values[2] - values[1]) / delta;
     } else if (scheme == DifferentiationSchemeEnum::SECOND_ORDER) {
       // TODO: implement second order integration here
+      Logger::getInstance().addError("Seconed order scheme not implemented!");
+      return 0;
     } else if (scheme == DifferentiationSchemeEnum::WENO3) {
       return weno3(values, delta, true);
     } else if (scheme == DifferentiationSchemeEnum::WENO5) {
       return weno5(values, delta, true);
     } else {
       Logger::getInstance().addError("Invalid finite differences scheme!");
+      return 0;
     }
   }
 

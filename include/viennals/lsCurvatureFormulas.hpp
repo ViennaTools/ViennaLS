@@ -78,7 +78,7 @@ double gaussianCurvature3D(std::array<T, N> funcValues) {
          norm;
 }
 
-/// Fills an std::array with differential values calculated from
+/// Fills a std::array with differential values calculated from
 /// neighbour values. This stencil only uses direct neighbours
 /// for fast calculation of the differentials.
 template <class It, class T = typename It::DomainType::hrleValueType>
@@ -111,7 +111,7 @@ std::array<T, 9> smallStencilFromIterator(It &it, const double gridDelta) {
   return d;
 }
 
-/// Fills an std::array with differential values calculated from
+/// Fills a std::array with differential values calculated from
 /// neighbour values. This stencil also uses diagonal neighbours
 /// to achieve a higher accuracy.
 template <class It, class T = typename It::DomainType::hrleValueType>

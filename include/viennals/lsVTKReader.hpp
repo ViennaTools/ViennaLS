@@ -6,6 +6,7 @@
 #include <lsFileFormats.hpp>
 #include <lsMesh.hpp>
 
+#include <utility>
 #include <vcLogger.hpp>
 #include <vcSmartPointer.hpp>
 
@@ -34,16 +35,17 @@ template <class T = double> class VTKReader {
                                           4, 4, 4, 8, 8, 6, 5};
 
 public:
-  VTKReader() {}
+  VTKReader() = default;
 
   VTKReader(SmartPointer<Mesh<T>> passedMesh) : mesh(passedMesh) {}
 
   VTKReader(SmartPointer<Mesh<T>> passedMesh, std::string passedFileName)
-      : mesh(passedMesh), fileName(passedFileName) {}
+      : mesh(passedMesh), fileName(std::move(passedFileName)) {}
 
   VTKReader(SmartPointer<Mesh<>> passedMesh, FileFormatEnum passedFormat,
             std::string passedFileName)
-      : mesh(passedMesh), fileFormat(passedFormat), fileName(passedFileName) {}
+      : mesh(passedMesh), fileFormat(passedFormat),
+        fileName(std::move(passedFileName)) {}
 
   /// set the mesh the file should be read into
   void setMesh(SmartPointer<Mesh<>> passedMesh) { mesh = passedMesh; }
@@ -52,7 +54,9 @@ public:
   void setFileFormat(FileFormatEnum passedFormat) { fileFormat = passedFormat; }
 
   /// set file name for file to read
-  void setFileName(std::string passedFileName) { fileName = passedFileName; }
+  void setFileName(std::string passedFileName) {
+    fileName = std::move(passedFileName);
+  }
 
   void apply() {
     // check mesh
@@ -125,7 +129,7 @@ public:
 
 private:
 #ifdef VIENNALS_USE_VTK
-  void readVTP(std::string filename) {
+  void readVTP(const std::string &filename) {
     if (mesh == nullptr) {
       Logger::getInstance()
           .addWarning("No mesh was passed to VTKReader.")
@@ -144,7 +148,7 @@ private:
 
     mesh->nodes.resize(polyData->GetNumberOfPoints());
     for (unsigned i = 0; i < mesh->nodes.size(); ++i) {
-      std::array<double, 3> coords;
+      std::array<double, 3> coords{};
       polyData->GetPoint(i, coords.data());
       mesh->nodes[i] = coords;
     }
@@ -158,7 +162,7 @@ private:
       cellArray->InitTraversal();
       vtkIdList *pointList = vtkIdList::New();
       while (cellArray->GetNextCell(pointList)) {
-        std::array<unsigned, 1> cell;
+        std::array<unsigned, 1> cell{};
         cell[0] = pointList->GetId(0);
         mesh->vertices.push_back(cell);
       }
@@ -171,7 +175,7 @@ private:
       cellArray->InitTraversal();
       vtkIdList *pointList = vtkIdList::New();
       while (cellArray->GetNextCell(pointList)) {
-        std::array<unsigned, 2> cell;
+        std::array<unsigned, 2> cell{};
         for (unsigned i = 0; i < 2; ++i) {
           cell[i] = pointList->GetId(i);
         }
@@ -186,7 +190,7 @@ private:
       cellArray->InitTraversal();
       vtkIdList *pointList = vtkIdList::New();
       while (cellArray->GetNextCell(pointList)) {
-        std::array<unsigned, 3> cell;
+        std::array<unsigned, 3> cell{};
         for (unsigned i = 0; i < 3; ++i) {
           cell[i] = pointList->GetId(i);
         }
@@ -199,11 +203,9 @@ private:
         vtkSmartPointer<vtkPointData>::New();
     pointData = polyData->GetPointData();
 
-    for (unsigned i = 0;
-         i < static_cast<unsigned>(pointData->GetNumberOfArrays()); ++i) {
-      vtkDataArray *dataArray;
-      dataArray = pointData->GetArray(i);
-      if (dataArray->GetNumberOfComponents() == 1) {
+    for (int i = 0; i < static_cast<int>(pointData->GetNumberOfArrays()); ++i) {
+      if (vtkDataArray *dataArray = pointData->GetArray(i);
+          dataArray->GetNumberOfComponents() == 1) {
         mesh->pointData.insertNextScalarData(
             typename PointData<T>::ScalarDataType(),
             std::string(pointData->GetArrayName(i)));
@@ -219,7 +221,7 @@ private:
         auto &vectors = *(mesh->pointData.getVectorData(i));
         vectors.resize(pointData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++j) {
-          std::array<double, 3> vector;
+          std::array<double, 3> vector{};
           dataArray->GetTuple(j, &(vector[0]));
           vectors[j] = vector;
         }
@@ -230,10 +232,8 @@ private:
     vtkSmartPointer<vtkCellData> cellData = vtkSmartPointer<vtkCellData>::New();
     cellData = polyData->GetCellData();
 
-    for (unsigned i = 0;
-         i < static_cast<unsigned>(cellData->GetNumberOfArrays()); ++i) {
-      vtkDataArray *dataArray;
-      dataArray = cellData->GetArray(i);
+    for (int i = 0; i < cellData->GetNumberOfArrays(); ++i) {
+      vtkDataArray *dataArray = cellData->GetArray(i);
       if (cellData->GetNumberOfComponents() == 1) {
         mesh->cellData.insertNextScalarData(
             typename PointData<T>::ScalarDataType(),
@@ -250,7 +250,7 @@ private:
         auto &vectors = *(mesh->cellData.getVectorData(i));
         vectors.resize(cellData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++j) {
-          std::array<double, 3> vector;
+          std::array<double, 3> vector{};
           dataArray->GetTuple(j, &(vector[0]));
           vectors[j] = vector;
         }
@@ -258,7 +258,7 @@ private:
     }
   }
 
-  void readVTU(std::string filename) {
+  void readVTU(const std::string &filename) {
     if (mesh == nullptr) {
       Logger::getInstance()
           .addWarning("No mesh was passed to VTKReader.")
@@ -280,7 +280,7 @@ private:
     // get all points
     mesh->nodes.resize(ugrid->GetNumberOfPoints());
     for (unsigned i = 0; i < mesh->nodes.size(); ++i) {
-      std::array<double, 3> coords;
+      std::array<double, 3> coords{};
       ugrid->GetPoint(i, &(coords[0]));
       mesh->nodes[i] = coords;
     }
@@ -293,13 +293,13 @@ private:
       switch (ugrid->GetCellType(i)) {
       case 1: // vert
       {
-        std::array<unsigned, 1> vert;
+        std::array<unsigned, 1> vert{};
         vert[0] = pointList->GetId(0);
         mesh->vertices.push_back(vert);
       } break;
       case 3: // line
       {
-        std::array<unsigned, 2> elements;
+        std::array<unsigned, 2> elements{};
         for (unsigned j = 0; j < 2; ++j) {
           elements[j] = pointList->GetId(j);
         }
@@ -307,7 +307,7 @@ private:
       } break;
       case 5: // triangle
       {
-        std::array<unsigned, 3> elements;
+        std::array<unsigned, 3> elements{};
         for (unsigned j = 0; j < 3; ++j) {
           elements[j] = pointList->GetId(j);
         }
@@ -315,7 +315,7 @@ private:
       } break;
       case 10: // tetra
       {
-        std::array<unsigned, 4> elements;
+        std::array<unsigned, 4> elements{};
         for (unsigned j = 0; j < 4; ++j) {
           elements[j] = pointList->GetId(j);
         }
@@ -323,12 +323,13 @@ private:
       } break;
       case 12: // hexa
       {
-        std::array<unsigned, 8> elements;
+        std::array<unsigned, 8> elements{};
         for (unsigned j = 0; j < 8; ++j) {
           elements[j] = pointList->GetId(j);
         }
         mesh->hexas.push_back(elements);
       } break;
+      default:
       }
     }
 
@@ -337,11 +338,9 @@ private:
         vtkSmartPointer<vtkPointData>::New();
     pointData = ugrid->GetPointData();
 
-    for (unsigned i = 0;
-         i < static_cast<unsigned>(pointData->GetNumberOfArrays()); ++i) {
-      vtkDataArray *dataArray;
-      dataArray = pointData->GetArray(i);
-      if (dataArray->GetNumberOfComponents() == 1) {
+    for (int i = 0; i < pointData->GetNumberOfArrays(); ++i) {
+      if (vtkDataArray *dataArray = pointData->GetArray(i);
+          dataArray->GetNumberOfComponents() == 1) {
         mesh->pointData.insertNextScalarData(
             typename PointData<T>::ScalarDataType(),
             std::string(pointData->GetArrayName(i)));
@@ -357,7 +356,7 @@ private:
         auto &vectors = *(mesh->pointData.getVectorData(i));
         vectors.resize(pointData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++j) {
-          std::array<double, 3> vector;
+          std::array<double, 3> vector{};
           dataArray->GetTuple(j, &(vector[0]));
           vectors[j] = vector;
         }
@@ -368,10 +367,8 @@ private:
     vtkSmartPointer<vtkCellData> cellData = vtkSmartPointer<vtkCellData>::New();
     cellData = ugrid->GetCellData();
 
-    for (unsigned i = 0;
-         i < static_cast<unsigned>(cellData->GetNumberOfArrays()); ++i) {
-      vtkDataArray *dataArray;
-      dataArray = cellData->GetArray(i);
+    for (int i = 0; i < static_cast<int>(cellData->GetNumberOfArrays()); ++i) {
+      vtkDataArray *dataArray = cellData->GetArray(i);
       if (cellData->GetNumberOfComponents() == 1) {
         mesh->cellData.insertNextScalarData(
             typename PointData<T>::ScalarDataType(),
@@ -388,7 +385,7 @@ private:
         auto &vectors = *(mesh->cellData.getVectorData(i));
         vectors.resize(cellData->GetNumberOfTuples());
         for (unsigned j = 0; j < dataArray->GetNumberOfTuples(); ++j) {
-          std::array<double, 3> vector;
+          std::array<double, 3> vector{};
           dataArray->GetTuple(j, &(vector[0]));
           vectors[j] = vector;
         }
@@ -398,7 +395,7 @@ private:
 
 #endif // VIENNALS_USE_VTK
 
-  void readVTKLegacy(std::string filename) {
+  void readVTKLegacy(const std::string &filename) {
     if (mesh == nullptr) {
       Logger::getInstance()
           .addWarning("No mesh was passed to VTKReader.")
@@ -427,15 +424,15 @@ private:
       if (temp.find("POINTS") != std::string::npos)
         break;
     }
-    int num_nodes = atoi(&temp[temp.find(" ") + 1]);
+    int num_nodes = atoi(&temp[temp.find(' ') + 1]);
 
     mesh->nodes.resize(num_nodes);
 
     for (int i = 0; i < num_nodes; i++) {
       double coords[3];
 
-      for (int j = 0; j < 3; j++)
-        f >> coords[j];
+      for (double &coord : coords)
+        f >> coord;
       for (int j = 0; j < 3; j++) {
         mesh->nodes[i][j] = coords[j];
         // int shift_size = shift.size();
@@ -454,7 +451,7 @@ private:
         break;
     }
 
-    int num_elems = atoi(&temp[temp.find(" ") + 1]);
+    int num_elems = atoi(&temp[temp.find(' ') + 1]);
 
     std::ifstream f_ct(filename.c_str()); // stream to read cell CELL_TYPES
     std::ifstream f_m(
@@ -465,7 +462,7 @@ private:
       if (temp.find("CELL_TYPES") == 0)
         break;
     }
-    int num_cell_types = atoi(&temp[temp.find(" ") + 1]);
+    int num_cell_types = atoi(&temp[temp.find(' ') + 1]);
     // need a cell_type for each cell
     if (num_elems != num_cell_types) {
       Logger::getInstance().addError(
@@ -513,14 +510,14 @@ private:
         // check for different types to subdivide them into supported types
         switch (cell_type) {
         case 1: {
-          std::array<unsigned, 1> elem;
+          std::array<unsigned, 1> elem{};
           f >> elem[0];
           mesh->template getElements<1>().push_back(elem);
           materials.push_back(cell_material);
           break;
         }
         case 3: {
-          std::array<unsigned, 2> elem;
+          std::array<unsigned, 2> elem{};
           for (unsigned j = 0; j < number_nodes; ++j) {
             f >> elem[j];
           }
@@ -530,7 +527,7 @@ private:
         }
         case 5: // triangle for 2D
         {
-          std::array<unsigned, 3> elem;
+          std::array<unsigned, 3> elem{};
           for (unsigned j = 0; j < number_nodes; ++j) {
             f >> elem[j];
           }
@@ -541,7 +538,7 @@ private:
 
         case 10: // tetra for 3D
         {
-          std::array<unsigned, 4> elem;
+          std::array<unsigned, 4> elem{};
           for (unsigned j = 0; j < number_nodes; ++j) {
             f >> elem[j];
           }
@@ -552,7 +549,7 @@ private:
 
         case 9: // this is a quad, so just plit it into two triangles
         {
-          std::array<unsigned, 3> elem;
+          std::array<unsigned, 3> elem{};
           for (unsigned j = 0; j < 3; ++j) {
             f >> elem[j];
           }
@@ -589,7 +586,7 @@ private:
     int num_cell_data = 0;
     while (std::getline(f, temp)) {
       if (temp.find("CELL_DATA") != std::string::npos) {
-        num_cell_data = atoi(&temp[temp.find(" ") + 1]);
+        num_cell_data = atoi(&temp[temp.find(' ') + 1]);
         break;
       }
     }
@@ -607,15 +604,15 @@ private:
 
       std::string scalarDataName;
       {
-        int firstS = temp.find(" ") + 1;
-        int secondS = temp.find(" ", firstS + 1);
+        auto firstS = temp.find(' ') + 1;
+        auto secondS = temp.find(' ', firstS + 1);
         scalarDataName = temp.substr(firstS, secondS - firstS);
       }
       std::vector<double> scalarData;
 
       // consume one line, which defines the lookup table
       std::getline(f, temp);
-      if (temp.compare("LOOKUP_TABLE default") != 0) {
+      if (temp != "LOOKUP_TABLE default") {
         Logger::getInstance()
             .addWarning("Wrong lookup table for VTKLegacy: " + temp)
             .print();

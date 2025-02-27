@@ -14,10 +14,9 @@ class Graph {
   // type for indexing components
   using IndexType = std::size_t;
   // edges must be unique
-  typedef typename std::unordered_set<IndexType> edgeListType;
-  // points must be unique and adressable
-  typedef typename std::unordered_map<IndexType, edgeListType>
-      adjacencyListType;
+  typedef std::unordered_set<IndexType> edgeListType;
+  // points must be unique and addressable
+  typedef std::unordered_map<IndexType, edgeListType> adjacencyListType;
 
   adjacencyListType adjacencyList;
   std::vector<IndexType> componentIds;
@@ -27,7 +26,7 @@ class Graph {
     // set component for this vertex
     componentIds[currentVertex] = currentComponent;
 
-    // cylce through all connected vertices and set their component
+    // cycle through all connected vertices and set their component
     auto vertexListIt = adjacencyList.find(currentVertex);
     if (vertexListIt == adjacencyList.end()) {
       Logger::getInstance().addError(
@@ -35,11 +34,10 @@ class Graph {
           " could not be found although it should exist!");
     }
 
-    for (auto it = vertexListIt->second.begin();
-         it != vertexListIt->second.end(); ++it) {
+    for (unsigned long it : vertexListIt->second) {
       // vertex has not been visited
-      if (componentIds[*it] == -1) {
-        depthFirstComponentSearch(*it, currentComponent);
+      if (componentIds[it] == -1) {
+        depthFirstComponentSearch(it, currentComponent);
       }
     }
   }
@@ -65,7 +63,7 @@ public:
     it->second.insert(vertex1);
   }
 
-  // returns an std::vector, where the value at each
+  // returns a std::vector, where the value at each
   // index denotes the component, the vertex belongs to
   std::vector<IndexType> getConnectedComponents() {
     // traverse all vertices and stop at unvisited ones
@@ -90,11 +88,11 @@ public:
 
   void print() {
     std::cout << "Graph structure: " << std::endl;
-    for (auto it = adjacencyList.begin(); it != adjacencyList.end(); ++it) {
-      auto &edges = (*it).second;
-      std::cout << "Vertex: " << (*it).first << std::endl;
-      for (auto edgeIt = edges.begin(); edgeIt != edges.end(); ++edgeIt) {
-        std::cout << *edgeIt << ", ";
+    for (auto &[fst, snd] : adjacencyList) {
+      auto &edges = snd;
+      std::cout << "Vertex: " << fst << std::endl;
+      for (const unsigned long edge : edges) {
+        std::cout << edge << ", ";
       }
       std::cout << std::endl;
     }

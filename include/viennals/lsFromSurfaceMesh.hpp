@@ -34,16 +34,12 @@ template <class T, int D> class FromSurfaceMesh {
     }
 
     /// Sets both xMin and Xmax to the passed vector.
-    box(const hrleVectorType<hrleIndexType, D - 1> &idx) {
+    explicit box(const hrleVectorType<hrleIndexType, D - 1> &idx) {
       xMin = idx;
       xMax = idx;
     }
 
-    box operator=(const box &b) {
-      xMin = b.xMin;
-      xMax = b.xMax;
-      return *this;
-    }
+    box &operator=(const box &b) = default;
 
     /// Checks whether there are points in the box and returns result.
     bool is_empty() const {
@@ -64,12 +60,12 @@ template <class T, int D> class FromSurfaceMesh {
       const box &b;
 
     public:
-      iterator(const box &bx) : pos(bx.min()), b(bx) {}
+      explicit iterator(const box &bx) : pos(bx.min()), b(bx) {}
 
       iterator &operator++() {
         int i;
         for (i = 0; i < D - 2; i++) {
-          pos[i]++;
+          ++pos[i];
           if (pos[i] <= b.xMax[i]) {
             break;
           } else {
@@ -77,7 +73,7 @@ template <class T, int D> class FromSurfaceMesh {
           }
         }
         if (i == D - 2)
-          pos[i]++;
+          ++pos[i];
         return *this;
       }
 
@@ -212,7 +208,7 @@ template <class T, int D> class FromSurfaceMesh {
   }
 
 public:
-  FromSurfaceMesh() {}
+  FromSurfaceMesh() = default;
 
   FromSurfaceMesh(SmartPointer<Domain<T, D>> passedLevelSet,
                   SmartPointer<Mesh<T>> passedMesh,
@@ -228,14 +224,14 @@ public:
 
   void setMesh(SmartPointer<Mesh<T>> passedMesh) { mesh = passedMesh; }
 
-  /// Set whether all triangles outside of the domain should be ignored (=true)
+  /// Set whether all triangles outside the domain should be ignored (=true)
   /// or whether boundary conditions should be applied correctly to such
   /// triangles(=false). Defaults to true.
   void setRemoveBoundaryTriangles(bool passedRemoveBoundaryTriangles) {
     removeBoundaryTriangles.fill(passedRemoveBoundaryTriangles);
   }
 
-  /// Set whether all triangles outside of the domain should be ignored (=true)
+  /// Set whether all triangles outside the domain should be ignored (=true)
   /// or whether boundary conditions should be applied correctly to such
   /// triangles(=false), for each direction. Defaults to true for all
   /// directions.
@@ -278,7 +274,7 @@ public:
 
     // setup list of grid points with distances to surface elements
     {
-      typedef typename std::vector<
+      typedef std::vector<
           std::pair<hrleVectorType<hrleIndexType, D>, std::pair<T, T>>>
           point_vector;
       point_vector points;
@@ -377,7 +373,7 @@ public:
             continue;
 
           for (typename box::iterator it_bb(bb); !it_bb.is_finished();
-               it_bb++) {
+               ++it_bb) {
 
             hrleVectorType<hrleIndexType, D> it_b;
             for (int h = 0; h < D - 1; ++h)
@@ -411,9 +407,9 @@ public:
               T intersection2 =
                   grid.globalCoordinate2LocalIndex(z, intersection);
 
-              hrleIndexType floor = static_cast<hrleIndexType>(
+              auto floor = static_cast<hrleIndexType>(
                   std::floor(intersection2 - distanceEps));
-              hrleIndexType ceil = static_cast<hrleIndexType>(
+              auto ceil = static_cast<hrleIndexType>(
                   std::ceil(intersection2 + distanceEps));
 
               floor = std::max(floor, minIndex[z] - 1);

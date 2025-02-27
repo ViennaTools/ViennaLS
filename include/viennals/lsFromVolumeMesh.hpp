@@ -33,11 +33,11 @@ private:
   bool gridSet = false;
 
 public:
-  FromVolumeMesh() {}
+  FromVolumeMesh() = default;
 
   FromVolumeMesh(const GridType &passedGrid, SmartPointer<Mesh<T>> passedMesh,
                  bool passedRemoveBoundaryTriangles = true)
-      : grid(passedGrid), mesh(passedMesh),
+      : mesh(passedMesh), grid(passedGrid),
         removeBoundaryTriangles(passedRemoveBoundaryTriangles), gridSet(true) {}
 
   void setGrid(const GridType &passedGrid) {
@@ -197,19 +197,19 @@ public:
     }
 
     auto levelSetIterator = levelSets.begin();
-    for (auto matIt = materialInts.begin(); matIt != materialInts.end();
-         ++matIt) {
+    for (int &materialInt : materialInts) {
       auto currentSurface = SmartPointer<Mesh<T>>::New();
       auto &meshElements = currentSurface->template getElements<D>();
       for (auto it = surfaceElements.begin(); it != surfaceElements.end();
            ++it) {
-        if (((*matIt) >= it->second.first) && ((*matIt) < it->second.second)) {
+        if ((materialInt >= it->second.first) &&
+            (materialInt < it->second.second)) {
           std::array<unsigned, D> element{it->first[0], it->first[1]};
           if constexpr (D == 3)
             element[2] = it->first[2];
           meshElements.push_back(element);
-        } else if (((*matIt) >= it->second.second) &&
-                   ((*matIt) < it->second.first)) {
+        } else if ((materialInt >= it->second.second) &&
+                   (materialInt < it->second.first)) {
           // swap first two elements since triangle has different orientation
           std::array<unsigned, D> element{it->first[1], it->first[0]};
           if constexpr (D == 3)
@@ -219,7 +219,7 @@ public:
       }
 
       // replace Nodes of Geometry by Nodes of individual surface
-      const unsigned int undefined_node =
+      constexpr unsigned int undefined_node =
           std::numeric_limits<unsigned int>::max();
       std::vector<unsigned int> nodeReplacements(mesh->nodes.size(),
                                                  undefined_node);
