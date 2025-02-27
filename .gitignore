@@ -1,5 +1,7 @@
+.idea/
 *a.out
 build*/
+cmake-build*
 install*/
 *.vtk
 *.vtu
