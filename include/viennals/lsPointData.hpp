@@ -4,6 +4,7 @@
 
 #include <array>
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include <lsConcepts.hpp>
@@ -29,10 +30,10 @@ private:
   std::vector<std::string> vectorDataLabels;
 
   template <class VectorType, class ReturnType = std::conditional_t<
-                                  std::is_const<VectorType>::value,
+                                  std::is_const_v<VectorType>,
                                   const typename VectorType::value_type *,
                                   typename VectorType::value_type *>>
-  ReturnType indexPointerOrNull(VectorType &v, int index) const {
+  static ReturnType indexPointerOrNull(VectorType &v, int index) {
     if (index >= 0 && index < v.size())
       return &(v[index]);
     else
@@ -44,46 +45,46 @@ private:
   }
 
   template <class DataType>
-  void appendTranslateData(DataType &currentData, const DataType &source,
-                           const std::vector<unsigned> &indices) {
+  static void appendTranslateData(DataType &currentData, const DataType &source,
+                                  const std::vector<unsigned> &indices) {
     currentData.reserve(currentData.size() + indices.size());
-    for (unsigned i = 0; i < indices.size(); ++i) {
-      currentData.push_back(source[indices[i]]);
+    for (unsigned int index : indices) {
+      currentData.push_back(source[index]);
     }
   }
 
 public:
   /// insert new scalar data array
   void insertNextScalarData(const ScalarDataType &scalars,
-                            std::string label = "Scalars") {
+                            const std::string &label = "Scalars") {
     scalarData.push_back(scalars);
     scalarDataLabels.push_back(label);
   }
 
   /// insert new scalar data array
   void insertNextScalarData(ScalarDataType &&scalars,
-                            std::string label = "Scalars") {
+                            const std::string &label = "Scalars") {
     scalarData.push_back(std::move(scalars));
     scalarDataLabels.push_back(label);
   }
 
   /// insert new vector data array
   void insertNextVectorData(const VectorDataType &vectors,
-                            std::string label = "Vectors") {
+                            const std::string &label = "Vectors") {
     vectorData.push_back(vectors);
     vectorDataLabels.push_back(label);
   }
 
   /// insert new vector data array
   void insertNextVectorData(VectorDataType &&vectors,
-                            std::string label = "Vectors") {
+                            const std::string &label = "Vectors") {
     vectorData.push_back(std::move(vectors));
     vectorDataLabels.push_back(label);
   }
 
   /// insert or replace scalar data array
   void insertReplaceScalarData(const ScalarDataType &scalars,
-                               std::string label = "Scalars") {
+                               const std::string &label = "Scalars") {
     if (int i = getScalarDataIndex(label); i != -1) {
       scalarData[i] = scalars;
     } else {
@@ -93,7 +94,7 @@ public:
 
   /// insert or replace scalar data array
   void insertReplaceScalarData(ScalarDataType &&scalars,
-                               std::string label = "Scalars") {
+                               const std::string &label = "Scalars") {
     if (int i = getScalarDataIndex(label); i != -1) {
       scalarData[i] = std::move(scalars);
     } else {
@@ -103,7 +104,7 @@ public:
 
   /// insert or replace vector data array
   void insertReplaceVectorData(const VectorDataType &vectors,
-                               std::string label = "Vectors") {
+                               const std::string &label = "Vectors") {
     if (int i = getVectorDataIndex(label); i != -1) {
       vectorData[i] = vectors;
     } else {
@@ -135,7 +136,7 @@ public:
     return indexPointerOrNull(scalarData, index);
   }
 
-  ScalarDataType *getScalarData(std::string searchLabel,
+  ScalarDataType *getScalarData(const std::string &searchLabel,
                                 bool noWarning = false) {
     if (int i = getScalarDataIndex(searchLabel); i != -1) {
       return &(scalarData[i]);
@@ -149,7 +150,7 @@ public:
     return nullptr;
   }
 
-  const ScalarDataType *getScalarData(std::string searchLabel,
+  const ScalarDataType *getScalarData(const std::string &searchLabel,
                                       bool noWarning = false) const {
     if (int i = getScalarDataIndex(searchLabel); i != -1) {
       return &(scalarData[i]);
@@ -163,7 +164,7 @@ public:
     return nullptr;
   }
 
-  int getScalarDataIndex(std::string searchLabel) const {
+  int getScalarDataIndex(const std::string &searchLabel) const {
     for (int i = 0; i < scalarDataLabels.size(); ++i) {
       if (scalarDataLabels[i] == searchLabel) {
         return i;
@@ -179,7 +180,7 @@ public:
   }
 
   void setScalarDataLabel(int index, std::string newLabel) {
-    scalarDataLabels[index] = newLabel;
+    scalarDataLabels[index] = std::move(newLabel);
   }
 
   /// Delete the scalar data at index.
@@ -196,7 +197,7 @@ public:
     return indexPointerOrNull(vectorData, index);
   }
 
-  VectorDataType *getVectorData(std::string searchLabel,
+  VectorDataType *getVectorData(const std::string &searchLabel,
                                 bool noWarning = false) {
     if (int i = getVectorDataIndex(searchLabel); i != -1) {
       return &(vectorData[i]);
@@ -210,7 +211,7 @@ public:
     return nullptr;
   }
 
-  const VectorDataType *getVectorData(std::string searchLabel,
+  const VectorDataType *getVectorData(const std::string &searchLabel,
                                       bool noWarning = false) const {
     if (int i = getVectorDataIndex(searchLabel); i != -1) {
       return &(vectorData[i]);
@@ -224,7 +225,7 @@ public:
     return nullptr;
   }
 
-  int getVectorDataIndex(std::string searchLabel) const {
+  int getVectorDataIndex(const std::string &searchLabel) const {
     for (int i = 0; i < vectorDataLabels.size(); ++i) {
       if (vectorDataLabels[i] == searchLabel) {
         return i;
@@ -240,7 +241,7 @@ public:
   }
 
   void setVectorDataLabel(int index, std::string newLabel) {
-    vectorDataLabels[index] = newLabel;
+    vectorDataLabels[index] = std::move(newLabel);
   }
 
   /// Delete the vector data at index.

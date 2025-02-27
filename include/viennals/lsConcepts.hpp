@@ -10,17 +10,16 @@ using AssignType = std::nullptr_t;
 inline constexpr AssignType assignable = AssignType();
 
 template <class Base, class Derived>
-using IsBaseOf =
-    std::enable_if_t<std::is_base_of<Base, Derived>::value, AssignType>;
+using IsBaseOf = std::enable_if_t<std::is_base_of_v<Base, Derived>, AssignType>;
 
 template <class A, class B>
-using IsSame = std::enable_if_t<std::is_same<A, B>::value, AssignType>;
+using IsSame = std::enable_if_t<std::is_same_v<A, B>, AssignType>;
 
 template <class A, class B>
-using IsNotSame = std::enable_if_t<!std::is_same<A, B>::value, AssignType>;
+using IsNotSame = std::enable_if_t<!std::is_same_v<A, B>, AssignType>;
 
 template <class T>
 using IsFloatingPoint =
-    std::enable_if_t<std::is_floating_point<T>::value, AssignType>;
+    std::enable_if_t<std::is_floating_point_v<T>, AssignType>;
 
 } // namespace lsConcepts

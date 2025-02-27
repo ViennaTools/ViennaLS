@@ -14,7 +14,7 @@ using namespace viennacore;
 /// by any advection distribution.
 template <class T, int D> class GeometricAdvectDistribution {
 public:
-  GeometricAdvectDistribution() {}
+  GeometricAdvectDistribution() = default;
 
   /// Quick check whether a point relative to the distributions
   /// center is inside the distribution. If there is no quick
@@ -22,7 +22,7 @@ public:
   /// return true or do not overload this function.
   virtual bool isInside(const Vec3D<hrleCoordType> &initial,
                         const Vec3D<hrleCoordType> &candidate,
-                        double eps = 0.) const {
+                        double eps) const {
     return true;
   }
 
@@ -36,7 +36,7 @@ public:
   /// Sets bounds to the bounding box of the distribution.
   virtual std::array<hrleCoordType, 6> getBounds() const = 0;
 
-  virtual ~GeometricAdvectDistribution() {}
+  virtual ~GeometricAdvectDistribution() = default;
 };
 
 /// Concrete implementation of GeometricAdvectDistribution for a spherical
@@ -53,7 +53,7 @@ public:
 
   bool isInside(const Vec3D<hrleCoordType> &initial,
                 const Vec3D<hrleCoordType> &candidate,
-                double eps = 0.) const override {
+                double eps) const override {
     hrleCoordType dot = 0.;
     for (unsigned i = 0; i < D; ++i) {
       double tmp = candidate[i] - initial[i];
@@ -134,7 +134,7 @@ public:
 
   bool isInside(const Vec3D<hrleCoordType> &initial,
                 const Vec3D<hrleCoordType> &candidate,
-                double eps = 0.) const override {
+                double eps) const override {
     for (unsigned i = 0; i < D; ++i) {
       if (std::abs(candidate[i] - initial[i]) >
           (std::abs(posExtent[i]) + eps)) {

@@ -25,6 +25,7 @@
 #include <lsDomain.hpp>
 #include <lsMaterialMap.hpp>
 #include <lsPreCompileMacros.hpp>
+#include <utility>
 
 // #define LS_TO_VISUALIZATION_DEBUG
 #ifdef LS_TO_VISUALIZATION_DEBUG
@@ -55,8 +56,8 @@ template <class T, int D> class WriteVisualizationMesh {
   /// This function removes duplicate points and agjusts the pointIDs in the
   /// cells
   /// of a vtkPolyData
-  void removeDuplicatePoints(vtkSmartPointer<vtkPolyData> &polyData,
-                             const double tolerance) {
+  static void removeDuplicatePoints(vtkSmartPointer<vtkPolyData> &polyData,
+                                    const double tolerance) {
 
     vtkSmartPointer<vtkPolyData> newPolyData =
         vtkSmartPointer<vtkPolyData>::New();
@@ -116,8 +117,8 @@ template <class T, int D> class WriteVisualizationMesh {
 
   /// This function removes duplicate points and agjusts the pointIDs in the
   /// cells of a vtkUnstructuredGrid
-  void removeDuplicatePoints(vtkSmartPointer<vtkUnstructuredGrid> &ugrid,
-                             const double tolerance) {
+  static void removeDuplicatePoints(vtkSmartPointer<vtkUnstructuredGrid> &ugrid,
+                                    const double tolerance) {
 
     vtkSmartPointer<vtkUnstructuredGrid> newGrid =
         vtkSmartPointer<vtkUnstructuredGrid>::New();
@@ -171,7 +172,8 @@ template <class T, int D> class WriteVisualizationMesh {
   }
 
   /// This function removes all cells which contain a point more than once
-  void removeDegenerateTetras(vtkSmartPointer<vtkUnstructuredGrid> &ugrid) {
+  static void
+  removeDegenerateTetras(vtkSmartPointer<vtkUnstructuredGrid> &ugrid) {
     vtkSmartPointer<vtkUnstructuredGrid> newGrid =
         vtkSmartPointer<vtkUnstructuredGrid>::New();
 
@@ -365,7 +367,7 @@ template <class T, int D> class WriteVisualizationMesh {
     }
 
     // now need to go through again to fix border points, this is done by
-    // mapping existing points onto the points outside of the domain according
+    // mapping existing points onto the points outside the domain according
     // to the correct boundary conditions
     // if (fixBorderPoints) {
     //   vtkIdType pointId = 0;
@@ -383,7 +385,7 @@ template <class T, int D> class WriteVisualizationMesh {
     //       hrleVectorType<hrleIndexType, D> localIndices =
     //           grid.globalIndices2LocalIndices(indices);
 
-    //       // now find Id of point we need to take value from
+    //       // now find ID of point we need to take value from
     //       int originalPointId = 0;
     //       for (int i = D - 1; i >= 0; --i) {
     //         originalPointId *=
@@ -407,7 +409,7 @@ template <class T, int D> class WriteVisualizationMesh {
   }
 
 public:
-  WriteVisualizationMesh() {}
+  WriteVisualizationMesh() = default;
 
   WriteVisualizationMesh(SmartPointer<Domain<T, D>> levelSet) {
     levelSets.push_back(levelSet);
@@ -420,7 +422,9 @@ public:
 
   /// Set the name of the file to export. For volume meshes "_volume.vtu" will
   /// be appended, for hull meshes "_hull.vtp".
-  void setFileName(std::string passedFileName) { fileName = passedFileName; }
+  void setFileName(std::string passedFileName) {
+    fileName = std::move(passedFileName);
+  }
 
   /// Whether to extract a hull mesh. Defaults to false
   void setExtractHullMesh(bool passedExtractHullMesh) {
@@ -512,7 +516,7 @@ public:
 #endif
 
     const bool useMaterialMap = materialMap != nullptr;
-    materialMeshes.push_back(clipper->GetOutput());
+    materialMeshes.emplace_back(clipper->GetOutput());
     materialIds.push_back(useMaterialMap ? materialMap->getMaterialId(0) : 0);
 
 #ifdef LS_TO_VISUALIZATION_DEBUG
@@ -586,8 +590,8 @@ public:
       insideClipper->Update();
 
       materialMeshes.back() = insideClipper->GetOutput();
-      materialMeshes.push_back(insideClipper->GetClippedOutput());
-      int material = counter;
+      materialMeshes.emplace_back(insideClipper->GetClippedOutput());
+      auto material = counter;
       if (useMaterialMap)
         material = materialMap->getMaterialId(counter);
       materialIds.push_back(material);

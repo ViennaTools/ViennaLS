@@ -29,7 +29,7 @@ public:
   static constexpr char meanCurvatureLabel[] = "MeanCurvatures";
   static constexpr char gaussianCurvatureLabel[] = "GaussianCurvatures";
 
-  CalculateCurvatures() {}
+  CalculateCurvatures() = default;
 
   CalculateCurvatures(SmartPointer<Domain<T, D>> passedLevelSet)
       : levelSet(passedLevelSet) {}

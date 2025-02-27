@@ -162,8 +162,8 @@ public:
   }
 
   void reduceTimeStepHamiltonJacobi(double &MaxTimeStep,
-                                    hrleCoordType gridDelta) {
-    const double alpha_maxCFL = 1.0;
+                                    hrleCoordType gridDelta) const {
+    constexpr double alpha_maxCFL = 1.0;
     // second time step test, based on alphas
 
     double timeStep = 0;

@@ -10,7 +10,7 @@ namespace viennals {
 
 using namespace viennacore;
 
-/// Expands the leveleSet to the specified number of layers.
+/// Expands the levelSet to the specified number of layers.
 /// The largest value in the levelset is thus width*0.5
 /// Returns the number of added points
 template <class T, int D> class Expand {
@@ -20,7 +20,7 @@ template <class T, int D> class Expand {
   bool updatePointData = true;
 
 public:
-  Expand() {}
+  Expand() = default;
 
   Expand(SmartPointer<Domain<T, D>> passedlsDomain)
       : levelSet(passedlsDomain) {}

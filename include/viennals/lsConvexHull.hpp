@@ -166,7 +166,7 @@ template <class T, int D> class ConvexHull {
       }
     }
 
-    assert(sharedNodes.size() > 0);
+    assert(!sharedNodes.empty());
 
     auto &points = pointCloud->points;
 
@@ -174,14 +174,14 @@ template <class T, int D> class ConvexHull {
     // then generate the average vector and its angle to the edges.
     // then calculate the dot product of each other node of t1 to the average
     // vector. If it is smaller than the dot product between the average vector
-    // and an edge, the node must be outside of triangle, It it is inside, one
+    // and an edge, the node must be outside of triangle. If it is inside, one
     // triangle must clip the other.
-    for (unsigned i = 0; i < sharedNodes.size(); ++i) {
+    for (unsigned int &sharedNode : sharedNodes) {
       hrleVectorType<T, D> averageVector;
       // save the dot product between average and one edge
       double centerEdgeDot;
       {
-        auto shared = sharedNodes[i];
+        auto shared = sharedNode;
         hrleVectorType<T, D> edge1 = Normalize(
             points[triangle2[(shared + 1) % D]] - points[triangle2[shared]]);
         hrleVectorType<T, D> edge2 = Normalize(
@@ -191,10 +191,9 @@ template <class T, int D> class ConvexHull {
       }
 
       // go over other nodes of triangle1
-      for (unsigned j = 0; j < otherNodes.size(); ++j) {
-        hrleVectorType<T, D> vector =
-            Normalize(points[triangle1[otherNodes[j]]] -
-                      points[triangle2[sharedNodes[i]]]);
+      for (unsigned int &otherNode : otherNodes) {
+        hrleVectorType<T, D> vector = Normalize(points[triangle1[otherNode]] -
+                                                points[triangle2[sharedNode]]);
 
         if (DotProduct(vector, averageVector) > centerEdgeDot + 1e-9) {
           return true;
@@ -270,7 +269,7 @@ template <class T, int D> class ConvexHull {
   }
 
 public:
-  ConvexHull() {}
+  ConvexHull() = default;
 
   ConvexHull(SmartPointer<Mesh<T>> passedMesh,
              SmartPointer<PointCloud<T, D>> passedPointCloud)
@@ -312,14 +311,14 @@ public:
         // need to check if there is second point at same z coord
         int currentPointIndex = -1;
         double hullMetric = std::numeric_limits<double>::max();
-        for (unsigned i = 0; i < points.size(); ++i) {
+        for (int i = 0; i < points.size(); ++i) {
           if (i == currentIndex)
             continue;
           if (std::abs(points[i][2] - points[currentIndex][2]) < 1e-7) {
             auto diff = points[currentIndex] - points[i];
             // choose closest point if points are in z plane
-            double currentHullMetric = DotProduct(diff, diff);
-            if (currentHullMetric < hullMetric) {
+            if (const double currentHullMetric = DotProduct(diff, diff);
+                currentHullMetric < hullMetric) {
               hullMetric = currentHullMetric;
               currentPointIndex = i;
             }
@@ -347,7 +346,7 @@ public:
     }
 
     // until there are no more edges to check
-    while (remainingEdges.size() != 0) {
+    while (!remainingEdges.empty()) {
       // for all points in the cloud
       EdgeType currentEdge = remainingEdges.back();
       remainingEdges.pop_back();

@@ -13,10 +13,10 @@ namespace lsInternal {
 
 using namespace viennacore;
 
-/// Engquist osher integration scheme based on the
+/// Engquist-Osher integration scheme based on the
 /// upwind integration scheme. Offers high performance
 /// but lower accuracy for complex velocity fields.
-template <class T, int D, int order> class EnquistOsher {
+template <class T, int D, int order> class EngquistOsher {
   SmartPointer<viennals::Domain<T, D>> levelSet;
   SmartPointer<viennals::VelocityField<T>> velocities;
   hrleSparseStarIterator<hrleDomain<T, D>, order> neighborIterator;
@@ -30,9 +30,9 @@ public:
     viennals::Expand<T, D>(passedlsDomain, 2 * order + 1).apply();
   }
 
-  EnquistOsher(SmartPointer<viennals::Domain<T, D>> passedlsDomain,
-               SmartPointer<viennals::VelocityField<T>> vel,
-               bool calcNormal = true)
+  EngquistOsher(SmartPointer<viennals::Domain<T, D>> passedlsDomain,
+                SmartPointer<viennals::VelocityField<T>> vel,
+                bool calcNormal = true)
       : levelSet(passedlsDomain), velocities(vel),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>, order>(
             levelSet->getDomain())),
@@ -165,7 +165,7 @@ public:
   }
 
   void reduceTimeStepHamiltonJacobi(double &MaxTimeStep,
-                                    hrleCoordType gridDelta) {}
+                                    hrleCoordType gridDelta) const {}
 };
 
 } // namespace lsInternal

@@ -9,7 +9,7 @@ class MarchingCubes {
   //                                             0x5, 0xc, 0xc, 0x5, 0xf, 0x6,
   //                                             0xa, 0x3, 0x9, 0x0};
 
-  const int triTable2[16][5] = {
+  static constexpr int triTable2[16][5] = {
       {-1, -1, -1, -1, -1}, {0, 3, -1, -1, -1},  {1, 0, -1, -1, -1},
       {1, 3, -1, -1, -1},   {2, 1, -1, -1, -1},  {0, 3, 2, 1, -1},
       {2, 0, -1, -1, -1},   {2, 3, -1, -1, -1},
@@ -46,7 +46,7 @@ class MarchingCubes {
   //     0xf00, 0xe09, 0xd03, 0xc0a, 0xb06, 0xa0f, 0x905, 0x80c, 0x70c, 0x605,
   //     0x50f, 0x406, 0x30a, 0x203, 0x109, 0x000};
 
-  const int triTable3[256][16] = {
+  static constexpr int triTable3[256][16] = {
       {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
       {0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
       {0, 1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -304,12 +304,12 @@ class MarchingCubes {
       {0, 3, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
       {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}};
 
-  const unsigned int mapCorners[8] = {0, 1, 3, 2, 4, 5, 7, 6};
+  static constexpr unsigned int mapCorners[8] = {0, 1, 3, 2, 4, 5, 7, 6};
 
 public:
   /// signs = signs of the corners in
   /// lexicographic order (1bit per corner)
-  const int *polygonize2d(unsigned int signs) {
+  static const int *polygonize2d(unsigned int signs) {
     unsigned int cubeindex = 0;
 
     for (unsigned int i = 0; i < 4; i++)
@@ -321,7 +321,7 @@ public:
 
   /// signs = signs of the corners in
   /// lexicographic order (1bit per corner)
-  const int *polygonize3d(unsigned int signs) {
+  static const int *polygonize3d(unsigned int signs) {
     unsigned int cubeindex = 0;
 
     for (unsigned int i = 0; i < 8; i++)

@@ -54,7 +54,7 @@ template <class T, int D> class Prune {
   }
 
 public:
-  Prune() {}
+  Prune() = default;
 
   Prune(SmartPointer<Domain<T, D>> passedlsDomain) : levelSet(passedlsDomain){};
 

@@ -41,7 +41,7 @@ template <class T, int D, int order> class StencilLocalLaxFriedrichsScalar {
   hrleVectorType<T, D>
   calculateNormal(const hrleVectorType<hrleIndexType, D> &offset) {
     hrleVectorType<T, D> normal;
-    const int startIndex = -1;
+    constexpr int startIndex = -1;
     T modulus = 0.;
 
     for (unsigned i = 0; i < D; ++i) {
@@ -245,8 +245,8 @@ public:
             localCoordArray, material, normal_p,
             neighborIterator.getCenter().getPointId());
         // now calculate scalar product of normal vector with velocity
-        for (unsigned i = 0; i < D; ++i) {
-          localScalarVelocity += localVectorVelocity[i] * normal[i];
+        for (unsigned dir = 0; dir < D; ++dir) {
+          localScalarVelocity += localVectorVelocity[dir] * normal[dir];
         }
 
         const T DN = std::abs(normalEpsilon * scalarVelocity);
@@ -285,9 +285,9 @@ public:
             toifl += gradient[idx] * velocityDelta[idx];
           }
           // denominator: |grad(phi)|^2
-          T denominator = Norm2(gradient);
-          monti *= velocityDelta[k] / denominator;
-          toifl *= -gradient[k] / denominator;
+          T denom = Norm2(gradient);
+          monti *= velocityDelta[k] / denom;
+          toifl *= -gradient[k] / denom;
 
           // Osher (constant V) term
           T osher = localScalarVelocity * normal[k];
@@ -327,8 +327,8 @@ public:
   }
 
   void reduceTimeStepHamiltonJacobi(double &MaxTimeStep,
-                                    hrleCoordType gridDelta) {
-    const double alpha_maxCFL = 1.0;
+                                    hrleCoordType gridDelta) const {
+    constexpr double alpha_maxCFL = 1.0;
     // second time step test, based on alphas
 
     double timeStep = 0;
@@ -371,7 +371,7 @@ void PrepareStencilLocalLaxFriedrichs(
   // always resize, so it has the correct number of elements
   isDepo.resize(levelSets.size(), false);
 
-  // Begin with biggest level set (top LS wrapped around all others)
+  // Begin with the biggest level set (top LS wrapped around all others)
   auto layerIt = levelSets.rbegin();
 
   // make empty LS which will contain the final top layer

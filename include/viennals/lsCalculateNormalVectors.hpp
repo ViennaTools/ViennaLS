@@ -30,7 +30,7 @@ template <class T, int D> class CalculateNormalVectors {
 public:
   static constexpr char normalVectorsLabel[] = "Normals";
 
-  CalculateNormalVectors() {}
+  CalculateNormalVectors() = default;
 
   CalculateNormalVectors(SmartPointer<Domain<T, D>> passedLevelSet,
                          T passedMaxValue = 0.5)

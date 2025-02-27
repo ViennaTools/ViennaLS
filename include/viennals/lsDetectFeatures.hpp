@@ -2,7 +2,6 @@
 
 #include <hrleCartesianPlaneIterator.hpp>
 #include <hrleSparseBoxIterator.hpp>
-#include <hrleSparseStarIterator.hpp>
 #include <lsCalculateNormalVectors.hpp>
 #include <lsCurvatureFormulas.hpp>
 #include <lsDomain.hpp>
@@ -35,7 +34,7 @@ template <class T, int D> class DetectFeatures {
 public:
   static constexpr char featureMarkersLabel[] = "FeatureMarkers";
 
-  DetectFeatures() {}
+  DetectFeatures() = default;
 
   DetectFeatures(SmartPointer<Domain<T, D>> passedLevelSet)
       : levelSet(passedLevelSet) {}
@@ -46,8 +45,8 @@ public:
 
   DetectFeatures(SmartPointer<Domain<T, D>> passedLevelSet, T passedLimit,
                  FeatureDetectionEnum passedMethod)
-      : levelSet(passedLevelSet), flatLimit(passedLimit),
-        flatLimit2(flatLimit * flatLimit), method(passedMethod) {}
+      : levelSet(passedLevelSet), method(passedMethod), flatLimit(passedLimit),
+        flatLimit2(flatLimit * flatLimit) {}
 
   void setDetectionThreshold(T threshold) {
     flatLimit = threshold;

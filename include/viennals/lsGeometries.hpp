@@ -15,7 +15,7 @@ public:
   hrleVectorType<T, D> origin = hrleVectorType<T, D>(T(0));
   T radius = 0.;
 
-  Sphere() {}
+  Sphere() = default;
 
   Sphere(hrleVectorType<T, D> passedOrigin, T passedRadius)
       : origin(passedOrigin), radius(passedRadius) {}
@@ -36,7 +36,7 @@ public:
   hrleVectorType<T, D> origin = hrleVectorType<T, D>(T(0));
   hrleVectorType<T, D> normal = hrleVectorType<T, D>(T(0));
 
-  Plane() {}
+  Plane() = default;
 
   Plane(hrleVectorType<T, D> passedOrigin, hrleVectorType<T, D> passedNormal)
       : origin(passedOrigin), normal(passedNormal) {}
@@ -58,7 +58,7 @@ public:
   hrleVectorType<T, D> minCorner = hrleVectorType<T, D>(T(0));
   hrleVectorType<T, D> maxCorner = hrleVectorType<T, D>(T(0));
 
-  Box() {}
+  Box() = default;
 
   Box(hrleVectorType<T, D> passedMinCorner,
       hrleVectorType<T, D> passedMaxCorner)
@@ -90,7 +90,7 @@ public:
   /// radius of the top of the cylinder
   T topRadius = 0.;
 
-  Cylinder() {}
+  Cylinder() = default;
 
   Cylinder(hrleVectorType<T, D> passedOrigin,
            hrleVectorType<T, D> passedAxisDirection, T passedHeight,
@@ -122,7 +122,7 @@ template <class T, int D> class PointCloud {
 public:
   std::vector<hrleVectorType<T, D>> points;
 
-  PointCloud() {}
+  PointCloud() = default;
 
   PointCloud(std::vector<hrleVectorType<T, D>> passedPoints)
       : points(passedPoints) {}

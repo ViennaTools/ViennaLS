@@ -21,10 +21,10 @@ template <class T, int D> class FromMesh {
   bool sortPointList = true;
 
 public:
-  FromMesh(){};
+  FromMesh() = default;
 
   FromMesh(SmartPointer<Domain<T, D>> passedLevelSet,
-           const SmartPointer<Mesh<T>> passedMesh)
+           SmartPointer<Mesh<T>> passedMesh)
       : levelSet(passedLevelSet), mesh(passedMesh) {}
 
   void setLevelSet(SmartPointer<Domain<T, D>> passedlsDomain) {
@@ -146,7 +146,7 @@ public:
       // choose correct next index
       if (pointDataIt == pointDataEnd) {
         nextIndex = grid.getMaxGridPoint();
-        nextIndex[D - 1]++;
+        ++nextIndex[D - 1];
       } else {
         for (unsigned i = 0; i < D; ++i) {
           nextIndex[i] = std::round(pointDataIt->at(i) / gridDelta);
@@ -158,7 +158,7 @@ public:
       // run inbetween
       for (int q = 0; q < D; q++) {
         hrleVectorType<hrleIndexType, D> tmp = currentIndex;
-        tmp[q]++;
+        ++tmp[q];
         if (tmp[q] > grid.getMaxGridPoint(q))
           continue;
         for (int r = 0; r < q; ++r)

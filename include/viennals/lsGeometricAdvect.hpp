@@ -1,10 +1,6 @@
 #pragma once
 
-#include <unordered_map>
-
-#include <hrleDenseIterator.hpp>
 #include <hrleSparseIterator.hpp>
-#include <hrleSparseStarIterator.hpp>
 #include <hrleVectorType.hpp>
 
 #include <lsBooleanOperation.hpp>
@@ -66,7 +62,7 @@ template <class T, int D> class GeometricAdvect {
   }
 
 public:
-  GeometricAdvect() {}
+  GeometricAdvect() = default;
 
   template <class DistType,
             lsConcepts::IsBaseOf<GeometricAdvectDistribution<hrleCoordType, D>,
@@ -212,7 +208,7 @@ public:
       auto valueIt = values->begin();
 
       auto newSurfaceMesh = SmartPointer<Mesh<hrleCoordType>>::New();
-      typename PointData<hrleCoordType>::ScalarDataType newValues;
+      PointData<hrleCoordType>::ScalarDataType newValues;
       hrleConstSparseIterator<DomainType> maskIt(maskDomain);
       for (auto &node : surfaceMesh->getNodes()) {
         hrleVectorType<hrleIndexType, D> index;
@@ -227,7 +223,7 @@ public:
           newSurfaceMesh->insertNextNode(node);
           newValues.push_back(*valueIt);
           // insert vertex
-          std::array<unsigned, 1> vertex;
+          std::array<unsigned, 1> vertex{};
           vertex[0] = newSurfaceMesh->nodes.size();
           newSurfaceMesh->insertNextVertex(vertex);
         }
@@ -377,9 +373,8 @@ public:
 
         unsigned long currentPointId = 0;
         // now check which surface points contribute to currentIndex
-        for (typename SurfaceNodesType::const_iterator surfIt =
-                 surfaceNodes.begin();
-             surfIt != surfaceNodes.end(); ++surfIt, ++currentPointId) {
+        for (auto surfIt = surfaceNodes.begin(); surfIt != surfaceNodes.end();
+             ++surfIt, ++currentPointId) {
 
           auto &currentNode = *surfIt;
 
@@ -468,8 +463,8 @@ public:
             newPoints[p].push_back(std::make_pair(currentIndex, oldValue));
           }
         }
-      } // domainBounds for
-    }   // parallel region
+      }
+    }
 
     // copy all points into the first vector
     {
@@ -495,7 +490,7 @@ public:
         }
 
         mesh->insertNextNode(node);
-        std::array<unsigned, 1> vertex;
+        std::array<unsigned, 1> vertex{};
         vertex[0] = mesh->vertices.size();
         mesh->insertNextVertex(vertex);
         scalarData.push_back(it->second);

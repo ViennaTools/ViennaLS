@@ -31,11 +31,11 @@ public:
   typedef hrleGrid<D> GridType;
   typedef hrleDomain<T, D> DomainType;
   typedef BoundaryConditionEnum BoundaryType;
-  typedef typename std::vector<std::pair<hrleVectorType<hrleIndexType, D>, T>>
+  typedef std::vector<std::pair<hrleVectorType<hrleIndexType, D>, T>>
       PointValueVectorType;
-  typedef typename std::vector<std::array<T, D>> NormalVectorType;
+  typedef std::vector<std::array<T, D>> NormalVectorType;
   typedef PointData<T> PointDataType;
-  typedef typename std::vector<bool> VoidPointMarkersType;
+  typedef std::vector<bool> VoidPointMarkersType;
 
 private:
   // PRIVATE MEMBER VARIABLES
@@ -67,7 +67,7 @@ public:
     domain.deepCopy(grid, DomainType(grid, T(POS_VALUE)));
   }
 
-  Domain(hrleCoordType *bounds, BoundaryType *boundaryConditions,
+  Domain(const hrleCoordType *bounds, BoundaryType *boundaryConditions,
          hrleCoordType gridDelta = 1.0) {
     hrleIndexType gridMin[D], gridMax[D];
     for (unsigned i = 0; i < D; ++i) {

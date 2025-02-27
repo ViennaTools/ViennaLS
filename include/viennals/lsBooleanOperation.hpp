@@ -265,7 +265,7 @@ private:
   }
 
 public:
-  BooleanOperation() {}
+  BooleanOperation() = default;
 
   BooleanOperation(
       SmartPointer<Domain<T, D>> passedlsDomain,

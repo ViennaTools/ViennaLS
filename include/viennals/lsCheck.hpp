@@ -25,8 +25,8 @@ template <class T, int D> class Check {
   std::string errors = "Level Set has not been checked yet!";
   bool printMessage = false;
 
-  std::string getDirectionString(int i) {
-    std::string result = "";
+  static std::string getDirectionString(int i) {
+    std::string result;
     if (i < D) {
       result += "-";
     } else {
@@ -48,7 +48,7 @@ template <class T, int D> class Check {
 
   bool isNegative(T val) { return val <= -std::numeric_limits<T>::epsilon(); }
 
-  int GetStatusFromDistance(T value) {
+  static int GetStatusFromDistance(T value) {
     int x = static_cast<int>(value);
     if (value >= 0.) {
       return (value <= static_cast<T>(x) + static_cast<T>(0.5)) ? x : x + 1;
@@ -58,7 +58,7 @@ template <class T, int D> class Check {
   }
 
 public:
-  Check() {}
+  Check() = default;
 
   Check(SmartPointer<Domain<T, D>> passedLevelSet, bool print = false)
       : levelSet(passedLevelSet), printMessage(print) {}
