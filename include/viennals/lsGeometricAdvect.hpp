@@ -463,8 +463,8 @@ public:
             newPoints[p].push_back(std::make_pair(currentIndex, oldValue));
           }
         }
-      } // domainBounds for
-    } // parallel region
+      }
+    }
 
     // copy all points into the first vector
     {
