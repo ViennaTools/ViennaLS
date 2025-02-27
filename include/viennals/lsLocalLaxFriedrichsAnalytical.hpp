@@ -32,8 +32,8 @@ template <class T, int D, int order> class LocalLaxFriedrichsAnalytical {
     return (diffPos + diffNeg) * 0.5;
   }
 
- static void incrementIndices(hrleVectorType<hrleIndexType, D> &index,
-                        hrleIndexType minIndex, hrleIndexType maxIndex) {
+  static void incrementIndices(hrleVectorType<hrleIndexType, D> &index,
+                               hrleIndexType minIndex, hrleIndexType maxIndex) {
     unsigned dir = 0;
     for (; dir < D - 1; ++dir) {
       if (index[dir] < maxIndex)

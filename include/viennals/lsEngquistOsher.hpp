@@ -31,8 +31,8 @@ public:
   }
 
   EngquistOsher(SmartPointer<viennals::Domain<T, D>> passedlsDomain,
-               SmartPointer<viennals::VelocityField<T>> vel,
-               bool calcNormal = true)
+                SmartPointer<viennals::VelocityField<T>> vel,
+                bool calcNormal = true)
       : levelSet(passedlsDomain), velocities(vel),
         neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>, order>(
             levelSet->getDomain())),

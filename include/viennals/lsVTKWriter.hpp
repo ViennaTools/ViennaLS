@@ -12,6 +12,7 @@
 
 #ifdef VIENNALS_USE_VTK
 #include <vtkCellArray.h>
+#include <vtkCellData.h>
 #include <vtkFloatArray.h>
 #include <vtkPointData.h>
 #include <vtkPoints.h>

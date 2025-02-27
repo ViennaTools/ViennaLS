@@ -329,7 +329,6 @@ private:
         }
         mesh->hexas.push_back(elements);
       } break;
-      default:
       }
     }
 
