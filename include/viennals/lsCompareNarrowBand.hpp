@@ -28,7 +28,7 @@ class CompareNarrowBand {
   bool checkAndCalculateBounds() {
     if (levelSetTarget == nullptr || levelSetSample == nullptr) {
       Logger::getInstance()
-          .addWarning("Missing level set in CompareNarrowBand.")
+          .addError("Missing level set in CompareNarrowBand.")
           .print();
       return false;
     }
@@ -39,7 +39,7 @@ class CompareNarrowBand {
     
     if (gridTarget.getGridDelta() != gridSample.getGridDelta()) {
       Logger::getInstance()
-          .addWarning("Grid delta mismatch in CompareNarrowBand. The grid deltas of the two level sets must be equal.")
+          .addError("Grid delta mismatch in CompareNarrowBand. The grid deltas of the two level sets must be equal.")
           .print();
       return false;
     }
@@ -55,7 +55,7 @@ class CompareNarrowBand {
     
     if (targetMinX != sampleMinX || targetMaxX != sampleMaxX) {
       Logger::getInstance()
-          .addWarning("X extent mismatch in CompareNarrowBand. The x extents of both level sets must be equal.")
+          .addError("X extent mismatch in CompareNarrowBand. The x extents of both level sets must be equal.")
           .print();
       return false;
     }
