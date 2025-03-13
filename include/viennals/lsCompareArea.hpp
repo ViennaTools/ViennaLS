@@ -5,6 +5,7 @@
 
 #include <hrleDenseCellIterator.hpp>
 #include <lsDomain.hpp>
+#include <lsMesh.hpp>
 #include <lsPreCompileMacros.hpp>
 
 namespace viennals {
@@ -12,7 +13,12 @@ namespace viennals {
 using namespace viennacore;
 
 /// Computes an estimate of the area where two level sets differ.
-/// Custom increment values can be set for specific x and y ranges.
+/// The area is calculated by iterating through the bounding box of the two
+/// level sets and comparing the cell values. The grid delta is used as the unit
+/// of area. Custom increment values can be set for specific x and y ranges,
+/// allowing to count certain areas multiple times or skip them. Optionally, a
+/// passed mesh can be filled with the area information, allowing for
+/// visualization of the differences.
 template <class T, int D> class CompareArea {
   typedef typename Domain<T, D>::DomainType hrleDomainType;
 
@@ -37,6 +43,14 @@ template <class T, int D> class CompareArea {
   unsigned short int defaultIncrement = 1;
 
   double gridDelta = 0.0;
+
+  // Mesh output related members
+  SmartPointer<Mesh<T>> outputMesh = nullptr;
+  bool generateMesh = false;
+  std::unordered_map<hrleVectorType<hrleIndexType, D>, size_t,
+                     typename hrleVectorType<hrleIndexType, D>::hash>
+      pointIdMapping;
+  size_t currentPointId = 0;
 
   bool checkAndCalculateBounds() {
     if (levelSetTarget == nullptr || levelSetSample == nullptr) {
@@ -133,6 +147,30 @@ public:
     useCustomYIncrement = true;
   }
 
+  /// Set the output mesh where difference areas will be stored
+  void setOutputMesh(SmartPointer<Mesh<T>> passedMesh) {
+    outputMesh = passedMesh;
+  }
+
+  /// Apply the comparison and generate a mesh visualization of the differences.
+  /// Each cell in the mesh will have a material ID:
+  ///   0: Areas where both level sets are inside
+  ///   1: Areas where only one level set is inside (mismatched areas)
+  void applyWithMeshOutput(SmartPointer<Mesh<T>> passedMesh) {
+    if (passedMesh == nullptr) {
+      Logger::getInstance()
+          .addWarning("No mesh was passed to CompareArea::applyWithMeshOutput.")
+          .print();
+      return;
+    }
+
+    outputMesh = passedMesh;
+    outputMesh->clear();
+    generateMesh = true;
+    apply();
+    generateMesh = false;
+  }
+
   /// Returns the computed area mismatch.
   double getAreaMismatch() const {
     return static_cast<double>(cellCount) * gridDelta * gridDelta;
@@ -170,6 +208,34 @@ public:
     cellCount = 0;
     customCellCount = 0;
 
+    // Initialize mesh-related variables if generating a mesh
+    if (generateMesh && outputMesh != nullptr) {
+      // Save the extent of the resulting mesh
+      for (unsigned i = 0; i < D; ++i) {
+        outputMesh->minimumExtent[i] = std::numeric_limits<T>::max();
+        outputMesh->maximumExtent[i] = std::numeric_limits<T>::lowest();
+      }
+
+      pointIdMapping.clear();
+      currentPointId = 0;
+
+      // Prepare mesh for material IDs and custom values
+      outputMesh->cellData.insertNextScalarData(
+          typename PointData<T>::ScalarDataType(), "Material");
+      auto &materialIds = *(outputMesh->cellData.getScalarData(0));
+
+      // Add a second scalar field for custom increment values
+      outputMesh->cellData.insertNextScalarData(
+          typename PointData<T>::ScalarDataType(), "CustomIncrement");
+      auto &incrementValues = *(outputMesh->cellData.getScalarData(1));
+    }
+
+    // Reference to the material IDs and increment values
+    auto materialIdPtr =
+        generateMesh ? &(*(outputMesh->cellData.getScalarData(0))) : nullptr;
+    auto incrementValuesPtr =
+        generateMesh ? &(*(outputMesh->cellData.getScalarData(1))) : nullptr;
+
     // Iterate through the domain defined by the bounding box
     for (; itTarget.getIndices() < maxIndex; itTarget.next()) {
       itSample.goToIndicesSequential(itTarget.getIndices());
@@ -186,36 +252,118 @@ public:
       centerValueTarget /= (1 << D);
       centerValueSample /= (1 << D);
 
-      // Determine if cell is inside and outside for level sets
-      bool isDifferent = (centerValueTarget <= 0.) != (centerValueSample <= 0.);
+      // Determine if cell is inside for each level set
+      bool insideTarget = (centerValueTarget <= 0.);
+      bool insideSample = (centerValueSample <= 0.);
+      bool isDifferent = insideTarget != insideSample;
 
-      // If one cell is inside and the other is outside, apply the increment
+      // Calculate range checks once per cell
+      bool inXRange = useCustomXIncrement &&
+                      (itTarget.getIndices()[0] * gridDelta >= xRangeMin &&
+                       itTarget.getIndices()[0] * gridDelta <= xRangeMax);
+      bool inYRange = useCustomYIncrement &&
+                      (itTarget.getIndices()[1] * gridDelta >= yRangeMin &&
+                       itTarget.getIndices()[1] * gridDelta <= yRangeMax);
+
+      // Calculate increment to add based on ranges
+      unsigned short int incrementToAdd = defaultIncrement;
+      if (inXRange && inYRange) {
+        // Apply both increments
+        incrementToAdd = customXIncrement + customYIncrement;
+      } else if (inXRange) {
+        incrementToAdd = customXIncrement;
+      } else if (inYRange) {
+        incrementToAdd = customYIncrement;
+      }
+
+      // If cells differ, update the counters
       if (isDifferent) {
         // Always increment simple cell count by 1
         cellCount += 1;
 
-        // For custom cell count, apply special rules
-        unsigned short int incrementToAdd = defaultIncrement;
-
-        bool inXRange = useCustomXIncrement &&
-                        (itTarget.getIndices()[0] * gridDelta >= xRangeMin &&
-                         itTarget.getIndices()[0] * gridDelta <= xRangeMax);
-        bool inYRange = useCustomYIncrement &&
-                        (itTarget.getIndices()[1] * gridDelta >= yRangeMin &&
-                         itTarget.getIndices()[1] * gridDelta <= yRangeMax);
-
-        if (inXRange && inYRange) {
-          // Apply both increments
-          incrementToAdd = customXIncrement + customYIncrement;
-        } else if (inXRange) {
-          incrementToAdd = customXIncrement;
-        } else if (inYRange) {
-          incrementToAdd = customYIncrement;
-        }
-
+        // For custom cell count, apply the calculated increment
         customCellCount += incrementToAdd;
       }
+
+      // For mesh generation, process all cells where at least one level set is
+      // inside
+      if (generateMesh && (insideTarget || insideSample)) {
+        // Material ID: 0 for matching inside, 1 for mismatched
+        int materialId = isDifferent ? 1 : 0;
+
+        std::array<unsigned, 1 << D> voxel;
+        bool addVoxel = true;
+
+        // Insert all points of voxel into pointList
+        for (unsigned i = 0; i < (1 << D); ++i) {
+          hrleVectorType<hrleIndexType, D> index;
+          for (unsigned j = 0; j < D; ++j) {
+            index[j] =
+                itTarget.getIndices(j) + itTarget.getCorner(i).getOffset()[j];
+            if (index[j] > maxIndex[j]) {
+              addVoxel = false;
+              break;
+            }
+          }
+          if (addVoxel) {
+            auto pointIdValue = std::make_pair(index, currentPointId);
+            auto pointIdPair = pointIdMapping.insert(pointIdValue);
+            voxel[i] = pointIdPair.first->second;
+            if (pointIdPair.second) {
+              ++currentPointId;
+            }
+          } else {
+            break;
+          }
+        }
+
+        if (addVoxel) {
+          if constexpr (D == 3) {
+            std::array<unsigned, 8> hexa{voxel[0], voxel[1], voxel[3],
+                                         voxel[2], voxel[4], voxel[5],
+                                         voxel[7], voxel[6]};
+            outputMesh->hexas.push_back(hexa);
+          } else if constexpr (D == 2) {
+            std::array<unsigned, 4> quad{voxel[0], voxel[1], voxel[3],
+                                         voxel[2]};
+            outputMesh->tetras.push_back(quad);
+          } else if constexpr (D == 1) {
+            std::array<unsigned, 2> line{voxel[0], voxel[1]};
+            outputMesh->lines.push_back(line);
+          }
+
+          materialIdPtr->push_back(materialId);
+
+          // Store increment value (0 if not different)
+          incrementValuesPtr->push_back(
+              isDifferent ? static_cast<T>(incrementToAdd) : 0);
+        }
+      }
     }
+
+    // Finalize mesh if generating one
+    if (generateMesh && outputMesh != nullptr && !pointIdMapping.empty()) {
+      // Insert points into the mesh
+      outputMesh->nodes.resize(pointIdMapping.size());
+      for (auto it = pointIdMapping.begin(); it != pointIdMapping.end(); ++it) {
+        std::array<T, 3> coords{};
+        for (unsigned i = 0; i < D; ++i) {
+          coords[i] = gridDelta * it->first[i];
+
+          if (coords[i] < outputMesh->minimumExtent[i]) {
+            outputMesh->minimumExtent[i] = coords[i];
+          } else if (coords[i] > outputMesh->maximumExtent[i]) {
+            outputMesh->maximumExtent[i] = coords[i];
+          }
+        }
+        outputMesh->nodes[it->second] = coords;
+      }
+    }
+
+    // Calculate the mismatched area based on the cell count
+    mismatchedArea = static_cast<double>(cellCount) * gridDelta * gridDelta;
+    customMismatchedArea =
+        static_cast<double>(customCellCount) * gridDelta * gridDelta;
   }
 };
 
