@@ -24,6 +24,8 @@
 #include <lsCalculateNormalVectors.hpp>
 #include <lsCalculateVisibilities.hpp>
 #include <lsCheck.hpp>
+#include <lsCompareArea.hpp>
+#include <lsCompareNarrowBand.hpp>
 #include <lsConvexHull.hpp>
 #include <lsDetectFeatures.hpp>
 #include <lsDomain.hpp>
@@ -351,6 +353,85 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("setLevelSet", &Check<T, D>::setLevelSet,
            "Set levelset for which to calculate normal vectors.")
       .def("apply", &Check<T, D>::apply, "Perform check.");
+
+  // CompareArea
+  pybind11::class_<CompareArea<T, D>, SmartPointer<CompareArea<T, D>>>(
+      module, "CompareArea")
+      // constructors
+      .def(pybind11::init(&SmartPointer<CompareArea<T, D>>::New<>))
+      .def(pybind11::init(
+          &SmartPointer<CompareArea<T, D>>::New<SmartPointer<Domain<T, D>> &,
+                                                SmartPointer<Domain<T, D>> &>))
+      // methods
+      .def("setLevelSetTarget", &CompareArea<T, D>::setLevelSetTarget,
+           "Sets the target level set.")
+      .def("setLevelSetSample", &CompareArea<T, D>::setLevelSetSample,
+           "Sets the sample level set.")
+      .def("setDefaultIncrement", &CompareArea<T, D>::setDefaultIncrement,
+           "Set default increment value")
+      .def("setXRangeAndIncrement", &CompareArea<T, D>::setXRangeAndIncrement,
+           "Sets the x-range and custom increment value")
+      .def("setYRangeAndIncrement", &CompareArea<T, D>::setYRangeAndIncrement,
+           "Sets the y-range and custom increment value")
+      .def("setOutputMesh", &CompareArea<T, D>::setOutputMesh,
+           "Set the output mesh where difference areas will be stored")
+      .def("getAreaMismatch", &CompareArea<T, D>::getAreaMismatch,
+           "Returns the computed area mismatch.")
+      .def(
+          "getCustomAreaMismatch", &CompareArea<T, D>::getCustomAreaMismatch,
+          "Returns the computed area mismatch, with custom increments applied.")
+      .def("getCellCount", &CompareArea<T, D>::getCellCount,
+           "Returns the number of cells where the level sets differ.")
+      .def("getCustomCellCount", &CompareArea<T, D>::getCustomCellCount,
+           "Returns the number of cells where the level sets differ, with "
+           "custom increments applied.")
+      .def("apply", &CompareArea<T, D>::apply,
+           "Computes the area difference between the two level sets.")
+      .def("applyWithMeshOutput", &CompareArea<T, D>::applyWithMeshOutput,
+           "Apply the comparison and generate a mesh visualization of the "
+           "differences.");
+
+  // CompareNarrowBand
+  pybind11::class_<CompareNarrowBand<T, D>,
+                   SmartPointer<CompareNarrowBand<T, D>>>(module,
+                                                          "CompareNarrowBand")
+      // constructors
+      .def(pybind11::init(&SmartPointer<CompareNarrowBand<T, D>>::New<>))
+      .def(pybind11::init(
+          &SmartPointer<CompareNarrowBand<T, D>>::New<
+              SmartPointer<Domain<T, D>> &, SmartPointer<Domain<T, D>> &>))
+      // methods
+      .def("setLevelSetTarget", &CompareNarrowBand<T, D>::setLevelSetTarget,
+           "Sets the target level set.")
+      .def("setlevelSetSample", &CompareNarrowBand<T, D>::setlevelSetSample,
+           "Sets the sample level set.")
+      .def("setXRange", &CompareNarrowBand<T, D>::setXRange,
+           "Set the x-coordinate range to restrict the comparison area")
+      .def("setYRange", &CompareNarrowBand<T, D>::setYRange,
+           "Set the y-coordinate range to restrict the comparison area")
+      .def("clearXRange", &CompareNarrowBand<T, D>::clearXRange,
+           "Clear the x-range restriction")
+      .def("clearYRange", &CompareNarrowBand<T, D>::clearYRange,
+           "Clear the y-range restriction")
+      .def("setOutputMesh", &CompareNarrowBand<T, D>::setOutputMesh,
+           "Set the output mesh where difference values will be stored")
+      .def("setOutputSquaredDifferences",
+           &CompareNarrowBand<T, D>::setOutputSquaredDifferences,
+           "Set whether to output squared differences (true) or raw "
+           "differences (false)")
+      .def("apply", &CompareNarrowBand<T, D>::apply,
+           "Apply the comparison and calculate the sum of squared differences.")
+      .def("applyWithMeshOutput", &CompareNarrowBand<T, D>::applyWithMeshOutput,
+           "Apply with mesh output - convenience method that ensures the mesh "
+           "is generated")
+      .def("getSumSquaredDifferences",
+           &CompareNarrowBand<T, D>::getSumSquaredDifferences,
+           "Return the sum of squared differences calculated by apply().")
+      .def("getNumPoints", &CompareNarrowBand<T, D>::getNumPoints,
+           "Return the number of points used in the comparison.")
+      .def("getRMSE", &CompareNarrowBand<T, D>::getRMSE,
+           "Calculate the root mean square error from previously computed "
+           "values.");
 
   // ConvexHull
   pybind11::class_<ConvexHull<T, D>, SmartPointer<ConvexHull<T, D>>>(
