@@ -3,6 +3,7 @@
 #include <cmath>
 #include <hrleDenseCellIterator.hpp>
 #include <lsDomain.hpp>
+#include <lsExpand.hpp>
 #include <lsPreCompileMacros.hpp>
 
 namespace viennals {
@@ -28,7 +29,7 @@ template <class T, int D> class CompareNarrowBand {
   bool checkAndCalculateBounds() {
     if (levelSetTarget == nullptr || levelSetSample == nullptr) {
       Logger::getInstance()
-          .addError("Missing level set in CompareNarrowBand.")
+          .addWarning("Missing level set in CompareNarrowBand.")
           .print();
       return false;
     }
@@ -39,8 +40,8 @@ template <class T, int D> class CompareNarrowBand {
 
     if (gridTarget.getGridDelta() != gridSample.getGridDelta()) {
       Logger::getInstance()
-          .addError("Grid delta mismatch in CompareNarrowBand. The grid deltas "
-                    "of the two level sets must be equal.")
+          .addWarning("Grid delta mismatch in CompareNarrowBand. The grid "
+                      "deltas of the two level sets must be equal.")
           .print();
       return false;
     }
@@ -64,10 +65,39 @@ template <class T, int D> class CompareNarrowBand {
 
     if (targetMinX != sampleMinX || targetMaxX != sampleMaxX) {
       Logger::getInstance()
-          .addError("X extent mismatch in CompareNarrowBand. The x extents of "
-                    "both level sets must be equal.")
+          .addWarning("X extent mismatch in CompareNarrowBand. The x extents "
+                      "of both level sets must be equal.")
           .print();
       return false;
+    }
+
+    // Expand the sample level set using lsExpand to a default width of 5
+    if (levelSetSample->getLevelSetWidth() < 5) {
+      Logger::getInstance()
+          .addWarning("Sample level set width is insufficient. Expanding it to "
+                      "a width of 5.")
+          .print();
+      Expand<T, D> expander;
+      expander.setLevelSet(levelSetSample);
+      expander.setWidth(5);
+      expander.apply();
+    }
+
+    // Check if target level set width is sufficient
+    if (levelSetTarget->getLevelSetWidth() <
+        levelSetSample->getLevelSetWidth() + 50) {
+      Logger::getInstance()
+          .addWarning(
+              "Target level set width is insufficient. It must exceed sample "
+              "width by least 50. \n"
+              " CORRECTION: The expansion was performed. \n"
+              "ALTERNATIVE: Alternatively, please expand the target yourself "
+              "using lsExpand before passing it to this function. \n")
+          .print();
+      Expand<T, D> expander;
+      expander.setLevelSet(levelSetTarget);
+      expander.setWidth(levelSetSample->getLevelSetWidth() + 50);
+      expander.apply();
     }
 
     // Initialize min and max indices
@@ -320,7 +350,7 @@ public:
   /// Apply with mesh output - convenience method that ensures the mesh is
   /// generated
   void applyWithMeshOutput(SmartPointer<Mesh<T>> outputMesh,
-                           bool outputSquared = false) {
+                           bool outputSquared = true) {
     setOutputMesh(outputMesh);
     setOutputSquaredDifferences(outputSquared);
     apply();
@@ -332,42 +362,10 @@ public:
   /// Return the number of points used in the comparison.
   unsigned getNumPoints() const { return numPoints; }
 
-  /// Compute the root mean square error instead of sum of squared differences
-  T applyRMSE() {
-    apply();
-    T sumSquared = sumSquaredDifferences;
-
-    // Count points that meet our criteria
-    unsigned numPoints = 0;
-
-    // Calculate the bounds for iteration - this already includes all checks
-    if (!checkAndCalculateBounds()) {
-      return 0.0;
-    }
-
-    // Set up iterators for both level sets
-    hrleConstDenseCellIterator<typename Domain<T, D>::DomainType> it(
-        levelSetTarget->getDomain(), minIndex);
-
-    // Count eligible points
-    for (; it.getIndices() < maxIndex; it.next()) {
-      T value = 0.0;
-
-      // Calculate average value at cell center
-      for (int i = 0; i < (1 << D); ++i) {
-        value += it.getCorner(i).getValue();
-      }
-      value /= (1 << D);
-
-      // Skip infinite or extreme values
-      if (std::isinf(value) || std::abs(value) > 1000) {
-        continue;
-      }
-
-      numPoints++;
-    }
-
-    return (numPoints > 0) ? std::sqrt(sumSquared / numPoints) : 0.0;
+  /// Calculate the root mean square error from previously computed values.
+  T getRMSE() const {
+    return (numPoints > 0) ? std::sqrt(sumSquaredDifferences / numPoints)
+                           : std::numeric_limits<T>::infinity();
   }
 };
 
