@@ -19,6 +19,7 @@ using namespace viennacore;
 /// allowing to count certain areas multiple times or skip them. Optionally, a
 /// passed mesh can be filled with the area information, allowing for
 /// visualization of the differences.
+/// The code is currently itended for 2D level sets only.
 template <class T, int D> class CompareArea {
   typedef typename Domain<T, D>::DomainType hrleDomainType;
 

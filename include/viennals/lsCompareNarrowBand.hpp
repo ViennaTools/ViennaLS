@@ -14,6 +14,7 @@ using namespace viennacore;
 /// Calculate distance measure between two level sets by comparing their SDF
 /// values on a narrow band. Returns the sum of squared differences between
 /// corresponding grid points.
+/// The code is currently itended for 2D level sets only.
 template <class T, int D> class CompareNarrowBand {
   SmartPointer<Domain<T, D>> levelSetTarget = nullptr;
   SmartPointer<Domain<T, D>> levelSetSample = nullptr;
