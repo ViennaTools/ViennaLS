@@ -4,6 +4,7 @@
 #include <hrleDenseCellIterator.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
+#include <lsMesh.hpp>
 #include <lsPreCompileMacros.hpp>
 
 namespace viennals {
