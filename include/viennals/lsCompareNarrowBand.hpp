@@ -1,11 +1,12 @@
 #pragma once
 
-#include <cmath>
 #include <hrleDenseCellIterator.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsMesh.hpp>
 #include <lsPreCompileMacros.hpp>
+
+#include <unordered_map>
 
 namespace viennals {
 
@@ -15,7 +16,7 @@ using namespace viennacore;
 /// values on a narrow band. Returns the sum of squared differences between
 /// corresponding grid points.
 /// The code is currently itended for 2D level sets only.
-template <class T, int D> class CompareNarrowBand {
+template <class T, int D = 2> class CompareNarrowBand {
   SmartPointer<Domain<T, D>> levelSetTarget = nullptr;
   SmartPointer<Domain<T, D>> levelSetSample = nullptr;
   hrleVectorType<hrleIndexType, D> minIndex, maxIndex;
@@ -27,6 +28,14 @@ template <class T, int D> class CompareNarrowBand {
   T yRangeMax = std::numeric_limits<T>::max();
   bool useXRange = false;
   bool useYRange = false;
+
+  // Fields to store the calculation results
+  T sumSquaredDifferences = 0.0;
+  unsigned numPoints = 0;
+  bool outputSquaredDifferences = false;
+
+  // Add mesh output capability
+  SmartPointer<Mesh<T>> outputMesh = nullptr;
 
   bool checkAndCalculateBounds() {
     if (levelSetTarget == nullptr || levelSetSample == nullptr) {
@@ -79,10 +88,7 @@ template <class T, int D> class CompareNarrowBand {
           .addWarning("Sample level set width is insufficient. Expanding it to "
                       "a width of 5.")
           .print();
-      Expand<T, D> expander;
-      expander.setLevelSet(levelSetSample);
-      expander.setWidth(5);
-      expander.apply();
+      Expand<T, D>(levelSetSample, 5).apply();
     }
 
     // Check if target level set width is sufficient
@@ -96,10 +102,8 @@ template <class T, int D> class CompareNarrowBand {
               "ALTERNATIVE: Alternatively, please expand the target yourself "
               "using lsExpand before passing it to this function. \n")
           .print();
-      Expand<T, D> expander;
-      expander.setLevelSet(levelSetTarget);
-      expander.setWidth(levelSetSample->getLevelSetWidth() + 50);
-      expander.apply();
+      Expand<T, D>(levelSetTarget, levelSetSample->getLevelSetWidth() + 50)
+          .apply();
     }
 
     // Initialize min and max indices
@@ -131,12 +135,20 @@ template <class T, int D> class CompareNarrowBand {
   }
 
 public:
-  CompareNarrowBand() {}
+  CompareNarrowBand() {
+    static_assert(
+        D == 2 &&
+        "CompareNarrowBand is currently only implemented for 2D level sets.");
+  }
 
   CompareNarrowBand(SmartPointer<Domain<T, D>> passedLevelSetTarget,
                     SmartPointer<Domain<T, D>> passedlevelSetSample)
       : levelSetTarget(passedLevelSetTarget),
-        levelSetSample(passedlevelSetSample) {}
+        levelSetSample(passedlevelSetSample) {
+    static_assert(
+        D == 2 &&
+        "CompareNarrowBand is currently only implemented for 2D level sets.");
+  }
 
   void setLevelSetTarget(SmartPointer<Domain<T, D>> passedLevelSet) {
     levelSetTarget = passedLevelSet;
@@ -174,20 +186,12 @@ public:
     yRangeMax = std::numeric_limits<T>::max();
   }
 
-  // Fields to store the calculation results
-  T sumSquaredDifferences = 0.0;
-  unsigned numPoints = 0;
-
-  // Add mesh output capability
-  SmartPointer<Mesh<T>> outputMesh = nullptr;
-  bool outputSquaredDifferences = false;
-
   /// Set the output mesh where difference values will be stored
   void setOutputMesh(SmartPointer<Mesh<T>> passedMesh) {
     outputMesh = passedMesh;
   }
 
-  /// Set whether to output squared differences (true) or raw differences
+  /// Set whether to output squared differences (true) or absolute differences
   /// (false)
   void setOutputSquaredDifferences(bool value) {
     outputSquaredDifferences = value;
@@ -207,6 +211,7 @@ public:
     double gridDelta = gridTarget.getGridDelta();
 
     // Set up iterators for both level sets
+    // TODO: why cell iterators?
     hrleConstDenseCellIterator<typename Domain<T, D>::DomainType> itSample(
         levelSetSample->getDomain(), minIndex);
     hrleConstDenseCellIterator<typename Domain<T, D>::DomainType> itTarget(
@@ -222,7 +227,8 @@ public:
     std::vector<T> differenceValues;
     size_t currentPointId = 0;
 
-    if (outputMesh != nullptr) {
+    const bool generateMesh = outputMesh != nullptr;
+    if (generateMesh) {
       outputMesh->clear();
 
       // Initialize mesh extent
@@ -230,11 +236,6 @@ public:
         outputMesh->minimumExtent[i] = std::numeric_limits<T>::max();
         outputMesh->maximumExtent[i] = std::numeric_limits<T>::lowest();
       }
-
-      // Prepare scalar data field for differences
-      outputMesh->cellData.insertNextScalarData(
-          typename PointData<T>::ScalarDataType(),
-          outputSquaredDifferences ? "SquaredDifferences" : "Differences");
     }
 
     // Iterate through the domain defined by the bounding box
@@ -275,15 +276,19 @@ public:
       }
 
       // Calculate difference and add to sum
-      T diff = (valueTarget - valueSample) * gridDelta;
-      T diffSquared = diff * diff;
-      sumSquaredDifferences += diffSquared;
+      T diff = std::abs(valueTarget - valueSample) * gridDelta;
+      if (outputSquaredDifferences)
+        diff = diff * diff;
+      sumSquaredDifferences += diff;
       numPoints++;
 
       // Store difference in mesh if required
-      if (outputMesh != nullptr) {
+      if (generateMesh) {
         std::array<unsigned, 1 << D> voxel;
         bool addVoxel = true;
+        // TODO: possibly remove this addVoxel check
+        // TODO: why use voxels at all? aren't the differences computed on
+        // points?
 
         // Insert all points of voxel into pointList
         for (unsigned i = 0; i < (1 << D); ++i) {
@@ -318,20 +323,16 @@ public:
             std::array<unsigned, 4> quad{voxel[0], voxel[1], voxel[3],
                                          voxel[2]};
             outputMesh->tetras.push_back(quad);
-          } else if constexpr (D == 1) {
-            std::array<unsigned, 2> line{voxel[0], voxel[1]};
-            outputMesh->lines.push_back(line);
           }
 
           // Add difference value to cell data
-          outputMesh->cellData.getScalarData(0)->push_back(
-              outputSquaredDifferences ? diffSquared : diff);
+          differenceValues.push_back(diff);
         }
       }
     }
 
-    // Insert points into mesh if needed
-    if (outputMesh != nullptr && !pointIdMapping.empty()) {
+    // Finalize mesh output
+    if (generateMesh && !pointIdMapping.empty()) {
       outputMesh->nodes.resize(pointIdMapping.size());
       for (auto it = pointIdMapping.begin(); it != pointIdMapping.end(); ++it) {
         std::array<T, 3> coords{};
@@ -346,16 +347,13 @@ public:
         }
         outputMesh->nodes[it->second] = coords;
       }
-    }
-  }
 
-  /// Apply with mesh output - convenience method that ensures the mesh is
-  /// generated
-  void applyWithMeshOutput(SmartPointer<Mesh<T>> outputMesh,
-                           bool outputSquared = true) {
-    setOutputMesh(outputMesh);
-    setOutputSquaredDifferences(outputSquared);
-    apply();
+      assert(differenceValues.size() ==
+             outputMesh->template getElements<1 << D>().size());
+      outputMesh->cellData.insertNextScalarData(
+          std::move(differenceValues),
+          outputSquaredDifferences ? "SquaredDifferences" : "Differences");
+    }
   }
 
   /// Return the sum of squared differences calculated by apply().

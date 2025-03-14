@@ -69,7 +69,7 @@ int main() {
   compareArea.setOutputMesh(mesh);
   compareArea.apply();
   // save mesh to file
-  ls::VTKWriter<double>(mesh, "areaDifference.vtp").apply();
+  ls::VTKWriter<double>(mesh, "areaDifference.vtu").apply();
 
   // Calculate theoretical area difference (for circles in 2D)
   // Area of circle = π * r²

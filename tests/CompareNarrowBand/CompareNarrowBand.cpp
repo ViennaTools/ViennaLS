@@ -66,20 +66,21 @@ int main() {
   }
 
   // Compare the narrow bands
-  auto compareNarrowBand =
-      ls::SmartPointer<ls::CompareNarrowBand<double, D>>::New(sphere1, sphere2);
+  ls::CompareNarrowBand<double, D> compareNarrowBand(sphere1, sphere2);
 
   // Create mesh for visualization of differences
   auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
-  compareNarrowBand->applyWithMeshOutput(mesh);
+  compareNarrowBand.setOutputMesh(mesh);
+
+  compareNarrowBand.apply();
 
   // Save mesh to file
-  ls::VTKWriter<double>(mesh, "narrowband_squared_differences.vtk").apply();
+  ls::VTKWriter<double>(mesh, "narrowband_absolute_differences.vtu").apply();
 
   // Get the calculated difference metrics
-  double sumSquaredDifferences = compareNarrowBand->getSumSquaredDifferences();
-  unsigned numPoints = compareNarrowBand->getNumPoints();
-  double rmse = compareNarrowBand->getRMSE();
+  double sumSquaredDifferences = compareNarrowBand.getSumSquaredDifferences();
+  unsigned numPoints = compareNarrowBand.getNumPoints();
+  double rmse = compareNarrowBand.getRMSE();
 
   std::cout << "Sphere 1 center: (" << origin1[0] << ", " << origin1[1] << ")"
             << std::endl;
@@ -94,39 +95,40 @@ int main() {
   std::cout << "\nTesting with restricted ranges:" << std::endl;
 
   // Test with restricted X range
-  compareNarrowBand->clearXRange();
-  compareNarrowBand->clearYRange();
-  compareNarrowBand->setXRange(-5, 5);
-  compareNarrowBand->apply();
-  std::cout << "RMSE with X range [-5, 5]: " << compareNarrowBand->getRMSE()
+  compareNarrowBand.setOutputMesh(nullptr); // do not create mesh
+  compareNarrowBand.clearXRange();
+  compareNarrowBand.clearYRange();
+  compareNarrowBand.setXRange(-5, 5);
+  compareNarrowBand.apply();
+  std::cout << "RMSE with X range [-5, 5]: " << compareNarrowBand.getRMSE()
             << std::endl;
   std::cout << "Number of points in X range: "
-            << compareNarrowBand->getNumPoints() << std::endl;
+            << compareNarrowBand.getNumPoints() << std::endl;
 
   // Test with restricted Y range
-  compareNarrowBand->clearXRange();
-  compareNarrowBand->setYRange(-5, 5);
-  compareNarrowBand->apply();
-  std::cout << "RMSE with Y range [-5, 5]: " << compareNarrowBand->getRMSE()
+  compareNarrowBand.clearXRange();
+  compareNarrowBand.setYRange(-5, 5);
+  compareNarrowBand.apply();
+  std::cout << "RMSE with Y range [-5, 5]: " << compareNarrowBand.getRMSE()
             << std::endl;
   std::cout << "Number of points in Y range: "
-            << compareNarrowBand->getNumPoints() << std::endl;
+            << compareNarrowBand.getNumPoints() << std::endl;
 
   // Test with both X and Y range restrictions
-  compareNarrowBand->setXRange(-3, 3);
-  compareNarrowBand->setYRange(-3, 3);
-  compareNarrowBand->apply();
+  compareNarrowBand.setXRange(-3, 3);
+  compareNarrowBand.setYRange(-3, 3);
+  compareNarrowBand.apply();
   std::cout << "RMSE with X range [-3, 3] and Y range [-3, 3]: "
-            << compareNarrowBand->getRMSE() << std::endl;
+            << compareNarrowBand.getRMSE() << std::endl;
   std::cout << "Number of points in both ranges: "
-            << compareNarrowBand->getNumPoints() << std::endl;
+            << compareNarrowBand.getNumPoints() << std::endl;
 
   // Create a mesh output with squared differences
-  auto meshSquared = ls::SmartPointer<ls::Mesh<>>::New();
-  compareNarrowBand->applyWithMeshOutput(
-      meshSquared, true); // true = output squared differences
-  ls::VTKWriter<double>(meshSquared,
-                        "narrowband_resctricted-range_squared_differences.vtk")
+  compareNarrowBand.setOutputMesh(mesh);
+  compareNarrowBand.setOutputSquaredDifferences(true);
+  compareNarrowBand.apply();
+  ls::VTKWriter<double>(mesh,
+                        "narrowband_resctricted-range_squared_differences.vtu")
       .apply();
 
   return 0;

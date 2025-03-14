@@ -354,6 +354,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Set levelset for which to calculate normal vectors.")
       .def("apply", &Check<T, D>::apply, "Perform check.");
 
+#if VIENNALS_PYTHON_DIMENSION == 2
   // CompareArea
   pybind11::class_<CompareArea<T, D>, SmartPointer<CompareArea<T, D>>>(
       module, "CompareArea")
@@ -386,10 +387,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Returns the number of cells where the level sets differ, with "
            "custom increments applied.")
       .def("apply", &CompareArea<T, D>::apply,
-           "Computes the area difference between the two level sets.")
-      .def("applyWithMeshOutput", &CompareArea<T, D>::applyWithMeshOutput,
-           "Apply the comparison and generate a mesh visualization of the "
-           "differences.");
+           "Computes the area difference between the two level sets.");
 
   // CompareNarrowBand
   pybind11::class_<CompareNarrowBand<T, D>,
@@ -417,13 +415,10 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Set the output mesh where difference values will be stored")
       .def("setOutputSquaredDifferences",
            &CompareNarrowBand<T, D>::setOutputSquaredDifferences,
-           "Set whether to output squared differences (true) or raw "
+           "Set whether to output squared differences (true) or absolute "
            "differences (false)")
       .def("apply", &CompareNarrowBand<T, D>::apply,
            "Apply the comparison and calculate the sum of squared differences.")
-      .def("applyWithMeshOutput", &CompareNarrowBand<T, D>::applyWithMeshOutput,
-           "Apply with mesh output - convenience method that ensures the mesh "
-           "is generated")
       .def("getSumSquaredDifferences",
            &CompareNarrowBand<T, D>::getSumSquaredDifferences,
            "Return the sum of squared differences calculated by apply().")
@@ -432,6 +427,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("getRMSE", &CompareNarrowBand<T, D>::getRMSE,
            "Calculate the root mean square error from previously computed "
            "values.");
+#endif
 
   // ConvexHull
   pybind11::class_<ConvexHull<T, D>, SmartPointer<ConvexHull<T, D>>>(
