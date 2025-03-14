@@ -20,17 +20,15 @@ using namespace viennacore;
 /// passed mesh can be filled with the area information, allowing for
 /// visualization of the differences.
 /// The code is currently itended for 2D level sets only.
-template <class T, int D> class CompareArea {
+template <class T, int D = 2> class CompareArea {
   typedef typename Domain<T, D>::DomainType hrleDomainType;
 
   SmartPointer<Domain<T, D>> levelSetTarget = nullptr;
   SmartPointer<Domain<T, D>> levelSetSample = nullptr;
   hrleVectorType<hrleIndexType, D> minIndex, maxIndex;
 
-  unsigned long int cellCount = 0;
-  unsigned long int customCellCount = 0;
-  double mismatchedArea = 0.;
-  double customMismatchedArea = 0.;
+  unsigned long int differentCellsCount = 0;
+  unsigned long int customDifferentCellCount = 0;
 
   hrleIndexType xRangeMin = std::numeric_limits<hrleIndexType>::lowest();
   hrleIndexType xRangeMax = std::numeric_limits<hrleIndexType>::max();
@@ -47,11 +45,6 @@ template <class T, int D> class CompareArea {
 
   // Mesh output related members
   SmartPointer<Mesh<T>> outputMesh = nullptr;
-  bool generateMesh = false;
-  std::unordered_map<hrleVectorType<hrleIndexType, D>, size_t,
-                     typename hrleVectorType<hrleIndexType, D>::hash>
-      pointIdMapping;
-  size_t currentPointId = 0;
 
   bool checkAndCalculateBounds() {
     if (levelSetTarget == nullptr || levelSetSample == nullptr) {
@@ -108,12 +101,20 @@ template <class T, int D> class CompareArea {
   }
 
 public:
-  CompareArea() {}
+  CompareArea() {
+    static_assert(
+        D == 2 &&
+        "CompareArea is currently only implemented for 2D level sets.");
+  }
 
   CompareArea(SmartPointer<Domain<T, D>> passedLevelSetTarget,
               SmartPointer<Domain<T, D>> passedLevelSetSample)
       : levelSetTarget(passedLevelSetTarget),
-        levelSetSample(passedLevelSetSample) {}
+        levelSetSample(passedLevelSetSample) {
+    static_assert(
+        D == 2 &&
+        "CompareArea is currently only implemented for 2D level sets.");
+  }
 
   /// Sets the target level set.
   void setLevelSetTarget(SmartPointer<Domain<T, D>> passedLevelSet) {
@@ -148,54 +149,41 @@ public:
     useCustomYIncrement = true;
   }
 
-  /// Set the output mesh where difference areas will be stored
+  /// Set the output mesh where difference areas will be stored for
+  /// visualization. Each cell in the mesh will have a cell data:
+  ///   0: Areas where both level sets are inside
+  ///   1: Areas where only one level set is inside (mismatched areas)
   void setOutputMesh(SmartPointer<Mesh<T>> passedMesh) {
     outputMesh = passedMesh;
   }
 
-  /// Apply the comparison and generate a mesh visualization of the differences.
-  /// Each cell in the mesh will have a material ID:
-  ///   0: Areas where both level sets are inside
-  ///   1: Areas where only one level set is inside (mismatched areas)
-  void applyWithMeshOutput(SmartPointer<Mesh<T>> passedMesh) {
-    if (passedMesh == nullptr) {
-      Logger::getInstance()
-          .addWarning("No mesh was passed to CompareArea::applyWithMeshOutput.")
-          .print();
-      return;
-    }
-
-    outputMesh = passedMesh;
-    outputMesh->clear();
-    generateMesh = true;
-    apply();
-    generateMesh = false;
-  }
-
   /// Returns the computed area mismatch.
   double getAreaMismatch() const {
-    return static_cast<double>(cellCount) * gridDelta * gridDelta;
+    return static_cast<double>(differentCellsCount) * gridDelta * gridDelta;
   }
 
   /// Returns the computed area mismatch, with custom increments applied.
   double getCustomAreaMismatch() const {
-    return static_cast<double>(customCellCount) * gridDelta * gridDelta;
+    return static_cast<double>(customDifferentCellCount) * gridDelta *
+           gridDelta;
   }
 
   /// Returns the number of cells where the level sets differ.
-  unsigned long int getCellCount() const { return cellCount; }
+  unsigned long int getCellCount() const { return differentCellsCount; }
 
   /// Returns the number of cells where the level sets differ, with custom
   /// increments applied.
-  unsigned long int getCustomCellCount() const { return customCellCount; }
+  unsigned long int getCustomCellCount() const {
+    return customDifferentCellCount;
+  }
 
   /// Computes the area difference between the two level sets.
   void apply() {
     // Calculate the bounds for iteration
     if (!checkAndCalculateBounds()) {
-      cellCount =
+      differentCellsCount =
           std::numeric_limits<unsigned long int>::max(); // Error indicator
-      customCellCount =
+      customDifferentCellCount =
           std::numeric_limits<unsigned long int>::max(); // Error indicator
       return;
     }
@@ -206,36 +194,28 @@ public:
     hrleConstDenseCellIterator<typename Domain<T, D>::DomainType> itSample(
         levelSetSample->getDomain(), minIndex);
 
-    cellCount = 0;
-    customCellCount = 0;
+    differentCellsCount = 0;
+    customDifferentCellCount = 0;
 
     // Initialize mesh-related variables if generating a mesh
-    if (generateMesh && outputMesh != nullptr) {
+    const bool generateMesh = outputMesh != nullptr;
+    if (generateMesh) {
       // Save the extent of the resulting mesh
+      outputMesh->clear();
       for (unsigned i = 0; i < D; ++i) {
         outputMesh->minimumExtent[i] = std::numeric_limits<T>::max();
         outputMesh->maximumExtent[i] = std::numeric_limits<T>::lowest();
       }
-
-      pointIdMapping.clear();
-      currentPointId = 0;
-
-      // Prepare mesh for material IDs and custom values
-      outputMesh->cellData.insertNextScalarData(
-          typename PointData<T>::ScalarDataType(), "Material");
-      auto &materialIds = *(outputMesh->cellData.getScalarData(0));
-
-      // Add a second scalar field for custom increment values
-      outputMesh->cellData.insertNextScalarData(
-          typename PointData<T>::ScalarDataType(), "CustomIncrement");
-      auto &incrementValues = *(outputMesh->cellData.getScalarData(1));
     }
 
-    // Reference to the material IDs and increment values
-    auto materialIdPtr =
-        generateMesh ? &(*(outputMesh->cellData.getScalarData(0))) : nullptr;
-    auto incrementValuesPtr =
-        generateMesh ? &(*(outputMesh->cellData.getScalarData(1))) : nullptr;
+    // Vector for cell differences and increment values to be inserted in the
+    // mesh
+    std::vector<T> cellDifference;
+    std::vector<T> incrementValues;
+    size_t currentPointId = 0;
+    std::unordered_map<hrleVectorType<hrleIndexType, D>, size_t,
+                       typename hrleVectorType<hrleIndexType, D>::hash>
+        pointIdMapping;
 
     // Iterate through the domain defined by the bounding box
     for (; itTarget.getIndices() < maxIndex; itTarget.next()) {
@@ -280,20 +260,21 @@ public:
       // If cells differ, update the counters
       if (isDifferent) {
         // Always increment simple cell count by 1
-        cellCount += 1;
+        differentCellsCount += 1;
 
         // For custom cell count, apply the calculated increment
-        customCellCount += incrementToAdd;
+        customDifferentCellCount += incrementToAdd;
       }
 
       // For mesh generation, process all cells where at least one level set is
       // inside
       if (generateMesh && (insideTarget || insideSample)) {
         // Material ID: 0 for matching inside, 1 for mismatched
-        int materialId = isDifferent ? 1 : 0;
+        int difference = isDifferent ? 1 : 0;
 
         std::array<unsigned, 1 << D> voxel;
         bool addVoxel = true;
+        // TODO: I think this check whether Voxel is added or not can be removed
 
         // Insert all points of voxel into pointList
         for (unsigned i = 0; i < (1 << D); ++i) {
@@ -328,22 +309,19 @@ public:
             std::array<unsigned, 4> quad{voxel[0], voxel[1], voxel[3],
                                          voxel[2]};
             outputMesh->tetras.push_back(quad);
-          } else if constexpr (D == 1) {
-            std::array<unsigned, 2> line{voxel[0], voxel[1]};
-            outputMesh->lines.push_back(line);
           }
 
-          materialIdPtr->push_back(materialId);
+          cellDifference.push_back(difference);
 
           // Store increment value (0 if not different)
-          incrementValuesPtr->push_back(
-              isDifferent ? static_cast<T>(incrementToAdd) : 0);
+          incrementValues.push_back(isDifferent ? static_cast<T>(incrementToAdd)
+                                                : 0);
         }
       }
     }
 
     // Finalize mesh if generating one
-    if (generateMesh && outputMesh != nullptr && !pointIdMapping.empty()) {
+    if (generateMesh && !pointIdMapping.empty()) {
       // Insert points into the mesh
       outputMesh->nodes.resize(pointIdMapping.size());
       for (auto it = pointIdMapping.begin(); it != pointIdMapping.end(); ++it) {
@@ -359,12 +337,15 @@ public:
         }
         outputMesh->nodes[it->second] = coords;
       }
-    }
 
-    // Calculate the mismatched area based on the cell count
-    mismatchedArea = static_cast<double>(cellCount) * gridDelta * gridDelta;
-    customMismatchedArea =
-        static_cast<double>(customCellCount) * gridDelta * gridDelta;
+      // Add cell data to the mesh
+      assert(cellDifference.size() == incrementValues.size());
+      assert(incrementValues.size() ==
+             outputMesh->template getElements<1 << D>().size());
+      outputMesh->cellData.insertNextScalarData(cellDifference, "Difference");
+      outputMesh->cellData.insertNextScalarData(incrementValues,
+                                                "CustomIncrement");
+    }
   }
 };
 

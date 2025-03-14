@@ -54,23 +54,22 @@ int main() {
   {
     auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
     ls::ToMesh<double, D>(sphere1, mesh).apply();
-    ls::VTKWriter<double>(mesh, "sphere1.vtk").apply();
+    ls::VTKWriter<double>(mesh, "sphere1.vtp").apply();
   }
 
   {
     auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
     ls::ToMesh<double, D>(sphere2, mesh).apply();
-    ls::VTKWriter<double>(mesh, "sphere2.vtk").apply();
+    ls::VTKWriter<double>(mesh, "sphere2.vtp").apply();
   }
 
   // Compare the areas with mesh Output
-  auto compareArea =
-      ls::SmartPointer<ls::CompareArea<double, D>>::New(sphere1, sphere2);
+  ls::CompareArea<double, D> compareArea(sphere1, sphere2);
   auto mesh = ls::SmartPointer<ls::Mesh<>>::New(); // Create mesh for output
-  compareArea->setOutputMesh(mesh);
-  compareArea->applyWithMeshOutput(mesh);
+  compareArea.setOutputMesh(mesh);
+  compareArea.apply();
   // save mesh to file
-  ls::VTKWriter<double>(mesh, "areaDifference.vtk").apply();
+  ls::VTKWriter<double>(mesh, "areaDifference.vtp").apply();
 
   // Calculate theoretical area difference (for circles in 2D)
   // Area of circle = π * r²
@@ -79,8 +78,8 @@ int main() {
   double theoreticalDifference = std::abs(theoreticalArea2 - theoreticalArea1);
 
   // Get the calculated area difference
-  double calculatedDifference = compareArea->getAreaMismatch();
-  unsigned long int cellCount = compareArea->getCellCount();
+  double calculatedDifference = compareArea.getAreaMismatch();
+  unsigned long int cellCount = compareArea.getCellCount();
 
   std::cout << "Sphere 1 radius: " << radius1 << std::endl;
   std::cout << "Sphere 2 radius: " << radius2 << std::endl;
@@ -97,30 +96,30 @@ int main() {
   std::cout << "\nTesting custom increments and ranges:" << std::endl;
 
   // Set custom increment for whole domain
-  compareArea->setDefaultIncrement(2);
-  compareArea->apply();
+  compareArea.setDefaultIncrement(2);
+  compareArea.apply();
   std::cout << "Area difference with default increment of 2: "
-            << compareArea->getCustomAreaMismatch() << std::endl;
+            << compareArea.getCustomAreaMismatch() << std::endl;
   std::cout << "Cell count with default increment of 2: "
-            << compareArea->getCustomCellCount() << std::endl;
+            << compareArea.getCustomCellCount() << std::endl;
 
   // Set range-specific increment for x-range
-  compareArea->setDefaultIncrement(1);
-  compareArea->setXRangeAndIncrement(-5, 5, 3);
-  compareArea->apply();
+  compareArea.setDefaultIncrement(1);
+  compareArea.setXRangeAndIncrement(-5, 5, 3);
+  compareArea.apply();
   std::cout << "Area difference with x-range increment of 3: "
-            << compareArea->getCustomAreaMismatch() << std::endl;
+            << compareArea.getCustomAreaMismatch() << std::endl;
   std::cout << "Cell count with x-range increment of 3: "
-            << compareArea->getCustomCellCount() << std::endl;
+            << compareArea.getCustomCellCount() << std::endl;
 
   // Set range-specific increment for y-range
-  compareArea->setDefaultIncrement(1);
-  compareArea->setYRangeAndIncrement(-5, 5, 4);
-  compareArea->apply();
+  compareArea.setDefaultIncrement(1);
+  compareArea.setYRangeAndIncrement(-5, 5, 4);
+  compareArea.apply();
   std::cout << "Area difference with y-range increment of 4: "
-            << compareArea->getCustomAreaMismatch() << std::endl;
+            << compareArea.getCustomAreaMismatch() << std::endl;
   std::cout << "Cell count with y-range increment of 4: "
-            << compareArea->getCustomCellCount() << std::endl;
+            << compareArea.getCustomCellCount() << std::endl;
 
   return 0;
 }
