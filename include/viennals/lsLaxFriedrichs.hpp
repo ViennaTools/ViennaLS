@@ -27,7 +27,7 @@ template <class T, int D, int order> class LaxFriedrichs {
   static T pow2(const T &value) { return value * value; }
 
 public:
-  static const int order_ = order;
+  // static const int order_ = order;
   static void prepareLS(SmartPointer<viennals::Domain<T, D>> passedlsDomain) {
     assert(order == 1 || order == 2);
     viennals::Expand<T, D>(passedlsDomain, 2 * order + 1).apply();
@@ -37,10 +37,8 @@ public:
                 SmartPointer<viennals::VelocityField<T>> vel, double alpha,
                 hrleVectorType<T, 3> &alphas, bool calcNormal)
       : levelSet(passedlsDomain), velocities(vel),
-        neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>, order>(
-            levelSet->getDomain())),
-        alphaFactor(alpha), finalAlphas(alphas),
-        calculateNormalVectors(calcNormal) {}
+        neighborIterator(levelSet->getDomain()), alphaFactor(alpha),
+        finalAlphas(alphas), calculateNormalVectors(calcNormal) {}
 
   std::pair<T, T> operator()(const hrleVectorType<hrleIndexType, D> &indices,
                              int material) {

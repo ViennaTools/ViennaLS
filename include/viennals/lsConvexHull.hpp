@@ -67,7 +67,7 @@ template <class T, int D> class ConvexHull {
         normal = calculateNormal(v1, v2);
       }
 
-      auto product = DotProduct(distance, normal);
+      auto product = hrleUtil::DotProduct(distance, normal);
       // if dot product is very small, point is very close to plane
       // we need to check if we already have the correct point
       // or if it is the next correct one
@@ -182,20 +182,21 @@ template <class T, int D> class ConvexHull {
       double centerEdgeDot;
       {
         auto shared = sharedNode;
-        hrleVectorType<T, D> edge1 = Normalize(
+        hrleVectorType<T, D> edge1 = hrleUtil::Normalize(
             points[triangle2[(shared + 1) % D]] - points[triangle2[shared]]);
-        hrleVectorType<T, D> edge2 = Normalize(
+        hrleVectorType<T, D> edge2 = hrleUtil::Normalize(
             points[triangle2[(shared + 2) % D]] - points[triangle2[shared]]);
-        averageVector = Normalize((edge1 + edge2) / 2);
-        centerEdgeDot = DotProduct(averageVector, edge2);
+        averageVector = hrleUtil::Normalize((edge1 + edge2) / 2);
+        centerEdgeDot = hrleUtil::DotProduct(averageVector, edge2);
       }
 
       // go over other nodes of triangle1
       for (unsigned int &otherNode : otherNodes) {
-        hrleVectorType<T, D> vector = Normalize(points[triangle1[otherNode]] -
-                                                points[triangle2[sharedNode]]);
+        hrleVectorType<T, D> vector = hrleUtil::Normalize(
+            points[triangle1[otherNode]] - points[triangle2[sharedNode]]);
 
-        if (DotProduct(vector, averageVector) > centerEdgeDot + 1e-9) {
+        if (hrleUtil::DotProduct(vector, averageVector) >
+            centerEdgeDot + 1e-9) {
           return true;
         }
       }
@@ -208,9 +209,9 @@ template <class T, int D> class ConvexHull {
   bool doesTriangleClip(const hrleVectorType<unsigned, D> &triangle) const {
     auto &points = pointCloud->points;
 
-    auto triangleNormal =
-        Normalize(calculateNormal(points[triangle[1]] - points[triangle[0]],
-                                  points[triangle[2]] - points[triangle[0]]));
+    auto triangleNormal = hrleUtil::Normalize(
+        calculateNormal(points[triangle[1]] - points[triangle[0]],
+                        points[triangle[2]] - points[triangle[0]]));
 
     // unsigned shareEdges = 0;
     for (unsigned i = 0; i < hullElements.size(); ++i) {
@@ -227,7 +228,7 @@ template <class T, int D> class ConvexHull {
       // if they share at least one node, they might clip, so check
       if (inOneTriangle > 0) {
         // check if they are in the same plane
-        auto normal2 = Normalize(calculateNormal(
+        auto normal2 = hrleUtil::Normalize(calculateNormal(
             points[hullElements[i][1]] - points[hullElements[i][0]],
             points[hullElements[i][2]] - points[hullElements[i][0]]));
 
@@ -317,7 +318,8 @@ public:
           if (std::abs(points[i][2] - points[currentIndex][2]) < 1e-7) {
             auto diff = points[currentIndex] - points[i];
             // choose closest point if points are in z plane
-            if (const double currentHullMetric = DotProduct(diff, diff);
+            if (const double currentHullMetric =
+                    hrleUtil::DotProduct(diff, diff);
                 currentHullMetric < hullMetric) {
               hullMetric = currentHullMetric;
               currentPointIndex = i;

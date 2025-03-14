@@ -23,8 +23,8 @@ template <class T, int D> class FromSurfaceMesh {
     /// each dimension respectively.
     box(const hrleVectorType<hrleIndexType, D - 1> &idx0,
         const hrleVectorType<hrleIndexType, D - 1> &idx1) {
-      xMin = Min(idx0, idx1);
-      xMax = Max(idx0, idx1);
+      xMin = hrleUtil::Min(idx0, idx1);
+      xMax = hrleUtil::Max(idx0, idx1);
     }
 
     /// Creates a copy of the passed box.
@@ -335,8 +335,8 @@ public:
         hrleVectorType<T, D> minNode = nodes[0];
         hrleVectorType<T, D> maxNode = nodes[0];
         for (int i = 1; i < D; ++i) {
-          minNode = Min(minNode, nodes[i]);
-          maxNode = Max(maxNode, nodes[i]);
+          minNode = hrleUtil::Min(minNode, nodes[i]);
+          maxNode = hrleUtil::Max(maxNode, nodes[i]);
         }
 
         // find indices which describe the triangle
@@ -426,7 +426,7 @@ public:
               t[z] -= intersection;
               for (int k = 1; k < D; k++)
                 t[(z + k) % D] -= p[(z + k) % D];
-              t = Normalize(t);
+              t = hrleUtil::Normalize(t);
 
               for (it_b[z] = floor; it_b[z] <= ceil; ++(it_b[z])) {
 

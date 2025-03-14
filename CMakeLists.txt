@@ -110,13 +110,14 @@ CPMAddPackage(
 
 CPMAddPackage(
   NAME PackageProject
-  VERSION 1.11.2
+  VERSION 1.13.0
   GIT_REPOSITORY "https://github.com/TheLartians/PackageProject.cmake"
   EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 
 CPMFindPackage(
   NAME ViennaHRLE
   VERSION 0.5.0
+  GIT_TAG refactor
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaHRLE"
   EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 

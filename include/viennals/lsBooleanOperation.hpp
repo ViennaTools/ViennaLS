@@ -115,7 +115,7 @@ private:
                                                 : Domain<T, D>::POS_VALUE);
         }
 
-        switch (compare(itA.getEndIndices(), itB.getEndIndices())) {
+        switch (hrleUtil::Compare(itA.getEndIndices(), itB.getEndIndices())) {
         case -1:
           itA.next();
           break;

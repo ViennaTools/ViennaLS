@@ -139,7 +139,7 @@ public:
             surfaceElements.lower_bound(currentSurfaceElement);
         if ((it != surfaceElements.end()) &&
             (it->first == currentSurfaceElement)) {
-          if (Orientation(currentElementPoints)) {
+          if (hrleUtil::Orientation(currentElementPoints)) {
             if (it->second.second != materialInts.back() + 1) {
               Logger::getInstance()
                   .addWarning(
@@ -167,7 +167,7 @@ public:
             surfaceElements.erase(it);
 
         } else {
-          if (Orientation(currentElementPoints)) {
+          if (hrleUtil::Orientation(currentElementPoints)) {
             surfaceElements.insert(
                 it, std::make_pair(currentSurfaceElement,
                                    std::make_pair(materialInts.back() + 1,
