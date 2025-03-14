@@ -18,15 +18,18 @@ using namespace viennacore;
 /// the mathematical nature of the speed function.
 /// see Toifl et al., 2019. ISBN: 978-1-7281-0938-1;
 /// DOI: 10.1109/SISPAD.2019.8870443
-template <class T, int D, int order> class StencilLocalLaxFriedrichsScalar {
+template <class T, int D, int order,
+          DifferentiationSchemeEnum finiteDifferenceScheme =
+              DifferentiationSchemeEnum::FIRST_ORDER>
+class StencilLocalLaxFriedrichsScalar {
   using LevelSetType = SmartPointer<viennals::Domain<T, D>>;
   using LevelSetsType = std::vector<LevelSetType>;
 
   LevelSetType levelSet;
   SmartPointer<viennals::VelocityField<T>> velocities;
-  const DifferentiationSchemeEnum finiteDifferenceScheme =
-      DifferentiationSchemeEnum::FIRST_ORDER;
-  hrleSparseBoxIterator<hrleDomain<T, D>> neighborIterator;
+  hrleSparseBoxIterator<hrleDomain<T, D>,
+                        static_cast<int>(finiteDifferenceScheme) + 1 + order>
+      neighborIterator;
   const double alphaFactor;
   const double normalEpsilon =
       std::cbrt(std::numeric_limits<double>::epsilon());
@@ -34,7 +37,7 @@ template <class T, int D, int order> class StencilLocalLaxFriedrichsScalar {
   // Final dissipation coefficients that are used by the time integrator. If
   // D==2 last entries are 0.
   hrleVectorType<T, 3> finalAlphas;
-  const unsigned numStencilPoints;
+  static constexpr unsigned numStencilPoints = std::pow(2 * order + 1, D);
 
   static T pow2(const T &value) { return value * value; }
 
@@ -66,9 +69,9 @@ template <class T, int D, int order> class StencilLocalLaxFriedrichsScalar {
   calculateGradient(const hrleVectorType<hrleIndexType, D> &offset) {
     hrleVectorType<T, D> gradient;
 
-    const unsigned numValues =
-        FiniteDifferences<T>::getNumberOfValues(finiteDifferenceScheme);
-    const int startIndex = -std::floor(numValues / 2);
+    constexpr unsigned numValues =
+        FiniteDifferences<T, finiteDifferenceScheme>::getNumberOfValues();
+    constexpr int startIndex = -std::floor(numValues / 2);
 
     for (unsigned i = 0; i < D; ++i) {
       hrleVectorType<hrleIndexType, D> index(offset);
@@ -78,17 +81,9 @@ template <class T, int D, int order> class StencilLocalLaxFriedrichsScalar {
         values.push_back(neighborIterator.getNeighbor(index).getValue());
       }
 
-      if (finiteDifferenceScheme == DifferentiationSchemeEnum::FIRST_ORDER) {
-        gradient[i] =
-            FiniteDifferences<T, DifferentiationSchemeEnum::FIRST_ORDER>::
-                calculateGradient(&(values[0]),
-                                  levelSet->getGrid().getGridDelta());
-      } else if (finiteDifferenceScheme == DifferentiationSchemeEnum::WENO3) {
-        gradient[i] = FiniteDifferences<T, DifferentiationSchemeEnum::WENO3>::
-            calculateGradient(&(values[0]), levelSet->getGrid().getGridDelta());
-      } else if (finiteDifferenceScheme == DifferentiationSchemeEnum::WENO5)
-        gradient[i] = FiniteDifferences<T, DifferentiationSchemeEnum::WENO5>::
-            calculateGradient(&(values[0]), levelSet->getGrid().getGridDelta());
+      gradient[i] =
+          FiniteDifferences<T, finiteDifferenceScheme>::calculateGradient(
+              values.data(), levelSet->getGrid().getGridDelta());
     }
 
     return gradient;
@@ -98,30 +93,20 @@ template <class T, int D, int order> class StencilLocalLaxFriedrichsScalar {
     hrleVectorType<T, D> gradient;
 
     const unsigned numValues =
-        FiniteDifferences<T>::getNumberOfValues(finiteDifferenceScheme);
+        FiniteDifferences<T, finiteDifferenceScheme>::getNumberOfValues();
     const int startIndex = -std::floor(numValues / 2);
 
     for (unsigned i = 0; i < D; ++i) {
-      hrleVectorType<hrleIndexType, D> index(hrleIndexType(0));
+      hrleVectorType<hrleIndexType, D> index(0);
       std::vector<T> values;
       for (unsigned j = 0; j < numValues; ++j) {
         index[i] = startIndex + j;
         values.push_back(neighborIterator.getNeighbor(index).getValue());
       }
 
-      if (finiteDifferenceScheme == DifferentiationSchemeEnum::FIRST_ORDER) {
-        gradient[i] =
-            FiniteDifferences<T, DifferentiationSchemeEnum::FIRST_ORDER>::
-                calculateGradientDiff(&(values[0]),
-                                      levelSet->getGrid().getGridDelta());
-      } else if (finiteDifferenceScheme == DifferentiationSchemeEnum::WENO3) {
-        gradient[i] = FiniteDifferences<T, DifferentiationSchemeEnum::WENO3>::
-            calculateGradientDiff(&(values[0]),
-                                  levelSet->getGrid().getGridDelta());
-      } else if (finiteDifferenceScheme == DifferentiationSchemeEnum::WENO5)
-        gradient[i] = FiniteDifferences<T, DifferentiationSchemeEnum::WENO5>::
-            calculateGradientDiff(&(values[0]),
-                                  levelSet->getGrid().getGridDelta());
+      gradient[i] =
+          FiniteDifferences<T, finiteDifferenceScheme>::calculateGradientDiff(
+              &(values[0]), levelSet->getGrid().getGridDelta());
     }
 
     return gradient;
@@ -134,15 +119,11 @@ public:
     viennals::Expand<T, D>(passedlsDomain, 2 * (order + 1) + 4).apply();
   }
 
-  StencilLocalLaxFriedrichsScalar(
-      LevelSetType passedlsDomain, SmartPointer<viennals::VelocityField<T>> vel,
-      double a = 1.0,
-      DifferentiationSchemeEnum scheme = DifferentiationSchemeEnum::FIRST_ORDER)
+  StencilLocalLaxFriedrichsScalar(LevelSetType passedlsDomain,
+                                  SmartPointer<viennals::VelocityField<T>> vel,
+                                  double a = 1.0)
       : levelSet(passedlsDomain), velocities(vel),
-        finiteDifferenceScheme(scheme),
-        neighborIterator(hrleSparseBoxIterator<hrleDomain<T, D>>(
-            levelSet->getDomain(), static_cast<unsigned>(scheme) + 1 + order)),
-        alphaFactor(a), numStencilPoints(std::pow(2 * order + 1, D)) {
+        neighborIterator(levelSet->getDomain()), alphaFactor(a) {
     for (int i = 0; i < 3; ++i) {
       finalAlphas[i] = 0;
     }
@@ -203,9 +184,9 @@ public:
       return {0, 0};
     }
 
-    T hamiltonian =
-        NormL2(calculateGradient(hrleVectorType<hrleIndexType, D>(0))) *
-        scalarVelocity;
+    T hamiltonian = hrleUtil::NormL2(calculateGradient(
+                        hrleVectorType<hrleIndexType, D>(0))) *
+                    scalarVelocity;
     T dissipation = 0.; // dissipation
 
     // dissipation block
@@ -285,7 +266,7 @@ public:
             toifl += gradient[idx] * velocityDelta[idx];
           }
           // denominator: |grad(phi)|^2
-          T denom = Norm2(gradient);
+          T denom = hrleUtil::Norm2(gradient);
           monti *= velocityDelta[k] / denom;
           toifl *= -gradient[k] / denom;
 

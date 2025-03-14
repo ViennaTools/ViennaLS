@@ -27,11 +27,9 @@ template <class T> class TransformMesh {
 
   // check vector for all zeros
   bool isValidVector() const {
-    if (DotProduct(transformVector, transformVector) < numericEps) {
+    if (hrleUtil::DotProduct(transformVector, transformVector) < numericEps)
       return false;
-    } else {
-      return true;
-    }
+    return true;
   }
 
   void translateMesh() {

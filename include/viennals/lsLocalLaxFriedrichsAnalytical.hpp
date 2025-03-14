@@ -21,7 +21,8 @@ using namespace viennacore;
 template <class T, int D, int order> class LocalLaxFriedrichsAnalytical {
   SmartPointer<viennals::Domain<T, D>> levelSet;
   SmartPointer<viennals::VelocityField<T>> velocities;
-  hrleSparseBoxIterator<hrleDomain<T, D>> neighborIterator;
+  // neighbor iterator always needs order 2 for alpha calculation
+  hrleSparseBoxIterator<hrleDomain<T, D>, 2> neighborIterator;
   hrleVectorType<T, 3> finalAlphas;
 
   static T pow2(const T &value) { return value * value; }
@@ -51,12 +52,11 @@ public:
     viennals::Expand<T, D>(passedlsDomain, 2 * (order + 2) + 1).apply();
   }
 
-  // neighboriterator always needs order 2 for alpha calculation
   LocalLaxFriedrichsAnalytical(
       SmartPointer<viennals::Domain<T, D>> passedlsDomain,
       SmartPointer<viennals::VelocityField<T>> vel)
       : levelSet(passedlsDomain), velocities(vel),
-        neighborIterator(levelSet->getDomain(), 2) {
+        neighborIterator(levelSet->getDomain()) {
     for (int i = 0; i < 3; ++i) {
       finalAlphas[i] = 0;
     }

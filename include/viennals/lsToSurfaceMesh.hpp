@@ -130,7 +130,7 @@ public:
 
           // look for existing surface node
           hrleVectorType<hrleIndexType, D> d(cellIt.getIndices());
-          d += BitMaskToVector<D, hrleIndexType>(p0);
+          d += hrleUtil::BitMaskToVector<D, hrleIndexType>(p0);
 
           nodeIt = nodes[dir].find(d);
           if (nodeIt != nodes[dir].end()) {
@@ -146,7 +146,7 @@ public:
                 // is set
                 cc[z] = static_cast<double>(
                     cellIt.getIndices(z) +
-                    BitMaskToVector<D, hrleIndexType>(p0)[z]);
+                    hrleUtil::BitMaskToVector<D, hrleIndexType>(p0)[z]);
               } else {
                 T d0, d1;
 

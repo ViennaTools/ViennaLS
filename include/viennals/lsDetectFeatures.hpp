@@ -113,8 +113,8 @@ private:
               ? domain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
-      for (hrleCartesianPlaneIterator<typename Domain<T, D>::DomainType>
-               neighborIt(levelSet->getDomain(), startVector, 1);
+      for (hrleCartesianPlaneIterator<typename Domain<T, D>::DomainType, 1>
+               neighborIt(levelSet->getDomain(), startVector);
            neighborIt.getIndices() < endVector; neighborIt.next()) {
 
         auto &center = neighborIt.getCenter();
@@ -189,8 +189,8 @@ private:
               ? domain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
-      for (hrleSparseBoxIterator<typename Domain<T, D>::DomainType> neighborIt(
-               levelSet->getDomain(), startVector, 1);
+      for (hrleSparseBoxIterator<typename Domain<T, D>::DomainType, 1>
+               neighborIt(levelSet->getDomain(), startVector);
            neighborIt.getIndices() < endVector; neighborIt.next()) {
         if (!neighborIt.getCenter().isDefined()) {
           continue;

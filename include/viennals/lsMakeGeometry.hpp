@@ -518,8 +518,8 @@ private:
 
     // rotate mesh
     // normalise axis vector
-    T unit =
-        std::sqrt(DotProduct(cylinder->axisDirection, cylinder->axisDirection));
+    T unit = std::sqrt(
+        hrleUtil::DotProduct(cylinder->axisDirection, cylinder->axisDirection));
     hrleVectorType<double, 3> cylinderAxis;
     for (unsigned i = 0; i < 3; ++i) {
       cylinderAxis[i] = cylinder->axisDirection[i] / unit;
