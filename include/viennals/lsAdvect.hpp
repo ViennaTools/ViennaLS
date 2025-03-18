@@ -82,6 +82,7 @@ template <class T, int D> class Advect {
   // this vector will hold the maximum time step for each point and the
   // corresponding velocity
   std::vector<std::vector<std::pair<std::pair<T, T>, T>>> storedRates;
+  double currentTimeStep = -1.;
 
   hrleVectorType<T, 3> findGlobalAlphas() const {
 
@@ -384,7 +385,7 @@ template <class T, int D> class Advect {
 
   /// internal function used as a wrapper to call specialized integrateTime
   /// with the chosen integrationScheme
-  double advect(double maxTimeStep = std::numeric_limits<double>::max()) {
+  double advect(double maxTimeStep) {
     // check whether a level set and velocites have been given
     if (levelSets.empty()) {
       Logger::getInstance()
@@ -399,76 +400,10 @@ template <class T, int D> class Advect {
       return std::numeric_limits<double>::max();
     }
 
-    prepareLS();
+    if (currentTimeStep < 0. || storedRates.empty())
+      runIntegration(maxTimeStep);
 
-    double timeStep = 0.;
-    if (integrationScheme == IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER) {
-      auto is = lsInternal::EngquistOsher<T, D, 1>(levelSets.back(), velocities,
-                                                   calculateNormalVectors);
-      timeStep = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER) {
-      auto is = lsInternal::EngquistOsher<T, D, 2>(levelSets.back(), velocities,
-                                                   calculateNormalVectors);
-      timeStep = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
-      auto alphas = findGlobalAlphas();
-      auto is = lsInternal::LaxFriedrichs<T, D, 1>(levelSets.back(), velocities,
-                                                   dissipationAlpha, alphas,
-                                                   calculateNormalVectors);
-      timeStep = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER) {
-      auto alphas = findGlobalAlphas();
-      auto is = lsInternal::LaxFriedrichs<T, D, 2>(levelSets.back(), velocities,
-                                                   dissipationAlpha, alphas,
-                                                   calculateNormalVectors);
-      timeStep = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::
-                   LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER) {
-      auto is = lsInternal::LocalLaxFriedrichsAnalytical<T, D, 1>(
-          levelSets.back(), velocities);
-      timeStep = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-      auto is = lsInternal::LocalLocalLaxFriedrichs<T, D, 1>(
-          levelSets.back(), velocities, dissipationAlpha);
-      timeStep = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
-      auto is = lsInternal::LocalLocalLaxFriedrichs<T, D, 2>(
-          levelSets.back(), velocities, dissipationAlpha);
-      timeStep = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-      auto is = lsInternal::LocalLaxFriedrichs<T, D, 1>(
-          levelSets.back(), velocities, dissipationAlpha);
-      timeStep = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
-      auto is = lsInternal::LocalLaxFriedrichs<T, D, 2>(
-          levelSets.back(), velocities, dissipationAlpha);
-      timeStep = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-      auto is = lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>(
-          levelSets.back(), velocities, dissipationAlpha);
-      timeStep = integrateTime(is, maxTimeStep);
-    } else {
-      Logger::getInstance()
-          .addWarning("Advect: Integration scheme not found. Not advecting.")
-          .print();
-
-      // if no correct scheme was found return infinity
-      // to stop advection
-      return std::numeric_limits<double>::max();
-    }
-
-    moveSurface(timeStep);
-    // clear the stored rates since surface has changed
-    storedRates.clear();
+    moveSurface();
 
     rebuildLS();
 
@@ -486,11 +421,12 @@ template <class T, int D> class Advect {
       }
     }
 
-    return timeStep;
+    return getCurrentTimeStep();
   }
 
   /// Internal function used to calculate the deltas to be applied to the LS
   /// values from the given velocities and the integration scheme to be used.
+  /// This function fills up the storedRates to be used when moving the LS
   template <class IntegrationSchemeType>
   double integrateTime(IntegrationSchemeType IntegrationScheme,
                        double maxTimeStep) {
@@ -658,7 +594,7 @@ template <class T, int D> class Advect {
 
   /// Level Sets below are also considered in order to adjust the advection
   /// depth accordingly if there would be a material change.
-  void moveSurface(double timeStep) {
+  void moveSurface() {
     if (timeStepRatio >= 0.5) {
       Logger::getInstance()
           .addWarning("Integration time step ratio should be smaller than 0.5. "
@@ -669,6 +605,7 @@ template <class T, int D> class Advect {
     auto &topDomain = levelSets.back()->getDomain();
     auto &grid = levelSets.back()->getGrid();
 
+    assert(currentTimeStep >= 0. && "No time step set!");
     assert(storedRates.size() == topDomain.getNumberOfSegments());
 
     // reduce to one layer thickness and apply new values directly to the
@@ -701,7 +638,7 @@ template <class T, int D> class Advect {
 
       for (unsigned localId = 0; localId < maxId; ++localId) {
         T &value = segment.definedValues[localId];
-        double time = timeStep;
+        double time = currentTimeStep;
 
         // if there is a change in materials during one time step, deduct
         // the time taken to advect up to the end of the top material and
@@ -762,6 +699,9 @@ template <class T, int D> class Advect {
       pointData.insertReplaceScalarData(std::move(vels), velocityLabel);
       pointData.insertReplaceScalarData(std::move(diss), dissipationLabel);
     }
+
+    // clear the stored rates since surface has changed
+    storedRates.clear();
   }
 
 public:
@@ -838,6 +778,9 @@ public:
   /// Get by how much the physical time was advanced during the last apply()
   /// call.
   double getAdvectedTime() const { return advectedTime; }
+
+  /// Return the last applied time step.
+  double getCurrentTimeStep() const { return currentTimeStep; }
 
   /// Get how many advection steps were performed during the last apply() call.
   unsigned getNumberOfTimeSteps() const { return numberOfTimeSteps; }
@@ -920,7 +863,7 @@ public:
   /// Perform the advection.
   void apply() {
     if (advectionTime == 0.) {
-      advectedTime = advect();
+      advectedTime = advect(std::numeric_limits<double>::max());
       numberOfTimeSteps = 1;
     } else {
       double currentTime = 0.0;
@@ -932,6 +875,72 @@ public:
           break;
       }
       advectedTime = currentTime;
+    }
+  }
+
+  /// This function applies the integration scheme and caculates the rates and
+  /// the maximum time step, but it does **not** move the surface.
+  void runIntegration(double maxTimeStep = std::numeric_limits<double>::max()) {
+    prepareLS();
+    if (integrationScheme == IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER) {
+      auto is = lsInternal::EngquistOsher<T, D, 1>(levelSets.back(), velocities,
+                                                   calculateNormalVectors);
+      currentTimeStep = integrateTime(is, maxTimeStep);
+    } else if (integrationScheme ==
+               IntegrationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER) {
+      auto is = lsInternal::EngquistOsher<T, D, 2>(levelSets.back(), velocities,
+                                                   calculateNormalVectors);
+      currentTimeStep = integrateTime(is, maxTimeStep);
+    } else if (integrationScheme ==
+               IntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
+      auto alphas = findGlobalAlphas();
+      auto is = lsInternal::LaxFriedrichs<T, D, 1>(levelSets.back(), velocities,
+                                                   dissipationAlpha, alphas,
+                                                   calculateNormalVectors);
+      currentTimeStep = integrateTime(is, maxTimeStep);
+    } else if (integrationScheme ==
+               IntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER) {
+      auto alphas = findGlobalAlphas();
+      auto is = lsInternal::LaxFriedrichs<T, D, 2>(levelSets.back(), velocities,
+                                                   dissipationAlpha, alphas,
+                                                   calculateNormalVectors);
+      currentTimeStep = integrateTime(is, maxTimeStep);
+    } else if (integrationScheme ==
+               IntegrationSchemeEnum::
+                   LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER) {
+      auto is = lsInternal::LocalLaxFriedrichsAnalytical<T, D, 1>(
+          levelSets.back(), velocities);
+      currentTimeStep = integrateTime(is, maxTimeStep);
+    } else if (integrationScheme ==
+               IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+      auto is = lsInternal::LocalLocalLaxFriedrichs<T, D, 1>(
+          levelSets.back(), velocities, dissipationAlpha);
+      currentTimeStep = integrateTime(is, maxTimeStep);
+    } else if (integrationScheme ==
+               IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
+      auto is = lsInternal::LocalLocalLaxFriedrichs<T, D, 2>(
+          levelSets.back(), velocities, dissipationAlpha);
+      currentTimeStep = integrateTime(is, maxTimeStep);
+    } else if (integrationScheme ==
+               IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+      auto is = lsInternal::LocalLaxFriedrichs<T, D, 1>(
+          levelSets.back(), velocities, dissipationAlpha);
+      currentTimeStep = integrateTime(is, maxTimeStep);
+    } else if (integrationScheme ==
+               IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
+      auto is = lsInternal::LocalLaxFriedrichs<T, D, 2>(
+          levelSets.back(), velocities, dissipationAlpha);
+      currentTimeStep = integrateTime(is, maxTimeStep);
+    } else if (integrationScheme ==
+               IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+      auto is = lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>(
+          levelSets.back(), velocities, dissipationAlpha);
+      currentTimeStep = integrateTime(is, maxTimeStep);
+    } else {
+      Logger::getInstance()
+          .addWarning("Advect: Integration scheme not found. Not integrating.")
+          .print();
+      currentTimeStep = -1.;
     }
   }
 };
