@@ -79,6 +79,10 @@ template <class T, int D> class Advect {
   bool checkDissipation = true;
   static constexpr double wrappingLayerEpsilon = 1e-4;
 
+  // this vector will hold the maximum time step for each point and the
+  // corresponding velocity
+  std::vector<std::vector<std::pair<std::pair<T, T>, T>>> storedRates;
+
   hrleVectorType<T, 3> findGlobalAlphas() const {
 
     auto &topDomain = levelSets.back()->getDomain();
@@ -397,61 +401,61 @@ template <class T, int D> class Advect {
 
     prepareLS();
 
-    double currentTime = 0.;
+    double timeStep = 0.;
     if (integrationScheme == IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER) {
       auto is = lsInternal::EngquistOsher<T, D, 1>(levelSets.back(), velocities,
                                                    calculateNormalVectors);
-      currentTime = integrateTime(is, maxTimeStep);
+      timeStep = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                IntegrationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER) {
       auto is = lsInternal::EngquistOsher<T, D, 2>(levelSets.back(), velocities,
                                                    calculateNormalVectors);
-      currentTime = integrateTime(is, maxTimeStep);
+      timeStep = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                IntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
       auto alphas = findGlobalAlphas();
       auto is = lsInternal::LaxFriedrichs<T, D, 1>(levelSets.back(), velocities,
                                                    dissipationAlpha, alphas,
                                                    calculateNormalVectors);
-      currentTime = integrateTime(is, maxTimeStep);
+      timeStep = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                IntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER) {
       auto alphas = findGlobalAlphas();
       auto is = lsInternal::LaxFriedrichs<T, D, 2>(levelSets.back(), velocities,
                                                    dissipationAlpha, alphas,
                                                    calculateNormalVectors);
-      currentTime = integrateTime(is, maxTimeStep);
+      timeStep = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                IntegrationSchemeEnum::
                    LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER) {
       auto is = lsInternal::LocalLaxFriedrichsAnalytical<T, D, 1>(
           levelSets.back(), velocities);
-      currentTime = integrateTime(is, maxTimeStep);
+      timeStep = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       auto is = lsInternal::LocalLocalLaxFriedrichs<T, D, 1>(
           levelSets.back(), velocities, dissipationAlpha);
-      currentTime = integrateTime(is, maxTimeStep);
+      timeStep = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
       auto is = lsInternal::LocalLocalLaxFriedrichs<T, D, 2>(
           levelSets.back(), velocities, dissipationAlpha);
-      currentTime = integrateTime(is, maxTimeStep);
+      timeStep = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       auto is = lsInternal::LocalLaxFriedrichs<T, D, 1>(
           levelSets.back(), velocities, dissipationAlpha);
-      currentTime = integrateTime(is, maxTimeStep);
+      timeStep = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
       auto is = lsInternal::LocalLaxFriedrichs<T, D, 2>(
           levelSets.back(), velocities, dissipationAlpha);
-      currentTime = integrateTime(is, maxTimeStep);
+      timeStep = integrateTime(is, maxTimeStep);
     } else if (integrationScheme ==
                IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       auto is = lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>(
           levelSets.back(), velocities, dissipationAlpha);
-      currentTime = integrateTime(is, maxTimeStep);
+      timeStep = integrateTime(is, maxTimeStep);
     } else {
       Logger::getInstance()
           .addWarning("Advect: Integration scheme not found. Not advecting.")
@@ -461,6 +465,10 @@ template <class T, int D> class Advect {
       // to stop advection
       return std::numeric_limits<double>::max();
     }
+
+    moveSurface(timeStep);
+    // clear the stored rates since surface has changed
+    storedRates.clear();
 
     rebuildLS();
 
@@ -478,29 +486,17 @@ template <class T, int D> class Advect {
       }
     }
 
-    return currentTime;
+    return timeStep;
   }
 
   /// Internal function used to calculate the deltas to be applied to the LS
   /// values from the given velocities and the integration scheme to be used.
-  /// Level Sets below are also considered in order to adjust the advection
-  /// depth accordingly if there would be a material change.
   template <class IntegrationSchemeType>
-  double
-  integrateTime(IntegrationSchemeType IntegrationScheme,
-                double maxTimeStep = std::numeric_limits<double>::max()) {
-    if (timeStepRatio >= 0.5) {
-      Logger::getInstance()
-          .addWarning("Integration time step ratio should be smaller than 0.5. "
-                      "Advection might fail!")
-          .print();
-    }
+  double integrateTime(IntegrationSchemeType IntegrationScheme,
+                       double maxTimeStep) {
 
     auto &topDomain = levelSets.back()->getDomain();
     auto &grid = levelSets.back()->getGrid();
-
-    std::vector<std::vector<std::pair<std::pair<T, T>, T>>> totalTempRates;
-    totalTempRates.resize((levelSets.back())->getNumberOfSegments());
 
     typename PointData<T>::ScalarDataType *voidMarkerPointer;
     if (ignoreVoids) {
@@ -516,10 +512,12 @@ template <class T, int D> class Advect {
         ignoreVoids = false;
       }
     }
-
     const bool ignoreVoidPoints = ignoreVoids;
 
-#pragma omp parallel num_threads((levelSets.back())->getNumberOfSegments())
+    assert(storedRates.empty() && "Overwriting stored rates!");
+    storedRates.resize(topDomain.getNumberOfSegments());
+
+#pragma omp parallel num_threads(topDomain.getNumberOfSegments())
     {
       int p = 0;
 #ifdef _OPENMP
@@ -536,7 +534,7 @@ template <class T, int D> class Advect {
               : grid.incrementIndices(grid.getMaxGridPoint());
 
       double tempMaxTimeStep = maxTimeStep;
-      auto &tempRates = totalTempRates[p];
+      auto &tempRates = storedRates[p];
       tempRates.reserve(
           topDomain.getNumberOfPoints() /
               static_cast<double>((levelSets.back())->getNumberOfSegments()) +
@@ -653,6 +651,26 @@ template <class T, int D> class Advect {
       }
     } // end of parallel section
 
+    // maxTimeStep is now the maximum time step possible for all points
+    // and rates are stored in a vector
+    return maxTimeStep;
+  }
+
+  /// Level Sets below are also considered in order to adjust the advection
+  /// depth accordingly if there would be a material change.
+  void moveSurface(double timeStep) {
+    if (timeStepRatio >= 0.5) {
+      Logger::getInstance()
+          .addWarning("Integration time step ratio should be smaller than 0.5. "
+                      "Advection might fail!")
+          .print();
+    }
+
+    auto &topDomain = levelSets.back()->getDomain();
+    auto &grid = levelSets.back()->getGrid();
+
+    assert(storedRates.size() == topDomain.getNumberOfSegments());
+
     // reduce to one layer thickness and apply new values directly to the
     // domain segments --> DO NOT CHANGE SEGMENTATION HERE (true parameter)
     Reduce<T, D>(levelSets.back(), 1, true).apply();
@@ -665,14 +683,14 @@ template <class T, int D> class Advect {
 
     const bool checkDiss = checkDissipation;
 
-#pragma omp parallel num_threads((levelSets.back())->getNumberOfSegments())
+#pragma omp parallel num_threads(topDomain.getNumberOfSegments())
     {
       int p = 0;
 #ifdef _OPENMP
       p = omp_get_thread_num();
 #endif
 
-      auto itRS = totalTempRates[p].cbegin();
+      auto itRS = storedRates[p].cbegin();
       auto &segment = topDomain.getDomainSegment(p);
       unsigned maxId = segment.getNumberOfPoints();
 
@@ -683,7 +701,7 @@ template <class T, int D> class Advect {
 
       for (unsigned localId = 0; localId < maxId; ++localId) {
         T &value = segment.definedValues[localId];
-        double time = maxTimeStep;
+        double time = timeStep;
 
         // if there is a change in materials during one time step, deduct
         // the time taken to advect up to the end of the top material and
@@ -744,8 +762,6 @@ template <class T, int D> class Advect {
       pointData.insertReplaceScalarData(std::move(vels), velocityLabel);
       pointData.insertReplaceScalarData(std::move(diss), dissipationLabel);
     }
-
-    return maxTimeStep;
   }
 
 public:
@@ -896,7 +912,7 @@ public:
           levelSets.back());
     } else {
       Logger::getInstance()
-          .addWarning("Advect: Integration scheme not found. Not advecting.")
+          .addWarning("Advect: Integration scheme not found.")
           .print();
     }
   }
