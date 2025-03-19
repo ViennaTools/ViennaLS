@@ -55,13 +55,16 @@ enum struct IntegrationSchemeEnum : unsigned {
 /// This class is used to advance level sets over time.
 /// Level sets are passed to the constructor in a std::vector, with
 /// the last element being the level set to advect, or "top level set", while
-/// the others are then adjusted afterwards. In order to ensure that advection
+/// the others are then adjusted afterward. In order to ensure that advection
 /// works correctly, the "top level set" has to include all lower level sets:
 /// LS_top = LS_top U LS_i for i = {0 ... n}, where n is the number of level
 /// sets. The velocities used to advect the level set are given in a concrete
 /// implementation of the lsVelocityField (check Advection examples for
 /// guidance)
 template <class T, int D> class Advect {
+  using ConstSparseIterator =
+      hrleConstSparseIterator<typename Domain<T, D>::DomainType>;
+
   std::vector<SmartPointer<Domain<T, D>>> levelSets;
   SmartPointer<VelocityField<T>> velocities = nullptr;
   IntegrationSchemeEnum integrationScheme =
@@ -97,37 +100,28 @@ template <class T, int D> class Advect {
 
 #pragma omp parallel num_threads((levelSets.back())->getNumberOfSegments())
     {
-      int p = 0;
-#ifdef _OPENMP
-      p = omp_get_thread_num();
-#endif
-
       hrleVectorType<T, 3> localAlphas(0., 0., 0.);
 
+      const int p = omp_get_thread_num();
       hrleVectorType<hrleIndexType, D> startVector =
           (p == 0) ? grid.getMinGridPoint()
                    : topDomain.getSegmentation()[p - 1];
-
       hrleVectorType<hrleIndexType, D> endVector =
           (p != static_cast<int>(topDomain.getNumberOfSegments() - 1))
               ? topDomain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
       // an iterator for each level set
-      std::vector<hrleConstSparseIterator<typename Domain<T, D>::DomainType>>
-          iterators;
-      for (auto it = levelSets.begin(); it != levelSets.end(); ++it) {
-        iterators.push_back(
-            hrleConstSparseIterator<typename Domain<T, D>::DomainType>(
-                (*it)->getDomain()));
+      std::vector<ConstSparseIterator> iterators;
+      for (auto const &ls : levelSets) {
+        iterators.emplace_back(ls->getDomain());
       }
 
       // neighborIterator for the top level set
       hrleConstSparseStarIterator<hrleDomain<T, D>, 1> neighborIterator(
           topDomain);
 
-      for (hrleSparseIterator<typename Domain<T, D>::DomainType> it(
-               topDomain, startVector);
+      for (ConstSparseIterator it(topDomain, startVector);
            it.getStartIndices() < endVector; ++it) {
 
         if (!it.isDefined() || std::abs(it.getValue()) > 0.5)
@@ -184,6 +178,7 @@ template <class T, int D> class Advect {
               localAlphas[i] = std::max(localAlphas[i], tempAlpha);
             }
 
+            // exit material loop
             break;
           }
         }
@@ -201,14 +196,14 @@ template <class T, int D> class Advect {
   }
 
   void rebuildLS() {
-    // TODO: this function uses manhatten distances for renormalisation,
+    // TODO: this function uses Manhattan distances for renormalisation,
     // since this is the quickest. For visualisation applications, better
     // renormalisation is needed, so it might be good to implement
     // Euler distance renormalisation as an option
     auto &grid = levelSets.back()->getGrid();
     auto newlsDomain = SmartPointer<Domain<T, D>>::New(grid);
-    typename Domain<T, D>::DomainType &newDomain = newlsDomain->getDomain();
-    typename Domain<T, D>::DomainType &domain = levelSets.back()->getDomain();
+    auto &newDomain = newlsDomain->getDomain();
+    auto &domain = levelSets.back()->getDomain();
 
     newDomain.initialize(domain.getNewSegmentation(),
                          domain.getAllocation() *
@@ -231,11 +226,7 @@ template <class T, int D> class Advect {
 
 #pragma omp parallel num_threads(newDomain.getNumberOfSegments())
     {
-      int p = 0;
-#ifdef _OPENMP
-      p = omp_get_thread_num();
-#endif
-
+      const int p = omp_get_thread_num();
       auto &domainSegment = newDomain.getDomainSegment(p);
 
       hrleVectorType<hrleIndexType, D> startVector =
@@ -386,7 +377,7 @@ template <class T, int D> class Advect {
   /// internal function used as a wrapper to call specialized integrateTime
   /// with the chosen integrationScheme
   double advect(double maxTimeStep) {
-    // check whether a level set and velocites have been given
+    // check whether a level set and velocities have been given
     if (levelSets.empty()) {
       Logger::getInstance()
           .addWarning("No level sets passed to Advect. Not advecting.")
@@ -401,7 +392,7 @@ template <class T, int D> class Advect {
     }
 
     if (currentTimeStep < 0. || storedRates.empty())
-      runIntegration(maxTimeStep);
+      applyIntegration(maxTimeStep);
 
     moveSurface();
 
@@ -450,16 +441,17 @@ template <class T, int D> class Advect {
     }
     const bool ignoreVoidPoints = ignoreVoids;
 
-    assert(storedRates.empty() && "Overwriting stored rates!");
+    if (!storedRates.empty()) {
+      Logger::getInstance()
+          .addWarning("Advect: Overwriting previously stored rates.")
+          .print();
+    }
+
     storedRates.resize(topDomain.getNumberOfSegments());
 
 #pragma omp parallel num_threads(topDomain.getNumberOfSegments())
     {
-      int p = 0;
-#ifdef _OPENMP
-      p = omp_get_thread_num();
-#endif
-
+      const int p = omp_get_thread_num();
       hrleVectorType<hrleIndexType, D> startVector =
           (p == 0) ? grid.getMinGridPoint()
                    : topDomain.getSegmentation()[p - 1];
@@ -477,18 +469,14 @@ template <class T, int D> class Advect {
           10);
 
       // an iterator for each level set
-      std::vector<hrleSparseIterator<typename Domain<T, D>::DomainType>>
-          iterators;
-      for (auto it = levelSets.begin(); it != levelSets.end(); ++it) {
-        iterators.push_back(
-            hrleSparseIterator<typename Domain<T, D>::DomainType>(
-                (*it)->getDomain()));
+      std::vector<ConstSparseIterator> iterators;
+      for (auto const &ls : levelSets) {
+        iterators.emplace_back(ls->getDomain());
       }
 
       IntegrationSchemeType scheme(IntegrationScheme);
 
-      for (hrleSparseIterator<typename Domain<T, D>::DomainType> it(
-               topDomain, startVector);
+      for (ConstSparseIterator it(topDomain, startVector);
            it.getStartIndices() < endVector; ++it) {
 
         if (!it.isDefined() || std::abs(it.getValue()) > 0.5)
@@ -592,8 +580,8 @@ template <class T, int D> class Advect {
     return maxTimeStep;
   }
 
-  /// Level Sets below are also considered in order to adjust the advection
-  /// depth accordingly if there would be a material change.
+  // Level Sets below are also considered in order to adjust the advection
+  // depth accordingly if there would be a material change.
   void moveSurface() {
     if (timeStepRatio >= 0.5) {
       Logger::getInstance()
@@ -622,14 +610,10 @@ template <class T, int D> class Advect {
 
 #pragma omp parallel num_threads(topDomain.getNumberOfSegments())
     {
-      int p = 0;
-#ifdef _OPENMP
-      p = omp_get_thread_num();
-#endif
-
+      const int p = omp_get_thread_num();
       auto itRS = storedRates[p].cbegin();
       auto &segment = topDomain.getDomainSegment(p);
-      unsigned maxId = segment.getNumberOfPoints();
+      const unsigned maxId = segment.getNumberOfPoints();
 
       if (saveVelocities) {
         velocityVectors[p].resize(maxId);
@@ -643,16 +627,20 @@ template <class T, int D> class Advect {
         // if there is a change in materials during one time step, deduct
         // the time taken to advect up to the end of the top material and
         // set the LS value to the one below
-        T velocity = itRS->first.first - itRS->first.second;
-        if (checkDiss && (itRS->first.first < 0 && velocity > 0) ||
-            (itRS->first.first > 0 && velocity < 0)) {
+        auto const [gradient, dissipation] = itRS->first;
+        T velocity = gradient - dissipation;
+        // check if dissipation is too high
+        if (checkDiss && (gradient < 0 && velocity > 0) ||
+            (gradient > 0 && velocity < 0)) {
           velocity = 0;
         }
+
         T rate = time * velocity;
         while (std::abs(itRS->second - value) < std::abs(rate)) {
           time -= std::abs((itRS->second - value) / velocity);
           value = itRS->second;
-          ++itRS;
+          ++itRS; // advance the TempStopRates iterator by one
+
           // recalculate velocity and rate
           velocity = itRS->first.first - itRS->first.second;
           if (checkDiss && (itRS->first.first < 0 && velocity > 0) ||
@@ -670,8 +658,7 @@ template <class T, int D> class Advect {
           dissipationVectors[p][localId] = itRS->first.second;
         }
 
-        // this
-        // is run when two materials are close but the velocity is too slow
+        // this is run when two materials are close but the velocity is too slow
         // to actually reach the second material, to get rid of the extra
         // entry in the TempRatesStop
         while (std::abs(itRS->second) != std::numeric_limits<T>::max())
@@ -878,9 +865,10 @@ public:
     }
   }
 
-  /// This function applies the integration scheme and caculates the rates and
+  /// This function applies the integration scheme and calculates the rates and
   /// the maximum time step, but it does **not** move the surface.
-  void runIntegration(double maxTimeStep = std::numeric_limits<double>::max()) {
+  void
+  applyIntegration(double maxTimeStep = std::numeric_limits<double>::max()) {
     prepareLS();
     if (integrationScheme == IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER) {
       auto is = lsInternal::EngquistOsher<T, D, 1>(levelSets.back(), velocities,
