@@ -48,6 +48,7 @@
 #include <lsReader.hpp>
 #include <lsReduce.hpp>
 #include <lsRemoveStrayPoints.hpp>
+#include <lsSliceExtractor.hpp>
 #include <lsToDiskMesh.hpp>
 #include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
@@ -1087,6 +1088,33 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Set the logic by which to choose the surface which should be kept. "
            "All other LS values will be marked as stray points and removed.")
       .def("apply", &RemoveStrayPoints<T, D>::apply, "Remove stray points.");
+
+  // SliceExtractor
+  pybind11::class_<SliceExtractor<T>, SmartPointer<SliceExtractor<T>>>(
+      module, "SliceExtractor")
+      // constructors
+      .def(pybind11::init(&SmartPointer<SliceExtractor<T>>::New<>))
+      .def(pybind11::init(
+          &SmartPointer<SliceExtractor<T>>::New<SmartPointer<Domain<T, 3>> &,
+                                                SmartPointer<Domain<T, 2>> &>))
+      .def(pybind11::init(
+          &SmartPointer<SliceExtractor<T>>::New<SmartPointer<Domain<T, 3>> &,
+                                                SmartPointer<Domain<T, 2>> &,
+                                                int, T>))
+      // methods
+      .def("setSourceDomain", &SliceExtractor<T>::setSourceDomain,
+           "Set the 3D source domain from which to extract the slice.")
+      .def("setSliceDomain", &SliceExtractor<T>::setSliceDomain,
+           "Set the 2D domain where the extracted slice will be stored.")
+      .def("setSliceDimension", &SliceExtractor<T>::setSliceDimension,
+           "Set the dimension along which to slice (0=x, 1=y, 2=z).")
+      .def("setSlicePosition", &SliceExtractor<T>::setSlicePosition,
+           "Set the position along the slice dimension where to extract the "
+           "slice.")
+      .def("setTolerance", &SliceExtractor<T>::setTolerance,
+           "Set the tolerance for matching points to the slice position.")
+      .def("apply", &SliceExtractor<T>::apply,
+           "Extract the 2D slice from the 3D domain.");
 
   // ToDiskMesh
   pybind11::class_<ToDiskMesh<T, D>, SmartPointer<ToDiskMesh<T, D>>>(
