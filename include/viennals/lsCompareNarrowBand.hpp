@@ -31,11 +31,12 @@ template <class T, int D = 2> class CompareNarrowBand {
 
   // Fields to store the calculation results
   T sumSquaredDifferences = 0.0;
+  T sumDifferences = 0.0;
   unsigned numPoints = 0;
-  bool outputSquaredDifferences = false;
 
   // Add mesh output capability
   SmartPointer<Mesh<T>> outputMesh = nullptr;
+  bool outputMeshSquaredDifferences = true;
 
   bool checkAndCalculateBounds() {
     if (levelSetTarget == nullptr || levelSetSample == nullptr) {
@@ -154,7 +155,7 @@ public:
     levelSetTarget = passedLevelSet;
   }
 
-  void setlevelSetSample(SmartPointer<Domain<T, D>> passedLevelSet) {
+  void setLevelSetSample(SmartPointer<Domain<T, D>> passedLevelSet) {
     levelSetSample = passedLevelSet;
   }
 
@@ -187,14 +188,16 @@ public:
   }
 
   /// Set the output mesh where difference values will be stored
-  void setOutputMesh(SmartPointer<Mesh<T>> passedMesh) {
+  void setOutputMesh(SmartPointer<Mesh<T>> passedMesh,
+                     bool outputMeshSquaredDiffs = true) {
     outputMesh = passedMesh;
+    outputMeshSquaredDifferences = outputMeshSquaredDiffs;
   }
 
   /// Set whether to output squared differences (true) or absolute differences
   /// (false)
-  void setOutputSquaredDifferences(bool value) {
-    outputSquaredDifferences = value;
+  void setOutputMeshSquaredDifferences(bool value) {
+    outputMeshSquaredDifferences = value;
   }
 
   /// Apply the comparison and calculate the sum of squared differences.
@@ -211,7 +214,6 @@ public:
     double gridDelta = gridTarget.getGridDelta();
 
     // Set up iterators for both level sets
-    // TODO: why cell iterators?
     hrleConstDenseCellIterator<typename Domain<T, D>::DomainType> itSample(
         levelSetSample->getDomain(), minIndex);
     hrleConstDenseCellIterator<typename Domain<T, D>::DomainType> itTarget(
@@ -277,9 +279,9 @@ public:
 
       // Calculate difference and add to sum
       T diff = std::abs(valueTarget - valueSample) * gridDelta;
-      if (outputSquaredDifferences)
-        diff = diff * diff;
-      sumSquaredDifferences += diff;
+      T diffSquared = diff * diff;
+      sumSquaredDifferences += diffSquared;
+      sumDifferences += diff;
       numPoints++;
 
       // Store difference in mesh if required
@@ -287,9 +289,6 @@ public:
         std::array<unsigned, 1 << D> voxel;
         bool addVoxel = true;
         // TODO: possibly remove this addVoxel check
-        // TODO: why use voxels at all? aren't the differences computed on
-        // points?
-
         // Insert all points of voxel into pointList
         for (unsigned i = 0; i < (1 << D); ++i) {
           hrleVectorType<hrleIndexType, D> index;
@@ -325,8 +324,10 @@ public:
             outputMesh->tetras.push_back(quad);
           }
 
-          // Add difference value to cell data
-          differenceValues.push_back(diff);
+          // Add difference value to cell data depending on whether squared
+          // differences are requested
+          differenceValues.push_back(outputMeshSquaredDifferences ? diffSquared
+                                                                  : diff);
         }
       }
     }
@@ -350,14 +351,18 @@ public:
 
       assert(differenceValues.size() ==
              outputMesh->template getElements<1 << D>().size());
-      outputMesh->cellData.insertNextScalarData(
-          std::move(differenceValues),
-          outputSquaredDifferences ? "SquaredDifferences" : "Differences");
+      outputMesh->cellData.insertNextScalarData(std::move(differenceValues),
+                                                outputMeshSquaredDifferences
+                                                    ? "Squared differences"
+                                                    : "Absolute differences");
     }
   }
 
   /// Return the sum of squared differences calculated by apply().
   T getSumSquaredDifferences() const { return sumSquaredDifferences; }
+
+  // Return the sum of differences calculated by apply().
+  T getSumDifferences() const { return sumDifferences; }
 
   /// Return the number of points used in the comparison.
   unsigned getNumPoints() const { return numPoints; }

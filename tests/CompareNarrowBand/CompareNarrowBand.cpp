@@ -56,13 +56,13 @@ int main() {
   {
     auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
     ls::ToMesh<double, D>(sphere1, mesh).apply();
-    ls::VTKWriter<double>(mesh, "sphere1_narrowband.vtk").apply();
+    ls::VTKWriter<double>(mesh, "sphere1_narrowband.vtp").apply();
   }
 
   {
     auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
     ls::ToMesh<double, D>(sphere2, mesh).apply();
-    ls::VTKWriter<double>(mesh, "sphere2_narrowband.vtk").apply();
+    ls::VTKWriter<double>(mesh, "sphere2_narrowband.vtp").apply();
   }
 
   // Compare the narrow bands
@@ -70,7 +70,7 @@ int main() {
 
   // Create mesh for visualization of differences
   auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
-  compareNarrowBand.setOutputMesh(mesh);
+  compareNarrowBand.setOutputMesh(mesh, false);
 
   compareNarrowBand.apply();
 
@@ -125,7 +125,7 @@ int main() {
 
   // Create a mesh output with squared differences
   compareNarrowBand.setOutputMesh(mesh);
-  compareNarrowBand.setOutputSquaredDifferences(true);
+  compareNarrowBand.setOutputMeshSquaredDifferences(true);
   compareNarrowBand.apply();
   ls::VTKWriter<double>(mesh,
                         "narrowband_resctricted-range_squared_differences.vtu")
