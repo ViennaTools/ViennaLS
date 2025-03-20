@@ -88,12 +88,11 @@ int main() {
 
   // Create mesh for visualization of differences
   auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
-  compareSparseField.setOutputMesh(mesh, false);
-
+  compareSparseField.setOutputMesh(mesh);
   compareSparseField.apply();
 
   // Save mesh to file
-  ls::VTKWriter<double>(mesh, "sparsefield_absolute_differences.vtp").apply();
+  ls::VTKWriter<double>(mesh, "sparsefield.vtp").apply();
 
   // Get the calculated difference metrics
   double sumSquaredDifferences = compareSparseField.getSumSquaredDifferences();
@@ -155,11 +154,8 @@ int main() {
 
   // Create a mesh output with squared differences
   compareSparseField.setOutputMesh(mesh);
-  compareSparseField.setOutputMeshSquaredDifferences(true);
   compareSparseField.apply();
-  ls::VTKWriter<double>(mesh,
-                        "sparsefield_restricted-range_squared_differences.vtp")
-      .apply();
+  ls::VTKWriter<double>(mesh, "sparsefield_restricted.vtp").apply();
 
   // Clear range restrictions
   compareSparseField.clearXRange();

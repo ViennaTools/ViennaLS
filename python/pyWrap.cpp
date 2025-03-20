@@ -455,10 +455,6 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Clear the y-range restriction")
       .def("setOutputMesh", &CompareSparseField<T, D>::setOutputMesh,
            "Set the output mesh where difference values will be stored")
-      .def("setOutputMeshSquaredDifferences",
-           &CompareSparseField<T, D>::setOutputMeshSquaredDifferences,
-           "Set whether to output squared differences (true) or absolute "
-           "differences (false)")
       .def("apply", &CompareSparseField<T, D>::apply,
            "Apply the comparison and calculate the sum of squared differences.")
       .def("getSumSquaredDifferences",

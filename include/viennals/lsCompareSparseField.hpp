@@ -41,7 +41,6 @@ template <class T, int D = 2> class CompareSparseField {
 
   // Add mesh output capability
   SmartPointer<Mesh<T>> outputMesh = nullptr;
-  bool outputMeshSquaredDifferences = true;
 
   bool checkAndCalculateBounds() {
     if (levelSetTarget == nullptr || levelSetSample == nullptr) {
@@ -170,16 +169,8 @@ public:
   }
 
   /// Set the output mesh where difference values will be stored
-  void setOutputMesh(SmartPointer<Mesh<T>> passedMesh,
-                     bool outputMeshSquaredDiffs = true) {
+  void setOutputMesh(SmartPointer<Mesh<T>> passedMesh) {
     outputMesh = passedMesh;
-    outputMeshSquaredDifferences = outputMeshSquaredDiffs;
-  }
-
-  /// Set whether to output squared differences (true) or absolute differences
-  /// (false)
-  void setOutputMeshSquaredDifferences(bool value) {
-    outputMeshSquaredDifferences = value;
   }
 
   /// Apply the comparison and calculate the sum of squared differences.
@@ -188,16 +179,23 @@ public:
     if (!checkAndCalculateBounds()) {
       // If checks fail, return NaN
       sumSquaredDifferences = std::numeric_limits<T>::quiet_NaN();
+      sumDifferences = std::numeric_limits<T>::quiet_NaN();
       numPoints = 0;
       return;
     }
 
     const auto &gridTarget = levelSetTarget->getGrid();
-    double gridDelta = gridTarget.getGridDelta();
+    const auto gridDelta = gridTarget.getGridDelta();
 
     sumSquaredDifferences = 0.0;
     sumDifferences = 0.0;
     numPoints = 0;
+
+    // Direct storage for points and differences
+    std::vector<std::array<T, 3>> nodeCoordinates; // 3D necessary for lsMesh
+    std::vector<std::array<unsigned, 1>> vertexIndices;
+    std::vector<T> differenceValues;
+    std::vector<T> squaredDifferenceValues;
 
     // Prepare mesh output if needed
     const bool generateMesh = outputMesh != nullptr;
@@ -209,12 +207,13 @@ public:
         outputMesh->minimumExtent[i] = std::numeric_limits<T>::max();
         outputMesh->maximumExtent[i] = std::numeric_limits<T>::lowest();
       }
-    }
 
-    // Direct storage for points and differences
-    std::vector<std::array<T, 3>> nodeCoordinates; // 3D necessary for lsMesh
-    std::vector<T> differenceValues;
-    std::vector<std::array<unsigned, 1>> vertexIndices;
+      // Reserve space for mesh data
+      nodeCoordinates.reserve(levelSetSample->getNumberOfPoints());
+      vertexIndices.reserve(levelSetSample->getNumberOfPoints());
+      differenceValues.reserve(levelSetSample->getNumberOfPoints());
+      squaredDifferenceValues.reserve(levelSetSample->getNumberOfPoints());
+    }
 
     // Create sparse iterators for the level sets
     hrleConstSparseIterator<typename Domain<T, D>::DomainType> itSample(
@@ -233,9 +232,9 @@ public:
 
       auto indices = itSample.getStartIndices();
 
-      // Calculate physical coordinates
+      // Calculate coordinates
       T xCoord = indices[0] * gridDelta;
-      T yCoord = (D > 1) ? indices[1] * gridDelta : 0;
+      T yCoord = indices[1] * gridDelta;
       T zCoord = 0.0; // Always use 0 for z-coordinate in 2D
 
       // Skip if outside the specified x-range
@@ -244,8 +243,8 @@ public:
         continue;
       }
 
-      // Skip if outside the specified y-range (only check in 2D and 3D)
-      if (D > 1 && useYRange && (yCoord < yRangeMin || yCoord > yRangeMax)) {
+      // Skip if outside the specified y-range
+      if (useYRange && (yCoord < yRangeMin || yCoord > yRangeMax)) {
         itSample.next();
         continue;
       }
@@ -257,8 +256,8 @@ public:
       T valueTarget = itTarget.getValue();
 
       // Check for infinite or extreme values that might cause numerical issues
-      if (std::isinf(valueTarget) || std::isinf(valueSample) ||
-          std::abs(valueTarget) > 1000 || std::abs(valueSample) > 1000) {
+      if (!itTarget.isDefined() || std::isinf(valueTarget) ||
+          std::isinf(valueSample)) {
         itSample.next();
         continue;
       }
@@ -278,9 +277,9 @@ public:
         // Store the coordinates
         nodeCoordinates.push_back(coords);
 
-        // Store the difference value (squared or absolute)
-        differenceValues.push_back(outputMeshSquaredDifferences ? diffSquared
-                                                                : diff);
+        // Store the difference value (squared and absolute)
+        differenceValues.push_back(diff);
+        squaredDifferenceValues.push_back(diffSquared);
 
         // Create a vertex for this point
         std::array<unsigned, 1> vertex = {
@@ -289,12 +288,10 @@ public:
 
         // Update the mesh extent
         for (unsigned i = 0; i < D; ++i) {
-          if (coords[i] < outputMesh->minimumExtent[i]) {
-            outputMesh->minimumExtent[i] = coords[i];
-          }
-          if (coords[i] > outputMesh->maximumExtent[i]) {
-            outputMesh->maximumExtent[i] = coords[i];
-          }
+          outputMesh->minimumExtent[i] =
+              std::min(outputMesh->minimumExtent[i], coords[i]);
+          outputMesh->maximumExtent[i] =
+              std::max(outputMesh->maximumExtent[i], coords[i]);
         }
       }
 
@@ -305,16 +302,16 @@ public:
     // Finalize mesh output
     if (generateMesh && !nodeCoordinates.empty()) {
       // Store the node coordinates directly
-      outputMesh->nodes = nodeCoordinates;
+      outputMesh->nodes = std::move(nodeCoordinates);
 
       // Store the vertices for point visualization
-      outputMesh->vertices = vertexIndices;
+      outputMesh->vertices = std::move(vertexIndices);
 
       // Store the difference values as point data
       outputMesh->pointData.insertNextScalarData(std::move(differenceValues),
-                                                 outputMeshSquaredDifferences
-                                                     ? "Squared differences"
-                                                     : "Absolute differences");
+                                                 "Absolute differences");
+      outputMesh->pointData.insertNextScalarData(
+          std::move(squaredDifferenceValues), "Squared differences");
     }
   }
 
