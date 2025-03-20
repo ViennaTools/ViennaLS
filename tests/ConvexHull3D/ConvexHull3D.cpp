@@ -97,8 +97,8 @@ int main() {
 
     double x = radius * cos(angle);
     double y = radius * sin(angle);
-    cloud->insertNextPoint(hrleVectorType<double, D>(x, y, -height));
-    cloud->insertNextPoint(hrleVectorType<double, D>(x, y, height));
+    cloud->insertNextPoint(ls::VectorType<double, D>(x, y, -height));
+    cloud->insertNextPoint(ls::VectorType<double, D>(x, y, height));
   }
 
   auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
@@ -106,8 +106,8 @@ int main() {
 
   auto pointMesh = ls::SmartPointer<ls::Mesh<>>::New();
   for (unsigned i = 0; i < cloud->points.size(); ++i) {
-    pointMesh->nodes.push_back(std::array<double, 3>{
-        cloud->points[i][0], cloud->points[i][1], cloud->points[i][2]});
+    pointMesh->nodes.emplace_back(cloud->points[i][0], cloud->points[i][1],
+                                  cloud->points[i][2]);
     pointMesh->vertices.push_back(std::array<unsigned, 1>{i});
   }
   std::cout << "Output point cloud" << std::endl;

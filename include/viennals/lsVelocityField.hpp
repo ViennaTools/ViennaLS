@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vcVectorUtil.hpp>
+#include <vcVectorType.hpp>
 
 namespace viennals {
 
@@ -26,7 +26,7 @@ public:
                                      int /*material*/,
                                      const Vec3D<T> & /*normalVector*/,
                                      unsigned long /*pointId*/) {
-    return {0, 0, 0};
+    return Vec3D<T>{0, 0, 0};
   }
 
   /// If lsLocalLaxFriedrichsAnalytical is used as the advection scheme,

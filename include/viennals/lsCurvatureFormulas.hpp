@@ -81,13 +81,13 @@ double gaussianCurvature3D(std::array<T, N> funcValues) {
 /// Fills a std::array with differential values calculated from
 /// neighbour values. This stencil only uses direct neighbours
 /// for fast calculation of the differentials.
-template <class It, class T = typename It::DomainType::hrleValueType>
+template <class It, class T = typename It::DomainType::ValueType>
 std::array<T, 9> smallStencilFromIterator(It &it, const double gridDelta) {
   constexpr int D = It::DomainType::dimension;
   std::array<T, 9> d;
   for (int i = 0; i < D; i++) {
-    hrleVectorType<hrleIndexType, D> posUnit(0);
-    hrleVectorType<hrleIndexType, D> negUnit(0);
+    VectorType<viennahrle::IndexType, D> posUnit(0);
+    VectorType<viennahrle::IndexType, D> negUnit(0);
     posUnit[i] = 1;
     negUnit[i] = -1;
     T phi_0 = it.getCenter().getValue();
@@ -114,14 +114,14 @@ std::array<T, 9> smallStencilFromIterator(It &it, const double gridDelta) {
 /// Fills a std::array with differential values calculated from
 /// neighbour values. This stencil also uses diagonal neighbours
 /// to achieve a higher accuracy.
-template <class It, class T = typename It::DomainType::hrleValueType>
+template <class It, class T = typename It::DomainType::ValueType>
 std::array<T, 9> bigStencilFromIterator(It &it, const double gridDelta) {
   constexpr int D = It::DomainType::dimension;
   std::array<T, 9> d;
   const double gridDelta2 = gridDelta * gridDelta;
   for (int i = 0; i < D; i++) {
-    hrleVectorType<hrleIndexType, D> posUnit(0);
-    hrleVectorType<hrleIndexType, D> negUnit(0);
+    VectorType<viennahrle::IndexType, D> posUnit(0);
+    VectorType<viennahrle::IndexType, D> negUnit(0);
     int first_axis = i;
     int second_axis = (i + 1) % D;
     posUnit[first_axis] = 1;
@@ -157,7 +157,7 @@ std::array<T, 9> bigStencilFromIterator(It &it, const double gridDelta) {
 /// function from a suitable hrle iterator.
 /// Requires an iterator that is big enough to calculate second order
 /// derivatives(e.g. hrleBoxIterator or hrleCartesianPlaneIterator)
-template <class It, class T = typename It::DomainType::hrleValueType>
+template <class It, class T = typename It::DomainType::ValueType>
 T meanCurvature(It &it, bool bigStencil = false) {
   constexpr int D = It::DomainType::dimension;
   auto gridDelta = it.getDomain().getGrid().getGridDelta();
@@ -177,7 +177,7 @@ T meanCurvature(It &it, bool bigStencil = false) {
 /// function from a suitable hrle iterator.
 /// Requires an iterator that is big enough to calculate second order
 /// derivatives(e.g. hrleBoxIterator or hrleCartesianPlaneIterator)
-template <class It, class T = typename It::DomainType::hrleValueType>
+template <class It, class T = typename It::DomainType::ValueType>
 T gaussianCurvature(It &it, bool bigStencil = false) {
   constexpr int D = It::DomainType::dimension;
   auto gridDelta = it.getDomain().getGrid().getGridDelta();

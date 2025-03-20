@@ -1,5 +1,4 @@
 #include <hrleDenseIterator.hpp>
-#include <hrleVectorType.hpp>
 #include <iostream>
 
 #include <lsBooleanOperation.hpp>
@@ -38,9 +37,9 @@ int main() {
       bounds, boundaryCons, gridDelta);
   auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
 
-  const hrleVectorType<double, D> origin(0., 0., 0.);
-  // const hrleVectorType<double, D> normal(0., 0., 1.);
-  const hrleVectorType<double, D> normal(1., 1., 1.);
+  const ls::VectorType<double, D> origin(0., 0., 0.);
+  // const ls::VectorType<double, D> normal(0., 0., 1.);
+  const ls::VectorType<double, D> normal(1., 1., 1.);
 
   ls::MakeGeometry<double, D>(
       levelSet, ls::SmartPointer<ls::Plane<double, D>>::New(origin, normal))

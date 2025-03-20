@@ -1,13 +1,12 @@
 #pragma once
 
 #include <hrleSparseStarIterator.hpp>
-#include <hrleVectorType.hpp>
 
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsVelocityField.hpp>
 
-#include <vcVectorUtil.hpp>
+#include <vcVectorType.hpp>
 
 namespace lsInternal {
 
@@ -19,9 +18,10 @@ using namespace viennacore;
 template <class T, int D, int order> class LocalLocalLaxFriedrichs {
   SmartPointer<viennals::Domain<T, D>> levelSet;
   SmartPointer<viennals::VelocityField<T>> velocities;
-  hrleSparseStarIterator<hrleDomain<T, D>, order> neighborIterator;
+  viennahrle::SparseStarIterator<viennahrle::Domain<T, D>, order>
+      neighborIterator;
   const double alphaFactor;
-  hrleVectorType<T, 3> finalAlphas;
+  VectorType<T, 3> finalAlphas;
 
   static T pow2(const T &value) { return value * value; }
 
@@ -35,21 +35,19 @@ public:
                           SmartPointer<viennals::VelocityField<T>> vel,
                           double a = 1.0)
       : levelSet(passedlsDomain), velocities(vel),
-        neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>, order>(
-            levelSet->getDomain())),
-        alphaFactor(a) {
+        neighborIterator(levelSet->getDomain()), alphaFactor(a) {
     for (int i = 0; i < 3; ++i) {
       finalAlphas[i] = 0;
     }
   }
 
-  std::pair<T, T> operator()(const hrleVectorType<hrleIndexType, D> &indices,
+  std::pair<T, T> operator()(const viennahrle::Index<D> &indices,
                              int material) {
 
     auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
 
-    hrleVectorType<T, 3> coordinate(0., 0., 0.);
+    VectorType<T, 3> coordinate(0., 0., 0.);
     for (unsigned i = 0; i < D; ++i) {
       coordinate[i] = indices[i] * gridDelta;
     }
@@ -58,7 +56,7 @@ public:
     neighborIterator.goToIndicesSequential(indices);
 
     // convert coordinate to std array for interface
-    Vec3D<T> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
+    Vec3D<T> coordArray{coordinate[0], coordinate[1], coordinate[2]};
 
     T gradPos[D];
     T gradNeg[D];
@@ -169,8 +167,7 @@ public:
     return {totalGrad, ((totalGrad != 0.) ? dissipation : 0)};
   }
 
-  void reduceTimeStepHamiltonJacobi(double &MaxTimeStep,
-                                    hrleCoordType gridDelta) {
+  void reduceTimeStepHamiltonJacobi(double &MaxTimeStep, double gridDelta) {
     constexpr double alpha_maxCFL = 1.0;
     // second time step test, based on alphas
 

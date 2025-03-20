@@ -1,11 +1,9 @@
 #pragma once
 
-#include <lsPreCompileMacros.hpp>
-
 #include <hrleSparseStarIterator.hpp>
-#include <hrleVectorType.hpp>
-
 #include <lsDomain.hpp>
+#include <lsPreCompileMacros.hpp>
+#include <vcVectorType.hpp>
 
 namespace viennals {
 
@@ -14,7 +12,7 @@ using namespace viennacore;
 /// Removes all level set points, which do not have
 /// at least one oppositely signed neighbour (Meaning
 /// they do not lie directly at the interface).
-/// Afterwards the level set will occupy the least memory
+/// Afterward the level set will occupy the least memory
 /// possible.
 template <class T, int D> class Prune {
   SmartPointer<Domain<T, D>> levelSet = nullptr;
@@ -56,7 +54,8 @@ template <class T, int D> class Prune {
 public:
   Prune() = default;
 
-  Prune(SmartPointer<Domain<T, D>> passedlsDomain) : levelSet(passedlsDomain){};
+  Prune(SmartPointer<Domain<T, D>> passedlsDomain)
+      : levelSet(passedlsDomain) {};
 
   void setLevelSet(SmartPointer<Domain<T, D>> passedlsDomain) {
     levelSet = passedlsDomain;
@@ -108,16 +107,16 @@ public:
 
       auto &domainSegment = newDomain.getDomainSegment(p);
 
-      hrleVectorType<hrleIndexType, D> startVector =
+      viennahrle::Index<D> const startVector =
           (p == 0) ? grid.getMinGridPoint()
                    : newDomain.getSegmentation()[p - 1];
 
-      hrleVectorType<hrleIndexType, D> endVector =
+      viennahrle::Index<D> const endVector =
           (p != static_cast<int>(newDomain.getNumberOfSegments() - 1))
               ? newDomain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
-      for (hrleSparseStarIterator<typename Domain<T, D>::DomainType, 1>
+      for (viennahrle::SparseStarIterator<typename Domain<T, D>::DomainType, 1>
                neighborIt(domain, startVector);
            neighborIt.getIndices() < endVector; neighborIt.next()) {
         auto &centerIt = neighborIt.getCenter();

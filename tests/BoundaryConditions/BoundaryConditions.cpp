@@ -34,8 +34,8 @@ int main() {
   auto levelSet = ls::SmartPointer<ls::Domain<double, D>>::New(
       bounds, boundaryCons, gridDelta);
 
-  hrleVectorType<double, D> origin(0., 0., 0.);
-  hrleVectorType<double, D> normalVector(0., 1., 1.);
+  ls::VectorType<double, D> origin(0., 0., 0.);
+  ls::VectorType<double, D> normalVector(0., 1., 1.);
 
   ls::MakeGeometry<double, D>(
       levelSet,

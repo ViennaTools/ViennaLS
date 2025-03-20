@@ -72,8 +72,7 @@ public:
           .print();
     }
 
-    typedef std::map<hrleVectorType<hrleIndexType, D>, unsigned>
-        nodeContainerType;
+    typedef std::map<viennahrle::Index<D>, unsigned> nodeContainerType;
 
     nodeContainerType nodes[D];
     typename nodeContainerType::iterator nodeIt;
@@ -87,14 +86,14 @@ public:
       newDataSourceIds.resize(1);
 
     // iterate over all active points
-    for (hrleConstSparseCellIterator<hrleDomainType> cellIt(
+    for (viennahrle::ConstSparseCellIterator<hrleDomainType> cellIt(
              levelSet->getDomain());
          !cellIt.isFinished(); cellIt.next()) {
 
       for (int u = 0; u < D; u++) {
         while (!nodes[u].empty() &&
                nodes[u].begin()->first <
-                   hrleVectorType<hrleIndexType, D>(cellIt.getIndices()))
+                   viennahrle::Index<D>(cellIt.getIndices()))
           nodes[u].erase(nodes[u].begin());
       }
 
@@ -129,8 +128,8 @@ public:
           auto dir = direction[edge];
 
           // look for existing surface node
-          hrleVectorType<hrleIndexType, D> d(cellIt.getIndices());
-          d += hrleUtil::BitMaskToVector<D, hrleIndexType>(p0);
+          viennahrle::Index<D> d(cellIt.getIndices());
+          d += BitMaskToVector<D, viennahrle::IndexType>(p0);
 
           nodeIt = nodes[dir].find(d);
           if (nodeIt != nodes[dir].end()) {
@@ -138,7 +137,7 @@ public:
           } else { // if node does not exist yet
 
             // calculate coordinate of new node
-            std::array<T, 3> cc{}; // initialise with zeros
+            Vec3D<T> cc(T(0)); // initialise with zeros
             std::size_t currentPointId = 0;
             for (int z = 0; z < D; z++) {
               if (z != dir) {
@@ -146,7 +145,7 @@ public:
                 // is set
                 cc[z] = static_cast<double>(
                     cellIt.getIndices(z) +
-                    hrleUtil::BitMaskToVector<D, hrleIndexType>(p0)[z]);
+                    BitMaskToVector<D, viennahrle::IndexType>(p0)[z]);
               } else {
                 T d0, d1;
 

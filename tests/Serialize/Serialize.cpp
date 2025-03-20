@@ -25,7 +25,7 @@ int main() {
   auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
 
   const double radius = 7.3;
-  const hrleVectorType<double, D> centre(5., 0.);
+  const ls::VectorType<double, D> centre(5., 0.);
 
   ls::MakeGeometry<double, 2>(
       levelSet, ls::SmartPointer<ls::Sphere<double, D>>::New(centre, radius))

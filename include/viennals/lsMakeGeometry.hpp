@@ -4,8 +4,7 @@
 
 #include <lsPreCompileMacros.hpp>
 
-#include <hrleIndexType.hpp>
-#include <hrleVectorType.hpp>
+#include <hrleTypes.hpp>
 
 #include <lsConvexHull.hpp>
 #include <lsDomain.hpp>
@@ -13,6 +12,8 @@
 #include <lsGeometries.hpp>
 #include <lsMesh.hpp>
 #include <lsTransformMesh.hpp>
+
+#include <vcVectorType.hpp>
 
 #ifndef NDEBUG
 #include <lsVTKWriter.hpp>
@@ -170,7 +171,7 @@ public:
   }
 
 private:
-  void makeSphere(hrleVectorType<T, D> origin, T radius) {
+  void makeSphere(VectorType<T, D> origin, T radius) {
     if (levelSet == nullptr) {
       Logger::getInstance()
           .addWarning("No level set was passed to MakeGeometry.")
@@ -180,11 +181,11 @@ private:
 
     // TODO, this is a stupid algorithm and scales with volume, which is madness
     auto &grid = levelSet->getGrid();
-    hrleCoordType gridDelta = grid.getGridDelta();
+    viennahrle::CoordType gridDelta = grid.getGridDelta();
 
     // calculate indices from sphere size
-    hrleVectorType<hrleIndexType, D> index;
-    hrleVectorType<hrleIndexType, D> endIndex;
+    viennahrle::Index<D> index;
+    viennahrle::Index<D> endIndex;
 
     for (unsigned i = 0; i < D; ++i) {
       index[i] = (origin[i] - radius) / gridDelta - 1;
@@ -196,7 +197,7 @@ private:
     const T radius2 = radius * radius;
 
     pointDataType pointData;
-    const hrleVectorType<hrleIndexType, D> minIndex = index;
+    const viennahrle::Index<D> minIndex = index;
 
     while (index < endIndex) {
       // take the shortest manhattan distance to gridline intersection
@@ -245,8 +246,7 @@ private:
 
   /// Creates a plane containing the point origin, with
   /// the plane normal given by normal
-  void makePlane(hrleVectorType<T, D> origin,
-                 hrleVectorType<T, D> passedNormal) {
+  void makePlane(VectorType<T, D> origin, VectorType<T, D> passedNormal) {
     if (levelSet == nullptr) {
       Logger::getInstance()
           .addWarning("No level set was passed to MakeGeometry.")
@@ -255,11 +255,11 @@ private:
     }
 
     auto &grid = levelSet->getGrid();
-    hrleCoordType gridDelta = grid.getGridDelta();
+    viennahrle::CoordType gridDelta = grid.getGridDelta();
 
     // normalise passedNormal
     double modulus = 0.;
-    hrleVectorType<double, D> normal(passedNormal);
+    VectorType<double, D> normal(passedNormal);
     for (unsigned i = 0; i < D; ++i) {
       modulus += normal[i] * normal[i];
     }
@@ -273,7 +273,7 @@ private:
     bool infDimSet = false;
     for (unsigned n = 0; n < D; ++n) {
       if (grid.getBoundaryConditions(n) ==
-          hrleBoundaryType::INFINITE_BOUNDARY) {
+          viennahrle::BoundaryType::INFINITE_BOUNDARY) {
         if (!infDimSet) {
           i = n;
           infDimSet = true;
@@ -297,7 +297,7 @@ private:
 
     // find minimum and maximum points in infinite direction
     // there are 2*(D-1) points in the corners of the simulation domain
-    std::vector<std::array<T, 3>> cornerPoints;
+    std::vector<Vec3D<T>> cornerPoints;
     cornerPoints.resize(2 * (D - 1));
 
     // cyclic permutations
@@ -370,7 +370,7 @@ private:
   }
 
   // This function creates a box starting in minCorner spanning to maxCorner
-  void makeBox(hrleVectorType<T, D> minCorner, hrleVectorType<T, D> maxCorner) {
+  void makeBox(VectorType<T, D> minCorner, VectorType<T, D> maxCorner) {
     if (levelSet == nullptr) {
       Logger::getInstance()
           .addWarning("No level set was passed to MakeGeometry.")
@@ -379,8 +379,8 @@ private:
     }
 
     // draw all triangles for the surface and then import from the mesh
-    std::vector<std::array<T, 3>> corners;
-    corners.resize(std::pow(2, D), {0, 0, 0});
+    std::vector<Vec3D<T>> corners;
+    corners.resize(std::pow(2, D), Vec3D<T>{0, 0, 0});
 
     // first corner is the minCorner
     for (unsigned i = 0; i < D; ++i)
@@ -454,16 +454,16 @@ private:
 
     auto mesh = SmartPointer<Mesh<T>>::New();
     // insert midpoint at base
-    mesh->insertNextNode(std::array<T, 3>{0.0, 0.0, 0.0});
+    mesh->insertNextNode(Vec3D<T>{0.0, 0.0, 0.0});
     {
       constexpr double limit = 2 * M_PI - 1e-6;
-      std::vector<std::array<T, 3>> points;
+      std::vector<Vec3D<T>> points;
       if (cylinder->topRadius)
-        std::vector<std::array<T, 3>> pointsTop;
+        std::vector<Vec3D<T>> pointsTop;
 
       // create and insert points at base
       for (double angle = 0.; angle < limit; angle += smallAngle) {
-        std::array<T, 3> point;
+        Vec3D<T> point;
         point[0] = cylinder->radius * std::cos(angle);
         point[1] = cylinder->radius * std::sin(angle);
         point[2] = 0.0;
@@ -472,7 +472,7 @@ private:
       }
 
       // insert midpoint at top
-      mesh->insertNextNode(std::array<T, 3>{0.0, 0.0, cylinder->height});
+      mesh->insertNextNode(Vec3D<T>{0.0, 0.0, cylinder->height});
 
       double angle = 0;
       for (unsigned i = 0; i < numPoints; ++i) {
@@ -518,14 +518,14 @@ private:
 
     // rotate mesh
     // normalise axis vector
-    T unit = std::sqrt(
-        hrleUtil::DotProduct(cylinder->axisDirection, cylinder->axisDirection));
-    hrleVectorType<double, 3> cylinderAxis;
-    for (unsigned i = 0; i < 3; ++i) {
+    T unit =
+        std::sqrt(DotProduct(cylinder->axisDirection, cylinder->axisDirection));
+    Vec3D<T> cylinderAxis;
+    for (int i = 0; i < 3; ++i) {
       cylinderAxis[i] = cylinder->axisDirection[i] / unit;
     }
     // get rotation axis via cross product of (0,0,1) and axis of cylinder
-    hrleVectorType<double, 3> rotAxis(-cylinderAxis[1], cylinderAxis[0], 0.0);
+    Vec3D<T> rotAxis(-cylinderAxis[1], cylinderAxis[0], 0.0);
     // angle is acos of dot product
     T rotationAngle = std::acos(cylinderAxis[2]);
 
@@ -534,8 +534,8 @@ private:
         .apply();
 
     // translate mesh
-    hrleVectorType<double, 3> translationVector;
-    for (unsigned i = 0; i < 3; ++i) {
+    Vec3D<T> translationVector;
+    for (int i = 0; i < 3; ++i) {
       translationVector[i] = cylinder->origin[i];
     }
     TransformMesh<T>(mesh, TransformEnum::TRANSLATION, translationVector)

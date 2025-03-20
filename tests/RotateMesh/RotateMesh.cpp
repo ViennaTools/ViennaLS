@@ -23,8 +23,8 @@ int main() {
   auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
 
   const NumericType radius = 7.3;
-  const hrleVectorType<NumericType, D> min(-50, -25., -25.);
-  const hrleVectorType<NumericType, D> max(0., 0., 0.);
+  const ls::VectorType<NumericType, D> min(-50, -25., -25.);
+  const ls::VectorType<NumericType, D> max(0., 0., 0.);
   ls::MakeGeometry<NumericType, D>(
       levelSet, ls::SmartPointer<ls::Box<double, D>>::New(min, max))
       .apply();
@@ -40,7 +40,7 @@ int main() {
 
   // auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
   // mesh->insertNextNode({1., 0., 1.});
-  hrleVectorType<hrleCoordType, 3> rotAxis{0., 1., 1.};
+  ls::VectorType<viennahrle::CoordType, 3> rotAxis{0., 1., 1.};
   ls::TransformMesh<double>(mesh, ls::TransformEnum::ROTATION, rotAxis, M_PI_4)
       .apply();
 

@@ -51,7 +51,7 @@ int main() {
   NumericType extent = 30;
   NumericType gridDelta = 0.5;
 
-  hrleCoordType bounds[2 * D] = {-extent, extent, -extent, extent};
+  double bounds[2 * D] = {-extent, extent, -extent, extent};
   ls::Domain<NumericType, D>::BoundaryType boundaryCons[D];
   boundaryCons[0] =
       ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;

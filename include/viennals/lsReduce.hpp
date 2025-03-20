@@ -1,9 +1,8 @@
 #pragma once
 
-#include <lsPreCompileMacros.hpp>
-
-#include <hrleVectorType.hpp>
 #include <lsDomain.hpp>
+#include <lsPreCompileMacros.hpp>
+#include <vcVectorType.hpp>
 
 namespace viennals {
 
@@ -23,12 +22,12 @@ public:
   Reduce() = default;
 
   Reduce(SmartPointer<Domain<T, D>> passedlsDomain)
-      : levelSet(passedlsDomain){};
+      : levelSet(passedlsDomain) {};
 
   Reduce(SmartPointer<Domain<T, D>> passedlsDomain, int passedWidth,
          bool passedNoNewSegment = false)
       : levelSet(passedlsDomain), width(passedWidth),
-        noNewSegment(passedNoNewSegment){};
+        noNewSegment(passedNoNewSegment) {};
 
   void setLevelSet(SmartPointer<Domain<T, D>> passedlsDomain) {
     levelSet = passedlsDomain;
@@ -92,16 +91,16 @@ public:
 
       auto &domainSegment = newDomain.getDomainSegment(p);
 
-      hrleVectorType<hrleIndexType, D> startVector =
+      viennahrle::Index<D> const startVector =
           (p == 0) ? grid.getMinGridPoint()
                    : newDomain.getSegmentation()[p - 1];
 
-      hrleVectorType<hrleIndexType, D> endVector =
+      viennahrle::Index<D> const endVector =
           (p != static_cast<int>(newDomain.getNumberOfSegments() - 1))
               ? newDomain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
-      for (hrleSparseIterator<typename Domain<T, D>::DomainType> it(
+      for (viennahrle::SparseIterator<typename Domain<T, D>::DomainType> it(
                domain, startVector);
            it.getStartIndices() < endVector; ++it) {
         T currentValue = it.getValue();

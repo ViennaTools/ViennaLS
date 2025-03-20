@@ -7,7 +7,7 @@
 #include <lsDomain.hpp>
 
 #include <vcSmartPointer.hpp>
-#include <vcVectorUtil.hpp>
+#include <vcVectorType.hpp>
 
 namespace viennals {
 
@@ -105,15 +105,16 @@ private:
       flagsSegment.reserve(
           levelSet->getDomain().getDomainSegment(p).getNumberOfPoints());
 
-      hrleVectorType<hrleIndexType, D> startVector =
+      viennahrle::Index<D> const startVector =
           (p == 0) ? grid.getMinGridPoint() : domain.getSegmentation()[p - 1];
 
-      hrleVectorType<hrleIndexType, D> endVector =
+      viennahrle::Index<D> const endVector =
           (p != static_cast<int>(domain.getNumberOfSegments() - 1))
               ? domain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
-      for (hrleCartesianPlaneIterator<typename Domain<T, D>::DomainType, 1>
+      for (viennahrle::CartesianPlaneIterator<typename Domain<T, D>::DomainType,
+                                              1>
                neighborIt(levelSet->getDomain(), startVector);
            neighborIt.getIndices() < endVector; neighborIt.next()) {
 
@@ -181,15 +182,15 @@ private:
       flagsSegment.reserve(
           levelSet->getDomain().getDomainSegment(p).getNumberOfPoints());
 
-      hrleVectorType<hrleIndexType, D> startVector =
+      viennahrle::Index<D> const startVector =
           (p == 0) ? grid.getMinGridPoint() : domain.getSegmentation()[p - 1];
 
-      hrleVectorType<hrleIndexType, D> endVector =
+      viennahrle::Index<D> const endVector =
           (p != static_cast<int>(domain.getNumberOfSegments() - 1))
               ? domain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
-      for (hrleSparseBoxIterator<typename Domain<T, D>::DomainType, 1>
+      for (viennahrle::SparseBoxIterator<typename Domain<T, D>::DomainType, 1>
                neighborIt(levelSet->getDomain(), startVector);
            neighborIt.getIndices() < endVector; neighborIt.next()) {
         if (!neighborIt.getCenter().isDefined()) {

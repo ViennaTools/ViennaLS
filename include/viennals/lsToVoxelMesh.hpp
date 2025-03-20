@@ -23,13 +23,13 @@ template <class T, int D> class ToVoxelMesh {
   std::vector<SmartPointer<Domain<T, D>>> levelSets;
   SmartPointer<Mesh<T>> mesh = nullptr;
   SmartPointer<MaterialMap> materialMap = nullptr;
-  hrleVectorType<hrleIndexType, D> minIndex, maxIndex;
+  viennahrle::Index<D> minIndex, maxIndex;
 
   void calculateBounds() {
     // set to zero
     for (unsigned i = 0; i < D; ++i) {
-      minIndex[i] = std::numeric_limits<hrleIndexType>::max();
-      maxIndex[i] = std::numeric_limits<hrleIndexType>::lowest();
+      minIndex[i] = std::numeric_limits<viennahrle::IndexType>::max();
+      maxIndex[i] = std::numeric_limits<viennahrle::IndexType>::lowest();
     }
     for (unsigned l = 0; l < levelSets.size(); ++l) {
       auto &grid = levelSets[l]->getGrid();
@@ -102,8 +102,8 @@ public:
       mesh->maximumExtent[i] = std::numeric_limits<T>::lowest();
     }
 
-    std::unordered_map<hrleVectorType<hrleIndexType, D>, size_t,
-                       typename hrleVectorType<hrleIndexType, D>::hash>
+    std::unordered_map<viennahrle::Index<D>, size_t,
+                       typename viennahrle::Index<D>::hash>
         pointIdMapping;
     size_t currentPointId = 0;
 
@@ -114,12 +114,11 @@ public:
     const bool useMaterialMap = materialMap != nullptr;
 
     // set up iterators for all materials
-    std::vector<hrleConstDenseCellIterator<typename Domain<T, D>::DomainType>>
+    std::vector<
+        viennahrle::ConstDenseCellIterator<typename Domain<T, D>::DomainType>>
         iterators;
     for (auto it = levelSets.begin(); it != levelSets.end(); ++it) {
-      iterators.push_back(
-          hrleConstDenseCellIterator<typename Domain<T, D>::DomainType>(
-              (*it)->getDomain(), minIndex));
+      iterators.emplace_back((*it)->getDomain(), minIndex);
     }
 
     // move iterator for lowest material id and then adjust others if they are
@@ -145,7 +144,7 @@ public:
           bool addVoxel = false;
           // now insert all points of voxel into pointList
           for (unsigned i = 0; i < (1 << D); ++i) {
-            hrleVectorType<hrleIndexType, D> index;
+            viennahrle::Index<D> index;
             addVoxel = true;
             for (unsigned j = 0; j < D; ++j) {
               index[j] =

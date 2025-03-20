@@ -107,16 +107,16 @@ public:
             levelSet->getDomain().getDomainSegment(p).getNumberOfPoints());
       }
 
-      hrleVectorType<hrleIndexType, D> startVector =
+      viennahrle::Index<D> const startVector =
           (p == 0) ? grid.getMinGridPoint()
                    : levelSet->getDomain().getSegmentation()[p - 1];
 
-      hrleVectorType<hrleIndexType, D> endVector =
+      viennahrle::Index<D> const endVector =
           (p != static_cast<int>(levelSet->getNumberOfSegments() - 1))
               ? levelSet->getDomain().getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
-      for (hrleCartesianPlaneIterator<typename Domain<T, D>::DomainType>
+      for (viennahrle::CartesianPlaneIterator<typename Domain<T, D>::DomainType>
                neighborIt(levelSet->getDomain(), startVector);
            neighborIt.getIndices() < endVector; neighborIt.next()) {
 

@@ -63,7 +63,8 @@ enum struct IntegrationSchemeEnum : unsigned {
 /// guidance)
 template <class T, int D> class Advect {
   using ConstSparseIterator =
-      hrleConstSparseIterator<typename Domain<T, D>::DomainType>;
+      viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>;
+  using hrleIndexType = viennahrle::IndexType;
 
   std::vector<SmartPointer<Domain<T, D>>> levelSets;
   SmartPointer<VelocityField<T>> velocities = nullptr;
@@ -87,7 +88,7 @@ template <class T, int D> class Advect {
   std::vector<std::vector<std::pair<std::pair<T, T>, T>>> storedRates;
   double currentTimeStep = -1.;
 
-  hrleVectorType<T, 3> findGlobalAlphas() const {
+  VectorType<T, 3> findGlobalAlphas() const {
 
     auto &topDomain = levelSets.back()->getDomain();
     auto &grid = levelSets.back()->getGrid();
@@ -96,17 +97,17 @@ template <class T, int D> class Advect {
     const T deltaPos = gridDelta;
     const T deltaNeg = -gridDelta;
 
-    hrleVectorType<T, 3> finalAlphas(0., 0., 0.);
+    VectorType<T, 3> finalAlphas(0., 0., 0.);
 
 #pragma omp parallel num_threads((levelSets.back())->getNumberOfSegments())
     {
-      hrleVectorType<T, 3> localAlphas(0., 0., 0.);
+      VectorType<T, 3> localAlphas(0., 0., 0.);
 
       const int p = omp_get_thread_num();
-      hrleVectorType<hrleIndexType, D> startVector =
+      VectorType<hrleIndexType, D> startVector =
           (p == 0) ? grid.getMinGridPoint()
                    : topDomain.getSegmentation()[p - 1];
-      hrleVectorType<hrleIndexType, D> endVector =
+      VectorType<hrleIndexType, D> endVector =
           (p != static_cast<int>(topDomain.getNumberOfSegments() - 1))
               ? topDomain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
@@ -118,8 +119,8 @@ template <class T, int D> class Advect {
       }
 
       // neighborIterator for the top level set
-      hrleConstSparseStarIterator<hrleDomain<T, D>, 1> neighborIterator(
-          topDomain);
+      viennahrle::ConstSparseStarIterator<typename Domain<T, D>::DomainType, 1>
+          neighborIterator(topDomain);
 
       for (ConstSparseIterator it(topDomain, startVector);
            it.getStartIndices() < endVector; ++it) {
@@ -229,11 +230,11 @@ template <class T, int D> class Advect {
       const int p = omp_get_thread_num();
       auto &domainSegment = newDomain.getDomainSegment(p);
 
-      hrleVectorType<hrleIndexType, D> startVector =
+      VectorType<hrleIndexType, D> startVector =
           (p == 0) ? grid.getMinGridPoint()
                    : newDomain.getSegmentation()[p - 1];
 
-      hrleVectorType<hrleIndexType, D> endVector =
+      VectorType<hrleIndexType, D> endVector =
           (p != static_cast<int>(newDomain.getNumberOfSegments() - 1))
               ? newDomain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
@@ -243,8 +244,8 @@ template <class T, int D> class Advect {
       if (updateData)
         newDataSourceIds[p].reserve(2.5 * domainSegment.getNumberOfPoints());
 
-      for (hrleSparseStarIterator<typename Domain<T, D>::DomainType, 1> it(
-               domain, startVector);
+      for (viennahrle::SparseStarIterator<typename Domain<T, D>::DomainType, 1>
+               it(domain, startVector);
            it.getIndices() < endVector; ++it) {
 
         // if the center is an active grid point
@@ -452,11 +453,11 @@ template <class T, int D> class Advect {
 #pragma omp parallel num_threads(topDomain.getNumberOfSegments())
     {
       const int p = omp_get_thread_num();
-      hrleVectorType<hrleIndexType, D> startVector =
+      VectorType<hrleIndexType, D> startVector =
           (p == 0) ? grid.getMinGridPoint()
                    : topDomain.getSegmentation()[p - 1];
 
-      hrleVectorType<hrleIndexType, D> endVector =
+      VectorType<hrleIndexType, D> endVector =
           (p != static_cast<int>(topDomain.getNumberOfSegments() - 1))
               ? topDomain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());

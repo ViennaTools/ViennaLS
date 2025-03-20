@@ -94,8 +94,9 @@ int main() {
 
   // iterate through all values and check if they are correct
   unsigned counter = 0;
-  for (hrleConstSparseIterator<typename ls::Domain<double, D>::DomainType> it(
-           substrate->getDomain());
+  for (viennahrle::ConstSparseIterator<
+           typename ls::Domain<double, D>::DomainType>
+           it(substrate->getDomain());
        !it.isFinished(); ++it) {
     auto indices = it.getStartIndices();
     LSTEST_ASSERT(indices == resultIndices[counter]);

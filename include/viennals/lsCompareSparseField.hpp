@@ -1,6 +1,5 @@
 #pragma once
 
-#include <hrleDenseIterator.hpp>
 #include <hrleSparseIterator.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
@@ -10,7 +9,6 @@
 
 #include <cmath>
 #include <limits>
-#include <unordered_map>
 
 namespace viennals {
 
@@ -23,6 +21,8 @@ using namespace viennacore;
 /// level set reduced to a sparse field if necessary. The code is currently
 /// intended for 2D level sets only.
 template <class T, int D = 2> class CompareSparseField {
+  using hrleIndexType = viennahrle::IndexType;
+
   SmartPointer<Domain<T, D>> levelSetTarget = nullptr;
   SmartPointer<Domain<T, D>> levelSetSample = nullptr;
 
@@ -192,7 +192,7 @@ public:
     numPoints = 0;
 
     // Direct storage for points and differences
-    std::vector<std::array<T, 3>> nodeCoordinates; // 3D necessary for lsMesh
+    std::vector<Vec3D<T>> nodeCoordinates; // 3D necessary for lsMesh
     std::vector<std::array<unsigned, 1>> vertexIndices;
     std::vector<T> differenceValues;
     std::vector<T> squaredDifferenceValues;
@@ -216,9 +216,9 @@ public:
     }
 
     // Create sparse iterators for the level sets
-    hrleConstSparseIterator<typename Domain<T, D>::DomainType> itSample(
+    viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType> itSample(
         levelSetSample->getDomain());
-    hrleConstSparseIterator<typename Domain<T, D>::DomainType> itTarget(
+    viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType> itTarget(
         levelSetTarget->getDomain());
 
     // Iterate over all defined points in the sample level set
@@ -272,7 +272,7 @@ public:
       // Store difference in mesh if required
       if (generateMesh) {
         // Create a new point with the coordinates of the sample level set point
-        std::array<T, 3> coords = {xCoord, yCoord, zCoord}; // lsMesh needs 3D
+        Vec3D<T> coords{xCoord, yCoord, zCoord}; // lsMesh needs 3D
 
         // Store the coordinates
         nodeCoordinates.push_back(coords);

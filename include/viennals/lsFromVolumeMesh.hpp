@@ -84,7 +84,7 @@ public:
     }
 
     // Map for all surfaceElements and their corresponding material
-    typedef std::map<hrleVectorType<unsigned int, D>, std::pair<int, int>>
+    typedef std::map<VectorType<unsigned int, D>, std::pair<int, int>>
         triangleMapType;
     triangleMapType surfaceElements;
 
@@ -92,7 +92,7 @@ public:
         (D == 3) ? mesh->tetras.size() : mesh->triangles.size();
     for (unsigned int i = 0; i < numberOfElements; ++i) {
       for (int j = 0; j < D + 1; j++) {
-        hrleVectorType<unsigned int, D> currentSurfaceElement;
+        VectorType<unsigned int, D> currentSurfaceElement;
         for (int k = 0; k < D; k++) {
           currentSurfaceElement[k] =
               mesh->template getElements<D + 1>()[i][(j + k) % (D + 1)];
@@ -125,7 +125,7 @@ public:
 
         currentSurfaceElement.sort();
 
-        hrleVectorType<double, D> currentElementPoints[D + 1];
+        VectorType<double, D> currentElementPoints[D + 1];
         for (int k = 0; k < D; k++) {
           currentElementPoints[k] = mesh->nodes[currentSurfaceElement[k]];
         }
@@ -139,7 +139,7 @@ public:
             surfaceElements.lower_bound(currentSurfaceElement);
         if ((it != surfaceElements.end()) &&
             (it->first == currentSurfaceElement)) {
-          if (hrleUtil::Orientation(currentElementPoints)) {
+          if (Orientation(currentElementPoints)) {
             if (it->second.second != materialInts.back() + 1) {
               Logger::getInstance()
                   .addWarning(
@@ -167,7 +167,7 @@ public:
             surfaceElements.erase(it);
 
         } else {
-          if (hrleUtil::Orientation(currentElementPoints)) {
+          if (Orientation(currentElementPoints)) {
             surfaceElements.insert(
                 it, std::make_pair(currentSurfaceElement,
                                    std::make_pair(materialInts.back() + 1,

@@ -3,21 +3,22 @@
 #include <cassert>
 #include <vector>
 
-#include <hrleVectorType.hpp>
-
 #include <lsPreCompileMacros.hpp>
 
+#include <vcVectorType.hpp>
+
 namespace viennals {
+using namespace viennacore;
 
 /// Class describing a sphere via origin and radius.
 template <class T, int D> class Sphere {
 public:
-  hrleVectorType<T, D> origin = hrleVectorType<T, D>(T(0));
+  VectorType<T, D> origin = VectorType<T, D>(T(0));
   T radius = 0.;
 
   Sphere() = default;
 
-  Sphere(hrleVectorType<T, D> passedOrigin, T passedRadius)
+  Sphere(VectorType<T, D> passedOrigin, T passedRadius)
       : origin(passedOrigin), radius(passedRadius) {}
 
   Sphere(T *passedOrigin, T passedRadius) : radius(passedRadius) {
@@ -33,12 +34,12 @@ public:
 /// Class describing a plane via a point in it and the plane normal.
 template <class T, int D> class Plane {
 public:
-  hrleVectorType<T, D> origin = hrleVectorType<T, D>(T(0));
-  hrleVectorType<T, D> normal = hrleVectorType<T, D>(T(0));
+  VectorType<T, D> origin = VectorType<T, D>(T(0));
+  VectorType<T, D> normal = VectorType<T, D>(T(0));
 
   Plane() = default;
 
-  Plane(hrleVectorType<T, D> passedOrigin, hrleVectorType<T, D> passedNormal)
+  Plane(VectorType<T, D> passedOrigin, VectorType<T, D> passedNormal)
       : origin(passedOrigin), normal(passedNormal) {}
 
   Plane(const T *passedOrigin, const T *passedNormal) {
@@ -55,13 +56,12 @@ public:
 /// Class describing a square box from one coordinate to another.
 template <class T, int D> class Box {
 public:
-  hrleVectorType<T, D> minCorner = hrleVectorType<T, D>(T(0));
-  hrleVectorType<T, D> maxCorner = hrleVectorType<T, D>(T(0));
+  VectorType<T, D> minCorner = VectorType<T, D>(T(0));
+  VectorType<T, D> maxCorner = VectorType<T, D>(T(0));
 
   Box() = default;
 
-  Box(hrleVectorType<T, D> passedMinCorner,
-      hrleVectorType<T, D> passedMaxCorner)
+  Box(VectorType<T, D> passedMinCorner, VectorType<T, D> passedMaxCorner)
       : minCorner(passedMinCorner), maxCorner(passedMaxCorner) {}
 
   Box(const T *passedMinCorner, const T *passedMaxCorner) {
@@ -80,9 +80,9 @@ public:
 template <class T, int D> class Cylinder {
 public:
   /// This is the location of the center of the base of the cylinder
-  hrleVectorType<T, 3> origin = hrleVectorType<T, 3>(T(0));
+  VectorType<T, 3> origin = VectorType<T, 3>(T(0));
   /// This vector will be the main axis of the cylinder
-  hrleVectorType<T, 3> axisDirection = hrleVectorType<T, 3>(T(0));
+  VectorType<T, 3> axisDirection = VectorType<T, 3>(T(0));
   /// height of the cylinder
   T height = 0.;
   /// radius of the base of the cylinder
@@ -92,9 +92,8 @@ public:
 
   Cylinder() = default;
 
-  Cylinder(hrleVectorType<T, D> passedOrigin,
-           hrleVectorType<T, D> passedAxisDirection, T passedHeight,
-           T passedRadius, T passedTopRadius = 0)
+  Cylinder(VectorType<T, D> passedOrigin, VectorType<T, D> passedAxisDirection,
+           T passedHeight, T passedRadius, T passedTopRadius = 0)
       : origin(passedOrigin), axisDirection(passedAxisDirection),
         height(passedHeight), radius(passedRadius), topRadius(passedTopRadius) {
   }
@@ -120,41 +119,41 @@ public:
 /// create geometries from its convex hull mesh.
 template <class T, int D> class PointCloud {
 public:
-  std::vector<hrleVectorType<T, D>> points;
+  std::vector<VectorType<T, D>> points;
 
   PointCloud() = default;
 
-  PointCloud(std::vector<hrleVectorType<T, D>> passedPoints)
+  PointCloud(std::vector<VectorType<T, D>> passedPoints)
       : points(passedPoints) {}
 
   PointCloud(const std::vector<std::vector<T>> &passedPoints) {
     for (auto point : passedPoints) {
-      hrleVectorType<T, D> p(point);
+      VectorType<T, D> p(point);
       points.push_back(p);
     }
   }
 
-  void insertNextPoint(hrleVectorType<T, D> newPoint) {
+  void insertNextPoint(VectorType<T, D> newPoint) {
     points.push_back(newPoint);
   }
 
   void insertNextPoint(T *newPoint) {
-    hrleVectorType<T, D> point(newPoint);
+    VectorType<T, D> point(newPoint);
     points.push_back(point);
   }
 
   void insertNextPoint(const std::array<T, D> newPoint) {
-    hrleVectorType<T, D> point(newPoint);
+    VectorType<T, D> point(newPoint);
     points.push_back(std::move(point));
   }
 
   void insertNextPoint(const std::vector<T> &newPoint) {
-    hrleVectorType<T, D> point(newPoint);
+    VectorType<T, D> point(newPoint);
     points.push_back(point);
   }
 
-  std::pair<typename std::vector<hrleVectorType<T, D>>::iterator, bool>
-  insertNextUniquePoint(hrleVectorType<T, D> newPoint) {
+  std::pair<typename std::vector<VectorType<T, D>>::iterator, bool>
+  insertNextUniquePoint(VectorType<T, D> newPoint) {
     for (auto it = points.begin(); it != points.end(); ++it) {
       if (newPoint == *it)
         return std::make_pair(it, false);
@@ -163,17 +162,17 @@ public:
     return std::make_pair(--points.end(), true);
   }
 
-  typename std::vector<hrleVectorType<T, D>>::iterator begin() {
+  typename std::vector<VectorType<T, D>>::iterator begin() {
     return points.begin();
   }
 
-  typename std::vector<hrleVectorType<T, D>>::iterator end() {
+  typename std::vector<VectorType<T, D>>::iterator end() {
     return points.end();
   }
 
   std::size_t size() { return points.size(); }
 
-  hrleVectorType<T, D> &operator[](std::size_t i) { return points[i]; }
+  VectorType<T, D> &operator[](std::size_t i) { return points[i]; }
 };
 
 // add all template specialisations for this class

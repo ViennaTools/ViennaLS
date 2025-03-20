@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
-  ViennaLS
-  LANGUAGES CXX
-  VERSION 4.2.2)
+        ViennaLS
+        LANGUAGES CXX
+        VERSION 4.2.2)
 
 # --------------------------------------------------------------------------------------------------------
 # Library options
@@ -26,45 +26,45 @@ option(VIENNALS_BUILD_TESTS "Build tests" OFF)
 # └ See: https://github.com/ViennaTools/ViennaPS/blob/c76e371817a797dfe2800691f00cb93317b731fa/CMakeLists.txt#L30
 # --------------------------------------------------------------------------------------------------------
 
-if(VIENNALS_VTK_PYTHON_LIBS AND VIENNALS_PACKAGE_PYTHON)
-  message(
-    STATUS "[ViennaLS] Disabling `VIENNALS_PACKAGE_PYTHON` in favor of `VIENNALS_VTK_PYTHON_LIBS`")
-  set(VIENNALS_PACKAGE_PYTHON OFF)
-endif()
+if (VIENNALS_VTK_PYTHON_LIBS AND VIENNALS_PACKAGE_PYTHON)
+    message(
+            STATUS "[ViennaLS] Disabling `VIENNALS_PACKAGE_PYTHON` in favor of `VIENNALS_VTK_PYTHON_LIBS`")
+    set(VIENNALS_PACKAGE_PYTHON OFF)
+endif ()
 
-if(VIENNALS_PACKAGE_PYTHON)
-  message(
-    STATUS
-      "[ViennaLS] Using remote VTK due to 'VIENNALS_PACKAGE_PYTHON', the build will take a long time!"
-  )
+if (VIENNALS_PACKAGE_PYTHON)
+    message(
+            STATUS
+            "[ViennaLS] Using remote VTK due to 'VIENNALS_PACKAGE_PYTHON', the build will take a long time!"
+    )
 
-  # CIBUILDWHEEL is absolutely cursed and won't work when this is turned on.
-  # I don't know why...
-  if(NOT VIENNALS_IS_CI)
-    set(CPM_DOWNLOAD_ALL ON)
-  endif()
+    # CIBUILDWHEEL is absolutely cursed and won't work when this is turned on.
+    # I don't know why...
+    if (NOT VIENNALS_IS_CI)
+        set(CPM_DOWNLOAD_ALL ON)
+    endif ()
 
-  set(VIENNALS_BUILD_PYTHON ON)
-endif()
+    set(VIENNALS_BUILD_PYTHON ON)
+endif ()
 
-if(VIENNALS_BUILD_PYTHON)
-  set(CMAKE_PLATFORM_NO_VERSIONED_SONAME ON)
-endif()
+if (VIENNALS_BUILD_PYTHON)
+    set(CMAKE_PLATFORM_NO_VERSIONED_SONAME ON)
+endif ()
 
 # --------------------------------------------------------------------------------------------------------
 # Configuration
 # --------------------------------------------------------------------------------------------------------
 
-if(VIENNALS_BUILD_PYTHON)
-  message(STATUS "[ViennaLS] Using VTK for python bindings")
-  set(VIENNALS_USE_VTK ON)
-endif()
+if (VIENNALS_BUILD_PYTHON)
+    message(STATUS "[ViennaLS] Using VTK for python bindings")
+    set(VIENNALS_USE_VTK ON)
+endif ()
 
-if(VIENNALS_STATIC_BUILD)
-  message(STATUS "[ViennaLS] Enabling precompiled headers for static build")
-  set(VIENNALS_PRECOMPILE_HEADERS ON)
-  set(BUILD_SHARED_LIBS OFF)
-endif()
+if (VIENNALS_STATIC_BUILD)
+    message(STATUS "[ViennaLS] Enabling precompiled headers for static build")
+    set(VIENNALS_PRECOMPILE_HEADERS ON)
+    set(BUILD_SHARED_LIBS OFF)
+endif ()
 
 # --------------------------------------------------------------------------------------------------------
 # Setup Library
@@ -75,24 +75,24 @@ add_library(ViennaTools::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
 set_target_properties(
-  ${PROJECT_NAME}
-  PROPERTIES CXX_STANDARD 17
-             CXX_EXTENSIONS OFF
-             CXX_STANDARD_REQUIRED ON)
+        ${PROJECT_NAME}
+        PROPERTIES CXX_STANDARD 17
+        CXX_EXTENSIONS OFF
+        CXX_STANDARD_REQUIRED ON)
 
-if(MSVC)
-  # https://learn.microsoft.com/cpp/c-runtime-library/math-constants
-  # TODO: In case C++20 is adpoted any time soon: https://cppreference.com/w/cpp/numeric/constants
-  target_compile_definitions(${PROJECT_NAME} INTERFACE _USE_MATH_DEFINES=1)
-endif()
+if (MSVC)
+    # https://learn.microsoft.com/cpp/c-runtime-library/math-constants
+    # TODO: In case C++20 is adpoted any time soon: https://cppreference.com/w/cpp/numeric/constants
+    target_compile_definitions(${PROJECT_NAME} INTERFACE _USE_MATH_DEFINES=1)
+endif ()
 
 # --------------------------------------------------------------------------------------------------------
 # Include directories
 # --------------------------------------------------------------------------------------------------------
 
 target_include_directories(
-  ${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/viennals>
-                            $<INSTALL_INTERFACE:include/viennals-${PROJECT_VERSION}>)
+        ${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/viennals>
+        $<INSTALL_INTERFACE:include/viennals-${PROJECT_VERSION}>)
 
 # --------------------------------------------------------------------------------------------------------
 # Setup Dependencies
@@ -102,43 +102,44 @@ include(cmake/cpm.cmake)
 include(cmake/vtk.cmake)
 
 CPMAddPackage(
-  NAME ViennaCore
-  VERSION 1.2.0
-  GIT_REPOSITORY "https://github.com/ViennaTools/ViennaCore"
-  OPTIONS "VIENNACORE_FORMAT_EXCLUDE docs/"
-  EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
+        NAME ViennaCore
+        VERSION 1.3.1
+        GIT_TAG vector-type
+        GIT_REPOSITORY "https://github.com/ViennaTools/ViennaCore"
+        OPTIONS "VIENNACORE_FORMAT_EXCLUDE docs/"
+        EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 
 CPMAddPackage(
-  NAME PackageProject
-  VERSION 1.13.0
-  GIT_REPOSITORY "https://github.com/TheLartians/PackageProject.cmake"
-  EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
+        NAME PackageProject
+        VERSION 1.13.0
+        GIT_REPOSITORY "https://github.com/TheLartians/PackageProject.cmake"
+        EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 
 CPMFindPackage(
-  NAME ViennaHRLE
-  VERSION 0.5.0
-  GIT_TAG refactor
-  GIT_REPOSITORY "https://github.com/ViennaTools/ViennaHRLE"
-  EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
+        NAME ViennaHRLE
+        VERSION 0.5.0
+        GIT_TAG refactor
+        GIT_REPOSITORY "https://github.com/ViennaTools/ViennaHRLE"
+        EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 
 find_package(OpenMP REQUIRED)
 target_link_libraries(${PROJECT_NAME} INTERFACE OpenMP::OpenMP_CXX ViennaHRLE ViennaCore)
 
-if(VIENNALS_USE_VTK AND VIENNALS_VTK_PYTHON_LIBS)
-  import_vtk_python()
-  target_link_libraries(${PROJECT_NAME} INTERFACE VTK::PythonLibs)
-elseif(VIENNALS_USE_VTK)
-  enable_language(C)
+if (VIENNALS_USE_VTK AND VIENNALS_VTK_PYTHON_LIBS)
+    import_vtk_python()
+    target_link_libraries(${PROJECT_NAME} INTERFACE VTK::PythonLibs)
+elseif (VIENNALS_USE_VTK)
+    enable_language(C)
 
-  CPMFindPackage(
-    NAME VTK
-    # TODO: Change to 9.3.1 as soon as it's released
-    # (https://github.com/ViennaTools/ViennaLS/pull/99#issuecomment-1832053715)
-    GIT_TAG 99bd602bdbe8024c55e8382f7cf1013d42a14601
-    VERSION 9.0.0
-    GIT_REPOSITORY "https://gitlab.kitware.com/vtk/vtk"
-    EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON}
-    OPTIONS "VTK_LEGACY_REMOVE ON"
+    CPMFindPackage(
+            NAME VTK
+            # TODO: Change to 9.3.1 as soon as it's released
+            # (https://github.com/ViennaTools/ViennaLS/pull/99#issuecomment-1832053715)
+            GIT_TAG 99bd602bdbe8024c55e8382f7cf1013d42a14601
+            VERSION 9.0.0
+            GIT_REPOSITORY "https://gitlab.kitware.com/vtk/vtk"
+            EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON}
+            OPTIONS "VTK_LEGACY_REMOVE ON"
             "VTK_SMP_IMPLEMENTATION_TYPE \"OpenMP\""
             "VTK_GROUP_ENABLE_Rendering NO"
             "VTK_GROUP_ENABLE_Imaging NO"
@@ -164,91 +165,91 @@ elseif(VIENNALS_USE_VTK)
             # This fixes an issue with the install script that causes find_package to fail.
             "CMAKE_PROJECT_NAME VTK")
 
-  target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_USE_VTK=1)
+    target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_USE_VTK=1)
 
-  target_link_libraries(
-    ${PROJECT_NAME}
-    INTERFACE VTK::CommonExecutionModel
-              VTK::CommonMisc
-              VTK::CommonSystem
-              VTK::CommonMath
-              VTK::CommonCore
-              VTK::CommonTransforms
-              VTK::CommonComputationalGeometry
-              VTK::IOCore
-              VTK::IOXMLParser
-              VTK::IOXML
-              VTK::FiltersCore
-              VTK::FiltersGeneral
-              VTK::FiltersGeometry)
-endif()
+    target_link_libraries(
+            ${PROJECT_NAME}
+            INTERFACE VTK::CommonExecutionModel
+            VTK::CommonMisc
+            VTK::CommonSystem
+            VTK::CommonMath
+            VTK::CommonCore
+            VTK::CommonTransforms
+            VTK::CommonComputationalGeometry
+            VTK::IOCore
+            VTK::IOXMLParser
+            VTK::IOXML
+            VTK::FiltersCore
+            VTK::FiltersGeneral
+            VTK::FiltersGeometry)
+endif ()
 
 # --------------------------------------------------------------------------------------------------------
 # Setup Sanitizer
 # --------------------------------------------------------------------------------------------------------
 
-if(VIENNALS_ENABLE_SANITIZER)
-  viennacore_enable_sanitizer()
-endif()
+if (VIENNALS_ENABLE_SANITIZER)
+    viennacore_enable_sanitizer()
+endif ()
 
 # --------------------------------------------------------------------------------------------------------
 # Setup Shared/Static Library
 # --------------------------------------------------------------------------------------------------------
 
-if(VIENNALS_PRECOMPILE_HEADERS)
-  set(VIENNALS_LINKAGE SHARED)
+if (VIENNALS_PRECOMPILE_HEADERS)
+    set(VIENNALS_LINKAGE SHARED)
 
-  if(VIENNALS_STATIC_BUILD)
-    set(VIENNALS_LINKAGE STATIC)
-  endif()
+    if (VIENNALS_STATIC_BUILD)
+        set(VIENNALS_LINKAGE STATIC)
+    endif ()
 
-  add_library(${PROJECT_NAME}Lib ${VIENNALS_LINKAGE})
-  add_library(${PROJECT_NAME}::Lib ALIAS ${PROJECT_NAME}Lib)
+    add_library(${PROJECT_NAME}Lib ${VIENNALS_LINKAGE})
+    add_library(${PROJECT_NAME}::Lib ALIAS ${PROJECT_NAME}Lib)
 
-  target_link_libraries(${PROJECT_NAME}Lib PUBLIC ${PROJECT_NAME})
-  target_sources(${PROJECT_NAME}Lib PUBLIC "lib/specialisations.cpp")
-  set_target_properties(${PROJECT_NAME}Lib PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
-endif()
+    target_link_libraries(${PROJECT_NAME}Lib PUBLIC ${PROJECT_NAME})
+    target_sources(${PROJECT_NAME}Lib PUBLIC "lib/specialisations.cpp")
+    set_target_properties(${PROJECT_NAME}Lib PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif ()
 
 # --------------------------------------------------------------------------------------------------------
 # Setup Examples
 # --------------------------------------------------------------------------------------------------------
 
-if(VIENNALS_BUILD_EXAMPLES)
-  message(STATUS "[ViennaLS] Building Examples")
-  add_subdirectory(examples)
-endif()
+if (VIENNALS_BUILD_EXAMPLES)
+    message(STATUS "[ViennaLS] Building Examples")
+    add_subdirectory(examples)
+endif ()
 
 # --------------------------------------------------------------------------------------------------------
 # Setup Tests
 # --------------------------------------------------------------------------------------------------------
 
-if(VIENNALS_BUILD_TESTS)
-  message(STATUS "[ViennaLS] Building Tests")
+if (VIENNALS_BUILD_TESTS)
+    message(STATUS "[ViennaLS] Building Tests")
 
-  enable_testing()
-  add_subdirectory(tests)
-endif()
+    enable_testing()
+    add_subdirectory(tests)
+endif ()
 
 # --------------------------------------------------------------------------------------------------------
 # Setup Python Bindings
 # --------------------------------------------------------------------------------------------------------
 
-if(VIENNALS_BUILD_PYTHON)
-  message(STATUS "[ViennaLS] Building Python Bindings")
-  add_subdirectory(python)
-  return()
-endif()
+if (VIENNALS_BUILD_PYTHON)
+    message(STATUS "[ViennaLS] Building Python Bindings")
+    add_subdirectory(python)
+    return()
+endif ()
 
 # --------------------------------------------------------------------------------------------------------
 # Install Target
 # --------------------------------------------------------------------------------------------------------
 
 packageProject(
-  NAME ${PROJECT_NAME} NAMESPACE ViennaTools
-  VERSION ${PROJECT_VERSION}
-  BINARY_DIR ${PROJECT_BINARY_DIR}
-  INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include/viennals
-  INCLUDE_DESTINATION include/viennals-${PROJECT_VERSION}
-  COMPATIBILITY SameMajorVersion
-  DEPENDENCIES "VTK 9.0.0;ViennaHRLE 0.5.0")
+        NAME ${PROJECT_NAME} NAMESPACE ViennaTools
+        VERSION ${PROJECT_VERSION}
+        BINARY_DIR ${PROJECT_BINARY_DIR}
+        INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include/viennals
+        INCLUDE_DESTINATION include/viennals-${PROJECT_VERSION}
+        COMPATIBILITY SameMajorVersion
+        DEPENDENCIES "VTK 9.0.0;ViennaHRLE 0.5.0")

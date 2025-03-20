@@ -1,12 +1,13 @@
 #pragma once
 
 #include <hrleSparseBoxIterator.hpp>
-#include <hrleVectorType.hpp>
 
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsFiniteDifferences.hpp>
 #include <lsVelocityField.hpp>
+
+#include <vcVectorType.hpp>
 
 namespace lsInternal {
 
@@ -27,8 +28,9 @@ class StencilLocalLaxFriedrichsScalar {
 
   LevelSetType levelSet;
   SmartPointer<viennals::VelocityField<T>> velocities;
-  hrleSparseBoxIterator<hrleDomain<T, D>,
-                        static_cast<int>(finiteDifferenceScheme) + 1 + order>
+  viennahrle::SparseBoxIterator<viennahrle::Domain<T, D>,
+                                static_cast<int>(finiteDifferenceScheme) + 1 +
+                                    order>
       neighborIterator;
   const double alphaFactor;
   const double normalEpsilon =
@@ -36,19 +38,18 @@ class StencilLocalLaxFriedrichsScalar {
 
   // Final dissipation coefficients that are used by the time integrator. If
   // D==2 last entries are 0.
-  hrleVectorType<T, 3> finalAlphas;
+  VectorType<T, 3> finalAlphas;
   static constexpr unsigned numStencilPoints = std::pow(2 * order + 1, D);
 
   static T pow2(const T &value) { return value * value; }
 
-  hrleVectorType<T, D>
-  calculateNormal(const hrleVectorType<hrleIndexType, D> &offset) {
-    hrleVectorType<T, D> normal;
+  VectorType<T, D> calculateNormal(const viennahrle::Index<D> &offset) {
+    VectorType<T, D> normal;
     constexpr int startIndex = -1;
     T modulus = 0.;
 
     for (unsigned i = 0; i < D; ++i) {
-      hrleVectorType<hrleIndexType, D> index(offset);
+      viennahrle::Index<D> index(offset);
       std::vector<T> values;
       for (unsigned j = 0; j < 3; ++j) {
         index[i] = startIndex + j;
@@ -65,16 +66,15 @@ class StencilLocalLaxFriedrichsScalar {
     return normal;
   }
 
-  hrleVectorType<T, D>
-  calculateGradient(const hrleVectorType<hrleIndexType, D> &offset) {
-    hrleVectorType<T, D> gradient;
+  VectorType<T, D> calculateGradient(const viennahrle::Index<D> &offset) {
+    VectorType<T, D> gradient;
 
     constexpr unsigned numValues =
         FiniteDifferences<T, finiteDifferenceScheme>::getNumberOfValues();
     constexpr int startIndex = -std::floor(numValues / 2);
 
     for (unsigned i = 0; i < D; ++i) {
-      hrleVectorType<hrleIndexType, D> index(offset);
+      viennahrle::Index<D> index(offset);
       std::vector<T> values;
       for (unsigned j = 0; j < numValues; ++j) {
         index[i] = startIndex + j;
@@ -89,15 +89,15 @@ class StencilLocalLaxFriedrichsScalar {
     return gradient;
   }
 
-  hrleVectorType<T, D> calculateGradientDiff() {
-    hrleVectorType<T, D> gradient;
+  VectorType<T, D> calculateGradientDiff() {
+    VectorType<T, D> gradient;
 
     const unsigned numValues =
         FiniteDifferences<T, finiteDifferenceScheme>::getNumberOfValues();
     const int startIndex = -std::floor(numValues / 2);
 
     for (unsigned i = 0; i < D; ++i) {
-      hrleVectorType<hrleIndexType, D> index(0);
+      viennahrle::Index<D> index(0);
       std::vector<T> values;
       for (unsigned j = 0; j < numValues; ++j) {
         index[i] = startIndex + j;
@@ -129,12 +129,12 @@ public:
     }
   }
 
-  std::pair<T, T> operator()(const hrleVectorType<hrleIndexType, D> &indices,
+  std::pair<T, T> operator()(const viennahrle::Index<D> &indices,
                              int material) {
     auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
 
-    hrleVectorType<T, 3> coordinate(0., 0., 0.);
+    VectorType<T, 3> coordinate(0., 0., 0.);
     for (unsigned i = 0; i < D; ++i) {
       coordinate[i] = indices[i] * gridDelta;
     }
@@ -143,15 +143,15 @@ public:
     neighborIterator.goToIndicesSequential(indices);
 
     // convert coordinate to std array for interface
-    std::array<T, 3> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
+    Vec3D<T> coordArray{coordinate[0], coordinate[1], coordinate[2]};
 
     // if there is a vector velocity, we need to project it onto a scalar
     // velocity first using its normal vector
-    // /*if (vectorVelocity != std::array<T, 3>({}))*/ {
-    std::array<T, 3> normalVector = {};
+    // /*if (vectorVelocity != Vec3D<T>({}))*/ {
+    Vec3D<T> normalVector;
     T denominator = 0; // normal modulus
     for (unsigned i = 0; i < D; i++) {
-      hrleVectorType<T, 3> neighborIndex(T(0));
+      viennahrle::Index<D> neighborIndex(0);
       neighborIndex[i] = 1;
       // normal vector calculation
       T pos = neighborIterator.getNeighbor(neighborIndex).getValue() -
@@ -171,7 +171,7 @@ public:
     double scalarVelocity = velocities->getScalarVelocity(
         coordArray, material, normalVector,
         neighborIterator.getCenter().getPointId());
-    std::array<T, 3> vectorVelocity = velocities->getVectorVelocity(
+    auto vectorVelocity = velocities->getVectorVelocity(
         coordArray, material, normalVector,
         neighborIterator.getCenter().getPointId());
 
@@ -184,45 +184,44 @@ public:
       return {0, 0};
     }
 
-    T hamiltonian = hrleUtil::NormL2(calculateGradient(
-                        hrleVectorType<hrleIndexType, D>(0))) *
-                    scalarVelocity;
+    T hamiltonian =
+        Norm(calculateGradient(viennahrle::Index<D>(0))) * scalarVelocity;
     T dissipation = 0.; // dissipation
 
     // dissipation block
     {
       // reserve alphas for all points in local stencil
-      std::vector<hrleVectorType<T, D>> alphas;
+      std::vector<VectorType<T, D>> alphas;
       alphas.reserve(numStencilPoints);
 
-      hrleVectorType<hrleIndexType, D> currentIndex(-order);
+      viennahrle::Index<D> currentIndex(-order);
       for (size_t i = 0; i < numStencilPoints; ++i) {
-        hrleVectorType<T, D> alpha;
-        hrleVectorType<T, 3> normal(calculateNormal(currentIndex));
+        VectorType<T, D> alpha;
+        VectorType<T, 3> normal(calculateNormal(currentIndex));
         if (D == 2)
           normal[2] = 0;
 
         // Check for corrupted normal
         if ((std::abs(normal[0]) < 1e-6) && (std::abs(normal[1]) < 1e-6) &&
             (std::abs(normal[2]) < 1e-6)) {
-          alphas.push_back(hrleVectorType<T, D>(T(0)));
+          alphas.push_back(VectorType<T, D>(T(0)));
           continue;
         }
 
-        std::array<T, 3> normal_p = {normal[0], normal[1], normal[2]};
-        std::array<T, 3> normal_n = {normal[0], normal[1], normal[2]};
+        Vec3D<T> normal_p{normal[0], normal[1], normal[2]};
+        Vec3D<T> normal_n{normal[0], normal[1], normal[2]};
 
-        hrleVectorType<T, D> velocityDelta(T(0));
+        VectorType<T, D> velocityDelta(T(0));
 
         // get local velocity
-        std::array<T, 3> localCoordArray = coordArray;
+        Vec3D<T> localCoordArray = coordArray;
         for (unsigned dir = 0; dir < D; ++dir)
           localCoordArray[dir] += currentIndex[dir];
 
         T localScalarVelocity = velocities->getScalarVelocity(
             localCoordArray, material, normal_p,
             neighborIterator.getCenter().getPointId());
-        std::array<T, 3> localVectorVelocity = velocities->getVectorVelocity(
+        Vec3D<T> localVectorVelocity = velocities->getVectorVelocity(
             localCoordArray, material, normal_p,
             neighborIterator.getCenter().getPointId());
         // now calculate scalar product of normal vector with velocity
@@ -258,7 +257,7 @@ public:
           // Toifl Quell term
           T toifl = 0;
 
-          hrleVectorType<T, D> gradient = calculateGradient(currentIndex);
+          VectorType<T, D> gradient = calculateGradient(currentIndex);
 
           for (int j = 0; j < D - 1; ++j) { // phi_p**2 + phi_q**2
             int idx = (k + 1 + j) % D;
@@ -266,7 +265,7 @@ public:
             toifl += gradient[idx] * velocityDelta[idx];
           }
           // denominator: |grad(phi)|^2
-          T denom = hrleUtil::Norm2(gradient);
+          T denom = DotProduct(gradient, gradient);
           monti *= velocityDelta[k] / denom;
           toifl *= -gradient[k] / denom;
 
@@ -291,7 +290,7 @@ public:
       }
 
       // determine max alphas for every axis
-      hrleVectorType<T, D> gradientDiff = calculateGradientDiff();
+      VectorType<T, D> gradientDiff = calculateGradientDiff();
       for (int d = 0; d < D; ++d) {
         T maxAlpha = 0;
 
@@ -308,7 +307,7 @@ public:
   }
 
   void reduceTimeStepHamiltonJacobi(double &MaxTimeStep,
-                                    hrleCoordType gridDelta) const {
+                                    double gridDelta) const {
     constexpr double alpha_maxCFL = 1.0;
     // second time step test, based on alphas
 

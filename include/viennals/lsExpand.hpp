@@ -3,8 +3,9 @@
 #include <lsPreCompileMacros.hpp>
 
 #include <hrleSparseStarIterator.hpp>
-#include <hrleVectorType.hpp>
 #include <lsDomain.hpp>
+
+#include <vcVectorType.hpp>
 
 namespace viennals {
 
@@ -14,7 +15,6 @@ using namespace viennacore;
 /// The largest value in the levelset is thus width*0.5
 /// Returns the number of added points
 template <class T, int D> class Expand {
-  typedef typename Domain<T, D>::GridType GridType;
   SmartPointer<Domain<T, D>> levelSet = nullptr;
   int width = 0;
   bool updatePointData = true;
@@ -68,8 +68,8 @@ public:
 
       auto &grid = levelSet->getGrid();
       auto newlsDomain = SmartPointer<Domain<T, D>>::New(grid);
-      typename Domain<T, D>::DomainType &newDomain = newlsDomain->getDomain();
-      typename Domain<T, D>::DomainType &domain = levelSet->getDomain();
+      auto &newDomain = newlsDomain->getDomain();
+      auto &domain = levelSet->getDomain();
 
       newDomain.initialize(domain.getNewSegmentation(),
                            domain.getAllocation() * allocationFactor);
@@ -90,16 +90,17 @@ public:
 
         auto &domainSegment = newDomain.getDomainSegment(p);
 
-        hrleVectorType<hrleIndexType, D> startVector =
+        viennahrle::Index<D> const startVector =
             (p == 0) ? grid.getMinGridPoint()
                      : newDomain.getSegmentation()[p - 1];
 
-        hrleVectorType<hrleIndexType, D> endVector =
+        viennahrle::Index<D> const endVector =
             (p != static_cast<int>(newDomain.getNumberOfSegments() - 1))
                 ? newDomain.getSegmentation()[p]
                 : grid.incrementIndices(grid.getMaxGridPoint());
 
-        for (hrleSparseStarIterator<typename Domain<T, D>::DomainType, 1>
+        for (viennahrle::SparseStarIterator<typename Domain<T, D>::DomainType,
+                                            1>
                  neighborIt(domain, startVector);
              neighborIt.getIndices() < endVector; neighborIt.next()) {
 

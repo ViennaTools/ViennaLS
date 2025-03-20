@@ -69,17 +69,17 @@ public:
       return;
     }
 
-    const hrleGrid<D> &grid = domain.getGrid();
+    const viennahrle::Grid<D> &grid = domain.getGrid();
     const T gridDelta = grid.getGridDelta();
 
-    if (hrleVectorType<T, D>(nodes.front()) != grid.getMinGridPoint()) {
+    if (VectorType<T, D>(nodes.front()) != grid.getMinGridPoint()) {
       domain.insertNextUndefinedPoint(0, grid.getMinGridPoint(),
                                       (values->front() < 0)
                                           ? Domain<T, D>::NEG_VALUE
                                           : Domain<T, D>::POS_VALUE);
     }
 
-    hrleVectorType<hrleIndexType, D> lastIndex(nodes.front());
+    viennahrle::Index<D> lastIndex(nodes.front());
     for (unsigned i = 0; i < D; ++i) {
       lastIndex[i] = nodes.front()[i] / gridDelta;
     }
@@ -90,8 +90,8 @@ public:
     auto valueIt = values->begin();
     auto valueEnd = values->end();
 
-    hrleVectorType<bool, D> signs(values->front() <=
-                                  -std::numeric_limits<T>::epsilon());
+    VectorType<bool, D> signs(values->front() <=
+                              -std::numeric_limits<T>::epsilon());
 
     while (pointDataIt != pointDataEnd && valueIt != valueEnd) {
       // only read in points within the first 5 layers, to ignore
@@ -104,7 +104,7 @@ public:
 
       bool setPoint = true;
 
-      hrleVectorType<hrleIndexType, D> currentIndex;
+      viennahrle::Index<D> currentIndex;
       for (unsigned i = 0; i < D; ++i) {
         currentIndex[i] = std::round(pointDataIt->at(i) / gridDelta);
       }
@@ -113,7 +113,7 @@ public:
       // if not, check, whether it is inside of domain
       for (unsigned i = 0; i < D; ++i) {
         if (grid.getBoundaryConditions(i) !=
-            hrleBoundaryType::INFINITE_BOUNDARY) {
+            viennahrle::BoundaryType::INFINITE_BOUNDARY) {
           if (currentIndex[i] > grid.getMaxBounds(i) ||
               currentIndex[i] < grid.getMinBounds(i)) {
             setPoint = false;
@@ -138,7 +138,7 @@ public:
         }
       }
 
-      hrleVectorType<hrleIndexType, D> nextIndex;
+      viennahrle::Index<D> nextIndex;
 
       ++pointDataIt;
       ++valueIt;
@@ -157,7 +157,7 @@ public:
       // point has the same index, if not, there must be an undefined
       // run inbetween
       for (int q = 0; q < D; q++) {
-        hrleVectorType<hrleIndexType, D> tmp = currentIndex;
+        viennahrle::Index<D> tmp = currentIndex;
         ++tmp[q];
         if (tmp[q] > grid.getMaxGridPoint(q))
           continue;
