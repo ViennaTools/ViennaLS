@@ -26,6 +26,7 @@
 #include <lsCheck.hpp>
 #include <lsCompareArea.hpp>
 #include <lsCompareNarrowBand.hpp>
+#include <lsCompareSparseField.hpp>
 #include <lsConvexHull.hpp>
 #include <lsDetectFeatures.hpp>
 #include <lsDomain.hpp>
