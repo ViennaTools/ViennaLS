@@ -99,8 +99,8 @@ public:
     auto newDomain =
         SmartPointer<Domain<T, D>>::New(bounds, boundaryConditions, gridDelta);
     this->deepCopy(newDomain);
-    hrleFillDomainWithSignedDistance(domain, pointData, T(NEG_VALUE),
-                                     T(POS_VALUE));
+    viennahrle::FillDomainWithSignedDistance(domain, pointData, T(NEG_VALUE),
+                                             T(POS_VALUE));
   }
 
   Domain(GridType passedGrid) : grid(passedGrid) {
@@ -130,8 +130,8 @@ public:
   /// contains (INDEX, Value) pairs, while lsFromMesh expects coordinates
   /// rather than indices
   void insertPoints(PointValueVectorType pointData, bool sort = true) {
-    hrleFillDomainWithSignedDistance(domain, pointData, T(NEG_VALUE),
-                                     T(POS_VALUE), sort);
+    viennahrle::FillDomainWithSignedDistance(domain, pointData, T(NEG_VALUE),
+                                             T(POS_VALUE), sort);
   }
 
   /// get reference to the grid on which the levelset is defined
