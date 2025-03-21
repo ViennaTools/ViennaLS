@@ -29,6 +29,11 @@ public:
         sliceDimension(passedSliceDimension),
         slicePosition(passedSlicePosition) {}
 
+  Slice(SmartPointer<Domain<T, 3>> passedDomain, int passedSliceDimension = 0,
+        T passedSlicePosition = 0)
+      : sourceLevelSet(passedDomain), sliceDimension(passedSliceDimension),
+        slicePosition(passedSlicePosition) {}
+
   void setSourceLevelSet(SmartPointer<Domain<T, 3>> passedDomain) {
     sourceLevelSet = passedDomain;
   }
@@ -36,6 +41,9 @@ public:
   void setSliceLevelSet(SmartPointer<Domain<T, 2>> passedDomain) {
     sliceLevelSet = passedDomain;
   }
+
+  // Getter needed if used without passed slice level-set
+  SmartPointer<Domain<T, 2>> getSliceLevelSet() { return sliceLevelSet; }
 
   void setSliceDimension(const int dimension) {
     if (dimension >= 0 && dimension < 3) {
@@ -57,11 +65,16 @@ public:
       return;
     }
 
+    // If no slice domain is set, create one automatically with bounds and BCs
+    // derived from the source domain
+    bool autoCreateSlice = false;
     if (sliceLevelSet == nullptr) {
+      autoCreateSlice = true;
       Logger::getInstance()
-          .addError("No slice level-set passed to Slice")
+          .addInfo("No slice level-set passed to Slice. Auto-created slice "
+                   "level-set with bounds derived from "
+                   "source domain")
           .print();
-      return;
     }
 
     const auto &sourceGrid = sourceLevelSet->getGrid();
@@ -82,6 +95,18 @@ public:
 
     // Container for the extracted points
     std::vector<std::pair<hrleVectorType<hrleIndexType, 2>, T>> pointData;
+
+    // Check if slice position is divisible by grid delta without remainder
+    if (std::fmod(slicePosition, gridDelta) != 0) {
+      // If not, change slice position to the nearest grid point
+      slicePosition = std::round(slicePosition / gridDelta) * gridDelta;
+      Logger::getInstance()
+          .addWarning("Slice position is not divisible by grid delta in "
+                      "Slice. Adjusting slice position to the nearest "
+                      "multiple of grid delta: " +
+                      std::to_string(slicePosition))
+          .print();
+    }
 
     // slice index
     const int sliceIndex = static_cast<int>(slicePosition / gridDelta);
@@ -121,11 +146,14 @@ public:
     if (pointData.empty()) {
       Logger::getInstance().addWarning("No points extracted in Slice").print();
     } else {
-      auto slice = SmartPointer<Domain<T, 2>>::New(
-          pointData, sliceBounds, sliceBoundaryConds, gridDelta);
-      sliceLevelSet->deepCopy(slice);
+      if (autoCreateSlice) {
+        sliceLevelSet = SmartPointer<Domain<T, 2>>::New(
+            pointData, sliceBounds, sliceBoundaryConds, gridDelta);
+      } else {
+        sliceLevelSet->insertPoints(pointData);
+      }
     }
-  }
+  };
 };
 
 // Add template specializations for this class
