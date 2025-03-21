@@ -2,12 +2,12 @@
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsMesh.hpp>
-#include <lsSliceExtractor.hpp>
+#include <lsSlice.hpp>
 #include <lsToMesh.hpp>
 #include <lsVTKWriter.hpp>
 
 /**
-  Test for lsSliceExtractor that extracts a 2D slice from a 3D level set domain.
+  Test for lsSlice that extracts a 2D slice from a 3D level set domain.
   This test creates a 3D sphere and extracts the z=0 plane as a 2D circle.
     \example SliceExtractor.cpp
 */
@@ -16,7 +16,7 @@ namespace ls = viennals;
 
 int main() {
   // Create a 3D sphere
-  double extent = 20;
+  constexpr double extent = 20;
   double gridDelta = 0.5;
 
   double bounds3D[6] = {-extent, extent, -extent, extent, -extent, extent};
@@ -51,9 +51,9 @@ int main() {
       bounds2D, boundaryCons2D, gridDelta);
 
   // Extract the z=0 slice (dimension 2 = z-axis)
-  ls::SliceExtractor<double> extractor;
-  extractor.setSourceDomain(sphere3D);
-  extractor.setSliceDomain(slice2D);
+  ls::Slice<double> extractor;
+  extractor.setSourceLevelSet(sphere3D);
+  extractor.setSliceLevelSet(slice2D);
   extractor.setSliceDimension(2);  // z-axis
   extractor.setSlicePosition(0.0); // z=0 plane
   extractor.apply();
@@ -66,7 +66,7 @@ int main() {
   // Extract the x=5 slice (dimension 0 = x-axis)
   auto sliceX = ls::SmartPointer<ls::Domain<double, 2>>::New(
       bounds2D, boundaryCons2D, gridDelta);
-  ls::SliceExtractor<double>(sphere3D, sliceX, 0, 5.0).apply();
+  ls::Slice<double>(sphere3D, sliceX, 0, 5.0).apply();
   auto meshX = ls::SmartPointer<ls::Mesh<>>::New();
   ls::ToMesh<double, 2>(sliceX, meshX).apply();
   ls::VTKWriter<double>(meshX, "sliceX5.vtp").apply();
@@ -74,7 +74,7 @@ int main() {
   // Extract the y=-5 slice (dimension 1 = y-axis)
   auto sliceY = ls::SmartPointer<ls::Domain<double, 2>>::New(
       bounds2D, boundaryCons2D, gridDelta);
-  ls::SliceExtractor<double>(sphere3D, sliceY, 1, -5.0).apply();
+  ls::Slice<double>(sphere3D, sliceY, 1, -5.0).apply();
   auto meshY = ls::SmartPointer<ls::Mesh<>>::New();
   ls::ToMesh<double, 2>(sliceY, meshY).apply();
   ls::VTKWriter<double>(meshY, "sliceY-5.vtp").apply();
@@ -88,21 +88,8 @@ int main() {
   // Try slicing at a position that does not intersect the sphere
   auto sliceNoIntersection = ls::SmartPointer<ls::Domain<double, 2>>::New(
       bounds2D, boundaryCons2D, gridDelta);
-  ls::SliceExtractor<double>(sphere3D, sliceNoIntersection, 2, 15.0).apply();
+  ls::Slice<double>(sphere3D, sliceNoIntersection, 2, 15.0).apply();
   auto meshNoIntersection = ls::SmartPointer<ls::Mesh<>>::New();
   ls::ToMesh<double, 2>(sliceNoIntersection, meshNoIntersection).apply();
   ls::VTKWriter<double>(meshNoIntersection, "sliceNoIntersection.vtp").apply();
-
-  // Try with a large tolerance
-  auto sliceLargeTolerance = ls::SmartPointer<ls::Domain<double, 2>>::New(
-      bounds2D, boundaryCons2D, gridDelta);
-  auto extractorLT =
-      ls::SliceExtractor<double>(sphere3D, sliceLargeTolerance, 2, 0.0);
-  extractorLT.setTolerance(10.0);
-  extractorLT.apply();
-  auto meshLargeTolerance = ls::SmartPointer<ls::Mesh<>>::New();
-  ls::ToMesh<double, 2>(sliceLargeTolerance, meshLargeTolerance).apply();
-  ls::VTKWriter<double>(meshLargeTolerance, "sliceLargeTolerance.vtp").apply();
-
-  return 0;
 }
