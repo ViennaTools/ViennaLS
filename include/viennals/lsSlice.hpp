@@ -80,19 +80,6 @@ public:
     const auto &sourceGrid = sourceLevelSet->getGrid();
     auto const gridDelta = sourceGrid.getGridDelta();
 
-    // Create bounds for the slice domain
-    double sliceBounds[4];
-    BoundaryConditionEnum sliceBoundaryConds[2];
-
-    for (int i = 0, d = 0; d < 3; d++) {
-      if (d != sliceDimension) {
-        sliceBounds[2 * i] = sourceGrid.getMinGridPoint(d) * gridDelta;
-        sliceBounds[2 * i + 1] = sourceGrid.getMaxGridPoint(d) * gridDelta;
-        sliceBoundaryConds[i] = sourceGrid.getBoundaryConditions(d);
-        i++;
-      }
-    }
-
     // Container for the extracted points
     std::vector<std::pair<hrleVectorType<hrleIndexType, 2>, T>> pointData;
 
@@ -147,9 +134,23 @@ public:
       Logger::getInstance().addWarning("No points extracted in Slice").print();
     } else {
       if (autoCreateSlice) {
+        // Create slice domain with bounds and BCs derived from source domain
+        double sliceBounds[4];
+        BoundaryConditionEnum sliceBoundaryConds[2];
+
+        for (int i = 0, d = 0; d < 3; d++) {
+          if (d != sliceDimension) {
+            sliceBounds[2 * i] = sourceGrid.getMinGridPoint(d) * gridDelta;
+            sliceBounds[2 * i + 1] = sourceGrid.getMaxGridPoint(d) * gridDelta;
+            sliceBoundaryConds[i] = sourceGrid.getBoundaryConditions(d);
+            i++;
+          }
+        }
+
         sliceLevelSet = SmartPointer<Domain<T, 2>>::New(
             pointData, sliceBounds, sliceBoundaryConds, gridDelta);
       } else {
+        // Use passed slice domain
         sliceLevelSet->insertPoints(pointData);
       }
     }
