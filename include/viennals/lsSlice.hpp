@@ -12,34 +12,32 @@ using namespace viennacore;
 /// the slice plane and is always inserted into the x-y plane. Use with caution,
 /// as the result might be an empty domain if the slice does not intersect any
 /// defined points in the source domain.
-template <class T> class SliceExtractor {
-private:
-  SmartPointer<Domain<T, 3>> sourceDomain = nullptr;
-  SmartPointer<Domain<T, 2>> sliceDomain = nullptr;
+template <class T> class Slice {
+  SmartPointer<Domain<T, 3>> sourceLevelSet = nullptr;
+  SmartPointer<Domain<T, 2>> sliceLevelSet = nullptr;
 
   int sliceDimension = 0; // (0=x, 1=y, 2=z)
   T slicePosition = 0;    // Position of the slice
-  T tolerance = 1e-6;     // Tolerance for matching slice position
 
 public:
-  SliceExtractor() {}
+  Slice() = default;
 
-  SliceExtractor(SmartPointer<Domain<T, 3>> passedDomain,
-                 SmartPointer<Domain<T, 2>> passedSliceDomain,
-                 int passedSliceDimension = 0, T passedSlicePosition = 0)
-      : sourceDomain(passedDomain), sliceDomain(passedSliceDomain),
+  Slice(SmartPointer<Domain<T, 3>> passedDomain,
+        SmartPointer<Domain<T, 2>> passedSliceDomain,
+        int passedSliceDimension = 0, T passedSlicePosition = 0)
+      : sourceLevelSet(passedDomain), sliceLevelSet(passedSliceDomain),
         sliceDimension(passedSliceDimension),
         slicePosition(passedSlicePosition) {}
 
-  void setSourceDomain(SmartPointer<Domain<T, 3>> passedDomain) {
-    sourceDomain = passedDomain;
+  void setSourceLevelSet(SmartPointer<Domain<T, 3>> passedDomain) {
+    sourceLevelSet = passedDomain;
   }
 
-  void setSliceDomain(SmartPointer<Domain<T, 2>> passedDomain) {
-    sliceDomain = passedDomain;
+  void setSliceLevelSet(SmartPointer<Domain<T, 2>> passedDomain) {
+    sliceLevelSet = passedDomain;
   }
 
-  void setSliceDimension(int dimension) {
+  void setSliceDimension(const int dimension) {
     if (dimension >= 0 && dimension < 3) {
       sliceDimension = dimension;
     } else {
@@ -51,51 +49,46 @@ public:
 
   void setSlicePosition(T position) { slicePosition = position; }
 
-  void setTolerance(T passedTolerance) { tolerance = passedTolerance; }
-
   void apply() {
-    if (sourceDomain == nullptr) {
+    if (sourceLevelSet == nullptr) {
       Logger::getInstance()
-          .addError("Source domain is null in SliceExtractor")
+          .addError("No source level-set passed to Slice")
           .print();
       return;
     }
 
-    if (sliceDomain == nullptr) {
+    if (sliceLevelSet == nullptr) {
       Logger::getInstance()
-          .addError("Slice domain is null in SliceExtractor")
+          .addError("No slice level-set passed to Slice")
           .print();
       return;
     }
 
-    const auto &sourceGrid = sourceDomain->getGrid();
+    const auto &sourceGrid = sourceLevelSet->getGrid();
     auto const gridDelta = sourceGrid.getGridDelta();
-
-    if (tolerance >= gridDelta) {
-      Logger::getInstance()
-          .addWarning("Tolerance is greater equal grid delta in "
-                      "SliceExtractor. This might lead to unexpected results.")
-          .print();
-    }
 
     // Create bounds for the slice domain
     double sliceBounds[4];
-    int sliceIdx = 0;
-    for (int d = 0; d < 3; d++) {
+    BoundaryConditionEnum sliceBoundaryConds[2];
+
+    for (int i = 0, d = 0; d < 3; d++) {
       if (d != sliceDimension) {
-        sliceBounds[2 * sliceIdx] = sourceGrid.getMinGridPoint(d) * gridDelta;
-        sliceBounds[2 * sliceIdx + 1] =
-            sourceGrid.getMaxGridPoint(d) * gridDelta;
-        sliceIdx++;
+        sliceBounds[2 * i] = sourceGrid.getMinGridPoint(d) * gridDelta;
+        sliceBounds[2 * i + 1] = sourceGrid.getMaxGridPoint(d) * gridDelta;
+        sliceBoundaryConds[i] = sourceGrid.getBoundaryConditions(d);
+        i++;
       }
     }
 
     // Container for the extracted points
     std::vector<std::pair<hrleVectorType<hrleIndexType, 2>, T>> pointData;
 
+    // slice index
+    const int sliceIndex = static_cast<int>(slicePosition / gridDelta);
+
     // Iterate through the source domain
     hrleConstSparseIterator<typename Domain<T, 3>::DomainType> it(
-        sourceDomain->getDomain());
+        sourceLevelSet->getDomain());
 
     while (!it.isFinished()) {
       if (!it.isDefined()) {
@@ -104,24 +97,20 @@ public:
       }
 
       auto indices = it.getStartIndices();
-
-      // Check if this point is in requested slice (within tolerance)
-      T coord = indices[sliceDimension] * gridDelta;
-      if (std::abs(coord - slicePosition) <= tolerance) {
+      if (indices[sliceDimension] == sliceIndex) {
         // Extract the value
         T value = it.getValue();
 
         // Create a new 2D index
         hrleVectorType<hrleIndexType, 2> sliceIndices;
-        int sliceIdx = 0;
-        for (int d = 0; d < 3; d++) {
+        for (int d = 0, j = 0; d < 3; d++) {
           if (d != sliceDimension) {
-            sliceIndices[sliceIdx++] = indices[d];
+            sliceIndices[j++] = indices[d];
           }
         }
 
         // Add to our collection
-        pointData.push_back(std::make_pair(sliceIndices, value));
+        pointData.emplace_back(sliceIndices, value);
       }
 
       it.next();
@@ -130,16 +119,16 @@ public:
     // Insert the extracted points into the slice domain, issue a warning if
     // there are no points to insert
     if (pointData.empty()) {
-      Logger::getInstance()
-          .addWarning("No points extracted in SliceExtractor")
-          .print();
+      Logger::getInstance().addWarning("No points extracted in Slice").print();
     } else {
-      sliceDomain->insertPoints(pointData);
+      auto slice = SmartPointer<Domain<T, 2>>::New(
+          pointData, sliceBounds, sliceBoundaryConds, gridDelta);
+      sliceLevelSet->deepCopy(slice);
     }
   }
 };
 
 // Add template specializations for this class
-PRECOMPILE_PRECISION(SliceExtractor)
+PRECOMPILE_PRECISION(Slice)
 
 } // namespace viennals
