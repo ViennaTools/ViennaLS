@@ -9,7 +9,7 @@
 /**
   Test for lsSlice that extracts a 2D slice from a 3D level set domain.
   This test creates a 3D sphere and extracts the z=0 plane as a 2D circle.
-    \example SliceExtractor.cpp
+    \example Slice.cpp
 */
 
 namespace ls = viennals;
@@ -92,4 +92,35 @@ int main() {
   auto meshNoIntersection = ls::SmartPointer<ls::Mesh<>>::New();
   ls::ToMesh<double, 2>(sliceNoIntersection, meshNoIntersection).apply();
   ls::VTKWriter<double>(meshNoIntersection, "sliceNoIntersection.vtp").apply();
+
+  // Try slicing at a position not divisible by grid delta
+  auto sliceNotDivisible = ls::SmartPointer<ls::Domain<double, 2>>::New(
+      bounds2D, boundaryCons2D, gridDelta);
+  ls::Slice<double>(sphere3D, sliceNotDivisible, 2, 2.75).apply();
+  auto meshNotDivisible = ls::SmartPointer<ls::Mesh<>>::New();
+  ls::ToMesh<double, 2>(sliceNotDivisible, meshNotDivisible).apply();
+  ls::VTKWriter<double>(meshNotDivisible, "sliceNotDivisible.vtp").apply();
+
+  // Try not passing a slice domain
+  ls::Slice<double> extractorNoSliceDomain;
+  extractorNoSliceDomain.setSourceLevelSet(sphere3D);
+  extractorNoSliceDomain.setSliceDimension(2);  // z-axis
+  extractorNoSliceDomain.setSlicePosition(0.0); // z=0 plane
+  extractorNoSliceDomain.apply();
+  auto meshNoSliceDomain = ls::SmartPointer<ls::Mesh<>>::New();
+  ls::ToMesh<double, 2>(extractorNoSliceDomain.getSliceLevelSet(),
+                        meshNoSliceDomain)
+      .apply();
+  ls::VTKWriter<double>(meshNoSliceDomain, "sliceNoSliceDomain.vtp").apply();
+
+  // Try with bounds which end at 0
+  double bounds2DZero[4] = {-extent, 0, -extent, 0};
+  auto slice2DZero = ls::SmartPointer<ls::Domain<double, 2>>::New(
+      bounds2DZero, boundaryCons2D, gridDelta);
+  ls::Slice<double>(sphere3D, slice2DZero, 2, 0.0).apply();
+  auto mesh2DZero = ls::SmartPointer<ls::Mesh<>>::New();
+  ls::ToMesh<double, 2>(slice2DZero, mesh2DZero).apply();
+  ls::VTKWriter<double>(mesh2DZero, "slice2DZero.vtp").apply();
+
+  return 0;
 }
