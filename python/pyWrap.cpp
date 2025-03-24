@@ -214,6 +214,8 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "call.")
       .def("getTimeStepRatio", &Advect<T, D>::getTimeStepRatio,
            "Get the time step ratio used for advection.")
+      .def("getCurrentTimeStep", &Advect<T, D>::getCurrentTimeStep,
+           "Get the current time step.")
       .def("getCalculateNormalVectors",
            &Advect<T, D>::getCalculateNormalVectors,
            "Get whether normal vectors are computed during advection.")
@@ -221,11 +223,17 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Set the integration scheme to use during advection.")
       .def("setDissipationAlpha", &Advect<T, D>::setDissipationAlpha,
            "Set the dissipation value to use for Lax Friedrichs integration.")
+      .def("prepareLS", &Advect<T, D>::prepareLS, "Prepare the level-set.")
       // need scoped release since we are calling a python method from
       // parallelised C++ code here
       .def("apply", &Advect<T, D>::apply,
            pybind11::call_guard<pybind11::gil_scoped_release>(),
-           "Perform advection.");
+           "Perform advection.")
+      .def("applyIntegration", &Advect<T, D>::applyIntegration,
+           pybind11::call_guard<pybind11::gil_scoped_release>(),
+           "Apply the integration scheme and calculate rates and maximum time "
+           "step, but it do **not** move the surface.");
+
   // enums
   pybind11::enum_<IntegrationSchemeEnum>(module, "IntegrationSchemeEnum",
                                          pybind11::module_local())
