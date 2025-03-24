@@ -2,9 +2,11 @@
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsMesh.hpp>
+#include <lsReader.hpp>
 #include <lsSlice.hpp>
 #include <lsToMesh.hpp>
 #include <lsVTKWriter.hpp>
+#include <lsWriter.hpp>
 
 /**
   Test for lsSlice that extracts a 2D slice from a 3D level set domain.
@@ -121,6 +123,21 @@ int main() {
   auto mesh2DZero = ls::SmartPointer<ls::Mesh<>>::New();
   ls::ToMesh<double, 2>(slice2DZero, mesh2DZero).apply();
   ls::VTKWriter<double>(mesh2DZero, "slice2DZero.vtp").apply();
+
+  // Try example with writing and reading the sliceLevelSet
+  ls::Slice<double> extractorWrite;
+  extractorWrite.setSourceLevelSet(sphere3D);
+  extractorWrite.setSliceDimension(2);  // z-axis
+  extractorWrite.setSlicePosition(0.0); // z=0 plane
+  extractorWrite.setWritePath("slice2D.lvst");
+  extractorWrite.apply();
+
+  auto slice2DRead = ls::SmartPointer<ls::Domain<double, 2>>::New();
+  ls::Reader<double, 2> reader(slice2DRead, "slice2D.lvst");
+  reader.apply();
+  auto mesh2DRead = ls::SmartPointer<ls::Mesh<>>::New();
+  ls::ToMesh<double, 2>(slice2DRead, mesh2DRead).apply();
+  ls::VTKWriter<double>(mesh2DRead, "slice2DRead.vtp").apply();
 
   return 0;
 }

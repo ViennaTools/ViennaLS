@@ -2,6 +2,7 @@
 
 #include <lsDomain.hpp>
 #include <lsPreCompileMacros.hpp>
+#include <lsWriter.hpp>
 
 namespace viennals {
 
@@ -18,6 +19,9 @@ template <class T> class Slice {
 
   int sliceDimension = 0; // (0=x, 1=y, 2=z)
   T slicePosition = 0;    // Position of the slice
+
+  bool writeSlice = false;
+  std::string writePath;
 
 public:
   Slice() = default;
@@ -40,6 +44,11 @@ public:
 
   void setSliceLevelSet(SmartPointer<Domain<T, 2>> passedDomain) {
     sliceLevelSet = passedDomain;
+  }
+
+  void setWritePath(const std::string &path) {
+    writeSlice = true;
+    writePath = path;
   }
 
   // Getter needed if used without passed slice level-set
@@ -152,6 +161,11 @@ public:
       } else {
         // Use passed slice domain
         sliceLevelSet->insertPoints(pointData);
+      }
+
+      if (writeSlice) {
+        Writer<T, 2> writer(sliceLevelSet, writePath);
+        writer.apply();
       }
     }
   };

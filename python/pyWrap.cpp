@@ -1109,6 +1109,8 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("setSlicePosition", &Slice<T>::setSlicePosition,
            "Set the position along the slice dimension where to extract the "
            "slice.")
+      .def("setWritePath", &Slice<T>::setWritePath,
+           "Set the path where the slice should be written to.")
       .def("apply", &Slice<T>::apply,
            "Extract the 2D slice from the 3D domain.");
 
