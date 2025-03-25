@@ -1,7 +1,10 @@
 #pragma once
 
 #include <lsDomain.hpp>
+#include <lsMesh.hpp>
 #include <lsPreCompileMacros.hpp>
+#include <lsToSurfaceMesh.hpp>
+#include <lsVTKWriter.hpp>
 #include <lsWriter.hpp>
 
 namespace viennals {
@@ -20,8 +23,11 @@ template <class T> class Slice {
   int sliceDimension = 0; // (0=x, 1=y, 2=z)
   T slicePosition = 0;    // Position of the slice
 
-  bool writeSlice = false;
+  bool writeSliceLevelSet = false;
+  bool writeSurfaceMesh = false;
   std::string writePath;
+
+  bool reflectX = false;
 
 public:
   Slice() = default;
@@ -46,8 +52,10 @@ public:
     sliceLevelSet = passedDomain;
   }
 
-  void setWritePath(const std::string &path) {
-    writeSlice = true;
+  void setWritePath(const std::string &path,
+                    bool writeSliceSurfaceMesh = false) {
+    writeSliceLevelSet = true;
+    writeSurfaceMesh = writeSliceSurfaceMesh;
     writePath = path;
   }
 
@@ -65,6 +73,8 @@ public:
   }
 
   void setSlicePosition(T position) { slicePosition = position; }
+
+  void setReflectX(bool reflect) { reflectX = reflect; }
 
   void apply() {
     if (sourceLevelSet == nullptr) {
@@ -130,6 +140,10 @@ public:
           }
         }
 
+        if (reflectX) {
+          sliceIndices[0] = -sliceIndices[0];
+        }
+
         // Add to our collection
         pointData.emplace_back(sliceIndices, value);
       }
@@ -156,6 +170,13 @@ public:
           }
         }
 
+        if (reflectX) {
+          // Swap and negate the X bounds
+          double temp = sliceBounds[0];
+          sliceBounds[0] = -sliceBounds[1];
+          sliceBounds[1] = -temp;
+        }
+
         sliceLevelSet = SmartPointer<Domain<T, 2>>::New(
             pointData, sliceBounds, sliceBoundaryConds, gridDelta);
       } else {
@@ -163,9 +184,15 @@ public:
         sliceLevelSet->insertPoints(pointData);
       }
 
-      if (writeSlice) {
+      if (writeSliceLevelSet) {
         Writer<T, 2> writer(sliceLevelSet, writePath);
         writer.apply();
+        if (writeSurfaceMesh) {
+          auto mesh = SmartPointer<Mesh<>>::New();
+          ToSurfaceMesh<T, 2> surfaceMesh(sliceLevelSet, mesh);
+          surfaceMesh.apply();
+          VTKWriter<T>(mesh, writePath + ".vtp").apply();
+        }
       }
     }
   };
