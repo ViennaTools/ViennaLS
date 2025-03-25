@@ -33,10 +33,10 @@ public:
   }
 
   void apply() {
-    // check mesh
+    // check level-set
     if (levelSet == nullptr) {
       Logger::getInstance()
-          .addWarning("No mesh was passed to Writer. Not writing.")
+          .addWarning("No level-set was passed to Writer. Not writing.")
           .print();
       return;
     }
