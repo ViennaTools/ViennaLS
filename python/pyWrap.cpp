@@ -1089,20 +1089,19 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "All other LS values will be marked as stray points and removed.")
       .def("apply", &RemoveStrayPoints<T, D>::apply, "Remove stray points.");
 
-  // SliceExtractor
+  // Slice
   pybind11::class_<Slice<T>, SmartPointer<Slice<T>>>(module, "Slice")
       // constructors
       .def(pybind11::init(&SmartPointer<Slice<T>>::New<>))
       .def(pybind11::init(
           &SmartPointer<Slice<T>>::New<SmartPointer<Domain<T, 3>> &,
-                                       SmartPointer<Domain<T, 2>> &>))
-      .def(pybind11::init(
-          &SmartPointer<Slice<T>>::New<SmartPointer<Domain<T, 3>> &,
                                        SmartPointer<Domain<T, 2>> &, int, T>))
+      .def(pybind11::init(
+          &SmartPointer<Slice<T>>::New<SmartPointer<Domain<T, 3>> &, int, T>))
       // methods
-      .def("setSourceDomain", &Slice<T>::setSourceLevelSet,
+      .def("setSourceLevelSet", &Slice<T>::setSourceLevelSet,
            "Set the 3D source level set from which to extract the slice.")
-      .def("setSliceDomain", &Slice<T>::setSliceLevelSet,
+      .def("setSliceLevelSet", &Slice<T>::setSliceLevelSet,
            "Set the 2D level set where the extracted slice will be stored.")
       .def("setSliceDimension", &Slice<T>::setSliceDimension,
            "Set the dimension along which to slice (0=x, 1=y, 2=z).")
@@ -1111,6 +1110,10 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "slice.")
       .def("setWritePath", &Slice<T>::setWritePath,
            "Set the path where the slice should be written to.")
+      .def("getSliceLevelSet", &Slice<T>::getSliceLevelSet,
+           "Get the 2D slice level set after extraction.")
+      .def("setReflectX", &Slice<T>::setReflectX,
+           "Set whether to reflect all x-coordinates in the resulting slice.")
       .def("apply", &Slice<T>::apply,
            "Extract the 2D slice from the 3D domain.");
 
