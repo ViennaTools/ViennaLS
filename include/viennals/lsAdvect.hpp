@@ -102,8 +102,10 @@ template <class T, int D> class Advect {
 #pragma omp parallel num_threads((levelSets.back())->getNumberOfSegments())
     {
       VectorType<T, 3> localAlphas(0., 0., 0.);
-
-      const int p = omp_get_thread_num();
+      int p = 0;
+#ifdef _OPENMP
+      p = omp_get_thread_num();
+#endif
       VectorType<hrleIndexType, D> startVector =
           (p == 0) ? grid.getMinGridPoint()
                    : topDomain.getSegmentation()[p - 1];
@@ -227,7 +229,10 @@ template <class T, int D> class Advect {
 
 #pragma omp parallel num_threads(newDomain.getNumberOfSegments())
     {
-      const int p = omp_get_thread_num();
+      int p = 0;
+#ifdef _OPENMP
+      p = omp_get_thread_num();
+#endif
       auto &domainSegment = newDomain.getDomainSegment(p);
 
       VectorType<hrleIndexType, D> startVector =
@@ -452,7 +457,10 @@ template <class T, int D> class Advect {
 
 #pragma omp parallel num_threads(topDomain.getNumberOfSegments())
     {
-      const int p = omp_get_thread_num();
+      int p = 0;
+#ifdef _OPENMP
+      p = omp_get_thread_num();
+#endif
       VectorType<hrleIndexType, D> startVector =
           (p == 0) ? grid.getMinGridPoint()
                    : topDomain.getSegmentation()[p - 1];
@@ -611,7 +619,10 @@ template <class T, int D> class Advect {
 
 #pragma omp parallel num_threads(topDomain.getNumberOfSegments())
     {
-      const int p = omp_get_thread_num();
+      int p = 0;
+#ifdef _OPENMP
+      p = omp_get_thread_num();
+#endif
       auto itRS = storedRates[p].cbegin();
       auto &segment = topDomain.getDomainSegment(p);
       const unsigned maxId = segment.getNumberOfPoints();
