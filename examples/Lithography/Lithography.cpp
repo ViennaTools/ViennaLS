@@ -6,6 +6,7 @@
 #include <lsVTKWriter.hpp>
 
 #include <hrleSparseIterator.hpp>
+#include <hrleDenseIterator.hpp>
 
 /**
   Example showing how to create a 2D level set domain from
@@ -25,23 +26,14 @@ void readPolygonCSV(const std::string &filename,
                     double shiftY = 0.0,
                     double shiftZ = 0.0,
                     bool is2D = true) {
-
   std::ifstream file(filename);
   if (!file.is_open()) {
     std::cerr << "Error opening file: " << filename << std::endl;
     return;
   }
 
+  std::vector<std::array<double, 3>> points;
   std::string line;
-  unsigned lastIdx = -1;
-  unsigned firstIdx = -1;
-  std::array<double, 3> firstPoint = {0., 0., 0.};
-  std::array<double, 3> lastPoint = {0., 0., 0.};
-
-  // Track bounding box
-  double minx = 1e100, maxx = -1e100;
-  double miny = 1e100, maxy = -1e100;
-  double minz = 1e100, maxz = -1e100;
 
   while (std::getline(file, line)) {
     std::stringstream ss(line);
@@ -52,7 +44,7 @@ void readPolygonCSV(const std::string &filename,
       coords.push_back(std::stod(value));
     }
 
-    double x = 0.0, y = 0.0, z = 0.0;
+    double x = 0., y = 0., z = 0.;
     if (coords.size() >= 2) {
       x = coords[0];
       y = coords[1];
@@ -63,34 +55,47 @@ void readPolygonCSV(const std::string &filename,
       continue;
     }
 
-    x = x * scaleFactor + shiftX;
-    y = y * scaleFactor + shiftY;
-    z = z * scaleFactor + shiftZ;
-
-    // Update bounds
-    minx = std::min(minx, x); maxx = std::max(maxx, x);
-    miny = std::min(miny, y); maxy = std::max(maxy, y);
-    minz = std::min(minz, z); maxz = std::max(maxz, z);
-
-    // Insert node
-    unsigned idx = mesh->insertNextNode({x, y, z});
-    if (firstIdx == -1) {
-      firstIdx = idx;
-      firstPoint = {x, y, z};
-    } else {
-      mesh->insertNextLine({idx, lastIdx});
-    }
-
-    lastIdx = idx;
-    lastPoint = {x, y, z};
+    points.push_back({
+      x * scaleFactor + shiftX,
+      y * scaleFactor + shiftY,
+      z * scaleFactor + shiftZ
+    });
   }
   file.close();
 
-  // Close the polygon if last point != first point
-  if ((lastIdx != -1) && (firstPoint != lastPoint)) {
-    mesh->insertNextLine({firstIdx, lastIdx});
+  if (points.size() < 2) return;
+
+  // --- Determine winding order using signed area ---
+  double signedArea = 0.0;
+  for (size_t i = 0; i < points.size(); ++i) {
+    const auto &p1 = points[i];
+    const auto &p2 = points[(i + 1) % points.size()];
+    signedArea += (p1[0] * p2[1] - p2[0] * p1[1]);
+  }
+  bool isCCW = (signedArea > 0);  // counter-clockwise if true
+
+  // --- Insert nodes and lines with correct order ---
+  std::vector<unsigned> indices;
+  for (const auto &p : points) {
+    indices.push_back(mesh->insertNextNode(p));
+  }
+
+  for (size_t i = 1; i < indices.size(); ++i) {
+    if (isCCW)
+      mesh->insertNextLine({indices[i], indices[i - 1]});
+    else
+      mesh->insertNextLine({indices[i - 1], indices[i]});
+  }
+
+  // Close the polygon if not already closed
+  if (points.front() != points.back()) {
+    if (isCCW)
+      mesh->insertNextLine({indices.front(), indices.back()});
+    else
+      mesh->insertNextLine({indices.back(), indices.front()});
   }
 }
+
 
 int main(int argc, char* argv[]) {
   ls::Logger::getInstance().setLogLevel(ls::LogLevel::DEBUG);
@@ -141,15 +146,24 @@ int main(int argc, char* argv[]) {
   using LevelSetType = ls::Domain<double, D>;
   auto &levelSet = pattern->getDomain();
 
-  hrleSparseIterator<typename LevelSetType::DomainType> it(levelSet);
-  for (; !it.isFinished(); ++it) {
-    const auto &coord = it.getStartIndices();
-    const double value = it.getValue();
+  std::cout << "Sparse iterator:" << std::endl;
+  hrleSparseIterator<typename LevelSetType::DomainType> its(levelSet);
+  for (; !its.isFinished(); ++its) {
+    const auto &coord = its.getStartIndices();
+    const double value = its.getValue();
     if (value <= 0.0) {
-      // Gaussians applied here
-      std::cout << "Point (" << coord[0] << ", " << coord[1];
-      if constexpr (D == 3) std::cout << ", " << coord[2];
-      std::cout << ") is exposed; SDF = " << value << std::endl;
+      std::cout << "Point (" << coord[0] << ", " << coord[1] << ") is exposed; SDF = " << value << std::endl;
+    }
+  }
+
+  std::cout << "Dense iterator:" << std::endl;
+  using LevelSetType = ls::Domain<double, 2>;
+  hrleDenseIterator<typename LevelSetType::DomainType> itd(levelSet);
+  for (; !itd.isFinished(); ++itd) {
+    auto idx = itd.getIndices();
+    double value = itd.getValue();
+    if (value < 0.) {
+      std::cout << "Point (" << idx[0] << ", " << idx[1] << ") is exposed; SDF = " << value << std::endl;
     }
   }
 
