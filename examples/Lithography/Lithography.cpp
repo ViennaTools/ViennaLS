@@ -4,6 +4,11 @@
 #include <lsToSurfaceMesh.hpp>
 #include <lsFromSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
+#include <lsToMesh.hpp>
+#include <lsMakeGeometry.hpp>
+#include <lsBooleanOperation.hpp>
+
+#include <lsExtrude.hpp>
 
 #include <hrleSparseIterator.hpp>
 #include <hrleDenseIterator.hpp>
@@ -96,7 +101,6 @@ void readPolygonCSV(const std::string &filename,
   }
 }
 
-
 int main(int argc, char* argv[]) {
   ls::Logger::getInstance().setLogLevel(ls::LogLevel::DEBUG);
 
@@ -111,15 +115,12 @@ int main(int argc, char* argv[]) {
   // scale in micrometers
   double xExtent = 50;
   double yExtent = 50;
-  double gridDelta = 1.0;
+  double gridDelta = 0.199;
 
   double bounds[2 * D] = {-xExtent / 2., xExtent / 2., -yExtent / 2., yExtent / 2.};
   ls::Domain<double, D>::BoundaryType boundaryCons[D];
   boundaryCons[0] = ls::Domain<double, D>::BoundaryType::PERIODIC_BOUNDARY;
   boundaryCons[1] = ls::Domain<double, D>::BoundaryType::PERIODIC_BOUNDARY;
-
-  auto substrate = ls::SmartPointer<ls::Domain<double, D>>::New(
-      bounds, boundaryCons, gridDelta);
 
   // copy the structure to add the pattern on top
   auto pattern = ls::SmartPointer<ls::Domain<double, D>>::New(
@@ -127,7 +128,7 @@ int main(int argc, char* argv[]) {
 
   // Create pattern from CSV polygon
   {
-    std::cout << "Reading polygon from CSV..." << std::endl;
+    std::cout << "== Reading polygon from CSV... ";
 
     auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
     readPolygonCSV(csvFilename, mesh);
@@ -138,33 +139,101 @@ int main(int argc, char* argv[]) {
     ls::ToSurfaceMesh<double, D>(pattern, writemesh).apply();
     ls::VTKWriter<double>(writemesh, "writtenMesh.vtp").apply();
 
-    std::cout << "Done reading polygon from CSV." << std::endl;
+    std::cout << "done!" << std::endl;
   }
 
-  std::cout << "Iterating over level set grid points with negative signed distance..." << std::endl;
-
+  // === Iterate over level set grid ===
   using LevelSetType = ls::Domain<double, D>;
   auto &levelSet = pattern->getDomain();
 
-  std::cout << "Sparse iterator:" << std::endl;
+  // Sparse iterator
   hrleSparseIterator<typename LevelSetType::DomainType> its(levelSet);
   for (; !its.isFinished(); ++its) {
     const auto &coord = its.getStartIndices();
     const double value = its.getValue();
     if (value <= 0.0) {
-      std::cout << "Point (" << coord[0] << ", " << coord[1] << ") is exposed; SDF = " << value << std::endl;
+      // Do whatever you want with the points
+      // Take care of runs (see HRLE)
+      // std::cout << "Point (" << coord[0] << ", " << coord[1] << ") is exposed; SDF = " << value << std::endl;
     }
   }
 
-  std::cout << "Dense iterator:" << std::endl;
-  using LevelSetType = ls::Domain<double, 2>;
+  // Dense iterator
+  using LevelSetType = ls::Domain<double, D>;
   hrleDenseIterator<typename LevelSetType::DomainType> itd(levelSet);
   for (; !itd.isFinished(); ++itd) {
     auto idx = itd.getIndices();
     double value = itd.getValue();
-    if (value < 0.) {
-      std::cout << "Point (" << idx[0] << ", " << idx[1] << ") is exposed; SDF = " << value << std::endl;
+    if (value <= 0.) {
+      // Do whatever you want with the points
+      // std::cout << "Point (" << idx[0] << ", " << idx[1] << ") is exposed; SDF = " << value << std::endl;
     }
+  }
+
+  // === Extrude 2D pattern into 3D ===
+  std::cout << "== Extruding 2D into 3D... ";
+
+  constexpr int D3 = 3;
+  using Domain3D = ls::Domain<double, D3>;
+  auto pattern3D = ls::SmartPointer<Domain3D>::New();
+
+  // Define extrusion extent in Z (0 to 5)
+  std::array<double, 2> extrudeExtent = {0. - gridDelta, 5. + gridDelta}; // add buffer or +/- gridDelta
+
+  // Boundary conditions in 3D (x, y periodic, z reflective)
+  std::array<ls::BoundaryConditionEnum, 3> boundaryConds = {
+      ls::BoundaryConditionEnum::PERIODIC_BOUNDARY,
+      ls::BoundaryConditionEnum::PERIODIC_BOUNDARY,
+      ls::BoundaryConditionEnum::INFINITE_BOUNDARY};
+
+  // Run extrusion using the available mesh-based implementation
+  // ls::Extrude<double>(pattern, pattern3D, extrudeExtent, 2, boundaryConds).apply();
+  ls::Extrude<double>(pattern, pattern3D, extrudeExtent, 2, boundaryConds).apply();
+
+  // === Export extruded mesh to SDF VTK grid for visualization ===
+  auto sdf3D_preCap = ls::SmartPointer<ls::Mesh<double>>::New();
+  ls::ToMesh<double, D3>(pattern3D, sdf3D_preCap).apply();
+  ls::VTKWriter<double>(sdf3D_preCap, "extrudedSDF_preCap.vtp").apply();
+
+  // === Add capping layers (bottom and top planes) ===
+  std::cout << "adding capping planes... ";
+
+  // Create bottom substrate (z >= 0)
+  auto bottomLS = ls::SmartPointer<Domain3D>::New(pattern3D->getGrid());
+  double originLow[3] = {0., 0., 0.};
+  double normalLow[3] = {0., 0., -1.}; // z >= 0
+  auto bottomPlane = ls::SmartPointer<ls::Plane<double, D3>>::New(originLow, normalLow);
+  ls::MakeGeometry<double, 3>(bottomLS, bottomPlane).apply();
+
+  // Create top cap (z <= 5 µm)
+  auto topLS = ls::SmartPointer<Domain3D>::New(pattern3D->getGrid());
+  double originHigh[3] = {0., 0., 5.0}; // Adjust to match extrusion
+  double normalHigh[3] = {0., 0., 1.}; // z <= 5
+  auto topPlane = ls::SmartPointer<ls::Plane<double, D3>>::New(originHigh, normalHigh);
+  ls::MakeGeometry<double, D3>(topLS, topPlane).apply();
+
+  // Intersect with bottom
+  ls::BooleanOperation<double, D3>(pattern3D, bottomLS, ls::BooleanOperationEnum::INTERSECT).apply();
+  // Intersect with top
+  ls::BooleanOperation<double, D3>(pattern3D, topLS, ls::BooleanOperationEnum::INTERSECT).apply();
+  std::cout << "done!" << std::endl;
+
+  // === Export extruded mesh to SDF VTK grid for visualization ===
+  auto sdf3D = ls::SmartPointer<ls::Mesh<double>>::New();
+  ls::ToMesh<double, D3>(pattern3D, sdf3D).apply();
+  ls::VTKWriter<double>(sdf3D, "extrudedSDF.vtp").apply();
+
+  // === Export Surface Mesh (safe if a surface exists)
+  try {
+    auto mesh3D = ls::SmartPointer<ls::Mesh<double>>::New();
+    ls::ToSurfaceMesh<double, D3>(pattern3D, mesh3D).apply();
+    if (!mesh3D->getNodes().empty()) {
+      ls::VTKWriter<double>(mesh3D, "extrudedMesh.vtp").apply();
+    } else {
+      std::cerr << "Warning: No surface found to export!" << std::endl;
+    }
+  } catch (...) {
+    std::cerr << "Exception: Failed to extract surface mesh from extruded level set." << std::endl;
   }
 
   return 0;
