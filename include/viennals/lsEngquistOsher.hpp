@@ -44,7 +44,7 @@ public:
     auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
 
-    VectorType<T, 3> coordinate(0., 0., 0.);
+    VectorType<T, 3> coordinate{0., 0., 0.};
     for (unsigned i = 0; i < D; ++i) {
       coordinate[i] = indices[i] * gridDelta;
     }
@@ -138,14 +138,11 @@ public:
       }
     }
 
-    // convert coordinate to std array for interface
-    Vec3D<T> const coordArray(coordinate[0], coordinate[1], coordinate[2]);
-
     double scalarVelocity = velocities->getScalarVelocity(
-        coordArray, material, normalVector,
+        coordinate, material, normalVector,
         neighborIterator.getCenter().getPointId());
     Vec3D<T> vectorVelocity = velocities->getVectorVelocity(
-        coordArray, material, normalVector,
+        coordinate, material, normalVector,
         neighborIterator.getCenter().getPointId());
 
     if (scalarVelocity > 0) {

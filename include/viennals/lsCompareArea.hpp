@@ -26,7 +26,7 @@ template <class T, int D = 2> class CompareArea {
 
   SmartPointer<Domain<T, D>> levelSetTarget = nullptr;
   SmartPointer<Domain<T, D>> levelSetSample = nullptr;
-  VectorType<hrleIndexType, D> minIndex, maxIndex;
+  viennahrle::Index<D> minIndex, maxIndex;
 
   unsigned long int differentCellsCount = 0;
   unsigned long int customDifferentCellCount = 0;
@@ -214,8 +214,8 @@ public:
     std::vector<T> cellDifference;
     std::vector<T> incrementValues;
     size_t currentPointId = 0;
-    std::unordered_map<VectorType<hrleIndexType, D>, size_t,
-                       typename VectorType<hrleIndexType, D>::hash>
+    std::unordered_map<viennahrle::Index<D>, size_t,
+                       typename viennahrle::Index<D>::hash>
         pointIdMapping;
 
     // Iterate through the domain defined by the bounding box
@@ -279,7 +279,7 @@ public:
 
         // Insert all points of voxel into pointList
         for (unsigned i = 0; i < (1 << D); ++i) {
-          VectorType<hrleIndexType, D> index;
+          viennahrle::Index<D> index;
           for (unsigned j = 0; j < D; ++j) {
             index[j] =
                 itTarget.getIndices(j) + itTarget.getCorner(i).getOffset()[j];
@@ -326,7 +326,7 @@ public:
       // Insert points into the mesh
       outputMesh->nodes.resize(pointIdMapping.size());
       for (auto it = pointIdMapping.begin(); it != pointIdMapping.end(); ++it) {
-        std::array<T, 3> coords{};
+        Vec3D<T> coords;
         for (unsigned i = 0; i < D; ++i) {
           coords[i] = gridDelta * it->first[i];
 

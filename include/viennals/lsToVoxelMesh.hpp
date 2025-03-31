@@ -196,7 +196,7 @@ public:
     double gridDelta = grid.getGridDelta();
     mesh->nodes.resize(pointIdMapping.size());
     for (auto it = pointIdMapping.begin(); it != pointIdMapping.end(); ++it) {
-      std::array<T, 3> coords{};
+      Vec3D<T> coords;
       for (unsigned i = 0; i < D; ++i) {
         coords[i] = gridDelta * it->first[i];
 

@@ -21,8 +21,8 @@ enum struct TransformEnum : unsigned {
 template <class T> class TransformMesh {
   SmartPointer<Mesh<T>> mesh = nullptr;
   TransformEnum transform = TransformEnum::TRANSLATION;
-  VectorType<double, 3> transformVector{};
-  double angle = 0.0;
+  VectorType<T, 3> transformVector{};
+  T angle = 0.0;
   double numericEps = 1e-6;
 
   // check vector for all zeros

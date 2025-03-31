@@ -267,12 +267,11 @@ public:
       }
     }
 
-    std::vector<std::pair<VectorType<hrleIndexType, D>, T>> points2;
+    std::vector<std::pair<viennahrle::Index<D>, T>> points2;
 
     // setup list of grid points with distances to surface elements
     {
-      typedef std::vector<
-          std::pair<VectorType<hrleIndexType, D>, std::pair<T, T>>>
+      typedef std::vector<std::pair<viennahrle::Index<D>, std::pair<T, T>>>
           point_vector;
       point_vector points;
       T gridDelta = grid.getGridDelta();
@@ -289,8 +288,9 @@ public:
 
       for (unsigned currentElement = 0; currentElement < elements.size();
            currentElement++) {
-        VectorType<T, D> nodes[D];     // nodes of element
-        VectorType<T, D> center(T(0)); // center point of triangle
+        VectorType<T, D> nodes[D]; // nodes of element
+        VectorType<T, D> center;   // center point of triangle
+        std::fill(center.begin(), center.end(), 0);
 
         std::bitset<2 * D> flags;
         flags.set();
@@ -322,9 +322,10 @@ public:
           continue;
 
         // center point calculation
-        center /= static_cast<T>(D);
+        for (int q = 0; q < D; q++)
+          center[q] /= static_cast<T>(D);
 
-        // VectorType<T,D> normal=NormalVector(c);  //normalvector
+        // VectorType<T,D> normal=NormalVector(c);  //normal vector
         // calculation
 
         // determine the minimum and maximum nodes of the element, based on
@@ -337,7 +338,7 @@ public:
         }
 
         // find indices which describe the triangle
-        VectorType<hrleIndexType, D> minIndex, maxIndex;
+        viennahrle::Index<D> minIndex, maxIndex;
         for (int q = 0; q < D; q++) {
           minIndex[q] =
               static_cast<hrleIndexType>(std::ceil(minNode[q] / gridDelta));
@@ -372,7 +373,7 @@ public:
           for (typename box::iterator it_bb(bb); !it_bb.is_finished();
                ++it_bb) {
 
-            VectorType<hrleIndexType, D> it_b;
+            viennahrle::Index<D> it_b;
             for (int h = 0; h < D - 1; ++h)
               it_b[(z + h + 1) % D] = (*it_bb)[h];
 
@@ -462,9 +463,9 @@ public:
       std::sort(points.begin(), points.end()); // sort points lexicographically
 
       // setup list of index/distance pairs for level set initialization
-      typename point_vector::iterator it_points = points.begin();
+      auto it_points = points.begin();
       while (it_points != points.end()) {
-        VectorType<hrleIndexType, D> tmp = it_points->first;
+        viennahrle::Index<D> tmp = it_points->first;
         points2.push_back(
             std::make_pair(it_points->first, it_points->second.second));
 

@@ -129,7 +129,7 @@ public:
 
           // look for existing surface node
           viennahrle::Index<D> d(cellIt.getIndices());
-          d += BitMaskToVector<D, viennahrle::IndexType>(p0);
+          d += viennahrle::BitMaskToIndex<D>(p0);
 
           nodeIt = nodes[dir].find(d);
           if (nodeIt != nodes[dir].end()) {
@@ -137,15 +137,15 @@ public:
           } else { // if node does not exist yet
 
             // calculate coordinate of new node
-            Vec3D<T> cc(T(0)); // initialise with zeros
+            Vec3D<T> cc = {0., 0., 0.}; // initialise with zeros
             std::size_t currentPointId = 0;
             for (int z = 0; z < D; z++) {
               if (z != dir) {
                 // TODO might not need BitMaskToVector here, just check if z bit
                 // is set
-                cc[z] = static_cast<double>(
-                    cellIt.getIndices(z) +
-                    BitMaskToVector<D, viennahrle::IndexType>(p0)[z]);
+                cc[z] =
+                    static_cast<double>(cellIt.getIndices(z) +
+                                        viennahrle::BitMaskToIndex<D>(p0)[z]);
               } else {
                 T d0, d1;
 

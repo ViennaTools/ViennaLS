@@ -123,9 +123,10 @@ public:
         // if (flags.any())
         //   continue;
 
-        currentSurfaceElement.sort();
+        // currentSurfaceElement.sort();
+        std::sort(currentSurfaceElement.begin(), currentSurfaceElement.end());
 
-        VectorType<double, D> currentElementPoints[D + 1];
+        Vec3D<T> currentElementPoints[D + 1];
         for (int k = 0; k < D; k++) {
           currentElementPoints[k] = mesh->nodes[currentSurfaceElement[k]];
         }

@@ -20,7 +20,7 @@ template <class T, int D = 2> class CompareNarrowBand {
   using hrleIndexType = viennahrle::IndexType;
   SmartPointer<Domain<T, D>> levelSetTarget = nullptr;
   SmartPointer<Domain<T, D>> levelSetSample = nullptr;
-  VectorType<hrleIndexType, D> minIndex, maxIndex;
+  viennahrle::Index<D> minIndex, maxIndex;
 
   // Variables for x and y range restrictions
   T xRangeMin = std::numeric_limits<T>::lowest();
@@ -224,8 +224,8 @@ public:
     numPoints = 0;
 
     // Prepare mesh output if needed
-    std::unordered_map<VectorType<hrleIndexType, D>, size_t,
-                       typename VectorType<hrleIndexType, D>::hash>
+    std::unordered_map<viennahrle::Index<D>, size_t,
+                       typename viennahrle::Index<D>::hash>
         pointIdMapping;
     std::vector<T> differenceValues;
     size_t currentPointId = 0;
@@ -292,7 +292,7 @@ public:
         // TODO: possibly remove this addVoxel check
         // Insert all points of voxel into pointList
         for (unsigned i = 0; i < (1 << D); ++i) {
-          VectorType<hrleIndexType, D> index;
+          viennahrle::Index<D> index;
           for (unsigned j = 0; j < D; ++j) {
             index[j] =
                 itSample.getIndices(j) + itSample.getCorner(i).getOffset()[j];

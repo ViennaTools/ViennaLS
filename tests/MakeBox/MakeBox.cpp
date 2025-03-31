@@ -42,8 +42,8 @@ int main() {
   auto levelSet = ls::SmartPointer<ls::Domain<double, D>>::New(
       bounds, boundaryCons, gridDelta);
 
-  ls::VectorType<double, D> min(bounds[0] + 10, bounds[2] + extent, 0);
-  ls::VectorType<double, D> max(bounds[1] - 10, bounds[3] + extent / 2., 4);
+  ls::VectorType<double, D> min{bounds[0] + 10, bounds[2] + extent, 0};
+  ls::VectorType<double, D> max{bounds[1] - 10, bounds[3] + extent / 2., 4};
   ls::MakeGeometry<double, D>(
       levelSet, ls::SmartPointer<ls::Box<double, D>>::New(min, max))
       .apply();

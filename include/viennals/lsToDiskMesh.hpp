@@ -116,8 +116,8 @@ public:
     std::vector<N> materialIds;
 
     // save the extent of the resulting mesh
-    Vec3D<N> minimumExtent(N(0));
-    Vec3D<N> maximumExtent(N(0));
+    Vec3D<N> minimumExtent;
+    Vec3D<N> maximumExtent;
     for (unsigned i = 0; i < D; ++i) {
       minimumExtent[i] = std::numeric_limits<T>::max();
       maximumExtent[i] = std::numeric_limits<T>::lowest();

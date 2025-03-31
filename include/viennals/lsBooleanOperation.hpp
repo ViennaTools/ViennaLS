@@ -124,7 +124,8 @@ private:
         default:
           itB.next();
         }
-        currentVector = Max(itA.getStartIndices(), itB.getStartIndices());
+        currentVector =
+            Max(itA.getStartIndices().get(), itB.getStartIndices().get());
       }
     }
 
@@ -280,7 +281,7 @@ public:
       SmartPointer<Domain<T, D>> passedlsDomainB,
       BooleanOperationEnum passedOperation = BooleanOperationEnum::INTERSECT)
       : levelSetA(passedlsDomainA), levelSetB(passedlsDomainB),
-        operation(passedOperation){};
+        operation(passedOperation) {};
 
   /// Set which level set to perform the boolean operation on.
   void setLevelSet(SmartPointer<Domain<T, D>> passedlsDomain) {

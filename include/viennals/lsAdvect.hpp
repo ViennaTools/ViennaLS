@@ -97,19 +97,19 @@ template <class T, int D> class Advect {
     const T deltaPos = gridDelta;
     const T deltaNeg = -gridDelta;
 
-    VectorType<T, 3> finalAlphas(0., 0., 0.);
+    VectorType<T, 3> finalAlphas = {0., 0., 0.};
 
 #pragma omp parallel num_threads((levelSets.back())->getNumberOfSegments())
     {
-      VectorType<T, 3> localAlphas(0., 0., 0.);
+      VectorType<T, 3> localAlphas = {0., 0., 0.};
       int p = 0;
 #ifdef _OPENMP
       p = omp_get_thread_num();
 #endif
-      VectorType<hrleIndexType, D> startVector =
+      viennahrle::Index<D> startVector =
           (p == 0) ? grid.getMinGridPoint()
                    : topDomain.getSegmentation()[p - 1];
-      VectorType<hrleIndexType, D> endVector =
+      viennahrle::Index<D> endVector =
           (p != static_cast<int>(topDomain.getNumberOfSegments() - 1))
               ? topDomain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
@@ -235,11 +235,11 @@ template <class T, int D> class Advect {
 #endif
       auto &domainSegment = newDomain.getDomainSegment(p);
 
-      VectorType<hrleIndexType, D> startVector =
+      viennahrle::Index<D> startVector =
           (p == 0) ? grid.getMinGridPoint()
                    : newDomain.getSegmentation()[p - 1];
 
-      VectorType<hrleIndexType, D> endVector =
+      viennahrle::Index<D> endVector =
           (p != static_cast<int>(newDomain.getNumberOfSegments() - 1))
               ? newDomain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
@@ -461,11 +461,11 @@ template <class T, int D> class Advect {
 #ifdef _OPENMP
       p = omp_get_thread_num();
 #endif
-      VectorType<hrleIndexType, D> startVector =
+      viennahrle::Index<D> startVector =
           (p == 0) ? grid.getMinGridPoint()
                    : topDomain.getSegmentation()[p - 1];
 
-      VectorType<hrleIndexType, D> endVector =
+      viennahrle::Index<D> endVector =
           (p != static_cast<int>(topDomain.getNumberOfSegments() - 1))
               ? topDomain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());

@@ -38,13 +38,13 @@ class StencilLocalLaxFriedrichsScalar {
 
   // Final dissipation coefficients that are used by the time integrator. If
   // D==2 last entries are 0.
-  VectorType<T, 3> finalAlphas;
+  Vec3D<T> finalAlphas;
   static constexpr unsigned numStencilPoints = std::pow(2 * order + 1, D);
 
   static T pow2(const T &value) { return value * value; }
 
-  VectorType<T, D> calculateNormal(const viennahrle::Index<D> &offset) {
-    VectorType<T, D> normal;
+  Vec3D<T> calculateNormal(const viennahrle::Index<D> &offset) {
+    Vec3D<T> normal = {0.0, 0.0, 0.0};
     constexpr int startIndex = -1;
     T modulus = 0.;
 
@@ -134,7 +134,7 @@ public:
     auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
 
-    VectorType<T, 3> coordinate(0., 0., 0.);
+    Vec3D<T> coordinate{0., 0., 0.};
     for (unsigned i = 0; i < D; ++i) {
       coordinate[i] = indices[i] * gridDelta;
     }
@@ -197,21 +197,19 @@ public:
       viennahrle::Index<D> currentIndex(-order);
       for (size_t i = 0; i < numStencilPoints; ++i) {
         VectorType<T, D> alpha;
-        VectorType<T, 3> normal(calculateNormal(currentIndex));
-        if (D == 2)
-          normal[2] = 0;
+        Vec3D<T> normal = calculateNormal(currentIndex);
 
         // Check for corrupted normal
         if ((std::abs(normal[0]) < 1e-6) && (std::abs(normal[1]) < 1e-6) &&
             (std::abs(normal[2]) < 1e-6)) {
-          alphas.push_back(VectorType<T, D>(T(0)));
           continue;
         }
 
         Vec3D<T> normal_p{normal[0], normal[1], normal[2]};
         Vec3D<T> normal_n{normal[0], normal[1], normal[2]};
 
-        VectorType<T, D> velocityDelta(T(0));
+        VectorType<T, D> velocityDelta;
+        std::fill(velocityDelta.begin(), velocityDelta.end(), 0.);
 
         // get local velocity
         Vec3D<T> localCoordArray = coordArray;

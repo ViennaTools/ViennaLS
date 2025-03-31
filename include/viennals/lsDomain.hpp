@@ -31,9 +31,7 @@ public:
   typedef viennahrle::Grid<D> GridType;
   typedef viennahrle::Domain<T, D> DomainType;
   typedef BoundaryConditionEnum BoundaryType;
-  typedef std::vector<std::pair<VectorType<viennahrle::IndexType, D>, T>>
-      PointValueVectorType;
-  typedef std::vector<std::array<T, D>> NormalVectorType;
+  typedef std::vector<std::pair<viennahrle::Index<D>, T>> PointValueVectorType;
   typedef PointData<T> PointDataType;
   typedef std::vector<bool> VoidPointMarkersType;
 

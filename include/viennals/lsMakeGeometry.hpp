@@ -246,7 +246,8 @@ private:
 
   /// Creates a plane containing the point origin, with
   /// the plane normal given by normal
-  void makePlane(VectorType<T, D> origin, VectorType<T, D> passedNormal) {
+  void makePlane(VectorType<T, D> origin,
+                 VectorType<T, D> const &passedNormal) {
     if (levelSet == nullptr) {
       Logger::getInstance()
           .addWarning("No level set was passed to MakeGeometry.")
@@ -259,7 +260,7 @@ private:
 
     // normalise passedNormal
     double modulus = 0.;
-    VectorType<double, D> normal(passedNormal);
+    VectorType<T, D> normal = passedNormal;
     for (unsigned i = 0; i < D; ++i) {
       modulus += normal[i] * normal[i];
     }
@@ -525,7 +526,7 @@ private:
       cylinderAxis[i] = cylinder->axisDirection[i] / unit;
     }
     // get rotation axis via cross product of (0,0,1) and axis of cylinder
-    Vec3D<T> rotAxis(-cylinderAxis[1], cylinderAxis[0], 0.0);
+    Vec3D<T> rotAxis = {-cylinderAxis[1], cylinderAxis[0], 0.0};
     // angle is acos of dot product
     T rotationAngle = std::acos(cylinderAxis[2]);
 

@@ -38,7 +38,7 @@ public:
   getVectorVelocity(const ls::Vec3D<double> & /*coordinate*/, int /*material*/,
                     const ls::Vec3D<double> & /*normalVector*/,
                     unsigned long /*pointId*/) final {
-    return ls::Vec3D<double>(0., 0., 0.);
+    return {0., 0., 0.};
   }
 };
 

@@ -486,7 +486,7 @@ public:
     {
       std::vector<T> scalarData;
       for (auto it = newPoints[0].begin(); it != newPoints[0].end(); ++it) {
-        Vec3D<T> node(T(0));
+        Vec3D<T> node{0., 0., 0.};
         for (unsigned i = 0; i < D; ++i) {
           node[i] = T((it->first)[i]) * gridDelta;
         }

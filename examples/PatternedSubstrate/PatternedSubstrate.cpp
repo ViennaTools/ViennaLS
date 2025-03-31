@@ -95,7 +95,7 @@ void makeRoundCone(ls::SmartPointer<ls::Mesh<>> mesh,
       double x = center[0] + distance * cos(angle);
       double y = center[1] + distance * sin(angle);
       cloud->insertNextPoint(
-          ls::VectorType<double, 3>(x, y, center[2] + pointHeight));
+          ls::VectorType<double, 3>{x, y, center[2] + pointHeight});
     }
   }
 
@@ -143,8 +143,8 @@ int main() {
     std::cout << "Creating pattern..." << std::endl;
 
     // need to place cone one grid delta below surface to avoid rounding
-    ls::VectorType<double, D> coneCenter(-xExtent / 2.0 + coneDistance / 2.0,
-                                         -3 * yConeDelta, -gridDelta);
+    ls::VectorType<double, D> coneCenter{-xExtent / 2.0 + coneDistance / 2.0,
+                                         -3 * yConeDelta, -gridDelta};
     double coneRadius = 1.4;
     double coneHeight = 1.5;
     // adjust since cone is slightly below the surface

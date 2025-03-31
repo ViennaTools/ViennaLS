@@ -86,8 +86,8 @@ std::array<T, 9> smallStencilFromIterator(It &it, const double gridDelta) {
   constexpr int D = It::DomainType::dimension;
   std::array<T, 9> d;
   for (int i = 0; i < D; i++) {
-    VectorType<viennahrle::IndexType, D> posUnit(0);
-    VectorType<viennahrle::IndexType, D> negUnit(0);
+    viennahrle::Index<D> posUnit(0);
+    viennahrle::Index<D> negUnit(0);
     posUnit[i] = 1;
     negUnit[i] = -1;
     T phi_0 = it.getCenter().getValue();
@@ -120,8 +120,8 @@ std::array<T, 9> bigStencilFromIterator(It &it, const double gridDelta) {
   std::array<T, 9> d;
   const double gridDelta2 = gridDelta * gridDelta;
   for (int i = 0; i < D; i++) {
-    VectorType<viennahrle::IndexType, D> posUnit(0);
-    VectorType<viennahrle::IndexType, D> negUnit(0);
+    viennahrle::Index<D> posUnit(0);
+    viennahrle::Index<D> negUnit(0);
     int first_axis = i;
     int second_axis = (i + 1) % D;
     posUnit[first_axis] = 1;

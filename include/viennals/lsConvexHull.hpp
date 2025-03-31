@@ -186,7 +186,7 @@ template <class T, int D> class ConvexHull {
         VectorType<T, D> edge2 = Normalize(points[triangle2[(shared + 2) % D]] -
                                            points[triangle2[shared]]);
         averageVector = edge1 + edge2;
-        averageVector /= 2;
+        averageVector = averageVector / T(2);
         Normalize(averageVector);
         centerEdgeDot = DotProduct(averageVector, edge2);
       }
@@ -307,7 +307,7 @@ public:
       unsigned currentIndex = std::distance(points.begin(), it);
 
       if (D == 2) {
-        remainingEdges.push_back(EdgeType(currentIndex));
+        remainingEdges.push_back(EdgeType{currentIndex});
       } else {
         // need to check if there is second point at same z coord
         int currentPointIndex = -1;
@@ -369,7 +369,7 @@ public:
       // mark edge as visited
       visitedEdges.push_back(currentEdge);
       if (D == 2) {
-        remainingEdges.push_back(EdgeType(nextIndex));
+        remainingEdges.push_back(EdgeType{nextIndex});
       } else {
         EdgeType edge;
         edge[0] = nextIndex;

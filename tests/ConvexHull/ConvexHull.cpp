@@ -42,7 +42,7 @@ int main() {
 
     double x = r * cos(angle);
     double y = r * sin(angle);
-    cloud->insertNextPoint(ls::VectorType<double, D>(x, y));
+    cloud->insertNextPoint(ls::VectorType<double, D>{x, y});
   }
   // cloud.insertNextPoint(hrleVectorType<double, D>(-1, 0));
   // cloud.insertNextPoint(hrleVectorType<double, D>(1, 0));
@@ -56,7 +56,7 @@ int main() {
 
   auto pointMesh = ls::SmartPointer<ls::Mesh<>>::New();
   for (unsigned i = 0; i < cloud->points.size(); ++i) {
-    pointMesh->nodes.emplace_back(cloud->points[i][0], cloud->points[i][1], 0.);
+    pointMesh->nodes.push_back({cloud->points[i][0], cloud->points[i][1], 0.});
     pointMesh->vertices.push_back(std::array<unsigned, 1>{i});
   }
   ls::VTKWriter<double>(pointMesh, ls::FileFormatEnum::VTP, "points.vtp")

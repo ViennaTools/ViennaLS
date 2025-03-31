@@ -13,10 +13,8 @@ using namespace viennacore;
 /// Class describing a sphere via origin and radius.
 template <class T, int D> class Sphere {
 public:
-  VectorType<T, D> origin = VectorType<T, D>(T(0));
+  VectorType<T, D> origin;
   T radius = 0.;
-
-  Sphere() = default;
 
   Sphere(VectorType<T, D> passedOrigin, T passedRadius)
       : origin(passedOrigin), radius(passedRadius) {}
@@ -28,16 +26,18 @@ public:
   }
 
   Sphere(const std::vector<T> &passedOrigin, T passedRadius)
-      : origin(passedOrigin), radius(passedRadius) {}
+      : radius(passedRadius) {
+    for (unsigned i = 0; i < D; ++i) {
+      origin[i] = passedOrigin[i];
+    }
+  }
 };
 
 /// Class describing a plane via a point in it and the plane normal.
 template <class T, int D> class Plane {
 public:
-  VectorType<T, D> origin = VectorType<T, D>(T(0));
-  VectorType<T, D> normal = VectorType<T, D>(T(0));
-
-  Plane() = default;
+  VectorType<T, D> origin;
+  VectorType<T, D> normal;
 
   Plane(VectorType<T, D> passedOrigin, VectorType<T, D> passedNormal)
       : origin(passedOrigin), normal(passedNormal) {}
@@ -49,17 +49,20 @@ public:
     }
   }
 
-  Plane(const std::vector<T> &passedOrigin, const std::vector<T> &passedNormal)
-      : origin(passedOrigin), normal(passedNormal) {}
+  Plane(const std::vector<T> &passedOrigin,
+        const std::vector<T> &passedNormal) {
+    for (unsigned i = 0; i < D; ++i) {
+      origin[i] = passedOrigin[i];
+      normal[i] = passedNormal[i];
+    }
+  }
 };
 
 /// Class describing a square box from one coordinate to another.
 template <class T, int D> class Box {
 public:
-  VectorType<T, D> minCorner = VectorType<T, D>(T(0));
-  VectorType<T, D> maxCorner = VectorType<T, D>(T(0));
-
-  Box() = default;
+  VectorType<T, D> minCorner;
+  VectorType<T, D> maxCorner;
 
   Box(VectorType<T, D> passedMinCorner, VectorType<T, D> passedMaxCorner)
       : minCorner(passedMinCorner), maxCorner(passedMaxCorner) {}
@@ -72,25 +75,27 @@ public:
   }
 
   Box(const std::vector<T> &passedMinCorner,
-      const std::vector<T> &passedMaxCorner)
-      : minCorner(passedMinCorner), maxCorner(passedMaxCorner) {}
+      const std::vector<T> &passedMaxCorner) {
+    for (unsigned i = 0; i < D; ++i) {
+      minCorner[i] = passedMinCorner[i];
+      maxCorner[i] = passedMaxCorner[i];
+    }
+  }
 };
 
 /// Class describing a square box from one coordinate to another.
 template <class T, int D> class Cylinder {
 public:
   /// This is the location of the center of the base of the cylinder
-  VectorType<T, 3> origin = VectorType<T, 3>(T(0));
+  VectorType<T, 3> origin;
   /// This vector will be the main axis of the cylinder
-  VectorType<T, 3> axisDirection = VectorType<T, 3>(T(0));
+  VectorType<T, 3> axisDirection;
   /// height of the cylinder
   T height = 0.;
   /// radius of the base of the cylinder
   T radius = 0.;
   /// radius of the top of the cylinder
   T topRadius = 0.;
-
-  Cylinder() = default;
 
   Cylinder(VectorType<T, D> passedOrigin, VectorType<T, D> passedAxisDirection,
            T passedHeight, T passedRadius, T passedTopRadius = 0)
@@ -110,8 +115,11 @@ public:
 
   Cylinder(std::vector<T> passedOrigin, std::vector<T> passedAxisDirection,
            T passedHeight, T passedRadius, T passedTopRadius = 0)
-      : origin(passedOrigin), axisDirection(passedAxisDirection),
-        height(passedHeight), radius(passedRadius), topRadius(passedTopRadius) {
+      : height(passedHeight), radius(passedRadius), topRadius(passedTopRadius) {
+    for (unsigned i = 0; i < D; ++i) {
+      origin[i] = passedOrigin[i];
+      axisDirection[i] = passedAxisDirection[i];
+    }
   }
 };
 
@@ -133,23 +141,17 @@ public:
     }
   }
 
-  void insertNextPoint(VectorType<T, D> newPoint) {
-    points.push_back(newPoint);
-  }
-
   void insertNextPoint(T *newPoint) {
-    VectorType<T, D> point(newPoint);
-    points.push_back(point);
-  }
-
-  void insertNextPoint(const std::array<T, D> newPoint) {
-    VectorType<T, D> point(newPoint);
+    VectorType<T, D> point;
+    for (unsigned i = 0; i < D; ++i) {
+      point[i] = newPoint[i];
+    }
     points.push_back(std::move(point));
   }
 
-  void insertNextPoint(const std::vector<T> &newPoint) {
+  void insertNextPoint(const VectorType<T, D> &newPoint) {
     VectorType<T, D> point(newPoint);
-    points.push_back(point);
+    points.push_back(std::move(point));
   }
 
   std::pair<typename std::vector<VectorType<T, D>>::iterator, bool>

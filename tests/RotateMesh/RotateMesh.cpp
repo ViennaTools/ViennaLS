@@ -23,8 +23,8 @@ int main() {
   auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
 
   const NumericType radius = 7.3;
-  const ls::VectorType<NumericType, D> min(-50, -25., -25.);
-  const ls::VectorType<NumericType, D> max(0., 0., 0.);
+  const ls::VectorType<NumericType, D> min = {-50, -25., -25.};
+  const ls::VectorType<NumericType, D> max = {0., 0., 0.};
   ls::MakeGeometry<NumericType, D>(
       levelSet, ls::SmartPointer<ls::Box<double, D>>::New(min, max))
       .apply();

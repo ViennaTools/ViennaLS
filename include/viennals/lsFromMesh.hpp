@@ -72,16 +72,16 @@ public:
     const viennahrle::Grid<D> &grid = domain.getGrid();
     const T gridDelta = grid.getGridDelta();
 
-    if (VectorType<T, D>(nodes.front()) != grid.getMinGridPoint()) {
+    viennahrle::Index<D> lastIndex;
+    for (unsigned i = 0; i < D; ++i) {
+      lastIndex[i] = nodes.front()[i] / gridDelta;
+    }
+
+    if (lastIndex != grid.getMinGridPoint()) {
       domain.insertNextUndefinedPoint(0, grid.getMinGridPoint(),
                                       (values->front() < 0)
                                           ? Domain<T, D>::NEG_VALUE
                                           : Domain<T, D>::POS_VALUE);
-    }
-
-    viennahrle::Index<D> lastIndex(nodes.front());
-    for (unsigned i = 0; i < D; ++i) {
-      lastIndex[i] = nodes.front()[i] / gridDelta;
     }
 
     auto pointDataIt = nodes.begin();
@@ -90,8 +90,9 @@ public:
     auto valueIt = values->begin();
     auto valueEnd = values->end();
 
-    VectorType<bool, D> signs(values->front() <=
-                              -std::numeric_limits<T>::epsilon());
+    VectorType<bool, D> signs;
+    std::fill(signs.begin(), signs.end(),
+              values->front() <= -std::numeric_limits<T>::epsilon());
 
     while (pointDataIt != pointDataEnd && valueIt != valueEnd) {
       // only read in points within the first 5 layers, to ignore
