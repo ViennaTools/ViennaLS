@@ -9,7 +9,6 @@ project(
 # --------------------------------------------------------------------------------------------------------
 
 option(VIENNALS_USE_VTK "Build with VTK file support" ON)
-option(VIENNALS_USE_OPENMP "Build with OpenMP support" ON)
 
 option(VIENNALS_PRECOMPILE_HEADERS "Build template specialisations for shorter compile times" OFF)
 option(VIENNALS_STATIC_BUILD "Build dependencies as static libraries" OFF)
@@ -107,7 +106,7 @@ CPMAddPackage(
   VERSION 1.3.1
   GIT_TAG vector-type
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaCore"
-  OPTIONS "VIENNACORE_FORMAT_EXCLUDE docs/" "VIENNACORE_USE_OPENMP ${VIENNALS_USE_OPENMP}"
+  OPTIONS "VIENNACORE_FORMAT_EXCLUDE docs/"
   EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 
 CPMAddPackage(
@@ -120,7 +119,6 @@ CPMFindPackage(
   NAME ViennaHRLE
   VERSION 0.5.0
   GIT_TAG refactor
-  OPTIONS "VIENNAHRLE_USE_OPENMP ${VIENNALS_USE_OPENMP}"
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaHRLE"
   EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 
