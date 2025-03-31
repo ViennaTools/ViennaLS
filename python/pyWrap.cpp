@@ -171,10 +171,11 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def_static("getInstance", &Logger::getInstance,
                   pybind11::return_value_policy::reference)
       .def("addDebug", &Logger::addDebug)
-      .def("addTiming",
-           (Logger & (Logger::*)(std::string, double)) & Logger::addTiming)
-      .def("addTiming", (Logger & (Logger::*)(std::string, double, double)) &
+      .def("addTiming", (Logger & (Logger::*)(const std::string &, double)) &
                             Logger::addTiming)
+      .def("addTiming",
+           (Logger & (Logger::*)(const std::string &, double, double)) &
+               Logger::addTiming)
       .def("addInfo", &Logger::addInfo)
       .def("addWarning", &Logger::addWarning)
       .def("addError", &Logger::addError, pybind11::arg("s"),
@@ -557,7 +558,8 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       //                      viennahrle::CoordType>))
       .def(pybind11::init(
           &SmartPointer<Domain<T, D>>::New<SmartPointer<Domain<T, D>> &>))
-      .def(pybind11::init(&SmartPointer<Domain<T, D>>::New<hrleGrid<D> &>))
+      .def(pybind11::init(
+          &SmartPointer<Domain<T, D>>::New<viennahrle::Grid<D> &>))
       // methods
       .def("deepCopy", &Domain<T, D>::deepCopy,
            "Copy lsDomain in this lsDomain.")
@@ -825,10 +827,10 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       module, "PointCloud")
       // constructors
       .def(pybind11::init(&SmartPointer<PointCloud<T, D>>::New<
-                          const std::vector<std::vector<T>> &>))
+                          const std::vector<VectorType<T, D>> &>))
       // methods
       .def("insertNextPoint",
-           (void(PointCloud<T, D>::*)(const std::vector<T> &)) &
+           (void(PointCloud<T, D>::*)(const VectorType<T, D> &)) &
                PointCloud<T, D>::insertNextPoint);
 
   // MakeGeometry
@@ -967,7 +969,8 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       // constructors
       .def(pybind11::init(&SmartPointer<Mesh<T>>::New<>))
       // methods
-      .def("getNodes", &Mesh<T>::getNodes,
+      .def("getNodes",
+           (std::vector<std::array<T, 3>> & (Mesh<T>::*)()) & Mesh<T>::getNodes,
            "Get all nodes of the mesh as a list.")
       .def("getVerticies",
            (std::vector<std::array<unsigned, 1>> & (Mesh<T>::*)()) &

@@ -134,13 +134,6 @@ public:
   PointCloud(std::vector<VectorType<T, D>> passedPoints)
       : points(passedPoints) {}
 
-  PointCloud(const std::vector<std::vector<T>> &passedPoints) {
-    for (auto point : passedPoints) {
-      VectorType<T, D> p(point);
-      points.push_back(p);
-    }
-  }
-
   void insertNextPoint(T *newPoint) {
     VectorType<T, D> point;
     for (unsigned i = 0; i < D; ++i) {
