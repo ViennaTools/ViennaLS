@@ -39,7 +39,7 @@ class StencilLocalLaxFriedrichsScalar {
   // Final dissipation coefficients that are used by the time integrator. If
   // D==2 last entries are 0.
   Vec3D<T> finalAlphas;
-  static constexpr unsigned numStencilPoints = std::pow(2 * order + 1, D);
+  static constexpr unsigned numStencilPoints = hrleUtil::pow(2 * order + 1, D);
 
   static T pow2(const T &value) { return value * value; }
 
@@ -56,7 +56,7 @@ class StencilLocalLaxFriedrichsScalar {
         values.push_back(neighborIterator.getNeighbor(index).getValue());
       }
       normal[i] = FiniteDifferences<T>::calculateGradient(
-          &(values[0]), levelSet->getGrid().getGridDelta());
+          values.data(), levelSet->getGrid().getGridDelta());
       modulus += normal[i] * normal[i];
     }
     modulus = std::sqrt(modulus);
@@ -71,7 +71,7 @@ class StencilLocalLaxFriedrichsScalar {
 
     constexpr unsigned numValues =
         FiniteDifferences<T, finiteDifferenceScheme>::getNumberOfValues();
-    constexpr int startIndex = -std::floor(numValues / 2);
+    const int startIndex = -std::floor(numValues / 2);
 
     for (unsigned i = 0; i < D; ++i) {
       viennahrle::Index<D> index(offset);
