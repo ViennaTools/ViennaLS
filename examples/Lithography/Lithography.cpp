@@ -117,18 +117,21 @@ int main(int argc, char* argv[]) {
   double yExtent = 50;
   double gridDelta = 0.199;
 
+  // using LevelSetType = ls::Domain<double, D, ls::SparseStorage<double, D>>;
+  using LevelSetType = ls::Domain<double, D>;
+
   double bounds[2 * D] = {-xExtent / 2., xExtent / 2., -yExtent / 2., yExtent / 2.};
-  ls::Domain<double, D>::BoundaryType boundaryCons[D];
-  boundaryCons[0] = ls::Domain<double, D>::BoundaryType::PERIODIC_BOUNDARY;
-  boundaryCons[1] = ls::Domain<double, D>::BoundaryType::PERIODIC_BOUNDARY;
+  LevelSetType::BoundaryType boundaryCons[D];
+  boundaryCons[0] = LevelSetType::BoundaryType::REFLECTIVE_BOUNDARY;
+  boundaryCons[1] = LevelSetType::BoundaryType::REFLECTIVE_BOUNDARY;
 
   // copy the structure to add the pattern on top
-  auto pattern = ls::SmartPointer<ls::Domain<double, D>>::New(
+  auto pattern = ls::SmartPointer<LevelSetType>::New(
       bounds, boundaryCons, gridDelta);
 
   // Create pattern from CSV polygon
   {
-    std::cout << "== Reading polygon from CSV... ";
+    std::cout << "-- Reading polygon from CSV... ";
 
     auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
     readPolygonCSV(csvFilename, mesh);
@@ -143,7 +146,6 @@ int main(int argc, char* argv[]) {
   }
 
   // === Iterate over level set grid ===
-  using LevelSetType = ls::Domain<double, D>;
   auto &levelSet = pattern->getDomain();
 
   // Sparse iterator
@@ -159,7 +161,6 @@ int main(int argc, char* argv[]) {
   }
 
   // Dense iterator
-  using LevelSetType = ls::Domain<double, D>;
   hrleDenseIterator<typename LevelSetType::DomainType> itd(levelSet);
   for (; !itd.isFinished(); ++itd) {
     auto idx = itd.getIndices();
@@ -171,24 +172,18 @@ int main(int argc, char* argv[]) {
   }
 
   // === Extrude 2D pattern into 3D ===
-  std::cout << "== Extruding 2D into 3D... ";
+  std::cout << "-- Extruding 2D into 3D... ";
 
   constexpr int D3 = 3;
   using Domain3D = ls::Domain<double, D3>;
   auto pattern3D = ls::SmartPointer<Domain3D>::New();
 
   // Define extrusion extent in Z (0 to 5)
-  std::array<double, 2> extrudeExtent = {0. - gridDelta, 5. + gridDelta}; // add buffer or +/- gridDelta
+  std::array<double, 2> extrudeExtent = {0., 5.}; // add buffer or +/- gridDelta
 
-  // Boundary conditions in 3D (x, y periodic, z reflective)
-  std::array<ls::BoundaryConditionEnum, 3> boundaryConds = {
-      ls::BoundaryConditionEnum::PERIODIC_BOUNDARY,
-      ls::BoundaryConditionEnum::PERIODIC_BOUNDARY,
-      ls::BoundaryConditionEnum::INFINITE_BOUNDARY};
-
-  // Run extrusion using the available mesh-based implementation
-  // ls::Extrude<double>(pattern, pattern3D, extrudeExtent, 2, boundaryConds).apply();
-  ls::Extrude<double>(pattern, pattern3D, extrudeExtent, 2, boundaryConds).apply();
+  // Run extrusion using the level-set based algorithm
+  auto extrusion = ls::Extrude<double>(pattern, pattern3D, extrudeExtent);
+  extrusion.apply();
 
   // === Export extruded mesh to SDF VTK grid for visualization ===
   auto sdf3D_preCap = ls::SmartPointer<ls::Mesh<double>>::New();
@@ -200,15 +195,15 @@ int main(int argc, char* argv[]) {
 
   // Create bottom substrate (z >= 0)
   auto bottomLS = ls::SmartPointer<Domain3D>::New(pattern3D->getGrid());
-  double originLow[3] = {0., 0., 0.};
-  double normalLow[3] = {0., 0., -1.}; // z >= 0
+  double originLow[3] = {0., 0., 0.}; 
+  double normalLow[3] = {0., 0., -1.};
   auto bottomPlane = ls::SmartPointer<ls::Plane<double, D3>>::New(originLow, normalLow);
   ls::MakeGeometry<double, 3>(bottomLS, bottomPlane).apply();
 
   // Create top cap (z <= 5 µm)
   auto topLS = ls::SmartPointer<Domain3D>::New(pattern3D->getGrid());
   double originHigh[3] = {0., 0., 5.0}; // Adjust to match extrusion
-  double normalHigh[3] = {0., 0., 1.}; // z <= 5
+  double normalHigh[3] = {0., 0., 1.};
   auto topPlane = ls::SmartPointer<ls::Plane<double, D3>>::New(originHigh, normalHigh);
   ls::MakeGeometry<double, D3>(topLS, topPlane).apply();
 
