@@ -1,17 +1,17 @@
 #include <iostream>
 
-#include <lsDomain.hpp>
-#include <lsToSurfaceMesh.hpp>
-#include <lsFromSurfaceMesh.hpp>
-#include <lsVTKWriter.hpp>
-#include <lsToMesh.hpp>
-#include <lsMakeGeometry.hpp>
 #include <lsBooleanOperation.hpp>
+#include <lsDomain.hpp>
+#include <lsFromSurfaceMesh.hpp>
+#include <lsMakeGeometry.hpp>
+#include <lsToMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
+#include <lsVTKWriter.hpp>
 
 #include <lsExtrude.hpp>
 
-#include <hrleSparseIterator.hpp>
 #include <hrleDenseIterator.hpp>
+#include <hrleSparseIterator.hpp>
 
 /**
   Example showing how to create a 2D level set domain from
@@ -26,10 +26,8 @@ namespace ls = viennals;
 
 void readPolygonCSV(const std::string &filename,
                     ls::SmartPointer<ls::Mesh<>> &mesh,
-                    double scaleFactor = 1.0,
-                    double shiftX = 0.0,
-                    double shiftY = 0.0,
-                    double shiftZ = 0.0,
+                    double scaleFactor = 1.0, double shiftX = 0.0,
+                    double shiftY = 0.0, double shiftZ = 0.0,
                     bool is2D = true) {
   std::ifstream file(filename);
   if (!file.is_open()) {
@@ -60,15 +58,13 @@ void readPolygonCSV(const std::string &filename,
       continue;
     }
 
-    points.push_back({
-      x * scaleFactor + shiftX,
-      y * scaleFactor + shiftY,
-      z * scaleFactor + shiftZ
-    });
+    points.push_back({x * scaleFactor + shiftX, y * scaleFactor + shiftY,
+                      z * scaleFactor + shiftZ});
   }
   file.close();
 
-  if (points.size() < 2) return;
+  if (points.size() < 2)
+    return;
 
   // --- Determine winding order using signed area ---
   double signedArea = 0.0;
@@ -77,7 +73,7 @@ void readPolygonCSV(const std::string &filename,
     const auto &p2 = points[(i + 1) % points.size()];
     signedArea += (p1[0] * p2[1] - p2[0] * p1[1]);
   }
-  bool isCCW = (signedArea > 0);  // counter-clockwise if true
+  bool isCCW = (signedArea > 0); // counter-clockwise if true
 
   // --- Insert nodes and lines with correct order ---
   std::vector<unsigned> indices;
@@ -101,8 +97,8 @@ void readPolygonCSV(const std::string &filename,
   }
 }
 
-int main(int argc, char* argv[]) {
-  ls::Logger::getInstance().setLogLevel(ls::LogLevel::DEBUG);
+int main(int argc, char *argv[]) {
+  ls::Logger::setLogLevel(ls::LogLevel::DEBUG);
 
   if (argc < 2) {
     std::cerr << "Usage: " << argv[0] << "<polygonFile.csv>" << std::endl;
@@ -120,14 +116,15 @@ int main(int argc, char* argv[]) {
   // using LevelSetType = ls::Domain<double, D, ls::SparseStorage<double, D>>;
   using LevelSetType = ls::Domain<double, D>;
 
-  double bounds[2 * D] = {-xExtent / 2., xExtent / 2., -yExtent / 2., yExtent / 2.};
+  double bounds[2 * D] = {-xExtent / 2., xExtent / 2., -yExtent / 2.,
+                          yExtent / 2.};
   LevelSetType::BoundaryType boundaryCons[D];
   boundaryCons[0] = LevelSetType::BoundaryType::REFLECTIVE_BOUNDARY;
   boundaryCons[1] = LevelSetType::BoundaryType::REFLECTIVE_BOUNDARY;
 
   // copy the structure to add the pattern on top
-  auto pattern = ls::SmartPointer<LevelSetType>::New(
-      bounds, boundaryCons, gridDelta);
+  auto pattern =
+      ls::SmartPointer<LevelSetType>::New(bounds, boundaryCons, gridDelta);
 
   // Create pattern from CSV polygon
   {
@@ -149,25 +146,27 @@ int main(int argc, char* argv[]) {
   auto &levelSet = pattern->getDomain();
 
   // Sparse iterator
-  hrleSparseIterator<typename LevelSetType::DomainType> its(levelSet);
+  viennahrle::SparseIterator<typename LevelSetType::DomainType> its(levelSet);
   for (; !its.isFinished(); ++its) {
     const auto &coord = its.getStartIndices();
     const double value = its.getValue();
     if (value <= 0.0) {
       // Do whatever you want with the points
       // Take care of runs (see HRLE)
-      // std::cout << "Point (" << coord[0] << ", " << coord[1] << ") is exposed; SDF = " << value << std::endl;
+      // std::cout << "Point (" << coord[0] << ", " << coord[1] << ") is
+      // exposed; SDF = " << value << std::endl;
     }
   }
 
   // Dense iterator
-  hrleDenseIterator<typename LevelSetType::DomainType> itd(levelSet);
+  viennahrle::DenseIterator<typename LevelSetType::DomainType> itd(levelSet);
   for (; !itd.isFinished(); ++itd) {
     auto idx = itd.getIndices();
     double value = itd.getValue();
     if (value <= 0.) {
       // Do whatever you want with the points
-      // std::cout << "Point (" << idx[0] << ", " << idx[1] << ") is exposed; SDF = " << value << std::endl;
+      // std::cout << "Point (" << idx[0] << ", " << idx[1] << ") is exposed;
+      // SDF = " << value << std::endl;
     }
   }
 
@@ -194,22 +193,28 @@ int main(int argc, char* argv[]) {
 
   // Create bottom substrate (z >= 0)
   auto bottomLS = ls::SmartPointer<Domain3D>::New(pattern3D->getGrid());
-  double originLow[3] = {0., 0., 0.}; 
+  double originLow[3] = {0., 0., 0.};
   double normalLow[3] = {0., 0., -1.};
-  auto bottomPlane = ls::SmartPointer<ls::Plane<double, D3>>::New(originLow, normalLow);
+  auto bottomPlane =
+      ls::SmartPointer<ls::Plane<double, D3>>::New(originLow, normalLow);
   ls::MakeGeometry<double, 3>(bottomLS, bottomPlane).apply();
 
   // Create top cap (z <= 5 µm)
   auto topLS = ls::SmartPointer<Domain3D>::New(pattern3D->getGrid());
   double originHigh[3] = {0., 0., 5.0}; // Adjust to match extrusion
   double normalHigh[3] = {0., 0., 1.};
-  auto topPlane = ls::SmartPointer<ls::Plane<double, D3>>::New(originHigh, normalHigh);
+  auto topPlane =
+      ls::SmartPointer<ls::Plane<double, D3>>::New(originHigh, normalHigh);
   ls::MakeGeometry<double, D3>(topLS, topPlane).apply();
 
   // Intersect with bottom
-  ls::BooleanOperation<double, D3>(pattern3D, bottomLS, ls::BooleanOperationEnum::INTERSECT).apply();
+  ls::BooleanOperation<double, D3>(pattern3D, bottomLS,
+                                   ls::BooleanOperationEnum::INTERSECT)
+      .apply();
   // Intersect with top
-  ls::BooleanOperation<double, D3>(pattern3D, topLS, ls::BooleanOperationEnum::INTERSECT).apply();
+  ls::BooleanOperation<double, D3>(pattern3D, topLS,
+                                   ls::BooleanOperationEnum::INTERSECT)
+      .apply();
   std::cout << "done!" << std::endl;
 
   // === Export extruded mesh to SDF VTK grid for visualization ===
@@ -227,7 +232,9 @@ int main(int argc, char* argv[]) {
       std::cerr << "Warning: No surface found to export!" << std::endl;
     }
   } catch (...) {
-    std::cerr << "Exception: Failed to extract surface mesh from extruded level set." << std::endl;
+    std::cerr
+        << "Exception: Failed to extract surface mesh from extruded level set."
+        << std::endl;
   }
 
   return 0;
