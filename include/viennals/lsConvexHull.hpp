@@ -262,12 +262,12 @@ template <class T, int D> class ConvexHull {
     return newNormal;
   }
 
-  // calculate Area of triangle defined by 2 vectors
-  T calculateArea(const VectorType<T, D> &v1,
-                  const VectorType<T, D> &v2) const {
-    VectorType<T, D> newNormal = CrossProduct(v1, v2);
-    return std::sqrt(DotProduct(newNormal, newNormal));
-  }
+  // // calculate Area of triangle defined by 2 vectors
+  // T calculateArea(const VectorType<T, D> &v1,
+  //                 const VectorType<T, D> &v2) const {
+  //   VectorType<T, D> newNormal = CrossProduct(v1, v2);
+  //   return std::sqrt(DotProduct(newNormal, newNormal));
+  // }
 
 public:
   ConvexHull() = default;
