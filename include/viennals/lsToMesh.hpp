@@ -82,7 +82,8 @@ public:
 
     const T gridDelta = levelSet->getGrid().getGridDelta();
 
-    for (hrleConstSparseIterator<hrleDomainType> it(levelSet->getDomain());
+    for (viennahrle::ConstSparseIterator<hrleDomainType> it(
+             levelSet->getDomain());
          !it.isFinished(); ++it) {
       if ((onlyDefined && !it.isDefined()) ||
           (onlyActive && std::abs(it.getValue()) > 0.5))
@@ -106,7 +107,7 @@ public:
       mesh->insertNextVertex(vertex);
 
       // insert corresponding node
-      std::array<T, 3> node;
+      Vec3D<T> node;
       if (D == 2)
         node[2] = 0.;
       for (unsigned i = 0; i < D; ++i) {

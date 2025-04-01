@@ -82,17 +82,17 @@ public:
 
       auto &domainSegment = newDomain.getDomainSegment(p);
 
-      hrleVectorType<hrleIndexType, D> startVector =
+      viennahrle::Index<D> const startVector =
           (p == 0) ? grid.getMinGridPoint()
                    : newDomain.getSegmentation()[p - 1];
 
-      hrleVectorType<hrleIndexType, D> endVector =
+      viennahrle::Index<D> const endVector =
           (p != static_cast<int>(newDomain.getNumberOfSegments() - 1))
               ? newDomain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
-      for (hrleConstSparseIterator<typename Domain<T, D>::DomainType> it(
-               domain, startVector);
+      for (viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>
+               it(domain, startVector);
            it.getStartIndices() < endVector; it.next()) {
         if (it.isDefined() && !voidMarkers->at(it.getPointId())) {
           newPoints[p].push_back(

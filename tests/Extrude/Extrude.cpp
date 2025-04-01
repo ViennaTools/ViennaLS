@@ -61,7 +61,7 @@ int main() {
     ls::VTKWriter<double>(mesh, "trench_initial.vtp").apply();
   }
 
-  std::array<double, 2> extrudeExtent = {-5., 5.};
+  ls::Vec2D<double> extrudeExtent{-5., 5.};
   std::array<ls::BoundaryConditionEnum, 3> boundaryConds{
       ls::BoundaryConditionEnum::REFLECTIVE_BOUNDARY,
       ls::BoundaryConditionEnum::INFINITE_BOUNDARY,

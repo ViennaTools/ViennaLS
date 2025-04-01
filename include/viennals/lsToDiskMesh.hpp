@@ -112,12 +112,12 @@ public:
 
     // set up data arrays
     std::vector<N> values;
-    std::vector<std::array<N, 3>> normals;
+    std::vector<Vec3D<N>> normals;
     std::vector<N> materialIds;
 
     // save the extent of the resulting mesh
-    std::array<N, 3> minimumExtent = {};
-    std::array<N, 3> maximumExtent = {};
+    Vec3D<N> minimumExtent;
+    Vec3D<N> maximumExtent;
     for (unsigned i = 0; i < D; ++i) {
       minimumExtent[i] = std::numeric_limits<T>::max();
       maximumExtent[i] = std::numeric_limits<T>::lowest();
@@ -136,10 +136,9 @@ public:
     }
 
     // an iterator for each levelset
-    std::vector<hrleConstSparseIterator<hrleDomainType>> iterators;
+    std::vector<viennahrle::ConstSparseIterator<hrleDomainType>> iterators;
     for (const auto levelSet : levelSets) {
-      iterators.push_back(
-          hrleConstSparseIterator<hrleDomainType>(levelSet->getDomain()));
+      iterators.emplace_back(levelSet->getDomain());
     }
 
     // iterate over top levelset
@@ -182,7 +181,7 @@ public:
 
       // insert corresponding node shifted by ls value in direction of the
       // normal vector
-      std::array<N, 3> node;
+      Vec3D<N> node;
       node[2] = 0.;
       double max = 0.;
       for (unsigned i = 0; i < D; ++i) {
@@ -211,7 +210,7 @@ public:
 
       // add data into mesh
       // copy normal
-      std::array<N, 3> normal;
+      Vec3D<N> normal;
       if (D == 2)
         normal[2] = 0.;
       for (unsigned i = 0; i < D; ++i) {

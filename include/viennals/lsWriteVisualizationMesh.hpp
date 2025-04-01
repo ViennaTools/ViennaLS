@@ -302,7 +302,7 @@ template <class T, int D> class WriteVisualizationMesh {
 #pragma omp parallel
     {
       // use dense iterator to got to every index location
-      hrleConstDenseIterator<typename Domain<T, D>::DomainType> it(
+      viennahrle::ConstDenseIterator<typename Domain<T, D>::DomainType> it(
           levelSet->getDomain());
 
 #pragma omp for
@@ -312,8 +312,7 @@ template <class T, int D> class WriteVisualizationMesh {
         double p[3];
         rgrid->GetPoint(pointId, p);
         // create index vector
-        hrleVectorType<hrleIndexType, D> indices(
-            grid.globalCoordinates2GlobalIndices(p));
+        viennahrle::Index<D> indices(grid.globalCoordinates2GlobalIndices(p));
 
         // write the corresponding LSValue
         T value;
@@ -378,11 +377,11 @@ template <class T, int D> class WriteVisualizationMesh {
     //       rgrid->GetPoint(pointId, p);
 
     //       // create index vector
-    //       hrleVectorType<hrleIndexType, D> indices(
+    //       viennahrle::Index<D> indices(
     //           grid.globalCoordinates2GlobalIndices(p));
 
     //       // vector for mapped point inside domain
-    //       hrleVectorType<hrleIndexType, D> localIndices =
+    //       viennahrle::Index<D> localIndices =
     //           grid.globalIndices2LocalIndices(indices);
 
     //       // now find ID of point we need to take value from

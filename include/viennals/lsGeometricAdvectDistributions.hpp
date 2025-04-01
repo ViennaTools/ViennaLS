@@ -1,9 +1,9 @@
 #pragma once
 
-#include <hrleVectorType.hpp>
+#include <hrleTypes.hpp>
 
 #include <vcLogger.hpp>
-#include <vcVectorUtil.hpp>
+#include <vcVectorType.hpp>
 
 namespace viennals {
 
@@ -20,8 +20,8 @@ public:
   /// center is inside the distribution. If there is no quick
   /// check due to the complexity of the distribution, always
   /// return true or do not overload this function.
-  virtual bool isInside(const Vec3D<hrleCoordType> &initial,
-                        const Vec3D<hrleCoordType> &candidate,
+  virtual bool isInside(const Vec3D<viennahrle::CoordType> &initial,
+                        const Vec3D<viennahrle::CoordType> &candidate,
                         double eps) const {
     return true;
   }
@@ -29,12 +29,12 @@ public:
   /// Returns the signed distance of a point relative to the distributions
   /// center. This is the signed manhatten distance to the nearest surface
   /// point.
-  virtual T getSignedDistance(const Vec3D<hrleCoordType> &initial,
-                              const Vec3D<hrleCoordType> &candidate,
+  virtual T getSignedDistance(const Vec3D<viennahrle::CoordType> &initial,
+                              const Vec3D<viennahrle::CoordType> &candidate,
                               unsigned long initialPointId) const = 0;
 
   /// Sets bounds to the bounding box of the distribution.
-  virtual std::array<hrleCoordType, 6> getBounds() const = 0;
+  virtual std::array<viennahrle::CoordType, 6> getBounds() const = 0;
 
   virtual ~GeometricAdvectDistribution() = default;
 };
@@ -51,10 +51,10 @@ public:
   SphereDistribution(const T passedRadius, const T delta)
       : radius(passedRadius), radius2(radius * radius), gridDelta(delta) {}
 
-  bool isInside(const Vec3D<hrleCoordType> &initial,
-                const Vec3D<hrleCoordType> &candidate,
+  bool isInside(const Vec3D<viennahrle::CoordType> &initial,
+                const Vec3D<viennahrle::CoordType> &candidate,
                 double eps) const override {
-    hrleCoordType dot = 0.;
+    viennahrle::CoordType dot = 0.;
     for (unsigned i = 0; i < D; ++i) {
       double tmp = candidate[i] - initial[i];
       dot += tmp * tmp;
@@ -66,11 +66,11 @@ public:
       return false;
   }
 
-  T getSignedDistance(const Vec3D<hrleCoordType> &initial,
-                      const Vec3D<hrleCoordType> &candidate,
+  T getSignedDistance(const Vec3D<viennahrle::CoordType> &initial,
+                      const Vec3D<viennahrle::CoordType> &candidate,
                       unsigned long /*initialPointId*/) const override {
     T distance = std::numeric_limits<T>::max();
-    Vec3D<hrleCoordType> v{};
+    Vec3D<viennahrle::CoordType> v{};
     for (unsigned i = 0; i < D; ++i) {
       v[i] = candidate[i] - initial[i];
     }
@@ -101,8 +101,8 @@ public:
     }
   }
 
-  std::array<hrleCoordType, 6> getBounds() const override {
-    std::array<hrleCoordType, 6> bounds = {};
+  std::array<viennahrle::CoordType, 6> getBounds() const override {
+    std::array<viennahrle::CoordType, 6> bounds = {};
     for (unsigned i = 0; i < D; ++i) {
       bounds[2 * i] = -radius;
       bounds[2 * i + 1] = radius;
@@ -116,7 +116,7 @@ public:
 template <class T, int D>
 class BoxDistribution : public GeometricAdvectDistribution<T, D> {
 public:
-  const hrleVectorType<T, 3> posExtent;
+  const VectorType<T, 3> posExtent;
   const T gridDelta;
 
   BoxDistribution(const std::array<T, 3> &halfAxes, const T delta)
@@ -132,8 +132,8 @@ public:
     }
   }
 
-  bool isInside(const Vec3D<hrleCoordType> &initial,
-                const Vec3D<hrleCoordType> &candidate,
+  bool isInside(const Vec3D<viennahrle::CoordType> &initial,
+                const Vec3D<viennahrle::CoordType> &candidate,
                 double eps) const override {
     for (unsigned i = 0; i < D; ++i) {
       if (std::abs(candidate[i] - initial[i]) >
@@ -144,8 +144,8 @@ public:
     return true;
   }
 
-  T getSignedDistance(const Vec3D<hrleCoordType> &initial,
-                      const Vec3D<hrleCoordType> &candidate,
+  T getSignedDistance(const Vec3D<viennahrle::CoordType> &initial,
+                      const Vec3D<viennahrle::CoordType> &candidate,
                       unsigned long /*initialPointId*/) const override {
     T distance = std::numeric_limits<T>::lowest();
     for (unsigned i = 0; i < D; ++i) {
@@ -155,8 +155,8 @@ public:
     return (posExtent[0] < 0) ? -distance : distance;
   }
 
-  std::array<hrleCoordType, 6> getBounds() const override {
-    std::array<hrleCoordType, 6> bounds = {};
+  std::array<viennahrle::CoordType, 6> getBounds() const override {
+    std::array<viennahrle::CoordType, 6> bounds = {};
     for (unsigned i = 0; i < D; ++i) {
       bounds[2 * i] = -posExtent[i];
       bounds[2 * i + 1] = posExtent[i];

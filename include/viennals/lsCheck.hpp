@@ -85,8 +85,9 @@ public:
 
     std::ostringstream oss;
 
-    for (hrleConstSparseStarIterator<hrleDomain<T, D>, 1> it(
-             levelSet->getDomain());
+    for (viennahrle::ConstSparseStarIterator<typename Domain<T, D>::DomainType,
+                                             1>
+             it(levelSet->getDomain());
          !it.isFinished(); it.next()) {
 
       if (it.getCenter().isDefined()) {

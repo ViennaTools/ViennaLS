@@ -1,22 +1,24 @@
 #pragma once
 
+#include <hrleSparseIterator.hpp>
 #include <lsDomain.hpp>
-#include <vcVectorUtil.hpp>
+#include <vcVectorType.hpp>
 
 namespace viennals {
 using namespace viennacore;
 
-template <class NumericType, int D> class CalculateVisibilities {
-  SmartPointer<Domain<NumericType, D>> levelSet;
-  Vec3D<NumericType> direction;
-  const NumericType epsilon = static_cast<NumericType>(1e-6);
+template <class T, int D> class CalculateVisibilities {
+  using hrleDomainType = typename Domain<T, D>::DomainType;
+
+  SmartPointer<Domain<T, D>> levelSet;
+  Vec3D<T> direction;
+  const T epsilon = static_cast<T>(1e-6);
   const std::string visibilitiesLabel;
 
 public:
-  CalculateVisibilities(
-      const SmartPointer<Domain<NumericType, D>> &passedLevelSet,
-      const Vec3D<NumericType> &passedDirection,
-      std::string label = "Visibilities")
+  CalculateVisibilities(const SmartPointer<Domain<T, D>> &passedLevelSet,
+                        const Vec3D<T> &passedDirection,
+                        std::string label = "Visibilities")
       : levelSet(passedLevelSet), direction(passedDirection),
         visibilitiesLabel(std::move(label)) {}
 
@@ -26,16 +28,15 @@ public:
     auto &grid = levelSet->getGrid();
 
     // *** Determine extents of domain ***
-    Vec3D<NumericType> minDefinedPoint;
-    Vec3D<NumericType> maxDefinedPoint;
+    Vec3D<T> minDefinedPoint;
+    Vec3D<T> maxDefinedPoint;
     // Initialize with extreme values
     for (int i = 0; i < D; ++i) {
-      minDefinedPoint[i] = std::numeric_limits<NumericType>::max();
-      maxDefinedPoint[i] = std::numeric_limits<NumericType>::lowest();
+      minDefinedPoint[i] = std::numeric_limits<T>::max();
+      maxDefinedPoint[i] = std::numeric_limits<T>::lowest();
     }
     // Iterate through all defined points in the domain
-    for (hrleSparseIterator<typename Domain<NumericType, D>::DomainType> it(
-             domain);
+    for (viennahrle::SparseIterator<hrleDomainType> it(domain);
          !it.isFinished(); it.next()) {
       if (!it.isDefined())
         continue; // Skip undefined points
@@ -44,7 +45,7 @@ public:
       auto point = it.getStartIndices();
       for (int i = 0; i < D; ++i) {
         // Compare to update min and max defined points
-        NumericType coord = point[i]; // * grid.getGridDelta();
+        T coord = point[i]; // * grid.getGridDelta();
         minDefinedPoint[i] = std::min(minDefinedPoint[i], coord);
         maxDefinedPoint[i] = std::max(maxDefinedPoint[i], coord);
       }
@@ -53,10 +54,10 @@ public:
 
     // Invert the vector
     auto dir = Normalize(Inv(direction)) *
-               static_cast<NumericType>(domain.getGrid().getGridDelta());
+               static_cast<T>(domain.getGrid().getGridDelta());
 
     auto numDefinedPoints = domain.getNumberOfPoints();
-    std::vector<NumericType> visibilities(numDefinedPoints);
+    std::vector<T> visibilities(numDefinedPoints);
 
 #pragma omp parallel num_threads(levelSet->getNumberOfSegments())
     {
@@ -65,49 +66,47 @@ public:
       p = omp_get_thread_num();
 #endif
 
-      hrleVectorType<hrleIndexType, D> startVector =
+      const viennahrle::Index<D> startVector =
           (p == 0) ? grid.getMinGridPoint() : domain.getSegmentation()[p - 1];
 
-      hrleVectorType<hrleIndexType, D> endVector =
+      const viennahrle::Index<D> endVector =
           (p != static_cast<int>(domain.getNumberOfSegments() - 1))
               ? domain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
       // Calculate the starting index for the visibility vector
-      hrleSizeType id = 0;
+      viennahrle::SizeType id = 0;
       for (int i = 0; i < p; ++i) {
         id += domain.getDomainSegment(i).getNumberOfPoints();
       }
 
-      for (hrleSparseIterator<typename Domain<NumericType, D>::DomainType> it(
-               domain, startVector);
+      for (viennahrle::SparseIterator<hrleDomainType> it(domain, startVector);
            it.getStartIndices() < endVector; ++it) {
 
         if (!it.isDefined())
           continue;
 
         // Starting position of the point
-        Vec3D<NumericType> currentPos;
+        Vec3D<T> currentPos;
         for (int i = 0; i < D; ++i) {
           currentPos[i] = it.getStartIndices(i);
         }
 
         // Start tracing the ray
-        NumericType minLevelSetValue =
-            it.getValue(); // Starting level set value
-        Vec3D<NumericType> rayPos = currentPos;
+        T minLevelSetValue = it.getValue(); // Starting level set value
+        Vec3D<T> rayPos = currentPos;
         bool visibility = true;
 
-        while (1) {
+        while (true) {
           // Update the ray position
           for (int i = 0; i < D; ++i) {
             rayPos[i] += dir[i];
           }
 
           // Determine the nearest grid cell (round to nearest index)
-          Vec3D<hrleIndexType> nearestCell;
+          viennahrle::Index<D> nearestCell;
           for (int i = 0; i < D; ++i) {
-            nearestCell[i] = static_cast<hrleIndexType>(rayPos[i]);
+            nearestCell[i] = static_cast<viennahrle::IndexType>(rayPos[i]);
           }
 
           // // Before adding a cell, check if it's already visited
@@ -132,14 +131,12 @@ public:
           }
 
           // Access the level set value at the nearest cell
-          NumericType neighborValue = std::numeric_limits<NumericType>::max();
-          hrleSparseIterator<typename Domain<NumericType, D>::DomainType>
-              neighborIt(domain);
-          neighborIt.goToIndices(nearestCell);
-          neighborValue = neighborIt.getValue();
+          T value =
+              viennahrle::SparseIterator<hrleDomainType>(domain, nearestCell)
+                  .getValue();
 
           // Update the minimum value encountered
-          if (neighborValue < minLevelSetValue) {
+          if (value < minLevelSetValue) {
             visibility = false;
             break;
           }

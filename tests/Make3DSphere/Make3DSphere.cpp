@@ -22,9 +22,9 @@ int main() {
 
   constexpr int D = 3;
 
-  omp_set_num_threads(1);
+  omp_set_num_threads(4);
 
-  double gridDelta = 0.4;
+  double gridDelta = 0.6;
 
   auto sphere1 = ls::SmartPointer<ls::Domain<double, D>>::New(
       gridDelta); //, boundaryCons);
@@ -58,7 +58,7 @@ int main() {
   std::cout << "Extracting..." << std::endl;
   ls::ToSurfaceMesh<double, D>(sphere1, mesh).apply();
 
-  mesh->print();
+  //   mesh->print();
 
   ls::VTKWriter<double>(mesh, "test-" + std::to_string(radius) + ".vtk")
       .apply();

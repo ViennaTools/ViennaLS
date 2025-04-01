@@ -100,8 +100,8 @@ public:
 // GeometricAdvectDistribution
 class PylsGeometricAdvectDistribution
     : public GeometricAdvectDistribution<T, D> {
-  typedef std::array<hrleCoordType, 3> vectorType;
-  typedef std::array<hrleCoordType, 6> boundsType;
+  typedef std::array<viennahrle::CoordType, 3> vectorType;
+  typedef std::array<viennahrle::CoordType, 6> boundsType;
   typedef GeometricAdvectDistribution<T, D> ClassType;
   using GeometricAdvectDistribution<T, D>::GeometricAdvectDistribution;
 
@@ -171,10 +171,11 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def_static("getInstance", &Logger::getInstance,
                   pybind11::return_value_policy::reference)
       .def("addDebug", &Logger::addDebug)
-      .def("addTiming",
-           (Logger & (Logger::*)(std::string, double)) & Logger::addTiming)
-      .def("addTiming", (Logger & (Logger::*)(std::string, double, double)) &
+      .def("addTiming", (Logger & (Logger::*)(const std::string &, double)) &
                             Logger::addTiming)
+      .def("addTiming",
+           (Logger & (Logger::*)(const std::string &, double, double)) &
+               Logger::addTiming)
       .def("addInfo", &Logger::addInfo)
       .def("addWarning", &Logger::addWarning)
       .def("addError", &Logger::addError, pybind11::arg("s"),
@@ -526,36 +527,39 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
   pybind11::class_<Domain<T, D>, SmartPointer<Domain<T, D>>>(module, "Domain")
       // constructors
       .def(pybind11::init(&SmartPointer<Domain<T, D>>::New<>))
-      .def(pybind11::init(&SmartPointer<Domain<T, D>>::New<hrleCoordType>),
+      .def(pybind11::init(
+               &SmartPointer<Domain<T, D>>::New<viennahrle::CoordType>),
            pybind11::arg("gridDelta") = 1.0)
       //  .def(pybind11::init(
-      //      &SmartPointer<Domain<T, D>>::New<hrleCoordType *,
+      //      &SmartPointer<Domain<T, D>>::New<viennahrle::CoordType *,
       //                                       BoundaryConditionEnum *>))
-      .def(pybind11::init([](std::array<hrleCoordType, 2 * D> bounds,
+      .def(pybind11::init([](std::array<viennahrle::CoordType, 2 * D> bounds,
                              std::array<BoundaryConditionEnum, D> bcs,
-                             hrleCoordType gridDelta) {
+                             viennahrle::CoordType gridDelta) {
              return SmartPointer<Domain<T, D>>::New(bounds.data(), bcs.data(),
                                                     gridDelta);
            }),
            pybind11::arg("bounds"), pybind11::arg("boundaryConditions"),
            pybind11::arg("gridDelta") = 1.0)
-      .def(pybind11::init(
-               &SmartPointer<Domain<T, D>>::New<std::vector<hrleCoordType>,
-                                                std::vector<unsigned>,
-                                                hrleCoordType>),
+      .def(pybind11::init(&SmartPointer<Domain<T, D>>::New<
+                          std::vector<viennahrle::CoordType>,
+                          std::vector<unsigned>, viennahrle::CoordType>),
            pybind11::arg("bounds"), pybind11::arg("boundaryConditions"),
            pybind11::arg("gridDelta") = 1.0)
       //  .def(pybind11::init(
       //      &SmartPointer<Domain<T, D>>::New<Domain<T,
       //      D>::PointValueVectorType,
-      //                                       hrleCoordType *,
+      //                                       viennahrle::CoordType *,
       //                                       BoundaryConditionEnum *>))
       //  .def(pybind11::init(&SmartPointer<Domain<T, D>>::New<
-      //                      Domain<T, D>::PointValueVectorType, hrleCoordType
-      //                      *, BoundaryConditionEnum *, hrleCoordType>))
+      //                      Domain<T, D>::PointValueVectorType,
+      //                      viennahrle::CoordType
+      //                      *, BoundaryConditionEnum *,
+      //                      viennahrle::CoordType>))
       .def(pybind11::init(
           &SmartPointer<Domain<T, D>>::New<SmartPointer<Domain<T, D>> &>))
-      .def(pybind11::init(&SmartPointer<Domain<T, D>>::New<hrleGrid<D> &>))
+      .def(pybind11::init(
+          &SmartPointer<Domain<T, D>>::New<viennahrle::Grid<D> &>))
       // methods
       .def("deepCopy", &Domain<T, D>::deepCopy,
            "Copy lsDomain in this lsDomain.")
@@ -609,7 +613,8 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def(pybind11::init(
           &SmartPointer<GeometricAdvect<T, D>>::New<
               SmartPointer<Domain<T, D>> &,
-              SmartPointer<GeometricAdvectDistribution<hrleCoordType, D>> &>))
+              SmartPointer<
+                  GeometricAdvectDistribution<viennahrle::CoordType, D>> &>))
       // methods
       .def("setLevelSet", &GeometricAdvect<T, D>::setLevelSet,
            "Set levelset to advect.")
@@ -822,10 +827,10 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       module, "PointCloud")
       // constructors
       .def(pybind11::init(&SmartPointer<PointCloud<T, D>>::New<
-                          const std::vector<std::vector<T>> &>))
+                          const std::vector<VectorType<T, D>> &>))
       // methods
       .def("insertNextPoint",
-           (void(PointCloud<T, D>::*)(const std::vector<T> &)) &
+           (void(PointCloud<T, D>::*)(const VectorType<T, D> &)) &
                PointCloud<T, D>::insertNextPoint);
 
   // MakeGeometry
@@ -965,8 +970,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def(pybind11::init(&SmartPointer<Mesh<T>>::New<>))
       // methods
       .def("getNodes",
-           (std::vector<std::array<double, 3>> & (Mesh<T>::*)()) &
-               Mesh<T>::getNodes,
+           (std::vector<std::array<T, 3>> & (Mesh<T>::*)()) & Mesh<T>::getNodes,
            "Get all nodes of the mesh as a list.")
       .def("getVerticies",
            (std::vector<std::array<unsigned, 1>> & (Mesh<T>::*)()) &
@@ -1274,5 +1278,5 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
 #endif
 
   // Also wrap hrleGrid so it can be used to create new LevelSets
-  pybind11::class_<hrleGrid<D>>(module, "hrleGrid");
+  pybind11::class_<viennahrle::Grid<D>>(module, "hrleGrid");
 }

@@ -486,7 +486,7 @@ private:
     }
 
     // maximum cell to read in is a tetra with 4 points
-    std::vector<hrleVectorType<unsigned int, 4>> elements;
+    std::vector<VectorType<unsigned int, 4>> elements;
     elements.reserve(num_elems);
 
     std::vector<double> materials;

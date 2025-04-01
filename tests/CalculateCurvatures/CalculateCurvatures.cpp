@@ -55,9 +55,10 @@ int main() {
   LSTEST_ASSERT(meanCurvatures != nullptr)
 
   double analyticCurvature = 1. / radius;
-  hrleSizeType numberOfActivePoints = 0;
+  viennahrle::SizeType numberOfActivePoints = 0;
   double sum = 0.;
-  for (hrleConstSparseIterator<typename ls::Domain<NumericType, D>::DomainType>
+  for (viennahrle::ConstSparseIterator<
+           typename ls::Domain<NumericType, D>::DomainType>
            it(sphere->getDomain());
        !it.isFinished(); ++it) {
     if (NumericType value = it.getValue();

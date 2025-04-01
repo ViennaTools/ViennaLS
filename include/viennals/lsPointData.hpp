@@ -2,7 +2,6 @@
 
 #include <lsPreCompileMacros.hpp>
 
-#include <array>
 #include <cstdint>
 #include <utility>
 #include <vector>
@@ -21,7 +20,7 @@ template <class T = double,
 class PointData {
 public:
   typedef std::vector<T> ScalarDataType;
-  typedef std::vector<std::array<T, 3>> VectorDataType;
+  typedef std::vector<Vec3D<T>> VectorDataType;
 
 private:
   std::vector<ScalarDataType> scalarData;
