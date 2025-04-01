@@ -14,27 +14,26 @@ using namespace viennacore;
 /// extruded can be set and boundary conditions in the 3D domain must be
 /// specified.
 template <class T> class Extrude {
+  using hrleIndexType = viennahrle::IndexType;
   SmartPointer<Domain<T, 2>> inputLevelSet = nullptr;
   SmartPointer<Domain<T, 3>> outputLevelSet = nullptr;
   Vec2D<T> extent = {0., 0.};
   int extrudeDim = 0;
   std::array<BoundaryConditionEnum, 3> boundaryConds = {};
+
 public:
   Extrude() = default;
-  
+
   Extrude(SmartPointer<Domain<T, 2>> passedInputLS,
           SmartPointer<Domain<T, 3>> passedOutputLS, Vec2D<T> passedExtent,
           const int passedExtrudeDim = 2,
-          BoundaryConditionEnum passedBoundaryCond = BoundaryConditionEnum::INFINITE_BOUNDARY)
-      : inputLevelSet(passedInputLS),
-        outputLevelSet(passedOutputLS),
-        extent(passedExtent),
-        extrudeDim(passedExtrudeDim),
-        boundaryConds{{
-          passedInputLS->getGrid().getBoundaryConditions(0),
-          passedInputLS->getGrid().getBoundaryConditions(1),
-          passedBoundaryCond
-        }} {}
+          BoundaryConditionEnum passedBoundaryCond =
+              BoundaryConditionEnum::INFINITE_BOUNDARY)
+      : inputLevelSet(passedInputLS), outputLevelSet(passedOutputLS),
+        extent(passedExtent), extrudeDim(passedExtrudeDim),
+        boundaryConds{{passedInputLS->getGrid().getBoundaryConditions(0),
+                       passedInputLS->getGrid().getBoundaryConditions(1),
+                       passedBoundaryCond}} {}
 
   Extrude(SmartPointer<Domain<T, 2>> passedInputLS,
           SmartPointer<Domain<T, 3>> passedOutputLS, Vec2D<T> passedExtent,
@@ -89,7 +88,7 @@ public:
     const auto extrudeDims = getExtrudeDims();
 
     {
-      std::vector<std::pair<hrleVectorType<hrleIndexType, 3>, T>> points3D;
+      std::vector<std::pair<viennahrle::Index<3>, T>> points3D;
 
       auto &domain2D = inputLevelSet->getDomain();
       auto &grid2D = inputLevelSet->getGrid();
@@ -109,21 +108,24 @@ public:
           domainBounds, boundaryConds.data(), gridDelta);
       outputLevelSet->deepCopy(tmpLevelSet);
 
-      for (hrleSparseIterator<hrleDomain<T, 2>> it(domain2D); !it.isFinished(); ++it) {
-        if (!it.isDefined()) continue;
-    
+      for (viennahrle::SparseIterator<typename Domain<T, 2>::DomainType> it(
+               domain2D);
+           !it.isFinished(); ++it) {
+        if (!it.isDefined())
+          continue;
+
         const auto index2D = it.getStartIndices();
         const T value = it.getValue();
-    
-        const hrleIndexType zStart = std::floor(extent[0] / gridDelta) -1;
-        const hrleIndexType zEnd = std::ceil(extent[1] / gridDelta) +1;
+
+        const hrleIndexType zStart = std::floor(extent[0] / gridDelta) - 1;
+        const hrleIndexType zEnd = std::ceil(extent[1] / gridDelta) + 1;
         for (hrleIndexType z = zStart; z <= zEnd; ++z) {
-          hrleVectorType<hrleIndexType, 3> index3D;
+          viennahrle::Index<3> index3D;
           index3D[0] = index2D[0];
           index3D[1] = index2D[1];
           index3D[2] = z;
-    
-          points3D.emplace_back(index3D, value);         
+
+          points3D.emplace_back(index3D, value);
         }
       }
 
