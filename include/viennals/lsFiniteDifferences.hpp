@@ -37,6 +37,21 @@ public:
     }
   }
 
+  static constexpr unsigned getNumberOfValues() {
+    switch (scheme) {
+    case DifferentiationSchemeEnum::FIRST_ORDER:
+      return 3;
+    case DifferentiationSchemeEnum::SECOND_ORDER:
+    case DifferentiationSchemeEnum::WENO3:
+      return 5;
+    case DifferentiationSchemeEnum::WENO5:
+      return 7;
+    default:
+      Logger::getInstance().addError("Invalid finite differences scheme!");
+      return 0;
+    }
+  }
+
   /// Weighted essentially non-oscillatory differentiation scheme 3rd order
   /// x1 ... x5 stencil points from left to right
   /// plus == true => right-sided

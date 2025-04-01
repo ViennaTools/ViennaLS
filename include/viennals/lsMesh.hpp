@@ -8,7 +8,7 @@
 
 #include <lsPointData.hpp>
 
-#include <vcVectorUtil.hpp>
+#include <vcVectorType.hpp>
 
 namespace viennals {
 

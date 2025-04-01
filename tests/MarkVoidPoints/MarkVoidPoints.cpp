@@ -84,9 +84,8 @@ int main() {
 
   // check if void points are set correctly
   bool correct = true;
-  for (auto it = hrleConstSparseIterator<
-           typename ls::Domain<NumericType, D>::DomainType>(
-           domain->getDomain());
+  for (auto it = viennahrle::ConstSparseIterator<
+           ls::Domain<NumericType, D>::DomainType>(domain->getDomain());
        !it.isFinished(); ++it) {
     // skip undefined runs
     if (!it.isDefined())

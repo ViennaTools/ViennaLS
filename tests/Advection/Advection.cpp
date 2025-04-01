@@ -10,6 +10,7 @@
 #include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
+#include <lsVelocityField.hpp>
 
 namespace ls = viennals;
 
@@ -22,9 +23,9 @@ namespace ls = viennals;
 // implement own velocity field
 class velocityField : public ls::VelocityField<double> {
 public:
-  double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
+  double getScalarVelocity(const ls::Vec3D<double> & /*coordinate*/,
                            int /*material*/,
-                           const std::array<double, 3> &normalVector,
+                           const ls::Vec3D<double> &normalVector,
                            unsigned long /*pointId*/) final {
     // Some arbitrary velocity function of your liking
     // (try changing it and see what happens :)
@@ -33,12 +34,11 @@ public:
     return velocity;
   }
 
-  std::array<double, 3>
-  getVectorVelocity(const std::array<double, 3> & /*coordinate*/,
-                    int /*material*/,
-                    const std::array<double, 3> & /*normalVector*/,
+  ls::Vec3D<double>
+  getVectorVelocity(const ls::Vec3D<double> & /*coordinate*/, int /*material*/,
+                    const ls::Vec3D<double> & /*normalVector*/,
                     unsigned long /*pointId*/) final {
-    return std::array<double, 3>({});
+    return {0., 0., 0.};
   }
 };
 

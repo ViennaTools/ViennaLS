@@ -2,7 +2,7 @@
 
 #include <lsPreCompileMacros.hpp>
 
-#include <hrleIndexType.hpp>
+#include <hrleTypes.hpp>
 
 #include <lsDomain.hpp>
 #include <lsMesh.hpp>
@@ -13,16 +13,17 @@ using namespace viennacore;
 
 /// Construct a level set from an explicit mesh.
 template <class T, int D> class FromSurfaceMesh {
+  using hrleIndexType = viennahrle::IndexType;
 
   /// Class defining a box used in ray tracing optimisation
   class box {
-    hrleVectorType<hrleIndexType, D - 1> xMin, xMax;
+    VectorType<hrleIndexType, D - 1> xMin, xMax;
 
   public:
     /// Sets xMin, xMax to the lowest and highest value of the two vectors for
     /// each dimension respectively.
-    box(const hrleVectorType<hrleIndexType, D - 1> &idx0,
-        const hrleVectorType<hrleIndexType, D - 1> &idx1) {
+    box(const VectorType<hrleIndexType, D - 1> &idx0,
+        const VectorType<hrleIndexType, D - 1> &idx1) {
       xMin = Min(idx0, idx1);
       xMax = Max(idx0, idx1);
     }
@@ -34,7 +35,7 @@ template <class T, int D> class FromSurfaceMesh {
     }
 
     /// Sets both xMin and Xmax to the passed vector.
-    explicit box(const hrleVectorType<hrleIndexType, D - 1> &idx) {
+    explicit box(const VectorType<hrleIndexType, D - 1> &idx) {
       xMin = idx;
       xMax = idx;
     }
@@ -50,13 +51,13 @@ template <class T, int D> class FromSurfaceMesh {
     }
 
     /// Returns vector of lowest point of box in each dimension.
-    const hrleVectorType<hrleIndexType, D - 1> &min() const { return xMin; }
+    const VectorType<hrleIndexType, D - 1> &min() const { return xMin; }
     /// Returns vector of highest point of box in each dimension.
-    const hrleVectorType<hrleIndexType, D - 1> &max() const { return xMax; }
+    const VectorType<hrleIndexType, D - 1> &max() const { return xMax; }
 
     /// Iterator over all grid points, contained by a box.
     class iterator {
-      hrleVectorType<hrleIndexType, D - 1> pos;
+      VectorType<hrleIndexType, D - 1> pos;
       const box &b;
 
     public:
@@ -85,9 +86,7 @@ template <class T, int D> class FromSurfaceMesh {
 
       bool is_finished() const { return (pos[D - 2] > b.xMax[D - 2]); }
 
-      const hrleVectorType<hrleIndexType, D - 1> &operator*() const {
-        return pos;
-      }
+      const VectorType<hrleIndexType, D - 1> &operator*() const { return pos; }
     };
   };
 
@@ -105,9 +104,9 @@ template <class T, int D> class FromSurfaceMesh {
   /// If there is
   /// an intersection this function returns true, otherwise false the
   /// intersection coordinate is returned by "intersection"
-  int calculateGridlineTriangleIntersection(hrleVectorType<T, 2> Point,
-                                            const hrleVectorType<T, 2> *c,
-                                            int dir, T &intersection) {
+  int calculateGridlineTriangleIntersection(VectorType<T, 2> Point,
+                                            const VectorType<T, 2> *c, int dir,
+                                            T &intersection) {
 
     bool inside_pos = true;
     bool inside_neg = true;
@@ -152,9 +151,9 @@ template <class T, int D> class FromSurfaceMesh {
   /// If there is
   /// an intersection this function returns true, otherwise false the
   /// intersection coordinate is returned by "intersection"
-  int calculateGridlineTriangleIntersection(hrleVectorType<T, 3> Point,
-                                            const hrleVectorType<T, 3> *c,
-                                            int dir, T &intersection) {
+  int calculateGridlineTriangleIntersection(VectorType<T, 3> Point,
+                                            const VectorType<T, 3> *c, int dir,
+                                            T &intersection) {
 
     bool inside_pos = true;
     bool inside_neg = true;
@@ -168,10 +167,8 @@ template <class T, int D> class FromSurfaceMesh {
       bool swapped =
           (c[(k + 1) % 3] <
            c[(k + 2) % 3]); // necessary to guarantee anti commutativity
-      const hrleVectorType<T, 3> &v1 =
-          (swapped) ? c[(k + 2) % 3] : c[(k + 1) % 3];
-      const hrleVectorType<T, 3> &v2 =
-          (swapped) ? c[(k + 1) % 3] : c[(k + 2) % 3];
+      const VectorType<T, 3> &v1 = (swapped) ? c[(k + 2) % 3] : c[(k + 1) % 3];
+      const VectorType<T, 3> &v2 = (swapped) ? c[(k + 1) % 3] : c[(k + 2) % 3];
 
       A[k] = (v1[dirA] - Point[dirA]) * (v2[dirB] - Point[dirB]) -
              (v2[dirA] - Point[dirA]) * (v1[dirB] - Point[dirB]);
@@ -270,17 +267,16 @@ public:
       }
     }
 
-    std::vector<std::pair<hrleVectorType<hrleIndexType, D>, T>> points2;
+    std::vector<std::pair<viennahrle::Index<D>, T>> points2;
 
     // setup list of grid points with distances to surface elements
     {
-      typedef std::vector<
-          std::pair<hrleVectorType<hrleIndexType, D>, std::pair<T, T>>>
+      typedef std::vector<std::pair<viennahrle::Index<D>, std::pair<T, T>>>
           point_vector;
       point_vector points;
       T gridDelta = grid.getGridDelta();
 
-      hrleVectorType<T, D> gridMin, gridMax;
+      VectorType<T, D> gridMin, gridMax;
       for (unsigned i = 0; i < D; ++i) {
         gridMin[i] = grid.getMinIndex(i) * gridDelta;
         gridMax[i] = grid.getMaxIndex(i) * gridDelta;
@@ -292,8 +288,9 @@ public:
 
       for (unsigned currentElement = 0; currentElement < elements.size();
            currentElement++) {
-        hrleVectorType<T, D> nodes[D];     // nodes of element
-        hrleVectorType<T, D> center(T(0)); // center point of triangle
+        VectorType<T, D> nodes[D]; // nodes of element
+        VectorType<T, D> center;   // center point of triangle
+        std::fill(center.begin(), center.end(), 0);
 
         std::bitset<2 * D> flags;
         flags.set();
@@ -325,22 +322,23 @@ public:
           continue;
 
         // center point calculation
-        center /= static_cast<T>(D);
+        for (int q = 0; q < D; q++)
+          center[q] /= static_cast<T>(D);
 
-        // hrleVectorType<T,D> normal=NormalVector(c);  //normalvector
+        // VectorType<T,D> normal=NormalVector(c);  //normal vector
         // calculation
 
         // determine the minimum and maximum nodes of the element, based on
         // their coordinates
-        hrleVectorType<T, D> minNode = nodes[0];
-        hrleVectorType<T, D> maxNode = nodes[0];
+        VectorType<T, D> minNode = nodes[0];
+        VectorType<T, D> maxNode = nodes[0];
         for (int i = 1; i < D; ++i) {
           minNode = Min(minNode, nodes[i]);
           maxNode = Max(maxNode, nodes[i]);
         }
 
         // find indices which describe the triangle
-        hrleVectorType<hrleIndexType, D> minIndex, maxIndex;
+        viennahrle::Index<D> minIndex, maxIndex;
         for (int q = 0; q < D; q++) {
           minIndex[q] =
               static_cast<hrleIndexType>(std::ceil(minNode[q] / gridDelta));
@@ -360,7 +358,7 @@ public:
 
         // each cartesian direction
         for (int z = 0; z < D; z++) {
-          hrleVectorType<hrleIndexType, D - 1> min_bb, max_bb;
+          VectorType<hrleIndexType, D - 1> min_bb, max_bb;
 
           for (int h = 0; h < D - 1; ++h) {
             min_bb[h] = minIndex[(z + h + 1) % D];
@@ -375,11 +373,11 @@ public:
           for (typename box::iterator it_bb(bb); !it_bb.is_finished();
                ++it_bb) {
 
-            hrleVectorType<hrleIndexType, D> it_b;
+            viennahrle::Index<D> it_b;
             for (int h = 0; h < D - 1; ++h)
               it_b[(z + h + 1) % D] = (*it_bb)[h];
 
-            hrleVectorType<T, D> p;
+            VectorType<T, D> p;
             for (int k = 1; k < D; k++)
               p[(k + z) % D] = grid.gridPositionOfGlobalIndex(
                   (k + z) % D, it_b[(k + z) % D]);
@@ -422,11 +420,11 @@ public:
                 ceil = grid.globalIndex2LocalIndex(z, ceil);
               }
 
-              hrleVectorType<T, D> t = center;
+              VectorType<T, D> t = center;
               t[z] -= intersection;
               for (int k = 1; k < D; k++)
                 t[(z + k) % D] -= p[(z + k) % D];
-              t = Normalize(t);
+              Normalize(t);
 
               for (it_b[z] = floor; it_b[z] <= ceil; ++(it_b[z])) {
 
@@ -465,9 +463,9 @@ public:
       std::sort(points.begin(), points.end()); // sort points lexicographically
 
       // setup list of index/distance pairs for level set initialization
-      typename point_vector::iterator it_points = points.begin();
+      auto it_points = points.begin();
       while (it_points != points.end()) {
-        hrleVectorType<hrleIndexType, D> tmp = it_points->first;
+        viennahrle::Index<D> tmp = it_points->first;
         points2.push_back(
             std::make_pair(it_points->first, it_points->second.second));
 

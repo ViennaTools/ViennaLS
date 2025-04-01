@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-#include <hrleVectorType.hpp>
+#include <vcVectorType.hpp>
 
 #include <lsMesh.hpp>
 
@@ -21,17 +21,15 @@ enum struct TransformEnum : unsigned {
 template <class T> class TransformMesh {
   SmartPointer<Mesh<T>> mesh = nullptr;
   TransformEnum transform = TransformEnum::TRANSLATION;
-  hrleVectorType<double, 3> transformVector{};
-  double angle = 0.0;
+  VectorType<T, 3> transformVector{};
+  T angle = 0.0;
   double numericEps = 1e-6;
 
   // check vector for all zeros
   bool isValidVector() const {
-    if (DotProduct(transformVector, transformVector) < numericEps) {
+    if (DotProduct(transformVector, transformVector) < numericEps)
       return false;
-    } else {
-      return true;
-    }
+    return true;
   }
 
   void translateMesh() {
@@ -96,13 +94,6 @@ public:
   TransformMesh(SmartPointer<Mesh<T>> passedMesh,
                 TransformEnum passedTransform = TransformEnum::TRANSLATION,
                 Vec3D<T> passedTransformVector = {}, double passedAngle = 0.0)
-      : mesh(passedMesh), transform(passedTransform),
-        transformVector(passedTransformVector), angle(passedAngle) {}
-
-  TransformMesh(SmartPointer<Mesh<T>> passedMesh,
-                TransformEnum passedTransform = TransformEnum::TRANSLATION,
-                hrleVectorType<double, 3> passedTransformVector = {},
-                double passedAngle = 0.0)
       : mesh(passedMesh), transform(passedTransform),
         transformVector(passedTransformVector), angle(passedAngle) {}
 

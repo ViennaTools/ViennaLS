@@ -6,12 +6,12 @@
 
 #include <hrleDomain.hpp>
 #include <hrleFillDomainWithSignedDistance.hpp>
-#include <hrleVectorType.hpp>
 
 #include <lsPointData.hpp>
 
 #include <vcLogger.hpp>
 #include <vcSmartPointer.hpp>
+#include <vcVectorType.hpp>
 
 #define LS_DOMAIN_SERIALIZATION_VERSION 0
 
@@ -20,7 +20,7 @@ namespace viennals {
 using namespace viennacore;
 
 // Boundary condition alias for easier access
-using BoundaryConditionEnum = hrleBoundaryType;
+using BoundaryConditionEnum = viennahrle::BoundaryType;
 
 ///  Class containing all information about the level set, including
 ///  the dimensions of the domain, boundary conditions and all data.
@@ -28,12 +28,10 @@ template <class T, int D> class Domain {
 public:
   // TYPEDEFS
   typedef T ValueType;
-  typedef hrleGrid<D> GridType;
-  typedef hrleDomain<T, D> DomainType;
+  typedef viennahrle::Grid<D> GridType;
+  typedef viennahrle::Domain<T, D> DomainType;
   typedef BoundaryConditionEnum BoundaryType;
-  typedef std::vector<std::pair<hrleVectorType<hrleIndexType, D>, T>>
-      PointValueVectorType;
-  typedef std::vector<std::array<T, D>> NormalVectorType;
+  typedef std::vector<std::pair<viennahrle::Index<D>, T>> PointValueVectorType;
   typedef PointData<T> PointDataType;
   typedef std::vector<bool> VoidPointMarkersType;
 
@@ -54,8 +52,8 @@ public:
   static constexpr T NEG_VALUE = std::numeric_limits<T>::lowest();
 
   /// initalise an empty infinite Domain
-  Domain(hrleCoordType gridDelta = 1.0) {
-    hrleIndexType gridMin[D], gridMax[D];
+  Domain(viennahrle::CoordType gridDelta = 1.0) {
+    viennahrle::IndexType gridMin[D], gridMax[D];
     BoundaryType boundaryCons[D];
     for (unsigned i = 0; i < D; ++i) {
       gridMin[i] = 0;
@@ -67,9 +65,9 @@ public:
     domain.deepCopy(grid, DomainType(grid, T(POS_VALUE)));
   }
 
-  Domain(const hrleCoordType *bounds, BoundaryType *boundaryConditions,
-         hrleCoordType gridDelta = 1.0) {
-    hrleIndexType gridMin[D], gridMax[D];
+  Domain(const viennahrle::CoordType *bounds, BoundaryType *boundaryConditions,
+         viennahrle::CoordType gridDelta = 1.0) {
+    viennahrle::IndexType gridMin[D], gridMax[D];
     for (unsigned i = 0; i < D; ++i) {
       gridMin[i] = std::floor(bounds[2 * i] / gridDelta);
       gridMax[i] = std::ceil(bounds[2 * i + 1] / gridDelta);
@@ -79,9 +77,9 @@ public:
     domain.deepCopy(grid, DomainType(grid, T(POS_VALUE)));
   }
 
-  Domain(std::vector<hrleCoordType> bounds,
+  Domain(std::vector<viennahrle::CoordType> bounds,
          std::vector<unsigned> boundaryConditions,
-         hrleCoordType gridDelta = 1.0) {
+         viennahrle::CoordType gridDelta = 1.0) {
     BoundaryType boundaryCons[D];
     for (unsigned i = 0; i < D; ++i) {
       boundaryCons[i] = static_cast<BoundaryType>(boundaryConditions[i]);
@@ -93,13 +91,14 @@ public:
 
   /// initialise Domain with domain size "bounds", filled with point/value
   /// pairs in pointData
-  Domain(PointValueVectorType pointData, hrleCoordType *bounds,
-         BoundaryType *boundaryConditions, hrleCoordType gridDelta = 1.0) {
+  Domain(PointValueVectorType pointData, viennahrle::CoordType *bounds,
+         BoundaryType *boundaryConditions,
+         viennahrle::CoordType gridDelta = 1.0) {
     auto newDomain =
         SmartPointer<Domain<T, D>>::New(bounds, boundaryConditions, gridDelta);
     this->deepCopy(newDomain);
-    hrleFillDomainWithSignedDistance(domain, pointData, T(NEG_VALUE),
-                                     T(POS_VALUE));
+    viennahrle::FillDomainWithSignedDistance(domain, pointData, T(NEG_VALUE),
+                                             T(POS_VALUE));
   }
 
   Domain(GridType passedGrid) : grid(passedGrid) {
@@ -129,8 +128,8 @@ public:
   /// contains (INDEX, Value) pairs, while lsFromMesh expects coordinates
   /// rather than indices
   void insertPoints(PointValueVectorType pointData, bool sort = true) {
-    hrleFillDomainWithSignedDistance(domain, pointData, T(NEG_VALUE),
-                                     T(POS_VALUE), sort);
+    viennahrle::FillDomainWithSignedDistance(domain, pointData, T(NEG_VALUE),
+                                             T(POS_VALUE), sort);
   }
 
   /// get reference to the grid on which the levelset is defined

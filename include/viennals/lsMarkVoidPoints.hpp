@@ -168,7 +168,8 @@ public:
     std::vector<IndexType> pointsPerComponent;
 
     // cycle through and set up the graph to get connectivity information
-    for (hrleConstSparseStarIterator<typename Domain<T, D>::DomainType, 1>
+    for (viennahrle::ConstSparseStarIterator<typename Domain<T, D>::DomainType,
+                                             1>
              neighborIt(domain->getDomain());
          !neighborIt.isFinished(); neighborIt.next()) {
       auto &center = neighborIt.getCenter();
@@ -260,7 +261,8 @@ public:
       componentMarkers.resize(domain->getNumberOfPoints());
 
     // cycle through again to set correct voidPointMarkers
-    for (hrleConstSparseStarIterator<typename Domain<T, D>::DomainType, 1>
+    for (viennahrle::ConstSparseStarIterator<typename Domain<T, D>::DomainType,
+                                             1>
              neighborIt(domain->getDomain());
          !neighborIt.isFinished(); neighborIt.next()) {
       auto center = neighborIt.getCenter();

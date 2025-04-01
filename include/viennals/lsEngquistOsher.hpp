@@ -1,13 +1,12 @@
 #pragma once
 
 #include <hrleSparseStarIterator.hpp>
-#include <hrleVectorType.hpp>
 
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsVelocityField.hpp>
 
-#include <vcVectorUtil.hpp>
+#include <vcVectorType.hpp>
 
 namespace lsInternal {
 
@@ -19,7 +18,8 @@ using namespace viennacore;
 template <class T, int D, int order> class EngquistOsher {
   SmartPointer<viennals::Domain<T, D>> levelSet;
   SmartPointer<viennals::VelocityField<T>> velocities;
-  hrleSparseStarIterator<hrleDomain<T, D>, order> neighborIterator;
+  viennahrle::SparseStarIterator<viennahrle::Domain<T, D>, order>
+      neighborIterator;
   bool calculateNormalVectors = true;
 
   static T pow2(const T &value) { return value * value; }
@@ -34,16 +34,17 @@ public:
                 SmartPointer<viennals::VelocityField<T>> vel,
                 bool calcNormal = true)
       : levelSet(passedlsDomain), velocities(vel),
-        neighborIterator(hrleSparseStarIterator<hrleDomain<T, D>, order>(
-            levelSet->getDomain())),
+        neighborIterator(
+            viennahrle::SparseStarIterator<viennahrle::Domain<T, D>, order>(
+                levelSet->getDomain())),
         calculateNormalVectors(calcNormal) {}
 
-  std::pair<T, T> operator()(const hrleVectorType<hrleIndexType, D> &indices,
+  std::pair<T, T> operator()(const viennahrle::Index<D> &indices,
                              int material) {
     auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
 
-    hrleVectorType<T, 3> coordinate(0., 0., 0.);
+    VectorType<T, 3> coordinate{0., 0., 0.};
     for (unsigned i = 0; i < D; ++i) {
       coordinate[i] = indices[i] * gridDelta;
     }
@@ -137,14 +138,11 @@ public:
       }
     }
 
-    // convert coordinate to std array for interface
-    Vec3D<T> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
-
     double scalarVelocity = velocities->getScalarVelocity(
-        coordArray, material, normalVector,
+        coordinate, material, normalVector,
         neighborIterator.getCenter().getPointId());
     Vec3D<T> vectorVelocity = velocities->getVectorVelocity(
-        coordArray, material, normalVector,
+        coordinate, material, normalVector,
         neighborIterator.getCenter().getPointId());
 
     if (scalarVelocity > 0) {
@@ -165,7 +163,7 @@ public:
   }
 
   void reduceTimeStepHamiltonJacobi(double &MaxTimeStep,
-                                    hrleCoordType gridDelta) const {}
+                                    double gridDelta) const {}
 };
 
 } // namespace lsInternal

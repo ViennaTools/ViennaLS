@@ -3,13 +3,13 @@
 #include <lsPreCompileMacros.hpp>
 
 #include <hrleSparseStarIterator.hpp>
-#include <hrleVectorType.hpp>
 
 #include <lsDomain.hpp>
 #include <lsPrune.hpp>
 
 #include <vcLogger.hpp>
 #include <vcSmartPointer.hpp>
+#include <vcVectorType.hpp>
 
 namespace viennals {
 
@@ -80,19 +80,19 @@ private:
 
       auto &domainSegment = newDomain.getDomainSegment(p);
 
-      hrleVectorType<hrleIndexType, D> currentVector =
+      viennahrle::Index<D> currentVector =
           (p == 0) ? grid.getMinGridPoint()
                    : newDomain.getSegmentation()[p - 1];
 
-      hrleVectorType<hrleIndexType, D> endVector =
+      viennahrle::Index<D> const endVector =
           (p != static_cast<int>(newDomain.getNumberOfSegments() - 1))
               ? newDomain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
-      hrleConstSparseIterator<hrleDomainType> itA(levelSetA->getDomain(),
-                                                  currentVector);
-      hrleConstSparseIterator<hrleDomainType> itB(levelSetB->getDomain(),
-                                                  currentVector);
+      viennahrle::ConstSparseIterator<hrleDomainType> itA(
+          levelSetA->getDomain(), currentVector);
+      viennahrle::ConstSparseIterator<hrleDomainType> itB(
+          levelSetB->getDomain(), currentVector);
 
       while (currentVector < endVector) {
         const auto &comparison = comp(itA.getValue(), itB.getValue());
@@ -115,7 +115,7 @@ private:
                                                 : Domain<T, D>::POS_VALUE);
         }
 
-        switch (compare(itA.getEndIndices(), itB.getEndIndices())) {
+        switch (Compare(itA.getEndIndices(), itB.getEndIndices())) {
         case -1:
           itA.next();
           break;
@@ -124,7 +124,8 @@ private:
         default:
           itB.next();
         }
-        currentVector = std::max(itA.getStartIndices(), itB.getStartIndices());
+        currentVector =
+            Max(itA.getStartIndices().get(), itB.getStartIndices().get());
       }
     }
 
@@ -232,11 +233,14 @@ private:
       // and positive undefined (UNDEF_PT+1)
       for (unsigned dim = 0; dim < D; ++dim) {
         for (unsigned c = 0; c < domainSegment.runTypes[dim].size(); ++c) {
-          if (domainSegment.runTypes[dim][c] == hrleRunTypeValues::UNDEF_PT) {
-            domainSegment.runTypes[dim][c] = hrleRunTypeValues::UNDEF_PT + 1;
+          if (domainSegment.runTypes[dim][c] ==
+              viennahrle::RunTypeValues::UNDEF_PT) {
+            domainSegment.runTypes[dim][c] =
+                viennahrle::RunTypeValues::UNDEF_PT + 1;
           } else if (domainSegment.runTypes[dim][c] ==
-                     hrleRunTypeValues::UNDEF_PT + 1) {
-            domainSegment.runTypes[dim][c] = hrleRunTypeValues::UNDEF_PT;
+                     viennahrle::RunTypeValues::UNDEF_PT + 1) {
+            domainSegment.runTypes[dim][c] =
+                viennahrle::RunTypeValues::UNDEF_PT;
           }
         }
       }

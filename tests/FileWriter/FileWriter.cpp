@@ -32,7 +32,7 @@ int main() {
       bounds, boundaryCons, gridDelta);
 
   const double radius = 7.3;
-  const hrleVectorType<double, D> centre(5., 0.);
+  const ls::VectorType<double, D> centre{5., 0.};
   // const double centre[D] = {0,0.1};
   // const double normal[D] = {0, 1};
 

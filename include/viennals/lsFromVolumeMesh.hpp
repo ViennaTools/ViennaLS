@@ -84,7 +84,7 @@ public:
     }
 
     // Map for all surfaceElements and their corresponding material
-    typedef std::map<hrleVectorType<unsigned int, D>, std::pair<int, int>>
+    typedef std::map<VectorType<unsigned int, D>, std::pair<int, int>>
         triangleMapType;
     triangleMapType surfaceElements;
 
@@ -92,7 +92,7 @@ public:
         (D == 3) ? mesh->tetras.size() : mesh->triangles.size();
     for (unsigned int i = 0; i < numberOfElements; ++i) {
       for (int j = 0; j < D + 1; j++) {
-        hrleVectorType<unsigned int, D> currentSurfaceElement;
+        VectorType<unsigned int, D> currentSurfaceElement;
         for (int k = 0; k < D; k++) {
           currentSurfaceElement[k] =
               mesh->template getElements<D + 1>()[i][(j + k) % (D + 1)];
@@ -123,9 +123,10 @@ public:
         // if (flags.any())
         //   continue;
 
-        currentSurfaceElement.sort();
+        // currentSurfaceElement.sort();
+        std::sort(currentSurfaceElement.begin(), currentSurfaceElement.end());
 
-        hrleVectorType<double, D> currentElementPoints[D + 1];
+        Vec3D<T> currentElementPoints[D + 1];
         for (int k = 0; k < D; k++) {
           currentElementPoints[k] = mesh->nodes[currentSurfaceElement[k]];
         }

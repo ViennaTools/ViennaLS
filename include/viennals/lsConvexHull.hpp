@@ -6,14 +6,12 @@
 #include <list>
 #include <unordered_map>
 
-#include <hrleVectorType.hpp>
-
 #include <lsGeometries.hpp>
 #include <lsMesh.hpp>
 
 #include <vcLogger.hpp>
 #include <vcSmartPointer.hpp>
-#include <vcVectorUtil.hpp>
+#include <vcVectorType.hpp>
 
 namespace viennals {
 
@@ -23,12 +21,12 @@ using namespace viennacore;
 /// point cloud. This is done using the gift wrapping approach.
 /// The points in the point cloud MUST be unique, otherwise this will fail.
 template <class T, int D> class ConvexHull {
-  typedef hrleVectorType<unsigned, D - 1> EdgeType;
+  typedef VectorType<unsigned, D - 1> EdgeType;
 
   SmartPointer<Mesh<T>> mesh = nullptr;
   SmartPointer<PointCloud<T, D>> pointCloud = nullptr;
   std::vector<EdgeType> visitedEdges;
-  std::vector<hrleVectorType<unsigned, D>> hullElements;
+  std::vector<VectorType<unsigned, D>> hullElements;
   std::list<EdgeType> remainingEdges;
 
   // go through all points in the set and find the correct element
@@ -51,8 +49,8 @@ template <class T, int D> class ConvexHull {
         continue;
 
       // surface element normal and distance to point i
-      hrleVectorType<T, D> normal;
-      hrleVectorType<T, D> distance = points[i] - points[currentEdge[0]];
+      VectorType<T, D> normal;
+      VectorType<T, D> distance = points[i] - points[currentEdge[0]];
       // create surface element and check if all points are to its right
       if constexpr (D == 2) {
         // in 2D normal is a 90 degree rotation
@@ -64,7 +62,8 @@ template <class T, int D> class ConvexHull {
       } else if constexpr (D == 3) {
         auto v1 = points[currentEdge[1]] - points[currentEdge[0]];
         auto v2 = points[nextIndex] - points[currentEdge[0]];
-        normal = calculateNormal(v1, v2);
+        normal = CrossProduct(v1, v2);
+        Normalize(normal);
       }
 
       auto product = DotProduct(distance, normal);
@@ -74,7 +73,7 @@ template <class T, int D> class ConvexHull {
       if (std::abs(product) < 1e-9) {
         // check if suggested triangle intersects with any other
         // in the same plane
-        hrleVectorType<unsigned, D> triangle;
+        VectorType<unsigned, D> triangle;
         triangle[0] = currentEdge[0];
         triangle[1] = currentEdge[1];
         triangle[2] = i;
@@ -145,8 +144,8 @@ template <class T, int D> class ConvexHull {
   }
 
   // return whether two triangles with shared nodes intersect
-  bool intersectSharedNode(const hrleVectorType<unsigned, D> &triangle1,
-                           const hrleVectorType<unsigned, D> &triangle2) const {
+  bool intersectSharedNode(const VectorType<unsigned, D> &triangle1,
+                           const VectorType<unsigned, D> &triangle2) const {
     // find which nodes are shared and which nodes are others
     std::vector<unsigned> sharedNodes;
     // otherNodes2 contains the nodes of triangle1 which are not shared
@@ -177,23 +176,25 @@ template <class T, int D> class ConvexHull {
     // and an edge, the node must be outside of triangle. If it is inside, one
     // triangle must clip the other.
     for (unsigned int &sharedNode : sharedNodes) {
-      hrleVectorType<T, D> averageVector;
+      VectorType<T, D> averageVector;
       // save the dot product between average and one edge
       double centerEdgeDot;
       {
         auto shared = sharedNode;
-        hrleVectorType<T, D> edge1 = Normalize(
-            points[triangle2[(shared + 1) % D]] - points[triangle2[shared]]);
-        hrleVectorType<T, D> edge2 = Normalize(
-            points[triangle2[(shared + 2) % D]] - points[triangle2[shared]]);
-        averageVector = Normalize((edge1 + edge2) / 2);
+        VectorType<T, D> edge1 = Normalize(points[triangle2[(shared + 1) % D]] -
+                                           points[triangle2[shared]]);
+        VectorType<T, D> edge2 = Normalize(points[triangle2[(shared + 2) % D]] -
+                                           points[triangle2[shared]]);
+        averageVector = edge1 + edge2;
+        averageVector = averageVector / T(2);
+        Normalize(averageVector);
         centerEdgeDot = DotProduct(averageVector, edge2);
       }
 
       // go over other nodes of triangle1
       for (unsigned int &otherNode : otherNodes) {
-        hrleVectorType<T, D> vector = Normalize(points[triangle1[otherNode]] -
-                                                points[triangle2[sharedNode]]);
+        VectorType<T, D> vector = Normalize(points[triangle1[otherNode]] -
+                                            points[triangle2[sharedNode]]);
 
         if (DotProduct(vector, averageVector) > centerEdgeDot + 1e-9) {
           return true;
@@ -205,12 +206,12 @@ template <class T, int D> class ConvexHull {
   }
 
   // check if triangle defined by two edges clips any other triangle
-  bool doesTriangleClip(const hrleVectorType<unsigned, D> &triangle) const {
+  bool doesTriangleClip(const VectorType<unsigned, D> &triangle) const {
     auto &points = pointCloud->points;
 
     auto triangleNormal =
-        Normalize(calculateNormal(points[triangle[1]] - points[triangle[0]],
-                                  points[triangle[2]] - points[triangle[0]]));
+        calculateNormal(points[triangle[1]] - points[triangle[0]],
+                        points[triangle[2]] - points[triangle[0]]);
 
     // unsigned shareEdges = 0;
     for (unsigned i = 0; i < hullElements.size(); ++i) {
@@ -227,9 +228,9 @@ template <class T, int D> class ConvexHull {
       // if they share at least one node, they might clip, so check
       if (inOneTriangle > 0) {
         // check if they are in the same plane
-        auto normal2 = Normalize(calculateNormal(
+        auto normal2 = calculateNormal(
             points[hullElements[i][1]] - points[hullElements[i][0]],
-            points[hullElements[i][2]] - points[hullElements[i][0]]));
+            points[hullElements[i][2]] - points[hullElements[i][0]]);
 
         bool skip = false;
         for (unsigned d = 0; d < D; ++d) {
@@ -252,21 +253,21 @@ template <class T, int D> class ConvexHull {
   }
 
   // calculate the normal vector of two vectors
-  hrleVectorType<T, D> calculateNormal(const hrleVectorType<T, D> &v1,
-                                       const hrleVectorType<T, D> &v2) const {
-    hrleVectorType<T, D> newNormal;
+  VectorType<T, D> calculateNormal(const VectorType<T, D> &v1,
+                                   const VectorType<T, D> &v2) const {
+    VectorType<T, D> newNormal;
     newNormal[0] = v1[1] * v2[2] - v1[2] * v2[1];
     newNormal[1] = v1[2] * v2[0] - v1[0] * v2[2];
     newNormal[2] = v1[0] * v2[1] - v1[1] * v2[0];
     return newNormal;
   }
 
-  // calculate Area of triangle defined by 2 vectors
-  T calculateArea(const hrleVectorType<T, D> &v1,
-                  const hrleVectorType<T, D> &v2) const {
-    hrleVectorType<T, D> newNormal = calculateNormal(v1, v2);
-    return std::sqrt(DotProduct(newNormal, newNormal));
-  }
+  // // calculate Area of triangle defined by 2 vectors
+  // T calculateArea(const VectorType<T, D> &v1,
+  //                 const VectorType<T, D> &v2) const {
+  //   VectorType<T, D> newNormal = CrossProduct(v1, v2);
+  //   return std::sqrt(DotProduct(newNormal, newNormal));
+  // }
 
 public:
   ConvexHull() = default;
@@ -306,7 +307,7 @@ public:
       unsigned currentIndex = std::distance(points.begin(), it);
 
       if (D == 2) {
-        remainingEdges.push_back(EdgeType(currentIndex));
+        remainingEdges.push_back(EdgeType{currentIndex});
       } else {
         // need to check if there is second point at same z coord
         int currentPointIndex = -1;
@@ -329,7 +330,7 @@ public:
         edge[0] = currentIndex;
         // if there was no point at same z, find through pivot
         if (currentPointIndex == -1) {
-          hrleVectorType<T, D> newPoint;
+          VectorType<T, D> newPoint;
           newPoint = points[currentIndex];
           newPoint[0] += 1.0;
           // take newPoint for fake edge to find correct first point
@@ -358,7 +359,7 @@ public:
       unsigned nextIndex = pivotEdge(currentEdge);
 
       // set new hull element and save
-      hrleVectorType<unsigned, D> element;
+      VectorType<unsigned, D> element;
       for (unsigned i = 0; i < D - 1; ++i) {
         element[i] = currentEdge[i];
       }
@@ -368,7 +369,7 @@ public:
       // mark edge as visited
       visitedEdges.push_back(currentEdge);
       if (D == 2) {
-        remainingEdges.push_back(EdgeType(nextIndex));
+        remainingEdges.push_back(EdgeType{nextIndex});
       } else {
         EdgeType edge;
         edge[0] = nextIndex;

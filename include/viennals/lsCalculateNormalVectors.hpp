@@ -5,13 +5,12 @@
 #include <algorithm>
 
 #include <hrleSparseStarIterator.hpp>
-#include <hrleVectorType.hpp>
 
 #include <lsDomain.hpp>
 
 #include <vcLogger.hpp>
 #include <vcSmartPointer.hpp>
-#include <vcVectorUtil.hpp>
+#include <vcVectorType.hpp>
 
 namespace viennals {
 
@@ -76,16 +75,17 @@ public:
       auto &normalVectors = normalVectorsVector[p];
       normalVectors.reserve(pointsPerSegment);
 
-      hrleVectorType<hrleIndexType, D> startVector =
+      viennahrle::Index<D> const startVector =
           (p == 0) ? grid.getMinGridPoint()
                    : levelSet->getDomain().getSegmentation()[p - 1];
 
-      hrleVectorType<hrleIndexType, D> endVector =
+      viennahrle::Index<D> const endVector =
           (p != static_cast<int>(levelSet->getNumberOfSegments() - 1))
               ? levelSet->getDomain().getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
-      for (hrleConstSparseStarIterator<typename Domain<T, D>::DomainType, 1>
+      for (viennahrle::ConstSparseStarIterator<
+               typename Domain<T, D>::DomainType, 1>
                neighborIt(levelSet->getDomain(), startVector);
            neighborIt.getIndices() < endVector; neighborIt.next()) {
 

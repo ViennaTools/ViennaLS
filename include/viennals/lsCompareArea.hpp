@@ -21,11 +21,12 @@ using namespace viennacore;
 /// visualization of the differences.
 /// The code is currently itended for 2D level sets only.
 template <class T, int D = 2> class CompareArea {
-  typedef typename Domain<T, D>::DomainType hrleDomainType;
+  using hrleDomainType = typename Domain<T, D>::DomainType;
+  using hrleIndexType = viennahrle::IndexType;
 
   SmartPointer<Domain<T, D>> levelSetTarget = nullptr;
   SmartPointer<Domain<T, D>> levelSetSample = nullptr;
-  hrleVectorType<hrleIndexType, D> minIndex, maxIndex;
+  viennahrle::Index<D> minIndex, maxIndex;
 
   unsigned long int differentCellsCount = 0;
   unsigned long int customDifferentCellCount = 0;
@@ -189,9 +190,9 @@ public:
     }
 
     // Set up dense cell iterators for both level sets
-    hrleConstDenseCellIterator<typename Domain<T, D>::DomainType> itTarget(
+    viennahrle::ConstDenseCellIterator<hrleDomainType> itTarget(
         levelSetTarget->getDomain(), minIndex);
-    hrleConstDenseCellIterator<typename Domain<T, D>::DomainType> itSample(
+    viennahrle::ConstDenseCellIterator<hrleDomainType> itSample(
         levelSetSample->getDomain(), minIndex);
 
     differentCellsCount = 0;
@@ -213,8 +214,8 @@ public:
     std::vector<T> cellDifference;
     std::vector<T> incrementValues;
     size_t currentPointId = 0;
-    std::unordered_map<hrleVectorType<hrleIndexType, D>, size_t,
-                       typename hrleVectorType<hrleIndexType, D>::hash>
+    std::unordered_map<viennahrle::Index<D>, size_t,
+                       typename viennahrle::Index<D>::hash>
         pointIdMapping;
 
     // Iterate through the domain defined by the bounding box
@@ -278,7 +279,7 @@ public:
 
         // Insert all points of voxel into pointList
         for (unsigned i = 0; i < (1 << D); ++i) {
-          hrleVectorType<hrleIndexType, D> index;
+          viennahrle::Index<D> index;
           for (unsigned j = 0; j < D; ++j) {
             index[j] =
                 itTarget.getIndices(j) + itTarget.getCorner(i).getOffset()[j];
@@ -325,7 +326,7 @@ public:
       // Insert points into the mesh
       outputMesh->nodes.resize(pointIdMapping.size());
       for (auto it = pointIdMapping.begin(); it != pointIdMapping.end(); ++it) {
-        std::array<T, 3> coords{};
+        Vec3D<T> coords;
         for (unsigned i = 0; i < D; ++i) {
           coords[i] = gridDelta * it->first[i];
 

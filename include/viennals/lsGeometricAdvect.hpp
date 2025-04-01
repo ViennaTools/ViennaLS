@@ -1,7 +1,6 @@
 #pragma once
 
 #include <hrleSparseIterator.hpp>
-#include <hrleVectorType.hpp>
 
 #include <lsBooleanOperation.hpp>
 #include <lsConcepts.hpp>
@@ -14,6 +13,7 @@
 
 #include <vcLogger.hpp>
 #include <vcSmartPointer.hpp>
+#include <vcVectorType.hpp>
 
 #ifndef NDEBUG // if in debug build
 #include <lsCheck.hpp>
@@ -33,6 +33,9 @@ using namespace viennacore;
 /// to normal advection if there is growth/reduction by a purely geometric
 /// directional distribution.
 template <class T, int D> class GeometricAdvect {
+  using hrleIndexType = viennahrle::IndexType;
+  using hrleCoordType = viennahrle::CoordType;
+
   SmartPointer<Domain<T, D>> levelSet = nullptr;
   SmartPointer<Domain<T, D>> maskLevelSet = nullptr;
   SmartPointer<const GeometricAdvectDistribution<hrleCoordType, D>> dist =
@@ -40,9 +43,9 @@ template <class T, int D> class GeometricAdvect {
   static constexpr T cutoffValue =
       T(1.) + std::numeric_limits<T>::epsilon() * T(100);
 
-  static void incrementIndices(hrleVectorType<hrleIndexType, D> &indices,
-                               const hrleVectorType<hrleIndexType, D> &min,
-                               const hrleVectorType<hrleIndexType, D> &max) {
+  static void incrementIndices(viennahrle::Index<D> &indices,
+                               const viennahrle::Index<D> &min,
+                               const viennahrle::Index<D> &max) {
     int dim = 0;
     for (; dim < D - 1; ++dim) {
       if (indices[dim] < max[dim])
@@ -141,7 +144,7 @@ public:
     auto distBounds = dist->getBounds();
 
     // TODO: need to add support for periodic boundary conditions!
-    hrleVectorType<hrleIndexType, D> distMin, distMax;
+    viennahrle::Index<D> distMin, distMax;
 
     bool minPointNegative = domain.getDomainSegment(0).definedValues[0] < 0.;
     bool maxPointNegative =
@@ -152,7 +155,7 @@ public:
     // find bounding box of old domain
     hrleIndexType bounds[6];
     domain.getDomainBounds(bounds);
-    hrleVectorType<hrleIndexType, D> min, max;
+    viennahrle::Index<D> min, max;
     for (unsigned i = 0; i < D; ++i) {
       // translate from coords to indices
       distMin[i] =
@@ -209,9 +212,9 @@ public:
 
       auto newSurfaceMesh = SmartPointer<Mesh<hrleCoordType>>::New();
       PointData<hrleCoordType>::ScalarDataType newValues;
-      hrleConstSparseIterator<DomainType> maskIt(maskDomain);
+      viennahrle::ConstSparseIterator<DomainType> maskIt(maskDomain);
       for (auto &node : surfaceMesh->getNodes()) {
-        hrleVectorType<hrleIndexType, D> index;
+        viennahrle::Index<D> index;
         for (unsigned i = 0; i < D; ++i) {
           index[i] = std::round(node[i] / gridDelta);
         }
@@ -259,11 +262,10 @@ public:
 
 #endif
 
-    typedef std::vector<std::array<hrleCoordType, 3>> SurfaceNodesType;
-    const SurfaceNodesType &surfaceNodes = surfaceMesh->getNodes();
+    const auto &surfaceNodes = surfaceMesh->getNodes();
 
     // initialize with segmentation for whole range
-    typename hrleDomain<T, D>::hrleIndexPoints segmentation;
+    typename viennahrle::Domain<T, D>::IndexPoints segmentation;
 
     {
       unsigned long long numPoints = 1;
@@ -277,7 +279,7 @@ public:
       unsigned long long pointId = 0;
       for (unsigned i = 0; i < numberOfSegments - 1; ++i) {
         pointId = pointsPerSegment * (i + 1);
-        hrleVectorType<hrleIndexType, D> segmentPoint;
+        viennahrle::Index<D> segmentPoint;
         for (int j = D - 1; j >= 0; --j) {
           segmentPoint[j] = pointId / (pointsPerDimension[j]) + min[j];
           pointId %= pointsPerDimension[j];
@@ -286,8 +288,7 @@ public:
       }
     }
 
-    typedef std::vector<std::pair<hrleVectorType<hrleIndexType, D>, T>>
-        PointValueVector;
+    typedef std::vector<std::pair<viennahrle::Index<D>, T>> PointValueVector;
     std::vector<PointValueVector> newPoints;
     newPoints.resize(domain.getNumberOfSegments());
 
@@ -310,7 +311,7 @@ public:
       p = omp_get_thread_num();
 #endif
 
-      hrleVectorType<hrleIndexType, D> startVector;
+      viennahrle::Index<D> startVector;
       if (p == 0) {
         startVector = min;
       } else {
@@ -318,23 +319,24 @@ public:
         incrementIndices(startVector, min, max);
       }
 
-      hrleVectorType<hrleIndexType, D> endVector =
+      viennahrle::Index<D> endVector =
           (p != static_cast<int>(domain.getNumberOfSegments() - 1))
               ? segmentation[p]
               : grid.incrementIndices(max);
 
-      hrleConstSparseIterator<DomainType> checkIt(levelSet->getDomain(),
-                                                  startVector);
+      viennahrle::ConstSparseIterator<DomainType> checkIt(levelSet->getDomain(),
+                                                          startVector);
 
       // Mask iterator for checking whether inside mask or not
-      SmartPointer<hrleConstSparseIterator<DomainType>> maskIt = nullptr;
+      SmartPointer<viennahrle::ConstSparseIterator<DomainType>> maskIt =
+          nullptr;
       if (maskLevelSet != nullptr) {
-        maskIt = SmartPointer<hrleConstSparseIterator<DomainType>>::New(
+        maskIt = SmartPointer<viennahrle::ConstSparseIterator<DomainType>>::New(
             maskLevelSet->getDomain(), startVector);
       }
 
       // Iterate through the bounds of new lsDomain lexicographically
-      for (hrleVectorType<hrleIndexType, D> currentIndex = startVector;
+      for (viennahrle::Index<D> currentIndex = startVector;
            currentIndex <= endVector;
            incrementIndices(currentIndex, min, max)) {
         // if point is already full in old level set, skip it
@@ -349,9 +351,9 @@ public:
           continue;
         }
 
-        std::array<hrleCoordType, 3> currentCoords{};
-        std::array<hrleCoordType, 3> currentDistMin{};
-        std::array<hrleCoordType, 3> currentDistMax{};
+        VectorType<hrleCoordType, 3> currentCoords{};
+        VectorType<hrleCoordType, 3> currentDistMin{};
+        VectorType<hrleCoordType, 3> currentDistMax{};
 
         for (unsigned i = 0; i < D; ++i) {
           currentCoords[i] = currentIndex[i] * gridDelta;
@@ -484,7 +486,7 @@ public:
     {
       std::vector<T> scalarData;
       for (auto it = newPoints[0].begin(); it != newPoints[0].end(); ++it) {
-        std::array<T, 3> node = {};
+        Vec3D<T> node{0., 0., 0.};
         for (unsigned i = 0; i < D; ++i) {
           node[i] = T((it->first)[i]) * gridDelta;
         }

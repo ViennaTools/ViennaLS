@@ -1,13 +1,12 @@
 #pragma once
 
 #include <hrleSparseBoxIterator.hpp>
-#include <hrleVectorType.hpp>
 
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsVelocityField.hpp>
 
-#include <vcVectorUtil.hpp>
+#include <vcVectorType.hpp>
 
 namespace lsInternal {
 
@@ -21,9 +20,10 @@ using namespace viennacore;
 template <class T, int D, int order> class LocalLaxFriedrichs {
   SmartPointer<viennals::Domain<T, D>> levelSet;
   SmartPointer<viennals::VelocityField<T>> velocities;
-  hrleSparseBoxIterator<hrleDomain<T, D>> neighborIterator;
+  // neighbor iterator always needs order 2 for alpha calculation
+  viennahrle::SparseBoxIterator<viennahrle::Domain<T, D>, 2> neighborIterator;
   const double alphaFactor;
-  hrleVectorType<T, 3> finalAlphas;
+  VectorType<T, 3> finalAlphas;
 
   static T pow2(const T &value) { return value * value; }
 
@@ -33,8 +33,9 @@ template <class T, int D, int order> class LocalLaxFriedrichs {
     return (diffPos + diffNeg) * 0.5;
   }
 
-  static void incrementIndices(hrleVectorType<hrleIndexType, D> &index,
-                               hrleIndexType minIndex, hrleIndexType maxIndex) {
+  static void incrementIndices(viennahrle::Index<D> &index,
+                               viennahrle::IndexType minIndex,
+                               viennahrle::IndexType maxIndex) {
     unsigned dir = 0;
     for (; dir < D - 1; ++dir) {
       if (index[dir] < maxIndex)
@@ -52,24 +53,23 @@ public:
     viennals::Expand<T, D>(passedlsDomain, 2 * (order + 2) + 1).apply();
   }
 
-  // neighboriterator always needs order 2 for alpha calculation
   LocalLaxFriedrichs(SmartPointer<viennals::Domain<T, D>> passedlsDomain,
                      SmartPointer<viennals::VelocityField<T>> vel,
                      double a = 1.0)
       : levelSet(passedlsDomain), velocities(vel),
-        neighborIterator(levelSet->getDomain(), 2), alphaFactor(a) {
+        neighborIterator(levelSet->getDomain()), alphaFactor(a) {
     for (int i = 0; i < 3; ++i) {
       finalAlphas[i] = 0;
     }
   }
 
-  std::pair<T, T> operator()(const hrleVectorType<hrleIndexType, D> &indices,
+  std::pair<T, T> operator()(const viennahrle::Index<D> &indices,
                              int material) {
 
     auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
 
-    hrleVectorType<T, 3> coordinate(0., 0., 0.);
+    VectorType<T, 3> coordinate{0., 0., 0.};
     for (unsigned i = 0; i < D; ++i) {
       coordinate[i] = indices[i] * gridDelta;
     }
@@ -78,7 +78,7 @@ public:
     neighborIterator.goToIndicesSequential(indices);
 
     // convert coordinate to std array for interface
-    Vec3D<T> coordArray = {coordinate[0], coordinate[1], coordinate[2]};
+    Vec3D<T> coordArray{coordinate[0], coordinate[1], coordinate[2]};
 
     T gradPos[D];
     T gradNeg[D];
@@ -90,8 +90,8 @@ public:
     T normalModulus = 0;
 
     for (int i = 0; i < D; i++) { // iterate over dimensions
-      hrleVectorType<hrleIndexType, D> posUnit(0);
-      hrleVectorType<hrleIndexType, D> negUnit(0);
+      viennahrle::Index<D> posUnit(0);
+      viennahrle::Index<D> negUnit(0);
       posUnit[i] = 1;
       negUnit[i] = -1;
 
@@ -186,11 +186,11 @@ public:
     T alpha[D] = {};
     {
       // alpha calculation is always on order 1 stencil
-      const hrleIndexType minIndex = -1;
-      const hrleIndexType maxIndex = 1;
+      const viennahrle::IndexType minIndex = -1;
+      const viennahrle::IndexType maxIndex = 1;
       const unsigned numNeighbors = std::pow((maxIndex - minIndex) + 1, D);
 
-      hrleVectorType<hrleIndexType, D> neighborIndex(minIndex);
+      viennahrle::Index<D> neighborIndex(minIndex);
       for (unsigned i = 0; i < numNeighbors; ++i) {
         Vec3D<T> coords;
         for (unsigned dir = 0; dir < D; ++dir) {
@@ -200,7 +200,7 @@ public:
         double normalModulus = 0.;
         auto center = neighborIterator.getNeighbor(neighborIndex).getValue();
         for (unsigned dir = 0; dir < D; ++dir) {
-          hrleVectorType<hrleIndexType, D> unity(0);
+          viennahrle::Index<D> unity(0);
           unity[dir] = 1;
           auto neg =
               neighborIterator.getNeighbor(neighborIndex - unity).getValue();
@@ -241,8 +241,7 @@ public:
     return {totalGrad, ((totalGrad != 0.) ? dissipation : 0)};
   }
 
-  void reduceTimeStepHamiltonJacobi(double &MaxTimeStep,
-                                    hrleCoordType gridDelta) {
+  void reduceTimeStepHamiltonJacobi(double &MaxTimeStep, double gridDelta) {
     constexpr double alpha_maxCFL = 1.0;
     // second time step test, based on alphas
 

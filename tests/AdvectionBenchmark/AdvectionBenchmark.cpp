@@ -23,30 +23,16 @@ class velocityField : public ls::VelocityField<double> {
 public:
   velocityField(std::vector<double> &data) : data_(data) {}
 
-  double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
+  double getScalarVelocity(const ls::Vec3D<double> & /*coordinate*/,
                            int /*material*/,
-                           const std::array<double, 3> & /*normalVector*/,
-                           unsigned long pointId) {
+                           const ls::Vec3D<double> & /*normalVector*/,
+                           unsigned long pointId) override {
     // Some arbitrary velocity function of your liking
     // (try changing it and see what happens :)
     // double velocity = 1. + ((normalVector[0] > 0) ? 2.3 : 0.5) *
     //                            std::abs(normalVector[0] * normalVector[0]);
     // return velocity;
     return data_[pointId];
-  }
-
-  std::array<double, 3>
-  getVectorVelocity(const std::array<double, 3> & /*coordinate*/,
-                    int /*material*/,
-                    const std::array<double, 3> & /*normalVector*/,
-                    unsigned long /*pointId*/) {
-    return std::array<double, 3>({});
-  }
-
-  double
-  getDissipationAlpha(int /*direction*/, int /*material*/,
-                      const std::array<double, 3> & /*centralDifferences*/) {
-    return 0;
   }
 };
 
@@ -81,7 +67,7 @@ int main() {
 
   const unsigned numberOfSteps = 500;
   // run several adveciton steps with different number of threads
-  for (unsigned cores = 1; cores < 33; cores *= 2) {
+  for (unsigned cores = 1; cores < 17; cores *= 2) {
     omp_set_num_threads(cores);
 
     auto levelSet = ls::SmartPointer<ls::Domain<double, D>>::New(gridDelta);
