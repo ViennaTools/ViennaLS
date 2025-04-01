@@ -182,8 +182,7 @@ int main(int argc, char* argv[]) {
   std::array<double, 2> extrudeExtent = {0., 5.}; // add buffer or +/- gridDelta
 
   // Run extrusion using the level-set based algorithm
-  auto extrusion = ls::Extrude<double>(pattern, pattern3D, extrudeExtent);
-  extrusion.apply();
+  ls::Extrude<double>(pattern, pattern3D, extrudeExtent).apply();
 
   // === Export extruded mesh to SDF VTK grid for visualization ===
   auto sdf3D_preCap = ls::SmartPointer<ls::Mesh<double>>::New();
