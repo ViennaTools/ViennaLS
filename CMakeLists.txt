@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaLS
   LANGUAGES CXX
-  VERSION 4.2.2)
+  VERSION 4.3.0)
 
 # --------------------------------------------------------------------------------------------------------
 # Library options
@@ -103,10 +103,9 @@ include(cmake/vtk.cmake)
 
 CPMAddPackage(
   NAME ViennaCore
-  VERSION 1.3.1
-  GIT_TAG vector-type
+  VERSION 1.4.0
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaCore"
-  OPTIONS "VIENNACORE_FORMAT_EXCLUDE docs/"
+  OPTIONS "VIENNACORE_FORMAT_EXCLUDE docs/ build/"
   EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 
 CPMAddPackage(
@@ -117,8 +116,7 @@ CPMAddPackage(
 
 CPMFindPackage(
   NAME ViennaHRLE
-  VERSION 0.5.0
-  GIT_TAG refactor
+  VERSION 0.6.0
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaHRLE"
   EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 
@@ -132,9 +130,7 @@ elseif(VIENNALS_USE_VTK)
 
   CPMFindPackage(
     NAME VTK
-    # TODO: Change to 9.3.1 as soon as it's released
-    # (https://github.com/ViennaTools/ViennaLS/pull/99#issuecomment-1832053715)
-    GIT_TAG 99bd602bdbe8024c55e8382f7cf1013d42a14601
+    GIT_TAG v9.4.0
     VERSION 9.0.0
     GIT_REPOSITORY "https://gitlab.kitware.com/vtk/vtk"
     EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON}
