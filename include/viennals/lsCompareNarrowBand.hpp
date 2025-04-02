@@ -63,26 +63,27 @@ template <class T, int D = 2> class CompareNarrowBand {
     const auto &domainTarget = levelSetTarget->getDomain();
     const auto &domainSample = levelSetSample->getDomain();
 
-    hrleIndexType targetMinX = gridTarget.isNegBoundaryInfinite(0)
-                                   ? domainTarget.getMinRunBreak(0)
-                                   : gridTarget.getMinIndex(0);
-    hrleIndexType targetMaxX = gridTarget.isPosBoundaryInfinite(0)
-                                   ? domainTarget.getMaxRunBreak(0)
-                                   : gridTarget.getMaxIndex(0);
-    hrleIndexType sampleMinX = gridSample.isNegBoundaryInfinite(0)
-                                   ? domainSample.getMinRunBreak(0)
-                                   : gridSample.getMinIndex(0);
-    hrleIndexType sampleMaxX = gridSample.isPosBoundaryInfinite(0)
-                                   ? domainSample.getMaxRunBreak(0)
-                                   : gridSample.getMaxIndex(0);
+    // hrleIndexType targetMinX = gridTarget.isNegBoundaryInfinite(0)
+    //                                ? domainTarget.getMinRunBreak(0)
+    //                                : gridTarget.getMinIndex(0);
+    // hrleIndexType targetMaxX = gridTarget.isPosBoundaryInfinite(0)
+    //                                ? domainTarget.getMaxRunBreak(0)
+    //                                : gridTarget.getMaxIndex(0);
+    // hrleIndexType sampleMinX = gridSample.isNegBoundaryInfinite(0)
+    //                                ? domainSample.getMinRunBreak(0)
+    //                                : gridSample.getMinIndex(0);
+    // hrleIndexType sampleMaxX = gridSample.isPosBoundaryInfinite(0)
+    //                                ? domainSample.getMaxRunBreak(0)
+    //                                : gridSample.getMaxIndex(0);
 
-    if (targetMinX != sampleMinX || targetMaxX != sampleMaxX) {
-      Logger::getInstance()
-          .addWarning("X extent mismatch in CompareNarrowBand. The x extents "
-                      "of both level sets must be equal.")
-          .print();
-      return false;
-    }
+    // if (targetMinX != sampleMinX || targetMaxX != sampleMaxX) {
+    //   Logger::getInstance()
+    //       .addWarning("X extent mismatch in CompareNarrowBand. The x extents
+    //       "
+    //                   "of both level sets must be equal.")
+    //       .print();
+    //   return false;
+    // }
 
     // Expand the sample level set using lsExpand to a default width of 5
     if (levelSetSample->getLevelSetWidth() < 5) {

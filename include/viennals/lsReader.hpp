@@ -33,17 +33,17 @@ public:
   }
 
   void apply() {
-    // check mesh
+    // check level-set
     if (levelSet == nullptr) {
       Logger::getInstance()
-          .addWarning("No mesh was passed to Reader. Not writing.")
+          .addWarning("No level-set was passed to Reader. Not reading.")
           .print();
       return;
     }
     // check filename
     if (fileName.empty()) {
       Logger::getInstance()
-          .addWarning("No file name specified for Reader. Not writing.")
+          .addWarning("No file name specified for Reader. Not reading.")
           .print();
       return;
     }
