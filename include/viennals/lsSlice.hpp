@@ -100,7 +100,7 @@ public:
     auto const gridDelta = sourceGrid.getGridDelta();
 
     // Container for the extracted points
-    std::vector<std::pair<hrleVectorType<hrleIndexType, 2>, T>> pointData;
+    std::vector<std::pair<viennahrle::Index<2>, T>> pointData;
 
     // Check if slice position is divisible by grid delta without remainder
     if (std::fmod(slicePosition, gridDelta) != 0) {
@@ -118,7 +118,7 @@ public:
     const int sliceIndex = static_cast<int>(slicePosition / gridDelta);
 
     // Iterate through the source domain
-    hrleConstSparseIterator<typename Domain<T, 3>::DomainType> it(
+    viennahrle::ConstSparseIterator<typename Domain<T, 3>::DomainType> it(
         sourceLevelSet->getDomain());
 
     while (!it.isFinished()) {
@@ -133,7 +133,7 @@ public:
         T value = it.getValue();
 
         // Create a new 2D index
-        hrleVectorType<hrleIndexType, 2> sliceIndices;
+        viennahrle::Index<2> sliceIndices;
         for (int d = 0, j = 0; d < 3; d++) {
           if (d != sliceDimension) {
             sliceIndices[j++] = indices[d];
