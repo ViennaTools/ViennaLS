@@ -236,8 +236,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "step, but it do **not** move the surface.");
 
   // enums
-  pybind11::enum_<IntegrationSchemeEnum>(module, "IntegrationSchemeEnum",
-                                         pybind11::module_local())
+  pybind11::enum_<IntegrationSchemeEnum>(module, "IntegrationSchemeEnum")
       .value("ENGQUIST_OSHER_1ST_ORDER",
              IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER)
       .value("ENGQUIST_OSHER_2ND_ORDER",
