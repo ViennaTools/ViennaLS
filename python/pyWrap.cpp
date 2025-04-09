@@ -48,6 +48,7 @@
 #include <lsReader.hpp>
 #include <lsReduce.hpp>
 #include <lsRemoveStrayPoints.hpp>
+#include <lsSlice.hpp>
 #include <lsToDiskMesh.hpp>
 #include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
@@ -522,7 +523,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .value("CURVATURE", FeatureDetectionEnum::CURVATURE)
       .value("NORMALS_ANGLE", FeatureDetectionEnum::NORMALS_ANGLE);
 
-  // lsDomain
+  // Domain
   pybind11::class_<Domain<T, D>, SmartPointer<Domain<T, D>>>(module, "Domain")
       // constructors
       .def(pybind11::init(&SmartPointer<Domain<T, D>>::New<>))
@@ -1099,6 +1100,34 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "All other LS values will be marked as stray points and removed.")
       .def("apply", &RemoveStrayPoints<T, D>::apply, "Remove stray points.");
 
+  // Slice
+  pybind11::class_<Slice<T>, SmartPointer<Slice<T>>>(module, "Slice")
+      // constructors
+      .def(pybind11::init(&SmartPointer<Slice<T>>::New<>))
+      .def(pybind11::init(
+          &SmartPointer<Slice<T>>::New<SmartPointer<Domain<T, 3>> &,
+                                       SmartPointer<Domain<T, 2>> &, int, T>))
+      .def(pybind11::init(
+          &SmartPointer<Slice<T>>::New<SmartPointer<Domain<T, 3>> &, int, T>))
+      // methods
+      .def("setSourceLevelSet", &Slice<T>::setSourceLevelSet,
+           "Set the 3D source level set from which to extract the slice.")
+      .def("setSliceLevelSet", &Slice<T>::setSliceLevelSet,
+           "Set the 2D level set where the extracted slice will be stored.")
+      .def("setSliceDimension", &Slice<T>::setSliceDimension,
+           "Set the dimension along which to slice (0=x, 1=y, 2=z).")
+      .def("setSlicePosition", &Slice<T>::setSlicePosition,
+           "Set the position along the slice dimension where to extract the "
+           "slice.")
+      .def("setWritePath", &Slice<T>::setWritePath,
+           "Set the path where the slice should be written to.")
+      .def("getSliceLevelSet", &Slice<T>::getSliceLevelSet,
+           "Get the 2D slice level set after extraction.")
+      .def("setReflectX", &Slice<T>::setReflectX,
+           "Set whether to reflect all x-coordinates in the resulting slice.")
+      .def("apply", &Slice<T>::apply,
+           "Extract the 2D slice from the 3D domain.");
+
   // ToDiskMesh
   pybind11::class_<ToDiskMesh<T, D>, SmartPointer<ToDiskMesh<T, D>>>(
       module, "ToDiskMesh")
@@ -1275,6 +1304,72 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("apply", &WriteVisualizationMesh<T, D>::apply,
            "Make and write mesh.");
 #endif
+
+  // 2D Domain in 3D import and 3D domain in 2D import
+  //   constexpr int dim = VIENNALS_PYTHON_DIMENSION == 2 ? 3 : 2;
+  //   pybind11::class_<Domain<T, dim>, SmartPointer<Domain<T, dim>>>(
+  //       module, ("Domain" + std::to_string(dim) + "D").c_str())
+  //       // constructors
+  //       .def(pybind11::init(&SmartPointer<Domain<T, dim>>::New<>))
+  //       .def(pybind11::init(
+  //                &SmartPointer<Domain<T, dim>>::New<viennahrle::CoordType>),
+  //            pybind11::arg("gridDelta") = 1.0)
+  //       .def(pybind11::init([](std::array<viennahrle::CoordType, 2 * D>
+  //       bounds,
+  //                              std::array<BoundaryConditionEnum, D> bcs,
+  //                              viennahrle::CoordType gridDelta) {
+  //              return SmartPointer<Domain<T, dim>>::New(bounds.data(),
+  //              bcs.data(),
+  //                                                       gridDelta);
+  //            }),
+  //            pybind11::arg("bounds"), pybind11::arg("boundaryConditions"),
+  //            pybind11::arg("gridDelta") = 1.0)
+  //       .def(pybind11::init(&SmartPointer<Domain<T, dim>>::New<
+  //                           std::vector<viennahrle::CoordType>,
+  //                           std::vector<unsigned>, viennahrle::CoordType>),
+  //            pybind11::arg("bounds"), pybind11::arg("boundaryConditions"),
+  //            pybind11::arg("gridDelta") = 1.0)
+  //       .def(pybind11::init(
+  //           &SmartPointer<Domain<T, dim>>::New<SmartPointer<Domain<T, dim>>
+  //           &>))
+  //       .def(pybind11::init(
+  //           &SmartPointer<Domain<T, dim>>::New<viennahrle::Grid<dim> &>))
+  //       // methods
+  //       .def("deepCopy", &Domain<T, dim>::deepCopy,
+  //            "Copy lsDomain in this lsDomain.")
+  //       .def("getNumberOfSegments", &Domain<T, dim>::getNumberOfSegments,
+  //            "Get the number of segments, the level set structure is divided
+  //            " "into.")
+  //       .def("getNumberOfPoints", &Domain<T, dim>::getNumberOfPoints,
+  //            "Get the number of defined level set values.")
+  //       .def("getLevelSetWidth", &Domain<T, dim>::getLevelSetWidth,
+  //            "Get the number of layers of level set points around the
+  //            explicit " "surface.")
+  //       .def("setLevelSetWidth", &Domain<T, dim>::setLevelSetWidth,
+  //            "Set the number of layers of level set points which should be "
+  //            "stored around the explicit surface.")
+  //       .def("clearMetaData", &Domain<T, dim>::clearMetaData,
+  //            "Clear all metadata stored in the level set.")
+  //       // allow filehandle to be passed and default to python standard
+  //       output .def(
+  //           "print",
+  //           [](Domain<T, D> &d, pybind11::object fileHandle) {
+  //             if (!(pybind11::hasattr(fileHandle, "write") &&
+  //                   pybind11::hasattr(fileHandle, "flush"))) {
+  //               throw pybind11::type_error(
+  //                   "MyClass::read_from_file_like_object(file): incompatible
+  //                   " "function argument:  `file` must be a file-like object,
+  //                   but "
+  //                   "`" +
+  //                   (std::string)(pybind11::repr(fileHandle)) + "`
+  //                   provided");
+  //             }
+  //             pybind11::detail::pythonbuf buf(fileHandle);
+  //             std::ostream stream(&buf);
+  //             d.print(stream);
+  //           },
+  //           pybind11::arg("stream") =
+  //               pybind11::module::import("sys").attr("stdout"));
 
   // Also wrap hrleGrid so it can be used to create new LevelSets
   pybind11::class_<viennahrle::Grid<D>>(module, "hrleGrid");

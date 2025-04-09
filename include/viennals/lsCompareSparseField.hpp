@@ -62,30 +62,31 @@ template <class T, int D = 2> class CompareSparseField {
       return false;
     }
 
-    // Check if the x extents of both level sets are equal
-    const auto &domainTarget = levelSetTarget->getDomain();
-    const auto &domainSample = levelSetSample->getDomain();
+    // // Check if the x extents of both level sets are equal
+    // const auto &domainTarget = levelSetTarget->getDomain();
+    // const auto &domainSample = levelSetSample->getDomain();
 
-    hrleIndexType targetMinX = gridTarget.isNegBoundaryInfinite(0)
-                                   ? domainTarget.getMinRunBreak(0)
-                                   : gridTarget.getMinIndex(0);
-    hrleIndexType targetMaxX = gridTarget.isPosBoundaryInfinite(0)
-                                   ? domainTarget.getMaxRunBreak(0)
-                                   : gridTarget.getMaxIndex(0);
-    hrleIndexType sampleMinX = gridSample.isNegBoundaryInfinite(0)
-                                   ? domainSample.getMinRunBreak(0)
-                                   : gridSample.getMinIndex(0);
-    hrleIndexType sampleMaxX = gridSample.isPosBoundaryInfinite(0)
-                                   ? domainSample.getMaxRunBreak(0)
-                                   : gridSample.getMaxIndex(0);
+    // hrleIndexType targetMinX = gridTarget.isNegBoundaryInfinite(0)
+    //                                ? domainTarget.getMinRunBreak(0)
+    //                                : gridTarget.getMinIndex(0);
+    // hrleIndexType targetMaxX = gridTarget.isPosBoundaryInfinite(0)
+    //                                ? domainTarget.getMaxRunBreak(0)
+    //                                : gridTarget.getMaxIndex(0);
+    // hrleIndexType sampleMinX = gridSample.isNegBoundaryInfinite(0)
+    //                                ? domainSample.getMinRunBreak(0)
+    //                                : gridSample.getMinIndex(0);
+    // hrleIndexType sampleMaxX = gridSample.isPosBoundaryInfinite(0)
+    //                                ? domainSample.getMaxRunBreak(0)
+    //                                : gridSample.getMaxIndex(0);
 
-    if (targetMinX != sampleMinX || targetMaxX != sampleMaxX) {
-      Logger::getInstance()
-          .addWarning("X extent mismatch in CompareNarrowBand. The x extents "
-                      "of both level sets must be equal.")
-          .print();
-      return false;
-    }
+    // if (targetMinX != sampleMinX || targetMaxX != sampleMaxX) {
+    //   Logger::getInstance()
+    //       .addWarning("X extent mismatch in CompareSparseField. The x extents
+    //       "
+    //                   "of both level sets must be equal.")
+    //       .print();
+    //   return false;
+    // }
 
     // Check if target level set width is sufficient
     if (levelSetTarget->getLevelSetWidth() < 50) {
@@ -263,7 +264,7 @@ public:
       }
 
       // Calculate difference and add to sum
-      T diff = std::abs(valueTarget - valueSample);
+      T diff = std::abs(valueTarget - valueSample) * gridDelta;
       T diffSquared = diff * diff;
       sumDifferences += diff;
       sumSquaredDifferences += diffSquared;
