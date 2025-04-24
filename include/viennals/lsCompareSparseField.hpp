@@ -42,6 +42,9 @@ template <class T, int D = 2> class CompareSparseField {
   // Add mesh output capability
   SmartPointer<Mesh<T>> outputMesh = nullptr;
 
+  // Add bool for filling the sample level set with distances
+  bool fillSampleWithDistances = false;
+
   bool checkAndCalculateBounds() {
     if (levelSetTarget == nullptr || levelSetSample == nullptr) {
       Logger::getInstance()
@@ -174,6 +177,9 @@ public:
     outputMesh = passedMesh;
   }
 
+  /// Set whether to fill the sample level set with distances
+  void setFillSampleWithDistances(bool fill) { fillSampleWithDistances = fill; }
+
   /// Apply the comparison and calculate the sum of squared differences.
   void apply() {
     // Perform compatibility checks
@@ -216,6 +222,13 @@ public:
       squaredDifferenceValues.reserve(levelSetSample->getNumberOfPoints());
     }
 
+    // Prepare for point data filling if needed
+    auto &samplePointData = levelSetSample->getPointData();
+    std::vector<T> pointDataDistances;
+    if (fillSampleWithDistances) {
+      pointDataDistances.reserve(levelSetSample->getNumberOfPoints());
+    }
+
     // Create sparse iterators for the level sets
     viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType> itSample(
         levelSetSample->getDomain());
@@ -256,7 +269,8 @@ public:
       itTarget.goToIndicesSequential(indices);
       T valueTarget = itTarget.getValue();
 
-      // Check for infinite or extreme values that might cause numerical issues
+      // Check for infinite or extreme values that might cause numerical
+      // issues
       if (!itTarget.isDefined() || std::isinf(valueTarget) ||
           std::isinf(valueSample)) {
         itSample.next();
@@ -272,7 +286,8 @@ public:
 
       // Store difference in mesh if required
       if (generateMesh) {
-        // Create a new point with the coordinates of the sample level set point
+        // Create a new point with the coordinates of the sample level set
+        // point
         Vec3D<T> coords{xCoord, yCoord, zCoord}; // lsMesh needs 3D
 
         // Store the coordinates
@@ -296,6 +311,10 @@ public:
         }
       }
 
+      if (fillSampleWithDistances) {
+        // Store the distance value in the point data
+        pointDataDistances.push_back(diff);
+      }
       // Move to next point
       itSample.next();
     }
@@ -313,6 +332,11 @@ public:
                                                  "Absolute differences");
       outputMesh->pointData.insertNextScalarData(
           std::move(squaredDifferenceValues), "Squared differences");
+    }
+
+    if (fillSampleWithDistances) {
+      samplePointData.insertNextScalarData(std::move(pointDataDistances),
+                                           "DistanceToTarget");
     }
   }
 

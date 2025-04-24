@@ -88,8 +88,15 @@ int main() {
 
   // Create mesh for visualization of differences
   auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+  compareSparseField.setFillSampleWithDistances(true);
   compareSparseField.setOutputMesh(mesh);
   compareSparseField.apply();
+
+  auto meshWithPointData =
+      ls::SmartPointer<ls::Mesh<>>::New(); // Mesh with point data
+  ls::ToMesh<double, D>(sphere2, meshWithPointData).apply();
+  ls::VTKWriter<double>(meshWithPointData, "sphere2_with_point_data.vtp")
+      .apply();
 
   // Save mesh to file
   ls::VTKWriter<double>(mesh, "sparsefield.vtp").apply();
