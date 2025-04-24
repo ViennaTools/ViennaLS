@@ -23,8 +23,6 @@ public:
         visibilitiesLabel(std::move(label)) {}
 
   void apply() {
-    std::cout << "NEW ONE!" << std::endl;
-
     auto &domain = levelSet->getDomain();
     auto &grid = levelSet->getGrid();
 
