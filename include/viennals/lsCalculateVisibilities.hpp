@@ -55,9 +55,9 @@ public:
     // Invert the vector
     auto dir = Normalize(Inv(direction)) *
                static_cast<T>(domain.getGrid().getGridDelta());
+    auto dirMagnitude = std::sqrt(DotProduct(dir, dir));
 
-    auto numDefinedPoints = domain.getNumberOfPoints();
-    std::vector<T> visibilities(numDefinedPoints);
+    std::vector<T> visibilities(domain.getNumberOfPoints(), static_cast<T>(-1));
 
 #pragma omp parallel num_threads(levelSet->getNumberOfSegments())
     {
@@ -73,12 +73,6 @@ public:
           (p != static_cast<int>(domain.getNumberOfSegments() - 1))
               ? domain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
-
-      // Calculate the starting index for the visibility vector
-      viennahrle::SizeType id = 0;
-      for (int i = 0; i < p; ++i) {
-        id += domain.getDomainSegment(i).getNumberOfPoints();
-      }
 
       for (viennahrle::SparseIterator<hrleDomainType> it(domain, startVector);
            it.getStartIndices() < endVector; ++it) {
@@ -99,22 +93,13 @@ public:
 
         while (true) {
           // Update the ray position
-          for (int i = 0; i < D; ++i) {
+          for (int i = 0; i < D; ++i)
             rayPos[i] += dir[i];
-          }
 
           // Determine the nearest grid cell (round to nearest index)
           viennahrle::Index<D> nearestCell;
-          for (int i = 0; i < D; ++i) {
+          for (int i = 0; i < D; ++i)
             nearestCell[i] = static_cast<viennahrle::IndexType>(rayPos[i]);
-          }
-
-          // // Before adding a cell, check if it's already visited
-          // if (std::find(visitedCells.begin(), visitedCells.end(),
-          // nearestCell)
-          // == visitedCells.end()) {
-          //     visitedCells.push_back(nearestCell);
-          // }
 
           // Check if the nearest cell is within bounds
           bool outOfBounds = false;
@@ -126,9 +111,8 @@ public:
             }
           }
 
-          if (outOfBounds) {
+          if (outOfBounds)
             break; // Ray is outside the grid
-          }
 
           // Access the level set value at the nearest cell
           T value =
@@ -136,15 +120,27 @@ public:
                   .getValue();
 
           // Update the minimum value encountered
-          if (value < minLevelSetValue) {
+          if (value < minLevelSetValue - 0.5 * dirMagnitude) {
             visibility = false;
             break;
           }
         }
 
         // Update visibility for this point
-        visibilities[id++] = visibility ? 1.0 : 0.0;
+        visibilities[it.getPointId()] = visibility ? 1.0 : 0.0;
       }
+    }
+
+    int unassignedCount = 0;
+    for (size_t i = 0; i < visibilities.size(); ++i) {
+      if (visibilities[i] < 0) {
+        std::cerr << "Unassigned visibility at point ID: " << i << std::endl;
+        ++unassignedCount;
+      }
+    }
+    if (unassignedCount > 0) {
+      std::cerr << "[Error] Total unassigned points: " << unassignedCount
+                << std::endl;
     }
 
     auto &pointData = levelSet->getPointData();
