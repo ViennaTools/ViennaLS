@@ -23,6 +23,7 @@ public:
         visibilitiesLabel(std::move(label)) {}
 
   void apply() {
+    std::cout << "NEW ONE!" << std::endl;
 
     auto &domain = levelSet->getDomain();
     auto &grid = levelSet->getGrid();
@@ -53,10 +54,7 @@ public:
     //****************************
 
     // Invert the vector
-    auto dir = Normalize(Inv(direction)) *
-               static_cast<T>(domain.getGrid().getGridDelta());
-    auto dirMagnitude = std::sqrt(DotProduct(dir, dir));
-
+    auto dir = Normalize(Inv(direction));
     std::vector<T> visibilities(domain.getNumberOfPoints(), static_cast<T>(-1));
 
 #pragma omp parallel num_threads(levelSet->getNumberOfSegments())
@@ -89,6 +87,11 @@ public:
         // Start tracing the ray
         T minLevelSetValue = it.getValue(); // Starting level set value
         Vec3D<T> rayPos = currentPos;
+
+        // Step once to skip immediate neighbor
+        for (int i = 0; i < D; ++i)
+          rayPos[i] += dir[i];
+
         bool visibility = true;
 
         while (true) {
@@ -120,7 +123,7 @@ public:
                   .getValue();
 
           // Update the minimum value encountered
-          if (value < minLevelSetValue - 0.5 * dirMagnitude) {
+          if (value < minLevelSetValue) {
             visibility = false;
             break;
           }
