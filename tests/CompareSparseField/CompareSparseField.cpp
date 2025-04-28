@@ -95,7 +95,7 @@ int main() {
   auto meshWithPointData =
       ls::SmartPointer<ls::Mesh<>>::New(); // Mesh with point data
   ls::ToMesh<double, D>(sphere2, meshWithPointData).apply();
-  ls::VTKWriter<double>(meshWithPointData, "sphere2_with_point_data.vtp")
+  ls::VTKWriter<double>(meshWithPointData, "sphere2_LS_with_point_data.vtp")
       .apply();
 
   // Save mesh to file
@@ -141,14 +141,14 @@ int main() {
   std::cout << "Number of points in X range: "
             << compareSparseField.getNumPoints() << std::endl;
 
-  // Test with restricted Y range
-  compareSparseField.clearXRange();
-  compareSparseField.setYRange(-5, 5);
-  compareSparseField.apply();
-  std::cout << "RMSE with Y range [-5, 5]: " << compareSparseField.getRMSE()
-            << std::endl;
-  std::cout << "Number of points in Y range: "
-            << compareSparseField.getNumPoints() << std::endl;
+  // // Test with restricted Y range
+  // compareSparseField.clearXRange();
+  // compareSparseField.setYRange(-5, 5);
+  // compareSparseField.apply();
+  // std::cout << "RMSE with Y range [-5, 5]: " << compareSparseField.getRMSE()
+  //           << std::endl;
+  // std::cout << "Number of points in Y range: "
+  //           << compareSparseField.getNumPoints() << std::endl;
 
   // Test with both X and Y range restrictions
   compareSparseField.setXRange(-3, 3);
