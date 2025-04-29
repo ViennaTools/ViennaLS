@@ -68,7 +68,7 @@ int main() {
   {
     auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
     ls::ToMesh<double, D>(sphere1, mesh).apply();
-    ls::VTKWriter<double>(mesh, "sphere1_expanded_target.vtp").apply();
+    ls::VTKWriter<double>(mesh, "sphere1_expanded.vtp").apply();
     auto meshSurface = ls::SmartPointer<ls::Mesh<>>::New();
     ls::ToSurfaceMesh<double, D>(sphere1, meshSurface).apply();
     ls::VTKWriter<double>(meshSurface, "sphere1_surface.vtp").apply();
@@ -77,7 +77,7 @@ int main() {
   {
     auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
     ls::ToMesh<double, D>(sphere2, mesh).apply();
-    ls::VTKWriter<double>(mesh, "sphere2_sparse_sample.vtp").apply();
+    ls::VTKWriter<double>(mesh, "sphere2_sparse_iterated.vtp").apply();
     auto meshSurface = ls::SmartPointer<ls::Mesh<>>::New();
     ls::ToSurfaceMesh<double, D>(sphere2, meshSurface).apply();
     ls::VTKWriter<double>(meshSurface, "sphere2_surface.vtp").apply();
@@ -88,7 +88,7 @@ int main() {
 
   // Create mesh for visualization of differences
   auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
-  compareSparseField.setFillSampleWithDistances(true);
+  compareSparseField.setFillIteratedWithDistances(true);
   compareSparseField.setOutputMesh(mesh);
   compareSparseField.apply();
 
@@ -103,8 +103,12 @@ int main() {
 
   // Get the calculated difference metrics
   double sumSquaredDifferences = compareSparseField.getSumSquaredDifferences();
-  unsigned numPoints = compareSparseField.getNumPoints();
   double rmse = compareSparseField.getRMSE();
+
+  // Check number of points
+  unsigned numPoints = compareSparseField.getNumPoints();
+  unsigned numSkippedPoints =
+      compareSparseField.getNumSkippedPoints(); // Number of skipped points
 
   std::cout << "Sphere 1 center: (" << origin1[0] << ", " << origin1[1] << ")"
             << std::endl;
@@ -114,18 +118,19 @@ int main() {
             << std::endl;
   std::cout << "Number of points compared: " << numPoints << std::endl;
   std::cout << "RMSE: " << rmse << std::endl;
+  std::cout << "Number of skipped points: " << numSkippedPoints << std::endl;
 
   // Compare to regular narrow band comparison for validation
   std::cout << "\nComparing with regular narrow band comparison:" << std::endl;
 
-  // Use the original sphere objects directly instead of copying them
-  ls::CompareNarrowBand<double, D> compareNarrowBand(sphere1, sphere2);
-  compareNarrowBand.apply();
+  // // Use the original sphere objects directly instead of copying them
+  // ls::CompareNarrowBand<double, D> compareNarrowBand(sphere1, sphere2);
+  // compareNarrowBand.apply();
 
-  std::cout << "Regular narrow band RMSE: " << compareNarrowBand.getRMSE()
-            << std::endl;
-  std::cout << "Regular narrow band points: "
-            << compareNarrowBand.getNumPoints() << std::endl;
+  // std::cout << "Regular narrow band RMSE: " << compareNarrowBand.getRMSE()
+  //           << std::endl;
+  // std::cout << "Regular narrow band points: "
+  //           << compareNarrowBand.getNumPoints() << std::endl;
 
   // Test with range restrictions
   std::cout << "\nTesting with restricted ranges:" << std::endl;
@@ -164,33 +169,34 @@ int main() {
   compareSparseField.apply();
   ls::VTKWriter<double>(mesh, "sparsefield_restricted.vtp").apply();
 
-  // Clear range restrictions
-  compareSparseField.clearXRange();
-  compareSparseField.clearYRange();
-  compareNarrowBand.clearXRange();
-  compareNarrowBand.clearYRange();
+  // // Clear range restrictions
+  // compareSparseField.clearXRange();
+  // compareSparseField.clearYRange();
+  // compareNarrowBand.clearXRange();
+  // compareNarrowBand.clearYRange();
 
-  // Performance test: Compare time against regular narrow band comparison
-  auto t1 = std::chrono::high_resolution_clock::now();
+  // // Performance test: Compare time against regular narrow band comparison
+  // auto t1 = std::chrono::high_resolution_clock::now();
 
-  compareSparseField.apply();
+  // compareSparseField.apply();
 
-  auto t2 = std::chrono::high_resolution_clock::now();
+  // auto t2 = std::chrono::high_resolution_clock::now();
 
-  compareNarrowBand.apply();
+  // compareNarrowBand.apply();
 
-  auto t3 = std::chrono::high_resolution_clock::now();
+  // auto t3 = std::chrono::high_resolution_clock::now();
 
-  std::chrono::duration<double, std::milli> sparse_ms = t2 - t1;
-  std::chrono::duration<double, std::milli> narrowband_ms = t3 - t2;
+  // std::chrono::duration<double, std::milli> sparse_ms = t2 - t1;
+  // std::chrono::duration<double, std::milli> narrowband_ms = t3 - t2;
 
-  std::cout << "\nPerformance comparison:" << std::endl;
-  std::cout << "Sparse Field execution time: " << sparse_ms.count() << " ms"
-            << std::endl;
-  std::cout << "Narrow Band execution time: " << narrowband_ms.count() << "ms "
-            << std::endl;
-  std::cout << "Performance ratio: "
-            << narrowband_ms.count() / sparse_ms.count() << "x" << std::endl;
+  // std::cout << "\nPerformance comparison:" << std::endl;
+  // std::cout << "Sparse Field execution time: " << sparse_ms.count() << " ms"
+  //           << std::endl;
+  // std::cout << "Narrow Band execution time: " << narrowband_ms.count() << "ms
+  // "
+  //           << std::endl;
+  // std::cout << "Performance ratio: "
+  //           << narrowband_ms.count() / sparse_ms.count() << "x" << std::endl;
 
   return 0;
 }
