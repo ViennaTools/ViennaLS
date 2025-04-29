@@ -450,10 +450,12 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
           &SmartPointer<CompareSparseField<T, D>>::New<
               SmartPointer<Domain<T, D>> &, SmartPointer<Domain<T, D>> &>))
       // methods
-      .def("setLevelSetTarget", &CompareSparseField<T, D>::setLevelSetTarget,
-           "Sets the target level set.")
-      .def("setLevelSetSample", &CompareSparseField<T, D>::setLevelSetSample,
-           "Sets the sample level set.")
+      .def("setLevelSetExpanded",
+           &CompareSparseField<T, D>::setLevelSetExpanded,
+           "Sets the expanded level set for comparison.")
+      .def("setLevelSetIterated",
+           &CompareSparseField<T, D>::setLevelSetIterated,
+           "Sets the iterated level set to compare against the expanded one.")
       .def("setXRange", &CompareSparseField<T, D>::setXRange,
            "Set the x-coordinate range to restrict the comparison area")
       .def("setYRange", &CompareSparseField<T, D>::setYRange,
@@ -464,6 +466,9 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Clear the y-range restriction")
       .def("setOutputMesh", &CompareSparseField<T, D>::setOutputMesh,
            "Set the output mesh where difference values will be stored")
+      .def("setFillIteratedWithDistances",
+           &CompareSparseField<T, D>::setFillIteratedWithDistances,
+           "Set whether to fill the iterated level set with distance values")
       .def("apply", &CompareSparseField<T, D>::apply,
            "Apply the comparison and calculate the sum of squared differences.")
       .def("getSumSquaredDifferences",
@@ -473,6 +478,9 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Return the sum of absolute differences calculated by apply().")
       .def("getNumPoints", &CompareSparseField<T, D>::getNumPoints,
            "Return the number of points used in the comparison.")
+      .def("getNumSkippedPoints",
+           &CompareSparseField<T, D>::getNumSkippedPoints,
+           "Return the number of points skipped during comparison.")
       .def("getRMSE", &CompareSparseField<T, D>::getRMSE,
            "Calculate the root mean square error from previously computed "
            "values.");
