@@ -16,15 +16,26 @@ using namespace viennacore;
 
 /// Calculate distance measure between two level sets by comparing their SDF
 /// values on a sparse field. This class iterates over the points in the sparse
-/// field of the sample level set and calculates differences with the target
-/// level set. The target level set needs to be expanded whereas the sample
-/// level set reduced to a sparse field if necessary. The code is currently
-/// intended for 2D level sets only.
+/// field of the iterated level set and calculates differences with the
+/// corresponding values of the expanded level set.
+///
+/// The expanded level set is expected to be expanded in such a way that the
+/// sparse field of the iterated level set always overlaps with defined values
+/// in the expanded level set. If a level set with a width < 50 is passed as the
+/// expaned one, the function will automatically expand it to a width of 50, a
+/// value which might be sufficient for many purposes. However, making sure that
+/// the level set is sufficiently expanded is the responsibility of the user.
+///
+/// The iterated level set is expected to be sparse. The reduction is performed
+/// automatically if this is not the case.
+///
+/// The code is currently intended for 2D level sets only.
+
 template <class T, int D = 2> class CompareSparseField {
   using hrleIndexType = viennahrle::IndexType;
 
-  SmartPointer<Domain<T, D>> levelSetTarget = nullptr;
-  SmartPointer<Domain<T, D>> levelSetSample = nullptr;
+  SmartPointer<Domain<T, D>> levelSetExpanded = nullptr;
+  SmartPointer<Domain<T, D>> levelSetIterated = nullptr;
 
   // Variables for x and y range restrictions
   T xRangeMin = std::numeric_limits<T>::lowest();
@@ -38,12 +49,16 @@ template <class T, int D = 2> class CompareSparseField {
   T sumSquaredDifferences = 0.0;
   T sumDifferences = 0.0;
   unsigned numPoints = 0;
+  unsigned numSkippedPoints = 0;
 
   // Add mesh output capability
   SmartPointer<Mesh<T>> outputMesh = nullptr;
 
+  // Add bool for filling the iterated level set with distances
+  bool fillIteratedWithDistances = false;
+
   bool checkAndCalculateBounds() {
-    if (levelSetTarget == nullptr || levelSetSample == nullptr) {
+    if (levelSetExpanded == nullptr || levelSetIterated == nullptr) {
       Logger::getInstance()
           .addWarning("Missing level set in CompareSparseField.")
           .print();
@@ -51,10 +66,10 @@ template <class T, int D = 2> class CompareSparseField {
     }
 
     // Check if the grids are compatible
-    const auto &gridTarget = levelSetTarget->getGrid();
-    const auto &gridSample = levelSetSample->getGrid();
+    const auto &gridExpanded = levelSetExpanded->getGrid();
+    const auto &gridIterated = levelSetIterated->getGrid();
 
-    if (gridTarget.getGridDelta() != gridSample.getGridDelta()) {
+    if (gridExpanded.getGridDelta() != gridIterated.getGridDelta()) {
       Logger::getInstance()
           .addWarning("Grid delta mismatch in CompareSparseField. The grid "
                       "deltas of the two level sets must be equal.")
@@ -63,23 +78,23 @@ template <class T, int D = 2> class CompareSparseField {
     }
 
     // // Check if the x extents of both level sets are equal
-    // const auto &domainTarget = levelSetTarget->getDomain();
-    // const auto &domainSample = levelSetSample->getDomain();
+    // const auto &domainExpanded = levelSetExpanded->getDomain();
+    // const auto &domainIterated = levelSetIterated->getDomain();
 
-    // hrleIndexType targetMinX = gridTarget.isNegBoundaryInfinite(0)
-    //                                ? domainTarget.getMinRunBreak(0)
-    //                                : gridTarget.getMinIndex(0);
-    // hrleIndexType targetMaxX = gridTarget.isPosBoundaryInfinite(0)
-    //                                ? domainTarget.getMaxRunBreak(0)
-    //                                : gridTarget.getMaxIndex(0);
-    // hrleIndexType sampleMinX = gridSample.isNegBoundaryInfinite(0)
-    //                                ? domainSample.getMinRunBreak(0)
-    //                                : gridSample.getMinIndex(0);
-    // hrleIndexType sampleMaxX = gridSample.isPosBoundaryInfinite(0)
-    //                                ? domainSample.getMaxRunBreak(0)
-    //                                : gridSample.getMaxIndex(0);
+    // hrleIndexType expandedMinX = gridExpanded.isNegBoundaryInfinite(0)
+    //                                ? domainExpanded.getMinRunBreak(0)
+    //                                : gridExpanded.getMinIndex(0);
+    // hrleIndexType expandedMaxX = gridExpanded.isPosBoundaryInfinite(0)
+    //                                ? domainExpanded.getMaxRunBreak(0)
+    //                                : gridExpanded.getMaxIndex(0);
+    // hrleIndexType iteratedMinX = gridIterated.isNegBoundaryInfinite(0)
+    //                                ? domainIterated.getMinRunBreak(0)
+    //                                : gridIterated.getMinIndex(0);
+    // hrleIndexType iteratedMaxX = gridIterated.isPosBoundaryInfinite(0)
+    //                                ? domainIterated.getMaxRunBreak(0)
+    //                                : gridIterated.getMaxIndex(0);
 
-    // if (targetMinX != sampleMinX || targetMaxX != sampleMaxX) {
+    // if (expandedMinX != iteratedMinX || expandedMaxX != iteratedMaxX) {
     //   Logger::getInstance()
     //       .addWarning("X extent mismatch in CompareSparseField. The x extents
     //       "
@@ -88,30 +103,31 @@ template <class T, int D = 2> class CompareSparseField {
     //   return false;
     // }
 
-    // Check if target level set width is sufficient
-    if (levelSetTarget->getLevelSetWidth() < 50) {
+    // Check if expanded level set width is sufficient
+    if (levelSetExpanded->getLevelSetWidth() < 50) {
       Logger::getInstance()
           .addWarning(
-              "Target level set width is insufficient. It must have a width of "
+              "Expanded level set width is insufficient. It must have a width "
+              "of "
               "at least 50. \n"
               " CORRECTION: The expansion was performed. \n"
-              "ALTERNATIVE: Alternatively, please expand the target yourself "
+              "ALTERNATIVE: Alternatively, please expand the expanded yourself "
               "using lsExpand before passing it to this function. \n")
           .print();
-      Expand<T, D>(levelSetTarget, 50).apply();
+      Expand<T, D>(levelSetExpanded, 50).apply();
     }
 
-    // Reduce the sample level set to a sparse field if necessary
-    if (levelSetSample->getLevelSetWidth() > 1) {
+    // Reduce the iterated level set to a sparse field if necessary
+    if (levelSetIterated->getLevelSetWidth() > 1) {
       Logger::getInstance()
           .addWarning(
-              "Sample level set width is too large. It must be reduced to a "
+              "Iterated level set width is too large. It must be reduced to a "
               "sparse field. \n"
               " CORRECTION: The reduction was performed. \n"
-              "ALTERNATIVE: Alternatively, please reduce the sample yourself "
+              "ALTERNATIVE: Alternatively, please reduce the iterated yourself "
               "using lsReduce before passing it to this function. \n")
           .print();
-      Reduce<T, D>(levelSetSample, 1).apply();
+      Reduce<T, D>(levelSetIterated, 1).apply();
     }
 
     return true;
@@ -124,21 +140,21 @@ public:
         "CompareSparseField is currently only implemented for 2D level sets.");
   }
 
-  CompareSparseField(SmartPointer<Domain<T, D>> passedLevelSetTarget,
-                     SmartPointer<Domain<T, D>> passedLevelSetSample)
-      : levelSetTarget(passedLevelSetTarget),
-        levelSetSample(passedLevelSetSample) {
+  CompareSparseField(SmartPointer<Domain<T, D>> passedLevelSetExpanded,
+                     SmartPointer<Domain<T, D>> passedLevelSetIterated)
+      : levelSetExpanded(passedLevelSetExpanded),
+        levelSetIterated(passedLevelSetIterated) {
     static_assert(
         D == 2 &&
         "CompareSparseField is currently only implemented for 2D level sets.");
   }
 
-  void setLevelSetTarget(SmartPointer<Domain<T, D>> passedLevelSet) {
-    levelSetTarget = passedLevelSet;
+  void setLevelSetExpanded(SmartPointer<Domain<T, D>> passedLevelSet) {
+    levelSetExpanded = passedLevelSet;
   }
 
-  void setLevelSetSample(SmartPointer<Domain<T, D>> passedLevelSet) {
-    levelSetSample = passedLevelSet;
+  void setLevelSetIterated(SmartPointer<Domain<T, D>> passedLevelSet) {
+    levelSetIterated = passedLevelSet;
   }
 
   /// Set the x-coordinate range to restrict the comparison area
@@ -174,6 +190,11 @@ public:
     outputMesh = passedMesh;
   }
 
+  /// Set whether to fill the iterated level set with distances
+  void setFillIteratedWithDistances(bool fill) {
+    fillIteratedWithDistances = fill;
+  }
+
   /// Apply the comparison and calculate the sum of squared differences.
   void apply() {
     // Perform compatibility checks
@@ -182,15 +203,17 @@ public:
       sumSquaredDifferences = std::numeric_limits<T>::quiet_NaN();
       sumDifferences = std::numeric_limits<T>::quiet_NaN();
       numPoints = 0;
+      numSkippedPoints = 0;
       return;
     }
 
-    const auto &gridTarget = levelSetTarget->getGrid();
-    const auto gridDelta = gridTarget.getGridDelta();
+    const auto &gridExpanded = levelSetExpanded->getGrid();
+    const auto gridDelta = gridExpanded.getGridDelta();
 
     sumSquaredDifferences = 0.0;
     sumDifferences = 0.0;
     numPoints = 0;
+    numSkippedPoints = 0;
 
     // Direct storage for points and differences
     std::vector<Vec3D<T>> nodeCoordinates; // 3D necessary for lsMesh
@@ -210,28 +233,35 @@ public:
       }
 
       // Reserve space for mesh data
-      nodeCoordinates.reserve(levelSetSample->getNumberOfPoints());
-      vertexIndices.reserve(levelSetSample->getNumberOfPoints());
-      differenceValues.reserve(levelSetSample->getNumberOfPoints());
-      squaredDifferenceValues.reserve(levelSetSample->getNumberOfPoints());
+      nodeCoordinates.reserve(levelSetIterated->getNumberOfPoints());
+      vertexIndices.reserve(levelSetIterated->getNumberOfPoints());
+      differenceValues.reserve(levelSetIterated->getNumberOfPoints());
+      squaredDifferenceValues.reserve(levelSetIterated->getNumberOfPoints());
+    }
+
+    // Prepare for point data filling if needed
+    auto &iteratedPointData = levelSetIterated->getPointData();
+    std::vector<T> pointDataDistances;
+    if (fillIteratedWithDistances) {
+      pointDataDistances.reserve(levelSetIterated->getNumberOfPoints());
     }
 
     // Create sparse iterators for the level sets
-    viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType> itSample(
-        levelSetSample->getDomain());
-    viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType> itTarget(
-        levelSetTarget->getDomain());
+    viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>
+        itIterated(levelSetIterated->getDomain());
+    viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>
+        itExpanded(levelSetExpanded->getDomain());
 
-    // Iterate over all defined points in the sample level set
-    while (!itSample.isFinished()) {
-      if (!itSample.isDefined()) {
+    // Iterate over all defined points in the iterated level set
+    while (!itIterated.isFinished()) {
+      if (!itIterated.isDefined()) {
         // this block is necessary to skip undefined points, I tested it:
         // std::cout << "Skipping undefined point" << std::endl;
-        itSample.next();
+        itIterated.next();
         continue;
       }
 
-      auto indices = itSample.getStartIndices();
+      auto indices = itIterated.getStartIndices();
 
       // Calculate coordinates
       T xCoord = indices[0] * gridDelta;
@@ -240,31 +270,33 @@ public:
 
       // Skip if outside the specified x-range
       if (useXRange && (xCoord < xRangeMin || xCoord > xRangeMax)) {
-        itSample.next();
+        itIterated.next();
         continue;
       }
 
       // Skip if outside the specified y-range
       if (useYRange && (yCoord < yRangeMin || yCoord > yRangeMax)) {
-        itSample.next();
+        itIterated.next();
         continue;
       }
 
-      // Get sample value
-      T valueSample = itSample.getValue();
+      // Get iterated value
+      T valueIterated = itIterated.getValue();
 
-      itTarget.goToIndicesSequential(indices);
-      T valueTarget = itTarget.getValue();
+      itExpanded.goToIndicesSequential(indices);
+      T valueExpanded = itExpanded.getValue();
 
-      // Check for infinite or extreme values that might cause numerical issues
-      if (!itTarget.isDefined() || std::isinf(valueTarget) ||
-          std::isinf(valueSample)) {
-        itSample.next();
+      // Check for infinite or extreme values that might cause numerical
+      // issues
+      if (!itExpanded.isDefined() || std::isinf(valueExpanded) ||
+          std::isinf(valueIterated)) {
+        numSkippedPoints++;
+        itIterated.next();
         continue;
       }
 
       // Calculate difference and add to sum
-      T diff = std::abs(valueTarget - valueSample) * gridDelta;
+      T diff = std::abs(valueExpanded - valueIterated) * gridDelta;
       T diffSquared = diff * diff;
       sumDifferences += diff;
       sumSquaredDifferences += diffSquared;
@@ -272,7 +304,8 @@ public:
 
       // Store difference in mesh if required
       if (generateMesh) {
-        // Create a new point with the coordinates of the sample level set point
+        // Create a new point with the coordinates of the iterated level set
+        // point
         Vec3D<T> coords{xCoord, yCoord, zCoord}; // lsMesh needs 3D
 
         // Store the coordinates
@@ -296,8 +329,12 @@ public:
         }
       }
 
+      if (fillIteratedWithDistances) {
+        // Store the distance value in the point data
+        pointDataDistances.push_back(diff);
+      }
       // Move to next point
-      itSample.next();
+      itIterated.next();
     }
 
     // Finalize mesh output
@@ -314,6 +351,11 @@ public:
       outputMesh->pointData.insertNextScalarData(
           std::move(squaredDifferenceValues), "Squared differences");
     }
+
+    if (fillIteratedWithDistances) {
+      iteratedPointData.insertNextScalarData(std::move(pointDataDistances),
+                                             "DistanceToExpanded");
+    }
   }
 
   /// Return the sum of squared differences calculated by apply().
@@ -324,6 +366,9 @@ public:
 
   /// Return the number of points used in the comparison.
   unsigned getNumPoints() const { return numPoints; }
+
+  /// Return the number of skipped points during the comparison.
+  unsigned getNumSkippedPoints() const { return numSkippedPoints; }
 
   /// Calculate the root mean square error from previously computed values.
   T getRMSE() const {
