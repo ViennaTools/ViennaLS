@@ -54,7 +54,9 @@ private:
   }
 
 public:
-  static auto New() { return SmartPointer<PointData>::New(); }
+  template <class... Args> static auto New(Args &&...args) {
+    return SmartPointer<PointData>::New(std::forward<Args>(args)...);
+  }
 
   /// insert new scalar data array
   void insertNextScalarData(const ScalarDataType &scalars,
