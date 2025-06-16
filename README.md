@@ -86,14 +86,14 @@ The CMake configuration automatically checks if the dependencies are installed. 
 ## Building the Python package
 
 > [!NOTE]  
-> On systems that feature a package manager (e.g. Ubuntu/Debian `apt`), the dependencies can be installed beforehand (e.g. using ```sudo apt install libvtk9.1 libvtk9-dev pybind11-dev```), which saves a considerable amount of time during compilation.
+> On systems that feature a package manager (e.g. Ubuntu/Debian `apt`), the dependencies can be installed beforehand (e.g. using ```sudo apt install libvtk9-dev```), which saves a considerable amount of time during compilation.
 
 The Python package can be built and installed using the `pip` command:
 
 ```bash
 git clone https://github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
-pip install --user .
+pip install .
 ```
 
 ## Using the Python package
@@ -138,7 +138,7 @@ We recommend using [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) to consum
 
 * Installation with CPM
   ```cmake
-  CPMAddPackage("gh:viennatools/viennals@4.3.1")
+  CPMAddPackage("gh:viennatools/viennals@4.3.2")
   ```
 
 * With a local installation
@@ -179,7 +179,7 @@ cmake --build build --target format
 
 ## Authors
 
-Current contributors: Tobias Reiter, Noah Karnel
+Current contributors: Tobias Reiter, Roman Kostal, Lado Filipovic
 
 Founder and initial developer: Otmar Ertl
 
