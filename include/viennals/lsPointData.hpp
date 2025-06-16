@@ -53,6 +53,8 @@ private:
   }
 
 public:
+  static auto New() { return SmartPointer<PointData>::New(); }
+
   /// insert new scalar data array
   void insertNextScalarData(const ScalarDataType &scalars,
                             const std::string &label = "Scalars") {
