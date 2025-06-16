@@ -9,6 +9,7 @@
 #include <lsConcepts.hpp>
 
 #include <vcLogger.hpp>
+#include <vcSmartPointer.hpp>
 
 namespace viennals {
 

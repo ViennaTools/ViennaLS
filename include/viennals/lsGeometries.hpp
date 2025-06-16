@@ -5,6 +5,7 @@
 
 #include <lsPreCompileMacros.hpp>
 
+#include <vcSmartPointer.hpp>
 #include <vcVectorType.hpp>
 
 namespace viennals {
