@@ -58,6 +58,9 @@ private:
   };
 
 public:
+  // Convenience function to create a new mesh smart pointer.
+  static auto New() { return SmartPointer<Mesh>::New(); }
+
   const std::vector<Vec3D<T>> &getNodes() const { return nodes; }
 
   std::vector<Vec3D<T>> &getNodes() { return nodes; }

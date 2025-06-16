@@ -60,7 +60,7 @@ int main() {
   // ls::IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER};
 
   for (auto integrationScheme : integrationSchemes) {
-    auto sphere1 = ls::SmartPointer<ls::Domain<double, D>>::New(gridDelta);
+    auto sphere1 = ls::Domain<double, D>::New(gridDelta);
 
     double origin[3] = {5., 0., 0.};
     double radius = 7.3;
