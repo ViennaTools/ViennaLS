@@ -7,6 +7,7 @@
 
 #include <hrleSparseCellIterator.hpp>
 #include <lsDomain.hpp>
+#include <lsExpand.hpp>
 #include <lsMarchingCubes.hpp>
 #include <lsMesh.hpp>
 
@@ -68,8 +69,10 @@ public:
     // defined grid points
     if (levelSet->getLevelSetWidth() < 2) {
       Logger::getInstance()
-          .addWarning("Levelset is less than 2 layers wide. Export might fail!")
+          .addWarning("Levelset is less than 2 layers wide. Expanding levelset "
+                      "to 2 layers.")
           .print();
+      Expand<T, D>(levelSet, 2).apply();
     }
 
     typedef std::map<viennahrle::Index<D>, unsigned> nodeContainerType;
