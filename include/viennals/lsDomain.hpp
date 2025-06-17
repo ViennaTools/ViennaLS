@@ -107,6 +107,11 @@ public:
 
   Domain(SmartPointer<Domain> passedDomain) { deepCopy(passedDomain); }
 
+  // Convenience function to create a new domain.
+  template <class... Args> static auto New(Args &&...args) {
+    return SmartPointer<Domain>::New(std::forward<Args>(args)...);
+  }
+
   /// this function sets a new levelset width and finalizes the levelset, so it
   /// is ready for use by other algorithms
   void finalize(int newWidth) { levelSetWidth = newWidth; }

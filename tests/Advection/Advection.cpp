@@ -60,13 +60,13 @@ int main() {
   // ls::IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER};
 
   for (auto integrationScheme : integrationSchemes) {
-    auto sphere1 = ls::SmartPointer<ls::Domain<double, D>>::New(gridDelta);
+    auto sphere1 = ls::Domain<double, D>::New(gridDelta);
 
     double origin[3] = {5., 0., 0.};
     double radius = 7.3;
 
-    ls::MakeGeometry<double, D>(
-        sphere1, ls::SmartPointer<ls::Sphere<double, D>>::New(origin, radius))
+    ls::MakeGeometry<double, D>(sphere1,
+                                ls::Sphere<double, D>::New(origin, radius))
         .apply();
 
     // {
@@ -101,7 +101,7 @@ int main() {
       time += advectionKernel.getAdvectedTime();
 
       std::string fileName = std::to_string(i) + ".vtp";
-      auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+      auto mesh = ls::Mesh<>::New();
       ls::ToMesh<double, D>(sphere1, mesh).apply();
       ls::VTKWriter<double>(mesh, "points_" + fileName).apply();
       ls::ToSurfaceMesh<double, D>(sphere1, mesh).apply();

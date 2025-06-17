@@ -26,28 +26,27 @@ int main() {
   double gridDelta = 0.5;
 
   double bounds[2 * D] = {-extent, extent, -extent, extent};
-  ls::Domain<double, D>::BoundaryType boundaryCons[D];
+  typename ls::BoundaryConditionEnum boundaryCons[D];
   for (unsigned i = 0; i < D; ++i)
-    boundaryCons[i] = ls::Domain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+    boundaryCons[i] = ls::BoundaryConditionEnum::REFLECTIVE_BOUNDARY;
 
-  auto sphere1 = ls::SmartPointer<ls::Domain<double, D>>::New(
-      bounds, boundaryCons, gridDelta);
+  auto sphere1 = ls::Domain<double, D>::New(bounds, boundaryCons, gridDelta);
 
   double origin[D] = {5., 0.};
   double radius = 7.3;
 
-  ls::MakeGeometry<double, D>(
-      sphere1, ls::SmartPointer<ls::Sphere<double, D>>::New(origin, radius))
+  ls::MakeGeometry<double, D>(sphere1,
+                              ls::Sphere<double, D>::New(origin, radius))
       .apply();
 
   {
-    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    auto mesh = ls::Mesh<>::New();
     ls::ToMesh<double, D>(sphere1, mesh).apply();
     ls::VTKWriter<double>(mesh, "sphere.vtk").apply();
   }
 
   {
-    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    auto mesh = ls::Mesh<>::New();
     ls::Expand<double, D>(sphere1, 5).apply();
     ls::ToMesh<double, D>(sphere1, mesh).apply();
     ls::VTKWriter<double>(mesh, "sphereExpanded.vtk").apply();

@@ -9,6 +9,7 @@
 #include <lsConcepts.hpp>
 
 #include <vcLogger.hpp>
+#include <vcSmartPointer.hpp>
 
 namespace viennals {
 
@@ -53,6 +54,10 @@ private:
   }
 
 public:
+  template <class... Args> static auto New(Args &&...args) {
+    return SmartPointer<PointData>::New(std::forward<Args>(args)...);
+  }
+
   /// insert new scalar data array
   void insertNextScalarData(const ScalarDataType &scalars,
                             const std::string &label = "Scalars") {

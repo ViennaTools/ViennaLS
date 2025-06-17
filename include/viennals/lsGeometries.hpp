@@ -5,6 +5,7 @@
 
 #include <lsPreCompileMacros.hpp>
 
+#include <vcSmartPointer.hpp>
 #include <vcVectorType.hpp>
 
 namespace viennals {
@@ -31,6 +32,10 @@ public:
       origin[i] = passedOrigin[i];
     }
   }
+
+  template <class... Args> static auto New(Args &&...args) {
+    return SmartPointer<Sphere>::New(std::forward<Args>(args)...);
+  }
 };
 
 /// Class describing a plane via a point in it and the plane normal.
@@ -56,6 +61,10 @@ public:
       normal[i] = passedNormal[i];
     }
   }
+
+  template <class... Args> static auto New(Args &&...args) {
+    return SmartPointer<Plane>::New(std::forward<Args>(args)...);
+  }
 };
 
 /// Class describing a square box from one coordinate to another.
@@ -80,6 +89,10 @@ public:
       minCorner[i] = passedMinCorner[i];
       maxCorner[i] = passedMaxCorner[i];
     }
+  }
+
+  template <class... Args> static auto New(Args &&...args) {
+    return SmartPointer<Box>::New(std::forward<Args>(args)...);
   }
 };
 
@@ -120,6 +133,10 @@ public:
       origin[i] = passedOrigin[i];
       axisDirection[i] = passedAxisDirection[i];
     }
+  }
+
+  template <class... Args> static auto New(Args &&...args) {
+    return SmartPointer<Cylinder>::New(std::forward<Args>(args)...);
   }
 };
 
@@ -168,6 +185,10 @@ public:
   std::size_t size() { return points.size(); }
 
   VectorType<T, D> &operator[](std::size_t i) { return points[i]; }
+
+  template <class... Args> static auto New(Args &&...args) {
+    return SmartPointer<PointCloud>::New(std::forward<Args>(args)...);
+  }
 };
 
 // add all template specialisations for this class

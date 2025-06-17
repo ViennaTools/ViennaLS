@@ -16,16 +16,13 @@ auto makeLSDomain() {
     bounds[5] = extent;
   }
 
-  typename ls::Domain<NumericType, D>::BoundaryType boundaryCons[D];
+  typename ls::BoundaryConditionEnum boundaryCons[D];
   for (unsigned i = 0; i < D - 1; ++i) {
-    boundaryCons[i] =
-        ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+    boundaryCons[i] = ls::BoundaryConditionEnum::REFLECTIVE_BOUNDARY;
   }
-  boundaryCons[D - 1] =
-      ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
+  boundaryCons[D - 1] = ls::BoundaryConditionEnum::INFINITE_BOUNDARY;
 
-  return ls::SmartPointer<ls::Domain<double, 3>>::New(bounds, boundaryCons,
-                                                      gridDelta);
+  return ls::Domain<double, 3>::New(bounds, boundaryCons, gridDelta);
 }
 
 unsigned long

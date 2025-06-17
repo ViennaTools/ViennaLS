@@ -413,7 +413,7 @@ private:
     }
 
     // now add all corners to mesh
-    auto mesh = SmartPointer<Mesh<T>>::New();
+    auto mesh = Mesh<T>::New();
     for (unsigned i = 0; i < corners.size(); ++i) {
       mesh->insertNextNode(corners[i]);
     }
