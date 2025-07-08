@@ -40,6 +40,7 @@ class StencilLocalLaxFriedrichsScalar {
   // D==2 last entries are 0.
   Vec3D<T> finalAlphas;
   static constexpr unsigned numStencilPoints = hrleUtil::pow(2 * order + 1, D);
+  static double maxDissipation; // default: std::numeric_limits<double>::max();
 
   static T pow2(const T &value) { return value * value; }
 
@@ -128,6 +129,8 @@ public:
       finalAlphas[i] = 0;
     }
   }
+
+  static void setMaxDissipation(double maxDiss) { maxDissipation = maxDiss; }
 
   std::pair<T, T> operator()(const viennahrle::Index<D> &indices,
                              int material) {
@@ -271,6 +274,10 @@ public:
           T osher = localScalarVelocity * normal[k];
           // Total derivative is sum of terms given above
           alpha[k] = std::fabs(monti + toifl + osher);
+
+          if (alpha[k] > maxDissipation) {
+            alpha[k] = 0.;
+          }
         }
 
         alphas.push_back(alpha);
@@ -318,6 +325,13 @@ public:
     MaxTimeStep = std::min(timeStep, MaxTimeStep);
   }
 };
+
+template <class T, int D, int order,
+          DifferentiationSchemeEnum finiteDifferenceScheme>
+double StencilLocalLaxFriedrichsScalar<T, D, order,
+                                       finiteDifferenceScheme>::maxDissipation =
+    std::numeric_limits<double>::max();
+
 } // namespace lsInternal
 
 namespace viennals {
