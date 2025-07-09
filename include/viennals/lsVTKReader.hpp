@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <string>
+#include <unordered_map>
 
 #include <lsFileFormats.hpp>
 #include <lsMesh.hpp>
@@ -30,9 +31,27 @@ template <class T = double> class VTKReader {
   SmartPointer<Mesh<T>> mesh = nullptr;
   FileFormatEnum fileFormat = FileFormatEnum::VTK_AUTO;
   std::string fileName;
+  std::unordered_map<std::string, T> metaData;
 
   unsigned vtk_nodes_for_cell_type[15] = {0, 1, 0, 2, 0, 3, 0, 0,
                                           4, 4, 4, 8, 8, 6, 5};
+
+  // accepts either vtkPolyData or vtkUnstructuredGrid
+  void extractFieldData(vtkDataSet *data) {
+    vtkFieldData *fieldData = data->GetFieldData();
+    if (!fieldData)
+      return;
+
+    for (int i = 0; i < fieldData->GetNumberOfArrays(); ++i) {
+      vtkDataArray *arr = fieldData->GetArray(i);
+      if (!arr || arr->GetNumberOfTuples() == 0)
+        continue;
+
+      std::string name = arr->GetName() ? arr->GetName() : "unnamed";
+      double value = arr->GetTuple1(0); // assumes scalar
+      metaData[name] = value;
+    }
+  }
 
 public:
   VTKReader() = default;
@@ -57,6 +76,8 @@ public:
   void setFileName(std::string passedFileName) {
     fileName = std::move(passedFileName);
   }
+
+  auto &getMetaData() { return metaData; }
 
   void apply() {
     // check mesh
@@ -256,6 +277,9 @@ private:
         }
       }
     }
+
+    // read meta data
+    extractFieldData(polyData);
   }
 
   void readVTU(const std::string &filename) {
@@ -390,6 +414,9 @@ private:
         }
       }
     }
+
+    // read meta data
+    extractFieldData(ugrid);
   }
 
 #endif // VIENNALS_USE_VTK
