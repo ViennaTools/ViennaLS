@@ -1273,7 +1273,13 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Set the name of the output file.")
       .def("setMetaData", &VTKWriter<T>::setMetaData,
            "Set the metadata to be written to the file.")
-      .def("addMetaData", &VTKWriter<T>::addMetaData,
+      .def("addMetaData",
+           pybind11::overload_cast<const std::string &, T>(
+               &VTKWriter<T>::addMetaData),
+           "Add a single metadata entry to the file.")
+      .def("addMetaData",
+           pybind11::overload_cast<const std::string &, const std::vector<T> &>(
+               &VTKWriter<T>::addMetaData),
            "Add a single metadata entry to the file.")
       .def("apply", &VTKWriter<T>::apply, "Write the mesh.");
 

@@ -31,7 +31,7 @@ template <class T = double> class VTKReader {
   SmartPointer<Mesh<T>> mesh = nullptr;
   FileFormatEnum fileFormat = FileFormatEnum::VTK_AUTO;
   std::string fileName;
-  std::unordered_map<std::string, T> metaData;
+  std::unordered_map<std::string, std::vector<T>> metaData;
 
   unsigned vtk_nodes_for_cell_type[15] = {0, 1, 0, 2, 0, 3, 0, 0,
                                           4, 4, 4, 8, 8, 6, 5};
@@ -43,13 +43,28 @@ template <class T = double> class VTKReader {
       return;
 
     for (int i = 0; i < fieldData->GetNumberOfArrays(); ++i) {
-      vtkDataArray *arr = fieldData->GetArray(i);
-      if (!arr || arr->GetNumberOfTuples() == 0)
+      vtkDataArray *array = fieldData->GetArray(i);
+      if (!array)
         continue;
 
-      std::string name = arr->GetName() ? arr->GetName() : "unnamed";
-      double value = arr->GetTuple1(0); // assumes scalar
-      metaData[name] = value;
+      const char *name = array->GetName();
+      if (!name)
+        continue;
+
+      int numTuples = array->GetNumberOfTuples();
+      int numComponents = array->GetNumberOfComponents();
+
+      std::vector<T> values;
+      values.reserve(numTuples * numComponents);
+
+      for (int t = 0; t < numTuples; ++t) {
+        T tuple[9]; // safe default (up to 9 components)
+        array->GetTuple(t, tuple);
+        for (int c = 0; c < numComponents; ++c)
+          values.push_back(tuple[c]);
+      }
+
+      metaData[name] = std::move(values);
     }
   }
 
