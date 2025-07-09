@@ -25,6 +25,7 @@
 #include <lsDomain.hpp>
 #include <lsMaterialMap.hpp>
 #include <lsPreCompileMacros.hpp>
+#include <unordered_map>
 #include <utility>
 
 // #define LS_TO_VISUALIZATION_DEBUG
@@ -52,6 +53,7 @@ template <class T, int D> class WriteVisualizationMesh {
   bool extractHullMesh = false;
   bool bottomRemoved = false;
   double LSEpsilon = 1e-2;
+  std::unordered_map<std::string, T> metaData;
 
   /// This function removes duplicate points and agjusts the pointIDs in the
   /// cells
@@ -441,6 +443,12 @@ public:
 
   void setWrappingLayerEpsilon(double epsilon) { LSEpsilon = epsilon; }
 
+  void setMetaData(const std::unordered_map<std::string, T> &passedMetaData) {
+    metaData = passedMetaData;
+  }
+
+  void addMetaData(const std::string &key, T value) { metaData[key] = value; }
+
   void apply() {
     // check if level sets have enough layers
     for (unsigned i = 0; i < levelSets.size(); ++i) {
@@ -693,6 +701,16 @@ public:
       // now that only tetras are left, remove the ones with degenerate points
       removeDegenerateTetras(volumeVTK);
 
+      // add meta data to volume mesh
+      for (const auto &it : metaData) {
+        vtkSmartPointer<vtkFloatArray> metaDataArray =
+            vtkSmartPointer<vtkFloatArray>::New();
+        metaDataArray->SetName(it.first.c_str());
+        metaDataArray->SetNumberOfTuples(1);
+        metaDataArray->SetTuple1(0, it.second);
+        volumeVTK->GetFieldData()->AddArray(metaDataArray);
+      }
+
       auto writer = vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
       writer->SetFileName((fileName + "_volume.vtu").c_str());
       writer->SetInputData(volumeVTK);
@@ -712,6 +730,16 @@ public:
       hullTriangleFilter->Update();
 
       hullVTK = hullTriangleFilter->GetOutput();
+
+      // add meta data to hull mesh
+      for (const auto &it : metaData) {
+        vtkSmartPointer<vtkFloatArray> metaDataArray =
+            vtkSmartPointer<vtkFloatArray>::New();
+        metaDataArray->SetName(it.first.c_str());
+        metaDataArray->SetNumberOfTuples(1);
+        metaDataArray->SetTuple1(0, it.second);
+        hullVTK->GetFieldData()->AddArray(metaDataArray);
+      }
 
       auto writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
       writer->SetFileName((fileName + "_hull.vtp").c_str());

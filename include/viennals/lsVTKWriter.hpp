@@ -2,11 +2,12 @@
 
 #include <fstream>
 #include <string>
+#include <unordered_map>
+#include <utility>
 
 #include <lsFileFormats.hpp>
 #include <lsMesh.hpp>
 
-#include <utility>
 #include <vcLogger.hpp>
 #include <vcSmartPointer.hpp>
 
@@ -33,6 +34,7 @@ template <class T> class VTKWriter {
   SmartPointer<Mesh<T>> mesh = nullptr;
   FileFormatEnum fileFormat = FileFormatEnum::VTK_AUTO;
   std::string fileName;
+  std::unordered_map<std::string, T> metaData;
 
 #ifdef VIENNALS_USE_VTK
   template <class In, class Out>
@@ -88,6 +90,12 @@ public:
   void setFileName(std::string passedFileName) {
     fileName = std::move(passedFileName);
   }
+
+  void setMetaData(const std::unordered_map<std::string, T> &passedMetaData) {
+    metaData = passedMetaData;
+  }
+
+  void addMetaData(const std::string &key, T value) { metaData[key] = value; }
 
   void apply() {
     // check mesh
@@ -219,6 +227,16 @@ private:
     addDataFromMesh(mesh->pointData, polyData->GetPointData());
     addDataFromMesh(mesh->cellData, polyData->GetCellData());
 
+    // add meta data
+    for (const auto &meta : metaData) {
+      vtkSmartPointer<vtkFloatArray> metaDataArray =
+          vtkSmartPointer<vtkFloatArray>::New();
+      metaDataArray->SetName(meta.first.c_str());
+      metaDataArray->SetNumberOfTuples(1);
+      metaDataArray->SetTuple1(0, meta.second);
+      polyData->GetFieldData()->AddArray(metaDataArray);
+    }
+
     vtkSmartPointer<vtkXMLPolyDataWriter> pwriter =
         vtkSmartPointer<vtkXMLPolyDataWriter>::New();
     pwriter->SetFileName(filename.c_str());
@@ -341,6 +359,16 @@ private:
     //   }
     //   uGrid->GetCellData()->AddArray(vectorData);
     // }
+
+    // add meta data
+    for (const auto &meta : metaData) {
+      vtkSmartPointer<vtkFloatArray> metaDataArray =
+          vtkSmartPointer<vtkFloatArray>::New();
+      metaDataArray->SetName(meta.first.c_str());
+      metaDataArray->SetNumberOfTuples(1);
+      metaDataArray->SetTuple1(0, meta.second);
+      uGrid->GetFieldData()->AddArray(metaDataArray);
+    }
 
     vtkSmartPointer<vtkXMLUnstructuredGridWriter> owriter =
         vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();

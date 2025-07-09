@@ -9,6 +9,7 @@
 #include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
+#include <lsWriteVisualizationMesh.hpp>
 
 /**
   2D Example showing how to use the library for topography
@@ -135,11 +136,21 @@ int main() {
               << numberOfSteps << std::flush;
     auto mesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
     ls::ToSurfaceMesh<NumericType, D>(newLayer, mesh).apply();
-    ls::VTKWriter<NumericType>(mesh, "trench" + std::to_string(i) + ".vtp")
-        .apply();
+    ls::VTKWriter<NumericType> writer(mesh,
+                                      "trench" + std::to_string(i) + ".vtp");
+    writer.addMetaData("time", passedTime);
+    writer.apply();
   }
   std::cout << std::endl;
   std::cout << "Time passed during advection: " << passedTime << std::endl;
+
+  ls::WriteVisualizationMesh<NumericType, D> writer;
+  writer.insertNextLevelSet(substrate);
+  writer.insertNextLevelSet(newLayer);
+  writer.addMetaData("time", passedTime);
+  writer.setFileName("airgap");
+  writer.setExtractHullMesh(true);
+  writer.apply();
 
   return 0;
 }
