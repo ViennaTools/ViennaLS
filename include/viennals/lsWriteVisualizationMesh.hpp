@@ -417,6 +417,9 @@ template <class T, int D> class WriteVisualizationMesh {
     // add metadata to field data
     vtkSmartPointer<vtkFieldData> fieldData = data->GetFieldData();
     for (const auto &meta : metaData) {
+      if (meta.second.empty())
+        continue; // skip empty metadata
+
       vtkSmartPointer<vtkFloatArray> metaDataArray =
           vtkSmartPointer<vtkFloatArray>::New();
       metaDataArray->SetName(meta.first.c_str());
