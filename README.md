@@ -5,6 +5,7 @@
 
 [![🧪 Tests](https://github.com/ViennaTools/ViennaLS/actions/workflows/build.yml/badge.svg)](https://github.com/ViennaTools/ViennaLS/actions/workflows/build.yml)
 [![🐍 Bindings](https://github.com/ViennaTools/ViennaLS/actions/workflows/python.yml/badge.svg)](https://github.com/ViennaTools/ViennaLS/actions/workflows/python.yml)
+[![PyPi Version](https://img.shields.io/pypi/v/ViennaLS?logo=pypi)](https://pypi.org/project/ViennaLS/)
 
 </div>
 
@@ -12,6 +13,16 @@ ViennaLS is a header-only C++ level set library developed for high performance t
 
 > [!NOTE]  
 > ViennaLS is under heavy development and improved daily. If you do have suggestions or find bugs, please let us know!
+
+## Quick Start  
+
+To install ViennaLS for Python, simply run:  
+
+```sh
+pip install ViennaLS
+```
+
+To use ViennaLS in C++, clone the repository and follow the installation steps below.
 
 ## Support
 
@@ -93,6 +104,7 @@ The Python package can be built and installed using the `pip` command:
 ```bash
 git clone https://github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
+
 pip install .
 ```
 
@@ -138,7 +150,7 @@ We recommend using [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) to consum
 
 * Installation with CPM
   ```cmake
-  CPMAddPackage("gh:viennatools/viennals@4.3.3")
+  CPMAddPackage("gh:viennatools/viennals@4.4.0")
   ```
 
 * With a local installation

@@ -1285,7 +1285,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            pybind11::overload_cast<
                const std::unordered_map<std::string, std::vector<T>> &>(
                &VTKWriter<T>::addMetaData),
-           "Add a single metadata entry to the file.")
+           "Add metadata to the file.")
       .def("apply", &VTKWriter<T>::apply, "Write the mesh.");
 
   // Writer
@@ -1340,7 +1340,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            pybind11::overload_cast<
                const std::unordered_map<std::string, std::vector<T>> &>(
                &WriteVisualizationMesh<T, D>::addMetaData),
-           "Add a single metadata entry to the file.")
+           "Add metadata to the file.")
       .def("apply", &WriteVisualizationMesh<T, D>::apply,
            "Make and write mesh.");
 #endif
