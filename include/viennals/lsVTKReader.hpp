@@ -166,12 +166,6 @@ public:
 private:
 #ifdef VIENNALS_USE_VTK
   void readVTP(const std::string &filename) {
-    if (mesh == nullptr) {
-      Logger::getInstance()
-          .addWarning("No mesh was passed to VTKReader.")
-          .print();
-      return;
-    }
 
     mesh->clear();
     vtkSmartPointer<vtkXMLPolyDataReader> pReader =
@@ -298,12 +292,6 @@ private:
   }
 
   void readVTU(const std::string &filename) {
-    if (mesh == nullptr) {
-      Logger::getInstance()
-          .addWarning("No mesh was passed to VTKReader.")
-          .print();
-      return;
-    }
 
     mesh->clear();
 
@@ -437,12 +425,6 @@ private:
 #endif // VIENNALS_USE_VTK
 
   void readVTKLegacy(const std::string &filename) {
-    if (mesh == nullptr) {
-      Logger::getInstance()
-          .addWarning("No mesh was passed to VTKReader.")
-          .print();
-      return;
-    }
 
     mesh->clear();
     // open geometry file

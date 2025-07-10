@@ -1281,6 +1281,11 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            pybind11::overload_cast<const std::string &, const std::vector<T> &>(
                &VTKWriter<T>::addMetaData),
            "Add a single metadata entry to the file.")
+      .def("addMetaData",
+           pybind11::overload_cast<
+               const std::unordered_map<std::string, std::vector<T>> &>(
+               &VTKWriter<T>::addMetaData),
+           "Add a single metadata entry to the file.")
       .def("apply", &VTKWriter<T>::apply, "Write the mesh.");
 
   // Writer
@@ -1323,7 +1328,18 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            " Whether to extract a tetra volume mesh. Defaults to true.")
       .def("setMetaData", &WriteVisualizationMesh<T, D>::setMetaData,
            "Set the metadata to be written to the file.")
-      .def("addMetaData", &WriteVisualizationMesh<T, D>::addMetaData,
+      .def("addMetaData",
+           pybind11::overload_cast<const std::string &, T>(
+               &WriteVisualizationMesh<T, D>::addMetaData),
+           "Add a single metadata entry to the file.")
+      .def("addMetaData",
+           pybind11::overload_cast<const std::string &, const std::vector<T> &>(
+               &WriteVisualizationMesh<T, D>::addMetaData),
+           "Add a single metadata entry to the file.")
+      .def("addMetaData",
+           pybind11::overload_cast<
+               const std::unordered_map<std::string, std::vector<T>> &>(
+               &WriteVisualizationMesh<T, D>::addMetaData),
            "Add a single metadata entry to the file.")
       .def("apply", &WriteVisualizationMesh<T, D>::apply,
            "Make and write mesh.");

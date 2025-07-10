@@ -67,7 +67,7 @@ template <class T> class VTKWriter {
     }
   }
 
-  void addMetaDataToFile(vtkDataSet *data) const {
+  void addMetaDataToVTK(vtkDataSet *data) const {
     if (metaData.empty()) {
       return;
     }
@@ -121,6 +121,13 @@ public:
 
   void addMetaData(const std::string &key, const std::vector<T> &values) {
     metaData[key] = values;
+  }
+
+  void addMetaData(
+      const std::unordered_map<std::string, std::vector<T>> &newMetaData) {
+    for (const auto &pair : newMetaData) {
+      metaData[pair.first] = pair.second;
+    }
   }
 
   void apply() {
@@ -252,7 +259,7 @@ private:
 
     addDataFromMesh(mesh->pointData, polyData->GetPointData());
     addDataFromMesh(mesh->cellData, polyData->GetCellData());
-    addMetaDataToFile(polyData);
+    addMetaDataToVTK(polyData);
 
     vtkSmartPointer<vtkXMLPolyDataWriter> pwriter =
         vtkSmartPointer<vtkXMLPolyDataWriter>::New();
@@ -349,7 +356,7 @@ private:
 
     addDataFromMesh(mesh->pointData, uGrid->GetPointData());
     addDataFromMesh(mesh->cellData, uGrid->GetCellData());
-    addMetaDataToFile(uGrid);
+    addMetaDataToVTK(uGrid);
 
     // // now add pointData
     // for (unsigned i = 0; i < mesh->cellData.getScalarDataSize(); ++i) {

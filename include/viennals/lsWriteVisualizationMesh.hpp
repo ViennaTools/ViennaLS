@@ -53,7 +53,7 @@ template <class T, int D> class WriteVisualizationMesh {
   bool extractHullMesh = false;
   bool bottomRemoved = false;
   double LSEpsilon = 1e-2;
-  std::unordered_map<std::string, T> metaData;
+  std::unordered_map<std::string, std::vector<T>> metaData;
 
   /// This function removes duplicate points and agjusts the pointIDs in the
   /// cells
@@ -409,6 +409,25 @@ template <class T, int D> class WriteVisualizationMesh {
     return rgrid;
   }
 
+  void addMetaDataToVTK(vtkDataSet *data) const {
+    if (metaData.empty()) {
+      return;
+    }
+
+    // add metadata to field data
+    vtkSmartPointer<vtkFieldData> fieldData = data->GetFieldData();
+    for (const auto &meta : metaData) {
+      vtkSmartPointer<vtkFloatArray> metaDataArray =
+          vtkSmartPointer<vtkFloatArray>::New();
+      metaDataArray->SetName(meta.first.c_str());
+      metaDataArray->SetNumberOfValues(meta.second.size());
+      for (size_t i = 0; i < meta.second.size(); ++i) {
+        metaDataArray->SetValue(i, meta.second[i]);
+      }
+      fieldData->AddArray(metaDataArray);
+    }
+  }
+
 public:
   WriteVisualizationMesh() = default;
 
@@ -443,11 +462,25 @@ public:
 
   void setWrappingLayerEpsilon(double epsilon) { LSEpsilon = epsilon; }
 
-  void setMetaData(const std::unordered_map<std::string, T> &passedMetaData) {
+  void setMetaData(
+      const std::unordered_map<std::string, std::vector<T>> &passedMetaData) {
     metaData = passedMetaData;
   }
 
-  void addMetaData(const std::string &key, T value) { metaData[key] = value; }
+  void addMetaData(const std::string &key, T value) {
+    metaData[key] = std::vector<T>{value};
+  }
+
+  void addMetaData(const std::string &key, const std::vector<T> &values) {
+    metaData[key] = values;
+  }
+
+  void addMetaData(
+      const std::unordered_map<std::string, std::vector<T>> &newMetaData) {
+    for (const auto &pair : newMetaData) {
+      metaData[pair.first] = pair.second;
+    }
+  }
 
   void apply() {
     // check if level sets have enough layers
@@ -702,14 +735,7 @@ public:
       removeDegenerateTetras(volumeVTK);
 
       // add meta data to volume mesh
-      for (const auto &it : metaData) {
-        vtkSmartPointer<vtkFloatArray> metaDataArray =
-            vtkSmartPointer<vtkFloatArray>::New();
-        metaDataArray->SetName(it.first.c_str());
-        metaDataArray->SetNumberOfTuples(1);
-        metaDataArray->SetTuple1(0, it.second);
-        volumeVTK->GetFieldData()->AddArray(metaDataArray);
-      }
+      addMetaDataToVTK(volumeVTK);
 
       auto writer = vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
       writer->SetFileName((fileName + "_volume.vtu").c_str());
@@ -732,14 +758,7 @@ public:
       hullVTK = hullTriangleFilter->GetOutput();
 
       // add meta data to hull mesh
-      for (const auto &it : metaData) {
-        vtkSmartPointer<vtkFloatArray> metaDataArray =
-            vtkSmartPointer<vtkFloatArray>::New();
-        metaDataArray->SetName(it.first.c_str());
-        metaDataArray->SetNumberOfTuples(1);
-        metaDataArray->SetTuple1(0, it.second);
-        hullVTK->GetFieldData()->AddArray(metaDataArray);
-      }
+      addMetaDataToVTK(hullVTK);
 
       auto writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
       writer->SetFileName((fileName + "_hull.vtp").c_str());
