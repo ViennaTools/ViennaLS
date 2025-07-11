@@ -86,6 +86,8 @@ for i in range(numberOfSteps):
     print("Advection step {} / {}".format(i, numberOfSteps))
 
     vls.ToSurfaceMesh(newLayer, mesh).apply()
-    vls.VTKWriter(mesh, "trench{}.vtp".format(i)).apply()
+    writer = vls.VTKWriter(mesh, "trench{}.vtp".format(i))
+    writer.addMetaData("time", passedTime)
+    writer.apply()
 
 print("Time passed during advection: {}".format(passedTime))

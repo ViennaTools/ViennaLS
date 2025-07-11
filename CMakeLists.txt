@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaLS
   LANGUAGES CXX
-  VERSION 4.3.3)
+  VERSION 4.4.0)
 
 # --------------------------------------------------------------------------------------------------------
 # Library options
@@ -247,4 +247,4 @@ packageProject(
   INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include/viennals
   INCLUDE_DESTINATION include/viennals-${PROJECT_VERSION}
   COMPATIBILITY SameMajorVersion
-  DEPENDENCIES "VTK 9.0.0;ViennaHRLE 0.5.0")
+  DEPENDENCIES "VTK;ViennaHRLE;ViennaCore")

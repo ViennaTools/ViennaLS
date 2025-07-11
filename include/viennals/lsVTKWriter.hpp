@@ -2,11 +2,12 @@
 
 #include <fstream>
 #include <string>
+#include <unordered_map>
+#include <utility>
 
 #include <lsFileFormats.hpp>
 #include <lsMesh.hpp>
 
-#include <utility>
 #include <vcLogger.hpp>
 #include <vcSmartPointer.hpp>
 
@@ -33,6 +34,7 @@ template <class T> class VTKWriter {
   SmartPointer<Mesh<T>> mesh = nullptr;
   FileFormatEnum fileFormat = FileFormatEnum::VTK_AUTO;
   std::string fileName;
+  std::unordered_map<std::string, std::vector<T>> metaData;
 
 #ifdef VIENNALS_USE_VTK
   template <class In, class Out>
@@ -64,6 +66,28 @@ template <class T> class VTKWriter {
       outData->AddArray(vectorData);
     }
   }
+
+  void addMetaDataToVTK(vtkDataSet *data) const {
+    if (metaData.empty()) {
+      return;
+    }
+
+    // add metadata to field data
+    vtkSmartPointer<vtkFieldData> fieldData = data->GetFieldData();
+    for (const auto &meta : metaData) {
+      if (meta.second.empty())
+        continue; // skip empty metadata
+
+      vtkSmartPointer<vtkFloatArray> metaDataArray =
+          vtkSmartPointer<vtkFloatArray>::New();
+      metaDataArray->SetName(meta.first.c_str());
+      metaDataArray->SetNumberOfValues(meta.second.size());
+      for (size_t i = 0; i < meta.second.size(); ++i) {
+        metaDataArray->SetValue(i, meta.second[i]);
+      }
+      fieldData->AddArray(metaDataArray);
+    }
+  }
 #endif // VIENNALS_USE_VTK
 
 public:
@@ -87,6 +111,26 @@ public:
   /// set file name for file to write
   void setFileName(std::string passedFileName) {
     fileName = std::move(passedFileName);
+  }
+
+  void setMetaData(
+      const std::unordered_map<std::string, std::vector<T>> &passedMetaData) {
+    metaData = passedMetaData;
+  }
+
+  void addMetaData(const std::string &key, T value) {
+    metaData[key] = std::vector<T>{value};
+  }
+
+  void addMetaData(const std::string &key, const std::vector<T> &values) {
+    metaData[key] = values;
+  }
+
+  void addMetaData(
+      const std::unordered_map<std::string, std::vector<T>> &newMetaData) {
+    for (const auto &pair : newMetaData) {
+      metaData[pair.first] = pair.second;
+    }
   }
 
   void apply() {
@@ -218,6 +262,7 @@ private:
 
     addDataFromMesh(mesh->pointData, polyData->GetPointData());
     addDataFromMesh(mesh->cellData, polyData->GetCellData());
+    addMetaDataToVTK(polyData);
 
     vtkSmartPointer<vtkXMLPolyDataWriter> pwriter =
         vtkSmartPointer<vtkXMLPolyDataWriter>::New();
@@ -314,6 +359,7 @@ private:
 
     addDataFromMesh(mesh->pointData, uGrid->GetPointData());
     addDataFromMesh(mesh->cellData, uGrid->GetCellData());
+    addMetaDataToVTK(uGrid);
 
     // // now add pointData
     // for (unsigned i = 0; i < mesh->cellData.getScalarDataSize(); ++i) {
