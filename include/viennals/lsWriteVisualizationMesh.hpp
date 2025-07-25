@@ -769,7 +769,7 @@ public:
       writer->Write();
     }
   }
-}; // namespace viennals
+};
 
 // add all template specialisations for this class
 PRECOMPILE_PRECISION_DIMENSION(WriteVisualizationMesh)

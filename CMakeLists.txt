@@ -198,12 +198,28 @@ if(VIENNALS_PRECOMPILE_HEADERS)
     set(VIENNALS_LINKAGE STATIC)
   endif()
 
-  add_library(${PROJECT_NAME}Lib ${VIENNALS_LINKAGE})
-  add_library(${PROJECT_NAME}::Lib ALIAS ${PROJECT_NAME}Lib)
+  set(LIB_NAME "viennals")
+  add_library(${LIB_NAME} ${VIENNALS_LINKAGE})
 
-  target_link_libraries(${PROJECT_NAME}Lib PUBLIC ${PROJECT_NAME})
-  target_sources(${PROJECT_NAME}Lib PUBLIC "lib/specialisations.cpp")
-  set_target_properties(${PROJECT_NAME}Lib PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+  target_link_libraries(${LIB_NAME} PRIVATE ${PROJECT_NAME})
+  target_compile_definitions(${LIB_NAME} PRIVATE VIENNALS_USE_PRECOMPILED)
+  target_sources(${LIB_NAME} PRIVATE "lib/specialisations.cpp")
+
+  set_target_properties(
+    ${LIB_NAME}
+    PROPERTIES VERSION ${PROJECT_VERSION} # full x.y.z appears in filename
+               SOVERSION ${PROJECT_VERSION_MAJOR} # major version for SONAME
+               WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
+  target_link_libraries(${PROJECT_NAME} INTERFACE ${LIB_NAME})
+  target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_USE_PRECOMPILED)
+
+  install(
+    TARGETS ${LIB_NAME}
+    EXPORT ViennaLSTargets
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin)
 endif()
 
 # --------------------------------------------------------------------------------------------------------
