@@ -44,7 +44,7 @@ public:
   void apply() {
     if (levelSet == nullptr) {
       Logger::getInstance()
-          .addWarning("No level set passed to Expand. Not expanding.")
+          .addError("No level set passed to Expand. Not expanding.")
           .print();
       return;
     }

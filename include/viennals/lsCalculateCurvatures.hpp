@@ -3,6 +3,7 @@
 #include <hrleCartesianPlaneIterator.hpp>
 #include <lsCurvatureFormulas.hpp>
 #include <lsDomain.hpp>
+#include <lsExpand.hpp>
 
 #include <vcLogger.hpp>
 #include <vcSmartPointer.hpp>
@@ -60,7 +61,7 @@ public:
   void apply() {
     if (levelSet == nullptr) {
       Logger::getInstance()
-          .addWarning("No level set was passed to CalculateCurvatures.")
+          .addError("No level set was passed to CalculateCurvatures.")
           .print();
     }
 
@@ -70,8 +71,10 @@ public:
       Logger::getInstance()
           .addWarning("CalculateCurvatures: Level set width must be "
                       "at least " +
-                      std::to_string(minWidth) + " !")
+                      std::to_string(minWidth) + ". Expanding level set to " +
+                      std::to_string(minWidth) + ".")
           .print();
+      Expand<T, D>(levelSet, minWidth).apply();
     }
 
     std::vector<std::vector<T>> meanCurvaturesVector(

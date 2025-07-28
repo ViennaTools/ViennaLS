@@ -98,14 +98,14 @@ public:
     // check mesh
     if (mesh == nullptr) {
       Logger::getInstance()
-          .addWarning("No mesh was passed to VTKReader. Not reading.")
+          .addError("No mesh was passed to VTKReader.")
           .print();
       return;
     }
     // check filename
     if (fileName.empty()) {
       Logger::getInstance()
-          .addWarning("No file name specified for VTKReader. Not reading.")
+          .addError("No file name specified for VTKReader.")
           .print();
       return;
     }
@@ -114,8 +114,8 @@ public:
       auto dotPos = fileName.rfind('.');
       if (dotPos == std::string::npos) {
         Logger::getInstance()
-            .addWarning("No valid file format found based on the file ending "
-                        "passed to VTKReader. Not reading.")
+            .addError("No valid file format found based on the file ending "
+                      "passed to VTKReader.")
             .print();
         return;
       }
@@ -128,8 +128,8 @@ public:
         fileFormat = FileFormatEnum::VTU;
       } else {
         Logger::getInstance()
-            .addWarning("No valid file format found based on the file ending "
-                        "passed to VTKReader. Not reading.")
+            .addError("No valid file format found based on the file ending "
+                      "passed to VTKReader.")
             .print();
         return;
       }
@@ -151,14 +151,13 @@ public:
     case FileFormatEnum::VTP:
     case FileFormatEnum::VTU:
       Logger::getInstance()
-          .addWarning(
-              "VTKReader was built without VTK support. Only VTK_LEGACY "
-              "can be used. File not read.")
+          .addError("VTKReader was built without VTK support. Only VTK_LEGACY "
+                    "can be used.")
           .print();
 #endif
     default:
       Logger::getInstance()
-          .addWarning("No valid file format set for VTKReader. Not reading.")
+          .addError("No valid file format set for VTKReader.")
           .print();
     }
   }

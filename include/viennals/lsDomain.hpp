@@ -223,7 +223,7 @@ public:
     stream.read(identifier, 8);
     if (std::string(identifier).compare(0, 8, "lsDomain")) {
       Logger::getInstance()
-          .addWarning(
+          .addError(
               "Reading Domain from stream failed. Header could not be found.")
           .print();
       return stream;
@@ -234,10 +234,10 @@ public:
     stream.read(&formatVersion, 1);
     if (formatVersion > LS_DOMAIN_SERIALIZATION_VERSION) {
       Logger::getInstance()
-          .addWarning(
-              "Reading Domain of version " + std::to_string(formatVersion) +
-              " with reader of version " +
-              std::to_string(LS_DOMAIN_SERIALIZATION_VERSION) + " failed.")
+          .addError("Reading Domain of version " +
+                    std::to_string(formatVersion) + " with reader of version " +
+                    std::to_string(LS_DOMAIN_SERIALIZATION_VERSION) +
+                    " failed.")
           .print();
       return stream;
     }

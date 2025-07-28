@@ -49,12 +49,12 @@ public:
   void apply() {
     if (levelSet == nullptr) {
       Logger::getInstance()
-          .addWarning("No level set was passed to ToMesh.")
+          .addError("No level set was passed to ToMesh.")
           .print();
       return;
     }
     if (mesh == nullptr) {
-      Logger::getInstance().addWarning("No mesh was passed to ToMesh.").print();
+      Logger::getInstance().addError("No mesh was passed to ToMesh.").print();
       return;
     }
 
@@ -62,6 +62,9 @@ public:
 
     // check if level set is empty
     if (levelSet->getNumberOfPoints() == 0) {
+      Logger::getInstance()
+          .addWarning("ToMesh: Level set is empty. No mesh will be created.")
+          .print();
       return;
     }
 

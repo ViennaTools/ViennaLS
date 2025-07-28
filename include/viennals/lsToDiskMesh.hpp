@@ -83,13 +83,13 @@ public:
   void apply() {
     if (levelSets.empty()) {
       Logger::getInstance()
-          .addWarning("No level sets passed to ToDiskMesh.")
+          .addError("No level sets passed to ToDiskMesh.")
           .print();
       return;
     }
     if (mesh == nullptr) {
       Logger::getInstance()
-          .addWarning("No mesh was passed to ToDiskMesh.")
+          .addError("No mesh was passed to ToDiskMesh.")
           .print();
       return;
     }
@@ -228,8 +228,7 @@ public:
           CalculateNormalVectors<T, D>::normalVectorsLabel);
       if (index < 0) {
         Logger::getInstance()
-            .addWarning("ToDiskMesh: Internal error: Could not find normal "
-                        "vector data.")
+            .addWarning("ToDiskMesh: Could not find normal vector data.")
             .print();
       } else {
         pointData.eraseVectorData(index);

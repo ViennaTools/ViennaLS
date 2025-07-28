@@ -386,13 +386,13 @@ template <class T, int D> class Advect {
     // check whether a level set and velocities have been given
     if (levelSets.empty()) {
       Logger::getInstance()
-          .addWarning("No level sets passed to Advect. Not advecting.")
+          .addError("No level sets passed to Advect. Not advecting.")
           .print();
       return std::numeric_limits<double>::max();
     }
     if (velocities == nullptr) {
       Logger::getInstance()
-          .addWarning("No velocity field passed to Advect. Not advecting.")
+          .addError("No velocity field passed to Advect. Not advecting.")
           .print();
       return std::numeric_limits<double>::max();
     }
@@ -814,9 +814,7 @@ public:
   void prepareLS() {
     // check whether a level set and velocities have been given
     if (levelSets.empty()) {
-      Logger::getInstance()
-          .addWarning("No level sets passed to Advect.")
-          .print();
+      Logger::getInstance().addError("No level sets passed to Advect.").print();
       return;
     }
 
@@ -854,7 +852,7 @@ public:
           levelSets.back());
     } else {
       Logger::getInstance()
-          .addWarning("Advect: Integration scheme not found.")
+          .addError("Advect: Integration scheme not found.")
           .print();
     }
   }
@@ -938,7 +936,7 @@ public:
       currentTimeStep = integrateTime(is, maxTimeStep);
     } else {
       Logger::getInstance()
-          .addWarning("Advect: Integration scheme not found. Not integrating.")
+          .addError("Advect: Integration scheme not found.")
           .print();
       currentTimeStep = -1.;
     }

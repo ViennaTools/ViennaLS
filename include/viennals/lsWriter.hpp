@@ -36,14 +36,14 @@ public:
     // check level-set
     if (levelSet == nullptr) {
       Logger::getInstance()
-          .addWarning("No level-set was passed to Writer. Not writing.")
+          .addError("No level-set was passed to Writer.")
           .print();
       return;
     }
     // check filename
     if (fileName.empty()) {
       Logger::getInstance()
-          .addWarning("No file name specified for Writer. Not writing.")
+          .addError("No file name specified for Writer.")
           .print();
       return;
     }

@@ -80,12 +80,12 @@ public:
   void apply() {
     if (levelSets.size() < 1) {
       Logger::getInstance()
-          .addWarning("No Level Sets supplied to ToVoxelMesh! Not converting.")
+          .addError("No Level Sets supplied to ToVoxelMesh! Not converting.")
           .print();
     }
     if (mesh == nullptr) {
       Logger::getInstance()
-          .addWarning("No mesh was passed to ToVoxelMesh.")
+          .addError("No mesh was passed to ToVoxelMesh.")
           .print();
       return;
     }

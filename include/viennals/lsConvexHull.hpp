@@ -285,13 +285,13 @@ public:
   void apply() {
     if (mesh == nullptr) {
       Logger::getInstance()
-          .addWarning("No mesh was passed to ConvexHull.")
+          .addError("No mesh was passed to ConvexHull.")
           .print();
       return;
     }
     if (pointCloud == nullptr) {
       Logger::getInstance()
-          .addWarning("No point cloud was passed to ConvexHull.")
+          .addError("No point cloud was passed to ConvexHull.")
           .print();
       return;
     }

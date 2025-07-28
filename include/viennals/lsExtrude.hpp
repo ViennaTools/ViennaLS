@@ -73,13 +73,12 @@ public:
   void apply() {
     if (inputLevelSet == nullptr) {
       Logger::getInstance()
-          .addWarning("No input Level Set supplied to Extrude! Not converting.")
+          .addError("No input Level Set supplied to Extrude.")
           .print();
     }
     if (outputLevelSet == nullptr) {
       Logger::getInstance()
-          .addWarning(
-              "No output Level Set supplied to Extrude! Not converting.")
+          .addError("No output Level Set supplied to Extrude.")
           .print();
       return;
     }

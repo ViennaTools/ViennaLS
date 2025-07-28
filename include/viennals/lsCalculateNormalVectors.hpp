@@ -7,6 +7,7 @@
 #include <hrleSparseStarIterator.hpp>
 
 #include <lsDomain.hpp>
+#include <lsExpand.hpp>
 
 #include <vcLogger.hpp>
 #include <vcSmartPointer.hpp>
@@ -44,7 +45,7 @@ public:
   void apply() {
     if (levelSet == nullptr) {
       Logger::getInstance()
-          .addWarning("No level set was passed to CalculateNormalVectors.")
+          .addError("No level set was passed to CalculateNormalVectors.")
           .print();
     }
 
@@ -52,8 +53,11 @@ public:
       Logger::getInstance()
           .addWarning("CalculateNormalVectors: Level set width must be "
                       "greater than " +
-                      std::to_string((maxValue * 4) + 1) + "!")
+                      std::to_string((maxValue * 4) + 1) +
+                      ". Expanding level set to " +
+                      std::to_string((maxValue * 4) + 1) + ".")
           .print();
+      Expand<T, D>(levelSet, (maxValue * 4) + 1).apply();
     }
 
     std::vector<std::vector<Vec3D<T>>> normalVectorsVector(
@@ -64,7 +68,7 @@ public:
 
     auto grid = levelSet->getGrid();
 
-    //! Calculate Normalvectors
+    // Calculate Normalvectors
 #pragma omp parallel num_threads(levelSet->getNumberOfSegments())
     {
       int p = 0;
@@ -111,10 +115,10 @@ public:
 
         denominator = std::sqrt(denominator);
         if (std::abs(denominator) < 1e-12) {
-          std::ostringstream oss;
-          oss << "CalculateNormalVectors: Vector of length 0 at "
-              << neighborIt.getIndices();
-          Logger::getInstance().addWarning(oss.str()).print();
+          Logger::getInstance()
+              .addWarning("CalculateNormalVectors: Vector of length 0 at " +
+                          neighborIt.getIndices().to_string())
+              .print();
           for (unsigned i = 0; i < D; ++i)
             n[i] = 0.;
         } else {
