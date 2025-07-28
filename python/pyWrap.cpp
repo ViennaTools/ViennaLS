@@ -161,8 +161,8 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .value("ERROR", LogLevel::ERROR)
       .value("WARNING", LogLevel::WARNING)
       .value("INFO", LogLevel::INFO)
-      .value("TIMING", LogLevel::TIMING)
       .value("INTERMEDIATE", LogLevel::INTERMEDIATE)
+      .value("TIMING", LogLevel::TIMING)
       .value("DEBUG", LogLevel::DEBUG);
 
   pybind11::class_<Logger, SmartPointer<Logger>>(module, "Logger",
@@ -184,9 +184,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("addWarning", &Logger::addWarning)
       .def("addError", &Logger::addError, pybind11::arg("s"),
            pybind11::arg("shouldAbort") = true)
-      .def("print", [](Logger &instance) {
-        instance.print(std::cout);
-      });
+      .def("print", [](Logger &instance) { instance.print(std::cout); });
 
   // Advect
   pybind11::class_<Advect<T, D>, SmartPointer<Advect<T, D>>>(module, "Advect")
