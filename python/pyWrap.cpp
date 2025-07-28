@@ -186,10 +186,6 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            pybind11::arg("shouldAbort") = true)
       .def("print", [](Logger &instance) {
         instance.print(std::cout);
-        if (instance.hasError()) {
-          // Handle error case
-          throw std::runtime_error("ViennaPS encountered an error.");
-        }
       });
 
   // Advect

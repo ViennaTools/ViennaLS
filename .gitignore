@@ -6,6 +6,7 @@ install*/
 *.vtk
 *.vtu
 *.vtp
+*_lstest*
 *.vscode/
 .vs
 CMakeSettings.json
