@@ -79,7 +79,7 @@ template <class T> class TransformMesh {
   void scaleMesh() {
     if (!isValidVector()) {
       Logger::getInstance()
-          .addWarning("TransformMesh: TransformVector is not valid!")
+          .addError("TransformMesh: TransformVector is not valid!")
           .print();
       return;
     }
@@ -100,7 +100,7 @@ public:
   void apply() {
     if (mesh == nullptr) {
       Logger::getInstance()
-          .addWarning("No mesh passed to TransformMesh. Not transforming!")
+          .addError("No mesh passed to TransformMesh. Not transforming!")
           .print();
     }
 
@@ -116,7 +116,7 @@ public:
       break;
     default:
       Logger::getInstance()
-          .addWarning(
+          .addError(
               "Invalid transform passed to TransformMesh. Not transforming!")
           .print();
     }

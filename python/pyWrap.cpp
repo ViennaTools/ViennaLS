@@ -161,14 +161,17 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .value("ERROR", LogLevel::ERROR)
       .value("WARNING", LogLevel::WARNING)
       .value("INFO", LogLevel::INFO)
-      .value("TIMING", LogLevel::TIMING)
       .value("INTERMEDIATE", LogLevel::INTERMEDIATE)
+      .value("TIMING", LogLevel::TIMING)
       .value("DEBUG", LogLevel::DEBUG);
 
   pybind11::class_<Logger, SmartPointer<Logger>>(module, "Logger",
                                                  pybind11::module_local())
       .def_static("setLogLevel", &Logger::setLogLevel)
       .def_static("getLogLevel", &Logger::getLogLevel)
+      .def_static("setLogFile", &Logger::setLogFile)
+      .def_static("appendToLogFile", &Logger::appendToLogFile)
+      .def_static("closeLogFile", &Logger::closeLogFile)
       .def_static("getInstance", &Logger::getInstance,
                   pybind11::return_value_policy::reference)
       .def("addDebug", &Logger::addDebug)

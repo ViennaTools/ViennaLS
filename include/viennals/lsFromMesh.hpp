@@ -40,13 +40,13 @@ public:
   void apply() {
     if (levelSet == nullptr) {
       Logger::getInstance()
-          .addWarning("No level set was passed to FromMesh.")
+          .addError("No level set was passed to FromMesh.")
           .print();
       return;
     }
     if (mesh == nullptr) {
       Logger::getInstance()
-          .addWarning("No Mesh<> was supplied to FromMesh.")
+          .addError("No Mesh was supplied to FromMesh.")
           .print();
       return;
     }
@@ -57,7 +57,7 @@ public:
 
     if (values == nullptr) {
       Logger::getInstance()
-          .addWarning("Mesh does not contain level set values (\"LSValues\").")
+          .addError("Mesh does not contain level set values (\"LSValues\").")
           .print();
       return;
     }

@@ -137,14 +137,14 @@ public:
     // check mesh
     if (mesh == nullptr) {
       Logger::getInstance()
-          .addWarning("No mesh was passed to VTKWriter. Not writing.")
+          .addError("No mesh was passed to VTKWriter.")
           .print();
       return;
     }
     // check filename
     if (fileName.empty()) {
       Logger::getInstance()
-          .addWarning("No file name specified for VTKWriter. Not writing.")
+          .addError("No file name specified for VTKWriter.")
           .print();
       return;
     }
@@ -163,8 +163,8 @@ public:
           fileFormat = FileFormatEnum::VTU;
         } else {
           Logger::getInstance()
-              .addWarning("No valid file format found based on the file ending "
-                          "passed to VTKWriter. Not writing.")
+              .addError("No valid file format found based on the file ending "
+                        "passed to VTKWriter.")
               .print();
           return;
         }
@@ -195,7 +195,7 @@ public:
 #endif
     default:
       Logger::getInstance()
-          .addWarning("No valid file format set for VTKWriter. Not writing.")
+          .addError("No valid file format set for VTKWriter.")
           .print();
     }
   }
@@ -205,7 +205,7 @@ private:
   void writeVTP(std::string filename) const {
     if (mesh == nullptr) {
       Logger::getInstance()
-          .addWarning("No mesh was passed to VTKWriter.")
+          .addError("No mesh was passed to VTKWriter.")
           .print();
       return;
     }
@@ -274,7 +274,7 @@ private:
   void writeVTU(std::string filename) const {
     if (mesh == nullptr) {
       Logger::getInstance()
-          .addWarning("No mesh was passed to VTKWriter.")
+          .addError("No mesh was passed to VTKWriter.")
           .print();
       return;
     }
@@ -400,7 +400,7 @@ private:
   void writeVTKLegacy(const std::string &filename) {
     if (mesh == nullptr) {
       Logger::getInstance()
-          .addWarning("No mesh was passed to VTKWriter.")
+          .addError("No mesh was passed to VTKWriter.")
           .print();
       return;
     }

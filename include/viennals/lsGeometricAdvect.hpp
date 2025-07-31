@@ -104,15 +104,15 @@ public:
   void apply() {
     if (levelSet == nullptr) {
       Logger::getInstance()
-          .addWarning("No level set passed to GeometricAdvect. Not Advecting.")
+          .addError("No level set passed to GeometricAdvect. Not Advecting.")
           .print();
       return;
     }
     if (dist == nullptr) {
       Logger::getInstance()
-          .addWarning("No GeometricAdvectDistribution passed to "
-                      "GeometricAdvect. Not "
-                      "Advecting.")
+          .addError("No GeometricAdvectDistribution passed to "
+                    "GeometricAdvect. Not "
+                    "Advecting.")
           .print();
       return;
     }

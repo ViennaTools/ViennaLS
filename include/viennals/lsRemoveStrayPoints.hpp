@@ -37,7 +37,7 @@ public:
   void apply() {
     if (levelSet == nullptr) {
       Logger::getInstance()
-          .addWarning("No level set was passed to lsPrune.")
+          .addError("No level set was passed to lsPrune.")
           .print();
       return;
     }
@@ -57,8 +57,8 @@ public:
         levelSet->getPointData().getScalarData("VoidPointMarkers", true);
     if (voidMarkers == nullptr) {
       Logger::getInstance()
-          .addWarning("RemoveStrayPoints: No scalar data for void point "
-                      "markers found. Cannot remove stray points.")
+          .addError("RemoveStrayPoints: No scalar data for void point "
+                    "markers found. Cannot remove stray points.")
           .print();
     }
 

@@ -60,7 +60,7 @@ template <class T, int D = 2> class CompareSparseField {
   bool checkAndCalculateBounds() {
     if (levelSetExpanded == nullptr || levelSetIterated == nullptr) {
       Logger::getInstance()
-          .addWarning("Missing level set in CompareSparseField.")
+          .addError("Missing level set in CompareSparseField.")
           .print();
       return false;
     }
@@ -71,8 +71,8 @@ template <class T, int D = 2> class CompareSparseField {
 
     if (gridExpanded.getGridDelta() != gridIterated.getGridDelta()) {
       Logger::getInstance()
-          .addWarning("Grid delta mismatch in CompareSparseField. The grid "
-                      "deltas of the two level sets must be equal.")
+          .addError("Grid delta mismatch in CompareSparseField. The grid "
+                    "deltas of the two level sets must be equal.")
           .print();
       return false;
     }
@@ -135,7 +135,7 @@ template <class T, int D = 2> class CompareSparseField {
 
 public:
   CompareSparseField() {
-    static_assert(
+    assert(
         D == 2 &&
         "CompareSparseField is currently only implemented for 2D level sets.");
   }
@@ -144,7 +144,7 @@ public:
                      SmartPointer<Domain<T, D>> passedLevelSetIterated)
       : levelSetExpanded(passedLevelSetExpanded),
         levelSetIterated(passedLevelSetIterated) {
-    static_assert(
+    assert(
         D == 2 &&
         "CompareSparseField is currently only implemented for 2D level sets.");
   }

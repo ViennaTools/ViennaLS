@@ -42,7 +42,7 @@ template <class T, int D = 2> class CompareNarrowBand {
   bool checkAndCalculateBounds() {
     if (levelSetTarget == nullptr || levelSetSample == nullptr) {
       Logger::getInstance()
-          .addWarning("Missing level set in CompareNarrowBand.")
+          .addError("Missing level set in CompareNarrowBand.")
           .print();
       return false;
     }
@@ -53,8 +53,8 @@ template <class T, int D = 2> class CompareNarrowBand {
 
     if (gridTarget.getGridDelta() != gridSample.getGridDelta()) {
       Logger::getInstance()
-          .addWarning("Grid delta mismatch in CompareNarrowBand. The grid "
-                      "deltas of the two level sets must be equal.")
+          .addError("Grid delta mismatch in CompareNarrowBand. The grid "
+                    "deltas of the two level sets must be equal.")
           .print();
       return false;
     }
@@ -139,7 +139,7 @@ template <class T, int D = 2> class CompareNarrowBand {
 
 public:
   CompareNarrowBand() {
-    static_assert(
+    assert(
         D == 2 &&
         "CompareNarrowBand is currently only implemented for 2D level sets.");
   }
@@ -148,7 +148,7 @@ public:
                     SmartPointer<Domain<T, D>> passedlevelSetSample)
       : levelSetTarget(passedLevelSetTarget),
         levelSetSample(passedlevelSetSample) {
-    static_assert(
+    assert(
         D == 2 &&
         "CompareNarrowBand is currently only implemented for 2D level sets.");
   }

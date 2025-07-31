@@ -243,13 +243,13 @@ public:
   void apply() {
     if (levelSet == nullptr) {
       Logger::getInstance()
-          .addWarning("No level set was passed to FromSurfaceMesh.")
+          .addError("No level set was passed to FromSurfaceMesh.")
           .print();
       return;
     }
     if (mesh == nullptr) {
       Logger::getInstance()
-          .addWarning("No mesh was passed to FromSurfaceMesh.")
+          .addError("No mesh was passed to FromSurfaceMesh.")
           .print();
       return;
     }

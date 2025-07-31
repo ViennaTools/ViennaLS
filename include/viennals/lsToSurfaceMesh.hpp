@@ -45,18 +45,22 @@ public:
   void apply() {
     if (levelSet == nullptr) {
       Logger::getInstance()
-          .addWarning("No level set was passed to ToSurfaceMesh.")
+          .addError("No level set was passed to ToSurfaceMesh.")
           .print();
       return;
     }
     if (mesh == nullptr) {
       Logger::getInstance()
-          .addWarning("No mesh was passed to ToSurfaceMesh.")
+          .addError("No mesh was passed to ToSurfaceMesh.")
           .print();
       return;
     }
 
     if (levelSet->getNumberOfPoints() == 0) {
+      Logger::getInstance()
+          .addWarning(
+              "ToSurfaceMesh: Level set is empty. No mesh will be created.")
+          .print();
       return;
     }
 

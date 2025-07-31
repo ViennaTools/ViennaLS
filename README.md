@@ -55,14 +55,13 @@ Releases are tagged on the maser branch and available in the [releases section](
 
 * [ViennaHRLE](https://github.com/ViennaTools/ViennaHRLE)
 
-* [VTK](https://github.com/Kitware/VTK) (optional)
+* [VTK](https://github.com/Kitware/VTK) (optional, but recommended for mesh export and visualization)
 
 * [pybind11](https://github.com/pybind/pybind11) (only for building Python libs)
 
 ## Using ViennaLS in your project
 
 Have a look at the [example repo](https://github.com/ViennaTools/viennals-example) for creating a project with ViennaLS as a dependency.
-
 
 ## Installing
 
@@ -73,11 +72,11 @@ However, we recommend the following procedure in order to set up all dependencie
 git clone https://github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
 
-cmake -B build -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/
+cmake -B build -D CMAKE_INSTALL_PREFIX=/path/to/your/custom/install/
 cmake --install build
 ```
 
-This will install the necessary headers and CMake files to the specified path. If DCMAKE_INSTALL_PREFIX is not specified, it will be installed to the standard path for your system, usually /usr/local/ .
+This will install the necessary headers and CMake files to the specified path. If `CMAKE_INSTALL_PREFIX` is not specified, it will be installed to the standard path for your system, usually `/usr/local/`.
 
 ## Installing without VTK
 
@@ -86,7 +85,7 @@ In order to install ViennaLS without VTK, run:
 git clone https://github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
 
-cmake -B build -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/ -DVIENNALS_USE_VTK=OFF
+cmake -B build -D CMAKE_INSTALL_PREFIX=/path/to/your/custom/install/ -D VIENNALS_USE_VTK=OFF
 cmake --install build
 ```
 
@@ -97,7 +96,7 @@ The CMake configuration automatically checks if the dependencies are installed. 
 ## Building the Python package
 
 > [!NOTE]  
-> On systems that feature a package manager (e.g. Ubuntu/Debian `apt`), the dependencies can be installed beforehand (e.g. using ```sudo apt install libvtk9-dev```), which saves a considerable amount of time during compilation.
+> On systems that feature a package manager (e.g. Ubuntu/Debian `apt`), VTK can be installed beforehand (e.g. using ```sudo apt install libvtk9-dev```), which saves a considerable amount of time during compilation.
 
 The Python package can be built and installed using the `pip` command:
 
@@ -150,7 +149,7 @@ We recommend using [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) to consum
 
 * Installation with CPM
   ```cmake
-  CPMAddPackage("gh:viennatools/viennals@4.4.0")
+  CPMAddPackage("gh:viennatools/viennals@4.5.0")
   ```
 
 * With a local installation
@@ -202,4 +201,7 @@ http://www.iue.tuwien.ac.at/
 
 ## License
 
-See file LICENSE in the base directory.
+ViennaLS is licensed under the [MIT License](./LICENSE).
+
+Some third-party libraries used by ViennaLS are under their own permissive licenses (MIT, BSD).  
+See [`THIRD_PARTY_LICENSES.md`](./THIRD_PARTY_LICENSES.md) for details.
