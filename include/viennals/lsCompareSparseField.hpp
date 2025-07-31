@@ -135,7 +135,7 @@ template <class T, int D = 2> class CompareSparseField {
 
 public:
   CompareSparseField() {
-    static_assert(
+    assert(
         D == 2 &&
         "CompareSparseField is currently only implemented for 2D level sets.");
   }
@@ -144,7 +144,7 @@ public:
                      SmartPointer<Domain<T, D>> passedLevelSetIterated)
       : levelSetExpanded(passedLevelSetExpanded),
         levelSetIterated(passedLevelSetIterated) {
-    static_assert(
+    assert(
         D == 2 &&
         "CompareSparseField is currently only implemented for 2D level sets.");
   }

@@ -139,7 +139,7 @@ template <class T, int D = 2> class CompareNarrowBand {
 
 public:
   CompareNarrowBand() {
-    static_assert(
+    assert(
         D == 2 &&
         "CompareNarrowBand is currently only implemented for 2D level sets.");
   }
@@ -148,7 +148,7 @@ public:
                     SmartPointer<Domain<T, D>> passedlevelSetSample)
       : levelSetTarget(passedLevelSetTarget),
         levelSetSample(passedlevelSetSample) {
-    static_assert(
+    assert(
         D == 2 &&
         "CompareNarrowBand is currently only implemented for 2D level sets.");
   }
