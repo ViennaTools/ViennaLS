@@ -276,7 +276,7 @@ public:
           alpha[k] = std::fabs(monti + toifl + osher);
 
           if (alpha[k] > maxDissipation) {
-            alpha[k] = 0.;
+            alpha[k] = maxDissipation;
           }
         }
 

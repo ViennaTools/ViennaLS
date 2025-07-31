@@ -239,6 +239,14 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Apply the integration scheme and calculate rates and maximum time "
            "step, but it do **not** move the surface.");
 
+  pybind11::class_<lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>>(
+      module, "StencilLocalLaxFriedrichsScalar")
+      .def_static(
+          "setMaxDissipation",
+          &lsInternal::StencilLocalLaxFriedrichsScalar<T, D,
+                                                       1>::setMaxDissipation,
+          pybind11::arg("maxDissipation"));
+
   // enums
   pybind11::enum_<IntegrationSchemeEnum>(module, "IntegrationSchemeEnum")
       .value("ENGQUIST_OSHER_1ST_ORDER",
