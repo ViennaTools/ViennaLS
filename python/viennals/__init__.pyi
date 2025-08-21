@@ -65,4 +65,4 @@ __all__: list[str] = [
 
 def _windows_dll_path(): ...
 
-version: str = "4.5.0"
+version: str = "5.0.0"

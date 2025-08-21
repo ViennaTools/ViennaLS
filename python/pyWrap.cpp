@@ -158,8 +158,39 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .value("SCALE", TransformEnum::SCALE)
       .finalize();
 
-
   // ---------- MESH CLASSES ----------
+  // PointData
+  py::class_<PointData<T>, SmartPointer<PointData<T>>>(module, "PointData")
+      // constructors
+      .def(py::init(&SmartPointer<PointData<T>>::New<>))
+      // methods
+      .def("insertNextScalarData",
+           (void(PointData<T>::*)(const PointData<T>::ScalarDataType &,
+                                  const std::string &)) &
+               PointData<T>::insertNextScalarData,
+           py::arg("scalars"), py::arg("label") = "Scalars")
+      .def("insertNextVectorData",
+           (void(PointData<T>::*)(const PointData<T>::VectorDataType &,
+                                  const std::string &)) &
+               PointData<T>::insertNextVectorData,
+           py::arg("vectors"), py::arg("label") = "Vectors")
+      .def("getScalarDataSize", &PointData<T>::getScalarDataSize)
+      .def("getVectorDataSize", &PointData<T>::getVectorDataSize)
+      .def("getScalarData",
+           (PointData<T>::ScalarDataType * (PointData<T>::*)(int)) &
+               PointData<T>::getScalarData)
+      .def("getScalarData", (PointData<T>::ScalarDataType *
+                             (PointData<T>::*)(const std::string &, bool)) &
+                                PointData<T>::getScalarData)
+      .def("getScalarDataLabel", &PointData<T>::getScalarDataLabel)
+      .def("getVectorData",
+           (PointData<T>::VectorDataType * (PointData<T>::*)(int)) &
+               PointData<T>::getVectorData)
+      .def("getVectorData", (PointData<T>::VectorDataType *
+                             (PointData<T>::*)(const std::string &, bool)) &
+                                PointData<T>::getVectorData)
+      .def("getVectorDataLabel", &PointData<T>::getVectorDataLabel);
+
   // Mesh
   py::class_<Mesh<T>, SmartPointer<Mesh<T>>>(module, "Mesh")
       // constructors
@@ -296,38 +327,32 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("getNumberOfMaterials", &MaterialMap::getNumberOfMaterials)
       .def("getMaterialId", &MaterialMap::getMaterialId);
 
-  // PointData
-  py::class_<PointData<T>, SmartPointer<PointData<T>>>(module, "PointData")
+  // VelocityField
+  py::class_<VelocityField<T>, SmartPointer<VelocityField<T>>,
+             PylsVelocityField>(module, "VelocityField")
       // constructors
-      .def(py::init(&SmartPointer<PointData<T>>::New<>))
+      .def(py::init<>())
       // methods
-      .def("insertNextScalarData",
-           (void(PointData<T>::*)(const PointData<T>::ScalarDataType &,
-                                  const std::string &)) &
-               PointData<T>::insertNextScalarData,
-           py::arg("scalars"), py::arg("label") = "Scalars")
-      .def("insertNextVectorData",
-           (void(PointData<T>::*)(const PointData<T>::VectorDataType &,
-                                  const std::string &)) &
-               PointData<T>::insertNextVectorData,
-           py::arg("vectors"), py::arg("label") = "Vectors")
-      .def("getScalarDataSize", &PointData<T>::getScalarDataSize)
-      .def("getVectorDataSize", &PointData<T>::getVectorDataSize)
-      .def("getScalarData",
-           (PointData<T>::ScalarDataType * (PointData<T>::*)(int)) &
-               PointData<T>::getScalarData)
-      .def("getScalarData", (PointData<T>::ScalarDataType *
-                             (PointData<T>::*)(const std::string &, bool)) &
-                                PointData<T>::getScalarData)
-      .def("getScalarDataLabel", &PointData<T>::getScalarDataLabel)
-      .def("getVectorData",
-           (PointData<T>::VectorDataType * (PointData<T>::*)(int)) &
-               PointData<T>::getVectorData)
-      .def("getVectorData", (PointData<T>::VectorDataType *
-                             (PointData<T>::*)(const std::string &, bool)) &
-                                PointData<T>::getVectorData)
-      .def("getVectorDataLabel", &PointData<T>::getVectorDataLabel);
+      .def("getScalarVelocity", &VelocityField<T>::getScalarVelocity,
+           "Return the scalar velocity for a point of material at coordinate "
+           "with normal vector normal.")
+      .def("getVectorVelocity", &VelocityField<T>::getVectorVelocity,
+           "Return the vector velocity for a point of material at coordinate "
+           "with normal vector normal.")
+      .def("getDissipationAlpha", &VelocityField<T>::getDissipationAlpha,
+           "Return the analytical dissipation alpha value if the "
+           "lsLocalLaxFriedrichsAnalytical scheme is used for advection.");
 
+  // ---------- MAIN API ----------
+  // Submodule for 2D
+  auto m2 = module.def_submodule("d2", "2D bindings");
+  bindApi<2>(m2);
+
+  // Submodule for 3D
+  auto m3 = module.def_submodule("d3", "3D bindings");
+  bindApi<3>(m3);
+
+  // SLICE AND EXTRUDE
   // Slice
   py::class_<Slice<T>, SmartPointer<Slice<T>>>(module, "Slice")
       // constructors
@@ -383,29 +408,4 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
                &Extrude<T>::setBoundaryConditions),
            "Set the boundary conditions in the 3D extruded domain.")
       .def("apply", &Extrude<T>::apply, "Perform extrusion.");
-
-  // VelocityField
-  py::class_<VelocityField<T>, SmartPointer<VelocityField<T>>,
-             PylsVelocityField>(module, "VelocityField")
-      // constructors
-      .def(py::init<>())
-      // methods
-      .def("getScalarVelocity", &VelocityField<T>::getScalarVelocity,
-           "Return the scalar velocity for a point of material at coordinate "
-           "with normal vector normal.")
-      .def("getVectorVelocity", &VelocityField<T>::getVectorVelocity,
-           "Return the vector velocity for a point of material at coordinate "
-           "with normal vector normal.")
-      .def("getDissipationAlpha", &VelocityField<T>::getDissipationAlpha,
-           "Return the analytical dissipation alpha value if the "
-           "lsLocalLaxFriedrichsAnalytical scheme is used for advection.");
-
-  // ---------- MAIN API ----------
-  // Submodule for 2D
-  auto m2 = module.def_submodule("d2", "2D bindings");
-  bindApi<2>(m2);
-
-  // Submodule for 3D
-  auto m3 = module.def_submodule("d3", "3D bindings");
-  bindApi<3>(m3);
 }

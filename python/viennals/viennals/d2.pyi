@@ -505,17 +505,10 @@ class CompareSparseField:
         """
 
 class ConvexHull:
-    @staticmethod
-    @typing.overload
-    def __init__(*args, **kwargs) -> None: ...
-    @staticmethod
-    def setPointCloud(*args, **kwargs) -> None:
-        """
-        Set point cloud used to generate mesh.
-        """
-
     @typing.overload
     def __init__(self) -> None: ...
+    @typing.overload
+    def __init__(self, arg0: viennals.viennals.Mesh, arg1: PointCloud) -> None: ...
     def apply(self) -> None:
         """
         Generate Hull.
@@ -524,6 +517,11 @@ class ConvexHull:
     def setMesh(self, arg0: viennals.viennals.Mesh) -> None:
         """
         Set mesh object where the generated mesh should be stored.
+        """
+
+    def setPointCloud(self, arg0: PointCloud) -> None:
+        """
+        Set point cloud used to generate mesh.
         """
 
 class Cylinder:

@@ -314,6 +314,17 @@ template <int D> void bindApi(py::module &module) {
            "Set levelset for which to calculate normal vectors.")
       .def("apply", &Check<T, D>::apply, "Perform check.");
 
+  // PointCloud
+  py::class_<PointCloud<T, D>, SmartPointer<PointCloud<T, D>>>(module,
+                                                               "PointCloud")
+      // constructors
+      .def(py::init(&SmartPointer<PointCloud<T, D>>::template New<
+                    const std::vector<VectorType<T, D>> &>))
+      // methods
+      .def("insertNextPoint",
+           (void(PointCloud<T, D>::*)(const VectorType<T, D> &)) &
+               PointCloud<T, D>::insertNextPoint);
+
   // ConvexHull
   py::class_<ConvexHull<T, D>, SmartPointer<ConvexHull<T, D>>>(module,
                                                                "ConvexHull")
@@ -521,16 +532,6 @@ template <int D> void bindApi(py::module &module) {
                    const T /*radius*/, const T /*topRadius*/>),
           py::arg("origin"), py::arg("axisDirection"), py::arg("height"),
           py::arg("radius"), py::arg("topRadius") = 0.);
-  // PointCloud
-  py::class_<PointCloud<T, D>, SmartPointer<PointCloud<T, D>>>(module,
-                                                               "PointCloud")
-      // constructors
-      .def(py::init(&SmartPointer<PointCloud<T, D>>::template New<
-                    const std::vector<VectorType<T, D>> &>))
-      // methods
-      .def("insertNextPoint",
-           (void(PointCloud<T, D>::*)(const VectorType<T, D> &)) &
-               PointCloud<T, D>::insertNextPoint);
 
   // MakeGeometry
   py::class_<MakeGeometry<T, D>, SmartPointer<MakeGeometry<T, D>>>(

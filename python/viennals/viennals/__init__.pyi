@@ -96,23 +96,21 @@ class CurvatureEnum(enum.IntEnum):
         """
 
 class Extrude:
-    @staticmethod
-    @typing.overload
-    def __init__(*args, **kwargs) -> None: ...
-    @staticmethod
-    def setInputLevelSet(*args, **kwargs) -> None:
-        """
-        Set 2D input Level Set
-        """
-
-    @staticmethod
-    def setOutputLevelSet(*args, **kwargs) -> None:
-        """
-        Set 3D output Level Set
-        """
-
     @typing.overload
     def __init__(self) -> None: ...
+    @typing.overload
+    def __init__(
+        self,
+        arg0: d2.Domain,
+        arg1: d3.Domain,
+        arg2: typing.Annotated[
+            collections.abc.Sequence[typing.SupportsFloat], "FixedSize(2)"
+        ],
+        arg3: typing.SupportsInt,
+        arg4: typing.Annotated[
+            collections.abc.Sequence[BoundaryConditionEnum], "FixedSize(3)"
+        ],
+    ) -> None: ...
     def apply(self) -> None:
         """
         Perform extrusion.
@@ -148,6 +146,16 @@ class Extrude:
     def setExtrudeDimension(self, arg0: typing.SupportsInt) -> None:
         """
         Set the dimension which should be extruded
+        """
+
+    def setInputLevelSet(self, arg0: d2.Domain) -> None:
+        """
+        Set 2D input Level Set
+        """
+
+    def setOutputLevelSet(self, arg0: d3.Domain) -> None:
+        """
+        Set 3D output Level Set
         """
 
 class FeatureDetectionEnum(enum.IntEnum):
@@ -311,7 +319,7 @@ class Mesh:
         Clear all data in the mesh.
         """
 
-    def getCellData(self) -> ...:
+    def getCellData(self) -> PointData:
         """
         Return a reference to the cell data of the mesh.
         """
@@ -331,7 +339,7 @@ class Mesh:
         Get all nodes of the mesh as a list.
         """
 
-    def getPointData(self) -> ...:
+    def getPointData(self) -> PointData:
         """
         Return a reference to the point data of the mesh.
         """
@@ -455,32 +463,26 @@ class PointData:
     ) -> None: ...
 
 class Slice:
-    @staticmethod
-    @typing.overload
-    def __init__(*args, **kwargs) -> None: ...
-    @staticmethod
-    @typing.overload
-    def __init__(*args, **kwargs) -> None: ...
-    @staticmethod
-    def setSliceLevelSet(*args, **kwargs) -> None:
-        """
-        Set the 2D level set where the extracted slice will be stored.
-        """
-
-    @staticmethod
-    def setSourceLevelSet(*args, **kwargs) -> None:
-        """
-        Set the 3D source level set from which to extract the slice.
-        """
-
     @typing.overload
     def __init__(self) -> None: ...
+    @typing.overload
+    def __init__(
+        self,
+        arg0: d3.Domain,
+        arg1: d2.Domain,
+        arg2: typing.SupportsInt,
+        arg3: typing.SupportsFloat,
+    ) -> None: ...
+    @typing.overload
+    def __init__(
+        self, arg0: d3.Domain, arg1: typing.SupportsInt, arg2: typing.SupportsFloat
+    ) -> None: ...
     def apply(self) -> None:
         """
         Extract the 2D slice from the 3D domain.
         """
 
-    def getSliceLevelSet(self) -> ...:
+    def getSliceLevelSet(self) -> d2.Domain:
         """
         Get the 2D slice level set after extraction.
         """
@@ -495,9 +497,19 @@ class Slice:
         Set the dimension along which to slice (0=x, 1=y, 2=z).
         """
 
+    def setSliceLevelSet(self, arg0: d2.Domain) -> None:
+        """
+        Set the 2D level set where the extracted slice will be stored.
+        """
+
     def setSlicePosition(self, arg0: typing.SupportsFloat) -> None:
         """
         Set the position along the slice dimension where to extract the slice.
+        """
+
+    def setSourceLevelSet(self, arg0: d3.Domain) -> None:
+        """
+        Set the 3D source level set from which to extract the slice.
         """
 
     def setWritePath(self, arg0: str, arg1: bool) -> None:
@@ -697,5 +709,5 @@ class VoidTopSurfaceEnum(enum.IntEnum):
 
 def setNumThreads(arg0: typing.SupportsInt) -> None: ...
 
-__version__: str = "4.5.0"
-version: str = "4.5.0"
+__version__: str = "5.0.0"
+version: str = "5.0.0"
