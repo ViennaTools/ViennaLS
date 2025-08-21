@@ -33,7 +33,7 @@ set(PYBIND11_FINDPYTHON ON)
 
 CPMFindPackage(
   NAME pybind11
-  VERSION 2.12.0
+  VERSION 3.0.0
   GIT_REPOSITORY "https://github.com/pybind/pybind11")
 
 # --------------------------------------------------------------------------------------------------------
@@ -52,18 +52,13 @@ endif()
 # Setup Bindings
 # --------------------------------------------------------------------------------------------------------
 
-viennacore_setup_binding(viennals2d ${VIENNALS_LIBRARY_OUTPUT_DIR})
-viennacore_setup_binding(viennals3d ${VIENNALS_LIBRARY_OUTPUT_DIR})
+viennacore_setup_binding(viennals ${VIENNALS_LIBRARY_OUTPUT_DIR})
 
-target_link_libraries(viennals2d PRIVATE ViennaLS)
-target_link_libraries(viennals3d PRIVATE ViennaLS)
+target_link_libraries(viennals PRIVATE ViennaLS)
 
 target_compile_definitions(
-  viennals2d PRIVATE -DVIENNALS_PYTHON_DIMENSION=2 -DVIENNALS_MODULE_NAME=viennals2d
-                     -DVIENNALS_VERSION=${CMAKE_PROJECT_VERSION})
-target_compile_definitions(
-  viennals3d PRIVATE -DVIENNALS_PYTHON_DIMENSION=3 -DVIENNALS_MODULE_NAME=viennals3d
-                     -DVIENNALS_VERSION=${CMAKE_PROJECT_VERSION})
+  viennals PRIVATE -DVIENNALS_MODULE_NAME=viennals
+                   -DVIENNALS_VERSION=${CMAKE_PROJECT_VERSION})
 
 # --------------------------------------------------------------------------------------------------------
 # Setup Lib-Folder
@@ -72,7 +67,7 @@ target_compile_definitions(
 set(VIENNALS_LIB_FOLDER ${VIENNALS_LIBRARY_OUTPUT_DIR}/viennals.libs)
 
 # Not required for both targets, one will suffice
-viennacore_setup_vtk_env(viennals2d ${VIENNALS_LIB_FOLDER})
+viennacore_setup_vtk_env(viennals ${VIENNALS_LIB_FOLDER})
 
 install(
   DIRECTORY ${VIENNALS_LIB_FOLDER}
