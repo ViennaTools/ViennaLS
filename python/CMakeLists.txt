@@ -37,37 +37,44 @@ CPMFindPackage(
   GIT_REPOSITORY "https://github.com/pybind/pybind11")
 
 # --------------------------------------------------------------------------------------------------------
-# Constants
-# --------------------------------------------------------------------------------------------------------
-
-set(VIENNALS_PYTHON_MODULE_NAME "viennals")
-set(VIENNALS_LIBRARY_OUTPUT_DIR ${CMAKE_BINARY_DIR})
-
-if(CMAKE_LIBRARY_OUTPUT_DIRECTORY)
-  set(VIENNALS_LIBRARY_OUTPUT_DIR "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
-  message(STATUS "[ViennaLS] Using Library Output Directory for bindings")
-endif()
-
-# --------------------------------------------------------------------------------------------------------
 # Setup Bindings
 # --------------------------------------------------------------------------------------------------------
 
-viennacore_setup_binding(viennals ${VIENNALS_LIBRARY_OUTPUT_DIR})
+set(PKG viennals)
+set(MOD _core)
 
-target_link_libraries(viennals PRIVATE ViennaLS)
+pybind11_add_module(${MOD} pyWrap.cpp)
+target_link_libraries(${MOD} PRIVATE ViennaLS)
+target_compile_definitions(${MOD} PRIVATE VIENNALS_MODULE_NAME=${MOD})
+target_compile_definitions(${MOD} PRIVATE VIENNALS_VERSION=${PROJECT_VERSION})
 
-target_compile_definitions(
-  viennals PRIVATE -DVIENNALS_MODULE_NAME=viennals
-                   -DVIENNALS_VERSION=${CMAKE_PROJECT_VERSION})
+# Put the built .so in build/<pkg> for convenience
+set_target_properties(${MOD} PROPERTIES
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PKG}"
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PKG}"
+  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PKG}"
+)
+
+# Install into site-packages/<pkg>/  (RELATIVE path!)
+install(TARGETS ${MOD}
+  LIBRARY DESTINATION ${PKG}
+  RUNTIME DESTINATION ${PKG}
+  ARCHIVE DESTINATION ${PKG}
+)
+
+# Package files 
+install(FILES ${CMAKE_SOURCE_DIR}/python/__init__.py DESTINATION ${PKG})
+
+add_dependencies(${PROJECT_NAME} ${MOD})
 
 # --------------------------------------------------------------------------------------------------------
 # Setup Lib-Folder
 # --------------------------------------------------------------------------------------------------------
 
-set(VIENNALS_LIB_FOLDER ${VIENNALS_LIBRARY_OUTPUT_DIR}/viennals.libs)
+set(VIENNALS_LIB_FOLDER ${CMAKE_BINARY_DIR}/${PKG}.libs)
 
 # Not required for both targets, one will suffice
-viennacore_setup_vtk_env(viennals ${VIENNALS_LIB_FOLDER})
+viennacore_setup_vtk_env(${MOD} ${VIENNALS_LIB_FOLDER})
 
 install(
   DIRECTORY ${VIENNALS_LIB_FOLDER}

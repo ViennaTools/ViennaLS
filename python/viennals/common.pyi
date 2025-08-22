@@ -1,13 +1,13 @@
 """
-ViennaLS is a header-only C++ level set library developed for high performance topography simulations. The main design goals are simplicity and efficiency, tailored towards scientific simulations. ViennaLS can also be used for visualization applications, although this is not the main design target.
+Common functions, not bound to dimension
 """
 
 from __future__ import annotations
 import collections.abc
 import enum
 import typing
-from . import d2
-from . import d3
+import viennals.d2
+import viennals.d3
 
 __all__: list[str] = [
     "BooleanOperationEnum",
@@ -29,10 +29,6 @@ __all__: list[str] = [
     "VTKWriter",
     "VelocityField",
     "VoidTopSurfaceEnum",
-    "d2",
-    "d3",
-    "setNumThreads",
-    "version",
 ]
 
 class BooleanOperationEnum(enum.IntEnum):
@@ -101,8 +97,8 @@ class Extrude:
     @typing.overload
     def __init__(
         self,
-        arg0: d2.Domain,
-        arg1: d3.Domain,
+        arg0: viennals.d2.Domain,
+        arg1: viennals.d3.Domain,
         arg2: typing.Annotated[
             collections.abc.Sequence[typing.SupportsFloat], "FixedSize(2)"
         ],
@@ -148,12 +144,12 @@ class Extrude:
         Set the dimension which should be extruded
         """
 
-    def setInputLevelSet(self, arg0: d2.Domain) -> None:
+    def setInputLevelSet(self, arg0: viennals.d2.Domain) -> None:
         """
         Set 2D input Level Set
         """
 
-    def setOutputLevelSet(self, arg0: d3.Domain) -> None:
+    def setOutputLevelSet(self, arg0: viennals.d3.Domain) -> None:
         """
         Set 3D output Level Set
         """
@@ -468,21 +464,24 @@ class Slice:
     @typing.overload
     def __init__(
         self,
-        arg0: d3.Domain,
-        arg1: d2.Domain,
+        arg0: viennals.d3.Domain,
+        arg1: viennals.d2.Domain,
         arg2: typing.SupportsInt,
         arg3: typing.SupportsFloat,
     ) -> None: ...
     @typing.overload
     def __init__(
-        self, arg0: d3.Domain, arg1: typing.SupportsInt, arg2: typing.SupportsFloat
+        self,
+        arg0: viennals.d3.Domain,
+        arg1: typing.SupportsInt,
+        arg2: typing.SupportsFloat,
     ) -> None: ...
     def apply(self) -> None:
         """
         Extract the 2D slice from the 3D domain.
         """
 
-    def getSliceLevelSet(self) -> d2.Domain:
+    def getSliceLevelSet(self) -> viennals.d2.Domain:
         """
         Get the 2D slice level set after extraction.
         """
@@ -497,7 +496,7 @@ class Slice:
         Set the dimension along which to slice (0=x, 1=y, 2=z).
         """
 
-    def setSliceLevelSet(self, arg0: d2.Domain) -> None:
+    def setSliceLevelSet(self, arg0: viennals.d2.Domain) -> None:
         """
         Set the 2D level set where the extracted slice will be stored.
         """
@@ -507,7 +506,7 @@ class Slice:
         Set the position along the slice dimension where to extract the slice.
         """
 
-    def setSourceLevelSet(self, arg0: d3.Domain) -> None:
+    def setSourceLevelSet(self, arg0: viennals.d3.Domain) -> None:
         """
         Set the 3D source level set from which to extract the slice.
         """
@@ -706,8 +705,3 @@ class VoidTopSurfaceEnum(enum.IntEnum):
         """
         Convert to a string according to format_spec.
         """
-
-def setNumThreads(arg0: typing.SupportsInt) -> None: ...
-
-__version__: str = "5.0.0"
-version: str = "5.0.0"

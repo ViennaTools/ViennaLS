@@ -5,7 +5,7 @@
 from __future__ import annotations
 import collections.abc
 import typing
-import viennals.viennals
+import viennals.common
 
 __all__: list[str] = [
     "Advect",
@@ -52,7 +52,7 @@ class Advect:
     @typing.overload
     def __init__(self, arg0: Domain) -> None: ...
     @typing.overload
-    def __init__(self, arg0: Domain, arg1: viennals.viennals.VelocityField) -> None: ...
+    def __init__(self, arg0: Domain, arg1: viennals.common.VelocityField) -> None: ...
     def apply(self) -> None:
         """
         Perform advection.
@@ -118,9 +118,7 @@ class Advect:
         Set whether voids in the geometry should be ignored during advection or not.
         """
 
-    def setIntegrationScheme(
-        self, arg0: viennals.viennals.IntegrationSchemeEnum
-    ) -> None:
+    def setIntegrationScheme(self, arg0: viennals.common.IntegrationSchemeEnum) -> None:
         """
         Set the integration scheme to use during advection.
         """
@@ -130,7 +128,7 @@ class Advect:
         Set the maximum time step size relative to grid size. Advection is only stable for <0.5.
         """
 
-    def setVelocityField(self, arg0: viennals.viennals.VelocityField) -> None:
+    def setVelocityField(self, arg0: viennals.common.VelocityField) -> None:
         """
         Set the velocity to use for advection.
         """
@@ -144,18 +142,18 @@ class BooleanOperation:
     def __init__(self, arg0: Domain, arg1: Domain) -> None: ...
     @typing.overload
     def __init__(
-        self, arg0: Domain, arg1: viennals.viennals.BooleanOperationEnum
+        self, arg0: Domain, arg1: viennals.common.BooleanOperationEnum
     ) -> None: ...
     @typing.overload
     def __init__(
-        self, arg0: Domain, arg1: Domain, arg2: viennals.viennals.BooleanOperationEnum
+        self, arg0: Domain, arg1: Domain, arg2: viennals.common.BooleanOperationEnum
     ) -> None: ...
     def apply(self) -> None:
         """
         Perform the boolean operation.
         """
 
-    def setBooleanOperation(self, arg0: viennals.viennals.BooleanOperationEnum) -> None:
+    def setBooleanOperation(self, arg0: viennals.common.BooleanOperationEnum) -> None:
         """
         Set which type of boolean operation should be performed.
         """
@@ -224,13 +222,13 @@ class CalculateCurvatures:
     @typing.overload
     def __init__(self, arg0: Domain) -> None: ...
     @typing.overload
-    def __init__(self, arg0: Domain, arg1: viennals.viennals.CurvatureEnum) -> None: ...
+    def __init__(self, arg0: Domain, arg1: viennals.common.CurvatureEnum) -> None: ...
     def apply(self) -> None:
         """
         Perform normal vector calculation.
         """
 
-    def setCurvatureType(self, arg0: viennals.viennals.CurvatureEnum) -> None:
+    def setCurvatureType(self, arg0: viennals.common.CurvatureEnum) -> None:
         """
         Set which method to use for calculation: Defaults to mean curvature.
         """
@@ -290,13 +288,13 @@ class ConvexHull:
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
-    def __init__(self, arg0: viennals.viennals.Mesh, arg1: PointCloud) -> None: ...
+    def __init__(self, arg0: viennals.common.Mesh, arg1: PointCloud) -> None: ...
     def apply(self) -> None:
         """
         Generate Hull.
         """
 
-    def setMesh(self, arg0: viennals.viennals.Mesh) -> None:
+    def setMesh(self, arg0: viennals.common.Mesh) -> None:
         """
         Set mesh object where the generated mesh should be stored.
         """
@@ -328,14 +326,14 @@ class DetectFeatures:
         self,
         arg0: Domain,
         arg1: typing.SupportsFloat,
-        arg2: viennals.viennals.FeatureDetectionEnum,
+        arg2: viennals.common.FeatureDetectionEnum,
     ) -> None: ...
     def apply(self) -> None:
         """
         Detect features.
         """
 
-    def setDetectionMethod(self, arg0: viennals.viennals.FeatureDetectionEnum) -> None:
+    def setDetectionMethod(self, arg0: viennals.common.FeatureDetectionEnum) -> None:
         """
         Set which method to use to detect features. Defaults to Curvature.
         """
@@ -357,7 +355,7 @@ class Domain:
             collections.abc.Sequence[typing.SupportsFloat], "FixedSize(6)"
         ],
         boundaryConditions: typing.Annotated[
-            collections.abc.Sequence[viennals.viennals.BoundaryConditionEnum],
+            collections.abc.Sequence[viennals.common.BoundaryConditionEnum],
             "FixedSize(3)",
         ],
         gridDelta: typing.SupportsFloat = 1.0,
@@ -430,9 +428,9 @@ class FromMesh:
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
-    def __init__(self, arg0: Domain, arg1: viennals.viennals.Mesh) -> None: ...
+    def __init__(self, arg0: Domain, arg1: viennals.common.Mesh) -> None: ...
     def apply(self) -> None: ...
-    def setMesh(self, arg0: viennals.viennals.Mesh) -> None:
+    def setMesh(self, arg0: viennals.common.Mesh) -> None:
         """
         Set the mesh to read from.
         """
@@ -443,10 +441,10 @@ class FromSurfaceMesh:
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
-    def __init__(self, arg0: Domain, arg1: viennals.viennals.Mesh) -> None: ...
+    def __init__(self, arg0: Domain, arg1: viennals.common.Mesh) -> None: ...
     @typing.overload
     def __init__(
-        self, arg0: Domain, arg1: viennals.viennals.Mesh, arg2: bool
+        self, arg0: Domain, arg1: viennals.common.Mesh, arg2: bool
     ) -> None: ...
     def apply(self) -> None:
         """
@@ -458,7 +456,7 @@ class FromSurfaceMesh:
         Set levelset to read into.
         """
 
-    def setMesh(self, arg0: viennals.viennals.Mesh) -> None:
+    def setMesh(self, arg0: viennals.common.Mesh) -> None:
         """
         Set the mesh to read from.
         """
@@ -481,10 +479,10 @@ class FromVolumeMesh:
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
-    def __init__(self, arg0: hrleGrid, arg1: viennals.viennals.Mesh) -> None: ...
+    def __init__(self, arg0: hrleGrid, arg1: viennals.common.Mesh) -> None: ...
     @typing.overload
     def __init__(
-        self, arg0: hrleGrid, arg1: viennals.viennals.Mesh, arg2: bool
+        self, arg0: hrleGrid, arg1: viennals.common.Mesh, arg2: bool
     ) -> None: ...
     def apply(self) -> None:
         """
@@ -496,7 +494,7 @@ class FromVolumeMesh:
         Set the grid used to read in the level sets.
         """
 
-    def setMesh(self, arg0: viennals.viennals.Mesh) -> None:
+    def setMesh(self, arg0: viennals.common.Mesh) -> None:
         """
         Set the mesh to read from.
         """
@@ -635,7 +633,7 @@ class MarkVoidPoints:
         Save the connectivity information of all LS points in the pointData of the level set.
         """
 
-    def setVoidTopSurface(self, arg0: viennals.viennals.VoidTopSurfaceEnum) -> None:
+    def setVoidTopSurface(self, arg0: viennals.common.VoidTopSurfaceEnum) -> None:
         """
         Set the logic by which to choose the surface which is non-void. All other connected surfaces will then be marked as void points.
         """
@@ -744,7 +742,7 @@ class RemoveStrayPoints:
         Set levelset for stray point removal.
         """
 
-    def setVoidTopSurface(self, arg0: viennals.viennals.VoidTopSurfaceEnum) -> None:
+    def setVoidTopSurface(self, arg0: viennals.common.VoidTopSurfaceEnum) -> None:
         """
         Set the logic by which to choose the surface which should be kept. All other LS values will be marked as stray points and removed.
         """
@@ -801,7 +799,7 @@ class ToDiskMesh:
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
-    def __init__(self, arg0: Domain, arg1: viennals.viennals.Mesh) -> None: ...
+    def __init__(self, arg0: Domain, arg1: viennals.common.Mesh) -> None: ...
     def apply(self) -> None:
         """
         Convert the levelset to a surface mesh.
@@ -812,7 +810,7 @@ class ToDiskMesh:
         Set levelset to mesh.
         """
 
-    def setMesh(self, arg0: viennals.viennals.Mesh) -> None:
+    def setMesh(self, arg0: viennals.common.Mesh) -> None:
         """
         Set the mesh to generate.
         """
@@ -821,14 +819,14 @@ class ToMesh:
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
-    def __init__(self, arg0: Domain, arg1: viennals.viennals.Mesh) -> None: ...
+    def __init__(self, arg0: Domain, arg1: viennals.common.Mesh) -> None: ...
     @typing.overload
     def __init__(
-        self, arg0: Domain, arg1: viennals.viennals.Mesh, arg2: bool
+        self, arg0: Domain, arg1: viennals.common.Mesh, arg2: bool
     ) -> None: ...
     @typing.overload
     def __init__(
-        self, arg0: Domain, arg1: viennals.viennals.Mesh, arg2: bool, arg3: bool
+        self, arg0: Domain, arg1: viennals.common.Mesh, arg2: bool, arg3: bool
     ) -> None: ...
     def apply(self) -> None:
         """
@@ -840,7 +838,7 @@ class ToMesh:
         Set levelset to mesh.
         """
 
-    def setMesh(self, arg0: viennals.viennals.Mesh) -> None:
+    def setMesh(self, arg0: viennals.common.Mesh) -> None:
         """
         Set the mesh to generate.
         """
@@ -859,7 +857,7 @@ class ToSurfaceMesh:
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
-    def __init__(self, arg0: Domain, arg1: viennals.viennals.Mesh) -> None: ...
+    def __init__(self, arg0: Domain, arg1: viennals.common.Mesh) -> None: ...
     def apply(self) -> None:
         """
         Convert the levelset to a surface mesh.
@@ -870,7 +868,7 @@ class ToSurfaceMesh:
         Set levelset to mesh.
         """
 
-    def setMesh(self, arg0: viennals.viennals.Mesh) -> None:
+    def setMesh(self, arg0: viennals.common.Mesh) -> None:
         """
         Set the mesh to generate.
         """
@@ -879,12 +877,12 @@ class ToVoxelMesh:
     @typing.overload
     def __init__(self) -> None: ...
     @typing.overload
-    def __init__(self, arg0: viennals.viennals.Mesh) -> None: ...
+    def __init__(self, arg0: viennals.common.Mesh) -> None: ...
     @typing.overload
-    def __init__(self, arg0: Domain, arg1: viennals.viennals.Mesh) -> None: ...
+    def __init__(self, arg0: Domain, arg1: viennals.common.Mesh) -> None: ...
     @typing.overload
     def __init__(
-        self, arg0: collections.abc.Sequence[Domain], arg1: viennals.viennals.Mesh
+        self, arg0: collections.abc.Sequence[Domain], arg1: viennals.common.Mesh
     ) -> None: ...
     def apply(self) -> None:
         """
@@ -896,7 +894,7 @@ class ToVoxelMesh:
         Insert next level set to output in the mesh.
         """
 
-    def setMesh(self, arg0: viennals.viennals.Mesh) -> None:
+    def setMesh(self, arg0: viennals.common.Mesh) -> None:
         """
         Set the mesh to generate.
         """

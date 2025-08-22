@@ -10,23 +10,35 @@ visualisation applications, although this is not the main design target.
 
 import sys
 
-def _windows_dll_path():
-    
-    import os
-    # import vtk
 
-    # vtk_path = vtk.__path__[0]
+def _windows_dll_path():
+
+    import os
 
     additional_paths = [
-        # os.path.join(os.path.dirname(vtk_path), 'vtk.libs'),
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), 'viennals.libs')
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "viennals.libs")
     ]
 
     for path in additional_paths:
         os.add_dll_directory(path)
         os.environ["PATH"] = path + os.pathsep + os.environ["PATH"]
 
+
 if sys.platform == "win32":
     _windows_dll_path()
 
-from .@NAME@ import *
+from . import _core as _C  # the binary inside the package
+import sys as _sys
+
+d2 = _C.d2
+d3 = _C.d3
+common = _C.common
+_sys.modules[__name__ + ".d2"] = d2
+_sys.modules[__name__ + ".d3"] = d3
+_sys.modules[__name__ + ".common"] = common
+
+# top-level API
+setNumThreads = _C.setNumThreads
+__version__ = getattr(_C, "__version__", None)
+__all__ = ["d2", "d3", "common", "setNumThreads", "__version__"]
+del _C, _sys
