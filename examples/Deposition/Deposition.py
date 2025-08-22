@@ -1,4 +1,6 @@
-import viennals3d as vls
+import viennals.d3 as vls
+from viennals.common import VelocityField, Mesh, VTKWriter, BooleanOperationEnum
+
 
 # @example Deposition.py
 #  3D Example showing how to use the library for topography
@@ -6,7 +8,7 @@ import viennals3d as vls
 #  layer of a different material is then grown on top.
 
 
-class velocityField(vls.VelocityField):
+class velocityField(VelocityField):
     # coord and normalVec are lists with 3 elements
     # in 2D coord[2] and normalVec[2] are zero
     # getScalarVelocity must return a scalar
@@ -45,7 +47,7 @@ vls.MakeGeometry(trench, vls.Box(minCorner, maxCorner)).apply()
 # Create trench geometry
 print("Booling trench")
 vls.BooleanOperation(
-    substrate, trench, vls.BooleanOperationEnum.RELATIVE_COMPLEMENT
+    substrate, trench, BooleanOperationEnum.RELATIVE_COMPLEMENT
 ).apply()
 
 # Now grow new material
@@ -71,16 +73,16 @@ advectionKernel.setVelocityField(velocities)
 counter = 1
 passedTime = 0
 
-mesh = vls.Mesh()
+mesh = Mesh()
 while passedTime < 4:
     advectionKernel.apply()
     passedTime += advectionKernel.getAdvectedTime()
 
     vls.ToSurfaceMesh(newLayer, mesh).apply()
-    vls.VTKWriter(mesh, "trench-{}.vtp".format(counter)).apply()
+    VTKWriter(mesh, "trench-{}.vtp".format(counter)).apply()
 
     vls.ToMesh(newLayer, mesh).apply()
-    vls.VTKWriter(mesh, "LS-{}.vtp".format(counter)).apply()
+    VTKWriter(mesh, "LS-{}.vtp".format(counter)).apply()
 
     counter = counter + 1
 

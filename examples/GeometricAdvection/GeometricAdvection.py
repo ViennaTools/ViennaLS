@@ -1,4 +1,5 @@
-import viennals3d as vls
+import viennals.d3 as vls
+from viennals.common import Mesh, VTKWriter, BooleanOperationEnum
 
 # @example GeometricAdvection.py
 #  3D Example showing how to use the library for topography
@@ -32,12 +33,12 @@ vls.MakeGeometry(trench, vls.Box(minCorner, maxCorner)).apply()
 # Create trench geometry
 print("Booling trench")
 vls.BooleanOperation(
-    substrate, trench, vls.BooleanOperationEnum.RELATIVE_COMPLEMENT
+    substrate, trench, BooleanOperationEnum.RELATIVE_COMPLEMENT
 ).apply()
 
-mesh = vls.Mesh()
+mesh = Mesh()
 vls.ToSurfaceMesh(substrate, mesh).apply()
-vls.VTKWriter(mesh, "trench-initial.vtp").apply()
+VTKWriter(mesh, "trench-initial.vtp").apply()
 
 # Now grow new material
 
@@ -52,4 +53,4 @@ dist = vls.SphereDistribution(4.0, gridDelta)
 vls.GeometricAdvect(newLayer, dist).apply()
 
 vls.ToSurfaceMesh(newLayer, mesh).apply()
-vls.VTKWriter(mesh, "trench-final.vtp").apply()
+VTKWriter(mesh, "trench-final.vtp").apply()
