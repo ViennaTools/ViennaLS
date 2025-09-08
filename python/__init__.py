@@ -32,13 +32,14 @@ import sys as _sys
 
 d2 = _C.d2
 d3 = _C.d3
-common = _C.common
 _sys.modules[__name__ + ".d2"] = d2
 _sys.modules[__name__ + ".d3"] = d3
-_sys.modules[__name__ + ".common"] = common
 
-# top-level API
-setNumThreads = _C.setNumThreads
-__version__ = getattr(_C, "__version__", None)
-__all__ = ["d2", "d3", "common", "setNumThreads", "__version__"]
-del _C, _sys
+
+# forward any other (common) names to _core (PEP 562)
+def __getattr__(name):
+    return getattr(_C, name)
+
+
+def __dir__():
+    return sorted(set(globals()) | set(dir(_C)))

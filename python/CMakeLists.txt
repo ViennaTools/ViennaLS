@@ -45,24 +45,24 @@ set(MOD _core)
 
 pybind11_add_module(${MOD} pyWrap.cpp)
 target_link_libraries(${MOD} PRIVATE ViennaLS)
-target_compile_definitions(${MOD} PRIVATE VIENNALS_MODULE_NAME=${MOD})
-target_compile_definitions(${MOD} PRIVATE VIENNALS_VERSION=${PROJECT_VERSION})
+target_compile_definitions(${MOD} PRIVATE VIENNALS_MODULE_NAME=${MOD}
+                                          VIENNALS_VERSION=${PROJECT_VERSION})
 
 # Put the built .so in build/<pkg> for convenience
-set_target_properties(${MOD} PROPERTIES
-  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PKG}"
-  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PKG}"
-  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PKG}"
-)
+set_target_properties(
+  ${MOD}
+  PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PKG}"
+             RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PKG}"
+             ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PKG}")
 
 # Install into site-packages/<pkg>/  (RELATIVE path!)
-install(TARGETS ${MOD}
+install(
+  TARGETS ${MOD}
   LIBRARY DESTINATION ${PKG}
   RUNTIME DESTINATION ${PKG}
-  ARCHIVE DESTINATION ${PKG}
-)
+  ARCHIVE DESTINATION ${PKG})
 
-# Package files 
+# Package files
 install(FILES ${CMAKE_SOURCE_DIR}/python/__init__.py DESTINATION ${PKG})
 
 add_dependencies(${PROJECT_NAME} ${MOD})

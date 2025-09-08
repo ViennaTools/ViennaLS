@@ -52,13 +52,13 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
   // wrap omp_set_num_threads to control number of threads
   module.def("setNumThreads", &omp_set_num_threads);
 
-  auto common = module.def_submodule(
-      "common", "Common functions, not bound to dimension");
-  common.attr("__name__") = "viennals.common";
-  common.attr("__package__") = "viennals";
+  //   auto common = module.def_submodule(
+  //       "common", "Common functions, not bound to dimension");
+  //   common.attr("__name__") = "viennals.common";
+  //   common.attr("__package__") = "viennals";
 
   // --------- Logger ---------
-  py::enum_<LogLevel>(common, "LogLevel", py::module_local())
+  py::enum_<LogLevel>(module, "LogLevel", py::module_local())
       .value("ERROR", LogLevel::ERROR)
       .value("WARNING", LogLevel::WARNING)
       .value("INFO", LogLevel::INFO)
@@ -66,7 +66,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .value("TIMING", LogLevel::TIMING)
       .value("DEBUG", LogLevel::DEBUG);
 
-  py::class_<Logger, SmartPointer<Logger>>(common, "Logger", py::module_local())
+  py::class_<Logger, SmartPointer<Logger>>(module, "Logger", py::module_local())
       .def_static("setLogLevel", &Logger::setLogLevel)
       .def_static("getLogLevel", &Logger::getLogLevel)
       .def_static("setLogFile", &Logger::setLogFile)
@@ -87,7 +87,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("print", [](Logger &instance) { instance.print(std::cout); });
 
   // ------ ENUMS ------
-  py::native_enum<IntegrationSchemeEnum>(common, "IntegrationSchemeEnum",
+  py::native_enum<IntegrationSchemeEnum>(module, "IntegrationSchemeEnum",
                                          "enum.IntEnum")
       .value("ENGQUIST_OSHER_1ST_ORDER",
              IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER)
@@ -111,7 +111,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
              IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER)
       .finalize();
 
-  py::native_enum<BooleanOperationEnum>(common, "BooleanOperationEnum",
+  py::native_enum<BooleanOperationEnum>(module, "BooleanOperationEnum",
                                         "enum.IntEnum")
       .value("INTERSECT", BooleanOperationEnum::INTERSECT)
       .value("UNION", BooleanOperationEnum::UNION)
@@ -119,20 +119,20 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .value("INVERT", BooleanOperationEnum::INVERT)
       .finalize();
 
-  py::native_enum<CurvatureEnum>(common, "CurvatureEnum", "enum.IntEnum")
+  py::native_enum<CurvatureEnum>(module, "CurvatureEnum", "enum.IntEnum")
       .value("MEAN_CURVATURE", CurvatureEnum::MEAN_CURVATURE)
       .value("GAUSSIAN_CURVATURE", CurvatureEnum::GAUSSIAN_CURVATURE)
       .value("MEAN_AND_GAUSSIAN_CURVATURE",
              CurvatureEnum::MEAN_AND_GAUSSIAN_CURVATURE)
       .finalize();
 
-  py::native_enum<FeatureDetectionEnum>(common, "FeatureDetectionEnum",
+  py::native_enum<FeatureDetectionEnum>(module, "FeatureDetectionEnum",
                                         "enum.IntEnum")
       .value("CURVATURE", FeatureDetectionEnum::CURVATURE)
       .value("NORMALS_ANGLE", FeatureDetectionEnum::NORMALS_ANGLE)
       .finalize();
 
-  py::native_enum<BoundaryConditionEnum>(common, "BoundaryConditionEnum",
+  py::native_enum<BoundaryConditionEnum>(module, "BoundaryConditionEnum",
                                          "enum.IntEnum")
       .value("REFLECTIVE_BOUNDARY", BoundaryConditionEnum::REFLECTIVE_BOUNDARY)
       .value("INFINITE_BOUNDARY", BoundaryConditionEnum::INFINITE_BOUNDARY)
@@ -143,13 +143,13 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
              BoundaryConditionEnum::NEG_INFINITE_BOUNDARY)
       .finalize();
 
-  py::native_enum<FileFormatEnum>(common, "FileFormatEnum", "enum.IntEnum")
+  py::native_enum<FileFormatEnum>(module, "FileFormatEnum", "enum.IntEnum")
       .value("VTK_LEGACY", FileFormatEnum::VTK_LEGACY)
       .value("VTP", FileFormatEnum::VTP)
       .value("VTU", FileFormatEnum::VTU)
       .finalize();
 
-  py::native_enum<VoidTopSurfaceEnum>(common, "VoidTopSurfaceEnum",
+  py::native_enum<VoidTopSurfaceEnum>(module, "VoidTopSurfaceEnum",
                                       "enum.IntEnum")
       .value("LEX_LOWEST", VoidTopSurfaceEnum::LEX_LOWEST)
       .value("LEX_HIGHEST", VoidTopSurfaceEnum::LEX_HIGHEST)
@@ -157,7 +157,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .value("SMALLEST", VoidTopSurfaceEnum::SMALLEST)
       .finalize();
 
-  py::native_enum<TransformEnum>(common, "TransformEnum", "enum.IntEnum")
+  py::native_enum<TransformEnum>(module, "TransformEnum", "enum.IntEnum")
       .value("TRANSLATION", TransformEnum::TRANSLATION)
       .value("ROTATION", TransformEnum::ROTATION)
       .value("SCALE", TransformEnum::SCALE)
@@ -165,19 +165,19 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
 
   // ---------- MESH CLASSES ----------
   // PointData
-  py::class_<PointData<T>, SmartPointer<PointData<T>>>(common, "PointData")
+  py::class_<PointData<T>, SmartPointer<PointData<T>>>(module, "PointData")
       // constructors
       .def(py::init(&SmartPointer<PointData<T>>::New<>))
       // methods
       .def("insertNextScalarData",
-           (void(PointData<T>::*)(const PointData<T>::ScalarDataType &,
-                                  const std::string &)) &
-               PointData<T>::insertNextScalarData,
+           (void (PointData<T>::*)(
+               const PointData<T>::ScalarDataType &,
+               const std::string &))&PointData<T>::insertNextScalarData,
            py::arg("scalars"), py::arg("label") = "Scalars")
       .def("insertNextVectorData",
-           (void(PointData<T>::*)(const PointData<T>::VectorDataType &,
-                                  const std::string &)) &
-               PointData<T>::insertNextVectorData,
+           (void (PointData<T>::*)(
+               const PointData<T>::VectorDataType &,
+               const std::string &))&PointData<T>::insertNextVectorData,
            py::arg("vectors"), py::arg("label") = "Vectors")
       .def("getScalarDataSize", &PointData<T>::getScalarDataSize)
       .def("getVectorDataSize", &PointData<T>::getVectorDataSize)
@@ -197,7 +197,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("getVectorDataLabel", &PointData<T>::getVectorDataLabel);
 
   // Mesh
-  py::class_<Mesh<T>, SmartPointer<Mesh<T>>>(common, "Mesh")
+  py::class_<Mesh<T>, SmartPointer<Mesh<T>>>(module, "Mesh")
       // constructors
       .def(py::init(&SmartPointer<Mesh<T>>::New<>))
       // methods
@@ -250,7 +250,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("clear", &Mesh<T>::clear, "Clear all data in the mesh.");
 
   // TransformMesh
-  py::class_<TransformMesh<T>, SmartPointer<TransformMesh<T>>>(common,
+  py::class_<TransformMesh<T>, SmartPointer<TransformMesh<T>>>(module,
                                                                "TransformMesh")
       // constructors
       .def(py::init([](SmartPointer<Mesh<T>> &mesh, TransformEnum op,
@@ -264,7 +264,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("apply", &TransformMesh<T>::apply, "Apply the transformation.");
 
   // VTKReader
-  py::class_<VTKReader<T>, SmartPointer<VTKReader<T>>>(common, "VTKReader")
+  py::class_<VTKReader<T>, SmartPointer<VTKReader<T>>>(module, "VTKReader")
       // constructors
       .def(py::init(&SmartPointer<VTKReader<T>>::New<>))
       .def(py::init(&SmartPointer<VTKReader<T>>::New<SmartPointer<Mesh<T>> &>))
@@ -285,7 +285,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("apply", &VTKReader<T>::apply, "Read the mesh.");
 
   // VTKWriter
-  py::class_<VTKWriter<T>, SmartPointer<VTKWriter<T>>>(common, "VTKWriter")
+  py::class_<VTKWriter<T>, SmartPointer<VTKWriter<T>>>(module, "VTKWriter")
       // constructors
       .def(py::init(&SmartPointer<VTKWriter<T>>::New<>))
       .def(py::init(&SmartPointer<VTKWriter<T>>::New<SmartPointer<Mesh<T>> &>))
@@ -320,7 +320,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
 
   // --------------- OTHER CLASSES ----------------
   // MaterialMap
-  py::class_<MaterialMap, SmartPointer<MaterialMap>>(common, "MaterialMap")
+  py::class_<MaterialMap, SmartPointer<MaterialMap>>(module, "MaterialMap")
       // constructors
       .def(py::init(&SmartPointer<MaterialMap>::New<>))
       // methods
@@ -334,7 +334,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
 
   // VelocityField
   py::class_<VelocityField<T>, SmartPointer<VelocityField<T>>,
-             PylsVelocityField>(common, "VelocityField")
+             PylsVelocityField>(module, "VelocityField")
       // constructors
       .def(py::init<>())
       // methods
@@ -361,9 +361,9 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
   m3.attr("__package__") = "viennals";
   bindApi<3>(m3);
 
-  // SLICE AND EXTRUDE
+  // SLICE AND EXTRUDE (requires declaration of Domain)
   // Slice
-  py::class_<Slice<T>, SmartPointer<Slice<T>>>(common, "Slice")
+  py::class_<Slice<T>, SmartPointer<Slice<T>>>(module, "Slice")
       // constructors
       .def(py::init(&SmartPointer<Slice<T>>::New<>))
       .def(py::init(
@@ -391,7 +391,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Extract the 2D slice from the 3D domain.");
 
   // Extrude
-  py::class_<Extrude<T>, SmartPointer<Extrude<T>>>(common, "Extrude")
+  py::class_<Extrude<T>, SmartPointer<Extrude<T>>>(module, "Extrude")
       // constructors
       .def(py::init(&SmartPointer<Extrude<T>>::New<>))
       .def(py::init(

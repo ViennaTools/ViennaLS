@@ -19,7 +19,7 @@ class epitaxy final : public VelocityField<T> {
   static constexpr double high = 1.0;
 
 public:
-  epitaxy(std::vector<double> vel) : velocities(vel){};
+  epitaxy(std::vector<double> vel) : velocities(vel) {};
 
   double getScalarVelocity(const std::array<T, 3> & /*coordinate*/,
                            int material, const std::array<T, 3> &normal,
