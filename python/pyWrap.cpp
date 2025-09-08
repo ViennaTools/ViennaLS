@@ -330,7 +330,15 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("getNumberOfLayers", &MaterialMap::getNumberOfLayers,
            "Get the number of level-sets in the material map.")
       .def("getNumberOfMaterials", &MaterialMap::getNumberOfMaterials)
-      .def("getMaterialId", &MaterialMap::getMaterialId);
+      .def("getMaterialId", &MaterialMap::getMaterialId)
+      .def("isValidIndex", &MaterialMap::isValidIndex)
+      .def("clear", &MaterialMap::clear)
+      .def("reserve", &MaterialMap::reserve)
+      .def("hasMaterial", &MaterialMap::hasMaterial)
+      .def("getMaterials", &MaterialMap::getMaterials,
+           "Get a list of all materials in the map.")
+      .def("getMaterialMap", &MaterialMap::getMaterialMap,
+           "Get the material map.");
 
   // VelocityField
   py::class_<VelocityField<T>, SmartPointer<VelocityField<T>>,
