@@ -1,5 +1,5 @@
 import viennals.d3 as vls
-from viennals.common import VelocityField, Mesh, VTKWriter, BooleanOperationEnum
+from viennals import VelocityField, Mesh, VTKWriter, BooleanOperationEnum
 
 
 # @example Deposition.py
@@ -80,9 +80,6 @@ while passedTime < 4:
 
     vls.ToSurfaceMesh(newLayer, mesh).apply()
     VTKWriter(mesh, "trench-{}.vtp".format(counter)).apply()
-
-    vls.ToMesh(newLayer, mesh).apply()
-    VTKWriter(mesh, "LS-{}.vtp".format(counter)).apply()
 
     counter = counter + 1
 

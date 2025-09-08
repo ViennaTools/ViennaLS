@@ -1,5 +1,5 @@
 import viennals.d3 as vls
-from viennals.common import Mesh, VTKWriter, BooleanOperationEnum
+from viennals import Mesh, VTKWriter, BooleanOperationEnum
 
 # @example GeometricAdvection.py
 #  3D Example showing how to use the library for topography

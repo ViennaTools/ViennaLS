@@ -11,7 +11,7 @@ using namespace viennacore;
 
 /// Enumeration describing which connected component to use
 /// as top surface during void point detection.
-/// All others points will be set as void poitns.
+/// All others points will be set as void points.
 /// LEX_* means the top surface is chosen according to the
 /// lexicographic first or last LS point, while LARGEST
 /// means that the connected component containing the
@@ -23,7 +23,7 @@ enum struct VoidTopSurfaceEnum : unsigned {
   SMALLEST = 3
 };
 
-/// This class is used to mark points of the level set
+/// \brief This class is used to mark points of the level set
 /// which are enclosed in a void.
 template <class T, int D> class MarkVoidPoints {
   using IndexType = std::size_t;

@@ -249,7 +249,7 @@ private:
     auto &grid = levelSet->getGrid();
     viennahrle::CoordType gridDelta = grid.getGridDelta();
 
-    // normalise passedNormal
+    // normalize passedNormal
     double modulus = 0.;
     VectorType<T, D> normal = passedNormal;
     for (unsigned i = 0; i < D; ++i) {

@@ -1,5 +1,5 @@
 import viennals.d2 as vls
-from viennals.common import VelocityField, Mesh, VTKWriter, BooleanOperationEnum
+from viennals import VelocityField, Mesh, VTKWriter, BooleanOperationEnum
 
 # @example AirGapDeposition.py
 #  Example showing how to use the library for topography
