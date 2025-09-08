@@ -20,7 +20,7 @@ template <class T, int D, int order> class EngquistOsher {
   SmartPointer<viennals::VelocityField<T>> velocities;
   viennahrle::SparseStarIterator<viennahrle::Domain<T, D>, order>
       neighborIterator;
-  bool calculateNormalVectors = true;
+  const bool calculateNormalVectors = true;
 
   static T pow2(const T &value) { return value * value; }
 
@@ -132,9 +132,9 @@ public:
         normalVector[i] = (pos + neg) * 0.5; // = 0;
         denominator += normalVector[i] * normalVector[i];
       }
-      denominator = std::sqrt(denominator);
+      denominator = 1. / std::sqrt(denominator);
       for (unsigned i = 0; i < D; ++i) {
-        normalVector[i] /= denominator;
+        normalVector[i] *= denominator;
       }
     }
 

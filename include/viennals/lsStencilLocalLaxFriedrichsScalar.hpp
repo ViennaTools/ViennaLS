@@ -60,9 +60,9 @@ class StencilLocalLaxFriedrichsScalar {
           values.data(), levelSet->getGrid().getGridDelta());
       modulus += normal[i] * normal[i];
     }
-    modulus = std::sqrt(modulus);
+    modulus = 1 / std::sqrt(modulus);
     for (unsigned i = 0; i < D; ++i) {
-      normal[i] /= modulus;
+      normal[i] *= modulus;
     }
     return normal;
   }
@@ -165,10 +165,10 @@ public:
       // normalise normal vector
       denominator += normalVector[i] * normalVector[i];
     }
-    denominator = std::sqrt(denominator);
+    denominator = 1 / std::sqrt(denominator);
 
     for (unsigned i = 0; i < D; ++i) {
-      normalVector[i] /= denominator;
+      normalVector[i] *= denominator;
     }
 
     double scalarVelocity = velocities->getScalarVelocity(

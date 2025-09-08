@@ -128,9 +128,9 @@ public:
     }
 
     if (calculateNormalVectors) {
-      normalModulus = std::sqrt(normalModulus);
+      normalModulus = 1. / std::sqrt(normalModulus);
       for (unsigned i = 0; i < D; ++i) {
-        normalVector[i] /= normalModulus;
+        normalVector[i] *= normalModulus;
       }
     }
 
