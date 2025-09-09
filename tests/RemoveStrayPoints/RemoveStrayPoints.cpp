@@ -68,7 +68,7 @@ int main() {
   cleaner.apply();
 
   // check if the correct surface was removed
-  LSTEST_ASSERT(substrate->getNumberOfPoints() == 42)
+  VC_TEST_ASSERT(substrate->getNumberOfPoints() == 42)
 
   // {
   //   auto mesh = ls::SmartPointer<ls::Mesh<>>::New();

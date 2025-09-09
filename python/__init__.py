@@ -8,8 +8,6 @@ tailored towards scientific simulations. ViennaLS can also be used for
 visualisation applications, although this is not the main design target.
 """
 
-import sys
-
 
 def _windows_dll_path():
 
@@ -24,12 +22,14 @@ def _windows_dll_path():
         os.environ["PATH"] = path + os.pathsep + os.environ["PATH"]
 
 
-if sys.platform == "win32":
+import sys as _sys
+from . import _core as _C  # the binary inside the package
+
+
+if _sys.platform == "win32":
     _windows_dll_path()
 
-from . import _core as _C  # the binary inside the package
-import sys as _sys
-
+# bring d2 and d3 into the top-level namespace
 d2 = _C.d2
 d3 = _C.d3
 _sys.modules[__name__ + ".d2"] = d2

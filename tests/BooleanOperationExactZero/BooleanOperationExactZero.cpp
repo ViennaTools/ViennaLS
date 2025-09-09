@@ -99,13 +99,13 @@ int main() {
            it(substrate->getDomain());
        !it.isFinished(); ++it) {
     auto indices = it.getStartIndices();
-    LSTEST_ASSERT(indices == resultIndices[counter]);
+    VC_TEST_ASSERT(indices == resultIndices[counter]);
 
     auto val = it.getValue();
     if (it.isDefined()) {
-      LSTEST_ASSERT((val - resultValues[counter]) < 1e-4)
+      VC_TEST_ASSERT((val - resultValues[counter]) < 1e-4)
     } else {
-      LSTEST_ASSERT((val < 0.) == (resultValues[counter] < 0.))
+      VC_TEST_ASSERT((val < 0.) == (resultValues[counter] < 0.))
     }
     ++counter;
   }
