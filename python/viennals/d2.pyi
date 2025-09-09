@@ -24,6 +24,7 @@ __all__: list[str] = [
     "DetectFeatures",
     "Domain",
     "Expand",
+    "FinalizeStencilLocalLaxFriedrichs",
     "FromMesh",
     "FromSurfaceMesh",
     "FromVolumeMesh",
@@ -33,6 +34,7 @@ __all__: list[str] = [
     "MarkVoidPoints",
     "Plane",
     "PointCloud",
+    "PrepareStencilLocalLaxFriedrichs",
     "Prune",
     "Reader",
     "Reduce",
@@ -1202,3 +1204,10 @@ class Writer:
 
 class hrleGrid:
     pass
+
+def FinalizeStencilLocalLaxFriedrichs(
+    levelSets: collections.abc.Sequence[Domain],
+) -> None: ...
+def PrepareStencilLocalLaxFriedrichs(
+    levelSets: collections.abc.Sequence[Domain], isDepo: collections.abc.Sequence[bool]
+) -> None: ...

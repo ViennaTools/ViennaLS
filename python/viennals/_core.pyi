@@ -6,8 +6,8 @@ from __future__ import annotations
 import collections.abc
 import enum
 import typing
-import viennals.d2
 from viennals import d2
+import viennals.d2
 from viennals import d3
 import viennals.d3
 
@@ -293,18 +293,32 @@ class Logger:
 
 class MaterialMap:
     def __init__(self) -> None: ...
+    def clear(self) -> None: ...
     def getMaterialId(self, arg0: typing.SupportsInt) -> int: ...
+    def getMaterialMap(self) -> list[int]:
+        """
+        Get the material map.
+        """
+
+    def getMaterials(self) -> set[int]:
+        """
+        Get a list of all materials in the map.
+        """
+
     def getNumberOfLayers(self) -> int:
         """
         Get the number of level-sets in the material map.
         """
 
     def getNumberOfMaterials(self) -> int: ...
+    def hasMaterial(self, arg0: typing.SupportsInt) -> bool: ...
     def insertNextMaterial(self, arg0: typing.SupportsInt) -> None:
         """
         Insert a new material into the map.
         """
 
+    def isValidIndex(self, arg0: typing.SupportsInt) -> bool: ...
+    def reserve(self, arg0: typing.SupportsInt) -> None: ...
     def setMaterialId(
         self, arg0: typing.SupportsInt, arg1: typing.SupportsInt
     ) -> None: ...

@@ -11,7 +11,6 @@ visualisation applications, although this is not the main design target.
 
 from __future__ import annotations
 import sys as _sys
-import sys as sys
 from viennals._core import BooleanOperationEnum
 from viennals._core import BoundaryConditionEnum
 from viennals._core import CurvatureEnum
@@ -59,7 +58,6 @@ __all__: list[str] = [
     "d2",
     "d3",
     "setNumThreads",
-    "sys",
     "version",
 ]
 
