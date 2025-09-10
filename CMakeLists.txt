@@ -130,7 +130,7 @@ elseif(VIENNALS_USE_VTK)
 
   CPMFindPackage(
     NAME VTK
-    GIT_TAG v9.3.1
+    GIT_TAG v9.5.1
     VERSION 9.0.0
     GIT_REPOSITORY "https://gitlab.kitware.com/vtk/vtk"
     EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON}

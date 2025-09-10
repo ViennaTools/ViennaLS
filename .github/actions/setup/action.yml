@@ -25,8 +25,8 @@ runs:
         brew install libomp
         echo "OpenMP_ROOT=$(brew --prefix)/opt/libomp" >> $GITHUB_ENV
 
-    - name: 💻 Setup Deployment Target
-      shell: bash
-      if: ${{ inputs.os == 'macos-latest' }}
-      run: |
-        echo "MACOSX_DEPLOYMENT_TARGET=14.0" >> $GITHUB_ENV
+    # - name: 💻 Setup Deployment Target
+    #   shell: bash
+    #   if: ${{ inputs.os == 'macos-latest' }}
+    #   run: |
+    #     echo "MACOSX_DEPLOYMENT_TARGET=14.0" >> $GITHUB_ENV
