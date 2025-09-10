@@ -90,6 +90,10 @@ endif()
 # Include directories
 # --------------------------------------------------------------------------------------------------------
 
+# Generate version header
+configure_file("${PROJECT_SOURCE_DIR}/cmake/lsVersion.hpp.in"
+               "${PROJECT_SOURCE_DIR}/include/viennals/lsVersion.hpp" @ONLY)
+
 target_include_directories(
   ${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/viennals>
                             $<INSTALL_INTERFACE:include/viennals-${PROJECT_VERSION}>)

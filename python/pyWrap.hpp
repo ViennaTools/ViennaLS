@@ -1,10 +1,3 @@
-// correct module name macro
-#define TOKENPASTE_INTERNAL(x, y, z) x##y##z
-#define TOKENPASTE(x, y, z) TOKENPASTE_INTERNAL(x, y, z)
-#define STRINGIZE2(s) #s
-#define STRINGIZE(s) STRINGIZE2(s)
-#define VIENNALS_MODULE_VERSION STRINGIZE(VIENNALS_VERSION)
-
 #include <pybind11/iostream.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -49,6 +42,7 @@
 #include <lsVTKReader.hpp>
 #include <lsVTKWriter.hpp>
 #include <lsVelocityField.hpp>
+#include <lsVersion.hpp>
 #include <lsWriteVisualizationMesh.hpp>
 #include <lsWriter.hpp>
 
@@ -329,8 +323,8 @@ template <int D> void bindApi(py::module &module) {
                     const std::vector<VectorType<T, D>> &>))
       // methods
       .def("insertNextPoint",
-           (void(PointCloud<T, D>::*)(const VectorType<T, D> &)) &
-               PointCloud<T, D>::insertNextPoint);
+           (void (PointCloud<T, D>::*)(
+               const VectorType<T, D> &))&PointCloud<T, D>::insertNextPoint);
 
   // ConvexHull
   py::class_<ConvexHull<T, D>, SmartPointer<ConvexHull<T, D>>>(module,
@@ -564,26 +558,26 @@ template <int D> void bindApi(py::module &module) {
       .def("setLevelSet", &MakeGeometry<T, D>::setLevelSet,
            "Set the levelset in which to create the geometry.")
       .def("setGeometry",
-           (void(MakeGeometry<T, D>::*)(SmartPointer<Sphere<T, D>>)) &
-               MakeGeometry<T, D>::setGeometry)
+           (void (MakeGeometry<T, D>::*)(
+               SmartPointer<Sphere<T, D>>))&MakeGeometry<T, D>::setGeometry)
       .def("setGeometry",
-           (void(MakeGeometry<T, D>::*)(SmartPointer<Plane<T, D>>)) &
-               MakeGeometry<T, D>::setGeometry)
+           (void (MakeGeometry<T, D>::*)(
+               SmartPointer<Plane<T, D>>))&MakeGeometry<T, D>::setGeometry)
       .def("setGeometry",
-           (void(MakeGeometry<T, D>::*)(SmartPointer<Box<T, D>>)) &
-               MakeGeometry<T, D>::setGeometry)
+           (void (MakeGeometry<T, D>::*)(
+               SmartPointer<Box<T, D>>))&MakeGeometry<T, D>::setGeometry)
       .def("setGeometry",
-           (void(MakeGeometry<T, D>::*)(SmartPointer<Cylinder<T, D>>)) &
-               MakeGeometry<T, D>::setGeometry)
+           (void (MakeGeometry<T, D>::*)(
+               SmartPointer<Cylinder<T, D>>))&MakeGeometry<T, D>::setGeometry)
       .def("setGeometry",
-           (void(MakeGeometry<T, D>::*)(SmartPointer<PointCloud<T, D>>)) &
-               MakeGeometry<T, D>::setGeometry)
+           (void (MakeGeometry<T, D>::*)(
+               SmartPointer<PointCloud<T, D>>))&MakeGeometry<T, D>::setGeometry)
       .def("setIgnoreBoundaryConditions",
-           (void(MakeGeometry<T, D>::*)(bool)) &
-               MakeGeometry<T, D>::setIgnoreBoundaryConditions)
+           (void (MakeGeometry<T, D>::*)(
+               bool))&MakeGeometry<T, D>::setIgnoreBoundaryConditions)
       .def("setIgnoreBoundaryConditions",
-           (void(MakeGeometry<T, D>::*)(std::array<bool, 3>)) &
-               MakeGeometry<T, D>::setIgnoreBoundaryConditions)
+           (void (MakeGeometry<T, D>::*)(std::array<bool, 3>))&MakeGeometry<
+               T, D>::setIgnoreBoundaryConditions)
       .def("apply", &MakeGeometry<T, D>::apply, "Generate the geometry.");
 
   // MarkVoidPoints

@@ -45,8 +45,7 @@ set(MOD _core)
 
 pybind11_add_module(${MOD} pyWrap.cpp)
 target_link_libraries(${MOD} PRIVATE ViennaLS)
-target_compile_definitions(${MOD} PRIVATE VIENNALS_MODULE_NAME=${MOD}
-                                          VIENNALS_VERSION=${PROJECT_VERSION})
+target_compile_definitions(${MOD} PRIVATE VIENNALS_MODULE_NAME=${MOD})
 
 # Put the built .so in build/<pkg> for convenience
 set_target_properties(

@@ -45,17 +45,11 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       "is not the main design target.";
 
   // set version string of python module
-  module.attr("__version__") =
-      VIENNALS_MODULE_VERSION; // for some reason this string does not show
-  module.attr("version") = VIENNALS_MODULE_VERSION;
+  module.attr("__version__") = versionString();
+  module.attr("version") = versionString();
 
   // wrap omp_set_num_threads to control number of threads
   module.def("setNumThreads", &omp_set_num_threads);
-
-  //   auto common = module.def_submodule(
-  //       "common", "Common functions, not bound to dimension");
-  //   common.attr("__name__") = "viennals.common";
-  //   common.attr("__package__") = "viennals";
 
   // --------- Logger ---------
   py::enum_<LogLevel>(module, "LogLevel", py::module_local())
@@ -170,14 +164,14 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def(py::init(&SmartPointer<PointData<T>>::New<>))
       // methods
       .def("insertNextScalarData",
-           (void(PointData<T>::*)(const PointData<T>::ScalarDataType &,
-                                  const std::string &)) &
-               PointData<T>::insertNextScalarData,
+           (void (PointData<T>::*)(
+               const PointData<T>::ScalarDataType &,
+               const std::string &))&PointData<T>::insertNextScalarData,
            py::arg("scalars"), py::arg("label") = "Scalars")
       .def("insertNextVectorData",
-           (void(PointData<T>::*)(const PointData<T>::VectorDataType &,
-                                  const std::string &)) &
-               PointData<T>::insertNextVectorData,
+           (void (PointData<T>::*)(
+               const PointData<T>::VectorDataType &,
+               const std::string &))&PointData<T>::insertNextVectorData,
            py::arg("vectors"), py::arg("label") = "Vectors")
       .def("getScalarDataSize", &PointData<T>::getScalarDataSize)
       .def("getVectorDataSize", &PointData<T>::getVectorDataSize)
