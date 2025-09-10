@@ -111,14 +111,22 @@ pip install .
 
 All functions which are available in C++ are also available in Python. The 2D version of the library can be imported as follows:
 ```python
-import viennals2d as vls
+import viennals.d2 as vls 
+import viennals # for common functions
 ```
 
-In order to switch to three dimensions, only the import needs to be changed:
+To switch to 3D, only the import changes:
 
 ```python
-import viennals3d as vls
+import viennals.d3 as vls
 ```
+Functions that operate on a domain object (e.g. `Advect`, `ToSurfaceMesh`, ...) are provided in the respective `d2` or `d3` modules.
+Common functions, enums, and dimension-independent utilities (such as `Mesh`) are available directly in the `viennals` namespace.
+
+A complete list of functions and their locations can be found in the [API documentation](PythonAPI.md).
+
+For examples on how to use the Python package, please have a look at these examples: [Air Gap Deposition](https://github.com/ViennaTools/ViennaLS/blob/master/examples/AirGapDeposition/AirGapDeposition.py), [Deposition](https://github.com/ViennaTools/ViennaLS/blob/master/examples/Deposition/Deposition.py), [Geometric Advection](https://github.com/ViennaTools/ViennaLS/blob/master/examples/GeometricAdvection/GeometricAdvection.py).
+
 
 ## Running the Tests
 
