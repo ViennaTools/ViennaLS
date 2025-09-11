@@ -23,11 +23,11 @@ def _windows_dll_path():
 
 
 import sys as _sys
-from . import _core as _C  # the binary inside the package
-
 
 if _sys.platform == "win32":
     _windows_dll_path()
+
+from . import _core as _C  # the binary inside the package
 
 # bring d2 and d3 into the top-level namespace
 d2 = _C.d2
