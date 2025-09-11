@@ -153,10 +153,10 @@ public:
       grad += pow2((diffNeg + diffPos) * 0.5);
     }
 
-    // normalise normal vector
-    normalModulus = std::sqrt(normalModulus);
+    // normalize normal vector
+    normalModulus = 1. / std::sqrt(normalModulus);
     for (unsigned i = 0; i < D; ++i) {
-      normalVector[i] /= normalModulus;
+      normalVector[i] *= normalModulus;
     }
 
     // Get velocities

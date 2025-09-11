@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaLS
   LANGUAGES CXX
-  VERSION 4.5.0)
+  VERSION 5.0.0)
 
 # --------------------------------------------------------------------------------------------------------
 # Library options
@@ -90,6 +90,10 @@ endif()
 # Include directories
 # --------------------------------------------------------------------------------------------------------
 
+# Generate version header
+configure_file("${PROJECT_SOURCE_DIR}/cmake/lsVersion.hpp.in"
+               "${PROJECT_SOURCE_DIR}/include/viennals/lsVersion.hpp" @ONLY)
+
 target_include_directories(
   ${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/viennals>
                             $<INSTALL_INTERFACE:include/viennals-${PROJECT_VERSION}>)
@@ -103,7 +107,7 @@ include(cmake/vtk.cmake)
 
 CPMAddPackage(
   NAME ViennaCore
-  VERSION 1.5.0
+  VERSION 1.6.0
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaCore"
   OPTIONS "VIENNACORE_FORMAT_EXCLUDE docs/ build/"
   EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
@@ -116,7 +120,7 @@ CPMAddPackage(
 
 CPMFindPackage(
   NAME ViennaHRLE
-  VERSION 0.6.1
+  VERSION 0.7.0
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaHRLE"
   EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 
@@ -128,37 +132,46 @@ if(VIENNALS_USE_VTK AND VIENNALS_VTK_PYTHON_LIBS)
 elseif(VIENNALS_USE_VTK)
   enable_language(C)
 
+  # Common VTK build options
+  set(VTK_OPTIONS
+      "VTK_LEGACY_REMOVE ON"
+      "VTK_SMP_IMPLEMENTATION_TYPE OpenMP"
+      "VTK_GROUP_ENABLE_Rendering NO"
+      "VTK_GROUP_ENABLE_Imaging NO"
+      "VTK_GROUP_ENABLE_Views NO"
+      "VTK_GROUP_ENABLE_Web NO"
+      "VTK_GROUP_ENABLE_Qt NO"
+      "VTK_GROUP_ENABLE_MPI NO"
+      "VTK_ENABLE_WRAPPING NO"
+      "VTK_MODULE_ENABLE_VTK_libproj NO"
+      "VTK_MODULE_ENABLE_VTK_CommonExecutionModel YES"
+      "VTK_MODULE_ENABLE_VTK_CommonMisc YES"
+      "VTK_MODULE_ENABLE_VTK_CommonSystem YES"
+      "VTK_MODULE_ENABLE_VTK_CommonMath YES"
+      "VTK_MODULE_ENABLE_VTK_CommonCore YES"
+      "VTK_MODULE_ENABLE_VTK_CommonTransforms YES"
+      "VTK_MODULE_ENABLE_VTK_CommonComputationalGeometry YES"
+      "VTK_MODULE_ENABLE_VTK_IOCore YES"
+      "VTK_MODULE_ENABLE_VTK_IOXMLParser YES"
+      "VTK_MODULE_ENABLE_VTK_IOXML YES"
+      "VTK_MODULE_ENABLE_VTK_FiltersCore YES"
+      "VTK_MODULE_ENABLE_VTK_FiltersGeneral YES"
+      "VTK_MODULE_ENABLE_VTK_FiltersGeometry YES"
+      "CMAKE_PROJECT_NAME VTK")
+
+  # macOS-specific adds
+  if(APPLE)
+    list(APPEND VTK_OPTIONS "VTK_MODULE_USE_EXTERNAL_VTK_png ON"
+         "VTK_MODULE_USE_EXTERNAL_VTK_zlib ON")
+  endif()
+
   CPMFindPackage(
     NAME VTK
     GIT_TAG v9.3.1
     VERSION 9.0.0
     GIT_REPOSITORY "https://gitlab.kitware.com/vtk/vtk"
     EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON}
-    OPTIONS "VTK_LEGACY_REMOVE ON"
-            "VTK_SMP_IMPLEMENTATION_TYPE \"OpenMP\""
-            "VTK_GROUP_ENABLE_Rendering NO"
-            "VTK_GROUP_ENABLE_Imaging NO"
-            "VTK_GROUP_ENABLE_Views NO"
-            "TK_GROUP_ENABLE_Web NO"
-            "VTK_GROUP_ENABLE_Qt NO"
-            "VTK_GROUP_ENABLE_MPI NO"
-            "VTK_ENABLE_WRAPPING NO"
-            "VTK_MODULE_ENABLE_VTK_libproj NO"
-            "VTK_MODULE_ENABLE_VTK_CommonExecutionModel YES"
-            "VTK_MODULE_ENABLE_VTK_CommonMisc YES"
-            "VTK_MODULE_ENABLE_VTK_CommonSystem YES"
-            "VTK_MODULE_ENABLE_VTK_CommonMath YES"
-            "VTK_MODULE_ENABLE_VTK_CommonCore YES"
-            "VTK_MODULE_ENABLE_VTK_CommonTransforms YES"
-            "VTK_MODULE_ENABLE_VTK_CommonComputationalGeometry YES"
-            "VTK_MODULE_ENABLE_VTK_IOCore YES"
-            "VTK_MODULE_ENABLE_VTK_IOXMLParser YES"
-            "VTK_MODULE_ENABLE_VTK_IOXML YES"
-            "VTK_MODULE_ENABLE_VTK_FiltersCore YES"
-            "VTK_MODULE_ENABLE_VTK_FiltersGeneral YES"
-            "VTK_MODULE_ENABLE_VTK_FiltersGeometry YES"
-            # This fixes an issue with the install script that causes find_package to fail.
-            "CMAKE_PROJECT_NAME VTK")
+    OPTIONS ${VTK_OPTIONS})
 
   target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_USE_VTK=1)
 

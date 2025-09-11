@@ -9,6 +9,14 @@
 
 #include <vcVectorType.hpp>
 
+// Choose adaptive epsilon strategy
+// 0: Original fixed epsilon
+// 1: Simple adaptive epsilon (recommended)
+// 2: Full adaptive epsilon (most accurate but slower)
+#ifndef ADAPTIVE_EPSILON_STRATEGY
+#define ADAPTIVE_EPSILON_STRATEGY 0
+#endif
+
 namespace lsInternal {
 
 using namespace viennacore;
@@ -33,7 +41,7 @@ class StencilLocalLaxFriedrichsScalar {
                                     order>
       neighborIterator;
   const double alphaFactor;
-  const double normalEpsilon =
+  const double baseNormalEpsilon =
       std::cbrt(std::numeric_limits<double>::epsilon());
 
   // Final dissipation coefficients that are used by the time integrator. If
@@ -42,7 +50,78 @@ class StencilLocalLaxFriedrichsScalar {
   static constexpr unsigned numStencilPoints = hrleUtil::pow(2 * order + 1, D);
   static double maxDissipation; // default: std::numeric_limits<double>::max();
 
+  // Adaptive epsilon control parameters
+  static constexpr T velocityScaleFactor =
+      0.5; // Controls velocity-based scaling
+  static constexpr T smoothnessThreshold =
+      0.1; // Threshold for smoothness detection
+  static constexpr T epsilonMinScale = 0.1;   // Minimum epsilon scale factor
+  static constexpr T epsilonMaxScale = 100.0; // Maximum epsilon scale factor
+
   static T pow2(const T &value) { return value * value; }
+
+  // Calculate adaptive epsilon based on velocity magnitude, grid resolution,
+  // and local velocity smoothness
+  T calculateAdaptiveEpsilon(T velocityMagnitude, T gridDelta,
+                             const Vec3D<T> &localCoordArray, int material,
+                             const Vec3D<T> &normal) const {
+    // Base epsilon scaled by grid resolution
+    T adaptiveEpsilon = baseNormalEpsilon * gridDelta;
+
+    // Scale with velocity magnitude to maintain numerical stability
+    // Use larger epsilon for larger velocities to avoid catastrophic
+    // cancellation
+    T absVelocity = std::abs(velocityMagnitude);
+    if (absVelocity > 1e-12) {
+      T velocityScale = 1.0 + velocityScaleFactor * std::log(1.0 + absVelocity);
+      adaptiveEpsilon *= velocityScale;
+    }
+
+    // Estimate local velocity smoothness using a simplified approach
+    // Only check smoothness if velocity is significant
+    if (absVelocity > 1e-10) {
+      T maxRelativeVariation = 0.0;
+
+      // Sample velocity in each coordinate direction with small perturbation
+      for (int dir = 0; dir < D; ++dir) {
+        Vec3D<T> perturbedNormal = normal;
+        perturbedNormal[dir] += smoothnessThreshold;
+
+        // Normalize the perturbed normal
+        T normSq = 0.0;
+        for (int i = 0; i < D; ++i) {
+          normSq += perturbedNormal[i] * perturbedNormal[i];
+        }
+        if (normSq > 1e-12) {
+          T invNorm = 1.0 / std::sqrt(normSq);
+          for (int i = 0; i < D; ++i) {
+            perturbedNormal[i] *= invNorm;
+          }
+
+          T perturbedVel = velocities->getScalarVelocity(
+              localCoordArray, material, perturbedNormal,
+              neighborIterator.getCenter().getPointId());
+
+          T relativeVariation =
+              std::abs(perturbedVel - velocityMagnitude) / absVelocity;
+          maxRelativeVariation =
+              std::max(maxRelativeVariation, relativeVariation);
+        }
+      }
+
+      // If velocity varies significantly, use larger epsilon for stability
+      if (maxRelativeVariation > smoothnessThreshold) {
+        T smoothnessFactor = 1.0 + maxRelativeVariation;
+        adaptiveEpsilon *= smoothnessFactor;
+      }
+    }
+
+    // Clamp epsilon to reasonable bounds
+    T minEpsilon = baseNormalEpsilon * gridDelta * epsilonMinScale;
+    T maxEpsilon = baseNormalEpsilon * gridDelta * epsilonMaxScale;
+
+    return std::max(minEpsilon, std::min(maxEpsilon, adaptiveEpsilon));
+  }
 
   Vec3D<T> calculateNormal(const viennahrle::Index<D> &offset) {
     Vec3D<T> normal = {0.0, 0.0, 0.0};
@@ -51,18 +130,18 @@ class StencilLocalLaxFriedrichsScalar {
 
     for (unsigned i = 0; i < D; ++i) {
       viennahrle::Index<D> index(offset);
-      std::vector<T> values;
+      std::array<T, 3> values;
       for (unsigned j = 0; j < 3; ++j) {
         index[i] = startIndex + j;
-        values.push_back(neighborIterator.getNeighbor(index).getValue());
+        values[j] = neighborIterator.getNeighbor(index).getValue();
       }
       normal[i] = FiniteDifferences<T>::calculateGradient(
           values.data(), levelSet->getGrid().getGridDelta());
       modulus += normal[i] * normal[i];
     }
-    modulus = std::sqrt(modulus);
+    modulus = 1 / std::sqrt(modulus);
     for (unsigned i = 0; i < D; ++i) {
-      normal[i] /= modulus;
+      normal[i] *= modulus;
     }
     return normal;
   }
@@ -76,10 +155,10 @@ class StencilLocalLaxFriedrichsScalar {
 
     for (unsigned i = 0; i < D; ++i) {
       viennahrle::Index<D> index(offset);
-      std::vector<T> values;
+      std::array<T, numValues> values;
       for (unsigned j = 0; j < numValues; ++j) {
         index[i] = startIndex + j;
-        values.push_back(neighborIterator.getNeighbor(index).getValue());
+        values[j] = neighborIterator.getNeighbor(index).getValue();
       }
 
       gradient[i] =
@@ -93,21 +172,22 @@ class StencilLocalLaxFriedrichsScalar {
   VectorType<T, D> calculateGradientDiff() {
     VectorType<T, D> gradient;
 
-    const unsigned numValues =
+    constexpr unsigned numValues =
         FiniteDifferences<T, finiteDifferenceScheme>::getNumberOfValues();
-    const int startIndex = -std::floor(numValues / 2);
+    const int startIndex =
+        -std::floor(numValues / 2); // std::floor constexpr in C++23
 
     for (unsigned i = 0; i < D; ++i) {
       viennahrle::Index<D> index(0);
-      std::vector<T> values;
+      std::array<T, numValues> values;
       for (unsigned j = 0; j < numValues; ++j) {
         index[i] = startIndex + j;
-        values.push_back(neighborIterator.getNeighbor(index).getValue());
+        values[j] = neighborIterator.getNeighbor(index).getValue();
       }
 
       gradient[i] =
           FiniteDifferences<T, finiteDifferenceScheme>::calculateGradientDiff(
-              &(values[0]), levelSet->getGrid().getGridDelta());
+              values.data(), levelSet->getGrid().getGridDelta());
     }
 
     return gradient;
@@ -132,6 +212,21 @@ public:
 
   static void setMaxDissipation(double maxDiss) { maxDissipation = maxDiss; }
 
+  // Simple adaptive epsilon calculation for better performance
+  T calculateSimpleAdaptiveEpsilon(T velocityMagnitude, T gridDelta) const {
+    T absVel = std::abs(velocityMagnitude);
+    T baseEps = baseNormalEpsilon * gridDelta;
+
+    // Simple velocity-based scaling to avoid numerical issues
+    if (absVel > 1e-10) {
+      // Scale epsilon with velocity magnitude (clamped to reasonable range)
+      T scale = std::max(T(0.1), std::min(T(10.0), absVel));
+      return baseEps * scale;
+    }
+
+    return baseEps;
+  }
+
   std::pair<T, T> operator()(const viennahrle::Index<D> &indices,
                              int material) {
     auto &grid = levelSet->getGrid();
@@ -144,9 +239,6 @@ public:
 
     // move neighborIterator to current position
     neighborIterator.goToIndicesSequential(indices);
-
-    // convert coordinate to std array for interface
-    Vec3D<T> coordArray{coordinate[0], coordinate[1], coordinate[2]};
 
     // if there is a vector velocity, we need to project it onto a scalar
     // velocity first using its normal vector
@@ -165,17 +257,16 @@ public:
       // normalise normal vector
       denominator += normalVector[i] * normalVector[i];
     }
-    denominator = std::sqrt(denominator);
-
+    denominator = 1 / std::sqrt(denominator);
     for (unsigned i = 0; i < D; ++i) {
-      normalVector[i] /= denominator;
+      normalVector[i] *= denominator;
     }
 
     double scalarVelocity = velocities->getScalarVelocity(
-        coordArray, material, normalVector,
+        coordinate, material, normalVector,
         neighborIterator.getCenter().getPointId());
     auto vectorVelocity = velocities->getVectorVelocity(
-        coordArray, material, normalVector,
+        coordinate, material, normalVector,
         neighborIterator.getCenter().getPointId());
 
     // now calculate scalar product of normal vector with velocity
@@ -194,8 +285,7 @@ public:
     // dissipation block
     {
       // reserve alphas for all points in local stencil
-      std::vector<VectorType<T, D>> alphas;
-      alphas.reserve(numStencilPoints);
+      std::array<VectorType<T, D>, numStencilPoints> alphas{};
 
       viennahrle::Index<D> currentIndex(-order);
       for (size_t i = 0; i < numStencilPoints; ++i) {
@@ -205,6 +295,7 @@ public:
         // Check for corrupted normal
         if ((std::abs(normal[0]) < 1e-6) && (std::abs(normal[1]) < 1e-6) &&
             (std::abs(normal[2]) < 1e-6)) {
+          alphas[i].fill(0);
           continue;
         }
 
@@ -212,10 +303,10 @@ public:
         Vec3D<T> normal_n{normal[0], normal[1], normal[2]};
 
         VectorType<T, D> velocityDelta;
-        std::fill(velocityDelta.begin(), velocityDelta.end(), 0.);
+        velocityDelta.fill(0.);
 
         // get local velocity
-        Vec3D<T> localCoordArray = coordArray;
+        Vec3D<T> localCoordArray = coordinate;
         for (unsigned dir = 0; dir < D; ++dir)
           localCoordArray[dir] += currentIndex[dir];
 
@@ -230,12 +321,29 @@ public:
           localScalarVelocity += localVectorVelocity[dir] * normal[dir];
         }
 
-        const T DN = std::abs(normalEpsilon * scalarVelocity);
+        // Calculate epsilon based on selected strategy
+        T DN;
+#if ADAPTIVE_EPSILON_STRATEGY == 0
+        // Original fixed epsilon approach
+        DN = std::abs(baseNormalEpsilon * scalarVelocity);
+#elif ADAPTIVE_EPSILON_STRATEGY == 1
+        // Simple adaptive epsilon (recommended)
+        DN = calculateSimpleAdaptiveEpsilon(localScalarVelocity,
+                                            levelSet->getGrid().getGridDelta());
+#elif ADAPTIVE_EPSILON_STRATEGY == 2
+        // Full adaptive epsilon (most accurate but slower)
+        DN = calculateAdaptiveEpsilon(localScalarVelocity,
+                                      levelSet->getGrid().getGridDelta(),
+                                      localCoordArray, material, normal);
+#else
+        // Fallback to original method
+        DN = std::abs(baseNormalEpsilon * scalarVelocity);
+#endif
 
         for (int k = 0; k < D; ++k) {
 
           normal_p[k] -= DN; // p=previous
-          normal_n[k] += DN; // n==next
+          normal_n[k] += DN; // n=next
 
           T vp = velocities->getScalarVelocity(
               localCoordArray, material, normal_p,
@@ -280,7 +388,7 @@ public:
           }
         }
 
-        alphas.push_back(alpha);
+        alphas[i] = alpha;
 
         // increment current index
         {

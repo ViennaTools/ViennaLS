@@ -5,6 +5,8 @@
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
+#include <vcTimer.hpp>
+
 using namespace viennals;
 constexpr int D = 3;
 using T = double;
@@ -84,7 +86,12 @@ int main(int argc, char *argv[]) {
       IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER);
   advectionKernel.setAdvectionTime(.5);
 
+  Timer timer;
+  timer.start();
   advectionKernel.apply();
+  timer.finish();
+
+  std::cout << "Epitaxy took " << timer.currentDuration / 1e9 << "s\n";
 
   FinalizeStencilLocalLaxFriedrichs<T, D>(levelSets);
 

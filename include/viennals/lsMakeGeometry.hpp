@@ -249,7 +249,7 @@ private:
     auto &grid = levelSet->getGrid();
     viennahrle::CoordType gridDelta = grid.getGridDelta();
 
-    // normalise passedNormal
+    // normalize passedNormal
     double modulus = 0.;
     VectorType<T, D> normal = passedNormal;
     for (unsigned i = 0; i < D; ++i) {
@@ -432,12 +432,12 @@ private:
     // cylinder axis will be (0,0,1)
     auto gridDelta = levelSet->getGrid().getGridDelta();
 
-    auto points = SmartPointer<PointCloud<T, D>>::New();
+    auto points = PointCloud<T, D>::New();
     const unsigned numPoints =
         std::ceil(2 * M_PI * cylinder->radius / gridDelta);
     const double smallAngle = 2.0 * M_PI / static_cast<double>(numPoints);
 
-    auto mesh = SmartPointer<Mesh<T>>::New();
+    auto mesh = Mesh<T>::New();
     // insert midpoint at base
     mesh->insertNextNode(Vec3D<T>{0.0, 0.0, 0.0});
     {
@@ -534,7 +534,7 @@ private:
 
   void makeCustom(SmartPointer<PointCloud<T, D>> pointCloud) {
     // create mesh from point cloud
-    auto mesh = SmartPointer<Mesh<T>>::New();
+    auto mesh = Mesh<T>::New();
     ConvexHull<T, D>(mesh, pointCloud).apply();
 
     // read mesh from surface
