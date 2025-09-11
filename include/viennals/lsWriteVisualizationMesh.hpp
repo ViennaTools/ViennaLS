@@ -53,7 +53,7 @@ template <class T, int D> class WriteVisualizationMesh {
   bool extractHullMesh = false;
   bool bottomRemoved = false;
   double LSEpsilon = 1e-2;
-  std::unordered_map<std::string, std::vector<T>> metaData;
+  std::unordered_map<std::string, std::vector<double>> metaData;
 
   /// This function removes duplicate points and agjusts the pointIDs in the
   /// cells
@@ -465,21 +465,21 @@ public:
 
   void setWrappingLayerEpsilon(double epsilon) { LSEpsilon = epsilon; }
 
-  void setMetaData(
-      const std::unordered_map<std::string, std::vector<T>> &passedMetaData) {
+  void setMetaData(const std::unordered_map<std::string, std::vector<double>>
+                       &passedMetaData) {
     metaData = passedMetaData;
   }
 
-  void addMetaData(const std::string &key, T value) {
-    metaData[key] = std::vector<T>{value};
+  void addMetaData(const std::string &key, double value) {
+    metaData[key] = std::vector<double>{value};
   }
 
-  void addMetaData(const std::string &key, const std::vector<T> &values) {
+  void addMetaData(const std::string &key, const std::vector<double> &values) {
     metaData[key] = values;
   }
 
   void addMetaData(
-      const std::unordered_map<std::string, std::vector<T>> &newMetaData) {
+      const std::unordered_map<std::string, std::vector<double>> &newMetaData) {
     for (const auto &pair : newMetaData) {
       metaData[pair.first] = pair.second;
     }

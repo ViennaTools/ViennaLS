@@ -31,7 +31,7 @@ template <class T = double> class VTKReader {
   SmartPointer<Mesh<T>> mesh = nullptr;
   FileFormatEnum fileFormat = FileFormatEnum::VTK_AUTO;
   std::string fileName;
-  std::unordered_map<std::string, std::vector<T>> metaData;
+  std::unordered_map<std::string, std::vector<double>> metaData;
 
   unsigned vtk_nodes_for_cell_type[15] = {0, 1, 0, 2, 0, 3, 0, 0,
                                           4, 4, 4, 8, 8, 6, 5};
