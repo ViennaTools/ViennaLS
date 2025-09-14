@@ -67,8 +67,7 @@ int main() {
       ls::BoundaryConditionEnum::INFINITE_BOUNDARY,
       ls::BoundaryConditionEnum::REFLECTIVE_BOUNDARY};
   auto trench_3D = ls::SmartPointer<ls::Domain<double, 3>>::New();
-  ls::Extrude<double>(trench, trench_3D, extrudeExtent, 2, boundaryConds)
-      .apply();
+  ls::Extrude<double>(trench, trench_3D, extrudeExtent, boundaryConds).apply();
 
   {
     auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
