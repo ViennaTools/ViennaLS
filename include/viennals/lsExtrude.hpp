@@ -18,6 +18,7 @@ template <class T> class Extrude {
   SmartPointer<Domain<T, 2>> inputLevelSet = nullptr;
   SmartPointer<Domain<T, 3>> outputLevelSet = nullptr;
   Vec2D<T> extent = {0., 0.};
+  int extrusionAxis = 0;
   std::array<BoundaryConditionEnum, 3> boundaryConds = {};
 
 public:
@@ -25,19 +26,22 @@ public:
 
   Extrude(SmartPointer<Domain<T, 2>> passedInputLS,
           SmartPointer<Domain<T, 3>> passedOutputLS, Vec2D<T> passedExtent,
+          int passedExtrusionAxis,
           BoundaryConditionEnum passedBoundaryCond =
               BoundaryConditionEnum::INFINITE_BOUNDARY)
       : inputLevelSet(passedInputLS), outputLevelSet(passedOutputLS),
-        extent(passedExtent),
+        extent(passedExtent), extrusionAxis(passedExtrusionAxis),
         boundaryConds{{passedInputLS->getGrid().getBoundaryConditions(0),
                        passedInputLS->getGrid().getBoundaryConditions(1),
                        passedBoundaryCond}} {}
 
   Extrude(SmartPointer<Domain<T, 2>> passedInputLS,
           SmartPointer<Domain<T, 3>> passedOutputLS, Vec2D<T> passedExtent,
+          int passedExtrusionAxis,
           std::array<BoundaryConditionEnum, 3> passedBoundaryConds)
       : inputLevelSet(passedInputLS), outputLevelSet(passedOutputLS),
-        extent(passedExtent), boundaryConds(passedBoundaryConds) {}
+        extent(passedExtent), extrusionAxis(passedExtrusionAxis),
+        boundaryConds(passedBoundaryConds) {}
 
   void setInputLevelSet(SmartPointer<Domain<T, 2>> passedInputLS) {
     inputLevelSet = passedInputLS;
@@ -50,6 +54,10 @@ public:
 
   // Set the min and max extent in the extruded dimension
   void setExtent(Vec2D<T> passedExtent) { extent = passedExtent; }
+
+  void setExtrusionAxis(int passedExtrusionAxis) {
+    extrusionAxis = passedExtrusionAxis;
+  }
 
   void setBoundaryConditions(
       std::array<BoundaryConditionEnum, 3> passedBoundaryConds) {
@@ -73,6 +81,12 @@ public:
           .print();
       return;
     }
+    if (extrusionAxis < 0 || extrusionAxis > 2) {
+      Logger::getInstance()
+          .addError("Extrusion axis must be between 0 and 2.")
+          .print();
+      return;
+    }
 
     std::vector<std::pair<viennahrle::Index<3>, T>> points3D;
 
@@ -83,19 +97,42 @@ public:
     auto maxBounds = grid2D.getMaxBounds();
 
     double domainBounds[2 * 3];
-    domainBounds[0] = minBounds[0] * gridDelta;
-    domainBounds[1] = maxBounds[0] * gridDelta;
-    domainBounds[2] = extent[0];
-    domainBounds[3] = extent[1];
-    domainBounds[4] = minBounds[1] * gridDelta;
-    domainBounds[5] = maxBounds[1] * gridDelta;
+    unsigned xx, yy;
+    if (extrusionAxis == 0) {
+      domainBounds[0] = extent[0];
+      domainBounds[1] = extent[1];
+      domainBounds[2] = minBounds[0] * gridDelta;
+      domainBounds[3] = maxBounds[0] * gridDelta;
+      domainBounds[4] = minBounds[1] * gridDelta;
+      domainBounds[5] = maxBounds[1] * gridDelta;
+      xx = 1;
+      yy = 2;
+    } else if (extrusionAxis == 1) {
+      domainBounds[0] = minBounds[0] * gridDelta;
+      domainBounds[1] = maxBounds[0] * gridDelta;
+      domainBounds[2] = extent[0];
+      domainBounds[3] = extent[1];
+      domainBounds[4] = minBounds[1] * gridDelta;
+      domainBounds[5] = maxBounds[1] * gridDelta;
+      xx = 0;
+      yy = 2;
+    } else if (extrusionAxis == 2) {
+      domainBounds[0] = minBounds[0] * gridDelta;
+      domainBounds[1] = maxBounds[0] * gridDelta;
+      domainBounds[2] = minBounds[1] * gridDelta;
+      domainBounds[3] = maxBounds[1] * gridDelta;
+      domainBounds[4] = extent[0];
+      domainBounds[5] = extent[1];
+      xx = 0;
+      yy = 1;
+    }
 
     auto tmpLevelSet = SmartPointer<Domain<T, 3>>::New(
         domainBounds, boundaryConds.data(), gridDelta);
     outputLevelSet->deepCopy(tmpLevelSet);
 
-    const hrleIndexType yStart = std::floor(extent[0] / gridDelta);
-    const hrleIndexType yEnd = std::ceil(extent[1] / gridDelta);
+    const hrleIndexType extStart = std::floor(extent[0] / gridDelta);
+    const hrleIndexType extEnd = std::ceil(extent[1] / gridDelta);
 
     for (viennahrle::SparseIterator<typename Domain<T, 2>::DomainType> it(
              domain2D);
@@ -106,11 +143,11 @@ public:
       const auto index2D = it.getStartIndices();
       const T value = it.getValue();
 
-      for (hrleIndexType y = yStart; y <= yEnd; ++y) {
+      for (hrleIndexType ext = extStart; ext <= extEnd; ++ext) {
         viennahrle::Index<3> index3D;
-        index3D[0] = index2D[0];
-        index3D[1] = y;
-        index3D[2] = index2D[1];
+        index3D[extrusionAxis] = ext;
+        index3D[xx] = index2D[0];
+        index3D[yy] = index2D[1];
 
         points3D.emplace_back(index3D, value);
       }

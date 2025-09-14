@@ -8,8 +8,8 @@ import enum
 import typing
 from viennals import d2
 import viennals.d2
-import viennals.d3
 from viennals import d3
+import viennals.d3
 
 __all__: list[str] = [
     "BooleanOperationEnum",
@@ -108,7 +108,8 @@ class Extrude:
         arg2: typing.Annotated[
             collections.abc.Sequence[typing.SupportsFloat], "FixedSize(2)"
         ],
-        arg3: typing.Annotated[
+        arg3: typing.SupportsInt,
+        arg4: typing.Annotated[
             collections.abc.Sequence[BoundaryConditionEnum], "FixedSize(3)"
         ],
     ) -> None: ...
@@ -142,6 +143,11 @@ class Extrude:
     ) -> None:
         """
         Set the extent in the extruded dimension
+        """
+
+    def setExtrusionAxis(self, arg0: typing.SupportsInt) -> None:
+        """
+        Set the axis in which to extrude (0=x, 1=y, 2=z).
         """
 
     def setInputLevelSet(self, arg0: viennals.d2.Domain) -> None:

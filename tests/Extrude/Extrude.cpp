@@ -6,6 +6,7 @@
 #include <lsMakeGeometry.hpp>
 #include <lsMesh.hpp>
 #include <lsToMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
 /**
@@ -21,7 +22,7 @@ int main() {
   omp_set_num_threads(4);
 
   double extent = 15;
-  double gridDelta = 0.5;
+  double gridDelta = 0.37;
 
   // 2D domain boundaries
   double bounds[2 * 2] = {-extent, extent, -extent, extent};
@@ -64,15 +65,56 @@ int main() {
   ls::Vec2D<double> extrudeExtent{-5., 5.};
   std::array<ls::BoundaryConditionEnum, 3> boundaryConds{
       ls::BoundaryConditionEnum::REFLECTIVE_BOUNDARY,
-      ls::BoundaryConditionEnum::INFINITE_BOUNDARY,
-      ls::BoundaryConditionEnum::REFLECTIVE_BOUNDARY};
+      ls::BoundaryConditionEnum::REFLECTIVE_BOUNDARY,
+      ls::BoundaryConditionEnum::INFINITE_BOUNDARY};
   auto trench_3D = ls::SmartPointer<ls::Domain<double, 3>>::New();
-  ls::Extrude<double>(trench, trench_3D, extrudeExtent, boundaryConds).apply();
+  ls::Extrude<double>(trench, trench_3D, extrudeExtent, 1, boundaryConds)
+      .apply();
 
   {
     auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
     ls::ToMesh<double, 3>(trench_3D, mesh).apply();
     ls::VTKWriter<double>(mesh, "trench_extrude.vtp").apply();
+  }
+
+  {
+    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    ls::ToSurfaceMesh<double, 3>(trench_3D, mesh).apply();
+    ls::VTKWriter<double>(mesh, "trench_extrude_surface.vtp").apply();
+  }
+
+  // Box
+  auto box_2D = ls::SmartPointer<ls::Domain<double, 2>>::New(
+      bounds, boundaryCons, gridDelta);
+  {
+    double minPoint[2] = {-3., -6.};
+    double maxPoint[2] = {3., 6.};
+
+    ls::MakeGeometry<double, 2>(
+        box_2D, ls::SmartPointer<ls::Box<double, 2>>::New(minPoint, maxPoint))
+        .apply();
+  }
+
+  {
+    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    ls::ToMesh<double, 2>(box_2D, mesh).apply();
+    ls::VTKWriter<double>(mesh, "box_initial.vtp").apply();
+  }
+
+  auto box_3D = ls::SmartPointer<ls::Domain<double, 3>>::New();
+  boundaryConds[2] = ls::BoundaryConditionEnum::REFLECTIVE_BOUNDARY;
+  ls::Extrude<double>(box_2D, box_3D, extrudeExtent, 2, boundaryConds).apply();
+
+  {
+    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    ls::ToMesh<double, 3>(box_3D, mesh).apply();
+    ls::VTKWriter<double>(mesh, "box_extrude.vtp").apply();
+  }
+
+  {
+    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    ls::ToSurfaceMesh<double, 3>(box_3D, mesh).apply();
+    ls::VTKWriter<double>(mesh, "box_extrude_surface.vtp").apply();
   }
 
   return 0;

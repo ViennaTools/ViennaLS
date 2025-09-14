@@ -396,9 +396,10 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
   py::class_<Extrude<T>, SmartPointer<Extrude<T>>>(module, "Extrude")
       // constructors
       .def(py::init(&SmartPointer<Extrude<T>>::New<>))
-      .def(py::init(&SmartPointer<Extrude<T>>::New<
-                    SmartPointer<Domain<T, 2>> &, SmartPointer<Domain<T, 3>> &,
-                    std::array<T, 2>, std::array<BoundaryConditionEnum, 3>>))
+      .def(py::init(
+          &SmartPointer<Extrude<T>>::New<
+              SmartPointer<Domain<T, 2>> &, SmartPointer<Domain<T, 3>> &,
+              std::array<T, 2>, int, std::array<BoundaryConditionEnum, 3>>))
       // methods
       .def("setInputLevelSet", &Extrude<T>::setInputLevelSet,
            "Set 2D input Level Set")
@@ -406,6 +407,8 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Set 3D output Level Set")
       .def("setExtent", &Extrude<T>::setExtent,
            "Set the extent in the extruded dimension")
+      .def("setExtrusionAxis", &Extrude<T>::setExtrusionAxis,
+           "Set the axis in which to extrude (0=x, 1=y, 2=z).")
       .def("setBoundaryConditions",
            py::overload_cast<std::array<BoundaryConditionEnum, 3>>(
                &Extrude<T>::setBoundaryConditions),
