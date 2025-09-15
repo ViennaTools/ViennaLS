@@ -6,10 +6,10 @@ from __future__ import annotations
 import collections.abc
 import enum
 import typing
-from viennals import d2
 import viennals.d2
-from viennals import d3
+from viennals import d2
 import viennals.d3
+from viennals import d3
 
 __all__: list[str] = [
     "BooleanOperationEnum",
