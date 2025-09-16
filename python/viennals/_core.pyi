@@ -6,10 +6,10 @@ from __future__ import annotations
 import collections.abc
 import enum
 import typing
-from viennals import d2
 import viennals.d2
-from viennals import d3
+from viennals import d2
 import viennals.d3
+from viennals import d3
 
 __all__: list[str] = [
     "BooleanOperationEnum",
@@ -145,9 +145,9 @@ class Extrude:
         Set the extent in the extruded dimension
         """
 
-    def setExtrudeDimension(self, arg0: typing.SupportsInt) -> None:
+    def setExtrusionAxis(self, arg0: typing.SupportsInt) -> None:
         """
-        Set the dimension which should be extruded
+        Set the axis in which to extrude (0=x, 1=y, 2=z).
         """
 
     def setInputLevelSet(self, arg0: viennals.d2.Domain) -> None:
@@ -728,5 +728,5 @@ class VoidTopSurfaceEnum(enum.IntEnum):
 
 def setNumThreads(arg0: typing.SupportsInt) -> None: ...
 
-__version__: str = ""
-version: str = ""
+__version__: str = "5.0.0"
+version: str = "5.0.0"

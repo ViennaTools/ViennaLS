@@ -1,13 +1,12 @@
-import viennals.d2 as vls
-from viennals import VelocityField, Mesh, VTKWriter, BooleanOperationEnum
+import viennals as vls
 
 # @example AirGapDeposition.py
-#  Example showing how to use the library for topography
+#  2D Example showing how to use the library for topography
 #  simulation, by creating a trench geometry. A layer of a different material is
 #  then grown directionally on top.
 
 
-class velocityField(VelocityField):
+class velocityField(vls.VelocityField):
     # coord and normalVec are lists with 3 elements
     # in 2D coord[2] and normalVec[2] are zero
     # getScalarVelocity must return a scalar
@@ -34,9 +33,9 @@ planeNormal = (0, 1, 0)
 vls.MakeGeometry(substrate, vls.Plane(origin, planeNormal)).apply()
 
 print("Extracting")
-mesh = Mesh()
+mesh = vls.Mesh()
 vls.ToSurfaceMesh(substrate, mesh).apply()
-VTKWriter(mesh, "plane.vtp").apply()
+vls.VTKWriter(mesh, "plane.vtp").apply()
 
 # create layer used for booling
 print("Creating box...")
@@ -47,12 +46,12 @@ vls.MakeGeometry(trench, vls.Box(minCorner, maxCorner)).apply()
 
 print("Extracting")
 vls.ToMesh(trench, mesh).apply()
-VTKWriter(mesh, "box.vtp").apply()
+vls.VTKWriter(mesh, "box.vtp").apply()
 
 # Create trench geometry
 print("Booling trench")
 vls.BooleanOperation(
-    substrate, trench, BooleanOperationEnum.RELATIVE_COMPLEMENT
+    substrate, trench, vls.BooleanOperationEnum.RELATIVE_COMPLEMENT
 ).apply()
 
 # Now grow new material
@@ -87,7 +86,7 @@ for i in range(numberOfSteps):
     print("Advection step {} / {}".format(i, numberOfSteps))
 
     vls.ToSurfaceMesh(newLayer, mesh).apply()
-    writer = VTKWriter(mesh, "trench{}.vtp".format(i))
+    writer = vls.VTKWriter(mesh, "trench{}.vtp".format(i))
     writer.addMetaData("time", passedTime)
     writer.apply()
 

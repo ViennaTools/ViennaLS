@@ -34,12 +34,39 @@ d2 = _C.d2
 d3 = _C.d3
 _sys.modules[__name__ + ".d2"] = d2
 _sys.modules[__name__ + ".d3"] = d3
+PROXY_DIM = 2  # default dimension for proxy classes
 
 
-# forward any other (common) names to _core (PEP 562)
+def setDimension(d: int):
+    """Set the dimension of the simulation (2 or 3).
+
+    Parameters
+    ----------
+    d: int
+        Dimension of the simulation (2 or 3).
+    """
+    global PROXY_DIM
+    if d == 2 or d == 3:
+        PROXY_DIM = d
+    else:
+        raise ValueError("Dimension must be 2 or 3.")
+
+
 def __getattr__(name):
-    return getattr(_C, name)
+    # 1) common/top-level from _core
+    try:
+        return getattr(_C, name)
+    except AttributeError as e_core:
+        pass
+    # 2) fallback to current default dimension
+    m = d2 if PROXY_DIM == 2 else d3
+    try:
+        return getattr(m, name)
+    except AttributeError:
+        raise AttributeError(
+            f"module {__name__!r} has no attribute {name!r}"
+        ) from e_core
 
 
 def __dir__():
-    return sorted(set(globals()) | set(dir(_C)))
+    return sorted(set(globals()) | set(dir(_C)) | set(dir(d2)) | set(dir(d3)))

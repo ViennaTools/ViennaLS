@@ -31,32 +31,116 @@ from viennals._core import VTKWriter
 from viennals._core import VelocityField
 from viennals._core import VoidTopSurfaceEnum
 from viennals._core import setNumThreads
+from viennals.d2 import Advect
+from viennals.d2 import BooleanOperation
+from viennals.d2 import Box
+from viennals.d2 import BoxDistribution
+from viennals.d2 import CalculateCurvatures
+from viennals.d2 import CalculateNormalVectors
+from viennals.d2 import CalculateVisibilities
+from viennals.d2 import Check
+from viennals.d2 import CompareArea
+from viennals.d2 import CompareNarrowBand
+from viennals.d2 import CompareSparseField
+from viennals.d2 import ConvexHull
+from viennals.d2 import Cylinder
+from viennals.d2 import DetectFeatures
+from viennals.d2 import Domain
+from viennals.d2 import Expand
+from viennals.d2 import FinalizeStencilLocalLaxFriedrichs
+from viennals.d2 import FromMesh
+from viennals.d2 import FromSurfaceMesh
+from viennals.d2 import FromVolumeMesh
+from viennals.d2 import GeometricAdvect
+from viennals.d2 import GeometricAdvectDistribution
+from viennals.d2 import MakeGeometry
+from viennals.d2 import MarkVoidPoints
+from viennals.d2 import Plane
+from viennals.d2 import PointCloud
+from viennals.d2 import PrepareStencilLocalLaxFriedrichs
+from viennals.d2 import Prune
+from viennals.d2 import Reader
+from viennals.d2 import Reduce
+from viennals.d2 import RemoveStrayPoints
+from viennals.d2 import Sphere
+from viennals.d2 import SphereDistribution
+from viennals.d2 import StencilLocalLaxFriedrichsScalar
+from viennals.d2 import ToDiskMesh
+from viennals.d2 import ToMesh
+from viennals.d2 import ToSurfaceMesh
+from viennals.d2 import ToVoxelMesh
+from viennals.d2 import WriteVisualizationMesh
+from viennals.d2 import Writer
+from viennals.d2 import hrleGrid
 from . import _core
 from . import d2
 from . import d3
 
 __all__: list[str] = [
+    "Advect",
+    "BooleanOperation",
     "BooleanOperationEnum",
     "BoundaryConditionEnum",
+    "Box",
+    "BoxDistribution",
+    "CalculateCurvatures",
+    "CalculateNormalVectors",
+    "CalculateVisibilities",
+    "Check",
+    "CompareArea",
+    "CompareNarrowBand",
+    "CompareSparseField",
+    "ConvexHull",
     "CurvatureEnum",
+    "Cylinder",
+    "DetectFeatures",
+    "Domain",
+    "Expand",
     "Extrude",
     "FeatureDetectionEnum",
     "FileFormatEnum",
+    "FinalizeStencilLocalLaxFriedrichs",
+    "FromMesh",
+    "FromSurfaceMesh",
+    "FromVolumeMesh",
+    "GeometricAdvect",
+    "GeometricAdvectDistribution",
     "IntegrationSchemeEnum",
     "LogLevel",
     "Logger",
+    "MakeGeometry",
+    "MarkVoidPoints",
     "MaterialMap",
     "Mesh",
+    "PROXY_DIM",
+    "Plane",
+    "PointCloud",
     "PointData",
+    "PrepareStencilLocalLaxFriedrichs",
+    "Prune",
+    "Reader",
+    "Reduce",
+    "RemoveStrayPoints",
     "Slice",
+    "Sphere",
+    "SphereDistribution",
+    "StencilLocalLaxFriedrichsScalar",
+    "ToDiskMesh",
+    "ToMesh",
+    "ToSurfaceMesh",
+    "ToVoxelMesh",
     "TransformEnum",
     "TransformMesh",
     "VTKReader",
     "VTKWriter",
     "VelocityField",
     "VoidTopSurfaceEnum",
+    "WriteVisualizationMesh",
+    "Writer",
     "d2",
     "d3",
+    "hrleGrid",
+    "setDimension",
     "setNumThreads",
     "version",
 ]
@@ -64,7 +148,18 @@ __all__: list[str] = [
 def __dir__(): ...
 def __getattr__(name): ...
 def _windows_dll_path(): ...
+def setDimension(d: int):
+    """
+    Set the dimension of the simulation (2 or 3).
 
-__version__: str = ""
-version: str = ""
+        Parameters
+        ----------
+        d: int
+            Dimension of the simulation (2 or 3).
+
+    """
+
+PROXY_DIM: int = 2
+__version__: str = "5.0.0"
+version: str = "5.0.0"
 _C = _core
