@@ -90,9 +90,9 @@ public:
     if (sliceLevelSet == nullptr) {
       autoCreateSlice = true;
       Logger::getInstance()
-          .addInfo("No slice level-set passed to Slice. Auto-created slice "
-                   "level-set with bounds derived from "
-                   "source domain")
+          .addDebug("No slice level-set passed to Slice. Auto-created slice "
+                    "level-set with bounds derived from "
+                    "source domain")
           .print();
     }
 
