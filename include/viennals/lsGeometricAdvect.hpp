@@ -38,8 +38,7 @@ template <class T, int D> class GeometricAdvect {
 
   SmartPointer<Domain<T, D>> levelSet = nullptr;
   SmartPointer<Domain<T, D>> maskLevelSet = nullptr;
-  SmartPointer<const GeometricAdvectDistribution<hrleCoordType, D>> dist =
-      nullptr;
+  SmartPointer<GeometricAdvectDistribution<hrleCoordType, D>> dist = nullptr;
   static constexpr T cutoffValue =
       T(1.) + std::numeric_limits<T>::epsilon() * T(100);
 
@@ -67,16 +66,12 @@ template <class T, int D> class GeometricAdvect {
 public:
   GeometricAdvect() = default;
 
-  template <class DistType,
-            lsConcepts::IsBaseOf<GeometricAdvectDistribution<hrleCoordType, D>,
-                                 DistType> = lsConcepts::assignable>
-  GeometricAdvect(SmartPointer<Domain<T, D>> passedLevelSet,
-                  SmartPointer<DistType> passedDist,
-                  SmartPointer<Domain<T, D>> passedMaskLevelSet = nullptr)
-      : levelSet(passedLevelSet), maskLevelSet(passedMaskLevelSet) {
-    dist = std::dynamic_pointer_cast<
-        GeometricAdvectDistribution<hrleCoordType, D>>(passedDist);
-  }
+  GeometricAdvect(
+      SmartPointer<Domain<T, D>> passedLevelSet,
+      SmartPointer<GeometricAdvectDistribution<hrleCoordType, D>> passedDist,
+      SmartPointer<Domain<T, D>> passedMaskLevelSet = nullptr)
+      : levelSet(passedLevelSet), maskLevelSet(passedMaskLevelSet),
+        dist(passedDist) {}
 
   /// Set the levelset which should be advected.
   void setLevelSet(SmartPointer<Domain<T, D>> passedLevelSet) {
@@ -85,12 +80,9 @@ public:
 
   /// Set which advection distribution to use. Must be derived from
   /// GeometricAdvectDistribution.
-  template <class DistType,
-            lsConcepts::IsBaseOf<GeometricAdvectDistribution<hrleCoordType, D>,
-                                 DistType> = lsConcepts::assignable>
-  void setAdvectionDistribution(SmartPointer<DistType> passedDist) {
-    dist = std::dynamic_pointer_cast<
-        GeometricAdvectDistribution<hrleCoordType, D>>(passedDist);
+  void setAdvectionDistribution(
+      SmartPointer<GeometricAdvectDistribution<hrleCoordType, D>> passedDist) {
+    dist = passedDist;
   }
 
   /// Set the levelset, which should be used as a mask. This level set
@@ -123,6 +115,8 @@ public:
     if (maskLevelSet != nullptr) {
       Expand<T, D>(maskLevelSet, 3).apply();
     }
+
+    dist->prepare(levelSet);
 
     typedef typename Domain<T, D>::DomainType DomainType;
 
@@ -526,6 +520,8 @@ public:
     levelSet->finalize(1);
 
     Expand<T, D>(levelSet, 2).apply();
+
+    dist->finalize();
   }
 };
 

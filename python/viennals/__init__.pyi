@@ -43,6 +43,7 @@ from viennals.d2 import CompareArea
 from viennals.d2 import CompareNarrowBand
 from viennals.d2 import CompareSparseField
 from viennals.d2 import ConvexHull
+from viennals.d2 import CustomSphereDistribution
 from viennals.d2 import Cylinder
 from viennals.d2 import DetectFeatures
 from viennals.d2 import Domain
@@ -92,6 +93,7 @@ __all__: list[str] = [
     "CompareSparseField",
     "ConvexHull",
     "CurvatureEnum",
+    "CustomSphereDistribution",
     "Cylinder",
     "DetectFeatures",
     "Domain",

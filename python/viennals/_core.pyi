@@ -8,8 +8,8 @@ import enum
 import typing
 import viennals.d2
 from viennals import d2
-import viennals.d3
 from viennals import d3
+import viennals.d3
 
 __all__: list[str] = [
     "BooleanOperationEnum",

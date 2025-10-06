@@ -39,19 +39,23 @@ public:
   virtual bool useSurfacePointId() const { return false; }
 
   virtual ~GeometricAdvectDistribution() = default;
+
+  virtual void prepare(SmartPointer<Domain<T, D>> domain) {}
+  virtual void finalize() {}
 };
 
 /// Concrete implementation of GeometricAdvectDistribution for a spherical
 /// advection distribution.
 template <class T, int D>
 class SphereDistribution : public GeometricAdvectDistribution<T, D> {
+
 public:
   const T radius = 0.;
   const T radius2;
-  const T gridDelta;
+  T gridDelta = 0.;
 
-  SphereDistribution(const T passedRadius, const T delta)
-      : radius(passedRadius), radius2(radius * radius), gridDelta(delta) {}
+  SphereDistribution(const T passedRadius)
+      : radius(passedRadius), radius2(radius * radius) {}
 
   bool isInside(const Vec3D<viennahrle::CoordType> &initial,
                 const Vec3D<viennahrle::CoordType> &candidate,
@@ -113,6 +117,10 @@ public:
   }
 
   bool useSurfacePointId() const override { return true; }
+
+  void prepare(SmartPointer<Domain<T, D>> domain) override {
+    gridDelta = domain->getGrid().getGridDelta();
+  }
 };
 
 /// Concrete implementation of GeometricAdvectDistribution
@@ -121,20 +129,9 @@ template <class T, int D>
 class BoxDistribution : public GeometricAdvectDistribution<T, D> {
 public:
   const VectorType<T, 3> posExtent;
-  const T gridDelta;
+  T gridDelta = 0.;
 
-  BoxDistribution(const std::array<T, 3> &halfAxes, const T delta)
-      : posExtent(halfAxes), gridDelta(delta) {
-    for (unsigned i = 0; i < D; ++i) {
-      if (std::abs(posExtent[i]) < gridDelta) {
-        Logger::getInstance()
-            .addWarning("One half-axis of BoxDistribution is smaller than "
-                        "the grid Delta! This can lead to numerical errors "
-                        "breaking the distribution!")
-            .print();
-      }
-    }
-  }
+  BoxDistribution(const std::array<T, 3> &halfAxes) : posExtent(halfAxes) {}
 
   bool isInside(const Vec3D<viennahrle::CoordType> &initial,
                 const Vec3D<viennahrle::CoordType> &candidate,
@@ -169,18 +166,31 @@ public:
   }
 
   bool useSurfacePointId() const override { return true; }
+
+  void prepare(SmartPointer<Domain<T, D>> domain) override {
+    gridDelta = domain->getGrid().getGridDelta();
+
+    for (unsigned i = 0; i < D; ++i) {
+      if (std::abs(posExtent[i]) < gridDelta) {
+        Logger::getInstance()
+            .addWarning("One half-axis of BoxDistribution is smaller than "
+                        "the grid Delta! This can lead to numerical errors "
+                        "breaking the distribution!")
+            .print();
+      }
+    }
+  }
 };
 
 template <class T, int D>
 class CustomSphereDistribution : public GeometricAdvectDistribution<T, D> {
 
   const std::vector<T> radii_;
-  const T gridDelta_;
+  T gridDelta_ = 0;
   T maxRadius_ = 0;
 
 public:
-  CustomSphereDistribution(const std::vector<T> &radii, T delta)
-      : radii_(radii), gridDelta_(delta) {
+  CustomSphereDistribution(const std::vector<T> &radii) : radii_(radii) {
     for (unsigned i = 0; i < D; ++i) {
       maxRadius_ = std::max(maxRadius_, std::abs(radii_[i]));
     }
@@ -240,6 +250,10 @@ public:
   }
 
   bool useSurfacePointId() const override { return true; }
+
+  void prepare(SmartPointer<Domain<T, D>> domain) override {
+    gridDelta_ = domain->getGrid().getGridDelta();
+  }
 };
 
 template <class T, int D>
@@ -248,17 +262,18 @@ class TrenchDistribution : public GeometricAdvectDistribution<T, D> {
   const T trenchWidth_;
   const T trenchDepth_;
   const T rate_;
-  const T gridDelta_;
 
   const T bottomMed_;
   const T a_, b_, n_;
 
+  T gridDelta_;
+
 public:
   TrenchDistribution(const T trenchWidth, const T trenchDepth, const T rate,
-                     const T gridDelta, const T bottomMed = 1.0,
-                     const T a = 1.0, const T b = 1.0, const T n = 1.0)
+                     const T bottomMed = 1.0, const T a = 1.0, const T b = 1.0,
+                     const T n = 1.0)
       : trenchWidth_(trenchWidth), trenchDepth_(trenchDepth), rate_(rate),
-        gridDelta_(gridDelta), bottomMed_(bottomMed), a_(a), b_(b), n_(n) {}
+        bottomMed_(bottomMed), a_(a), b_(b), n_(n) {}
 
   T getSignedDistance(const Vec3D<viennahrle::CoordType> &initial,
                       const Vec3D<viennahrle::CoordType> &candidate,
@@ -317,5 +332,9 @@ public:
   }
 
   bool useSurfacePointId() const override { return true; }
+
+  void prepare(SmartPointer<Domain<T, D>> domain) override {
+    gridDelta_ = domain->getGrid().getGridDelta();
+  }
 };
 } // namespace viennals

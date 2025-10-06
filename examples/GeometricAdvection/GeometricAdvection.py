@@ -50,7 +50,7 @@ newLayer = vls.Domain(substrate)
 
 print("Advecting")
 # Advect the level set
-dist = vls.SphereDistribution(4.0, gridDelta)
+dist = vls.SphereDistribution(4.0)
 vls.GeometricAdvect(newLayer, dist).apply()
 
 vls.ToSurfaceMesh(newLayer, mesh).apply()

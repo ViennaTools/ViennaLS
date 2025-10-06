@@ -323,8 +323,8 @@ template <int D> void bindApi(py::module &module) {
                     const std::vector<VectorType<T, D>> &>))
       // methods
       .def("insertNextPoint",
-           (void (PointCloud<T, D>::*)(
-               const VectorType<T, D> &))&PointCloud<T, D>::insertNextPoint);
+           (void(PointCloud<T, D>::*)(const VectorType<T, D> &)) &
+               PointCloud<T, D>::insertNextPoint);
 
   // ConvexHull
   py::class_<ConvexHull<T, D>, SmartPointer<ConvexHull<T, D>>>(module,
@@ -378,8 +378,7 @@ template <int D> void bindApi(py::module &module) {
            "Set levelset to advect.")
       .def(
           "setAdvectionDistribution",
-          &GeometricAdvect<T, D>::template setAdvectionDistribution<
-              PylsGeometricAdvectDistribution<D>>,
+          &GeometricAdvect<T, D>::setAdvectionDistribution,
           "Set advection distribution to use as kernel for the fast advection.")
       .def("apply", &GeometricAdvect<T, D>::apply,
            py::call_guard<py::gil_scoped_release>(), "Perform advection.");
@@ -399,13 +398,16 @@ template <int D> void bindApi(py::module &module) {
            "Get the signed distance of the passed point to the surface of the "
            "distribution.")
       .def("getBounds", &GeometricAdvectDistribution<T, D>::getBounds,
-           "Get the cartesian bounds of the distribution.");
+           "Get the cartesian bounds of the distribution.")
+      .def("prepare", &GeometricAdvectDistribution<T, D>::prepare,
+           "Prepare the distribution for use with the passed level set.")
+      .def("finalize", &GeometricAdvectDistribution<T, D>::finalize,
+           "Finalize the distribution after use with the level set.");
 
   py::class_<SphereDistribution<T, D>, SmartPointer<SphereDistribution<T, D>>,
              GeometricAdvectDistribution<T, D>>(module, "SphereDistribution")
       // constructors
-      .def(
-          py::init(&SmartPointer<SphereDistribution<T, D>>::template New<T, T>))
+      .def(py::init(&SmartPointer<SphereDistribution<T, D>>::template New<T>))
       // methods
       .def("isInside", &SphereDistribution<T, D>::isInside,
            "Check whether passed point is inside the distribution.")
@@ -419,7 +421,7 @@ template <int D> void bindApi(py::module &module) {
              GeometricAdvectDistribution<T, D>>(module, "BoxDistribution")
       // constructors
       .def(py::init(&SmartPointer<BoxDistribution<T, D>>::template New<
-                    const std::array<T, 3>, T>))
+                    const std::array<T, 3>>))
       // methods
       .def("isInside", &BoxDistribution<T, D>::isInside,
            "Check whether passed point is inside the distribution.")
@@ -435,7 +437,7 @@ template <int D> void bindApi(py::module &module) {
                                                 "CustomSphereDistribution")
       // constructors
       .def(py::init(&SmartPointer<CustomSphereDistribution<T, D>>::template New<
-                    const std::vector<T> &, T>))
+                    const std::vector<T> &>))
       // methods
       .def("isInside", &CustomSphereDistribution<T, D>::isInside,
            "Check whether passed point is inside the distribution.")
@@ -444,21 +446,6 @@ template <int D> void bindApi(py::module &module) {
            "Get the signed distance of the passed point to the surface of the "
            "distribution.")
       .def("getBounds", &CustomSphereDistribution<T, D>::getBounds,
-           "Get the cartesian bounds of the distribution.");
-
-  py::class_<TrenchDistribution<T, D>, SmartPointer<TrenchDistribution<T, D>>,
-             GeometricAdvectDistribution<T, D>>(module, "TrenchDistribution")
-      // constructors
-      .def(py::init(
-          &SmartPointer<TrenchDistribution<T, D>>::template New<T, T, T, T, T,
-                                                                T, T, T>))
-      // methods
-      .def("isInside", &TrenchDistribution<T, D>::isInside,
-           "Check whether passed point is inside the distribution.")
-      .def("getSignedDistance", &TrenchDistribution<T, D>::getSignedDistance,
-           "Get the signed distance of the passed point to the surface of the "
-           "distribution.")
-      .def("getBounds", &TrenchDistribution<T, D>::getBounds,
            "Get the cartesian bounds of the distribution.");
 
   // Expand
@@ -590,26 +577,26 @@ template <int D> void bindApi(py::module &module) {
       .def("setLevelSet", &MakeGeometry<T, D>::setLevelSet,
            "Set the levelset in which to create the geometry.")
       .def("setGeometry",
-           (void (MakeGeometry<T, D>::*)(
-               SmartPointer<Sphere<T, D>>))&MakeGeometry<T, D>::setGeometry)
+           (void(MakeGeometry<T, D>::*)(SmartPointer<Sphere<T, D>>)) &
+               MakeGeometry<T, D>::setGeometry)
       .def("setGeometry",
-           (void (MakeGeometry<T, D>::*)(
-               SmartPointer<Plane<T, D>>))&MakeGeometry<T, D>::setGeometry)
+           (void(MakeGeometry<T, D>::*)(SmartPointer<Plane<T, D>>)) &
+               MakeGeometry<T, D>::setGeometry)
       .def("setGeometry",
-           (void (MakeGeometry<T, D>::*)(
-               SmartPointer<Box<T, D>>))&MakeGeometry<T, D>::setGeometry)
+           (void(MakeGeometry<T, D>::*)(SmartPointer<Box<T, D>>)) &
+               MakeGeometry<T, D>::setGeometry)
       .def("setGeometry",
-           (void (MakeGeometry<T, D>::*)(
-               SmartPointer<Cylinder<T, D>>))&MakeGeometry<T, D>::setGeometry)
+           (void(MakeGeometry<T, D>::*)(SmartPointer<Cylinder<T, D>>)) &
+               MakeGeometry<T, D>::setGeometry)
       .def("setGeometry",
-           (void (MakeGeometry<T, D>::*)(
-               SmartPointer<PointCloud<T, D>>))&MakeGeometry<T, D>::setGeometry)
+           (void(MakeGeometry<T, D>::*)(SmartPointer<PointCloud<T, D>>)) &
+               MakeGeometry<T, D>::setGeometry)
       .def("setIgnoreBoundaryConditions",
-           (void (MakeGeometry<T, D>::*)(
-               bool))&MakeGeometry<T, D>::setIgnoreBoundaryConditions)
+           (void(MakeGeometry<T, D>::*)(bool)) &
+               MakeGeometry<T, D>::setIgnoreBoundaryConditions)
       .def("setIgnoreBoundaryConditions",
-           (void (MakeGeometry<T, D>::*)(std::array<bool, 3>))&MakeGeometry<
-               T, D>::setIgnoreBoundaryConditions)
+           (void(MakeGeometry<T, D>::*)(std::array<bool, 3>)) &
+               MakeGeometry<T, D>::setIgnoreBoundaryConditions)
       .def("apply", &MakeGeometry<T, D>::apply, "Generate the geometry.");
 
   // MarkVoidPoints

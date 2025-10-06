@@ -11,7 +11,7 @@
 #include <lsVTKWriter.hpp>
 
 /**
-  3D Example showing how to use the library for topography
+  2D Example showing how to use the library for topography
   emulation, by creating a trench geometry. A uniform
   layer of a different material is then grown on top. It is
   the same example as Deposition but emulates the deposition
@@ -19,81 +19,18 @@
   \example GeometricAdvection.cpp
 */
 
-namespace ls = viennals;
-
-using NumericType = double;
-
-template <class T, int D>
-class MyDistribution : public ls::GeometricAdvectDistribution<T, D> {
-private:
-  const T gridDelta_ = 0.5;
-  const T constantGrowth_ = 1;
-  const T ARGrowth_ = 1;
-  const T exponent_ = 1;
-  const T height_;
-
-public:
-  MyDistribution(T gridDelta, T height, T constantGrowth, T ARGrowth,
-                 T exponent)
-      : gridDelta_(gridDelta), constantGrowth_(constantGrowth),
-        ARGrowth_(ARGrowth), exponent_(exponent), height_(height) {}
-
-  T getSignedDistance(const ls::Vec3D<viennahrle::CoordType> &initial,
-                      const ls::Vec3D<viennahrle::CoordType> &candidate,
-                      unsigned long pointId) const override {
-
-    T distance = std::numeric_limits<T>::max();
-    ls::Vec3D<viennahrle::CoordType> v{};
-    for (unsigned i = 0; i < D; ++i) {
-      v[i] = candidate[i] - initial[i];
-    }
-
-    const T radius =
-        ARGrowth_ * std::pow(std::abs(initial[D - 1]) / height_, exponent_) +
-        constantGrowth_;
-    const T radius2 = radius * radius;
-    if (std::abs(radius) <= gridDelta_) {
-      distance =
-          std::max(std::max(std::abs(v[0]), std::abs(v[1])), std::abs(v[2])) -
-          std::abs(radius);
-    } else {
-      for (unsigned i = 0; i < D; ++i) {
-        T y = (v[(i + 1) % D]);
-        T z = 0;
-        if constexpr (D == 3)
-          z = (v[(i + 2) % D]);
-        T x = radius2 - y * y - z * z;
-        if (x < 0.)
-          continue;
-        T dirRadius = std::abs(v[i]) - std::sqrt(x);
-        if (std::abs(dirRadius) < std::abs(distance))
-          distance = dirRadius;
-      }
-    }
-    // return distance;
-    if (radius < 0) {
-      return -distance;
-    } else {
-      return distance;
-    }
-  }
-
-  /// Sets bounds to the bounding box of the distribution.
-  std::array<viennahrle::CoordType, 6> getBounds() const override {
-    return {{-(constantGrowth_ + ARGrowth_), (constantGrowth_ + ARGrowth_),
-             -(constantGrowth_ + ARGrowth_), (constantGrowth_ + ARGrowth_),
-             -(constantGrowth_ + ARGrowth_), (constantGrowth_ + ARGrowth_)}};
-  }
-};
-
 int main() {
 
+  namespace ls = viennals;
+  using NumericType = double;
   constexpr int D = 2;
   omp_set_num_threads(1);
 
   NumericType extent = 30;
   NumericType gridDelta = 0.5;
   NumericType height = 50;
+  NumericType width = 20;
+  NumericType radius = 4;
 
   double bounds[2 * D] = {-extent, extent, -extent, extent};
   ls::Domain<NumericType, D>::BoundaryType boundaryCons[D];
@@ -121,8 +58,8 @@ int main() {
         bounds, boundaryCons, gridDelta);
     // make -x and +x greater than domain for numerical stability
     // NumericType ylimit = extent / 4.;
-    NumericType minCorner[D] = {-extent / 3, 0.};
-    NumericType maxCorner[D] = {extent / 3, height + 1.};
+    NumericType minCorner[D] = {-width / 2, 0.};
+    NumericType maxCorner[D] = {width / 2, height + 1.};
     auto box =
         ls::SmartPointer<ls::Box<NumericType, D>>::New(minCorner, maxCorner);
     ls::MakeGeometry<NumericType, D>(trench, box).apply();
@@ -147,8 +84,9 @@ int main() {
 
   std::cout << "Advecting" << std::endl;
   // Grow the layer uniformly by 4 as in deposition example
-  auto dist = ls::SmartPointer<MyDistribution<viennahrle::CoordType, D>>::New(
-      gridDelta, height, 2, 10, 3);
+  auto dist =
+      ls::SmartPointer<ls::SphereDistribution<viennahrle::CoordType, D>>::New(
+          radius);
   ls::GeometricAdvect<NumericType, D>(newLayer, dist).apply();
 
   {
