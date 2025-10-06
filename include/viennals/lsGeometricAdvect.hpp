@@ -129,7 +129,8 @@ public:
     auto &domain = levelSet->getDomain();
 
     auto &grid = levelSet->getGrid();
-    auto gridDelta = grid.getGridDelta();
+    const auto gridDelta = grid.getGridDelta();
+    const bool useSurfacePointId = dist->useSurfacePointId();
 
     // Extract the original surface as a point cloud of grid
     // points shifted to the surface (disk mesh)
@@ -138,7 +139,8 @@ public:
         SmartPointer<typename ToDiskMesh<T, D>::TranslatorType>::New();
     ToDiskMesh<T, D, hrleCoordType>(levelSet, surfaceMesh, pointIdTranslator)
         .apply();
-    *pointIdTranslator = inverseTranslator(*pointIdTranslator);
+    if (!useSurfacePointId)
+      *pointIdTranslator = inverseTranslator(*pointIdTranslator);
 
     // find bounds of distribution
     auto distBounds = dist->getBounds();
@@ -401,10 +403,13 @@ public:
           }
 
           // get filling fraction from distance to dist surface
-          T tmpDistance = dist->getSignedDistance(
-                              currentNode, currentCoords,
-                              pointIdTranslator->find(currentPointId)->second) /
-                          gridDelta;
+          auto pointId = currentPointId;
+          if (!useSurfacePointId) {
+            pointId = pointIdTranslator->find(currentPointId)->second;
+          }
+          T tmpDistance =
+              dist->getSignedDistance(currentNode, currentCoords, pointId) /
+              gridDelta;
 
           // if cell is far within a distribution, set it filled
           if (distIsPositive) {
