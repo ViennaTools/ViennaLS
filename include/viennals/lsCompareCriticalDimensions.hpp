@@ -210,18 +210,26 @@ public:
     ToSurfaceMesh<T, D>(levelSetReference, surfaceMeshRef).apply();
     ToSurfaceMesh<T, D>(levelSetCompare, surfaceMeshCmp).apply();
 
-    // Get the domain extent to determine perpendicular range
-    // Use the union of both domains' bounds to ensure all points are considered
-    const auto &gridRef = levelSetReference->getGrid();
-    const auto &gridCmp = levelSetCompare->getGrid();
-    T xMin =
-        std::min(gridRef.getMinBounds(0), gridCmp.getMinBounds(0)) * gridDelta;
-    T xMax =
-        std::max(gridRef.getMaxBounds(0), gridCmp.getMaxBounds(0)) * gridDelta;
-    T yMin =
-        std::min(gridRef.getMinBounds(1), gridCmp.getMinBounds(1)) * gridDelta;
-    T yMax =
-        std::max(gridRef.getMaxBounds(1), gridCmp.getMaxBounds(1)) * gridDelta;
+    // Get actual mesh extents instead of grid bounds
+    // This ensures we don't filter out surface points that extend beyond grid
+    // bounds
+    T xMin = std::numeric_limits<T>::max();
+    T xMax = std::numeric_limits<T>::lowest();
+    T yMin = std::numeric_limits<T>::max();
+    T yMax = std::numeric_limits<T>::lowest();
+
+    for (const auto &node : surfaceMeshRef->nodes) {
+      xMin = std::min(xMin, node[0]);
+      xMax = std::max(xMax, node[0]);
+      yMin = std::min(yMin, node[1]);
+      yMax = std::max(yMax, node[1]);
+    }
+    for (const auto &node : surfaceMeshCmp->nodes) {
+      xMin = std::min(xMin, node[0]);
+      xMax = std::max(xMax, node[0]);
+      yMin = std::min(yMin, node[1]);
+      yMax = std::max(yMax, node[1]);
+    }
 
     // Process each range specification
     for (const auto &spec : rangeSpecs) {
