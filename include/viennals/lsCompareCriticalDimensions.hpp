@@ -211,11 +211,17 @@ public:
     ToSurfaceMesh<T, D>(levelSetCompare, surfaceMeshCmp).apply();
 
     // Get the domain extent to determine perpendicular range
+    // Use the union of both domains' bounds to ensure all points are considered
     const auto &gridRef = levelSetReference->getGrid();
-    T xMin = gridRef.getMinBounds(0) * gridDelta;
-    T xMax = gridRef.getMaxBounds(0) * gridDelta;
-    T yMin = gridRef.getMinBounds(1) * gridDelta;
-    T yMax = gridRef.getMaxBounds(1) * gridDelta;
+    const auto &gridCmp = levelSetCompare->getGrid();
+    T xMin =
+        std::min(gridRef.getMinBounds(0), gridCmp.getMinBounds(0)) * gridDelta;
+    T xMax =
+        std::max(gridRef.getMaxBounds(0), gridCmp.getMaxBounds(0)) * gridDelta;
+    T yMin =
+        std::min(gridRef.getMinBounds(1), gridCmp.getMinBounds(1)) * gridDelta;
+    T yMax =
+        std::max(gridRef.getMaxBounds(1), gridCmp.getMaxBounds(1)) * gridDelta;
 
     // Process each range specification
     for (const auto &spec : rangeSpecs) {
@@ -243,10 +249,10 @@ public:
       }
 
       // Find all surface crossings from the mesh nodes
-      auto crossingsRef = findSurfaceCrossings(surfaceMeshRef, spec.isXRange,
-                                               scanMin, scanMax, perpMin, perpMax);
-      auto crossingsCmp = findSurfaceCrossings(surfaceMeshCmp, spec.isXRange,
-                                               scanMin, scanMax, perpMin, perpMax);
+      auto crossingsRef = findSurfaceCrossings(
+          surfaceMeshRef, spec.isXRange, scanMin, scanMax, perpMin, perpMax);
+      auto crossingsCmp = findSurfaceCrossings(
+          surfaceMeshCmp, spec.isXRange, scanMin, scanMax, perpMin, perpMax);
 
       // Find critical dimensions
       auto [validRef, cdRef] =
