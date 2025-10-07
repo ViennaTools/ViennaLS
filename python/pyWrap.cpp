@@ -25,6 +25,7 @@
 #include <lsCalculateVisibilities.hpp>
 #include <lsCheck.hpp>
 #include <lsCompareArea.hpp>
+#include <lsCompareCriticalDimensions.hpp>
 #include <lsCompareNarrowBand.hpp>
 #include <lsCompareSparseField.hpp>
 #include <lsConvexHull.hpp>
@@ -484,6 +485,65 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("getRMSE", &CompareSparseField<T, D>::getRMSE,
            "Calculate the root mean square error from previously computed "
            "values.");
+
+  // CompareCriticalDimensions
+  pybind11::class_<CompareCriticalDimensions<T, D>,
+                   SmartPointer<CompareCriticalDimensions<T, D>>>(
+      module, "CompareCriticalDimensions")
+      // constructors
+      .def(pybind11::init(&SmartPointer<CompareCriticalDimensions<T, D>>::New<>))
+      .def(pybind11::init(
+          &SmartPointer<CompareCriticalDimensions<T, D>>::New<
+              SmartPointer<Domain<T, D>> &, SmartPointer<Domain<T, D>> &>))
+      // methods
+      .def("setLevelSetReference",
+           &CompareCriticalDimensions<T, D>::setLevelSetReference,
+           "Sets the reference level set.")
+      .def("setLevelSetCompare",
+           &CompareCriticalDimensions<T, D>::setLevelSetCompare,
+           "Sets the comparison level set.")
+      .def("addXRange", &CompareCriticalDimensions<T, D>::addXRange,
+           pybind11::arg("minX"), pybind11::arg("maxX"),
+           pybind11::arg("findMaximum") = true,
+           "Add an X range to find maximum or minimum Y position.")
+      .def("addYRange", &CompareCriticalDimensions<T, D>::addYRange,
+           pybind11::arg("minY"), pybind11::arg("maxY"),
+           pybind11::arg("findMaximum") = true,
+           "Add a Y range to find maximum or minimum X position.")
+      .def("clearRanges", &CompareCriticalDimensions<T, D>::clearRanges,
+           "Clear all range specifications.")
+      .def("setOutputMesh", &CompareCriticalDimensions<T, D>::setOutputMesh,
+           "Set the output mesh where critical dimension locations will be "
+           "stored.")
+      .def("apply", &CompareCriticalDimensions<T, D>::apply,
+           "Apply the comparison.")
+      .def("getNumCriticalDimensions",
+           &CompareCriticalDimensions<T, D>::getNumCriticalDimensions,
+           "Get the number of critical dimensions compared.")
+      .def("getCriticalDimensionResult",
+           [](CompareCriticalDimensions<T, D> &self, size_t index) {
+             T posRef, posCmp, diff;
+             bool valid = self.getCriticalDimensionResult(index, posRef, posCmp,
+                                                          diff);
+             if (valid) {
+               return pybind11::make_tuple(true, posRef, posCmp, diff);
+             } else {
+               return pybind11::make_tuple(false, 0.0, 0.0, 0.0);
+             }
+           },
+           pybind11::arg("index"),
+           "Get a specific critical dimension result. Returns (valid, "
+           "positionReference, positionCompare, difference).")
+      .def("getMeanDifference",
+           &CompareCriticalDimensions<T, D>::getMeanDifference,
+           "Get mean absolute difference across all valid critical dimensions.")
+      .def("getMaxDifference", &CompareCriticalDimensions<T, D>::getMaxDifference,
+           "Get maximum difference across all valid critical dimensions.")
+      .def("getRMSE", &CompareCriticalDimensions<T, D>::getRMSE,
+           "Get RMSE across all valid critical dimensions.")
+      .def("getAllDifferences",
+           &CompareCriticalDimensions<T, D>::getAllDifferences,
+           "Get all valid differences as a list.");
 #endif
 
   // ConvexHull
