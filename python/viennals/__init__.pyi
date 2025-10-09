@@ -68,6 +68,7 @@ from viennals.d2 import SphereDistribution
 from viennals.d2 import StencilLocalLaxFriedrichsScalar
 from viennals.d2 import ToDiskMesh
 from viennals.d2 import ToMesh
+from viennals.d2 import ToMultiSurfaceMesh
 from viennals.d2 import ToSurfaceMesh
 from viennals.d2 import ToVoxelMesh
 from viennals.d2 import WriteVisualizationMesh
@@ -129,6 +130,7 @@ __all__: list[str] = [
     "StencilLocalLaxFriedrichsScalar",
     "ToDiskMesh",
     "ToMesh",
+    "ToMultiSurfaceMesh",
     "ToSurfaceMesh",
     "ToVoxelMesh",
     "TransformEnum",

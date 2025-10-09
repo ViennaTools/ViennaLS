@@ -42,6 +42,7 @@ __all__: list[str] = [
     "StencilLocalLaxFriedrichsScalar",
     "ToDiskMesh",
     "ToMesh",
+    "ToMultiSurfaceMesh",
     "ToSurfaceMesh",
     "ToVoxelMesh",
     "WriteVisualizationMesh",
@@ -856,6 +857,16 @@ class ToDiskMesh:
         Set levelset to mesh.
         """
 
+    def setMaterialMap(self, arg0: viennals._core.MaterialMap) -> None:
+        """
+        Set the material map to use for the disk mesh.
+        """
+
+    def setMaxValue(self, arg0: typing.SupportsFloat) -> None:
+        """
+        Set the maximum level set value to include in the disk mesh.
+        """
+
     def setMesh(self, arg0: viennals._core.Mesh) -> None:
         """
         Set the mesh to generate.
@@ -895,6 +906,33 @@ class ToMesh:
     def setOnlyDefined(self, arg0: bool) -> None:
         """
         Set whether only defined points should be output to the mesh.
+        """
+
+class ToMultiSurfaceMesh:
+    @typing.overload
+    def __init__(self) -> None: ...
+    @typing.overload
+    def __init__(self, arg0: Domain, arg1: viennals._core.Mesh) -> None: ...
+    @typing.overload
+    def __init__(self, arg0: viennals._core.Mesh) -> None: ...
+    def apply(self) -> None:
+        """
+        Convert the levelset to a surface mesh.
+        """
+
+    def insertNextLevelSet(self, arg0: Domain) -> None:
+        """
+        Insert next level set to output in the mesh.
+        """
+
+    def setMaterialMap(self, arg0: viennals._core.MaterialMap) -> None:
+        """
+        Set the material map to use for the multi surface mesh.
+        """
+
+    def setMesh(self, arg0: viennals._core.Mesh) -> None:
+        """
+        Set the mesh to generate.
         """
 
 class ToSurfaceMesh:

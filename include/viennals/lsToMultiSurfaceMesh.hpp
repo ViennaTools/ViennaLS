@@ -120,15 +120,6 @@ public:
     const bool checkNodeFlag = minNodeDistanceFactor > 0;
     const bool useMaterialMap = materialMap != nullptr;
 
-    // Estimate triangle count and reserve memory
-    const size_t estimatedTriangles =
-        levelSets.back()->getDomain().getNumberOfPoints() / 4;
-    normals.reserve(estimatedTriangles);
-    materials.reserve(estimatedTriangles);
-    mesh->triangles.reserve(estimatedTriangles);
-    mesh->nodes.reserve(estimatedTriangles * 4);
-    nodeIdByBin.reserve(estimatedTriangles * 4);
-
     auto quantize = [&](const Vec3D<T> &p) -> I3 {
       const T inv = T(1) / minNodeDistance;
       return {(int)std::llround(p[0] * inv), (int)std::llround(p[1] * inv),
@@ -328,5 +319,7 @@ private:
     return CrossProduct(nodeB - nodeA, nodeC - nodeA);
   }
 };
+
+PRECOMPILE_PRECISION_DIMENSION(ToMultiSurfaceMesh)
 
 } // namespace viennals

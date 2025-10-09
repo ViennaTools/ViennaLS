@@ -36,6 +36,7 @@
 #include <lsSlice.hpp>
 #include <lsToDiskMesh.hpp>
 #include <lsToMesh.hpp>
+#include <lsToMultiSurfaceMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsToVoxelMesh.hpp>
 #include <lsTransformMesh.hpp>
@@ -695,6 +696,10 @@ template <int D> void bindApi(py::module &module) {
       .def("setLevelSet", &ToDiskMesh<T, D>::setLevelSet,
            "Set levelset to mesh.")
       .def("setMesh", &ToDiskMesh<T, D>::setMesh, "Set the mesh to generate.")
+      .def("setMaterialMap", &ToDiskMesh<T, D>::setMaterialMap,
+           "Set the material map to use for the disk mesh.")
+      .def("setMaxValue", &ToDiskMesh<T, D>::setMaxValue,
+           "Set the maximum level set value to include in the disk mesh.")
       .def("apply", &ToDiskMesh<T, D>::apply,
            "Convert the levelset to a surface mesh.");
 
@@ -733,6 +738,25 @@ template <int D> void bindApi(py::module &module) {
       .def("setMesh", &ToSurfaceMesh<T, D>::setMesh,
            "Set the mesh to generate.")
       .def("apply", &ToSurfaceMesh<T, D>::apply,
+           "Convert the levelset to a surface mesh.");
+
+  // ToMultiSurfaceMesh
+  py::class_<ToMultiSurfaceMesh<T, D>, SmartPointer<ToMultiSurfaceMesh<T, D>>>(
+      module, "ToMultiSurfaceMesh")
+      // constructors
+      .def(py::init(&SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<>))
+      .def(py::init(&SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<
+                    SmartPointer<Domain<T, D>> &, SmartPointer<Mesh<T>> &>))
+      .def(py::init(&SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<
+                    SmartPointer<Mesh<T>> &>))
+      // methods
+      .def("insertNextLevelSet", &ToMultiSurfaceMesh<T, D>::insertNextLevelSet,
+           "Insert next level set to output in the mesh.")
+      .def("setMesh", &ToMultiSurfaceMesh<T, D>::setMesh,
+           "Set the mesh to generate.")
+      .def("setMaterialMap", &ToMultiSurfaceMesh<T, D>::setMaterialMap,
+           "Set the material map to use for the multi surface mesh.")
+      .def("apply", &ToMultiSurfaceMesh<T, D>::apply,
            "Convert the levelset to a surface mesh.");
 
   // ToVoxelMesh
