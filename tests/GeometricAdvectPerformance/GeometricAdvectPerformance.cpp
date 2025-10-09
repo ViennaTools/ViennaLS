@@ -104,7 +104,7 @@ int main() {
 
   // set up spherical advection dist
   auto dist = ls::SmartPointer<ls::SphereDistribution<NumericType, D>>::New(
-      depositionDistance, gridDelta);
+      depositionDistance);
 
   auto newLayer = ls::SmartPointer<ls::Domain<double, D>>::New(substrate);
 

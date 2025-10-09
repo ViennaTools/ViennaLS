@@ -38,7 +38,7 @@ template <class T, int D> class GeometricAdvect {
 
   SmartPointer<Domain<T, D>> levelSet = nullptr;
   SmartPointer<Domain<T, D>> maskLevelSet = nullptr;
-  SmartPointer<GeometricAdvectDistribution<hrleCoordType, D>> dist = nullptr;
+  SmartPointer<GeometricAdvectDistribution<T, D>> dist = nullptr;
   static constexpr T cutoffValue =
       T(1.) + std::numeric_limits<T>::epsilon() * T(100);
 
@@ -66,10 +66,9 @@ template <class T, int D> class GeometricAdvect {
 public:
   GeometricAdvect() = default;
 
-  GeometricAdvect(
-      SmartPointer<Domain<T, D>> passedLevelSet,
-      SmartPointer<GeometricAdvectDistribution<hrleCoordType, D>> passedDist,
-      SmartPointer<Domain<T, D>> passedMaskLevelSet = nullptr)
+  GeometricAdvect(SmartPointer<Domain<T, D>> passedLevelSet,
+                  SmartPointer<GeometricAdvectDistribution<T, D>> passedDist,
+                  SmartPointer<Domain<T, D>> passedMaskLevelSet = nullptr)
       : levelSet(passedLevelSet), maskLevelSet(passedMaskLevelSet),
         dist(passedDist) {}
 
@@ -81,7 +80,7 @@ public:
   /// Set which advection distribution to use. Must be derived from
   /// GeometricAdvectDistribution.
   void setAdvectionDistribution(
-      SmartPointer<GeometricAdvectDistribution<hrleCoordType, D>> passedDist) {
+      SmartPointer<GeometricAdvectDistribution<T, D>> passedDist) {
     dist = passedDist;
   }
 
