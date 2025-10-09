@@ -7,7 +7,9 @@
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
 #include <lsToMesh.hpp>
+#include <lsToMultiSurfaceMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
+
 #include <lsVTKWriter.hpp>
 #include <lsWriteVisualizationMesh.hpp>
 
@@ -151,6 +153,14 @@ int main() {
   writer.setFileName("airgap");
   writer.setExtractHullMesh(true);
   writer.apply();
+
+  ls::ToMultiSurfaceMesh<NumericType, D> multiMeshKernel;
+  multiMeshKernel.insertNextLevelSet(substrate);
+  multiMeshKernel.insertNextLevelSet(newLayer);
+  auto multiMesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
+  multiMeshKernel.setMesh(multiMesh);
+  multiMeshKernel.apply();
+  ls::VTKWriter<NumericType>(multiMesh, "multimesh.vtp").apply();
 
   return 0;
 }

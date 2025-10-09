@@ -9,22 +9,25 @@
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsMarchingCubes.hpp>
+#include <lsMaterialMap.hpp>
 #include <lsMesh.hpp>
 
 namespace viennals {
 
 using namespace viennacore;
 
-template <class NumericType, int D = 3> class ToSurfaceMesh_dev {
+template <class NumericType, int D, class T = NumericType>
+class ToMultiSurfaceMesh {
 
   typedef viennals::Domain<NumericType, D> lsDomainType;
   typedef typename viennals::Domain<NumericType, D>::DomainType hrleDomainType;
 
   std::vector<SmartPointer<lsDomainType>> levelSets;
-  SmartPointer<viennals::Mesh<NumericType>> mesh = nullptr;
+  SmartPointer<viennals::Mesh<T>> mesh = nullptr;
+  SmartPointer<MaterialMap> materialMap = nullptr;
 
-  const NumericType epsilon;
-  const NumericType minNodeDistanceFactor = 0.05;
+  const double epsilon;
+  const double minNodeDistanceFactor;
 
   struct I3 {
     int x, y, z;
@@ -47,47 +50,54 @@ template <class NumericType, int D = 3> class ToSurfaceMesh_dev {
   };
 
 public:
-  ToSurfaceMesh_dev(SmartPointer<lsDomainType> passedLevelSet,
-                    SmartPointer<viennals::Mesh<NumericType>> passedMesh,
-                    double eps = 1e-12, double minNodeDistFactor = 0.05)
+  ToMultiSurfaceMesh(double eps = 1e-12, double minNodeDistFactor = 0.05)
+      : epsilon(eps), minNodeDistanceFactor(minNodeDistFactor) {}
+
+  ToMultiSurfaceMesh(SmartPointer<lsDomainType> passedLevelSet,
+                     SmartPointer<viennals::Mesh<T>> passedMesh,
+                     double eps = 1e-12, double minNodeDistFactor = 0.05)
       : mesh(passedMesh), epsilon(eps),
         minNodeDistanceFactor(minNodeDistFactor) {
     levelSets.push_back(passedLevelSet);
   }
 
-  ToSurfaceMesh_dev(SmartPointer<viennals::Mesh<NumericType>> passedMesh,
-                    double eps = 1e-12, double minNodeDistFactor = 0.05)
+  ToMultiSurfaceMesh(SmartPointer<viennals::Mesh<T>> passedMesh,
+                     double eps = 1e-12, double minNodeDistFactor = 0.05)
       : mesh(passedMesh), epsilon(eps),
         minNodeDistanceFactor(minNodeDistFactor) {}
+
+  void setMesh(SmartPointer<viennals::Mesh<T>> passedMesh) {
+    mesh = passedMesh;
+  }
 
   void insertNextLevelSet(SmartPointer<lsDomainType> passedLevelSet) {
     levelSets.push_back(passedLevelSet);
   }
 
+  void setMaterialMap(SmartPointer<MaterialMap> passedMaterialMap) {
+    materialMap = passedMaterialMap;
+  }
+
   void apply() {
     if (levelSets.empty()) {
       Logger::getInstance()
-          .addError("No level set was passed to CreateSurfaceMesh.")
+          .addError("No level set was passed to ToMultiSurfaceMesh.")
           .print();
       return;
     }
     if (mesh == nullptr) {
       Logger::getInstance()
-          .addError("No mesh was passed to CreateSurfaceMesh.")
+          .addError("No mesh was passed to ToMultiSurfaceMesh.")
           .print();
       return;
     }
 
     mesh->clear();
     const auto gridDelta = levelSets.front()->getGrid().getGridDelta();
-    mesh->minimumExtent =
-        Vec3D<NumericType>{std::numeric_limits<NumericType>::max(),
-                           std::numeric_limits<NumericType>::max(),
-                           std::numeric_limits<NumericType>::max()};
-    mesh->maximumExtent =
-        Vec3D<NumericType>{std::numeric_limits<NumericType>::lowest(),
-                           std::numeric_limits<NumericType>::lowest(),
-                           std::numeric_limits<NumericType>::lowest()};
+    for (unsigned i = 0; i < D; ++i) {
+      mesh->minimumExtent[i] = std::numeric_limits<NumericType>::max();
+      mesh->maximumExtent[i] = std::numeric_limits<NumericType>::lowest();
+    }
 
     constexpr unsigned int corner0[12] = {0, 1, 2, 0, 4, 5, 6, 4, 0, 1, 3, 2};
     constexpr unsigned int corner1[12] = {1, 3, 3, 2, 5, 7, 7, 6, 4, 5, 7, 6};
@@ -96,27 +106,28 @@ public:
     typedef std::map<viennahrle::Index<D>, unsigned> nodeContainerType;
 
     nodeContainerType nodes[D];
-    const NumericType minNodeDistance = gridDelta * minNodeDistanceFactor;
+    const double minNodeDistance = gridDelta * minNodeDistanceFactor;
     std::unordered_map<I3, unsigned, I3Hash> nodeIdByBin;
 
     typename nodeContainerType::iterator nodeIt;
 
-    std::vector<Vec3D<NumericType>> normals;
+    std::vector<Vec3D<T>> normals;
+    std::vector<T> materials;
 
     const bool checkNodeFlag = minNodeDistanceFactor > 0;
+    const bool useMaterialMap = materialMap != nullptr;
 
     // Estimate triangle count and reserve memory
-    if (levelSets.size() == 1) {
-      size_t estimatedTriangles =
-          levelSets.front()->getDomain().getNumberOfPoints() / 4;
-      normals.reserve(estimatedTriangles);
-      mesh->triangles.reserve(estimatedTriangles);
-      mesh->nodes.reserve(estimatedTriangles * 4);
-      nodeIdByBin.reserve(estimatedTriangles * 4);
-    }
+    const size_t estimatedTriangles =
+        levelSets.back()->getDomain().getNumberOfPoints() / 4;
+    normals.reserve(estimatedTriangles);
+    materials.reserve(estimatedTriangles);
+    mesh->triangles.reserve(estimatedTriangles);
+    mesh->nodes.reserve(estimatedTriangles * 4);
+    nodeIdByBin.reserve(estimatedTriangles * 4);
 
-    auto quantize = [&](const Vec3D<NumericType> &p) -> I3 {
-      const NumericType inv = NumericType(1) / minNodeDistance;
+    auto quantize = [&](const Vec3D<T> &p) -> I3 {
+      const T inv = T(1) / minNodeDistance;
       return {(int)std::llround(p[0] * inv), (int)std::llround(p[1] * inv),
               (int)std::llround(p[2] * inv)};
     };
@@ -180,35 +191,33 @@ public:
             } else {
               // if node does not exist yet
               // calculate coordinate of new node
-              Vec3D<NumericType> cc{}; // initialise with zeros
+              Vec3D<T> cc{}; // initialise with zeros
               for (int z = 0; z < D; z++) {
                 if (z != dir) {
                   // TODO might not need BitMaskToVector here, just check if z
                   // bit is set
-                  cc[z] =
-                      static_cast<NumericType>(cellIt.getIndices(z) + p0B[z]);
+                  cc[z] = static_cast<T>(cellIt.getIndices(z) + p0B[z]);
                 } else {
-                  auto d0 =
-                      static_cast<NumericType>(cellIt.getCorner(p0).getValue());
-                  auto d1 =
-                      static_cast<NumericType>(cellIt.getCorner(p1).getValue());
+                  auto d0 = static_cast<T>(cellIt.getCorner(p0).getValue());
+                  auto d1 = static_cast<T>(cellIt.getCorner(p1).getValue());
 
                   // calculate the surface-grid intersection point
                   if (d0 == -d1) { // includes case where d0=d1=0
-                    cc[z] =
-                        static_cast<NumericType>(cellIt.getIndices(z)) + 0.5;
+                    cc[z] = static_cast<T>(cellIt.getIndices(z)) + 0.5;
                   } else {
                     if (std::abs(d0) <= std::abs(d1)) {
-                      cc[z] = static_cast<NumericType>(cellIt.getIndices(z)) +
+                      cc[z] = static_cast<T>(cellIt.getIndices(z)) +
                               (d0 / (d0 - d1));
                     } else {
-                      cc[z] =
-                          static_cast<NumericType>(cellIt.getIndices(z) + 1) -
-                          (d1 / (d1 - d0));
+                      cc[z] = static_cast<T>(cellIt.getIndices(z) + 1) -
+                              (d1 / (d1 - d0));
                     }
                   }
-                  cc[z] = std::max(cc[z], cellIt.getIndices(z) + epsilon);
-                  cc[z] = std::min(cc[z], (cellIt.getIndices(z) + 1) - epsilon);
+                  cc[z] = std::max(
+                      cc[z], static_cast<T>(cellIt.getIndices(z) + epsilon));
+                  cc[z] = std::min(
+                      cc[z],
+                      static_cast<T>((cellIt.getIndices(z) + 1) - epsilon));
                 }
                 cc[z] = gridDelta * cc[z];
               }
@@ -241,34 +250,45 @@ public:
           }
 
           if (!triangleMisformed(nod_numbers)) {
-            Vec3D<NumericType> normal;
-            if constexpr (D == 2)
-              normal = Vec3D<NumericType>{-(mesh->nodes[nod_numbers[1]][1] -
-                                            mesh->nodes[nod_numbers[0]][1]),
-                                          mesh->nodes[nod_numbers[1]][0] -
-                                              mesh->nodes[nod_numbers[0]][0],
-                                          0.};
-            else
-              auto normal = calculateNormal(mesh->nodes[nod_numbers[0]],
-                                            mesh->nodes[nod_numbers[1]],
-                                            mesh->nodes[nod_numbers[2]]);
+            Vec3D<T> normal;
+            if constexpr (D == 2) {
+              normal = Vec3D<T>{-(mesh->nodes[nod_numbers[1]][1] -
+                                  mesh->nodes[nod_numbers[0]][1]),
+                                mesh->nodes[nod_numbers[1]][0] -
+                                    mesh->nodes[nod_numbers[0]][0],
+                                T(0)};
+            } else {
+              normal = calculateNormal(mesh->nodes[nod_numbers[0]],
+                                       mesh->nodes[nod_numbers[1]],
+                                       mesh->nodes[nod_numbers[2]]);
+            }
 
-            auto n2 = normal[0] * normal[0] + normal[1] * normal[1] +
-                      normal[2] * normal[2];
+            double n2 = normal[0] * normal[0] + normal[1] * normal[1] +
+                        normal[2] * normal[2];
             if (n2 > epsilon) {
-              mesh->insertNextElement(
-                  nod_numbers); // insert new surface element
-              NumericType invn = static_cast<NumericType>(1.) /
-                                 std::sqrt(static_cast<NumericType>(n2));
+              // insert new element
+              mesh->insertNextElement(nod_numbers);
+
+              // insert normal
+              T invn = static_cast<T>(1.) / std::sqrt(static_cast<T>(n2));
               for (int d = 0; d < D; d++) {
                 normal[d] *= invn;
               }
               normals.push_back(normal);
+
+              // insert material
+              if (useMaterialMap) {
+                materials.push_back(materialMap->getMaterialId(l));
+              } else {
+                materials.push_back(static_cast<T>(l));
+              }
             }
           }
         }
       }
     }
+
+    mesh->cellData.insertNextScalarData(materials, "MaterialIds");
     mesh->cellData.insertNextVectorData(normals, "Normals");
     mesh->triangles.shrink_to_fit();
     mesh->nodes.shrink_to_fit();
