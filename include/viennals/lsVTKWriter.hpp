@@ -148,6 +148,10 @@ public:
           .print();
       return;
     }
+    if (mesh->nodes.empty()) {
+      Logger::getInstance().addWarning("Writing empty mesh.").print();
+      return;
+    }
 
     if (fileFormat == FileFormatEnum::VTK_AUTO) {
       auto dotPos = fileName.rfind('.');
