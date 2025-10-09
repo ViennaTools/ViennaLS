@@ -57,6 +57,9 @@ template <class T, int D = 2> class CompareSparseField {
   // Add bool for filling the iterated level set with distances
   bool fillIteratedWithDistances = false;
 
+  // Expansion width for the expanded level set
+  int expandedLevelSetWidth = 50;
+
   bool checkAndCalculateBounds() {
     if (levelSetExpanded == nullptr || levelSetIterated == nullptr) {
       Logger::getInstance()
@@ -104,17 +107,17 @@ template <class T, int D = 2> class CompareSparseField {
     // }
 
     // Check if expanded level set width is sufficient
-    if (levelSetExpanded->getLevelSetWidth() < 50) {
+    if (levelSetExpanded->getLevelSetWidth() < expandedLevelSetWidth) {
       Logger::getInstance()
           .addWarning(
               "Expanded level set width is insufficient. It must have a width "
-              "of "
-              "at least 50. \n"
+              "of at least " +
+              std::to_string(expandedLevelSetWidth) + ". \n" +
               " CORRECTION: The expansion was performed. \n"
               "ALTERNATIVE: Alternatively, please expand the expanded yourself "
               "using lsExpand before passing it to this function. \n")
           .print();
-      Expand<T, D>(levelSetExpanded, 50).apply();
+      Expand<T, D>(levelSetExpanded, expandedLevelSetWidth).apply();
     }
 
     // Reduce the iterated level set to a sparse field if necessary
@@ -193,6 +196,21 @@ public:
   /// Set whether to fill the iterated level set with distances
   void setFillIteratedWithDistances(bool fill) {
     fillIteratedWithDistances = fill;
+  }
+
+  /// Set the expansion width for the expanded level set
+  /// This value will be used if the expanded level set needs to be expanded
+  /// automatically during the apply() call
+  void setExpandedLevelSetWidth(int width) {
+    if (width <= 0) {
+      Logger::getInstance()
+          .addWarning("Expansion width must be positive. Using default value "
+                      "of 50.")
+          .print();
+      expandedLevelSetWidth = 50;
+    } else {
+      expandedLevelSetWidth = width;
+    }
   }
 
   /// Apply the comparison and calculate the sum of squared differences.

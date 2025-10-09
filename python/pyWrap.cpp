@@ -470,6 +470,9 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("setFillIteratedWithDistances",
            &CompareSparseField<T, D>::setFillIteratedWithDistances,
            "Set whether to fill the iterated level set with distance values")
+      .def("setExpandedLevelSetWidth",
+           &CompareSparseField<T, D>::setExpandedLevelSetWidth,
+           "Set the expansion width for the expanded level set")
       .def("apply", &CompareSparseField<T, D>::apply,
            "Apply the comparison and calculate the sum of squared differences.")
       .def("getSumSquaredDifferences",
