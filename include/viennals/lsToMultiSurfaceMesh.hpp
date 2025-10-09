@@ -4,6 +4,8 @@
 
 #include <iostream>
 #include <map>
+#include <unordered_map>
+#include <unordered_set>
 
 #include <hrleSparseCellIterator.hpp>
 #include <lsDomain.hpp>
@@ -108,6 +110,7 @@ public:
     nodeContainerType nodes[D];
     const double minNodeDistance = gridDelta * minNodeDistanceFactor;
     std::unordered_map<I3, unsigned, I3Hash> nodeIdByBin;
+    std::unordered_set<I3, I3Hash> uniqueElements;
 
     typename nodeContainerType::iterator nodeIt;
 
@@ -132,13 +135,20 @@ public:
               (int)std::llround(p[2] * inv)};
     };
 
+    auto elementI3 = [&](const std::array<unsigned, D> &element) -> I3 {
+      if constexpr (D == 2)
+        return {(int)element[0], (int)element[1], 0};
+      else
+        return {(int)element[0], (int)element[1], (int)element[2]};
+    };
+
     // an iterator for each level set
     std::vector<viennahrle::ConstSparseCellIterator<hrleDomainType>> cellIts;
     for (const auto &ls : levelSets)
       cellIts.emplace_back(ls->getDomain());
 
-    // iterate over all active surface points
     for (unsigned l = 0; l < levelSets.size(); l++) {
+      // iterate over all active surface points
       for (auto cellIt = cellIts[l]; !cellIt.isFinished(); cellIt.next()) {
         for (int u = 0; u < D; u++) {
           while (!nodes[u].empty() &&
@@ -219,7 +229,7 @@ public:
                       cc[z],
                       static_cast<T>((cellIt.getIndices(z) + 1) - epsilon));
                 }
-                cc[z] = gridDelta * cc[z];
+                cc[z] *= gridDelta;
               }
 
               int nodeIdx = -1;
@@ -249,38 +259,43 @@ public:
             }
           }
 
+          // check for degenerate triangles
           if (!triangleMisformed(nod_numbers)) {
-            Vec3D<T> normal;
-            if constexpr (D == 2) {
-              normal = Vec3D<T>{-(mesh->nodes[nod_numbers[1]][1] -
-                                  mesh->nodes[nod_numbers[0]][1]),
-                                mesh->nodes[nod_numbers[1]][0] -
-                                    mesh->nodes[nod_numbers[0]][0],
-                                T(0)};
-            } else {
-              normal = calculateNormal(mesh->nodes[nod_numbers[0]],
-                                       mesh->nodes[nod_numbers[1]],
-                                       mesh->nodes[nod_numbers[2]]);
-            }
 
-            double n2 = normal[0] * normal[0] + normal[1] * normal[1] +
-                        normal[2] * normal[2];
-            if (n2 > epsilon) {
-              // insert new element
-              mesh->insertNextElement(nod_numbers);
-
-              // insert normal
-              T invn = static_cast<T>(1.) / std::sqrt(static_cast<T>(n2));
-              for (int d = 0; d < D; d++) {
-                normal[d] *= invn;
-              }
-              normals.push_back(normal);
-
-              // insert material
-              if (useMaterialMap) {
-                materials.push_back(materialMap->getMaterialId(l));
+            // only insert if not already present
+            if (uniqueElements.insert(elementI3(nod_numbers)).second) {
+              Vec3D<T> normal;
+              if constexpr (D == 2) {
+                normal = Vec3D<T>{-(mesh->nodes[nod_numbers[1]][1] -
+                                    mesh->nodes[nod_numbers[0]][1]),
+                                  mesh->nodes[nod_numbers[1]][0] -
+                                      mesh->nodes[nod_numbers[0]][0],
+                                  T(0)};
               } else {
-                materials.push_back(static_cast<T>(l));
+                normal = calculateNormal(mesh->nodes[nod_numbers[0]],
+                                         mesh->nodes[nod_numbers[1]],
+                                         mesh->nodes[nod_numbers[2]]);
+              }
+
+              double n2 = normal[0] * normal[0] + normal[1] * normal[1] +
+                          normal[2] * normal[2];
+              if (n2 > epsilon) {
+                // insert new element
+                mesh->insertNextElement(nod_numbers);
+
+                // insert normal
+                T invn = static_cast<T>(1.) / std::sqrt(static_cast<T>(n2));
+                for (int d = 0; d < D; d++) {
+                  normal[d] *= invn;
+                }
+                normals.push_back(normal);
+
+                // insert material
+                if (useMaterialMap) {
+                  materials.push_back(materialMap->getMaterialId(l));
+                } else {
+                  materials.push_back(static_cast<T>(l));
+                }
               }
             }
           }
