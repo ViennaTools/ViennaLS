@@ -97,8 +97,7 @@ int main() {
     box[1] = 1.1;
     box[2] = 15;
   }
-  auto dist = ls::SmartPointer<ls::BoxDistribution<NumericType, D>>::New(
-      box, gridDelta);
+  auto dist = ls::SmartPointer<ls::BoxDistribution<NumericType, D>>::New(box);
   ls::GeometricAdvect<NumericType, D>(substrate, dist).apply();
 
   std::cout << "Writing results..." << std::endl;

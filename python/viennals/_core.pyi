@@ -8,8 +8,8 @@ import enum
 import typing
 import viennals.d2
 from viennals import d2
-import viennals.d3
 from viennals import d3
+import viennals.d3
 
 __all__: list[str] = [
     "BooleanOperationEnum",
@@ -728,5 +728,5 @@ class VoidTopSurfaceEnum(enum.IntEnum):
 
 def setNumThreads(arg0: typing.SupportsInt) -> None: ...
 
-__version__: str = "5.0.1"
-version: str = "5.0.1"
+__version__: str = "5.1.0"
+version: str = "5.1.0"

@@ -17,6 +17,7 @@ __all__: list[str] = [
     "CalculateVisibilities",
     "Check",
     "ConvexHull",
+    "CustomSphereDistribution",
     "Cylinder",
     "DetectFeatures",
     "Domain",
@@ -41,6 +42,7 @@ __all__: list[str] = [
     "StencilLocalLaxFriedrichsScalar",
     "ToDiskMesh",
     "ToMesh",
+    "ToMultiSurfaceMesh",
     "ToSurfaceMesh",
     "ToVoxelMesh",
     "WriteVisualizationMesh",
@@ -183,7 +185,6 @@ class BoxDistribution(GeometricAdvectDistribution):
         arg0: typing.Annotated[
             collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"
         ],
-        arg1: typing.SupportsFloat,
     ) -> None: ...
     def getBounds(self) -> typing.Annotated[list[float], "FixedSize(6)"]:
         """
@@ -304,6 +305,43 @@ class ConvexHull:
     def setPointCloud(self, arg0: PointCloud) -> None:
         """
         Set point cloud used to generate mesh.
+        """
+
+class CustomSphereDistribution(GeometricAdvectDistribution):
+    def __init__(
+        self, arg0: collections.abc.Sequence[typing.SupportsFloat]
+    ) -> None: ...
+    def getBounds(self) -> typing.Annotated[list[float], "FixedSize(6)"]:
+        """
+        Get the cartesian bounds of the distribution.
+        """
+
+    def getSignedDistance(
+        self,
+        arg0: typing.Annotated[
+            collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"
+        ],
+        arg1: typing.Annotated[
+            collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"
+        ],
+        arg2: typing.SupportsInt,
+    ) -> float:
+        """
+        Get the signed distance of the passed point to the surface of the distribution.
+        """
+
+    def isInside(
+        self,
+        arg0: typing.Annotated[
+            collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"
+        ],
+        arg1: typing.Annotated[
+            collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"
+        ],
+        arg2: typing.SupportsFloat,
+    ) -> bool:
+        """
+        Check whether passed point is inside the distribution.
         """
 
 class Cylinder:
@@ -508,16 +546,17 @@ class GeometricAdvect:
     @staticmethod
     @typing.overload
     def __init__(*args, **kwargs) -> None: ...
+    @staticmethod
+    def setAdvectionDistribution(*args, **kwargs) -> None:
+        """
+        Set advection distribution to use as kernel for the fast advection.
+        """
+
     @typing.overload
     def __init__(self) -> None: ...
     def apply(self) -> None:
         """
         Perform advection.
-        """
-
-    def setAdvectionDistribution(self, arg0: ...) -> None:
-        """
-        Set advection distribution to use as kernel for the fast advection.
         """
 
     def setLevelSet(self, arg0: Domain) -> None:
@@ -527,6 +566,11 @@ class GeometricAdvect:
 
 class GeometricAdvectDistribution:
     def __init__(self) -> None: ...
+    def finalize(self) -> None:
+        """
+        Finalize the distribution after use with the level set.
+        """
+
     def getBounds(self) -> typing.Annotated[list[float], "FixedSize(6)"]:
         """
         Get the cartesian bounds of the distribution.
@@ -558,6 +602,11 @@ class GeometricAdvectDistribution:
     ) -> bool:
         """
         Check whether passed point is inside the distribution.
+        """
+
+    def prepare(self, arg0: Domain) -> None:
+        """
+        Prepare the distribution for use with the passed level set.
         """
 
 class MakeGeometry:
@@ -755,9 +804,7 @@ class Sphere:
     ) -> None: ...
 
 class SphereDistribution(GeometricAdvectDistribution):
-    def __init__(
-        self, arg0: typing.SupportsFloat, arg1: typing.SupportsFloat
-    ) -> None: ...
+    def __init__(self, arg0: typing.SupportsFloat) -> None: ...
     def getBounds(self) -> typing.Annotated[list[float], "FixedSize(6)"]:
         """
         Get the cartesian bounds of the distribution.
@@ -810,6 +857,16 @@ class ToDiskMesh:
         Set levelset to mesh.
         """
 
+    def setMaterialMap(self, arg0: viennals._core.MaterialMap) -> None:
+        """
+        Set the material map to use for the disk mesh.
+        """
+
+    def setMaxValue(self, arg0: typing.SupportsFloat) -> None:
+        """
+        Set the maximum level set value to include in the disk mesh.
+        """
+
     def setMesh(self, arg0: viennals._core.Mesh) -> None:
         """
         Set the mesh to generate.
@@ -849,6 +906,33 @@ class ToMesh:
     def setOnlyDefined(self, arg0: bool) -> None:
         """
         Set whether only defined points should be output to the mesh.
+        """
+
+class ToMultiSurfaceMesh:
+    @typing.overload
+    def __init__(self) -> None: ...
+    @typing.overload
+    def __init__(self, arg0: Domain, arg1: viennals._core.Mesh) -> None: ...
+    @typing.overload
+    def __init__(self, arg0: viennals._core.Mesh) -> None: ...
+    def apply(self) -> None:
+        """
+        Convert the levelset to a surface mesh.
+        """
+
+    def insertNextLevelSet(self, arg0: Domain) -> None:
+        """
+        Insert next level set to output in the mesh.
+        """
+
+    def setMaterialMap(self, arg0: viennals._core.MaterialMap) -> None:
+        """
+        Set the material map to use for the multi surface mesh.
+        """
+
+    def setMesh(self, arg0: viennals._core.Mesh) -> None:
+        """
+        Set the mesh to generate.
         """
 
 class ToSurfaceMesh:

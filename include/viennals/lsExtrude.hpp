@@ -158,4 +158,6 @@ public:
   }
 };
 
+PRECOMPILE_PRECISION(Extrude);
+
 } // namespace viennals

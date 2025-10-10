@@ -15,6 +15,7 @@
 #include <lsDetectFeatures.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
+#include <lsExtrude.hpp>
 #include <lsFromSurfaceMesh.hpp>
 #include <lsFromVolumeMesh.hpp>
 #include <lsGeometricAdvect.hpp>
@@ -26,6 +27,7 @@
 #include <lsSlice.hpp>
 #include <lsToDiskMesh.hpp>
 #include <lsToMesh.hpp>
+#include <lsToMultiSurfaceMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsToVoxelMesh.hpp>
 #include <lsWriteVisualizationMesh.hpp>
@@ -34,8 +36,10 @@
 namespace viennals {
 
 // now call the specialize macro to precompile them
+PRECOMPILE_SPECIALIZE_PRECISION(Extrude)
 PRECOMPILE_SPECIALIZE_PRECISION(PointData)
 PRECOMPILE_SPECIALIZE_PRECISION(Mesh)
+PRECOMPILE_SPECIALIZE_PRECISION(Slice)
 PRECOMPILE_SPECIALIZE(Advect)
 PRECOMPILE_SPECIALIZE(BooleanOperation)
 PRECOMPILE_SPECIALIZE(CalculateCurvatures)
@@ -60,9 +64,9 @@ PRECOMPILE_SPECIALIZE(MakeGeometry)
 PRECOMPILE_SPECIALIZE(Prune)
 PRECOMPILE_SPECIALIZE(Reader)
 PRECOMPILE_SPECIALIZE(Reduce)
-PRECOMPILE_SPECIALIZE_PRECISION(Slice)
 PRECOMPILE_SPECIALIZE(ToDiskMesh)
 PRECOMPILE_SPECIALIZE(ToMesh)
+PRECOMPILE_SPECIALIZE(ToMultiSurfaceMesh)
 PRECOMPILE_SPECIALIZE(ToSurfaceMesh)
 PRECOMPILE_SPECIALIZE(ToVoxelMesh)
 PRECOMPILE_SPECIALIZE(Writer)

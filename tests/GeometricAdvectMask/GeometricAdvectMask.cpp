@@ -114,8 +114,7 @@ int main() {
       // ls::SmartPointer<ls::SphereDistribution<double,
       // D>>::New(-15.0,gridDelta);
       ls::SmartPointer<ls::BoxDistribution<NumericType, D>>::New(
-          std::array<NumericType, 3>({-gridDelta, -gridDelta, -150.0}),
-          gridDelta);
+          std::array<NumericType, 3>({-gridDelta, -gridDelta, -150.0}));
 
   ls::GeometricAdvect<NumericType, D>(levelSet, dist, mask).apply();
 

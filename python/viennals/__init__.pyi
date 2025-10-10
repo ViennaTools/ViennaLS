@@ -43,6 +43,7 @@ from viennals.d2 import CompareArea
 from viennals.d2 import CompareNarrowBand
 from viennals.d2 import CompareSparseField
 from viennals.d2 import ConvexHull
+from viennals.d2 import CustomSphereDistribution
 from viennals.d2 import Cylinder
 from viennals.d2 import DetectFeatures
 from viennals.d2 import Domain
@@ -67,6 +68,7 @@ from viennals.d2 import SphereDistribution
 from viennals.d2 import StencilLocalLaxFriedrichsScalar
 from viennals.d2 import ToDiskMesh
 from viennals.d2 import ToMesh
+from viennals.d2 import ToMultiSurfaceMesh
 from viennals.d2 import ToSurfaceMesh
 from viennals.d2 import ToVoxelMesh
 from viennals.d2 import WriteVisualizationMesh
@@ -92,6 +94,7 @@ __all__: list[str] = [
     "CompareSparseField",
     "ConvexHull",
     "CurvatureEnum",
+    "CustomSphereDistribution",
     "Cylinder",
     "DetectFeatures",
     "Domain",
@@ -127,6 +130,7 @@ __all__: list[str] = [
     "StencilLocalLaxFriedrichsScalar",
     "ToDiskMesh",
     "ToMesh",
+    "ToMultiSurfaceMesh",
     "ToSurfaceMesh",
     "ToVoxelMesh",
     "TransformEnum",
@@ -160,6 +164,6 @@ def setDimension(d: int):
     """
 
 PROXY_DIM: int = 2
-__version__: str = "5.0.1"
-version: str = "5.0.1"
+__version__: str = "5.1.0"
+version: str = "5.1.0"
 _C = _core

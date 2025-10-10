@@ -38,8 +38,7 @@ template <class T, int D> class GeometricAdvect {
 
   SmartPointer<Domain<T, D>> levelSet = nullptr;
   SmartPointer<Domain<T, D>> maskLevelSet = nullptr;
-  SmartPointer<const GeometricAdvectDistribution<hrleCoordType, D>> dist =
-      nullptr;
+  SmartPointer<GeometricAdvectDistribution<T, D>> dist = nullptr;
   static constexpr T cutoffValue =
       T(1.) + std::numeric_limits<T>::epsilon() * T(100);
 
@@ -67,16 +66,11 @@ template <class T, int D> class GeometricAdvect {
 public:
   GeometricAdvect() = default;
 
-  template <class DistType,
-            lsConcepts::IsBaseOf<GeometricAdvectDistribution<hrleCoordType, D>,
-                                 DistType> = lsConcepts::assignable>
   GeometricAdvect(SmartPointer<Domain<T, D>> passedLevelSet,
-                  SmartPointer<DistType> passedDist,
+                  SmartPointer<GeometricAdvectDistribution<T, D>> passedDist,
                   SmartPointer<Domain<T, D>> passedMaskLevelSet = nullptr)
-      : levelSet(passedLevelSet), maskLevelSet(passedMaskLevelSet) {
-    dist = std::dynamic_pointer_cast<
-        GeometricAdvectDistribution<hrleCoordType, D>>(passedDist);
-  }
+      : levelSet(passedLevelSet), maskLevelSet(passedMaskLevelSet),
+        dist(passedDist) {}
 
   /// Set the levelset which should be advected.
   void setLevelSet(SmartPointer<Domain<T, D>> passedLevelSet) {
@@ -85,12 +79,9 @@ public:
 
   /// Set which advection distribution to use. Must be derived from
   /// GeometricAdvectDistribution.
-  template <class DistType,
-            lsConcepts::IsBaseOf<GeometricAdvectDistribution<hrleCoordType, D>,
-                                 DistType> = lsConcepts::assignable>
-  void setAdvectionDistribution(SmartPointer<DistType> passedDist) {
-    dist = std::dynamic_pointer_cast<
-        GeometricAdvectDistribution<hrleCoordType, D>>(passedDist);
+  void setAdvectionDistribution(
+      SmartPointer<GeometricAdvectDistribution<T, D>> passedDist) {
+    dist = passedDist;
   }
 
   /// Set the levelset, which should be used as a mask. This level set
@@ -124,12 +115,15 @@ public:
       Expand<T, D>(maskLevelSet, 3).apply();
     }
 
+    dist->prepare(levelSet);
+
     typedef typename Domain<T, D>::DomainType DomainType;
 
     auto &domain = levelSet->getDomain();
 
     auto &grid = levelSet->getGrid();
-    auto gridDelta = grid.getGridDelta();
+    const auto gridDelta = grid.getGridDelta();
+    const bool useSurfacePointId = dist->useSurfacePointId();
 
     // Extract the original surface as a point cloud of grid
     // points shifted to the surface (disk mesh)
@@ -138,7 +132,8 @@ public:
         SmartPointer<typename ToDiskMesh<T, D>::TranslatorType>::New();
     ToDiskMesh<T, D, hrleCoordType>(levelSet, surfaceMesh, pointIdTranslator)
         .apply();
-    *pointIdTranslator = inverseTranslator(*pointIdTranslator);
+    if (!useSurfacePointId)
+      *pointIdTranslator = inverseTranslator(*pointIdTranslator);
 
     // find bounds of distribution
     auto distBounds = dist->getBounds();
@@ -401,10 +396,13 @@ public:
           }
 
           // get filling fraction from distance to dist surface
-          T tmpDistance = dist->getSignedDistance(
-                              currentNode, currentCoords,
-                              pointIdTranslator->find(currentPointId)->second) /
-                          gridDelta;
+          auto pointId = currentPointId;
+          if (!useSurfacePointId) {
+            pointId = pointIdTranslator->find(currentPointId)->second;
+          }
+          T tmpDistance =
+              dist->getSignedDistance(currentNode, currentCoords, pointId) /
+              gridDelta;
 
           // if cell is far within a distribution, set it filled
           if (distIsPositive) {
@@ -521,6 +519,8 @@ public:
     levelSet->finalize(1);
 
     Expand<T, D>(levelSet, 2).apply();
+
+    dist->finalize();
   }
 };
 

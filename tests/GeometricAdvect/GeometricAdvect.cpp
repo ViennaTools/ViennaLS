@@ -65,8 +65,7 @@ int main() {
   ls::VTKWriter<double>(mesh, "surface.vtk").apply();
 
   // set up spherical advection dist
-  auto dist =
-      ls::SmartPointer<ls::SphereDistribution<double, D>>::New(20.0, gridDelta);
+  auto dist = ls::SmartPointer<ls::SphereDistribution<double, D>>::New(20.0);
   ls::GeometricAdvect<NumericType, D>(levelSet, dist).apply();
 
   ls::ToMesh<NumericType, D>(levelSet, mesh).apply();
@@ -75,8 +74,8 @@ int main() {
   ls::VTKWriter<double>(mesh, "afterDepo.vtk").apply();
 
   // now remove the same again using spherical distribution
-  auto etch = ls::SmartPointer<ls::SphereDistribution<NumericType, D>>::New(
-      -20.0, gridDelta);
+  auto etch =
+      ls::SmartPointer<ls::SphereDistribution<NumericType, D>>::New(-20.0);
   ls::GeometricAdvect<NumericType, D>(levelSet, etch).apply();
 
   ls::ToMesh<NumericType, D>(levelSet, mesh).apply();

@@ -11,7 +11,7 @@
 #include <lsVTKWriter.hpp>
 
 /**
-  3D Example showing how to use the library for topography
+  2D Example showing how to use the library for topography
   emulation, by creating a trench geometry. A uniform
   layer of a different material is then grown on top. It is
   the same example as Deposition but emulates the deposition
@@ -19,31 +19,35 @@
   \example GeometricAdvection.cpp
 */
 
-namespace ls = viennals;
-
-using NumericType = float;
-
 int main() {
 
-  constexpr int D = 3;
-  omp_set_num_threads(4);
+  namespace ls = viennals;
+  using NumericType = double;
+  constexpr int D = 2;
+  omp_set_num_threads(1);
 
   NumericType extent = 30;
   NumericType gridDelta = 0.5;
+  NumericType height = 50;
+  NumericType width = 20;
+  NumericType radius = 4;
 
-  double bounds[2 * D] = {-extent, extent, -extent, extent, -extent, extent};
+  double bounds[2 * D] = {-extent, extent, -extent, extent};
   ls::Domain<NumericType, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D - 1; ++i)
     boundaryCons[i] =
         ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
-  boundaryCons[2] = ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
+  boundaryCons[D - 1] =
+      ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
   auto substrate = ls::SmartPointer<ls::Domain<NumericType, D>>::New(
       bounds, boundaryCons, gridDelta);
 
   {
-    NumericType origin[3] = {0., 0., 0.};
-    NumericType planeNormal[3] = {0., 0., 1.};
+    NumericType origin[D] = {0};
+    origin[D - 1] = height;
+    NumericType planeNormal[D] = {0.};
+    planeNormal[D - 1] = 1.;
     auto plane =
         ls::SmartPointer<ls::Plane<NumericType, D>>::New(origin, planeNormal);
     ls::MakeGeometry<NumericType, D>(substrate, plane).apply();
@@ -53,9 +57,9 @@ int main() {
     auto trench = ls::SmartPointer<ls::Domain<NumericType, D>>::New(
         bounds, boundaryCons, gridDelta);
     // make -x and +x greater than domain for numerical stability
-    NumericType ylimit = extent / 4.;
-    NumericType minCorner[D] = {-extent - 1, -ylimit, -15.};
-    NumericType maxCorner[D] = {extent + 1, ylimit, 1.};
+    // NumericType ylimit = extent / 4.;
+    NumericType minCorner[D] = {-width / 2, 0.};
+    NumericType maxCorner[D] = {width / 2, height + 1.};
     auto box =
         ls::SmartPointer<ls::Box<NumericType, D>>::New(minCorner, maxCorner);
     ls::MakeGeometry<NumericType, D>(trench, box).apply();
@@ -82,7 +86,7 @@ int main() {
   // Grow the layer uniformly by 4 as in deposition example
   auto dist =
       ls::SmartPointer<ls::SphereDistribution<viennahrle::CoordType, D>>::New(
-          4.0, gridDelta);
+          radius);
   ls::GeometricAdvect<NumericType, D>(newLayer, dist).apply();
 
   {

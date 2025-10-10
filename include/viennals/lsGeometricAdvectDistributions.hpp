@@ -31,25 +31,31 @@ public:
   /// point.
   virtual T getSignedDistance(const Vec3D<viennahrle::CoordType> &initial,
                               const Vec3D<viennahrle::CoordType> &candidate,
-                              unsigned long initialPointId) const = 0;
+                              unsigned long pointId) const = 0;
 
   /// Sets bounds to the bounding box of the distribution.
   virtual std::array<viennahrle::CoordType, 6> getBounds() const = 0;
 
+  virtual bool useSurfacePointId() const { return false; }
+
   virtual ~GeometricAdvectDistribution() = default;
+
+  virtual void prepare(SmartPointer<Domain<T, D>> domain) {}
+  virtual void finalize() {}
 };
 
 /// Concrete implementation of GeometricAdvectDistribution for a spherical
 /// advection distribution.
 template <class T, int D>
 class SphereDistribution : public GeometricAdvectDistribution<T, D> {
+
 public:
   const T radius = 0.;
   const T radius2;
-  const T gridDelta;
+  T gridDelta = 0.;
 
-  SphereDistribution(const T passedRadius, const T delta)
-      : radius(passedRadius), radius2(radius * radius), gridDelta(delta) {}
+  SphereDistribution(const T passedRadius)
+      : radius(passedRadius), radius2(radius * radius) {}
 
   bool isInside(const Vec3D<viennahrle::CoordType> &initial,
                 const Vec3D<viennahrle::CoordType> &candidate,
@@ -68,7 +74,7 @@ public:
 
   T getSignedDistance(const Vec3D<viennahrle::CoordType> &initial,
                       const Vec3D<viennahrle::CoordType> &candidate,
-                      unsigned long /*initialPointId*/) const override {
+                      unsigned long /*pointId*/) const override {
     T distance = std::numeric_limits<T>::max();
     Vec3D<viennahrle::CoordType> v{};
     for (unsigned i = 0; i < D; ++i) {
@@ -109,6 +115,12 @@ public:
     }
     return bounds;
   }
+
+  bool useSurfacePointId() const override { return true; }
+
+  void prepare(SmartPointer<Domain<T, D>> domain) override {
+    gridDelta = domain->getGrid().getGridDelta();
+  }
 };
 
 /// Concrete implementation of GeometricAdvectDistribution
@@ -117,20 +129,9 @@ template <class T, int D>
 class BoxDistribution : public GeometricAdvectDistribution<T, D> {
 public:
   const VectorType<T, 3> posExtent;
-  const T gridDelta;
+  T gridDelta = 0.;
 
-  BoxDistribution(const std::array<T, 3> &halfAxes, const T delta)
-      : posExtent(halfAxes), gridDelta(delta) {
-    for (unsigned i = 0; i < D; ++i) {
-      if (std::abs(posExtent[i]) < gridDelta) {
-        Logger::getInstance()
-            .addWarning("One half-axis of BoxDistribution is smaller than "
-                        "the grid Delta! This can lead to numerical errors "
-                        "breaking the distribution!")
-            .print();
-      }
-    }
-  }
+  BoxDistribution(const std::array<T, 3> &halfAxes) : posExtent(halfAxes) {}
 
   bool isInside(const Vec3D<viennahrle::CoordType> &initial,
                 const Vec3D<viennahrle::CoordType> &candidate,
@@ -146,7 +147,7 @@ public:
 
   T getSignedDistance(const Vec3D<viennahrle::CoordType> &initial,
                       const Vec3D<viennahrle::CoordType> &candidate,
-                      unsigned long /*initialPointId*/) const override {
+                      unsigned long /*pointId*/) const override {
     T distance = std::numeric_limits<T>::lowest();
     for (unsigned i = 0; i < D; ++i) {
       T vector = std::abs(candidate[i] - initial[i]);
@@ -163,6 +164,95 @@ public:
     }
     return bounds;
   }
+
+  bool useSurfacePointId() const override { return true; }
+
+  void prepare(SmartPointer<Domain<T, D>> domain) override {
+    gridDelta = domain->getGrid().getGridDelta();
+
+    for (unsigned i = 0; i < D; ++i) {
+      if (std::abs(posExtent[i]) < gridDelta) {
+        Logger::getInstance()
+            .addWarning("One half-axis of BoxDistribution is smaller than "
+                        "the grid Delta! This can lead to numerical errors "
+                        "breaking the distribution!")
+            .print();
+      }
+    }
+  }
 };
 
+template <class T, int D>
+class CustomSphereDistribution : public GeometricAdvectDistribution<T, D> {
+
+  const std::vector<T> radii_;
+  T gridDelta_ = 0;
+  T maxRadius_ = 0;
+
+public:
+  CustomSphereDistribution(const std::vector<T> &radii) : radii_(radii) {
+    for (unsigned i = 0; i < D; ++i) {
+      maxRadius_ = std::max(maxRadius_, std::abs(radii_[i]));
+    }
+  }
+
+  T getSignedDistance(const Vec3D<viennahrle::CoordType> &initial,
+                      const Vec3D<viennahrle::CoordType> &candidate,
+                      unsigned long pointId) const override {
+    T distance = std::numeric_limits<T>::max();
+    Vec3D<viennahrle::CoordType> v{};
+    for (unsigned i = 0; i < D; ++i) {
+      v[i] = candidate[i] - initial[i];
+    }
+
+    if (pointId >= radii_.size()) {
+      Logger::getInstance()
+          .addError("Point ID " + std::to_string(pointId) +
+                    " is out of bounds for CustomSphereDistribution with " +
+                    std::to_string(radii_.size()) + " radii!")
+          .print();
+      return distance;
+    }
+    const auto radius = radii_[pointId];
+    if (std::abs(radius) <= gridDelta_) {
+      distance =
+          std::max(std::max(std::abs(v[0]), std::abs(v[1])), std::abs(v[2])) -
+          std::abs(radius);
+    } else {
+      for (unsigned i = 0; i < D; ++i) {
+        T y = (v[(i + 1) % D]);
+        T z = 0;
+        if constexpr (D == 3)
+          z = (v[(i + 2) % D]);
+        T x = radius * radius - y * y - z * z;
+        if (x < 0.)
+          continue;
+        T dirRadius = std::abs(v[i]) - std::sqrt(x);
+        if (std::abs(dirRadius) < std::abs(distance))
+          distance = dirRadius;
+      }
+    }
+    // return distance;
+    if (radius < 0) {
+      return -distance;
+    } else {
+      return distance;
+    }
+  }
+
+  std::array<viennahrle::CoordType, 6> getBounds() const override {
+    std::array<viennahrle::CoordType, 6> bounds = {};
+    for (unsigned i = 0; i < D; ++i) {
+      bounds[2 * i] = -maxRadius_;
+      bounds[2 * i + 1] = maxRadius_;
+    }
+    return bounds;
+  }
+
+  bool useSurfacePointId() const override { return true; }
+
+  void prepare(SmartPointer<Domain<T, D>> domain) override {
+    gridDelta_ = domain->getGrid().getGridDelta();
+  }
+};
 } // namespace viennals
