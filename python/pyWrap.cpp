@@ -25,6 +25,7 @@
 #include <lsCalculateVisibilities.hpp>
 #include <lsCheck.hpp>
 #include <lsCompareArea.hpp>
+#include <lsCompareChamfer.hpp>
 #include <lsCompareCriticalDimensions.hpp>
 #include <lsCompareNarrowBand.hpp>
 #include <lsCompareSparseField.hpp>
@@ -547,6 +548,41 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("getAllDifferences",
            &CompareCriticalDimensions<T, D>::getAllDifferences,
            "Get all valid differences as a list.");
+
+  // CompareChamfer
+  pybind11::class_<CompareChamfer<T, D>, SmartPointer<CompareChamfer<T, D>>>(
+      module, "CompareChamfer")
+      // constructors
+      .def(pybind11::init(&SmartPointer<CompareChamfer<T, D>>::New<>))
+      .def(pybind11::init(
+          &SmartPointer<CompareChamfer<T, D>>::New<SmartPointer<Domain<T, D>> &,
+                                                   SmartPointer<Domain<T, D>> &>))
+      // methods
+      .def("setLevelSetTarget", &CompareChamfer<T, D>::setLevelSetTarget,
+           "Set the target level set.")
+      .def("setLevelSetSample", &CompareChamfer<T, D>::setLevelSetSample,
+           "Set the sample level set.")
+      .def("setOutputMeshTarget", &CompareChamfer<T, D>::setOutputMeshTarget,
+           "Set output mesh for target surface points with distance data.")
+      .def("setOutputMeshSample", &CompareChamfer<T, D>::setOutputMeshSample,
+           "Set output mesh for sample surface points with distance data.")
+      .def("apply", &CompareChamfer<T, D>::apply,
+           "Apply the Chamfer distance calculation.")
+      .def("getForwardDistance", &CompareChamfer<T, D>::getForwardDistance,
+           "Get the forward distance (average distance from target to sample).")
+      .def("getBackwardDistance", &CompareChamfer<T, D>::getBackwardDistance,
+           "Get the backward distance (average distance from sample to target).")
+      .def("getChamferDistance", &CompareChamfer<T, D>::getChamferDistance,
+           "Get the Chamfer distance (average of forward and backward).")
+      .def("getRMSChamferDistance",
+           &CompareChamfer<T, D>::getRMSChamferDistance,
+           "Get the RMS Chamfer distance.")
+      .def("getMaxDistance", &CompareChamfer<T, D>::getMaxDistance,
+           "Get the maximum nearest-neighbor distance.")
+      .def("getNumTargetPoints", &CompareChamfer<T, D>::getNumTargetPoints,
+           "Get the number of target surface points.")
+      .def("getNumSamplePoints", &CompareChamfer<T, D>::getNumSamplePoints,
+           "Get the number of sample surface points.");
 #endif
 
   // ConvexHull
