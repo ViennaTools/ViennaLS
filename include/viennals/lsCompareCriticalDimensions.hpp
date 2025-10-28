@@ -32,8 +32,8 @@ using namespace viennacore;
 template <class T, int D = 2> class CompareCriticalDimensions {
   using hrleIndexType = viennahrle::IndexType;
 
-  SmartPointer<Domain<T, D>> levelSetReference = nullptr;
-  SmartPointer<Domain<T, D>> levelSetCompare = nullptr;
+  SmartPointer<Domain<T, D>> levelSetTarget = nullptr;
+  SmartPointer<Domain<T, D>> levelSetSample = nullptr;
 
   // Structure to hold a range specification
   struct RangeSpec {
@@ -51,10 +51,10 @@ template <class T, int D = 2> class CompareCriticalDimensions {
     T rangeMin;
     T rangeMax;
     bool findMaximum;
-    T positionReference; // Critical dimension position in reference LS
-    T positionCompare;   // Critical dimension position in compare LS
-    T difference;        // Absolute difference
-    bool valid;          // Whether both critical dimensions were found
+    T positionTarget; // Critical dimension position in target LS
+    T positionSample; // Critical dimension position in sample LS
+    T difference;     // Absolute difference
+    bool valid;       // Whether both critical dimensions were found
   };
 
   std::vector<CriticalDimensionResult> results;
@@ -63,18 +63,18 @@ template <class T, int D = 2> class CompareCriticalDimensions {
   SmartPointer<Mesh<T>> outputMesh = nullptr;
 
   bool checkInputs() {
-    if (levelSetReference == nullptr || levelSetCompare == nullptr) {
+    if (levelSetTarget == nullptr || levelSetSample == nullptr) {
       Logger::getInstance()
-          .addWarning("Missing level set in CompareCriticalDimensions.")
+          .addWarning("Missing level set in SampleCriticalDimensions.")
           .print();
       return false;
     }
 
     // Check if the grids are compatible
-    const auto &gridReference = levelSetReference->getGrid();
-    const auto &gridCompare = levelSetCompare->getGrid();
+    const auto &gridTarget = levelSetTarget->getGrid();
+    const auto &gridSample = levelSetSample->getGrid();
 
-    if (gridReference.getGridDelta() != gridCompare.getGridDelta()) {
+    if (gridTarget.getGridDelta() != gridSample.getGridDelta()) {
       Logger::getInstance()
           .addWarning("Grid delta mismatch in CompareCriticalDimensions. The "
                       "grid deltas of the two level sets must be equal.")
@@ -148,20 +148,20 @@ public:
                             "implemented for 2D level sets.");
   }
 
-  CompareCriticalDimensions(SmartPointer<Domain<T, D>> passedLevelSetReference,
-                            SmartPointer<Domain<T, D>> passedLevelSetCompare)
-      : levelSetReference(passedLevelSetReference),
-        levelSetCompare(passedLevelSetCompare) {
+  CompareCriticalDimensions(SmartPointer<Domain<T, D>> passedLevelSetTarget,
+                            SmartPointer<Domain<T, D>> passedLevelSetSample)
+      : levelSetTarget(passedLevelSetTarget),
+        levelSetSample(passedLevelSetSample) {
     static_assert(D == 2 && "CompareCriticalDimensions is currently only "
                             "implemented for 2D level sets.");
   }
 
-  void setLevelSetReference(SmartPointer<Domain<T, D>> passedLevelSet) {
-    levelSetReference = passedLevelSet;
+  void setLevelSetTarget(SmartPointer<Domain<T, D>> passedLevelSet) {
+    levelSetTarget = passedLevelSet;
   }
 
-  void setLevelSetCompare(SmartPointer<Domain<T, D>> passedLevelSet) {
-    levelSetCompare = passedLevelSet;
+  void setLevelSetSample(SmartPointer<Domain<T, D>> passedLevelSet) {
+    levelSetSample = passedLevelSet;
   }
 
   /// Add an X range to find maximum or minimum Y position
@@ -200,15 +200,15 @@ public:
       return;
     }
 
-    const auto &grid = levelSetReference->getGrid();
+    const auto &grid = levelSetTarget->getGrid();
     const T gridDelta = grid.getGridDelta();
 
     // Convert both level sets to surface meshes once
     auto surfaceMeshRef = SmartPointer<Mesh<T>>::New();
     auto surfaceMeshCmp = SmartPointer<Mesh<T>>::New();
 
-    ToSurfaceMesh<T, D>(levelSetReference, surfaceMeshRef).apply();
-    ToSurfaceMesh<T, D>(levelSetCompare, surfaceMeshCmp).apply();
+    ToSurfaceMesh<T, D>(levelSetTarget, surfaceMeshRef).apply();
+    ToSurfaceMesh<T, D>(levelSetSample, surfaceMeshCmp).apply();
 
     // Get actual mesh extents instead of grid bounds
     // This ensures we don't filter out surface points that extend beyond grid
@@ -270,8 +270,8 @@ public:
 
       if (validRef && validCmp) {
         result.valid = true;
-        result.positionReference = cdRef;
-        result.positionCompare = cdCmp;
+        result.positionTarget = cdRef;
+        result.positionSample = cdCmp;
         result.difference = std::abs(cdRef - cdCmp);
       }
 
@@ -288,13 +288,13 @@ public:
   size_t getNumCriticalDimensions() const { return results.size(); }
 
   /// Get a specific critical dimension result
-  bool getCriticalDimensionResult(size_t index, T &positionReference,
-                                  T &positionCompare, T &difference) const {
+  bool getCriticalDimensionResult(size_t index, T &positionTarget,
+                                  T &positionSample, T &difference) const {
     if (index >= results.size() || !results[index].valid) {
       return false;
     }
-    positionReference = results[index].positionReference;
-    positionCompare = results[index].positionCompare;
+    positionTarget = results[index].positionTarget;
+    positionSample = results[index].positionSample;
     difference = results[index].difference;
     return true;
   }
@@ -355,8 +355,8 @@ private:
     std::vector<Vec3D<T>> nodeCoordinates;
     std::vector<std::array<unsigned, 1>> vertexIndices;
     std::vector<T> differenceValues;
-    std::vector<T> referenceValues;
-    std::vector<T> compareValues;
+    std::vector<T> targetValues;
+    std::vector<T> sampleValues;
 
     for (unsigned i = 0; i < D; ++i) {
       outputMesh->minimumExtent[i] = std::numeric_limits<T>::max();
@@ -368,41 +368,41 @@ private:
       if (!result.valid)
         continue;
 
-      // Create points for reference and compare positions
-      Vec3D<T> coordRef, coordCmp;
+      // Create points for target and sample positions
+      Vec3D<T> coordTarget, coordSample;
 
       if (result.isXRange) {
         // Critical dimension is in Y, position is along X range
         T xMid = (result.rangeMin + result.rangeMax) / 2.0;
-        coordRef = {xMid, result.positionReference, 0.0};
-        coordCmp = {xMid, result.positionCompare, 0.0};
+        coordTarget = {xMid, result.positionTarget, 0.0};
+        coordSample = {xMid, result.positionSample, 0.0};
       } else {
         // Critical dimension is in X, position is along Y range
         T yMid = (result.rangeMin + result.rangeMax) / 2.0;
-        coordRef = {result.positionReference, yMid, 0.0};
-        coordCmp = {result.positionCompare, yMid, 0.0};
+        coordTarget = {result.positionTarget, yMid, 0.0};
+        coordSample = {result.positionSample, yMid, 0.0};
       }
 
-      // Add reference point
-      nodeCoordinates.push_back(coordRef);
+      // Add target point
+      nodeCoordinates.push_back(coordTarget);
       vertexIndices.push_back({pointId++});
       differenceValues.push_back(result.difference);
-      referenceValues.push_back(result.positionReference);
-      compareValues.push_back(result.positionCompare);
+      targetValues.push_back(result.positionTarget);
+      sampleValues.push_back(result.positionSample);
 
-      // Add compare point
-      nodeCoordinates.push_back(coordCmp);
+      // Add sample point
+      nodeCoordinates.push_back(coordSample);
       vertexIndices.push_back({pointId++});
       differenceValues.push_back(result.difference);
-      referenceValues.push_back(result.positionReference);
-      compareValues.push_back(result.positionCompare);
+      targetValues.push_back(result.positionTarget);
+      sampleValues.push_back(result.positionSample);
 
       // Update extent
       for (unsigned i = 0; i < D; ++i) {
-        outputMesh->minimumExtent[i] =
-            std::min({outputMesh->minimumExtent[i], coordRef[i], coordCmp[i]});
-        outputMesh->maximumExtent[i] =
-            std::max({outputMesh->maximumExtent[i], coordRef[i], coordCmp[i]});
+        outputMesh->minimumExtent[i] = std::min(
+            {outputMesh->minimumExtent[i], coordTarget[i], coordSample[i]});
+        outputMesh->maximumExtent[i] = std::max(
+            {outputMesh->maximumExtent[i], coordTarget[i], coordSample[i]});
       }
     }
 
@@ -411,10 +411,10 @@ private:
       outputMesh->vertices = std::move(vertexIndices);
       outputMesh->pointData.insertNextScalarData(std::move(differenceValues),
                                                  "Difference");
-      outputMesh->pointData.insertNextScalarData(std::move(referenceValues),
-                                                 "ReferencePosition");
-      outputMesh->pointData.insertNextScalarData(std::move(compareValues),
-                                                 "ComparePosition");
+      outputMesh->pointData.insertNextScalarData(std::move(targetValues),
+                                                 "TargetPosition");
+      outputMesh->pointData.insertNextScalarData(std::move(sampleValues),
+                                                 "SamplePosition");
     }
   }
 };
