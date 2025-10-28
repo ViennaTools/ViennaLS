@@ -73,7 +73,7 @@ int main() {
   {
     std::ostringstream oss;
     newLevelSet->getDomain().print(oss);
-    LSTEST_ASSERT(oss.str() == domainString)
+    VC_TEST_ASSERT(oss.str() == domainString)
   }
 
   return 0;

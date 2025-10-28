@@ -4,8 +4,8 @@
 
 * Make sure everything builds with & without shared libs
 
-* Run clang-format on ALL files of the project (use format-project.sh)
+* Run clang-format on ALL files of the project (use CMake target `format`)
 
-* Wrap all implemented interface functions for Python in Wrapping/pyWrap.cpp
+* Wrap all implemented interface functions for Python in python/pyWrap.cpp
 
 * IMPORTANT: Check the ReadMe file in / to make sure nothing changed

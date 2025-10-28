@@ -80,7 +80,7 @@ int main() {
   marker.apply();
 
   auto markers = domain->getPointData().getScalarData("VoidPointMarkers");
-  LSTEST_ASSERT(markers)
+  VC_TEST_ASSERT(markers)
 
   // check if void points are set correctly
   bool correct = true;
@@ -105,7 +105,7 @@ int main() {
       }
     }
   }
-  LSTEST_ASSERT(correct)
+  VC_TEST_ASSERT(correct)
 
   // std::cout << "voidMarkers: " <<
   // domain->getPointData().getScalarData("VoidPointMarkers")->size() <<

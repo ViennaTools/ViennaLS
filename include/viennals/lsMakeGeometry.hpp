@@ -115,6 +115,11 @@ public:
   /// Set a point cloud, which is used to create
   /// a geometry from its convex hull.
   void setGeometry(SmartPointer<PointCloud<T, D>> passedPointCloud) {
+    if (passedPointCloud && passedPointCloud->empty()) {
+      Logger::getInstance()
+          .addWarning("Passing an empty point cloud to MakeGeometry. ")
+          .print();
+    }
     pointCloud = passedPointCloud;
     geometry = GeometryEnum::CUSTOM;
   }
@@ -141,7 +146,7 @@ public:
   void apply() {
     if (levelSet == nullptr) {
       Logger::getInstance()
-          .addWarning("No level set was passed to MakeGeometry.")
+          .addError("No level set was passed to MakeGeometry.")
           .print();
       return;
     }
@@ -164,21 +169,14 @@ public:
       break;
     default:
       Logger::getInstance()
-          .addWarning("Invalid geometry type was specified for MakeGeometry. "
-                      "Not creating geometry.")
+          .addError("Invalid geometry type was specified for MakeGeometry. "
+                    "Not creating geometry.")
           .print();
     }
   }
 
 private:
   void makeSphere(VectorType<T, D> origin, T radius) {
-    if (levelSet == nullptr) {
-      Logger::getInstance()
-          .addWarning("No level set was passed to MakeGeometry.")
-          .print();
-      return;
-    }
-
     // TODO, this is a stupid algorithm and scales with volume, which is madness
     auto &grid = levelSet->getGrid();
     viennahrle::CoordType gridDelta = grid.getGridDelta();
@@ -248,17 +246,10 @@ private:
   /// the plane normal given by normal
   void makePlane(VectorType<T, D> origin,
                  VectorType<T, D> const &passedNormal) {
-    if (levelSet == nullptr) {
-      Logger::getInstance()
-          .addWarning("No level set was passed to MakeGeometry.")
-          .print();
-      return;
-    }
-
     auto &grid = levelSet->getGrid();
     viennahrle::CoordType gridDelta = grid.getGridDelta();
 
-    // normalise passedNormal
+    // normalize passedNormal
     double modulus = 0.;
     VectorType<T, D> normal = passedNormal;
     for (unsigned i = 0; i < D; ++i) {
@@ -372,13 +363,6 @@ private:
 
   // This function creates a box starting in minCorner spanning to maxCorner
   void makeBox(VectorType<T, D> minCorner, VectorType<T, D> maxCorner) {
-    if (levelSet == nullptr) {
-      Logger::getInstance()
-          .addWarning("No level set was passed to MakeGeometry.")
-          .print();
-      return;
-    }
-
     // draw all triangles for the surface and then import from the mesh
     std::vector<Vec3D<T>> corners;
     corners.resize(std::pow(2, D), Vec3D<T>{0, 0, 0});
@@ -439,7 +423,7 @@ private:
   void makeCylinder(SmartPointer<Cylinder<T, D>> cylinder) {
     if (D != 3) {
       Logger::getInstance()
-          .addWarning("MakeGeometry: Cylinder can only be created in 3D!")
+          .addError("MakeGeometry: Cylinder can only be created in 3D!")
           .print();
       return;
     }
@@ -448,12 +432,12 @@ private:
     // cylinder axis will be (0,0,1)
     auto gridDelta = levelSet->getGrid().getGridDelta();
 
-    auto points = SmartPointer<PointCloud<T, D>>::New();
+    auto points = PointCloud<T, D>::New();
     const unsigned numPoints =
         std::ceil(2 * M_PI * cylinder->radius / gridDelta);
     const double smallAngle = 2.0 * M_PI / static_cast<double>(numPoints);
 
-    auto mesh = SmartPointer<Mesh<T>>::New();
+    auto mesh = Mesh<T>::New();
     // insert midpoint at base
     mesh->insertNextNode(Vec3D<T>{0.0, 0.0, 0.0});
     {
@@ -550,7 +534,7 @@ private:
 
   void makeCustom(SmartPointer<PointCloud<T, D>> pointCloud) {
     // create mesh from point cloud
-    auto mesh = SmartPointer<Mesh<T>>::New();
+    auto mesh = Mesh<T>::New();
     ConvexHull<T, D>(mesh, pointCloud).apply();
 
     // read mesh from surface

@@ -1,4 +1,5 @@
-import viennals3d as vls
+import viennals as vls
+
 
 # @example Deposition.py
 #  3D Example showing how to use the library for topography
@@ -19,6 +20,9 @@ class velocityField(vls.VelocityField):
     def getVectorVelocity(self, coord, material, normal, pointId):
         return (0, 0, 0)
 
+
+# set dimension to 3D (default is 2D)
+vls.setDimension(3)
 
 extent = 30
 gridDelta = 0.5
@@ -78,9 +82,6 @@ while passedTime < 4:
 
     vls.ToSurfaceMesh(newLayer, mesh).apply()
     vls.VTKWriter(mesh, "trench-{}.vtp".format(counter)).apply()
-
-    vls.ToMesh(newLayer, mesh).apply()
-    vls.VTKWriter(mesh, "LS-{}.vtp".format(counter)).apply()
 
     counter = counter + 1
 

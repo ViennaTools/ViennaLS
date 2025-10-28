@@ -25,6 +25,7 @@
 #include <lsDomain.hpp>
 #include <lsMaterialMap.hpp>
 #include <lsPreCompileMacros.hpp>
+#include <unordered_map>
 #include <utility>
 
 // #define LS_TO_VISUALIZATION_DEBUG
@@ -52,6 +53,7 @@ template <class T, int D> class WriteVisualizationMesh {
   bool extractHullMesh = false;
   bool bottomRemoved = false;
   double LSEpsilon = 1e-2;
+  std::unordered_map<std::string, std::vector<double>> metaData;
 
   /// This function removes duplicate points and agjusts the pointIDs in the
   /// cells
@@ -407,6 +409,28 @@ template <class T, int D> class WriteVisualizationMesh {
     return rgrid;
   }
 
+  void addMetaDataToVTK(vtkDataSet *data) const {
+    if (metaData.empty()) {
+      return;
+    }
+
+    // add metadata to field data
+    vtkSmartPointer<vtkFieldData> fieldData = data->GetFieldData();
+    for (const auto &meta : metaData) {
+      if (meta.second.empty())
+        continue; // skip empty metadata
+
+      vtkSmartPointer<vtkFloatArray> metaDataArray =
+          vtkSmartPointer<vtkFloatArray>::New();
+      metaDataArray->SetName(meta.first.c_str());
+      metaDataArray->SetNumberOfValues(meta.second.size());
+      for (size_t i = 0; i < meta.second.size(); ++i) {
+        metaDataArray->SetValue(i, meta.second[i]);
+      }
+      fieldData->AddArray(metaDataArray);
+    }
+  }
+
 public:
   WriteVisualizationMesh() = default;
 
@@ -440,6 +464,26 @@ public:
   }
 
   void setWrappingLayerEpsilon(double epsilon) { LSEpsilon = epsilon; }
+
+  void setMetaData(const std::unordered_map<std::string, std::vector<double>>
+                       &passedMetaData) {
+    metaData = passedMetaData;
+  }
+
+  void addMetaData(const std::string &key, double value) {
+    metaData[key] = std::vector<double>{value};
+  }
+
+  void addMetaData(const std::string &key, const std::vector<double> &values) {
+    metaData[key] = values;
+  }
+
+  void addMetaData(
+      const std::unordered_map<std::string, std::vector<double>> &newMetaData) {
+    for (const auto &pair : newMetaData) {
+      metaData[pair.first] = pair.second;
+    }
+  }
 
   void apply() {
     // check if level sets have enough layers
@@ -693,6 +737,9 @@ public:
       // now that only tetras are left, remove the ones with degenerate points
       removeDegenerateTetras(volumeVTK);
 
+      // add meta data to volume mesh
+      addMetaDataToVTK(volumeVTK);
+
       auto writer = vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
       writer->SetFileName((fileName + "_volume.vtu").c_str());
       writer->SetInputData(volumeVTK);
@@ -713,13 +760,16 @@ public:
 
       hullVTK = hullTriangleFilter->GetOutput();
 
+      // add meta data to hull mesh
+      addMetaDataToVTK(hullVTK);
+
       auto writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
       writer->SetFileName((fileName + "_hull.vtp").c_str());
       writer->SetInputData(hullVTK);
       writer->Write();
     }
   }
-}; // namespace viennals
+};
 
 // add all template specialisations for this class
 PRECOMPILE_PRECISION_DIMENSION(WriteVisualizationMesh)

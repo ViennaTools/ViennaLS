@@ -56,13 +56,13 @@ public:
   void apply() {
     if (!gridSet) {
       Logger::getInstance()
-          .addWarning("No grid has been set in FromVolumeMesh.")
+          .addError("No grid has been set in FromVolumeMesh.")
           .print();
       return;
     }
     if (mesh == nullptr) {
       Logger::getInstance()
-          .addWarning("No mesh was passed to FromVolumeMesh.")
+          .addError("No mesh was passed to FromVolumeMesh.")
           .print();
       return;
     }

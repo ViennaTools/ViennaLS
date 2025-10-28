@@ -104,18 +104,16 @@ template <class T, int D = 2> class CompareArea {
 
 public:
   CompareArea() {
-    static_assert(
-        D == 2 &&
-        "CompareArea is currently only implemented for 2D level sets.");
+    assert(D == 2 &&
+           "CompareArea is currently only implemented for 2D level sets.");
   }
 
   CompareArea(SmartPointer<Domain<T, D>> passedLevelSetTarget,
               SmartPointer<Domain<T, D>> passedLevelSetSample)
       : levelSetTarget(passedLevelSetTarget),
         levelSetSample(passedLevelSetSample) {
-    static_assert(
-        D == 2 &&
-        "CompareArea is currently only implemented for 2D level sets.");
+    assert(D == 2 &&
+           "CompareArea is currently only implemented for 2D level sets.");
   }
 
   /// Sets the target level set.

@@ -90,9 +90,9 @@ public:
     if (sliceLevelSet == nullptr) {
       autoCreateSlice = true;
       Logger::getInstance()
-          .addInfo("No slice level-set passed to Slice. Auto-created slice "
-                   "level-set with bounds derived from "
-                   "source domain")
+          .addDebug("No slice level-set passed to Slice. Auto-created slice "
+                    "level-set with bounds derived from "
+                    "source domain")
           .print();
     }
 
@@ -177,8 +177,8 @@ public:
           sliceBounds[1] = -temp;
         }
 
-        sliceLevelSet = SmartPointer<Domain<T, 2>>::New(
-            pointData, sliceBounds, sliceBoundaryConds, gridDelta);
+        sliceLevelSet = Domain<T, 2>::New(pointData, sliceBounds,
+                                          sliceBoundaryConds, gridDelta);
       } else {
         // Use passed slice domain
         sliceLevelSet->insertPoints(pointData);
@@ -188,7 +188,7 @@ public:
         Writer<T, 2> writer(sliceLevelSet, writePath);
         writer.apply();
         if (writeSurfaceMesh) {
-          auto mesh = SmartPointer<Mesh<>>::New();
+          auto mesh = Mesh<T>::New();
           ToSurfaceMesh<T, 2> surfaceMesh(sliceLevelSet, mesh);
           surfaceMesh.apply();
           VTKWriter<T>(mesh, writePath + ".vtp").apply();

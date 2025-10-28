@@ -182,7 +182,9 @@ public:
     return points.end();
   }
 
-  std::size_t size() { return points.size(); }
+  std::size_t size() const { return points.size(); }
+
+  bool empty() const { return points.empty(); }
 
   VectorType<T, D> &operator[](std::size_t i) { return points[i]; }
 

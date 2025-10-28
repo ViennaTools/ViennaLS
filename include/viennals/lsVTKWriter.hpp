@@ -2,11 +2,12 @@
 
 #include <fstream>
 #include <string>
+#include <unordered_map>
+#include <utility>
 
 #include <lsFileFormats.hpp>
 #include <lsMesh.hpp>
 
-#include <utility>
 #include <vcLogger.hpp>
 #include <vcSmartPointer.hpp>
 
@@ -30,9 +31,12 @@ using namespace viennacore;
 
 /// Class handling the output of an Mesh<> to VTK file types.
 template <class T> class VTKWriter {
+  using MetaDataType = std::unordered_map<std::string, std::vector<double>>;
+
   SmartPointer<Mesh<T>> mesh = nullptr;
   FileFormatEnum fileFormat = FileFormatEnum::VTK_AUTO;
   std::string fileName;
+  MetaDataType metaData;
 
 #ifdef VIENNALS_USE_VTK
   template <class In, class Out>
@@ -64,6 +68,28 @@ template <class T> class VTKWriter {
       outData->AddArray(vectorData);
     }
   }
+
+  void addMetaDataToVTK(vtkDataSet *data) const {
+    if (metaData.empty()) {
+      return;
+    }
+
+    // add metadata to field data
+    vtkSmartPointer<vtkFieldData> fieldData = data->GetFieldData();
+    for (const auto &meta : metaData) {
+      if (meta.second.empty())
+        continue; // skip empty metadata
+
+      vtkSmartPointer<vtkFloatArray> metaDataArray =
+          vtkSmartPointer<vtkFloatArray>::New();
+      metaDataArray->SetName(meta.first.c_str());
+      metaDataArray->SetNumberOfValues(meta.second.size());
+      for (size_t i = 0; i < meta.second.size(); ++i) {
+        metaDataArray->SetValue(i, meta.second[i]);
+      }
+      fieldData->AddArray(metaDataArray);
+    }
+  }
 #endif // VIENNALS_USE_VTK
 
 public:
@@ -89,18 +115,36 @@ public:
     fileName = std::move(passedFileName);
   }
 
+  void setMetaData(const MetaDataType &passedMetaData) {
+    metaData = passedMetaData;
+  }
+
+  void addMetaData(const std::string &key, double value) {
+    metaData[key] = std::vector<double>{value};
+  }
+
+  void addMetaData(const std::string &key, const std::vector<double> &values) {
+    metaData[key] = values;
+  }
+
+  void addMetaData(const MetaDataType &newMetaData) {
+    for (const auto &pair : newMetaData) {
+      metaData[pair.first] = pair.second;
+    }
+  }
+
   void apply() {
     // check mesh
     if (mesh == nullptr) {
       Logger::getInstance()
-          .addWarning("No mesh was passed to VTKWriter. Not writing.")
+          .addError("No mesh was passed to VTKWriter.")
           .print();
       return;
     }
     // check filename
     if (fileName.empty()) {
       Logger::getInstance()
-          .addWarning("No file name specified for VTKWriter. Not writing.")
+          .addError("No file name specified for VTKWriter.")
           .print();
       return;
     }
@@ -119,8 +163,8 @@ public:
           fileFormat = FileFormatEnum::VTU;
         } else {
           Logger::getInstance()
-              .addWarning("No valid file format found based on the file ending "
-                          "passed to VTKWriter. Not writing.")
+              .addError("No valid file format found based on the file ending "
+                        "passed to VTKWriter.")
               .print();
           return;
         }
@@ -151,7 +195,7 @@ public:
 #endif
     default:
       Logger::getInstance()
-          .addWarning("No valid file format set for VTKWriter. Not writing.")
+          .addError("No valid file format set for VTKWriter.")
           .print();
     }
   }
@@ -161,7 +205,7 @@ private:
   void writeVTP(std::string filename) const {
     if (mesh == nullptr) {
       Logger::getInstance()
-          .addWarning("No mesh was passed to VTKWriter.")
+          .addError("No mesh was passed to VTKWriter.")
           .print();
       return;
     }
@@ -218,6 +262,7 @@ private:
 
     addDataFromMesh(mesh->pointData, polyData->GetPointData());
     addDataFromMesh(mesh->cellData, polyData->GetCellData());
+    addMetaDataToVTK(polyData);
 
     vtkSmartPointer<vtkXMLPolyDataWriter> pwriter =
         vtkSmartPointer<vtkXMLPolyDataWriter>::New();
@@ -229,7 +274,7 @@ private:
   void writeVTU(std::string filename) const {
     if (mesh == nullptr) {
       Logger::getInstance()
-          .addWarning("No mesh was passed to VTKWriter.")
+          .addError("No mesh was passed to VTKWriter.")
           .print();
       return;
     }
@@ -314,6 +359,7 @@ private:
 
     addDataFromMesh(mesh->pointData, uGrid->GetPointData());
     addDataFromMesh(mesh->cellData, uGrid->GetCellData());
+    addMetaDataToVTK(uGrid);
 
     // // now add pointData
     // for (unsigned i = 0; i < mesh->cellData.getScalarDataSize(); ++i) {
@@ -354,7 +400,7 @@ private:
   void writeVTKLegacy(const std::string &filename) {
     if (mesh == nullptr) {
       Logger::getInstance()
-          .addWarning("No mesh was passed to VTKWriter.")
+          .addError("No mesh was passed to VTKWriter.")
           .print();
       return;
     }

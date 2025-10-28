@@ -78,7 +78,7 @@ public:
   void apply() {
     if (levelSet == nullptr) {
       Logger::getInstance()
-          .addWarning("No level set was passed to Check.")
+          .addError("No level set was passed to Check.")
           .print();
       return;
     }

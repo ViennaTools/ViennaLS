@@ -316,8 +316,7 @@ public:
   void apply() {
     if (levelSetA == nullptr) {
       Logger::getInstance()
-          .addWarning("No level set was passed to BooleanOperation. Not "
-                      "performing operation.")
+          .addError("No level set was passed to BooleanOperation.")
           .print();
       return;
     }
@@ -325,8 +324,8 @@ public:
     if (static_cast<unsigned>(operation) < 3) {
       if (levelSetB == nullptr) {
         Logger::getInstance()
-            .addWarning("Only one level set was passed to BooleanOperation, "
-                        "although two were required. Not performing operation.")
+            .addError("Only one level set was passed to BooleanOperation, "
+                      "although two were required.")
             .print();
         return;
       }
@@ -348,8 +347,7 @@ public:
     case BooleanOperationEnum::CUSTOM:
       if (operationComp == nullptr) {
         Logger::getInstance()
-            .addWarning("No comparator supplied to custom BooleanOperation. "
-                        "Not performing operation.")
+            .addError("No comparator supplied to custom BooleanOperation.")
             .print();
         return;
       }

@@ -39,7 +39,7 @@ private:
     else
       Logger::getInstance()
           .addWarning("PointData: Tried to access out of bounds index! "
-                      "Returned nullptr instead.")
+                      "Returning nullptr instead.")
           .print();
     return nullptr;
   }
@@ -393,8 +393,8 @@ public:
     stream.read(identifier, 11);
     if (std::string(identifier).compare(0, 11, "lsPointData")) {
       Logger::getInstance()
-          .addWarning("Reading PointData from stream failed. Header could "
-                      "not be found.")
+          .addError("Reading PointData from stream failed. Header could "
+                    "not be found.")
           .print();
       return stream;
     }

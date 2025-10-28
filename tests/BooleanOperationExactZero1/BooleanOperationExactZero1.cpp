@@ -109,9 +109,7 @@ int main() {
 
   // writeLS(substrate, "subs_afterPrune2.vtp");
 
-  ls::Check<NumericType, D> checker(substrate);
-  checker.apply();
-  LSTEST_ASSERT(checker.isValid());
+  LSTEST_ASSERT_VALID_LS(substrate, NumericType, D);
 
   return 0;
 }

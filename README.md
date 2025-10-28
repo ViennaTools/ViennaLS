@@ -5,6 +5,7 @@
 
 [![🧪 Tests](https://github.com/ViennaTools/ViennaLS/actions/workflows/build.yml/badge.svg)](https://github.com/ViennaTools/ViennaLS/actions/workflows/build.yml)
 [![🐍 Bindings](https://github.com/ViennaTools/ViennaLS/actions/workflows/python.yml/badge.svg)](https://github.com/ViennaTools/ViennaLS/actions/workflows/python.yml)
+[![PyPi Version](https://img.shields.io/pypi/v/ViennaLS?logo=pypi)](https://pypi.org/project/ViennaLS/)
 
 </div>
 
@@ -12,6 +13,16 @@ ViennaLS is a header-only C++ level set library developed for high performance t
 
 > [!NOTE]  
 > ViennaLS is under heavy development and improved daily. If you do have suggestions or find bugs, please let us know!
+
+## Quick Start  
+
+To install ViennaLS for Python, simply run:  
+
+```sh
+pip install ViennaLS
+```
+
+To use ViennaLS in C++, clone the repository and follow the installation steps below.
 
 ## Support
 
@@ -44,14 +55,13 @@ Releases are tagged on the maser branch and available in the [releases section](
 
 * [ViennaHRLE](https://github.com/ViennaTools/ViennaHRLE)
 
-* [VTK](https://github.com/Kitware/VTK) (optional)
+* [VTK](https://github.com/Kitware/VTK) (optional, but recommended for mesh export and visualization)
 
 * [pybind11](https://github.com/pybind/pybind11) (only for building Python libs)
 
 ## Using ViennaLS in your project
 
 Have a look at the [example repo](https://github.com/ViennaTools/viennals-example) for creating a project with ViennaLS as a dependency.
-
 
 ## Installing
 
@@ -62,11 +72,11 @@ However, we recommend the following procedure in order to set up all dependencie
 git clone https://github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
 
-cmake -B build -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/
+cmake -B build -D CMAKE_INSTALL_PREFIX=/path/to/your/custom/install/
 cmake --install build
 ```
 
-This will install the necessary headers and CMake files to the specified path. If DCMAKE_INSTALL_PREFIX is not specified, it will be installed to the standard path for your system, usually /usr/local/ .
+This will install the necessary headers and CMake files to the specified path. If `CMAKE_INSTALL_PREFIX` is not specified, it will be installed to the standard path for your system, usually `/usr/local/`.
 
 ## Installing without VTK
 
@@ -75,7 +85,7 @@ In order to install ViennaLS without VTK, run:
 git clone https://github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
 
-cmake -B build -DCMAKE_INSTALL_PREFIX=/path/to/your/custom/install/ -DVIENNALS_USE_VTK=OFF
+cmake -B build -D CMAKE_INSTALL_PREFIX=/path/to/your/custom/install/ -D VIENNALS_USE_VTK=OFF
 cmake --install build
 ```
 
@@ -86,13 +96,14 @@ The CMake configuration automatically checks if the dependencies are installed. 
 ## Building the Python package
 
 > [!NOTE]  
-> On systems that feature a package manager (e.g. Ubuntu/Debian `apt`), the dependencies can be installed beforehand (e.g. using ```sudo apt install libvtk9-dev```), which saves a considerable amount of time during compilation.
+> On systems that feature a package manager (e.g. Ubuntu/Debian `apt`), VTK can be installed beforehand (e.g. using ```sudo apt install libvtk9-dev```), which saves a considerable amount of time during compilation.
 
 The Python package can be built and installed using the `pip` command:
 
 ```bash
 git clone https://github.com/ViennaTools/ViennaLS.git
 cd ViennaLS
+
 pip install .
 ```
 
@@ -100,14 +111,22 @@ pip install .
 
 All functions which are available in C++ are also available in Python. The 2D version of the library can be imported as follows:
 ```python
-import viennals2d as vls
+import viennals.d2 as vls 
+import viennals # for common functions
 ```
 
-In order to switch to three dimensions, only the import needs to be changed:
+To switch to 3D, only the import changes:
 
 ```python
-import viennals3d as vls
+import viennals.d3 as vls
 ```
+Functions that operate on a domain object (e.g. `Advect`, `ToSurfaceMesh`, ...) are provided in the respective `d2` or `d3` modules.
+Common functions, enums, and dimension-independent utilities (such as `Mesh`) are available directly in the `viennals` namespace.
+
+A complete list of functions and their locations can be found in the [API documentation](PythonAPI.md).
+
+For examples on how to use the Python package, please have a look at these examples: [Air Gap Deposition](https://github.com/ViennaTools/ViennaLS/blob/master/examples/AirGapDeposition/AirGapDeposition.py), [Deposition](https://github.com/ViennaTools/ViennaLS/blob/master/examples/Deposition/Deposition.py), [Geometric Advection](https://github.com/ViennaTools/ViennaLS/blob/master/examples/GeometricAdvection/GeometricAdvection.py).
+
 
 ## Running the Tests
 
@@ -138,7 +157,7 @@ We recommend using [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) to consum
 
 * Installation with CPM
   ```cmake
-  CPMAddPackage("gh:viennatools/viennals@4.3.2")
+  CPMAddPackage("gh:viennatools/viennals@5.0.1")
   ```
 
 * With a local installation
@@ -190,4 +209,7 @@ http://www.iue.tuwien.ac.at/
 
 ## License
 
-See file LICENSE in the base directory.
+ViennaLS is licensed under the [MIT License](./LICENSE).
+
+Some third-party libraries used by ViennaLS are under their own permissive licenses (MIT, BSD).  
+See [`THIRD_PARTY_LICENSES.md`](./THIRD_PARTY_LICENSES.md) for details.

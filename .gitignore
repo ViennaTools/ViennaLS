@@ -6,6 +6,7 @@ install*/
 *.vtk
 *.vtu
 *.vtp
+*_lstest*
 *.vscode/
 .vs
 CMakeSettings.json
@@ -22,3 +23,4 @@ _generate/
 *env*
 .mypy_cache/
 .eggs/
+test.ipynb

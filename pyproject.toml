@@ -1,9 +1,12 @@
 [build-system]
-requires = ["scikit-build-core", "pybind11"]
+requires = [
+    "scikit-build-core", 
+    "pybind11"
+]
 build-backend = "scikit_build_core.build"
 
 [project]
-version = "4.3.2"
+version = "5.0.1"
 name = "ViennaLS"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -18,4 +21,4 @@ Issues = "https://github.com/ViennaTools/ViennaLS/issues"
 [tool.scikit-build]
 build-dir = "build"
 cmake.args = ["-DVIENNALS_BUILD_PYTHON=ON"]
-wheel.packages = ["python/viennals3d", "python/viennals2d"]
+wheel.packages = ["python/viennals"]

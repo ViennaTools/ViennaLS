@@ -52,7 +52,7 @@ int main() {
 
   auto meanCurvatures = sphere->getPointData().getScalarData("MeanCurvatures");
 
-  LSTEST_ASSERT(meanCurvatures != nullptr)
+  VC_TEST_ASSERT(meanCurvatures != nullptr)
 
   double analyticCurvature = 1. / radius;
   viennahrle::SizeType numberOfActivePoints = 0;
@@ -69,7 +69,8 @@ int main() {
     ++numberOfActivePoints;
   }
 
-  LSTEST_ASSERT(std::abs(sum / numberOfActivePoints - analyticCurvature) < 1e-3)
+  VC_TEST_ASSERT(std::abs(sum / numberOfActivePoints - analyticCurvature) <
+                 1e-3)
 
   // std::cout << "Writing Output..." << std::endl;
   // typename lsPointData<NumericType>::ScalarDataType analytic;

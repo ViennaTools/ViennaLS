@@ -1,4 +1,4 @@
-import viennals3d as vls
+import viennals as vls
 
 # @example GeometricAdvection.py
 #  3D Example showing how to use the library for topography
@@ -6,6 +6,8 @@ import viennals3d as vls
 # layer of a different material is then grown on top. It is
 # the same example as Deposition but emulates the deposition
 # rather than simulating a slow growth.
+
+vls.setDimension(3)
 
 extent = 30
 gridDelta = 0.5

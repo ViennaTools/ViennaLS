@@ -1,7 +1,7 @@
-import viennals2d as vls
+import viennals as vls
 
 # @example AirGapDeposition.py
-#  Example showing how to use the library for topography
+#  2D Example showing how to use the library for topography
 #  simulation, by creating a trench geometry. A layer of a different material is
 #  then grown directionally on top.
 
@@ -86,6 +86,8 @@ for i in range(numberOfSteps):
     print("Advection step {} / {}".format(i, numberOfSteps))
 
     vls.ToSurfaceMesh(newLayer, mesh).apply()
-    vls.VTKWriter(mesh, "trench{}.vtp".format(i)).apply()
+    writer = vls.VTKWriter(mesh, "trench{}.vtp".format(i))
+    writer.addMetaData("time", passedTime)
+    writer.apply()
 
 print("Time passed during advection: {}".format(passedTime))

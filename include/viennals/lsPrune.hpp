@@ -74,7 +74,7 @@ public:
   void apply() {
     if (levelSet == nullptr) {
       Logger::getInstance()
-          .addWarning("No level set was passed to Prune.")
+          .addError("No level set was passed to Prune.")
           .print();
       return;
     }

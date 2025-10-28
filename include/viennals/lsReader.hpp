@@ -36,14 +36,14 @@ public:
     // check level-set
     if (levelSet == nullptr) {
       Logger::getInstance()
-          .addWarning("No level-set was passed to Reader. Not reading.")
+          .addError("No level-set was passed to Reader.")
           .print();
       return;
     }
     // check filename
     if (fileName.empty()) {
       Logger::getInstance()
-          .addWarning("No file name specified for Reader. Not reading.")
+          .addError("No file name specified for Reader.")
           .print();
       return;
     }

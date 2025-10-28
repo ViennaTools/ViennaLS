@@ -55,7 +55,7 @@ public:
   void apply() {
     if (levelSet == nullptr) {
       Logger::getInstance()
-          .addWarning("No level set was passed to Reduce.")
+          .addError("No level set was passed to Reduce.")
           .print();
       return;
     }
