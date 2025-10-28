@@ -208,7 +208,8 @@ int main() {
   auto sphere1_wide = ls::SmartPointer<ls::Domain<double, D>>::New(
       bounds, boundaryCons, gridDelta);
   ls::MakeGeometry<double, D>(
-      sphere1_wide, ls::SmartPointer<ls::Sphere<double, D>>::New(origin1, radius1))
+      sphere1_wide,
+      ls::SmartPointer<ls::Sphere<double, D>>::New(origin1, radius1))
       .apply();
 
   ls::CompareSparseField<double, D> compareLargeWidth(sphere1_wide, sphere2);

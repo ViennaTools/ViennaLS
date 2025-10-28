@@ -29,7 +29,7 @@ int main() {
   for (unsigned i = 0; i < D; ++i)
     boundaryCons[i] = ls::Domain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
 
-  // Create first circle (reference)
+  // Create first circle (target)
   auto circle1 = ls::SmartPointer<ls::Domain<double, D>>::New(
       bounds, boundaryCons, gridDelta);
 
@@ -40,7 +40,7 @@ int main() {
       circle1, ls::SmartPointer<ls::Sphere<double, D>>::New(origin1, radius1))
       .apply();
 
-  // Create second circle (compare) with shifted center
+  // Create second circle (sample) with shifted center
   auto circle2 = ls::SmartPointer<ls::Domain<double, D>>::New(
       bounds, boundaryCons, gridDelta);
 
@@ -55,13 +55,13 @@ int main() {
   {
     auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
     ls::ToSurfaceMesh<double, D>(circle1, mesh).apply();
-    ls::VTKWriter<double>(mesh, "circle1_reference.vtp").apply();
+    ls::VTKWriter<double>(mesh, "circle1_target.vtp").apply();
   }
 
   {
     auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
     ls::ToSurfaceMesh<double, D>(circle2, mesh).apply();
-    ls::VTKWriter<double>(mesh, "circle2_compare.vtp").apply();
+    ls::VTKWriter<double>(mesh, "circle2_sample.vtp").apply();
   }
 
   // Compare critical dimensions
@@ -120,8 +120,8 @@ int main() {
     if (compareCriticalDims.getCriticalDimensionResult(i, posRef, posCmp,
                                                        diff)) {
       std::cout << "  Dimension " << i << ":" << std::endl;
-      std::cout << "    Reference position: " << posRef << std::endl;
-      std::cout << "    Compare position: " << posCmp << std::endl;
+      std::cout << "    Target position: " << posRef << std::endl;
+      std::cout << "    Sample position: " << posCmp << std::endl;
       std::cout << "    Difference: " << diff << std::endl;
     } else {
       std::cout << "  Dimension " << i << ": Invalid (not found)" << std::endl;

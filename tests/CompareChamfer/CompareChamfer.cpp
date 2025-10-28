@@ -118,8 +118,7 @@ int main() {
             << compareChamfer.getNumTargetPoints() << std::endl;
   std::cout << "  Sample surface points: "
             << compareChamfer.getNumSamplePoints() << std::endl;
-  std::cout << "  Execution time: " << chamfer_ms.count() << " ms"
-            << std::endl;
+  std::cout << "  Execution time: " << chamfer_ms.count() << " ms" << std::endl;
 
   // Save meshes with distance data
   ls::VTKWriter<double>(targetMesh, "chamfer_target_distances.vtp").apply();
@@ -159,8 +158,7 @@ int main() {
   std::cout << "\nArea Comparison Results:" << std::endl;
   std::cout << "  Area mismatch: " << compareArea.getAreaMismatch()
             << std::endl;
-  std::cout << "  Different cells: " << compareArea.getCellCount()
-            << std::endl;
+  std::cout << "  Different cells: " << compareArea.getCellCount() << std::endl;
   std::cout << "  Execution time: " << area_ms.count() << " ms" << std::endl;
 
   // Test 3: Different geometric configurations
@@ -215,8 +213,8 @@ int main() {
   compareLargeShift.apply();
 
   std::cout << "\nLarge shift (5 units in x-direction):" << std::endl;
-  std::cout << "  Chamfer distance: "
-            << compareLargeShift.getChamferDistance() << std::endl;
+  std::cout << "  Chamfer distance: " << compareLargeShift.getChamferDistance()
+            << std::endl;
   std::cout << "  Expected shift: " << origin5[0] - origin1[0] << std::endl;
 
   // Test 4: Performance summary

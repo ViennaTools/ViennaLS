@@ -38,11 +38,11 @@ template <class T, int D = 2> class CompareChamfer {
   SmartPointer<Domain<T, D>> levelSetSample = nullptr;
 
   // Results
-  T forwardDistance = 0.0;     // Target → Sample
-  T backwardDistance = 0.0;    // Sample → Target
-  T chamferDistance = 0.0;     // Average of forward and backward
-  T rmsChamferDistance = 0.0;  // RMS of all nearest-neighbor distances
-  T maxDistance = 0.0;         // Maximum nearest-neighbor distance
+  T forwardDistance = 0.0;    // Target → Sample
+  T backwardDistance = 0.0;   // Sample → Target
+  T chamferDistance = 0.0;    // Average of forward and backward
+  T rmsChamferDistance = 0.0; // RMS of all nearest-neighbor distances
+  T maxDistance = 0.0;        // Maximum nearest-neighbor distance
   unsigned numTargetPoints = 0;
   unsigned numSamplePoints = 0;
 
@@ -249,8 +249,8 @@ public:
     backwardDistance = sumBackward / numSamplePoints;
 
     // Compute overall metrics
-    chamferDistance = (sumForward + sumBackward) /
-                      (numTargetPoints + numSamplePoints);
+    chamferDistance =
+        (sumForward + sumBackward) / (numTargetPoints + numSamplePoints);
     rmsChamferDistance = std::sqrt((sumSquaredForward + sumSquaredBackward) /
                                    (numTargetPoints + numSamplePoints));
     maxDistance = std::max(maxForward, maxBackward);
