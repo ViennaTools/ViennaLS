@@ -190,10 +190,9 @@ public:
       return;
     }
 
-    // Ensure both level sets have sufficient width to avoid undefined values
-    // in the comparison region. We need at least width=2 so that all cells
-    // in the bounding box have defined corner values (no undefined runs with
-    // ±max()).
+    // Ensure both level sets have sufficient width to avoid floating point
+    // arithmetic errors. A new working copy is created if expansion is needed,
+    // leaving the original level set unmodified.
     constexpr int minimumWidth = 3;
 
     // Use the original or expanded copies as needed
