@@ -5,6 +5,7 @@
 
 #include <hrleDenseCellIterator.hpp>
 #include <lsDomain.hpp>
+#include <lsExpand.hpp>
 #include <lsMesh.hpp>
 #include <lsPreCompileMacros.hpp>
 
@@ -187,11 +188,38 @@ public:
       return;
     }
 
+    // Ensure both level sets have sufficient width to avoid floating point
+    // arithmetic errors. A new working copy is created if expansion is needed,
+    // leaving the original level set unmodified.
+    constexpr int minimumWidth = 3;
+
+    // Use the original or expanded copies as needed
+    auto workingTarget = levelSetTarget;
+    auto workingSample = levelSetSample;
+
+    if (levelSetTarget->getLevelSetWidth() < minimumWidth) {
+      workingTarget = SmartPointer<Domain<T, D>>::New(levelSetTarget);
+      Expand<T, D>(workingTarget, minimumWidth).apply();
+      Logger::getInstance()
+          .addInfo("CompareArea: Expanded target level set to width " +
+                   std::to_string(minimumWidth) + " to avoid undefined values.")
+          .print();
+    }
+
+    if (levelSetSample->getLevelSetWidth() < minimumWidth) {
+      workingSample = SmartPointer<Domain<T, D>>::New(levelSetSample);
+      Expand<T, D>(workingSample, minimumWidth).apply();
+      Logger::getInstance()
+          .addInfo("CompareArea: Expanded sample level set to width " +
+                   std::to_string(minimumWidth) + " to avoid undefined values.")
+          .print();
+    }
+
     // Set up dense cell iterators for both level sets
     viennahrle::ConstDenseCellIterator<hrleDomainType> itTarget(
-        levelSetTarget->getDomain(), minIndex);
+        workingTarget->getDomain(), minIndex);
     viennahrle::ConstDenseCellIterator<hrleDomainType> itSample(
-        levelSetSample->getDomain(), minIndex);
+        workingSample->getDomain(), minIndex);
 
     differentCellsCount = 0;
     customDifferentCellCount = 0;

@@ -17,6 +17,8 @@ __all__: list[str] = [
     "CalculateVisibilities",
     "Check",
     "CompareArea",
+    "CompareChamfer",
+    "CompareCriticalDimensions",
     "CompareNarrowBand",
     "CompareSparseField",
     "ConvexHull",
@@ -360,9 +362,159 @@ class CompareArea:
         Sets the y-range and custom increment value
         """
 
-class CompareNarrowBand:
+class CompareChamfer:
     @typing.overload
     def __init__(self) -> None: ...
+    @typing.overload
+    def __init__(self, arg0: Domain, arg1: Domain) -> None: ...
+    def apply(self) -> None:
+        """
+        Computes Chamfer distance between two level sets.
+        """
+
+    def getBackwardDistance(self) -> float:
+        """
+        Return the backward chamfer distance (distance from target to sample).
+        """
+
+    def getChamferDistance(self) -> float:
+        """
+        Return the combined chamfer distance metric.
+        """
+
+    def getForwardDistance(self) -> float:
+        """
+        Return the forward chamfer distance (distance from sample to target).
+        """
+
+    def getMaxDistance(self) -> float:
+        """
+        Return the maximum pointwise distance measured between the level sets.
+        """
+
+    def getNumSamplePoints(self) -> int:
+        """
+        Return the number of sample points considered in the computation.
+        """
+
+    def getNumTargetPoints(self) -> int:
+        """
+        Return the number of target points considered in the computation.
+        """
+
+    def getRMSChamferDistance(self) -> float:
+        """
+        Return the root-mean-square of the chamfer distances.
+        """
+
+    def setLevelSetSample(self, arg0: Domain) -> None:
+        """
+        Set the sample level set (source) for chamfer comparison.
+        """
+
+    def setLevelSetTarget(self, arg0: Domain) -> None:
+        """
+        Set the target level set for chamfer comparison.
+        """
+
+    def setOutputMeshSample(self, arg0: viennals._core.Mesh) -> None:
+        """
+        Set an output mesh to store sample-side distance values.
+        """
+
+    def setOutputMeshTarget(self, arg0: viennals._core.Mesh) -> None:
+        """
+        Set an output mesh to store target-side distance values.
+        """
+
+class CompareCriticalDimensions:
+    @typing.overload
+    def __init__(self) -> None: ...
+    @typing.overload
+    def __init__(self, arg0: Domain, arg1: Domain) -> None: ...
+    def apply(self) -> None:
+        """
+        Perform the critical-dimensions comparison between target and sample level sets.
+        """
+
+    def addXRange(
+        self,
+        minX: typing.SupportsFloat,
+        maxX: typing.SupportsFloat,
+        findMaximum: bool = ...,
+    ) -> None:
+        """
+        Add an x-range [minX, maxX] to restrict where critical dimensions are evaluated.
+        If findMaximum is true, record the maximum difference within the range, otherwise record the minimum.
+        """
+
+    def addYRange(
+        self,
+        minY: typing.SupportsFloat,
+        maxY: typing.SupportsFloat,
+        findMaximum: bool = ...,
+    ) -> None:
+        """
+        Add a y-range [minY, maxY] to restrict where critical dimensions are evaluated.
+        If findMaximum is true, record the maximum difference within the range, otherwise record the minimum.
+        """
+
+    def clearRanges(self) -> None:
+        """
+        Clear all previously added x/y ranges.
+        """
+
+    def getAllDifferences(self) -> list[float]:
+        """
+        Return a list of all measured critical-dimension differences.
+        """
+
+    def getCriticalDimensionResult(
+        self, index: int
+    ) -> tuple[bool, float, float, float]:
+        """
+        Return the result tuple for the critical dimension at the given index:
+        (valid, x_position, y_position, difference).
+        """
+
+    def getMaxDifference(self) -> float:
+        """
+        Return the maximum measured critical-dimension difference.
+        """
+
+    def getMeanDifference(self) -> float:
+        """
+        Return the mean of measured critical-dimension differences.
+        """
+
+    def getNumCriticalDimensions(self) -> int:
+        """
+        Return the number of critical dimensions that were evaluated.
+        """
+
+    def getRMSE(self) -> float:
+        """
+        Return the root-mean-square error of the measured differences.
+        """
+
+    def setLevelSetSample(self, arg0: Domain) -> None:
+        """
+        Set the level set to be compared (the sample) against the target.
+        """
+
+    def setLevelSetTarget(self, arg0: Domain) -> None:
+        """
+        Set the target level set used for critical-dimensions comparison.
+        """
+
+    def setOutputMesh(self, arg0: viennals._core.Mesh) -> None:
+        """
+        Set an output mesh where comparison results (e.g. points of difference) will be stored.
+        """
+
+class CompareNarrowBand:
+    @typing.overload
+    def __init(self) -> None: ...
     @typing.overload
     def __init__(self, arg0: Domain, arg1: Domain) -> None: ...
     def apply(self) -> None:

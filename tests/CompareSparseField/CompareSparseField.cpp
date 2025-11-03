@@ -59,7 +59,8 @@ int main() {
       .apply();
 
   // Make sure target is expanded
-  ls::Expand<double, D>(sphere1, 50).apply();
+  // Note: We'll let CompareSparseField do the expansion automatically
+  // ls::Expand<double, D>(sphere1, 50).apply();
 
   // Reduce the sample level set to a sparse field
   ls::Reduce<double, D>(sphere2, 1).apply();
@@ -86,6 +87,12 @@ int main() {
   // Compare using sparse field comparison
   ls::CompareSparseField<double, D> compareSparseField(sphere1, sphere2);
 
+  // Test the new setExpandedLevelSetWidth feature
+  // Set a custom expansion width (default is 50)
+  compareSparseField.setExpandedLevelSetWidth(75);
+  std::cout << "Using custom expansion width of 75 for the expanded level set"
+            << std::endl;
+
   // Create mesh for visualization of differences
   auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
   compareSparseField.setFillIteratedWithDistances(true);
@@ -110,10 +117,13 @@ int main() {
   unsigned numSkippedPoints =
       compareSparseField.getNumSkippedPoints(); // Number of skipped points
 
+  std::cout << "\nComparison Results:" << std::endl;
   std::cout << "Sphere 1 center: (" << origin1[0] << ", " << origin1[1] << ")"
             << std::endl;
   std::cout << "Sphere 2 center: (" << origin2[0] << ", " << origin2[1] << ")"
             << std::endl;
+  std::cout << "Sphere 1 level set width after expansion: "
+            << sphere1->getLevelSetWidth() << std::endl;
   std::cout << "Sum of squared differences: " << sumSquaredDifferences
             << std::endl;
   std::cout << "Number of points compared: " << numPoints << std::endl;
@@ -168,6 +178,47 @@ int main() {
   compareSparseField.setOutputMesh(mesh);
   compareSparseField.apply();
   ls::VTKWriter<double>(mesh, "sparsefield_restricted.vtp").apply();
+
+  // Test with different expansion widths
+  std::cout << "\nTesting with different expansion widths:" << std::endl;
+
+  // Reset ranges
+  compareSparseField.clearXRange();
+  compareSparseField.clearYRange();
+  compareSparseField.setOutputMesh(nullptr);
+
+  // Test with smaller expansion width (should still work but may have less
+  // coverage)
+  auto sphere1_narrow = ls::SmartPointer<ls::Domain<double, D>>::New(
+      bounds, boundaryCons, gridDelta);
+  ls::MakeGeometry<double, D>(
+      sphere1_narrow,
+      ls::SmartPointer<ls::Sphere<double, D>>::New(origin1, radius1))
+      .apply();
+
+  ls::CompareSparseField<double, D> compareSmallWidth(sphere1_narrow, sphere2);
+  compareSmallWidth.setExpandedLevelSetWidth(30);
+  compareSmallWidth.apply();
+  std::cout << "RMSE with expansion width 30: " << compareSmallWidth.getRMSE()
+            << std::endl;
+  std::cout << "Level set width after expansion: "
+            << sphere1_narrow->getLevelSetWidth() << std::endl;
+
+  // Test with larger expansion width
+  auto sphere1_wide = ls::SmartPointer<ls::Domain<double, D>>::New(
+      bounds, boundaryCons, gridDelta);
+  ls::MakeGeometry<double, D>(
+      sphere1_wide,
+      ls::SmartPointer<ls::Sphere<double, D>>::New(origin1, radius1))
+      .apply();
+
+  ls::CompareSparseField<double, D> compareLargeWidth(sphere1_wide, sphere2);
+  compareLargeWidth.setExpandedLevelSetWidth(100);
+  compareLargeWidth.apply();
+  std::cout << "RMSE with expansion width 100: " << compareLargeWidth.getRMSE()
+            << std::endl;
+  std::cout << "Level set width after expansion: "
+            << sphere1_wide->getLevelSetWidth() << std::endl;
 
   // // Clear range restrictions
   // compareSparseField.clearXRange();
