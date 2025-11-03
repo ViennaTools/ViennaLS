@@ -28,6 +28,9 @@ using namespace viennacore;
 /// dimensions.
 ///
 /// The code is currently intended for 2D level sets only.
+///
+/// Note for the future: lsToDiskMesh could be used instead of lsToSurfaceMesh,
+/// which is probably more efficient but slightly less accurate.
 
 template <class T, int D = 2> class CompareCriticalDimensions {
   using hrleIndexType = viennahrle::IndexType;
