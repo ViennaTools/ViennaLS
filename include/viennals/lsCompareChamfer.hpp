@@ -32,6 +32,9 @@ using namespace viennacore;
 ///
 /// Both level sets must have a width of at least 2 to extract surfaces. If
 /// not, they will be automatically expanded.
+///
+/// Note for the future: lsToDiskMesh could be used instead of lsToSurfaceMesh,
+/// which is probably more efficient but slightly less accurate.
 
 template <class T, int D = 2> class CompareChamfer {
   SmartPointer<Domain<T, D>> levelSetTarget = nullptr;
