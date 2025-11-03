@@ -231,8 +231,13 @@ public:
       yMax = std::max(yMax, node[1]);
     }
 
-    // Process each range specification
-    for (const auto &spec : rangeSpecs) {
+    // Pre-allocate results vector to avoid race conditions
+    results.resize(rangeSpecs.size());
+
+    // Process each range specification in parallel
+#pragma omp parallel for
+    for (size_t specIdx = 0; specIdx < rangeSpecs.size(); ++specIdx) {
+      const auto &spec = rangeSpecs[specIdx];
       CriticalDimensionResult result;
       result.isXRange = spec.isXRange;
       result.rangeMin = spec.rangeMin;
@@ -275,7 +280,8 @@ public:
         result.difference = std::abs(cdRef - cdCmp);
       }
 
-      results.push_back(result);
+      // Direct assignment instead of push_back to avoid race condition
+      results[specIdx] = result;
     }
 
     // Generate mesh if requested
