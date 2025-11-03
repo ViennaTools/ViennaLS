@@ -47,16 +47,6 @@ pybind11_add_module(${MOD} pyWrap.cpp)
 target_link_libraries(${MOD} PRIVATE ViennaLS)
 target_compile_definitions(${MOD} PRIVATE VIENNALS_MODULE_NAME=${MOD})
 
-# Add OpenMP support for MSVC
-if(MSVC)
-  include(CheckCXXCompilerFlag)
-  check_cxx_compiler_flag("-openmp:llvm" COMPILER_SUPPORTS_OPENMP_LLVM)
-  if(COMPILER_SUPPORTS_OPENMP_LLVM)
-    target_compile_options(${MOD} PRIVATE -openmp:llvm)
-    target_link_options(${MOD} PRIVATE -openmp:llvm)
-  endif()
-endif()
-
 # Put the built .so in build/<pkg> for convenience
 set_target_properties(
   ${MOD}
