@@ -657,6 +657,11 @@ class CompareSparseField:
         Set the y-coordinate range to restrict the comparison area
         """
 
+    def setExpandedLevelSetWidth(self, arg0: typing.SupportsInt) -> None:
+        """
+        Set the expansion width for the expanded level set
+        """
+
 class ConvexHull:
     @typing.overload
     def __init__(self) -> None: ...
