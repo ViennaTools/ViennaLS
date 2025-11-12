@@ -80,6 +80,8 @@ public:
 
   void setMaxValue(const T passedMaxValue) { maxValue = passedMaxValue; }
 
+  void clearLevelSets() { levelSets.clear(); }
+
   void apply() {
     if (levelSets.empty()) {
       Logger::getInstance()

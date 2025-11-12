@@ -67,6 +67,11 @@ class Advect:
         Apply the integration scheme and calculate rates and maximum time step, but it do **not** move the surface.
         """
 
+    def clearLevelSets(self) -> None:
+        """
+        Clear all level sets used for advection.
+        """
+
     def getAdvectedTime(self) -> float:
         """
         Get the time passed during advection.
@@ -852,6 +857,16 @@ class ToDiskMesh:
         Convert the levelset to a surface mesh.
         """
 
+    def clearLevelSets(self) -> None:
+        """
+        Clear all inserted level sets.
+        """
+
+    def insertNextLevelSet(self, arg0: Domain) -> None:
+        """
+        Insert next level set to output in the disk mesh.
+        """
+
     def setLevelSet(self, arg0: Domain) -> None:
         """
         Set levelset to mesh.
@@ -920,6 +935,11 @@ class ToMultiSurfaceMesh:
         Convert the levelset to a surface mesh.
         """
 
+    def clearLevelSets(self) -> None:
+        """
+        Clear all inserted level sets.
+        """
+
     def insertNextLevelSet(self, arg0: Domain) -> None:
         """
         Insert next level set to output in the mesh.
@@ -969,6 +989,11 @@ class ToVoxelMesh:
     def apply(self) -> None:
         """
         Convert the levelset to a surface mesh.
+        """
+
+    def clearLevelSets(self) -> None:
+        """
+        Clear all inserted level sets.
         """
 
     def insertNextLevelSet(self, arg0: Domain) -> None:

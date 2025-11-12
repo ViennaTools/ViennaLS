@@ -40,6 +40,8 @@ from viennals.d2 import CalculateNormalVectors
 from viennals.d2 import CalculateVisibilities
 from viennals.d2 import Check
 from viennals.d2 import CompareArea
+from viennals.d2 import CompareChamfer
+from viennals.d2 import CompareCriticalDimensions
 from viennals.d2 import CompareNarrowBand
 from viennals.d2 import CompareSparseField
 from viennals.d2 import ConvexHull
@@ -90,6 +92,8 @@ __all__: list[str] = [
     "CalculateVisibilities",
     "Check",
     "CompareArea",
+    "CompareChamfer",
+    "CompareCriticalDimensions",
     "CompareNarrowBand",
     "CompareSparseField",
     "ConvexHull",
@@ -164,6 +168,6 @@ def setDimension(d: int):
     """
 
 PROXY_DIM: int = 2
-__version__: str = "5.1.0"
-version: str = "5.1.0"
+__version__: str = "5.1.1"
+version: str = "5.1.1"
 _C = _core

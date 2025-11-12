@@ -72,6 +72,11 @@ class Advect:
         Apply the integration scheme and calculate rates and maximum time step, but it do **not** move the surface.
         """
 
+    def clearLevelSets(self) -> None:
+        """
+        Clear all level sets used for advection.
+        """
+
     def getAdvectedTime(self) -> float:
         """
         Get the time passed during advection.
@@ -369,62 +374,62 @@ class CompareChamfer:
     def __init__(self, arg0: Domain, arg1: Domain) -> None: ...
     def apply(self) -> None:
         """
-        Computes Chamfer distance between two level sets.
+        Apply the Chamfer distance calculation.
         """
 
     def getBackwardDistance(self) -> float:
         """
-        Return the backward chamfer distance (distance from target to sample).
+        Get the backward distance (average distance from sample to target).
         """
 
     def getChamferDistance(self) -> float:
         """
-        Return the combined chamfer distance metric.
+        Get the Chamfer distance (average of forward and backward).
         """
 
     def getForwardDistance(self) -> float:
         """
-        Return the forward chamfer distance (distance from sample to target).
+        Get the forward distance (average distance from target to sample).
         """
 
     def getMaxDistance(self) -> float:
         """
-        Return the maximum pointwise distance measured between the level sets.
+        Get the maximum nearest-neighbor distance.
         """
 
     def getNumSamplePoints(self) -> int:
         """
-        Return the number of sample points considered in the computation.
+        Get the number of sample surface points.
         """
 
     def getNumTargetPoints(self) -> int:
         """
-        Return the number of target points considered in the computation.
+        Get the number of target surface points.
         """
 
     def getRMSChamferDistance(self) -> float:
         """
-        Return the root-mean-square of the chamfer distances.
+        Get the RMS Chamfer distance.
         """
 
     def setLevelSetSample(self, arg0: Domain) -> None:
         """
-        Set the sample level set (source) for chamfer comparison.
+        Set the sample level set.
         """
 
     def setLevelSetTarget(self, arg0: Domain) -> None:
         """
-        Set the target level set for chamfer comparison.
+        Set the target level set.
         """
 
     def setOutputMeshSample(self, arg0: viennals._core.Mesh) -> None:
         """
-        Set an output mesh to store sample-side distance values.
+        Set output mesh for sample surface points with distance data.
         """
 
     def setOutputMeshTarget(self, arg0: viennals._core.Mesh) -> None:
         """
-        Set an output mesh to store target-side distance values.
+        Set output mesh for target surface points with distance data.
         """
 
 class CompareCriticalDimensions:
@@ -432,89 +437,84 @@ class CompareCriticalDimensions:
     def __init__(self) -> None: ...
     @typing.overload
     def __init__(self, arg0: Domain, arg1: Domain) -> None: ...
-    def apply(self) -> None:
-        """
-        Perform the critical-dimensions comparison between target and sample level sets.
-        """
-
     def addXRange(
         self,
         minX: typing.SupportsFloat,
         maxX: typing.SupportsFloat,
-        findMaximum: bool = ...,
+        findMaximum: bool = True,
     ) -> None:
         """
-        Add an x-range [minX, maxX] to restrict where critical dimensions are evaluated.
-        If findMaximum is true, record the maximum difference within the range, otherwise record the minimum.
+        Add an X range to find maximum or minimum Y position.
         """
 
     def addYRange(
         self,
         minY: typing.SupportsFloat,
         maxY: typing.SupportsFloat,
-        findMaximum: bool = ...,
+        findMaximum: bool = True,
     ) -> None:
         """
-        Add a y-range [minY, maxY] to restrict where critical dimensions are evaluated.
-        If findMaximum is true, record the maximum difference within the range, otherwise record the minimum.
+        Add a Y range to find maximum or minimum X position.
+        """
+
+    def apply(self) -> None:
+        """
+        Apply the comparison.
         """
 
     def clearRanges(self) -> None:
         """
-        Clear all previously added x/y ranges.
+        Clear all range specifications.
         """
 
     def getAllDifferences(self) -> list[float]:
         """
-        Return a list of all measured critical-dimension differences.
+        Get all valid differences as a list.
         """
 
-    def getCriticalDimensionResult(
-        self, index: int
-    ) -> tuple[bool, float, float, float]:
+    def getCriticalDimensionResult(self, index: typing.SupportsInt) -> tuple:
         """
-        Return the result tuple for the critical dimension at the given index:
-        (valid, x_position, y_position, difference).
+        Get a specific critical dimension result. Returns (valid, positionTarget, positionSample, difference).
         """
 
     def getMaxDifference(self) -> float:
         """
-        Return the maximum measured critical-dimension difference.
+        Get maximum difference across all valid critical dimensions.
         """
 
     def getMeanDifference(self) -> float:
         """
-        Return the mean of measured critical-dimension differences.
+        Get mean absolute difference across all valid critical dimensions.
         """
 
     def getNumCriticalDimensions(self) -> int:
         """
-        Return the number of critical dimensions that were evaluated.
+        Get the number of critical dimensions compared.
         """
 
     def getRMSE(self) -> float:
         """
-        Return the root-mean-square error of the measured differences.
+        Get RMSE across all valid critical dimensions.
         """
 
     def setLevelSetSample(self, arg0: Domain) -> None:
         """
-        Set the level set to be compared (the sample) against the target.
+        Sets the sample level set.
         """
 
     def setLevelSetTarget(self, arg0: Domain) -> None:
         """
-        Set the target level set used for critical-dimensions comparison.
+        Sets the target level set.
         """
 
     def setOutputMesh(self, arg0: viennals._core.Mesh) -> None:
         """
-        Set an output mesh where comparison results (e.g. points of difference) will be stored.
+        Set the output mesh where critical dimension locations will be stored.
         """
 
 class CompareNarrowBand:
     @typing.overload
-    def __init(self) -> None: ...
+    def __init__(self) -> None: ...
     @typing.overload
     def __init__(self, arg0: Domain, arg1: Domain) -> None: ...
     def apply(self) -> None:
@@ -627,6 +627,11 @@ class CompareSparseField:
         Return the sum of squared differences calculated by apply().
         """
 
+    def setExpandedLevelSetWidth(self, arg0: typing.SupportsInt) -> None:
+        """
+        Set the expansion width for the expanded level set
+        """
+
     def setFillIteratedWithDistances(self, arg0: bool) -> None:
         """
         Set whether to fill the iterated level set with distance values
@@ -655,11 +660,6 @@ class CompareSparseField:
     def setYRange(self, arg0: typing.SupportsFloat, arg1: typing.SupportsFloat) -> None:
         """
         Set the y-coordinate range to restrict the comparison area
-        """
-
-    def setExpandedLevelSetWidth(self, arg0: typing.SupportsInt) -> None:
-        """
-        Set the expansion width for the expanded level set
         """
 
 class ConvexHull:
@@ -1227,6 +1227,16 @@ class ToDiskMesh:
         Convert the levelset to a surface mesh.
         """
 
+    def clearLevelSets(self) -> None:
+        """
+        Clear all inserted level sets.
+        """
+
+    def insertNextLevelSet(self, arg0: Domain) -> None:
+        """
+        Insert next level set to output in the disk mesh.
+        """
+
     def setLevelSet(self, arg0: Domain) -> None:
         """
         Set levelset to mesh.
@@ -1295,6 +1305,11 @@ class ToMultiSurfaceMesh:
         Convert the levelset to a surface mesh.
         """
 
+    def clearLevelSets(self) -> None:
+        """
+        Clear all inserted level sets.
+        """
+
     def insertNextLevelSet(self, arg0: Domain) -> None:
         """
         Insert next level set to output in the mesh.
@@ -1344,6 +1359,11 @@ class ToVoxelMesh:
     def apply(self) -> None:
         """
         Convert the levelset to a surface mesh.
+        """
+
+    def clearLevelSets(self) -> None:
+        """
+        Clear all inserted level sets.
         """
 
     def insertNextLevelSet(self, arg0: Domain) -> None:

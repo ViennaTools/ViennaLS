@@ -731,6 +731,8 @@ public:
     levelSets.push_back(passedlsDomain);
   }
 
+  void clearLevelSets() { levelSets.clear(); }
+
   /// Set the velocity field used for advection. This should be a concrete
   /// implementation of lsVelocityField
   void setVelocityField(SmartPointer<VelocityField<T>> passedVelocities) {
