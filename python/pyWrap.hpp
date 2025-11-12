@@ -174,6 +174,8 @@ template <int D> void bindApi(py::module &module) {
       // getters and setters
       .def("insertNextLevelSet", &Advect<T, D>::insertNextLevelSet,
            "Insert next level set to use for advection.")
+      .def("clearLevelSets", &Advect<T, D>::clearLevelSets,
+           "Clear all level sets used for advection.")
       .def("setVelocityField", &Advect<T, D>::setVelocityField,
            "Set the velocity to use for advection.")
       .def("setAdvectionTime", &Advect<T, D>::setAdvectionTime,
@@ -697,6 +699,10 @@ template <int D> void bindApi(py::module &module) {
       // methods
       .def("setLevelSet", &ToDiskMesh<T, D>::setLevelSet,
            "Set levelset to mesh.")
+      .def("clearLevelSets", &ToDiskMesh<T, D>::clearLevelSets,
+           "Clear all inserted level sets.")
+      .def("insertNextLevelSet", &ToDiskMesh<T, D>::insertNextLevelSet,
+           "Insert next level set to output in the disk mesh.")
       .def("setMesh", &ToDiskMesh<T, D>::setMesh, "Set the mesh to generate.")
       .def("setMaterialMap", &ToDiskMesh<T, D>::setMaterialMap,
            "Set the material map to use for the disk mesh.")
@@ -754,6 +760,8 @@ template <int D> void bindApi(py::module &module) {
       // methods
       .def("insertNextLevelSet", &ToMultiSurfaceMesh<T, D>::insertNextLevelSet,
            "Insert next level set to output in the mesh.")
+      .def("clearLevelSets", &ToMultiSurfaceMesh<T, D>::clearLevelSets,
+           "Clear all inserted level sets.")
       .def("setMesh", &ToMultiSurfaceMesh<T, D>::setMesh,
            "Set the mesh to generate.")
       .def("setMaterialMap", &ToMultiSurfaceMesh<T, D>::setMaterialMap,
@@ -776,6 +784,8 @@ template <int D> void bindApi(py::module &module) {
       // methods
       .def("insertNextLevelSet", &ToVoxelMesh<T, D>::insertNextLevelSet,
            "Insert next level set to output in the mesh.")
+      .def("clearLevelSets", &ToVoxelMesh<T, D>::clearLevelSets,
+           "Clear all inserted level sets.")
       .def("setMesh", &ToVoxelMesh<T, D>::setMesh, "Set the mesh to generate.")
       .def("apply", &ToVoxelMesh<T, D>::apply,
            "Convert the levelset to a surface mesh.");

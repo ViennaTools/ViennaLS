@@ -76,6 +76,8 @@ public:
     levelSets.push_back(passedLevelSet);
   }
 
+  void clearLevelSets() { levelSets.clear(); }
+
   void setMaterialMap(SmartPointer<MaterialMap> passedMaterialMap) {
     materialMap = passedMaterialMap;
   }

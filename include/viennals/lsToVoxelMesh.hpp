@@ -71,6 +71,8 @@ public:
     levelSets.push_back(passedLevelSet);
   }
 
+  void clearLevelSets() { levelSets.clear(); }
+
   void setMesh(SmartPointer<Mesh<T>> passedMesh) { mesh = passedMesh; }
 
   void setMaterialMap(SmartPointer<MaterialMap> passedMaterialMap) {

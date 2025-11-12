@@ -443,6 +443,8 @@ public:
     levelSets.push_back(levelSet);
   }
 
+  void clearLevelSets() { levelSets.clear(); }
+
   /// Set the name of the file to export. For volume meshes "_volume.vtu" will
   /// be appended, for hull meshes "_hull.vtp".
   void setFileName(std::string passedFileName) {
