@@ -168,6 +168,6 @@ def setDimension(d: int):
     """
 
 PROXY_DIM: int = 2
-__version__: str = "5.1.1"
-version: str = "5.1.1"
+__version__: str = "5.2.0"
+version: str = "5.2.0"
 _C = _core
