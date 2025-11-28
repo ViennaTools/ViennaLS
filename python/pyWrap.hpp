@@ -629,6 +629,9 @@ template <int D> void bindApi(py::module &module) {
       .def("setSaveComponentsId", &MarkVoidPoints<T, D>::setSaveComponentIds,
            "Save the connectivity information of all LS points in the "
            "pointData of the level set.")
+      .def("getNumberOfComponents",
+           &MarkVoidPoints<T, D>::getNumberOfComponents,
+           "Get the number of connected components found in the level set.")
       .def("apply", &MarkVoidPoints<T, D>::apply, "Mark void points.");
 
   // Prune

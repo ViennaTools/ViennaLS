@@ -157,7 +157,7 @@ We recommend using [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) to consum
 
 * Installation with CPM
   ```cmake
-  CPMAddPackage("gh:viennatools/viennals@5.1.1")
+  CPMAddPackage("gh:viennatools/viennals@5.2.1")
   ```
 
 * With a local installation

@@ -667,6 +667,11 @@ class MarkVoidPoints:
         Mark void points.
         """
 
+    def getNumberOfComponents(self) -> int:
+        """
+        Get the number of connected components found in the level set.
+        """
+
     def setDetectLargestSurface(self, arg0: bool) -> None:
         """
         Set that the top surface should be the one with the most connected LS points.
