@@ -32,6 +32,7 @@ template <class T, int D> class MarkVoidPoints {
   bool reverseVoidDetection = false;
   bool saveComponents = false;
   bool detectLargestSurface = false;
+  std::size_t numComponents = 0;
 
   // two points are connected if they have the same sign
   static bool areConnected(const T &value1, const T &value2) {
@@ -149,6 +150,8 @@ public:
   /// points should be saved. Ech point is assigned a component ID
   /// denoting which other points it is connected to.
   void setSaveComponentIds(bool scid) { saveComponents = scid; }
+
+  std::size_t getNumberOfComponents() const { return numComponents; }
 
   void apply() {
     lsInternal::Graph graph;
@@ -313,6 +316,11 @@ public:
     }
 
     if (saveComponents) {
+      auto maxComponent =
+          *std::max_element(componentMarkers.begin(), componentMarkers.end());
+      assert(maxComponent >= 0);
+      numComponents = maxComponent;
+
       auto componentMarkersPointer =
           pointData.getScalarData("ConnectedComponentId", true);
       // if vector data does not exist
