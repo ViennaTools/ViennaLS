@@ -190,6 +190,11 @@ template <int D> void bindApi(py::module &module) {
       .def("setIgnoreVoids", &Advect<T, D>::setIgnoreVoids,
            "Set whether voids in the geometry should be ignored during "
            "advection or not.")
+      .def(
+          "setSaveAdvectionVelocities",
+          &Advect<T, D>::setSaveAdvectionVelocities,
+          "Set whether the velocities applied to each point should be saved in "
+          "the level set for debug purposes.")
       .def("getAdvectedTime", &Advect<T, D>::getAdvectedTime,
            "Get the time passed during advection.")
       .def("getNumberOfTimeSteps", &Advect<T, D>::getNumberOfTimeSteps,

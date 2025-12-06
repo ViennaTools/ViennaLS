@@ -51,6 +51,15 @@ def setDimension(d: int):
     else:
         raise ValueError("Dimension must be 2 or 3.")
 
+def getDimension() -> int:
+    """Get the current dimension of the simulation.
+
+    Returns
+    -------
+    int
+        The currently set dimension (2 or 3).
+    """
+    return PROXY_DIM
 
 def __getattr__(name):
     # 1) common/top-level from _core

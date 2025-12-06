@@ -520,48 +520,79 @@ template <class T, int D> class Advect {
             }
           }
 
-          T valueBelow;
-          // get value of material below (before in levelSets list)
-          if (currentLevelSetId > 0) {
-            iterators[currentLevelSetId - 1].goToIndicesSequential(
-                it.getStartIndices());
-            valueBelow = iterators[currentLevelSetId - 1].getValue();
-          } else {
-            valueBelow = std::numeric_limits<T>::max();
-          }
-
-          // if velocity is positive, set maximum time step possible without
-          // violating the cfl condition
+          // Case 1: Growth / Deposition (Velocity > 0)
+          // Limit the time step based on the standard CFL condition.
           T velocity = gradNDissipation.first - gradNDissipation.second;
           if (velocity > 0.) {
             maxStepTime += cfl / velocity;
             tempRates.push_back(std::make_pair(gradNDissipation,
                                                -std::numeric_limits<T>::max()));
             break;
-            // if velocity is 0, maximum time step is infinite
+            // Case 2: Static (Velocity == 0)
+            // No time step limit imposed by this point.
           } else if (velocity == 0.) {
             maxStepTime = std::numeric_limits<T>::max();
             tempRates.push_back(std::make_pair(gradNDissipation,
                                                std::numeric_limits<T>::max()));
             break;
-            // if the velocity is negative apply the velocity for as long as
-            // possible without infringing on material below
+            // Case 3: Etching (Velocity < 0)
           } else {
+            // Retrieve the LS value of the material interface directly below
+            // the current one. This block is moved into this else since it is
+            // only required for etching.
+            T valueBelow;
+            if (currentLevelSetId > 0) {
+              iterators[currentLevelSetId - 1].goToIndicesSequential(
+                  it.getStartIndices());
+              valueBelow = iterators[currentLevelSetId - 1].getValue();
+            } else {
+              // If there is no material below, the limit is effectively
+              // infinite distance.
+              valueBelow = std::numeric_limits<T>::max();
+            }
             T difference = std::abs(valueBelow - value);
 
+            // Sub-case 3a: Micro-layer handling (Numerical Stability)
+            // If the layer is vanishingly thin (noise level), consume it
+            // immediately and continue to the next layer without limiting the
+            // global time step. This prevents the simulation from stalling due
+            // to near-zero time steps.
+            if (difference < 1e-4) {
+              maxStepTime -= difference / velocity;
+              tempRates.push_back(std::make_pair(gradNDissipation, valueBelow));
+              cfl -= difference;
+              value = valueBelow;
+              continue;
+            }
+
+            // Sub-case 3b: Thick Layer (Standard CFL)
+            // The material is thick enough to support a full CFL time step.
             if (difference >= cfl) {
               maxStepTime -= cfl / velocity;
               tempRates.push_back(std::make_pair(
                   gradNDissipation, std::numeric_limits<T>::max()));
               break;
+
+              // Sub-case 3c: Interface Hit (Thin Layer)
+              // The material is thinner than the CFL distance.
+              // We must STOP exactly at the interface.
             } else {
+              // Calculate the time required to reach the material boundary.
               maxStepTime -= difference / velocity;
-              // the second part of the pair indicates how far we can move
-              // in this time step until the end of the material is reached
               tempRates.push_back(std::make_pair(gradNDissipation, valueBelow));
-              cfl -= difference;
-              // use new LS value for next calculations
-              value = valueBelow;
+
+              tempRates.push_back(std::make_pair(
+                  gradNDissipation, std::numeric_limits<T>::max()));
+
+              Logger::getInstance()
+                  .addDebug("Global time step limited by layer thickness!"
+                            "\nInstead of " +
+                            std::to_string(-cfl / velocity) + " it is set to " +
+                            std::to_string(maxStepTime))
+                  .print();
+              // We stop processing layers below. By breaking here, we force the
+              // simulation to pause exactly when the top layer is consumed.
+              break;
             }
           }
         }
