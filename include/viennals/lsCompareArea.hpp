@@ -200,19 +200,17 @@ public:
     if (levelSetTarget->getLevelSetWidth() < minimumWidth) {
       workingTarget = SmartPointer<Domain<T, D>>::New(levelSetTarget);
       Expand<T, D>(workingTarget, minimumWidth).apply();
-      Logger::getInstance()
-          .addInfo("CompareArea: Expanded target level set to width " +
-                   std::to_string(minimumWidth) + " to avoid undefined values.")
-          .print();
+      VIENNACORE_LOG_INFO("CompareArea: Expanded target level set to width " +
+                          std::to_string(minimumWidth) +
+                          " to avoid undefined values.");
     }
 
     if (levelSetSample->getLevelSetWidth() < minimumWidth) {
       workingSample = SmartPointer<Domain<T, D>>::New(levelSetSample);
       Expand<T, D>(workingSample, minimumWidth).apply();
-      Logger::getInstance()
-          .addInfo("CompareArea: Expanded sample level set to width " +
-                   std::to_string(minimumWidth) + " to avoid undefined values.")
-          .print();
+      VIENNACORE_LOG_INFO("CompareArea: Expanded sample level set to width " +
+                          std::to_string(minimumWidth) +
+                          " to avoid undefined values.");
     }
 
     // Set up dense cell iterators for both level sets

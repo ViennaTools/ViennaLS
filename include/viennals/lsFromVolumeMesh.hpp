@@ -142,23 +142,19 @@ public:
             (it->first == currentSurfaceElement)) {
           if (Orientation(currentElementPoints)) {
             if (it->second.second != materialInts.back() + 1) {
-              Logger::getInstance()
-                  .addWarning(
-                      "Coinciding surface elements with same orientation in "
-                      "Element: " +
-                      std::to_string(i))
-                  .print();
+              VIENNACORE_LOG_WARNING(
+                  "Coinciding surface elements with same orientation in "
+                  "Element: " +
+                  std::to_string(i));
             }
             it->second.second =
                 (materialData == nullptr) ? 0 : (*materialData)[i];
           } else {
             if (it->second.first != materialInts.back() + 1) {
-              Logger::getInstance()
-                  .addWarning(
-                      "Coinciding surface elements with same orientation in "
-                      "Element: " +
-                      std::to_string(i))
-                  .print();
+              VIENNACORE_LOG_WARNING(
+                  "Coinciding surface elements with same orientation in "
+                  "Element: " +
+                  std::to_string(i));
             }
             it->second.first =
                 (materialData == nullptr) ? 0 : (*materialData)[i];

@@ -172,11 +172,10 @@ public:
 
     for (unsigned i = 0; i < D; ++i) {
       if (std::abs(posExtent[i]) < gridDelta) {
-        Logger::getInstance()
-            .addWarning("One half-axis of BoxDistribution is smaller than "
-                        "the grid Delta! This can lead to numerical errors "
-                        "breaking the distribution!")
-            .print();
+        VIENNACORE_LOG_WARNING(
+            "One half-axis of BoxDistribution is smaller than "
+            "the grid Delta! This can lead to numerical errors "
+            "breaking the distribution!");
       }
     }
   }

@@ -136,10 +136,8 @@ public:
       break;
 
     default:
-      Logger::getInstance()
-          .addWarning("MarkVoidPoints: Invalid VoidTopSurfaceEnum set. "
-                      "Using default values.")
-          .print();
+      VIENNACORE_LOG_WARNING("MarkVoidPoints: Invalid VoidTopSurfaceEnum set. "
+                             "Using default values.");
       reverseVoidDetection = false;
       detectLargestSurface = false;
       break;

@@ -37,10 +37,8 @@ private:
     if (index >= 0 && index < v.size())
       return &(v[index]);
     else
-      Logger::getInstance()
-          .addWarning("PointData: Tried to access out of bounds index! "
-                      "Returning nullptr instead.")
-          .print();
+      VIENNACORE_LOG_WARNING("PointData: Tried to access out of bounds index! "
+                             "Returning nullptr instead.");
     return nullptr;
   }
 
@@ -145,12 +143,11 @@ public:
     if (int i = getScalarDataIndex(searchLabel); i != -1) {
       return &(scalarData[i]);
     }
-    if (!noWarning)
-      Logger::getInstance()
-          .addWarning("PointData attempted to access scalar data labeled '" +
-                      searchLabel +
-                      "', which does not exist. Returning nullptr instead.")
-          .print();
+    if (!noWarning) {
+      VIENNACORE_LOG_WARNING(
+          "PointData attempted to access scalar data labeled '" + searchLabel +
+          "', which does not exist. Returning nullptr instead.");
+    }
     return nullptr;
   }
 
@@ -159,12 +156,11 @@ public:
     if (int i = getScalarDataIndex(searchLabel); i != -1) {
       return &(scalarData[i]);
     }
-    if (!noWarning)
-      Logger::getInstance()
-          .addWarning("PointData attempted to access scalar data labeled '" +
-                      searchLabel +
-                      "', which does not exist. Returning nullptr instead.")
-          .print();
+    if (!noWarning) {
+      VIENNACORE_LOG_WARNING(
+          "PointData attempted to access scalar data labeled '" + searchLabel +
+          "', which does not exist. Returning nullptr instead.");
+    }
     return nullptr;
   }
 
@@ -206,12 +202,11 @@ public:
     if (int i = getVectorDataIndex(searchLabel); i != -1) {
       return &(vectorData[i]);
     }
-    if (!noWarning)
-      Logger::getInstance()
-          .addWarning("PointData attempted to access vector data labeled '" +
-                      searchLabel +
-                      "', which does not exist. Returning nullptr instead.")
-          .print();
+    if (!noWarning) {
+      VIENNACORE_LOG_WARNING(
+          "PointData attempted to access vector data labeled '" + searchLabel +
+          "', which does not exist. Returning nullptr instead.");
+    }
     return nullptr;
   }
 
@@ -220,12 +215,11 @@ public:
     if (int i = getVectorDataIndex(searchLabel); i != -1) {
       return &(vectorData[i]);
     }
-    if (!noWarning)
-      Logger::getInstance()
-          .addWarning("PointData attempted to access vector data labeled '" +
-                      searchLabel +
-                      "', which does not exist. Returning nullptr instead.")
-          .print();
+    if (!noWarning) {
+      VIENNACORE_LOG_WARNING(
+          "PointData attempted to access vector data labeled '" + searchLabel +
+          "', which does not exist. Returning nullptr instead.");
+    }
     return nullptr;
   }
 

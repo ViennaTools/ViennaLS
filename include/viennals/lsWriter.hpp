@@ -42,16 +42,13 @@ public:
     }
     // check filename
     if (fileName.empty()) {
-      Logger::getInstance()
-          .addError("No file name specified for Writer.")
-          .print();
+      VIENNACORE_LOG_ERROR("No file name specified for Writer.");
       return;
     }
 
     if (fileName.find(".lvst") != fileName.length() - 5) {
-      Logger::getInstance()
-          .addWarning("File name does not end in '.lvst', appending it.")
-          .print();
+      VIENNACORE_LOG_WARNING(
+          "File name does not end in '.lvst', appending it.");
       fileName.append(".lvst");
     }
 

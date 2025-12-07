@@ -385,15 +385,12 @@ template <class T, int D> class Advect {
   double advect(double maxTimeStep) {
     // check whether a level set and velocities have been given
     if (levelSets.empty()) {
-      Logger::getInstance()
-          .addError("No level sets passed to Advect. Not advecting.")
-          .print();
+      VIENNACORE_LOG_ERROR("No level sets passed to Advect. Not advecting.");
       return std::numeric_limits<double>::max();
     }
     if (velocities == nullptr) {
-      Logger::getInstance()
-          .addError("No velocity field passed to Advect. Not advecting.")
-          .print();
+      VIENNACORE_LOG_ERROR(
+          "No velocity field passed to Advect. Not advecting.");
       return std::numeric_limits<double>::max();
     }
 
@@ -438,19 +435,15 @@ template <class T, int D> class Advect {
       voidMarkerPointer =
           pointData.getScalarData(MarkVoidPoints<T, D>::voidPointLabel, true);
       if (voidMarkerPointer == nullptr) {
-        Logger::getInstance()
-            .addWarning("Advect: Cannot find void point markers. Not "
-                        "ignoring void points.")
-            .print();
+        VIENNACORE_LOG_WARNING("Advect: Cannot find void point markers. Not "
+                               "ignoring void points.");
         ignoreVoids = false;
       }
     }
     const bool ignoreVoidPoints = ignoreVoids;
 
     if (!storedRates.empty()) {
-      Logger::getInstance()
-          .addWarning("Advect: Overwriting previously stored rates.")
-          .print();
+      VIENNACORE_LOG_WARNING("Advect: Overwriting previously stored rates.");
     }
 
     storedRates.resize(topDomain.getNumberOfSegments());
@@ -584,12 +577,11 @@ template <class T, int D> class Advect {
               tempRates.push_back(std::make_pair(
                   gradNDissipation, std::numeric_limits<T>::max()));
 
-              Logger::getInstance()
-                  .addDebug("Global time step limited by layer thickness!"
-                            "\nInstead of " +
-                            std::to_string(-cfl / velocity) + " it is set to " +
-                            std::to_string(maxStepTime))
-                  .print();
+              VIENNACORE_LOG_DEBUG(
+                  "Global time step limited by layer thickness!"
+                  "\nInstead of " +
+                  std::to_string(-cfl / velocity) + " it is set to " +
+                  std::to_string(maxStepTime));
               // We stop processing layers below. By breaking here, we force the
               // simulation to pause exactly when the top layer is consumed.
               break;
@@ -624,10 +616,9 @@ template <class T, int D> class Advect {
   // depth accordingly if there would be a material change.
   void moveSurface() {
     if (timeStepRatio >= 0.5) {
-      Logger::getInstance()
-          .addWarning("Integration time step ratio should be smaller than 0.5. "
-                      "Advection might fail!")
-          .print();
+      VIENNACORE_LOG_WARNING(
+          "Integration time step ratio should be smaller than 0.5. "
+          "Advection might fail!");
     }
 
     auto &topDomain = levelSets.back()->getDomain();
@@ -847,7 +838,7 @@ public:
   void prepareLS() {
     // check whether a level set and velocities have been given
     if (levelSets.empty()) {
-      Logger::getInstance().addError("No level sets passed to Advect.").print();
+      VIENNACORE_LOG_ERROR("No level sets passed to Advect.");
       return;
     }
 
@@ -884,9 +875,7 @@ public:
       lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>::prepareLS(
           levelSets.back());
     } else {
-      Logger::getInstance()
-          .addError("Advect: Integration scheme not found.")
-          .print();
+      VIENNACORE_LOG_ERROR("Advect: Integration scheme not found.");
     }
   }
 
@@ -968,9 +957,7 @@ public:
           levelSets.back(), velocities, dissipationAlpha);
       currentTimeStep = integrateTime(is, maxTimeStep);
     } else {
-      Logger::getInstance()
-          .addError("Advect: Integration scheme not found.")
-          .print();
+      VIENNACORE_LOG_ERROR("Advect: Integration scheme not found.");
       currentTimeStep = -1.;
     }
   }

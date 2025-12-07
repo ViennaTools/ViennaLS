@@ -116,9 +116,7 @@ public:
   /// a geometry from its convex hull.
   void setGeometry(SmartPointer<PointCloud<T, D>> passedPointCloud) {
     if (passedPointCloud && passedPointCloud->empty()) {
-      Logger::getInstance()
-          .addWarning("Passing an empty point cloud to MakeGeometry. ")
-          .print();
+      VIENNACORE_LOG_WARNING("Passing an empty point cloud to MakeGeometry. ");
     }
     pointCloud = passedPointCloud;
     geometry = GeometryEnum::CUSTOM;

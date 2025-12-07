@@ -54,7 +54,7 @@ public:
       return;
     }
     if (mesh == nullptr) {
-      Logger::getInstance().addError("No mesh was passed to ToMesh.").print();
+      VIENNACORE_LOG_ERROR("No mesh was passed to ToMesh.");
       return;
     }
 
@@ -62,9 +62,8 @@ public:
 
     // check if level set is empty
     if (levelSet->getNumberOfPoints() == 0) {
-      Logger::getInstance()
-          .addWarning("ToMesh: Level set is empty. No mesh will be created.")
-          .print();
+      VIENNACORE_LOG_WARNING(
+          "ToMesh: Level set is empty. No mesh will be created.");
       return;
     }
 
@@ -133,10 +132,8 @@ public:
           const auto &currentData = *dataPointer;
           scalarData[i].push_back(currentData[it.getPointId()]);
         } else {
-          Logger::getInstance()
-              .addWarning("ToMesh: Tried to access out of bounds scalarData! "
-                          "Ignoring.")
-              .print();
+          VIENNACORE_LOG_WARNING(
+              "ToMesh: Tried to access out of bounds scalarData! Ignoring.");
           break;
         }
       }
@@ -147,10 +144,8 @@ public:
           const auto &currentData = *dataPointer;
           vectorData[i].push_back(currentData[it.getPointId()]);
         } else {
-          Logger::getInstance()
-              .addWarning("ToMesh: Tried to access out of bounds vectorData! "
-                          "Ignoring.")
-              .print();
+          VIENNACORE_LOG_WARNING(
+              "ToMesh: Tried to access out of bounds vectorData! Ignoring.");
           break;
         }
       }

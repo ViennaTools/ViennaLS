@@ -96,9 +96,7 @@ public:
       return;
     }
     if (buildTranslator && translator == nullptr) {
-      Logger::getInstance()
-          .addWarning("No translator was passed to ToDiskMesh.")
-          .print();
+      VIENNACORE_LOG_WARNING("No translator was passed to ToDiskMesh.");
     }
 
     mesh->clear();
@@ -229,9 +227,8 @@ public:
       auto index = pointData.getVectorDataIndex(
           CalculateNormalVectors<T, D>::normalVectorsLabel);
       if (index < 0) {
-        Logger::getInstance()
-            .addWarning("ToDiskMesh: Could not find normal vector data.")
-            .print();
+        VIENNACORE_LOG_WARNING(
+            "ToDiskMesh: Could not find normal vector data.");
       } else {
         pointData.eraseVectorData(index);
       }
