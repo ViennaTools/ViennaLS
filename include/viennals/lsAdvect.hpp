@@ -513,9 +513,9 @@ template <class T, int D> class Advect {
             }
           }
 
+          T velocity = gradNDissipation.first - gradNDissipation.second;
           // Case 1: Growth / Deposition (Velocity > 0)
           // Limit the time step based on the standard CFL condition.
-          T velocity = gradNDissipation.first - gradNDissipation.second;
           if (velocity > 0.) {
             maxStepTime += cfl / velocity;
             tempRates.push_back(std::make_pair(gradNDissipation,
@@ -545,20 +545,7 @@ template <class T, int D> class Advect {
             }
             T difference = std::abs(valueBelow - value);
 
-            // Sub-case 3a: Micro-layer handling (Numerical Stability)
-            // If the layer is vanishingly thin (noise level), consume it
-            // immediately and continue to the next layer without limiting the
-            // global time step. This prevents the simulation from stalling due
-            // to near-zero time steps.
-            if (difference < 1e-4) {
-              maxStepTime -= difference / velocity;
-              tempRates.push_back(std::make_pair(gradNDissipation, valueBelow));
-              cfl -= difference;
-              value = valueBelow;
-              continue;
-            }
-
-            // Sub-case 3b: Thick Layer (Standard CFL)
+            // Sub-case 3a: Thick Layer (Standard CFL)
             // The material is thick enough to support a full CFL time step.
             if (difference >= cfl) {
               maxStepTime -= cfl / velocity;
@@ -566,25 +553,16 @@ template <class T, int D> class Advect {
                   gradNDissipation, std::numeric_limits<T>::max()));
               break;
 
-              // Sub-case 3c: Interface Hit (Thin Layer)
-              // The material is thinner than the CFL distance.
-              // We must STOP exactly at the interface.
+            // Sub-case 3b: Interface Hit (Thin Layer)
+            // The material is thinner than the CFL distance.
+            // We will need two velocities for the two materials.
             } else {
               // Calculate the time required to reach the material boundary.
               maxStepTime -= difference / velocity;
               tempRates.push_back(std::make_pair(gradNDissipation, valueBelow));
 
-              tempRates.push_back(std::make_pair(
-                  gradNDissipation, std::numeric_limits<T>::max()));
-
-              VIENNACORE_LOG_DEBUG(
-                  "Global time step limited by layer thickness!"
-                  "\nInstead of " +
-                  std::to_string(-cfl / velocity) + " it is set to " +
-                  std::to_string(maxStepTime));
-              // We stop processing layers below. By breaking here, we force the
-              // simulation to pause exactly when the top layer is consumed.
-              break;
+              cfl -= difference;
+              value = valueBelow;
             }
           }
         }
