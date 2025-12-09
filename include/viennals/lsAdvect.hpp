@@ -553,9 +553,9 @@ template <class T, int D> class Advect {
                   gradNDissipation, std::numeric_limits<T>::max()));
               break;
 
-            // Sub-case 3b: Interface Hit (Thin Layer)
-            // The material is thinner than the CFL distance.
-            // We will need two velocities for the two materials.
+              // Sub-case 3b: Interface Hit (Thin Layer)
+              // The material is thinner than the CFL distance.
+              // We will need two velocities for the two materials.
             } else {
               // Calculate the time required to reach the material boundary.
               maxStepTime -= difference / velocity;

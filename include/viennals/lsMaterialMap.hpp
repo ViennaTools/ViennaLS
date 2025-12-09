@@ -1,8 +1,8 @@
 #pragma once
 
+#include <algorithm>
 #include <set>
 #include <vector>
-#include <algorithm>
 
 namespace viennals {
 
@@ -34,8 +34,7 @@ public:
     int idToRemove = materialMap.back();
     materialMap.pop_back();
 
-    bool isUnique = std::find(materialMap.begin(), 
-                              materialMap.end(), 
+    bool isUnique = std::find(materialMap.begin(), materialMap.end(),
                               idToRemove) == materialMap.end();
 
     if (isUnique) {
