@@ -514,55 +514,62 @@ template <class T, int D> class Advect {
           }
 
           T velocity = gradNDissipation.first - gradNDissipation.second;
-          // Case 1: Growth / Deposition (Velocity > 0)
-          // Limit the time step based on the standard CFL condition.
           if (velocity > 0.) {
+            // Case 1: Growth / Deposition (Velocity > 0)
+            // Limit the time step based on the standard CFL condition.
             maxStepTime += cfl / velocity;
             tempRates.push_back(std::make_pair(gradNDissipation,
                                                -std::numeric_limits<T>::max()));
             break;
+          } else if (velocity == 0.) {
             // Case 2: Static (Velocity == 0)
             // No time step limit imposed by this point.
-          } else if (velocity == 0.) {
             maxStepTime = std::numeric_limits<T>::max();
             tempRates.push_back(std::make_pair(gradNDissipation,
                                                std::numeric_limits<T>::max()));
             break;
-            // Case 3: Etching (Velocity < 0)
           } else {
-            // Retrieve the LS value of the material interface directly below
-            // the current one. This block is moved into this else since it is
-            // only required for etching.
+            // Case 3: Etching (Velocity < 0)
+            // Retrieve the interface location of the underlying material.
             T valueBelow;
             if (currentLevelSetId > 0) {
               iterators[currentLevelSetId - 1].goToIndicesSequential(
                   it.getStartIndices());
               valueBelow = iterators[currentLevelSetId - 1].getValue();
             } else {
-              // If there is no material below, the limit is effectively
-              // infinite distance.
               valueBelow = std::numeric_limits<T>::max();
             }
+            // Calculate the top material thickness
             T difference = std::abs(valueBelow - value);
 
-            // Sub-case 3a: Thick Layer (Standard CFL)
-            // The material is thick enough to support a full CFL time step.
             if (difference >= cfl) {
+              // Sub-case 3a: Standard Advection
+              // Far from interface: Use full CFL time step.
               maxStepTime -= cfl / velocity;
               tempRates.push_back(std::make_pair(
                   gradNDissipation, std::numeric_limits<T>::max()));
               break;
 
-              // Sub-case 3b: Interface Hit (Thin Layer)
-              // The material is thinner than the CFL distance.
-              // We will need two velocities for the two materials.
             } else {
-              // Calculate the time required to reach the material boundary.
-              maxStepTime -= difference / velocity;
-              tempRates.push_back(std::make_pair(gradNDissipation, valueBelow));
-
-              cfl -= difference;
-              value = valueBelow;
+              // Sub-case 3b: Interface Interaction
+              if (difference > 0.05 * cfl) {
+                // Adaptive Sub-stepping:
+                // Approaching boundary: Force small steps (5% CFL) to gather
+                // flux statistics and prevent numerical overshoot ("Soft
+                // Landing").
+                maxStepTime -= 0.05 * cfl / velocity;
+                tempRates.push_back(std::make_pair(
+                    gradNDissipation, std::numeric_limits<T>::min()));
+              } else {
+                // Terminal Step:
+                // Within tolerance: Snap to boundary, consume budget, and
+                // switch material.
+                tempRates.push_back(
+                    std::make_pair(gradNDissipation, valueBelow));
+                cfl -= difference;
+                value = valueBelow;
+                maxStepTime -= difference / velocity;
+              }
             }
           }
         }
