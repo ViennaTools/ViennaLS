@@ -83,6 +83,7 @@ template <class T, int D> class Advect {
   bool saveAdvectionVelocities = false;
   bool updatePointData = true;
   bool checkDissipation = true;
+  bool adaptiveTimeStepping = false;
   static constexpr double wrappingLayerEpsilon = 1e-4;
 
   // this vector will hold the maximum time step for each point and the
@@ -443,6 +444,7 @@ template <class T, int D> class Advect {
       }
     }
     const bool ignoreVoidPoints = ignoreVoids;
+    const bool useAdaptiveTimeStepping = adaptiveTimeStepping;
 
     if (!storedRates.empty()) {
       VIENNACORE_LOG_WARNING("Advect: Overwriting previously stored rates.");
@@ -554,7 +556,7 @@ template <class T, int D> class Advect {
 
             } else {
               // Sub-case 3b: Interface Interaction
-              if (difference > 0.05 * cfl) {
+              if (useAdaptiveTimeStepping && difference > 0.05 * cfl) {
                 // Adaptive Sub-stepping:
                 // Approaching boundary: Force small steps (5% CFL) to gather
                 // flux statistics and prevent numerical overshoot ("Soft
@@ -780,6 +782,11 @@ public:
   /// Defaults to false. If set to true, only the "top" values will
   /// be advected. All others values are not changed.
   void setIgnoreVoids(bool iV) { ignoreVoids = iV; }
+
+  /// Set whether adaptive time stepping should be used
+  /// when approaching material boundaries during etching.
+  /// Defaults to false.
+  void setAdaptiveTimeStepping(bool aTS) { adaptiveTimeStepping = aTS; }
 
   /// Set whether the velocities applied to each point should be saved in
   /// the level set for debug purposes.
