@@ -218,6 +218,9 @@ class IntegrationSchemeEnum(enum.IntEnum):
     STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER: typing.ClassVar[
         IntegrationSchemeEnum
     ]  # value = <IntegrationSchemeEnum.STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER: 9>
+    WENO_5TH_ORDER: typing.ClassVar[
+        IntegrationSchemeEnum
+    ]  # value = <IntegrationSchemeEnum.WENO_5TH_ORDER: 10>
     @classmethod
     def __new__(cls, value): ...
     def __format__(self, format_spec):

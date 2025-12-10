@@ -23,6 +23,7 @@
 #include <lsLocalLaxFriedrichsAnalytical.hpp>
 #include <lsLocalLocalLaxFriedrichs.hpp>
 #include <lsStencilLocalLaxFriedrichsScalar.hpp>
+#include <lsWENO5.hpp>
 
 // Velocity accessor
 #include <lsVelocityField.hpp>
@@ -49,7 +50,8 @@ enum struct IntegrationSchemeEnum : unsigned {
   LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER = 6,
   LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 7,
   LOCAL_LAX_FRIEDRICHS_2ND_ORDER = 8,
-  STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 9
+  STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 9,
+  WENO_5TH_ORDER = 10
 };
 
 /// This class is used to advance level sets over time.
@@ -859,6 +861,9 @@ public:
                IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>::prepareLS(
           levelSets.back());
+    } else if (integrationScheme == IntegrationSchemeEnum::WENO_5TH_ORDER) {
+      // WENO5 requires a stencil radius of 3 (template parameter 3)
+      lsInternal::WENO5<T, D, 3>::prepareLS(levelSets.back());
     } else {
       VIENNACORE_LOG_ERROR("Advect: Integration scheme not found.");
     }
@@ -940,6 +945,11 @@ public:
                IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       auto is = lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>(
           levelSets.back(), velocities, dissipationAlpha);
+      currentTimeStep = integrateTime(is, maxTimeStep);
+    } else if (integrationScheme == IntegrationSchemeEnum::WENO_5TH_ORDER) {
+      // Instantiate WENO5 with order 3 (neighbors +/- 3)
+      auto is = lsInternal::WENO5<T, D, 3>(levelSets.back(), velocities,
+                                           calculateNormalVectors);
       currentTimeStep = integrateTime(is, maxTimeStep);
     } else {
       VIENNACORE_LOG_ERROR("Advect: Integration scheme not found.");

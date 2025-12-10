@@ -50,14 +50,15 @@ int main() {
   double gridDelta = 0.6999999;
 
   std::vector<ls::IntegrationSchemeEnum> integrationSchemes = {
-      // ls::IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER,
-      // ls::IntegrationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER,
-      ls::IntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER};
-  // ls::IntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER,
-  // ls::IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
-  // ls::IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER,
-  // ls::IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
-  // ls::IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER};
+      ls::IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER,
+      ls::IntegrationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER,
+      ls::IntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER,
+      ls::IntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER,
+      ls::IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
+      ls::IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER,
+      ls::IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
+      ls::IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER,
+      ls::IntegrationSchemeEnum::WENO_5TH_ORDER};
 
   for (auto integrationScheme : integrationSchemes) {
     auto sphere1 = ls::Domain<double, D>::New(gridDelta);

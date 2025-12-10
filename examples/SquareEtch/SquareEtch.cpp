@@ -80,7 +80,7 @@ public:
 int main() {
 
   constexpr int D = 2;
-  omp_set_num_threads(1);
+  omp_set_num_threads(8);
 
   // Change this to use the analytical velocity field
   const bool useAnalyticalVelocity = false;
@@ -173,7 +173,8 @@ int main() {
     // Analytical velocity fields and dissipation coefficients
     // can only be used with this integration scheme
     advectionKernel.setIntegrationScheme(
-        ls::IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER);
+        // ls::IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER);
+        ls::IntegrationSchemeEnum::WENO_5TH_ORDER);
   } else {
     // for numerical velocities, just use the default
     // integration scheme, which is not accurate for certain
