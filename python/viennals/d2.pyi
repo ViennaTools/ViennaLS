@@ -112,6 +112,11 @@ class Advect:
         Prepare the level-set.
         """
 
+    def setAdaptiveTimeStepping(self, arg0: bool) -> None:
+        """
+        Set whether adaptive time stepping should be used when approaching material boundaries during etching.
+        """
+
     def setAdvectionTime(self, arg0: typing.SupportsFloat) -> None:
         """
         Set the time until when the level set should be advected.
@@ -135,6 +140,16 @@ class Advect:
     def setIntegrationScheme(self, arg0: viennals._core.IntegrationSchemeEnum) -> None:
         """
         Set the integration scheme to use during advection.
+        """
+
+    def setSaveAdvectionVelocities(self, arg0: bool) -> None:
+        """
+        Set whether the velocities applied to each point should be saved in the level set for debug purposes.
+        """
+
+    def setSingleStep(self, arg0: bool) -> None:
+        """
+        Set whether only a single advection step should be performed.
         """
 
     def setTimeStepRatio(self, arg0: typing.SupportsFloat) -> None:

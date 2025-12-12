@@ -190,6 +190,11 @@ template <int D> void bindApi(py::module &module) {
       .def("setIgnoreVoids", &Advect<T, D>::setIgnoreVoids,
            "Set whether voids in the geometry should be ignored during "
            "advection or not.")
+      .def("setAdaptiveTimeStepping", &Advect<T, D>::setAdaptiveTimeStepping,
+           "Set whether adaptive time stepping should be used when approaching "
+           "material boundaries during etching.")
+      .def("setSingleStep", &Advect<T, D>::setSingleStep,
+           "Set whether only a single advection step should be performed.")
       .def(
           "setSaveAdvectionVelocities",
           &Advect<T, D>::setSaveAdvectionVelocities,
