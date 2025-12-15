@@ -4,6 +4,8 @@
 
 // all header files which define API functions
 #include <lsAdvect.hpp>
+#include <lsAdvectForwardEuler.hpp>
+#include <lsAdvectRungeKutta3.hpp>
 #include <lsBooleanOperation.hpp>
 #include <lsCalculateCurvatures.hpp>
 #include <lsCalculateNormalVectors.hpp>
@@ -180,6 +182,8 @@ template <int D> void bindApi(py::module &module) {
            "Set the velocity to use for advection.")
       .def("setAdvectionTime", &Advect<T, D>::setAdvectionTime,
            "Set the time until when the level set should be advected.")
+      .def("setSingleStep", &Advect<T, D>::setSingleStep, py::arg("singleStep"),
+           "Set whether only a single advection step should be performed.")
       .def("setTimeStepRatio", &Advect<T, D>::setTimeStepRatio,
            "Set the maximum time step size relative to grid size. Advection is "
            "only stable for <0.5.")
@@ -190,11 +194,21 @@ template <int D> void bindApi(py::module &module) {
       .def("setIgnoreVoids", &Advect<T, D>::setIgnoreVoids,
            "Set whether voids in the geometry should be ignored during "
            "advection or not.")
+      .def("setAdaptiveTimeStepping", &Advect<T, D>::setAdaptiveTimeStepping,
+           py::arg("enabled") = true, py::arg("subdivisions") = 20,
+           "Enable/disable adaptive time stepping and set the number of "
+           "subdivisions.")
       .def(
           "setSaveAdvectionVelocities",
           &Advect<T, D>::setSaveAdvectionVelocities,
           "Set whether the velocities applied to each point should be saved in "
           "the level set for debug purposes.")
+      .def("setCheckDissipation", &Advect<T, D>::setCheckDissipation,
+           py::arg("check"),
+           "Enable/disable dissipation checking.")
+      .def("setUpdatePointData", &Advect<T, D>::setUpdatePointData,
+           py::arg("update"),
+           "Enable/disable updating point data after advection.")
       .def("getAdvectedTime", &Advect<T, D>::getAdvectedTime,
            "Get the time passed during advection.")
       .def("getNumberOfTimeSteps", &Advect<T, D>::getNumberOfTimeSteps,
@@ -215,11 +229,28 @@ template <int D> void bindApi(py::module &module) {
       // need scoped release since we are calling a python method from
       // parallelised C++ code here
       .def("apply", &Advect<T, D>::apply,
-           py::call_guard<py::gil_scoped_release>(), "Perform advection.")
-      .def("applyIntegration", &Advect<T, D>::applyIntegration,
-           py::call_guard<py::gil_scoped_release>(),
-           "Apply the integration scheme and calculate rates and maximum time "
-           "step, but it do **not** move the surface.");
+           py::call_guard<py::gil_scoped_release>(), "Perform advection.");
+
+  // AdvectForwardEuler
+  py::class_<AdvectForwardEuler<T, D>, Advect<T, D>,
+             SmartPointer<AdvectForwardEuler<T, D>>>(module,
+                                                     "AdvectForwardEuler")
+      .def(py::init(&SmartPointer<AdvectForwardEuler<T, D>>::template New<>))
+      .def(py::init(&SmartPointer<AdvectForwardEuler<T, D>>::template New<
+                    SmartPointer<Domain<T, D>> &>))
+      .def(py::init(&SmartPointer<AdvectForwardEuler<T, D>>::template New<
+                    SmartPointer<Domain<T, D>> &,
+                    SmartPointer<VelocityField<T>> &>));
+
+  // AdvectRungeKutta3
+  py::class_<AdvectRungeKutta3<T, D>, Advect<T, D>,
+             SmartPointer<AdvectRungeKutta3<T, D>>>(module, "AdvectRungeKutta3")
+      .def(py::init(&SmartPointer<AdvectRungeKutta3<T, D>>::template New<>))
+      .def(py::init(&SmartPointer<AdvectRungeKutta3<T, D>>::template New<
+                    SmartPointer<Domain<T, D>> &>))
+      .def(py::init(&SmartPointer<AdvectRungeKutta3<T, D>>::template New<
+                    SmartPointer<Domain<T, D>> &,
+                    SmartPointer<VelocityField<T>> &>));
 
   py::class_<lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>>(
       module, "StencilLocalLaxFriedrichsScalar")

@@ -1,7 +1,7 @@
 #include <iostream>
 #include <numeric>
 
-#include <lsAdvect.hpp>
+#include <lsAdvectForwardEuler.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
@@ -90,7 +90,7 @@ int main() {
       sphere1->getPointData().insertNextScalarData(pointIDs, "originalIDs");
     }
 
-    ls::Advect<double, D> advectionKernel;
+    ls::AdvectForwardEuler<double, D> advectionKernel;
     advectionKernel.insertNextLevelSet(sphere1);
     advectionKernel.setVelocityField(velocities);
     advectionKernel.setIntegrationScheme(integrationScheme);
