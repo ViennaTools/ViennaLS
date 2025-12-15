@@ -2,10 +2,15 @@
 
 #ifdef VIENNALS_VTK_RENDERING
 
+#include <lsMaterialMap.hpp>
+#include <lsMesh.hpp>
+
 #include <vtkActor.h>
 #include <vtkAutoInit.h>
 #include <vtkCamera.h>
 #include <vtkCellArray.h>
+#include <vtkInteractorStyleImage.h>
+#include <vtkLookupTable.h>
 #include <vtkPoints.h>
 #include <vtkPolyData.h>
 #include <vtkPolyDataMapper.h>
@@ -19,20 +24,26 @@ VTK_MODULE_INIT(vtkInteractionStyle);
 VTK_MODULE_INIT(vtkRenderingFreeType);
 VTK_MODULE_INIT(vtkRenderingUI);
 
+class ImagePanInteractorStyle : public vtkInteractorStyleImage {
+public:
+  static ImagePanInteractorStyle *New();
+  vtkTypeMacro(ImagePanInteractorStyle, vtkInteractorStyleImage);
+
+  void OnLeftButtonDown() override { this->StartPan(); }
+
+  void OnLeftButtonUp() override { this->EndPan(); }
+};
+
+vtkStandardNewMacro(ImagePanInteractorStyle);
+
 namespace viennals {
 
 template <typename T> class VTKRenderWindow {
 public:
-  VTKRenderWindow() {
-    renderer = vtkSmartPointer<vtkRenderer>::New();
-    renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
-    renderWindow->SetSize(800, 600);
-    renderWindow->SetWindowName("ViennaLS Render Window");
-    renderWindow->SetPosition(100, 100);
-    renderWindow->AddRenderer(renderer);
-    renderer->SetBackground(0.1, 0.2, 0.3); // Gray background
-    interactor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
-    interactor->SetRenderWindow(renderWindow);
+  VTKRenderWindow() { initialize(); }
+  VTKRenderWindow(SmartPointer<Mesh<T>> passedMesh) {
+    initialize();
+    setMesh(passedMesh);
   }
 
   ~VTKRenderWindow() {
@@ -46,7 +57,22 @@ public:
 
   void setMesh(SmartPointer<Mesh<T>> passedMesh) {
     mesh = passedMesh;
+    auto matIds = mesh->getCellData().getScalarData("MaterialIds", false);
+    if (matIds) {
+      materialIds = *matIds;
+    }
     updatePolyData();
+  }
+
+  void setMaterialIds(const std::vector<T> &ids) { materialIds = ids; }
+
+  auto setBackgroundColor(const std::array<double, 3> &color) {
+    backgroundColor = color;
+    if (renderer) {
+      renderer->SetBackground(backgroundColor.data());
+    }
+
+    return *this;
   }
 
   void render() {
@@ -54,9 +80,6 @@ public:
       std::cout << "No mesh set for rendering." << std::endl;
       return;
     }
-    std::cout << "Rendering mesh with " << mesh->getNodes().size() << " nodes, "
-              << mesh->lines.size() << " lines, " << mesh->triangles.size()
-              << " triangles." << std::endl;
     renderWindow->Render();
     interactor->Initialize();
     interactor->Start();
@@ -65,13 +88,27 @@ public:
   vtkSmartPointer<vtkRenderWindow> getRenderWindow() { return renderWindow; }
 
 private:
-  SmartPointer<Mesh<T>> mesh = nullptr;
-  vtkSmartPointer<vtkRenderer> renderer;
-  vtkSmartPointer<vtkRenderWindow> renderWindow;
-  vtkSmartPointer<vtkRenderWindowInteractor> interactor;
-  vtkSmartPointer<vtkPolyData> polyData;
-  vtkSmartPointer<vtkPolyDataMapper> mapper;
-  vtkSmartPointer<vtkActor> actor;
+  void enable2DMode() {
+    assert(renderer && "Renderer not initialized");
+    vtkCamera *cam = renderer->GetActiveCamera();
+    cam->ParallelProjectionOn();
+
+    auto style = vtkSmartPointer<ImagePanInteractorStyle>::New();
+    interactor->SetInteractorStyle(style);
+  }
+
+  void initialize() {
+    renderer = vtkSmartPointer<vtkRenderer>::New();
+    renderer->SetBackground(backgroundColor.data());
+
+    renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
+    renderWindow->SetWindowName("ViennaLS Render Window");
+    renderWindow->AddRenderer(renderer);
+    renderWindow->SetSize(windowSize.data());
+
+    interactor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
+    interactor->SetRenderWindow(renderWindow);
+  }
 
   void updatePolyData() {
     if (mesh == nullptr) {
@@ -95,9 +132,6 @@ private:
     // Debug: print bounds
     double bounds[6];
     polyData->GetBounds(bounds);
-    std::cout << "PolyData bounds: " << bounds[0] << " " << bounds[1] << " "
-              << bounds[2] << " " << bounds[3] << " " << bounds[4] << " "
-              << bounds[5] << std::endl;
 
     // Vertices
     if (!mesh->vertices.empty()) {
@@ -112,8 +146,6 @@ private:
 
     // Lines
     if (!mesh->lines.empty()) {
-      std::cout << "Adding " << mesh->lines.size() << " lines to VTK polydata."
-                << std::endl;
       vtkSmartPointer<vtkCellArray> lines =
           vtkSmartPointer<vtkCellArray>::New();
       for (const auto &line : mesh->lines) {
@@ -122,12 +154,12 @@ private:
         lines->InsertCellPoint(line[1]);
       }
       polyData->SetLines(lines);
+
+      enable2DMode();
     }
 
     // Triangles
     if (!mesh->triangles.empty()) {
-      std::cout << "Adding " << mesh->triangles.size()
-                << " triangles to VTK polydata." << std::endl;
       vtkSmartPointer<vtkCellArray> polys =
           vtkSmartPointer<vtkCellArray>::New();
       for (const auto &triangle : mesh->triangles) {
@@ -139,20 +171,69 @@ private:
       polyData->SetPolys(polys);
     }
 
-    std::cout << "Number of cells in polyData: " << polyData->GetNumberOfCells()
-              << std::endl;
+    // Material IDs as cell data
+    bool useMaterialIds =
+        !materialIds.empty() &&
+        (materialIds.size() == mesh->lines.size() + mesh->triangles.size());
+    int minId = std::numeric_limits<int>::max();
+    int maxId = std::numeric_limits<int>::min();
+    if (useMaterialIds) {
+      vtkSmartPointer<vtkIntArray> matIdArray =
+          vtkSmartPointer<vtkIntArray>::New();
+      matIdArray->SetName("MaterialIds");
+      for (const auto &id : materialIds) {
+        int mId = static_cast<int>(id);
+        matIdArray->InsertNextValue(mId);
+        minId = std::min(minId, mId);
+        maxId = std::max(maxId, mId);
+      }
+      polyData->GetCellData()->AddArray(matIdArray);
+      polyData->GetCellData()->SetActiveScalars("MaterialIds");
+      VIENNACORE_LOG_DEBUG("Added MaterialIds array to cell data.");
+    }
 
     mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
     mapper->SetInputData(polyData);
 
+    if (useMaterialIds) {
+      mapper->SetScalarModeToUseCellData();
+      mapper->ScalarVisibilityOn();
+      mapper->SelectColorArray("MaterialIds");
+
+      vtkSmartPointer<vtkLookupTable> lut =
+          vtkSmartPointer<vtkLookupTable>::New();
+
+      lut->SetNumberOfTableValues(256);
+      lut->SetHueRange(0.667, 0.0); // blue → red
+      lut->SetSaturationRange(1.0, 1.0);
+      lut->SetValueRange(1.0, 1.0);
+      lut->Build();
+
+      mapper->SetLookupTable(lut);
+      mapper->SetScalarRange(minId, maxId);
+    }
+
     actor = vtkSmartPointer<vtkActor>::New();
     actor->SetMapper(mapper);
-    actor->GetProperty()->SetColor(1.0, 0.0, 0.0); // Red color
-    actor->GetProperty()->SetLineWidth(3.0);       // Thicker lines
+    actor->GetProperty()->SetLineWidth(3.0); // Thicker lines
 
     renderer->AddActor(actor);
     renderer->ResetCamera();
   }
+
+private:
+  SmartPointer<Mesh<T>> mesh = nullptr;
+  std::vector<T> materialIds;
+
+  vtkSmartPointer<vtkRenderer> renderer;
+  vtkSmartPointer<vtkRenderWindow> renderWindow;
+  vtkSmartPointer<vtkRenderWindowInteractor> interactor;
+  vtkSmartPointer<vtkPolyData> polyData;
+  vtkSmartPointer<vtkPolyDataMapper> mapper;
+  vtkSmartPointer<vtkActor> actor;
+
+  std::array<double, 3> backgroundColor = {84.0 / 255, 89.0 / 255, 109.0 / 255};
+  std::array<int, 2> windowSize = {800, 600};
 };
 
 } // namespace viennals
