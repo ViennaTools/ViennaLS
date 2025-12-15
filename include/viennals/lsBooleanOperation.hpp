@@ -315,18 +315,15 @@ public:
   /// Perform operation.
   void apply() {
     if (levelSetA == nullptr) {
-      Logger::getInstance()
-          .addError("No level set was passed to BooleanOperation.")
-          .print();
+      VIENNACORE_LOG_ERROR("No level set was passed to BooleanOperation.");
       return;
     }
 
     if (static_cast<unsigned>(operation) < 3) {
       if (levelSetB == nullptr) {
-        Logger::getInstance()
-            .addError("Only one level set was passed to BooleanOperation, "
-                      "although two were required.")
-            .print();
+        VIENNACORE_LOG_ERROR(
+            "Only one level set was passed to BooleanOperation, "
+            "although two were required.");
         return;
       }
     }
@@ -346,9 +343,8 @@ public:
       break;
     case BooleanOperationEnum::CUSTOM:
       if (operationComp == nullptr) {
-        Logger::getInstance()
-            .addError("No comparator supplied to custom BooleanOperation.")
-            .print();
+        VIENNACORE_LOG_ERROR(
+            "No comparator supplied to custom BooleanOperation.");
         return;
       }
       booleanOpInternal(operationComp);

@@ -67,9 +67,7 @@ template <class T, int D = 2> class CompareCriticalDimensions {
 
   bool checkInputs() {
     if (levelSetTarget == nullptr || levelSetSample == nullptr) {
-      Logger::getInstance()
-          .addWarning("Missing level set in SampleCriticalDimensions.")
-          .print();
+      VIENNACORE_LOG_WARNING("Missing level set in CompareCriticalDimensions.");
       return false;
     }
 
@@ -78,17 +76,15 @@ template <class T, int D = 2> class CompareCriticalDimensions {
     const auto &gridSample = levelSetSample->getGrid();
 
     if (gridTarget.getGridDelta() != gridSample.getGridDelta()) {
-      Logger::getInstance()
-          .addWarning("Grid delta mismatch in CompareCriticalDimensions. The "
-                      "grid deltas of the two level sets must be equal.")
-          .print();
+      VIENNACORE_LOG_WARNING(
+          "Grid delta mismatch in CompareCriticalDimensions. The "
+          "grid deltas of the two level sets must be equal.");
       return false;
     }
 
     if (rangeSpecs.empty()) {
-      Logger::getInstance()
-          .addWarning("No ranges specified in CompareCriticalDimensions.")
-          .print();
+      VIENNACORE_LOG_WARNING(
+          "No ranges specified in CompareCriticalDimensions.");
       return false;
     }
 

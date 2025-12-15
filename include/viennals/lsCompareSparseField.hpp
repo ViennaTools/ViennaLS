@@ -108,28 +108,24 @@ template <class T, int D = 2> class CompareSparseField {
 
     // Check if expanded level set width is sufficient
     if (levelSetExpanded->getLevelSetWidth() < expandedLevelSetWidth) {
-      Logger::getInstance()
-          .addWarning(
-              "Expanded level set width is insufficient. It must have a width "
-              "of at least " +
-              std::to_string(expandedLevelSetWidth) + ". \n" +
-              " CORRECTION: The expansion was performed. \n"
-              "ALTERNATIVE: Alternatively, please expand the expanded yourself "
-              "using lsExpand before passing it to this function. \n")
-          .print();
+      VIENNACORE_LOG_WARNING(
+          "Expanded level set width is insufficient. It must have a width of "
+          "at least " +
+          std::to_string(expandedLevelSetWidth) + ". \n" +
+          " CORRECTION: The expansion was performed. \n"
+          "ALTERNATIVE: Alternatively, please expand the expanded yourself "
+          "using lsExpand before passing it to this function. \n");
       Expand<T, D>(levelSetExpanded, expandedLevelSetWidth).apply();
     }
 
     // Reduce the iterated level set to a sparse field if necessary
     if (levelSetIterated->getLevelSetWidth() > 1) {
-      Logger::getInstance()
-          .addWarning(
-              "Iterated level set width is too large. It must be reduced to a "
-              "sparse field. \n"
-              " CORRECTION: The reduction was performed. \n"
-              "ALTERNATIVE: Alternatively, please reduce the iterated yourself "
-              "using lsReduce before passing it to this function. \n")
-          .print();
+      VIENNACORE_LOG_WARNING(
+          "Iterated level set width is too large. It must be reduced to a "
+          "sparse field. \n"
+          " CORRECTION: The reduction was performed. \n"
+          "ALTERNATIVE: Alternatively, please reduce the iterated yourself "
+          "using lsReduce before passing it to this function. \n");
       Reduce<T, D>(levelSetIterated, 1).apply();
     }
 
@@ -203,10 +199,8 @@ public:
   /// automatically during the apply() call
   void setExpandedLevelSetWidth(int width) {
     if (width <= 0) {
-      Logger::getInstance()
-          .addWarning("Expansion width must be positive. Using default value "
-                      "of 50.")
-          .print();
+      VIENNACORE_LOG_WARNING(
+          "Expansion width must be positive. Using default value of 50.");
       expandedLevelSetWidth = 50;
     } else {
       expandedLevelSetWidth = width;

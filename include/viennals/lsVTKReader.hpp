@@ -589,14 +589,14 @@ private:
           std::ostringstream oss;
           oss << "VTK Cell type " << cell_type
               << " is not supported. Cell ignored..." << std::endl;
-          Logger::getInstance().addWarning(oss.str()).print();
+          VIENNACORE_LOG_WARNING(oss.str());
         }
       } else {
         std::ostringstream oss;
         oss << "INVALID CELL TYPE! Expected number of nodes: " << number_nodes
             << ", Found number of nodes: " << elems_fake
             << "; Ignoring element...";
-        Logger::getInstance().addError(oss.str());
+        VIENNACORE_LOG_ERROR(oss.str());
         // ignore rest of lines
         f.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
       }
@@ -635,9 +635,7 @@ private:
       // consume one line, which defines the lookup table
       std::getline(f, temp);
       if (temp != "LOOKUP_TABLE default") {
-        Logger::getInstance()
-            .addWarning("Wrong lookup table for VTKLegacy: " + temp)
-            .print();
+        VIENNACORE_LOG_WARNING("Wrong lookup table for VTKLegacy: " + temp);
       }
 
       // now read scalar values

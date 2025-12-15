@@ -491,11 +491,9 @@ public:
     // check if level sets have enough layers
     for (unsigned i = 0; i < levelSets.size(); ++i) {
       if (levelSets[i]->getLevelSetWidth() < 2) {
-        Logger::getInstance()
-            .addWarning(
-                "WriteVisualizationMesh: Level Set " + std::to_string(i) +
-                " should have a width greater than 1! Conversion might fail!")
-            .print();
+        VIENNACORE_LOG_WARNING(
+            "WriteVisualizationMesh: Level Set " + std::to_string(i) +
+            " should have a width greater than 1! Conversion might fail!");
       }
     }
 

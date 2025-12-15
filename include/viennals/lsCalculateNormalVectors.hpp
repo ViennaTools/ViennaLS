@@ -56,11 +56,10 @@ public:
 
   void setMaxValue(const T passedMaxValue) {
     if (passedMaxValue <= 0) {
-      Logger::getInstance()
-          .addWarning("CalculateNormalVectors: maxValue should be positive. "
-                      "Using default value " +
-                      std::to_string(DEFAULT_MAX_VALUE) + ".")
-          .print();
+      VIENNACORE_LOG_WARNING(
+          "CalculateNormalVectors: maxValue should be positive. "
+          "Using default value " +
+          std::to_string(DEFAULT_MAX_VALUE) + ".");
       maxValue = DEFAULT_MAX_VALUE;
     } else {
       maxValue = passedMaxValue;
@@ -81,20 +80,17 @@ public:
 
   void apply() {
     if (levelSet == nullptr) {
-      Logger::getInstance()
-          .addError("No level set was passed to CalculateNormalVectors.")
-          .print();
+      VIENNACORE_LOG_ERROR(
+          "No level set was passed to CalculateNormalVectors.");
       return;
     }
 
     if (levelSet->getLevelSetWidth() < (maxValue * 4) + 1) {
-      Logger::getInstance()
-          .addWarning("CalculateNormalVectors: Level set width must be "
-                      "greater than " +
-                      std::to_string((maxValue * 4) + 1) +
-                      ". Expanding level set to " +
-                      std::to_string((maxValue * 4) + 1) + ".")
-          .print();
+      VIENNACORE_LOG_WARNING("CalculateNormalVectors: Level set width must be "
+                             "greater than " +
+                             std::to_string((maxValue * 4) + 1) +
+                             ". Expanding level set to " +
+                             std::to_string((maxValue * 4) + 1) + ".");
       Expand<T, D>(levelSet, (maxValue * 4) + 1).apply();
     }
 
@@ -155,10 +151,9 @@ public:
 
         denominator = std::sqrt(denominator);
         if (std::abs(denominator) < EPSILON) {
-          Logger::getInstance()
-              .addWarning("CalculateNormalVectors: Vector of length 0 at " +
-                          neighborIt.getIndices().to_string())
-              .print();
+          VIENNACORE_LOG_WARNING(
+              "CalculateNormalVectors: Vector of length 0 at " +
+              neighborIt.getIndices().to_string());
           for (unsigned i = 0; i < D; ++i)
             n[i] = 0.;
         } else {

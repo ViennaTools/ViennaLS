@@ -89,11 +89,9 @@ public:
     bool autoCreateSlice = false;
     if (sliceLevelSet == nullptr) {
       autoCreateSlice = true;
-      Logger::getInstance()
-          .addDebug("No slice level-set passed to Slice. Auto-created slice "
-                    "level-set with bounds derived from "
-                    "source domain")
-          .print();
+      VIENNACORE_LOG_DEBUG("No slice level-set passed to Slice. Auto-creating "
+                           "slice level-set with bounds derived from source "
+                           "domain.");
     }
 
     const auto &sourceGrid = sourceLevelSet->getGrid();
@@ -106,12 +104,10 @@ public:
     if (std::fmod(slicePosition, gridDelta) != 0) {
       // If not, change slice position to the nearest grid point
       slicePosition = std::round(slicePosition / gridDelta) * gridDelta;
-      Logger::getInstance()
-          .addWarning("Slice position is not divisible by grid delta in "
-                      "Slice. Adjusting slice position to the nearest "
-                      "multiple of grid delta: " +
-                      std::to_string(slicePosition))
-          .print();
+      VIENNACORE_LOG_WARNING("Slice position is not divisible by grid delta in "
+                             "Slice. Adjusting slice position to the nearest "
+                             "multiple of grid delta: " +
+                             std::to_string(slicePosition));
     }
 
     // slice index
@@ -154,7 +150,7 @@ public:
     // Insert the extracted points into the slice domain, issue a warning if
     // there are no points to insert
     if (pointData.empty()) {
-      Logger::getInstance().addWarning("No points extracted in Slice").print();
+      VIENNACORE_LOG_WARNING("No points extracted in Slice");
     } else {
       if (autoCreateSlice) {
         // Create slice domain with bounds and BCs derived from source domain

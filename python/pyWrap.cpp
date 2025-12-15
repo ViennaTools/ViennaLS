@@ -103,6 +103,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
              IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER)
       .value("STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER",
              IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER)
+      .value("WENO_5TH_ORDER", IntegrationSchemeEnum::WENO_5TH_ORDER)
       .finalize();
 
   py::native_enum<BooleanOperationEnum>(module, "BooleanOperationEnum",

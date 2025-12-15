@@ -187,11 +187,9 @@ T gaussianCurvature(It &it, bool bigStencil = false) {
   else
     d = smallStencilFromIterator(it, gridDelta);
   if constexpr (D == 2) {
-    Logger::getInstance()
-        .addWarning(
-            "2D structures do not have a Gaussian Curvature, use "
-            "\"meanCurvature(IteratorType & neighborIterator)\" instead!")
-        .print();
+    VIENNACORE_LOG_WARNING(
+        "2D structures do not have a Gaussian Curvature, use "
+        "\"meanCurvature(IteratorType & neighborIterator)\" instead!");
     return 0.;
   } else {
     return gaussianCurvature3D(d);

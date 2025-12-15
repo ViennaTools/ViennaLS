@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <set>
 #include <vector>
 
@@ -23,6 +24,22 @@ public:
   void insertNextMaterial(const int passedMaterialId) {
     materialMap.push_back(passedMaterialId);
     materials.insert(passedMaterialId);
+  }
+
+  void removeLastMaterial() {
+    if (materialMap.empty()) {
+      return;
+    }
+
+    int idToRemove = materialMap.back();
+    materialMap.pop_back();
+
+    bool isUnique = std::find(materialMap.begin(), materialMap.end(),
+                              idToRemove) == materialMap.end();
+
+    if (isUnique) {
+      materials.erase(idToRemove);
+    }
   }
 
   void setMaterialId(const std::size_t index, const int materialId) {

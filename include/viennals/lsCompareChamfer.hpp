@@ -55,9 +55,7 @@ template <class T, int D = 2> class CompareChamfer {
 
   bool checkCompatibility() {
     if (levelSetTarget == nullptr || levelSetSample == nullptr) {
-      Logger::getInstance()
-          .addWarning("Missing level set in CompareChamfer.")
-          .print();
+      VIENNACORE_LOG_WARNING("Missing level set in CompareChamfer.");
       return false;
     }
 
@@ -66,10 +64,8 @@ template <class T, int D = 2> class CompareChamfer {
     const auto &gridSample = levelSetSample->getGrid();
 
     if (gridTarget.getGridDelta() != gridSample.getGridDelta()) {
-      Logger::getInstance()
-          .addWarning("Grid delta mismatch in CompareChamfer. The grid "
-                      "deltas of the two level sets must be equal.")
-          .print();
+      VIENNACORE_LOG_WARNING("Grid delta mismatch in CompareChamfer. The grid "
+                             "deltas of the two level sets must be equal.");
       return false;
     }
 
@@ -136,19 +132,17 @@ public:
     if (levelSetTarget->getLevelSetWidth() < minimumWidth) {
       workingTarget = SmartPointer<Domain<T, D>>::New(levelSetTarget);
       Expand<T, D>(workingTarget, minimumWidth).apply();
-      Logger::getInstance()
-          .addInfo("CompareChamfer: Expanded target level set to width " +
-                   std::to_string(minimumWidth) + " for surface extraction.")
-          .print();
+      VIENNACORE_LOG_INFO(
+          "CompareChamfer: Expanded target level set to width " +
+          std::to_string(minimumWidth) + " for surface extraction.");
     }
 
     if (levelSetSample->getLevelSetWidth() < minimumWidth) {
       workingSample = SmartPointer<Domain<T, D>>::New(levelSetSample);
       Expand<T, D>(workingSample, minimumWidth).apply();
-      Logger::getInstance()
-          .addInfo("CompareChamfer: Expanded sample level set to width " +
-                   std::to_string(minimumWidth) + " for surface extraction.")
-          .print();
+      VIENNACORE_LOG_INFO(
+          "CompareChamfer: Expanded sample level set to width " +
+          std::to_string(minimumWidth) + " for surface extraction.");
     }
 
     // Extract surface meshes
@@ -166,11 +160,9 @@ public:
     numSamplePoints = sampleNodes.size();
 
     if (numTargetPoints == 0 || numSamplePoints == 0) {
-      Logger::getInstance()
-          .addWarning(
-              "CompareChamfer: One or both surfaces have no points. Cannot "
-              "compute Chamfer distance.")
-          .print();
+      VIENNACORE_LOG_WARNING(
+          "CompareChamfer: One or both surfaces have no points. "
+          "Cannot compute Chamfer distance.");
       forwardDistance = std::numeric_limits<T>::infinity();
       backwardDistance = std::numeric_limits<T>::infinity();
       chamferDistance = std::numeric_limits<T>::infinity();

@@ -87,24 +87,21 @@ template <class T, int D = 2> class CompareNarrowBand {
 
     // Expand the sample level set using lsExpand to a default width of 5
     if (levelSetSample->getLevelSetWidth() < 5) {
-      Logger::getInstance()
-          .addWarning("Sample level set width is insufficient. Expanding it to "
-                      "a width of 5.")
-          .print();
+      VIENNACORE_LOG_WARNING(
+          "Sample level set width is insufficient. Expanding it to "
+          "a width of 5.");
       Expand<T, D>(levelSetSample, 5).apply();
     }
 
     // Check if target level set width is sufficient
     if (levelSetTarget->getLevelSetWidth() <
         levelSetSample->getLevelSetWidth() + 50) {
-      Logger::getInstance()
-          .addWarning(
-              "Target level set width is insufficient. It must exceed sample "
-              "width by least 50. \n"
-              " CORRECTION: The expansion was performed. \n"
-              "ALTERNATIVE: Alternatively, please expand the target yourself "
-              "using lsExpand before passing it to this function. \n")
-          .print();
+      VIENNACORE_LOG_WARNING(
+          "Target level set width is insufficient. It must exceed sample "
+          "width by least 50. \n"
+          " CORRECTION: The expansion was performed. \n"
+          "ALTERNATIVE: Alternatively, please expand the target yourself "
+          "using lsExpand before passing it to this function. \n");
       Expand<T, D>(levelSetTarget, levelSetSample->getLevelSetWidth() + 50)
           .apply();
     }

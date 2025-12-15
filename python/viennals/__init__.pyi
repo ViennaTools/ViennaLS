@@ -147,6 +147,7 @@ __all__: list[str] = [
     "Writer",
     "d2",
     "d3",
+    "getDimension",
     "hrleGrid",
     "setDimension",
     "setNumThreads",
@@ -156,6 +157,17 @@ __all__: list[str] = [
 def __dir__(): ...
 def __getattr__(name): ...
 def _windows_dll_path(): ...
+def getDimension() -> int:
+    """
+    Get the current dimension of the simulation.
+
+        Returns
+        -------
+        int
+            The currently set dimension (2 or 3).
+
+    """
+
 def setDimension(d: int):
     """
     Set the dimension of the simulation (2 or 3).
@@ -168,6 +180,6 @@ def setDimension(d: int):
     """
 
 PROXY_DIM: int = 2
-__version__: str = "5.2.0"
-version: str = "5.2.0"
+__version__: str = "5.3.0"
+version: str = "5.3.0"
 _C = _core

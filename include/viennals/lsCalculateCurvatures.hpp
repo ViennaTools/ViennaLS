@@ -49,7 +49,7 @@ public:
       type = passedType;
     } else {
       if (passedType != type) {
-        Logger::getInstance().addWarning(
+        VIENNACORE_LOG_WARNING(
             "CalculateCurvatures: Could not set curvature type because 2D "
             "only supports mean curvature.");
       }
@@ -60,20 +60,18 @@ public:
 
   void apply() {
     if (levelSet == nullptr) {
-      Logger::getInstance()
-          .addError("No level set was passed to CalculateCurvatures.")
-          .print();
+      VIENNACORE_LOG_ERROR("No level set was passed to CalculateCurvatures.");
+      return;
     }
 
     // need second neighbours
     if (unsigned minWidth = std::ceil((maxValue * 8) + 1);
         levelSet->getLevelSetWidth() < minWidth) {
-      Logger::getInstance()
-          .addWarning("CalculateCurvatures: Level set width must be "
-                      "at least " +
-                      std::to_string(minWidth) + ". Expanding level set to " +
-                      std::to_string(minWidth) + ".")
-          .print();
+      VIENNACORE_LOG_WARNING("CalculateCurvatures: Level set width must be "
+                             "at least " +
+                             std::to_string(minWidth) +
+                             ". Expanding level set to " +
+                             std::to_string(minWidth) + ".");
       Expand<T, D>(levelSet, minWidth).apply();
     }
 

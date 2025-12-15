@@ -190,6 +190,20 @@ template <int D> void bindApi(py::module &module) {
       .def("setIgnoreVoids", &Advect<T, D>::setIgnoreVoids,
            "Set whether voids in the geometry should be ignored during "
            "advection or not.")
+      .def("setAdaptiveTimeStepping", &Advect<T, D>::setAdaptiveTimeStepping,
+           "Set whether adaptive time stepping should be used when approaching "
+           "material boundaries during etching.")
+      .def("setAdaptiveTimeStepThreshold",
+           &Advect<T, D>::setAdaptiveTimeStepThreshold,
+           "Set the threshold (in fraction of the CFL condition) below which "
+           "adaptive time stepping is applied. Defaults to 0.05.")
+      .def("setSingleStep", &Advect<T, D>::setSingleStep,
+           "Set whether only a single advection step should be performed.")
+      .def(
+          "setSaveAdvectionVelocities",
+          &Advect<T, D>::setSaveAdvectionVelocities,
+          "Set whether the velocities applied to each point should be saved in "
+          "the level set for debug purposes.")
       .def("getAdvectedTime", &Advect<T, D>::getAdvectedTime,
            "Get the time passed during advection.")
       .def("getNumberOfTimeSteps", &Advect<T, D>::getNumberOfTimeSteps,
@@ -206,6 +220,9 @@ template <int D> void bindApi(py::module &module) {
            "Set the integration scheme to use during advection.")
       .def("setDissipationAlpha", &Advect<T, D>::setDissipationAlpha,
            "Set the dissipation value to use for Lax Friedrichs integration.")
+      .def("setUpdatePointData", &Advect<T, D>::setUpdatePointData,
+           "Set whether the point data in the old LS should be translated to "
+           "the advected LS. Defaults to true.")
       .def("prepareLS", &Advect<T, D>::prepareLS, "Prepare the level-set.")
       // need scoped release since we are calling a python method from
       // parallelised C++ code here
@@ -755,11 +772,24 @@ template <int D> void bindApi(py::module &module) {
   py::class_<ToMultiSurfaceMesh<T, D>, SmartPointer<ToMultiSurfaceMesh<T, D>>>(
       module, "ToMultiSurfaceMesh")
       // constructors
-      .def(py::init(&SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<>))
+      .def(py::init(
+               &SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<double,
+                                                                     double>),
+           py::arg("eps") = 1e-12, py::arg("minNodeDistFactor") = 0.05)
       .def(py::init(&SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<
-                    SmartPointer<Domain<T, D>> &, SmartPointer<Mesh<T>> &>))
+                    SmartPointer<Domain<T, D>> &, SmartPointer<Mesh<T>> &,
+                    double, double>),
+           py::arg("domain"), py::arg("mesh"), py::arg("eps") = 1e-12,
+           py::arg("minNodeDistFactor") = 0.05)
       .def(py::init(&SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<
-                    SmartPointer<Mesh<T>> &>))
+                    std::vector<SmartPointer<Domain<T, D>>> &,
+                    SmartPointer<Mesh<T>> &, double, double>),
+           py::arg("domains"), py::arg("mesh"), py::arg("eps") = 1e-12,
+           py::arg("minNodeDistFactor") = 0.05)
+      .def(py::init(&SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<
+                    SmartPointer<Mesh<T>> &, double, double>),
+           py::arg("mesh"), py::arg("eps") = 1e-12,
+           py::arg("minNodeDistFactor") = 0.05)
       // methods
       .def("insertNextLevelSet", &ToMultiSurfaceMesh<T, D>::insertNextLevelSet,
            "Insert next level set to output in the mesh.")

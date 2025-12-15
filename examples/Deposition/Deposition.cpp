@@ -110,10 +110,11 @@ int main() {
   // the other could be taken as a mask layer for advection
   advectionKernel.insertNextLevelSet(substrate);
   advectionKernel.insertNextLevelSet(newLayer);
-
   advectionKernel.setVelocityField(velocities);
   // advectionKernel.setAdvectionTime(4.);
   unsigned counter = 1;
+  advectionKernel.setIntegrationScheme(
+      ls::IntegrationSchemeEnum::WENO_5TH_ORDER);
   for (NumericType time = 0; time < 4.;
        time += advectionKernel.getAdvectedTime()) {
     advectionKernel.apply();

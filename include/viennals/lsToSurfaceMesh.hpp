@@ -57,10 +57,8 @@ public:
     }
 
     if (levelSet->getNumberOfPoints() == 0) {
-      Logger::getInstance()
-          .addWarning(
-              "ToSurfaceMesh: Level set is empty. No mesh will be created.")
-          .print();
+      VIENNACORE_LOG_WARNING(
+          "ToSurfaceMesh: Level set is empty. No mesh will be created.");
       return;
     }
 
@@ -72,10 +70,8 @@ public:
     // test if level set function consists of at least 2 layers of
     // defined grid points
     if (levelSet->getLevelSetWidth() < 2) {
-      Logger::getInstance()
-          .addWarning("Levelset is less than 2 layers wide. Expanding levelset "
-                      "to 2 layers.")
-          .print();
+      VIENNACORE_LOG_WARNING("Levelset is less than 2 layers wide. Expanding "
+                             "levelset to 2 layers.");
       Expand<T, D>(levelSet, 2).apply();
     }
 

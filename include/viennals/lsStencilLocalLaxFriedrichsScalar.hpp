@@ -462,11 +462,9 @@ void PrepareStencilLocalLaxFriedrichs(
     std::vector<SmartPointer<Domain<T, D>>> &levelSets,
     std::vector<bool> isDepo) {
   if (isDepo.size() < levelSets.size()) {
-    Logger::getInstance()
-        .addWarning(
-            "PrepareStencilLocalLaxFriedrichs: isDepo does not have enough "
-            "elements. Assuming all higher layers are not depo layers.")
-        .print();
+    VIENNACORE_LOG_WARNING(
+        "PrepareStencilLocalLaxFriedrichs: isDepo does not have enough "
+        "elements. Assuming all higher layers are not depo layers.");
   }
   // always resize, so it has the correct number of elements
   isDepo.resize(levelSets.size(), false);

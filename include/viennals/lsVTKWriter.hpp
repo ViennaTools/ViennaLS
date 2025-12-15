@@ -143,13 +143,11 @@ public:
     }
     // check filename
     if (fileName.empty()) {
-      Logger::getInstance()
-          .addError("No file name specified for VTKWriter.")
-          .print();
+      VIENNACORE_LOG_ERROR("No file name specified for VTKWriter.");
       return;
     }
     if (mesh->nodes.empty()) {
-      Logger::getInstance().addWarning("Writing empty mesh.").print();
+      VIENNACORE_LOG_WARNING("Writing empty mesh.");
       return;
     }
 
@@ -190,17 +188,14 @@ public:
 #else
     case FileFormatEnum::VTP:
     case FileFormatEnum::VTU:
-      Logger::getInstance()
-          .addWarning("VTKWriter was built without VTK support. Falling back "
-                      "to VTK_LEGACY.")
-          .print();
+      VIENNACORE_LOG_WARNING(
+          "VTKWriter was built without VTK support. Falling back "
+          "to VTK_LEGACY.");
       writeVTKLegacy(fileName);
       break;
 #endif
     default:
-      Logger::getInstance()
-          .addError("No valid file format set for VTKWriter.")
-          .print();
+      VIENNACORE_LOG_ERROR("No valid file format set for VTKWriter.");
     }
   }
 
@@ -485,10 +480,9 @@ private:
     // WRITE POINT DATA
     if (mesh->pointData.getScalarDataSize() ||
         mesh->pointData.getVectorDataSize()) {
-      Logger::getInstance()
-          .addWarning("Point data output not supported for legacy VTK output. "
-                      "Point data is ignored.")
-          .print();
+      VIENNACORE_LOG_WARNING(
+          "Point data output not supported for legacy VTK output. "
+          "Point data is ignored.");
     }
 
     // WRITE SCALAR DATA

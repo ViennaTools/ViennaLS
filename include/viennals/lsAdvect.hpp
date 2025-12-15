@@ -23,6 +23,7 @@
 #include <lsLocalLaxFriedrichsAnalytical.hpp>
 #include <lsLocalLocalLaxFriedrichs.hpp>
 #include <lsStencilLocalLaxFriedrichsScalar.hpp>
+#include <lsWENO5.hpp>
 
 // Velocity accessor
 #include <lsVelocityField.hpp>
@@ -49,7 +50,8 @@ enum struct IntegrationSchemeEnum : unsigned {
   LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER = 6,
   LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 7,
   LOCAL_LAX_FRIEDRICHS_2ND_ORDER = 8,
-  STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 9
+  STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 9,
+  WENO_5TH_ORDER = 10
 };
 
 /// This class is used to advance level sets over time.
@@ -81,6 +83,8 @@ template <class T, int D> class Advect {
   bool saveAdvectionVelocities = false;
   bool updatePointData = true;
   bool checkDissipation = true;
+  bool adaptiveTimeStepping = false;
+  double adaptiveTimeStepThreshold = 0.05;
   static constexpr double wrappingLayerEpsilon = 1e-4;
 
   // this vector will hold the maximum time step for each point and the
@@ -385,15 +389,12 @@ template <class T, int D> class Advect {
   double advect(double maxTimeStep) {
     // check whether a level set and velocities have been given
     if (levelSets.empty()) {
-      Logger::getInstance()
-          .addError("No level sets passed to Advect. Not advecting.")
-          .print();
+      VIENNACORE_LOG_ERROR("No level sets passed to Advect. Not advecting.");
       return std::numeric_limits<double>::max();
     }
     if (velocities == nullptr) {
-      Logger::getInstance()
-          .addError("No velocity field passed to Advect. Not advecting.")
-          .print();
+      VIENNACORE_LOG_ERROR(
+          "No velocity field passed to Advect. Not advecting.");
       return std::numeric_limits<double>::max();
     }
 
@@ -438,19 +439,17 @@ template <class T, int D> class Advect {
       voidMarkerPointer =
           pointData.getScalarData(MarkVoidPoints<T, D>::voidPointLabel, true);
       if (voidMarkerPointer == nullptr) {
-        Logger::getInstance()
-            .addWarning("Advect: Cannot find void point markers. Not "
-                        "ignoring void points.")
-            .print();
+        VIENNACORE_LOG_WARNING("Advect: Cannot find void point markers. Not "
+                               "ignoring void points.");
         ignoreVoids = false;
       }
     }
     const bool ignoreVoidPoints = ignoreVoids;
+    const bool useAdaptiveTimeStepping = adaptiveTimeStepping;
+    const double atsThreshold = adaptiveTimeStepThreshold;
 
     if (!storedRates.empty()) {
-      Logger::getInstance()
-          .addWarning("Advect: Overwriting previously stored rates.")
-          .print();
+      VIENNACORE_LOG_WARNING("Advect: Overwriting previously stored rates.");
     }
 
     storedRates.resize(topDomain.getNumberOfSegments());
@@ -520,48 +519,62 @@ template <class T, int D> class Advect {
             }
           }
 
-          T valueBelow;
-          // get value of material below (before in levelSets list)
-          if (currentLevelSetId > 0) {
-            iterators[currentLevelSetId - 1].goToIndicesSequential(
-                it.getStartIndices());
-            valueBelow = iterators[currentLevelSetId - 1].getValue();
-          } else {
-            valueBelow = std::numeric_limits<T>::max();
-          }
-
-          // if velocity is positive, set maximum time step possible without
-          // violating the cfl condition
           T velocity = gradNDissipation.first - gradNDissipation.second;
           if (velocity > 0.) {
+            // Case 1: Growth / Deposition (Velocity > 0)
+            // Limit the time step based on the standard CFL condition.
             maxStepTime += cfl / velocity;
             tempRates.push_back(std::make_pair(gradNDissipation,
                                                -std::numeric_limits<T>::max()));
             break;
-            // if velocity is 0, maximum time step is infinite
           } else if (velocity == 0.) {
+            // Case 2: Static (Velocity == 0)
+            // No time step limit imposed by this point.
             maxStepTime = std::numeric_limits<T>::max();
             tempRates.push_back(std::make_pair(gradNDissipation,
                                                std::numeric_limits<T>::max()));
             break;
-            // if the velocity is negative apply the velocity for as long as
-            // possible without infringing on material below
           } else {
+            // Case 3: Etching (Velocity < 0)
+            // Retrieve the interface location of the underlying material.
+            T valueBelow;
+            if (currentLevelSetId > 0) {
+              iterators[currentLevelSetId - 1].goToIndicesSequential(
+                  it.getStartIndices());
+              valueBelow = iterators[currentLevelSetId - 1].getValue();
+            } else {
+              valueBelow = std::numeric_limits<T>::max();
+            }
+            // Calculate the top material thickness
             T difference = std::abs(valueBelow - value);
 
             if (difference >= cfl) {
+              // Sub-case 3a: Standard Advection
+              // Far from interface: Use full CFL time step.
               maxStepTime -= cfl / velocity;
               tempRates.push_back(std::make_pair(
                   gradNDissipation, std::numeric_limits<T>::max()));
               break;
+
             } else {
-              maxStepTime -= difference / velocity;
-              // the second part of the pair indicates how far we can move
-              // in this time step until the end of the material is reached
-              tempRates.push_back(std::make_pair(gradNDissipation, valueBelow));
-              cfl -= difference;
-              // use new LS value for next calculations
-              value = valueBelow;
+              // Sub-case 3b: Interface Interaction
+              if (useAdaptiveTimeStepping && difference > atsThreshold * cfl) {
+                // Adaptive Sub-stepping:
+                // Approaching boundary: Force small steps to gather flux
+                // statistics and prevent numerical overshoot ("Soft Landing").
+                maxStepTime -= atsThreshold * cfl / velocity;
+                tempRates.push_back(std::make_pair(
+                    gradNDissipation, std::numeric_limits<T>::min()));
+              } else {
+                // Terminal Step:
+                // Within tolerance: Snap to boundary, consume budget, and
+                // switch material.
+                tempRates.push_back(
+                    std::make_pair(gradNDissipation, valueBelow));
+                cfl -= difference;
+                value = valueBelow;
+                maxStepTime -= difference / velocity;
+              }
             }
           }
         }
@@ -593,10 +606,9 @@ template <class T, int D> class Advect {
   // depth accordingly if there would be a material change.
   void moveSurface() {
     if (timeStepRatio >= 0.5) {
-      Logger::getInstance()
-          .addWarning("Integration time step ratio should be smaller than 0.5. "
-                      "Advection might fail!")
-          .print();
+      VIENNACORE_LOG_WARNING(
+          "Integration time step ratio should be smaller than 0.5. "
+          "Advection might fail!");
     }
 
     auto &topDomain = levelSets.back()->getDomain();
@@ -772,6 +784,18 @@ public:
   /// be advected. All others values are not changed.
   void setIgnoreVoids(bool iV) { ignoreVoids = iV; }
 
+  /// Set whether adaptive time stepping should be used
+  /// when approaching material boundaries during etching.
+  /// Defaults to false.
+  void setAdaptiveTimeStepping(bool aTS) { adaptiveTimeStepping = aTS; }
+
+  /// Set the threshold (in fraction of the CFL condition)
+  /// below which adaptive time stepping is applied.
+  /// Defaults to 0.05 (5% of the CFL condition).
+  void setAdaptiveTimeStepThreshold(double threshold) {
+    adaptiveTimeStepThreshold = threshold;
+  }
+
   /// Set whether the velocities applied to each point should be saved in
   /// the level set for debug purposes.
   void setSaveAdvectionVelocities(bool sAV) { saveAdvectionVelocities = sAV; }
@@ -816,7 +840,7 @@ public:
   void prepareLS() {
     // check whether a level set and velocities have been given
     if (levelSets.empty()) {
-      Logger::getInstance().addError("No level sets passed to Advect.").print();
+      VIENNACORE_LOG_ERROR("No level sets passed to Advect.");
       return;
     }
 
@@ -852,10 +876,11 @@ public:
                IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>::prepareLS(
           levelSets.back());
+    } else if (integrationScheme == IntegrationSchemeEnum::WENO_5TH_ORDER) {
+      // WENO5 requires a stencil radius of 3 (template parameter 3)
+      lsInternal::WENO5<T, D, 3>::prepareLS(levelSets.back());
     } else {
-      Logger::getInstance()
-          .addError("Advect: Integration scheme not found.")
-          .print();
+      VIENNACORE_LOG_ERROR("Advect: Integration scheme not found.");
     }
   }
 
@@ -936,10 +961,13 @@ public:
       auto is = lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>(
           levelSets.back(), velocities, dissipationAlpha);
       currentTimeStep = integrateTime(is, maxTimeStep);
+    } else if (integrationScheme == IntegrationSchemeEnum::WENO_5TH_ORDER) {
+      // Instantiate WENO5 with order 3 (neighbors +/- 3)
+      auto is = lsInternal::WENO5<T, D, 3>(levelSets.back(), velocities,
+                                           calculateNormalVectors);
+      currentTimeStep = integrateTime(is, maxTimeStep);
     } else {
-      Logger::getInstance()
-          .addError("Advect: Integration scheme not found.")
-          .print();
+      VIENNACORE_LOG_ERROR("Advect: Integration scheme not found.");
       currentTimeStep = -1.;
     }
   }

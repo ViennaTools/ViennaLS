@@ -236,9 +236,7 @@ public:
 
 #ifndef NDEBUG // if in debug build
     {
-      Logger::getInstance()
-          .addDebug("GeomAdvect: Writing debug meshes")
-          .print();
+      VIENNACORE_LOG_DEBUG("GeomAdvect: Writing debug meshes");
       VTKWriter<hrleCoordType>(surfaceMesh, FileFormatEnum::VTP,
                                "DEBUG_lsGeomAdvectMesh_contributewoMask.vtp")
           .apply();
@@ -295,7 +293,7 @@ public:
     {
       std::ostringstream oss;
       oss << "GeomAdvect: Min: " << min << ", Max: " << max << std::endl;
-      Logger::getInstance().addDebug(oss.str()).print();
+      VIENNACORE_LOG_DEBUG(oss.str());
     }
 #endif
 // set up multithreading
@@ -499,7 +497,7 @@ public:
     }
 
 #ifndef NDEBUG // if in debug build
-    Logger::getInstance().addDebug("GeomAdvect: Writing final mesh...").print();
+    VIENNACORE_LOG_DEBUG("GeomAdvect: Writing final mesh...");
     VTKWriter<T>(mesh, FileFormatEnum::VTP, "DEBUG_lsGeomAdvectMesh_final.vtp")
         .apply();
 #endif
@@ -507,7 +505,7 @@ public:
     FromMesh<T, D>(levelSet, mesh).apply();
 
 #ifndef NDEBUG // if in debug build
-    Logger::getInstance().addDebug("GeomAdvect: Writing final LS...").print();
+    VIENNACORE_LOG_DEBUG("GeomAdvect: Writing final LS...");
     ToMesh<T, D>(levelSet, mesh).apply();
     VTKWriter<T>(mesh, FileFormatEnum::VTP, "DEBUG_lsGeomAdvectLS_final.vtp")
         .apply();
