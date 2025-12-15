@@ -1,5 +1,5 @@
-#include <iostream>
 #include <array>
+#include <iostream>
 
 #include <lsAdvectForwardEuler.hpp>
 #include <lsAdvectRungeKutta3.hpp>
@@ -46,7 +46,8 @@ int main() {
     boundaryCons[i] = ls::Domain<T, D>::BoundaryType::INFINITE_BOUNDARY;
 
   // Create initial level set (Sphere)
-  auto sphere = ls::SmartPointer<ls::Domain<T, D>>::New(bounds, boundaryCons, gridDelta);
+  auto sphere =
+      ls::SmartPointer<ls::Domain<T, D>>::New(bounds, boundaryCons, gridDelta);
   T origin[3] = {0.0, 0.0, 0.0};
   T radius = 1.5;
   ls::MakeGeometry<T, D>(sphere, ls::Sphere<T, D>::New(origin, radius)).apply();
@@ -64,14 +65,16 @@ int main() {
   advectFE.insertNextLevelSet(sphereFE);
   advectFE.setVelocityField(velocityField);
   advectFE.setAdvectionTime(2.0);
-  advectFE.setIntegrationScheme(ls::IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
+  advectFE.setIntegrationScheme(
+      ls::IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
 
   // Setup Advection: Runge-Kutta 3
   ls::AdvectRungeKutta3<T, D> advectRK3;
   advectRK3.insertNextLevelSet(sphereRK3);
   advectRK3.setVelocityField(velocityField);
   advectRK3.setAdvectionTime(2.0);
-  advectRK3.setIntegrationScheme(ls::IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
+  advectRK3.setIntegrationScheme(
+      ls::IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
 
   // Run Advection
   std::cout << "Running Forward Euler Advection..." << std::endl;

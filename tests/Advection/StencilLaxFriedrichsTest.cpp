@@ -1,13 +1,13 @@
-#include <iostream>
 #include <array>
+#include <iostream>
 
 #include <lsAdvectForwardEuler.hpp>
 #include <lsDomain.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsTestAsserts.hpp>
-#include <lsVelocityField.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
+#include <lsVelocityField.hpp>
 
 namespace ls = viennals;
 
@@ -41,7 +41,8 @@ int main() {
     boundaryCons[i] = ls::Domain<T, D>::BoundaryType::INFINITE_BOUNDARY;
 
   // Create initial level set (Sphere)
-  auto sphere = ls::SmartPointer<ls::Domain<T, D>>::New(bounds, boundaryCons, gridDelta);
+  auto sphere =
+      ls::SmartPointer<ls::Domain<T, D>>::New(bounds, boundaryCons, gridDelta);
   T origin[3] = {0.0, 0.0, 0.0};
   T radius = 1.0;
   ls::MakeGeometry<T, D>(sphere, ls::Sphere<T, D>::New(origin, radius)).apply();
@@ -59,7 +60,7 @@ int main() {
   advectionKernel.insertNextLevelSet(sphere);
   advectionKernel.setVelocityField(velocityField);
   advectionKernel.setAdvectionTime(0.5);
-  
+
   // Set the specific integration scheme
   advectionKernel.setIntegrationScheme(
       ls::IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER);

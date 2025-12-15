@@ -30,11 +30,12 @@ public:
   using Base::velocities;
 
 private:
-
   // Helper function for linear combination: target = wTarget * target + wSource
   // * source
-  void combineLevelSets(double wTarget, const SmartPointer<Domain<T, D>> &target,
-                        double wSource, const SmartPointer<Domain<T, D>> &source) {
+  void combineLevelSets(double wTarget,
+                        const SmartPointer<Domain<T, D>> &target,
+                        double wSource,
+                        const SmartPointer<Domain<T, D>> &source) {
     // We write the result into levelSets.back() (which is passed as 'target' or
     // 'source' usually, but here we assume target is the destination)
     // Actually, to support u_new = a*u_old + b*u_new, we should write to
@@ -125,7 +126,6 @@ public:
 
     return dt;
   }
-
 };
 
 PRECOMPILE_PRECISION_DIMENSION(AdvectRungeKutta3);
