@@ -87,6 +87,15 @@ public:
       VIENNACORE_LOG_WARNING("No mesh set for rendering.");
       return;
     }
+
+    // Re-attach renderer to the style right before starting
+    if (auto style = interactor->GetInteractorStyle()) {
+      style->SetDefaultRenderer(renderer);
+      style->SetCurrentRenderer(renderer);
+    }
+    interactor->SetRenderWindow(renderWindow);
+    renderWindow->AddRenderer(renderer);
+
     renderWindow->Render();
     interactor->Initialize();
     interactor->Start();
@@ -100,6 +109,9 @@ public:
     cam->ParallelProjectionOn();
 
     auto style = vtkSmartPointer<ImagePanInteractorStyle>::New();
+    // Make sure both the interactor and the style know which renderer to use
+    style->SetDefaultRenderer(renderer);
+    style->SetCurrentRenderer(renderer);
     interactor->SetInteractorStyle(style);
     return *this;
   }
@@ -111,11 +123,11 @@ private:
 
     renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
     renderWindow->SetWindowName("ViennaLS Render Window");
-    renderWindow->AddRenderer(renderer);
     renderWindow->SetSize(windowSize.data());
 
     interactor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
     interactor->SetRenderWindow(renderWindow);
+    renderWindow->SetInteractor(interactor);
   }
 
   void updatePolyData() {

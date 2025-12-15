@@ -43,6 +43,7 @@
 #include <lsToVoxelMesh.hpp>
 #include <lsTransformMesh.hpp>
 #include <lsVTKReader.hpp>
+#include <lsVTKRenderWindow.hpp>
 #include <lsVTKWriter.hpp>
 #include <lsVelocityField.hpp>
 #include <lsVersion.hpp>
@@ -345,8 +346,8 @@ template <int D> void bindApi(py::module &module) {
                     const std::vector<VectorType<T, D>> &>))
       // methods
       .def("insertNextPoint",
-           (void(PointCloud<T, D>::*)(const VectorType<T, D> &)) &
-               PointCloud<T, D>::insertNextPoint);
+           (void (PointCloud<T, D>::*)(
+               const VectorType<T, D> &))&PointCloud<T, D>::insertNextPoint);
 
   // ConvexHull
   py::class_<ConvexHull<T, D>, SmartPointer<ConvexHull<T, D>>>(module,
@@ -599,26 +600,26 @@ template <int D> void bindApi(py::module &module) {
       .def("setLevelSet", &MakeGeometry<T, D>::setLevelSet,
            "Set the levelset in which to create the geometry.")
       .def("setGeometry",
-           (void(MakeGeometry<T, D>::*)(SmartPointer<Sphere<T, D>>)) &
-               MakeGeometry<T, D>::setGeometry)
+           (void (MakeGeometry<T, D>::*)(
+               SmartPointer<Sphere<T, D>>))&MakeGeometry<T, D>::setGeometry)
       .def("setGeometry",
-           (void(MakeGeometry<T, D>::*)(SmartPointer<Plane<T, D>>)) &
-               MakeGeometry<T, D>::setGeometry)
+           (void (MakeGeometry<T, D>::*)(
+               SmartPointer<Plane<T, D>>))&MakeGeometry<T, D>::setGeometry)
       .def("setGeometry",
-           (void(MakeGeometry<T, D>::*)(SmartPointer<Box<T, D>>)) &
-               MakeGeometry<T, D>::setGeometry)
+           (void (MakeGeometry<T, D>::*)(
+               SmartPointer<Box<T, D>>))&MakeGeometry<T, D>::setGeometry)
       .def("setGeometry",
-           (void(MakeGeometry<T, D>::*)(SmartPointer<Cylinder<T, D>>)) &
-               MakeGeometry<T, D>::setGeometry)
+           (void (MakeGeometry<T, D>::*)(
+               SmartPointer<Cylinder<T, D>>))&MakeGeometry<T, D>::setGeometry)
       .def("setGeometry",
-           (void(MakeGeometry<T, D>::*)(SmartPointer<PointCloud<T, D>>)) &
-               MakeGeometry<T, D>::setGeometry)
+           (void (MakeGeometry<T, D>::*)(
+               SmartPointer<PointCloud<T, D>>))&MakeGeometry<T, D>::setGeometry)
       .def("setIgnoreBoundaryConditions",
-           (void(MakeGeometry<T, D>::*)(bool)) &
-               MakeGeometry<T, D>::setIgnoreBoundaryConditions)
+           (void (MakeGeometry<T, D>::*)(
+               bool))&MakeGeometry<T, D>::setIgnoreBoundaryConditions)
       .def("setIgnoreBoundaryConditions",
-           (void(MakeGeometry<T, D>::*)(std::array<bool, 3>)) &
-               MakeGeometry<T, D>::setIgnoreBoundaryConditions)
+           (void (MakeGeometry<T, D>::*)(std::array<bool, 3>))&MakeGeometry<
+               T, D>::setIgnoreBoundaryConditions)
       .def("apply", &MakeGeometry<T, D>::apply, "Generate the geometry.");
 
   // MarkVoidPoints
