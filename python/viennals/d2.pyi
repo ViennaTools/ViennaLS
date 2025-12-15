@@ -1325,11 +1325,34 @@ class ToMesh:
 
 class ToMultiSurfaceMesh:
     @typing.overload
-    def __init__(self) -> None: ...
+    def __init__(
+        self,
+        eps: typing.SupportsFloat = 1e-12,
+        minNodeDistFactor: typing.SupportsFloat = 0.05,
+    ) -> None: ...
     @typing.overload
-    def __init__(self, arg0: Domain, arg1: viennals._core.Mesh) -> None: ...
+    def __init__(
+        self,
+        domain: Domain,
+        mesh: viennals._core.Mesh,
+        eps: typing.SupportsFloat = 1e-12,
+        minNodeDistFactor: typing.SupportsFloat = 0.05,
+    ) -> None: ...
     @typing.overload
-    def __init__(self, arg0: viennals._core.Mesh) -> None: ...
+    def __init__(
+        self,
+        domains: collections.abc.Sequence[Domain],
+        mesh: viennals._core.Mesh,
+        eps: typing.SupportsFloat = 1e-12,
+        minNodeDistFactor: typing.SupportsFloat = 0.05,
+    ) -> None: ...
+    @typing.overload
+    def __init__(
+        self,
+        mesh: viennals._core.Mesh,
+        eps: typing.SupportsFloat = 1e-12,
+        minNodeDistFactor: typing.SupportsFloat = 0.05,
+    ) -> None: ...
     def apply(self) -> None:
         """
         Convert the levelset to a surface mesh.
