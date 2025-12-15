@@ -6,7 +6,7 @@ requires = [
 build-backend = "scikit_build_core.build"
 
 [project]
-version = "5.2.1"
+version = "5.3.0"
 name = "ViennaLS"
 readme = "README.md"
 license = {file = "LICENSE"}

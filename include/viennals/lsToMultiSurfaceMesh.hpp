@@ -63,6 +63,13 @@ public:
     levelSets.push_back(passedLevelSet);
   }
 
+  ToMultiSurfaceMesh(
+      std::vector<SmartPointer<lsDomainType>> const &passedLevelSets,
+      SmartPointer<viennals::Mesh<T>> passedMesh, double eps = 1e-12,
+      double minNodeDistFactor = 0.05)
+      : levelSets(passedLevelSets), mesh(passedMesh), epsilon(eps),
+        minNodeDistanceFactor(minNodeDistFactor) {}
+
   ToMultiSurfaceMesh(SmartPointer<viennals::Mesh<T>> passedMesh,
                      double eps = 1e-12, double minNodeDistFactor = 0.05)
       : mesh(passedMesh), epsilon(eps),
@@ -122,7 +129,7 @@ public:
     const bool checkNodeFlag = minNodeDistanceFactor > 0;
     const bool useMaterialMap = materialMap != nullptr;
 
-    auto quantize = [&](const Vec3D<T> &p) -> I3 {
+    auto quantize = [&minNodeDistance](const Vec3D<T> &p) -> I3 {
       const T inv = T(1) / minNodeDistance;
       return {(int)std::llround(p[0] * inv), (int)std::llround(p[1] * inv),
               (int)std::llround(p[2] * inv)};

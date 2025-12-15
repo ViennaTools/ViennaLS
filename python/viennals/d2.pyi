@@ -112,6 +112,16 @@ class Advect:
         Prepare the level-set.
         """
 
+    def setAdaptiveTimeStepThreshold(self, arg0: typing.SupportsFloat) -> None:
+        """
+        Set the threshold (in fraction of the CFL condition) below which adaptive time stepping is applied. Defaults to 0.05.
+        """
+
+    def setAdaptiveTimeStepping(self, arg0: bool) -> None:
+        """
+        Set whether adaptive time stepping should be used when approaching material boundaries during etching.
+        """
+
     def setAdvectionTime(self, arg0: typing.SupportsFloat) -> None:
         """
         Set the time until when the level set should be advected.
@@ -137,9 +147,24 @@ class Advect:
         Set the integration scheme to use during advection.
         """
 
+    def setSaveAdvectionVelocities(self, arg0: bool) -> None:
+        """
+        Set whether the velocities applied to each point should be saved in the level set for debug purposes.
+        """
+
+    def setSingleStep(self, arg0: bool) -> None:
+        """
+        Set whether only a single advection step should be performed.
+        """
+
     def setTimeStepRatio(self, arg0: typing.SupportsFloat) -> None:
         """
         Set the maximum time step size relative to grid size. Advection is only stable for <0.5.
+        """
+
+    def setUpdatePointData(self, arg0: bool) -> None:
+        """
+        Set whether the point data in the old LS should be translated to the advected LS. Defaults to true.
         """
 
     def setVelocityField(self, arg0: viennals._core.VelocityField) -> None:
@@ -1300,11 +1325,34 @@ class ToMesh:
 
 class ToMultiSurfaceMesh:
     @typing.overload
-    def __init__(self) -> None: ...
+    def __init__(
+        self,
+        eps: typing.SupportsFloat = 1e-12,
+        minNodeDistFactor: typing.SupportsFloat = 0.05,
+    ) -> None: ...
     @typing.overload
-    def __init__(self, arg0: Domain, arg1: viennals._core.Mesh) -> None: ...
+    def __init__(
+        self,
+        domain: Domain,
+        mesh: viennals._core.Mesh,
+        eps: typing.SupportsFloat = 1e-12,
+        minNodeDistFactor: typing.SupportsFloat = 0.05,
+    ) -> None: ...
     @typing.overload
-    def __init__(self, arg0: viennals._core.Mesh) -> None: ...
+    def __init__(
+        self,
+        domains: collections.abc.Sequence[Domain],
+        mesh: viennals._core.Mesh,
+        eps: typing.SupportsFloat = 1e-12,
+        minNodeDistFactor: typing.SupportsFloat = 0.05,
+    ) -> None: ...
+    @typing.overload
+    def __init__(
+        self,
+        mesh: viennals._core.Mesh,
+        eps: typing.SupportsFloat = 1e-12,
+        minNodeDistFactor: typing.SupportsFloat = 0.05,
+    ) -> None: ...
     def apply(self) -> None:
         """
         Convert the levelset to a surface mesh.

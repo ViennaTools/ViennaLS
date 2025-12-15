@@ -418,6 +418,7 @@ protected:
     }
     const bool ignoreVoidPoints = ignoreVoids;
     const bool useAdaptiveTimeStepping = adaptiveTimeStepping;
+    const double atsThreshold = adaptiveTimeStepThreshold;
 
     if (!storedRates.empty()) {
       VIENNACORE_LOG_WARNING("Advect: Overwriting previously stored rates.");
