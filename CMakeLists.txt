@@ -9,6 +9,7 @@ project(
 # --------------------------------------------------------------------------------------------------------
 
 option(VIENNALS_USE_VTK "Build with VTK file support" ON)
+option(VIENNALS_VTK_RENDERING "Build with VTK rendering support" ON)
 
 option(VIENNALS_PRECOMPILE_HEADERS "Build template specialisations for shorter compile times" OFF)
 option(VIENNALS_STATIC_BUILD "Build dependencies as static libraries" OFF)
@@ -140,7 +141,7 @@ elseif(VIENNALS_USE_VTK)
   set(VTK_OPTIONS
       "VTK_LEGACY_REMOVE ON"
       "VTK_SMP_IMPLEMENTATION_TYPE OpenMP"
-      "VTK_GROUP_ENABLE_Rendering NO"
+      "VTK_GROUP_ENABLE_Rendering YES"
       "VTK_GROUP_ENABLE_Imaging NO"
       "VTK_GROUP_ENABLE_Views NO"
       "VTK_GROUP_ENABLE_Web NO"
@@ -194,6 +195,12 @@ elseif(VIENNALS_USE_VTK)
               VTK::FiltersCore
               VTK::FiltersGeneral
               VTK::FiltersGeometry)
+  if(VIENNALS_VTK_RENDERING)
+    target_link_libraries(
+      ${PROJECT_NAME} INTERFACE VTK::RenderingCore VTK::RenderingOpenGL2 VTK::RenderingUI
+                                VTK::InteractionStyle VTK::RenderingFreeType)
+    target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_VTK_RENDERING=1)
+  endif()
 endif()
 
 # --------------------------------------------------------------------------------------------------------
