@@ -112,6 +112,11 @@ class Advect:
         Prepare the level-set.
         """
 
+    def setAdaptiveTimeStepThreshold(self, arg0: typing.SupportsFloat) -> None:
+        """
+        Set the threshold (in fraction of the CFL condition) below which adaptive time stepping is applied. Defaults to 0.05.
+        """
+
     def setAdaptiveTimeStepping(self, arg0: bool) -> None:
         """
         Set whether adaptive time stepping should be used when approaching material boundaries during etching.
@@ -155,6 +160,11 @@ class Advect:
     def setTimeStepRatio(self, arg0: typing.SupportsFloat) -> None:
         """
         Set the maximum time step size relative to grid size. Advection is only stable for <0.5.
+        """
+
+    def setUpdatePointData(self, arg0: bool) -> None:
+        """
+        Set whether the point data in the old LS should be translated to the advected LS. Defaults to true.
         """
 
     def setVelocityField(self, arg0: viennals._core.VelocityField) -> None:

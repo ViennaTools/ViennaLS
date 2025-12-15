@@ -193,6 +193,10 @@ template <int D> void bindApi(py::module &module) {
       .def("setAdaptiveTimeStepping", &Advect<T, D>::setAdaptiveTimeStepping,
            "Set whether adaptive time stepping should be used when approaching "
            "material boundaries during etching.")
+      .def("setAdaptiveTimeStepThreshold",
+           &Advect<T, D>::setAdaptiveTimeStepThreshold,
+           "Set the threshold (in fraction of the CFL condition) below which "
+           "adaptive time stepping is applied. Defaults to 0.05.")
       .def("setSingleStep", &Advect<T, D>::setSingleStep,
            "Set whether only a single advection step should be performed.")
       .def(
@@ -216,6 +220,9 @@ template <int D> void bindApi(py::module &module) {
            "Set the integration scheme to use during advection.")
       .def("setDissipationAlpha", &Advect<T, D>::setDissipationAlpha,
            "Set the dissipation value to use for Lax Friedrichs integration.")
+      .def("setUpdatePointData", &Advect<T, D>::setUpdatePointData,
+           "Set whether the point data in the old LS should be translated to "
+           "the advected LS. Defaults to true.")
       .def("prepareLS", &Advect<T, D>::prepareLS, "Prepare the level-set.")
       // need scoped release since we are calling a python method from
       // parallelised C++ code here

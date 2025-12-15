@@ -84,6 +84,7 @@ template <class T, int D> class Advect {
   bool updatePointData = true;
   bool checkDissipation = true;
   bool adaptiveTimeStepping = false;
+  double adaptiveTimeStepThreshold = 0.05;
   static constexpr double wrappingLayerEpsilon = 1e-4;
 
   // this vector will hold the maximum time step for each point and the
@@ -445,6 +446,7 @@ template <class T, int D> class Advect {
     }
     const bool ignoreVoidPoints = ignoreVoids;
     const bool useAdaptiveTimeStepping = adaptiveTimeStepping;
+    const double atsThreshold = adaptiveTimeStepThreshold;
 
     if (!storedRates.empty()) {
       VIENNACORE_LOG_WARNING("Advect: Overwriting previously stored rates.");
@@ -556,12 +558,11 @@ template <class T, int D> class Advect {
 
             } else {
               // Sub-case 3b: Interface Interaction
-              if (useAdaptiveTimeStepping && difference > 0.05 * cfl) {
+              if (useAdaptiveTimeStepping && difference > atsThreshold * cfl) {
                 // Adaptive Sub-stepping:
-                // Approaching boundary: Force small steps (5% CFL) to gather
-                // flux statistics and prevent numerical overshoot ("Soft
-                // Landing").
-                maxStepTime -= 0.05 * cfl / velocity;
+                // Approaching boundary: Force small steps to gather flux
+                // statistics and prevent numerical overshoot ("Soft Landing").
+                maxStepTime -= atsThreshold * cfl / velocity;
                 tempRates.push_back(std::make_pair(
                     gradNDissipation, std::numeric_limits<T>::min()));
               } else {
@@ -787,6 +788,13 @@ public:
   /// when approaching material boundaries during etching.
   /// Defaults to false.
   void setAdaptiveTimeStepping(bool aTS) { adaptiveTimeStepping = aTS; }
+
+  /// Set the threshold (in fraction of the CFL condition)
+  /// below which adaptive time stepping is applied.
+  /// Defaults to 0.05 (5% of the CFL condition).
+  void setAdaptiveTimeStepThreshold(double threshold) {
+    adaptiveTimeStepThreshold = threshold;
+  }
 
   /// Set whether the velocities applied to each point should be saved in
   /// the level set for debug purposes.
