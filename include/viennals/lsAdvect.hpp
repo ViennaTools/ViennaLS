@@ -24,6 +24,7 @@
 #include <lsLocalLocalLaxFriedrichs.hpp>
 #include <lsStencilLocalLaxFriedrichsScalar.hpp>
 #include <lsWENO5.hpp>
+#include <lsWENO5.hpp>
 
 // Velocity accessor
 #include <lsVelocityField.hpp>
@@ -50,6 +51,8 @@ enum struct IntegrationSchemeEnum : unsigned {
   LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER = 6,
   LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 7,
   LOCAL_LAX_FRIEDRICHS_2ND_ORDER = 8,
+  STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 9,
+  WENO_5TH_ORDER = 10
   STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 9,
   WENO_5TH_ORDER = 10
 };
@@ -413,6 +416,8 @@ protected:
       if (voidMarkerPointer == nullptr) {
         VIENNACORE_LOG_WARNING("Advect: Cannot find void point markers. Not "
                                "ignoring void points.");
+        VIENNACORE_LOG_WARNING("Advect: Cannot find void point markers. Not "
+                               "ignoring void points.");
         ignoreVoids = false;
       }
     }
@@ -420,6 +425,7 @@ protected:
     const bool useAdaptiveTimeStepping = adaptiveTimeStepping;
 
     if (!storedRates.empty()) {
+      VIENNACORE_LOG_WARNING("Advect: Overwriting previously stored rates.");
       VIENNACORE_LOG_WARNING("Advect: Overwriting previously stored rates.");
     }
 
@@ -494,11 +500,15 @@ protected:
           if (velocity > 0.) {
             // Case 1: Growth / Deposition (Velocity > 0)
             // Limit the time step based on the standard CFL condition.
+            // Case 1: Growth / Deposition (Velocity > 0)
+            // Limit the time step based on the standard CFL condition.
             maxStepTime += cfl / velocity;
             tempRates.push_back(std::make_pair(gradNDissipation,
                                                -std::numeric_limits<T>::max()));
             break;
           } else if (velocity == 0.) {
+            // Case 2: Static (Velocity == 0)
+            // No time step limit imposed by this point.
             // Case 2: Static (Velocity == 0)
             // No time step limit imposed by this point.
             maxStepTime = std::numeric_limits<T>::max();
@@ -517,15 +527,29 @@ protected:
               valueBelow = std::numeric_limits<T>::max();
             }
             // Calculate the top material thickness
+            // Case 3: Etching (Velocity < 0)
+            // Retrieve the interface location of the underlying material.
+            T valueBelow;
+            if (currentLevelSetId > 0) {
+              iterators[currentLevelSetId - 1].goToIndicesSequential(
+                  it.getStartIndices());
+              valueBelow = iterators[currentLevelSetId - 1].getValue();
+            } else {
+              valueBelow = std::numeric_limits<T>::max();
+            }
+            // Calculate the top material thickness
             T difference = std::abs(valueBelow - value);
 
             if (difference >= cfl) {
+              // Sub-case 3a: Standard Advection
+              // Far from interface: Use full CFL time step.
               // Sub-case 3a: Standard Advection
               // Far from interface: Use full CFL time step.
               maxStepTime -= cfl / velocity;
               tempRates.push_back(std::make_pair(
                   gradNDissipation, std::numeric_limits<T>::max()));
               break;
+
 
             } else {
               // Sub-case 3b: Interface Interaction
@@ -648,6 +672,9 @@ protected:
   // depth accordingly if there would be a material change.
   void updateLevelSet(double dt) {
     if (timeStepRatio >= 0.5) {
+      VIENNACORE_LOG_WARNING(
+          "Integration time step ratio should be smaller than 0.5. "
+          "Advection might fail!");
       VIENNACORE_LOG_WARNING(
           "Integration time step ratio should be smaller than 0.5. "
           "Advection might fail!");
@@ -887,6 +914,7 @@ public:
     // check whether a level set and velocities have been given
     if (levelSets.empty()) {
       VIENNACORE_LOG_ERROR("No level sets passed to Advect.");
+      VIENNACORE_LOG_ERROR("No level sets passed to Advect.");
       return;
     }
 
@@ -922,6 +950,9 @@ public:
                IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>::prepareLS(
           levelSets.back());
+    } else if (integrationScheme == IntegrationSchemeEnum::WENO_5TH_ORDER) {
+      // WENO5 requires a stencil radius of 3 (template parameter 3)
+      lsInternal::WENO5<T, D, 3>::prepareLS(levelSets.back());
     } else if (integrationScheme == IntegrationSchemeEnum::WENO_5TH_ORDER) {
       // WENO5 requires a stencil radius of 3 (template parameter 3)
       lsInternal::WENO5<T, D, 3>::prepareLS(levelSets.back());

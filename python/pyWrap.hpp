@@ -228,6 +228,9 @@ template <int D> void bindApi(py::module &module) {
       .def("setUpdatePointData", &Advect<T, D>::setUpdatePointData,
            "Set whether the point data in the old LS should be translated to "
            "the advected LS. Defaults to true.")
+      .def("setUpdatePointData", &Advect<T, D>::setUpdatePointData,
+           "Set whether the point data in the old LS should be translated to "
+           "the advected LS. Defaults to true.")
       .def("prepareLS", &Advect<T, D>::prepareLS, "Prepare the level-set.")
       // need scoped release since we are calling a python method from
       // parallelised C++ code here
@@ -798,12 +801,28 @@ template <int D> void bindApi(py::module &module) {
                &SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<double,
                                                                      double>),
            py::arg("eps") = 1e-12, py::arg("minNodeDistFactor") = 0.05)
+      .def(py::init(
+               &SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<double,
+                                                                     double>),
+           py::arg("eps") = 1e-12, py::arg("minNodeDistFactor") = 0.05)
       .def(py::init(&SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<
                     SmartPointer<Domain<T, D>> &, SmartPointer<Mesh<T>> &,
                     double, double>),
            py::arg("domain"), py::arg("mesh"), py::arg("eps") = 1e-12,
            py::arg("minNodeDistFactor") = 0.05)
+                    SmartPointer<Domain<T, D>> &, SmartPointer<Mesh<T>> &,
+                    double, double>),
+           py::arg("domain"), py::arg("mesh"), py::arg("eps") = 1e-12,
+           py::arg("minNodeDistFactor") = 0.05)
       .def(py::init(&SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<
+                    std::vector<SmartPointer<Domain<T, D>>> &,
+                    SmartPointer<Mesh<T>> &, double, double>),
+           py::arg("domains"), py::arg("mesh"), py::arg("eps") = 1e-12,
+           py::arg("minNodeDistFactor") = 0.05)
+      .def(py::init(&SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<
+                    SmartPointer<Mesh<T>> &, double, double>),
+           py::arg("mesh"), py::arg("eps") = 1e-12,
+           py::arg("minNodeDistFactor") = 0.05)
                     std::vector<SmartPointer<Domain<T, D>>> &,
                     SmartPointer<Mesh<T>> &, double, double>),
            py::arg("domains"), py::arg("mesh"), py::arg("eps") = 1e-12,
