@@ -9,6 +9,8 @@
 #include <vtkAutoInit.h>
 #include <vtkCamera.h>
 #include <vtkCellArray.h>
+#include <vtkCellData.h>
+#include <vtkDataSetMapper.h>
 #include <vtkInteractorStyleImage.h>
 #include <vtkLookupTable.h>
 #include <vtkPoints.h>
@@ -64,6 +66,11 @@ public:
     updatePolyData();
   }
 
+  void setVolumeMesh(vtkSmartPointer<vtkUnstructuredGrid> volumeVTK) {
+    volumeMesh = volumeVTK;
+    updateVolumeMesh();
+  }
+
   void setMaterialIds(const std::vector<T> &ids) { materialIds = ids; }
 
   auto setBackgroundColor(const std::array<double, 3> &color) {
@@ -76,8 +83,8 @@ public:
   }
 
   void render() {
-    if (mesh == nullptr) {
-      std::cout << "No mesh set for rendering." << std::endl;
+    if (mesh == nullptr && volumeMesh == nullptr) {
+      VIENNACORE_LOG_WARNING("No mesh set for rendering.");
       return;
     }
     renderWindow->Render();
@@ -87,16 +94,17 @@ public:
 
   vtkSmartPointer<vtkRenderWindow> getRenderWindow() { return renderWindow; }
 
-private:
-  void enable2DMode() {
+  auto enable2DMode() {
     assert(renderer && "Renderer not initialized");
     vtkCamera *cam = renderer->GetActiveCamera();
     cam->ParallelProjectionOn();
 
     auto style = vtkSmartPointer<ImagePanInteractorStyle>::New();
     interactor->SetInteractorStyle(style);
+    return *this;
   }
 
+private:
   void initialize() {
     renderer = vtkSmartPointer<vtkRenderer>::New();
     renderer->SetBackground(backgroundColor.data());
@@ -113,11 +121,6 @@ private:
   void updatePolyData() {
     if (mesh == nullptr) {
       return;
-    }
-
-    // Remove previous actor if exists
-    if (actor) {
-      renderer->RemoveActor(actor);
     }
 
     polyData = vtkSmartPointer<vtkPolyData>::New();
@@ -192,7 +195,7 @@ private:
       VIENNACORE_LOG_DEBUG("Added MaterialIds array to cell data.");
     }
 
-    mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+    auto mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
     mapper->SetInputData(polyData);
 
     if (useMaterialIds) {
@@ -213,9 +216,20 @@ private:
       mapper->SetScalarRange(minId, maxId);
     }
 
-    actor = vtkSmartPointer<vtkActor>::New();
+    auto actor = vtkSmartPointer<vtkActor>::New();
     actor->SetMapper(mapper);
     actor->GetProperty()->SetLineWidth(3.0); // Thicker lines
+
+    renderer->AddActor(actor);
+    renderer->ResetCamera();
+  }
+
+  void updateVolumeMesh() {
+    auto mapper = vtkSmartPointer<vtkDataSetMapper>::New();
+    mapper->SetInputData(volumeMesh);
+
+    auto actor = vtkSmartPointer<vtkActor>::New();
+    actor->SetMapper(mapper);
 
     renderer->AddActor(actor);
     renderer->ResetCamera();
@@ -225,12 +239,12 @@ private:
   SmartPointer<Mesh<T>> mesh = nullptr;
   std::vector<T> materialIds;
 
+  vtkSmartPointer<vtkUnstructuredGrid> volumeMesh = nullptr;
+
   vtkSmartPointer<vtkRenderer> renderer;
   vtkSmartPointer<vtkRenderWindow> renderWindow;
   vtkSmartPointer<vtkRenderWindowInteractor> interactor;
   vtkSmartPointer<vtkPolyData> polyData;
-  vtkSmartPointer<vtkPolyDataMapper> mapper;
-  vtkSmartPointer<vtkActor> actor;
 
   std::array<double, 3> backgroundColor = {84.0 / 255, 89.0 / 255, 109.0 / 255};
   std::array<int, 2> windowSize = {800, 600};
