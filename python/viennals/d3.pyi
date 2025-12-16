@@ -9,6 +9,8 @@ import viennals._core
 
 __all__: list[str] = [
     "Advect",
+    "AdvectForwardEuler",
+    "AdvectRungeKutta3",
     "BooleanOperation",
     "Box",
     "BoxDistribution",
@@ -62,11 +64,6 @@ class Advect:
         Perform advection.
         """
 
-    def applyIntegration(self, arg0: typing.SupportsFloat) -> None:
-        """
-        Apply the integration scheme and calculate rates and maximum time step, but it do **not** move the surface.
-        """
-
     def clearLevelSets(self) -> None:
         """
         Clear all level sets used for advection.
@@ -107,14 +104,11 @@ class Advect:
         Prepare the level-set.
         """
 
-    def setAdaptiveTimeStepThreshold(self, arg0: typing.SupportsFloat) -> None:
+    def setAdaptiveTimeStepping(
+        self, enabled: bool = True, subdivisions: typing.SupportsInt = 20
+    ) -> None:
         """
-        Set the threshold (in fraction of the CFL condition) below which adaptive time stepping is applied. Defaults to 0.05.
-        """
-
-    def setAdaptiveTimeStepping(self, arg0: bool) -> None:
-        """
-        Set whether adaptive time stepping should be used when approaching material boundaries during etching.
+        Enable/disable adaptive time stepping and set the number of subdivisions.
         """
 
     def setAdvectionTime(self, arg0: typing.SupportsFloat) -> None:
@@ -125,6 +119,11 @@ class Advect:
     def setCalculateNormalVectors(self, arg0: bool) -> None:
         """
         Set whether normal vectors are needed for the supplied velocity field.
+        """
+
+    def setCheckDissipation(self, check: bool) -> None:
+        """
+        Enable/disable dissipation checking.
         """
 
     def setDissipationAlpha(self, arg0: typing.SupportsFloat) -> None:
@@ -147,7 +146,7 @@ class Advect:
         Set whether the velocities applied to each point should be saved in the level set for debug purposes.
         """
 
-    def setSingleStep(self, arg0: bool) -> None:
+    def setSingleStep(self, singleStep: bool) -> None:
         """
         Set whether only a single advection step should be performed.
         """
@@ -157,6 +156,13 @@ class Advect:
         Set the maximum time step size relative to grid size. Advection is only stable for <0.5.
         """
 
+    @typing.overload
+    def setUpdatePointData(self, update: bool) -> None:
+        """
+        Enable/disable updating point data after advection.
+        """
+
+    @typing.overload
     def setUpdatePointData(self, arg0: bool) -> None:
         """
         Set whether the point data in the old LS should be translated to the advected LS. Defaults to true.
@@ -166,6 +172,22 @@ class Advect:
         """
         Set the velocity to use for advection.
         """
+
+class AdvectForwardEuler(Advect):
+    @typing.overload
+    def __init__(self) -> None: ...
+    @typing.overload
+    def __init__(self, arg0: Domain) -> None: ...
+    @typing.overload
+    def __init__(self, arg0: Domain, arg1: viennals._core.VelocityField) -> None: ...
+
+class AdvectRungeKutta3(Advect):
+    @typing.overload
+    def __init__(self) -> None: ...
+    @typing.overload
+    def __init__(self, arg0: Domain) -> None: ...
+    @typing.overload
+    def __init__(self, arg0: Domain, arg1: viennals._core.VelocityField) -> None: ...
 
 class BooleanOperation:
     @typing.overload
