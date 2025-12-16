@@ -14,20 +14,11 @@ template <class T, int D> class AdvectRungeKutta3 : public Advect<T, D> {
       viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>;
   using hrleIndexType = viennahrle::IndexType;
   using Base = Advect<T, D>;
-
+  using Base::levelSets;
   SmartPointer<Domain<T, D>> originalLevelSet = nullptr;
 
 public:
   using Base::Base; // inherit all constructors
-
-  using Base::advectedTime;
-  using Base::advectionTime;
-  using Base::currentTimeStep;
-  using Base::levelSets;
-  using Base::numberOfTimeSteps;
-  using Base::performOnlySingleStep;
-  using Base::storedRates;
-  using Base::velocities;
 
 private:
   // Helper function for linear combination: target = wTarget * target + wSource
@@ -68,25 +59,13 @@ private:
     }
   }
 
-public:
   double advect(double maxTimeStep) override {
-    if (levelSets.empty()) {
-      VIENNACORE_LOG_ERROR("No level sets passed to Advect. Not advecting.");
-      return std::numeric_limits<double>::max();
-    }
-    if (velocities == nullptr) {
-      VIENNACORE_LOG_ERROR(
-          "No velocity field passed to Advect. Not advecting.");
-      return std::numeric_limits<double>::max();
-    }
-
     // 1. Prepare and Expand
     Base::prepareLS();
 
     // 2. Save u^n (Deep copy with identical topology)
     if (originalLevelSet == nullptr) {
-      originalLevelSet =
-          SmartPointer<Domain<T, D>>::New(levelSets.back()->getGrid());
+      originalLevelSet = Domain<T, D>::New(levelSets.back()->getGrid());
     }
     originalLevelSet->deepCopy(levelSets.back());
 

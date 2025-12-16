@@ -769,6 +769,31 @@ protected:
     storedRates.clear();
   }
 
+  /// internal function used as a wrapper to call specialized integrateTime
+  /// with the chosen integrationScheme
+  virtual double advect(double maxTimeStep) {
+    prepareLS();
+
+    if (currentTimeStep < 0. || storedRates.empty())
+      computeRates(maxTimeStep);
+
+    updateLevelSet(currentTimeStep);
+
+    rebuildLS();
+
+    // Adjust all level sets below the advected one
+    if (integrationScheme !=
+        IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+      for (unsigned i = 0; i < levelSets.size() - 1; ++i) {
+        BooleanOperation<T, D>(levelSets[i], levelSets.back(),
+                               BooleanOperationEnum::INTERSECT)
+            .apply();
+      }
+    }
+
+    return currentTimeStep;
+  }
+
 public:
   static constexpr char velocityLabel[] = "AdvectionVelocities";
   static constexpr char dissipationLabel[] = "Dissipation";
@@ -943,41 +968,18 @@ public:
     }
   }
 
-  /// internal function used as a wrapper to call specialized integrateTime
-  /// with the chosen integrationScheme
-  virtual double advect(double maxTimeStep) {
+  void apply() {
     // check whether a level set and velocities have been given
     if (levelSets.empty()) {
       VIENNACORE_LOG_ERROR("No level sets passed to Advect. Not advecting.");
-      return std::numeric_limits<double>::max();
+      return;
     }
     if (velocities == nullptr) {
       VIENNACORE_LOG_ERROR(
           "No velocity field passed to Advect. Not advecting.");
-      return std::numeric_limits<double>::max();
+      return;
     }
 
-    if (currentTimeStep < 0. || storedRates.empty())
-      computeRates(maxTimeStep);
-
-    updateLevelSet(currentTimeStep);
-
-    rebuildLS();
-
-    // Adjust all level sets below the advected one
-    if (integrationScheme !=
-        IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-      for (unsigned i = 0; i < levelSets.size() - 1; ++i) {
-        BooleanOperation<T, D>(levelSets[i], levelSets.back(),
-                               BooleanOperationEnum::INTERSECT)
-            .apply();
-      }
-    }
-
-    return currentTimeStep;
-  }
-
-  virtual void apply() {
     if (advectionTime == 0.) {
       advectedTime = advect(std::numeric_limits<double>::max());
       numberOfTimeSteps = 1;
