@@ -69,26 +69,34 @@ private:
     }
     originalLevelSet->deepCopy(levelSets.back());
 
+    double limit = maxTimeStep / 3.0;
+    double totalDt = 0.0;
+
     // 3. Stage 1: u^(1) = u^n + dt * L(u^n)
-    Base::computeRates(maxTimeStep);
+    Base::computeRates(limit);
     double dt = Base::getCurrentTimeStep();
     Base::updateLevelSet(dt);
+    totalDt += dt;
 
     // 4. Stage 2: u^(2) = 3/4 u^n + 1/4 (u^(1) + dt * L(u^(1)))
     // Calculate rates based on u^(1) (current levelSets.back())
-    Base::computeRates(dt);
+    Base::computeRates(limit);
+    dt = Base::getCurrentTimeStep();
     // Update to get u^* = u^(1) + dt * L(u^(1))
     Base::updateLevelSet(dt);
     // Combine: u^(2) = 0.75 * u^n + 0.25 * u^*
     combineLevelSets(0.75, originalLevelSet, 0.25, levelSets.back());
+    totalDt += dt;
 
     // 5. Stage 3: u^(n+1) = 1/3 u^n + 2/3 (u^(2) + dt * L(u^(2)))
     // Calculate rates based on u^(2) (current levelSets.back())
-    Base::computeRates(dt);
+    Base::computeRates(limit);
+    dt = Base::getCurrentTimeStep();
     // Update to get u^** = u^(2) + dt * L(u^(2))
     Base::updateLevelSet(dt);
     // Combine: u^(n+1) = 1/3 * u^n + 2/3 * u^**
     combineLevelSets(1.0 / 3.0, originalLevelSet, 2.0 / 3.0, levelSets.back());
+    totalDt += dt;
 
     // 6. Finalize: Re-segment and renormalize only at the end
     Base::rebuildLS();
@@ -103,7 +111,7 @@ private:
       }
     }
 
-    return dt;
+    return totalDt;
   }
 };
 
