@@ -20,11 +20,14 @@
 #include <vtkRenderWindow.h>
 #include <vtkRenderWindowInteractor.h>
 #include <vtkRenderer.h>
+#include <vtkUnstructuredGrid.h>
 
+#ifndef VIENNALS_VTK_MODULE_INIT
 VTK_MODULE_INIT(vtkRenderingOpenGL2);
 VTK_MODULE_INIT(vtkInteractionStyle);
 VTK_MODULE_INIT(vtkRenderingFreeType);
 VTK_MODULE_INIT(vtkRenderingUI);
+#endif
 
 class ImagePanInteractorStyle : public vtkInteractorStyleImage {
 public:
@@ -88,7 +91,8 @@ public:
       return;
     }
 
-    // Re-attach renderer to the style right before starting
+    // Re-attach renderer to the style right before starting, in case the style
+    // was changed in the meantime
     if (auto style = interactor->GetInteractorStyle()) {
       style->SetDefaultRenderer(renderer);
       style->SetCurrentRenderer(renderer);
@@ -125,8 +129,14 @@ private:
     renderWindow->SetWindowName("ViennaLS Render Window");
     renderWindow->SetSize(windowSize.data());
 
+    // Initialize interactor
     interactor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
     interactor->SetRenderWindow(renderWindow);
+
+    // Set interactor style
+    auto style = vtkSmartPointer<vtkInteractorStyleTrackballCamera>::New();
+    interactor->SetInteractorStyle(style);
+
     renderWindow->SetInteractor(interactor);
   }
 

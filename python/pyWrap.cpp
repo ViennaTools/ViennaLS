@@ -165,14 +165,14 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def(py::init(&SmartPointer<PointData<T>>::New<>))
       // methods
       .def("insertNextScalarData",
-           (void (PointData<T>::*)(
-               const PointData<T>::ScalarDataType &,
-               const std::string &))&PointData<T>::insertNextScalarData,
+           (void(PointData<T>::*)(const PointData<T>::ScalarDataType &,
+                                  const std::string &)) &
+               PointData<T>::insertNextScalarData,
            py::arg("scalars"), py::arg("label") = "Scalars")
       .def("insertNextVectorData",
-           (void (PointData<T>::*)(
-               const PointData<T>::VectorDataType &,
-               const std::string &))&PointData<T>::insertNextVectorData,
+           (void(PointData<T>::*)(const PointData<T>::VectorDataType &,
+                                  const std::string &)) &
+               PointData<T>::insertNextVectorData,
            py::arg("vectors"), py::arg("label") = "Vectors")
       .def("getScalarDataSize", &PointData<T>::getScalarDataSize)
       .def("getVectorDataSize", &PointData<T>::getVectorDataSize)
@@ -313,6 +313,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Add metadata to the file.")
       .def("apply", &VTKWriter<T>::apply, "Write the mesh.");
 
+#ifdef VIENNALS_VTK_RENDERING
   // VTK Renderer
   py::class_<VTKRenderWindow<T>, SmartPointer<VTKRenderWindow<T>>>(
       module, "VTKRenderWindow")
@@ -328,6 +329,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       //  .def("enable2DMode", &VTKRenderWindow<T>::enable2DMode,
       //       "Enable 2D mode for rendering.")
       .def("render", &VTKRenderWindow<T>::render, "Render the added meshes.");
+#endif
 
   // --------------- OTHER CLASSES ----------------
   // MaterialMap

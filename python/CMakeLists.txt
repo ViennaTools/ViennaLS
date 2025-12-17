@@ -47,6 +47,18 @@ pybind11_add_module(${MOD} pyWrap.cpp)
 target_link_libraries(${MOD} PRIVATE ViennaLS)
 target_compile_definitions(${MOD} PRIVATE VIENNALS_MODULE_NAME=${MOD})
 
+if(VIENNALS_VTK_RENDERING)
+  vtk_module_autoinit(
+    TARGETS
+    ${MOD}
+    MODULES
+    VTK::RenderingOpenGL2
+    VTK::InteractionStyle
+    VTK::RenderingFreeType
+    VTK::RenderingUI)
+  target_compile_definitions(${MOD} PRIVATE VIENNALS_VTK_MODULE_INIT)
+endif()
+
 # Put the built .so in build/<pkg> for convenience
 set_target_properties(
   ${MOD}
