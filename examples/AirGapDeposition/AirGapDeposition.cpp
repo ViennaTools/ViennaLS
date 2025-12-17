@@ -66,12 +66,10 @@ double runSimulation(AdvectKernelType &kernel,
     kernel.apply();
     passedTime += kernel.getAdvectedTime();
 
-    std::cout << "\r" << name << " Advection time: "
-              << std::fixed << std::setprecision(1)
-              << std::setw(4) << std::setfill('0') << passedTime
-              << " / "
-              << std::setw(4) << std::setfill('0') << totalTime
-              << "s" << std::flush;
+    std::cout << "\r" << name << " Advection time: " << std::fixed
+              << std::setprecision(1) << std::setw(4) << std::setfill('0')
+              << passedTime << " / " << std::setw(4) << std::setfill('0')
+              << totalTime << "s" << std::flush;
 
     auto mesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
     ls::ToSurfaceMesh<NumericType, D>(newLayer, mesh).apply();
@@ -173,8 +171,8 @@ int main() {
   advectionKernelFE.setVelocityField(velocities);
   advectionKernelFE.setIgnoreVoids(true);
 
-  double passedTimeFE = runSimulation(advectionKernelFE, newLayerFE,
-                                      totalSimulationTime, outputInterval, "FE");
+  double passedTimeFE = runSimulation(
+      advectionKernelFE, newLayerFE, totalSimulationTime, outputInterval, "FE");
 
   // RK Kernel
   ls::AdvectRungeKutta3<NumericType, D> advectionKernelRK;
@@ -183,8 +181,8 @@ int main() {
   advectionKernelRK.setVelocityField(velocities);
   advectionKernelRK.setIgnoreVoids(true);
 
-  double passedTimeRK = runSimulation(advectionKernelRK, newLayerRK,
-                                      totalSimulationTime, outputInterval, "RK");
+  double passedTimeRK = runSimulation(
+      advectionKernelRK, newLayerRK, totalSimulationTime, outputInterval, "RK");
 
   std::cout << "Time passed FE: " << passedTimeFE << std::endl;
   std::cout << "Time passed RK: " << passedTimeRK << std::endl;
