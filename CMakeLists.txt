@@ -190,27 +190,35 @@ elseif(VIENNALS_USE_VTK)
 
   target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_USE_VTK=1)
 
-  target_link_libraries(
-    ${PROJECT_NAME}
-    INTERFACE VTK::CommonExecutionModel
-              VTK::CommonMisc
-              VTK::CommonSystem
-              VTK::CommonMath
-              VTK::CommonCore
-              VTK::CommonTransforms
-              VTK::CommonComputationalGeometry
-              VTK::IOCore
-              VTK::IOXMLParser
-              VTK::IOXML
-              VTK::FiltersCore
-              VTK::FiltersGeneral
-              VTK::FiltersGeometry)
+  set(VTK_LIBRARIES
+      VTK::CommonExecutionModel
+      VTK::CommonMisc
+      VTK::CommonSystem
+      VTK::CommonMath
+      VTK::CommonCore
+      VTK::CommonTransforms
+      VTK::CommonComputationalGeometry
+      VTK::IOCore
+      VTK::IOXMLParser
+      VTK::IOXML
+      VTK::FiltersCore
+      VTK::FiltersGeneral
+      VTK::FiltersGeometry
+      CACHE INTERNAL "")
+
   if(VIENNALS_VTK_RENDERING)
-    target_link_libraries(
-      ${PROJECT_NAME} INTERFACE VTK::RenderingCore VTK::RenderingOpenGL2 VTK::RenderingUI
-                                VTK::InteractionStyle VTK::RenderingFreeType)
+    list(
+      APPEND
+      VTK_LIBRARIES
+      VTK::RenderingCore
+      VTK::RenderingOpenGL2
+      VTK::RenderingUI
+      VTK::InteractionStyle
+      VTK::RenderingFreeType
+      VTK::IOImage)
     target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_VTK_RENDERING=1)
   endif()
+  target_link_libraries(${PROJECT_NAME} INTERFACE ${VTK_LIBRARIES})
 endif()
 
 # --------------------------------------------------------------------------------------------------------
