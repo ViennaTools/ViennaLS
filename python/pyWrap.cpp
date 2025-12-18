@@ -82,7 +82,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
 
   // ------ ENUMS ------
   py::native_enum<DiscretizationSchemeEnum>(module, "DiscretizationSchemeEnum",
-                                         "enum.IntEnum")
+                                            "enum.IntEnum")
       .value("ENGQUIST_OSHER_1ST_ORDER",
              DiscretizationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER)
       .value("ENGQUIST_OSHER_2ND_ORDER",
@@ -91,8 +91,9 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
              DiscretizationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER)
       .value("LAX_FRIEDRICHS_2ND_ORDER",
              DiscretizationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER)
-      .value("LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER",
-             DiscretizationSchemeEnum::LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER)
+      .value(
+          "LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER",
+          DiscretizationSchemeEnum::LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER)
       .value("LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER",
              DiscretizationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER)
       .value("LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER",

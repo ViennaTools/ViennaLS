@@ -396,8 +396,9 @@ protected:
   }
 
   /// Internal function used to calculate the deltas to be applied to the LS
-  /// values from the given velocities and the spatial discretization scheme to be used.
-  /// This function fills up the storedRates to be used when moving the LS
+  /// values from the given velocities and the spatial discretization scheme to
+  /// be used. This function fills up the storedRates to be used when moving the
+  /// LS
   template <class DiscretizationSchemeType>
   double integrateTime(DiscretizationSchemeType discretizationScheme,
                        double maxTimeStep) {
