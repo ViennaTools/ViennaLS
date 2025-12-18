@@ -17,7 +17,7 @@ from viennals._core import CurvatureEnum
 from viennals._core import Extrude
 from viennals._core import FeatureDetectionEnum
 from viennals._core import FileFormatEnum
-from viennals._core import IntegrationSchemeEnum
+from viennals._core import DiscretizationSchemeEnum
 from viennals._core import LogLevel
 from viennals._core import Logger
 from viennals._core import MaterialMap
@@ -116,7 +116,7 @@ __all__: list[str] = [
     "FromVolumeMesh",
     "GeometricAdvect",
     "GeometricAdvectDistribution",
-    "IntegrationSchemeEnum",
+    "DiscretizationSchemeEnum",
     "LogLevel",
     "Logger",
     "MakeGeometry",

@@ -171,21 +171,21 @@ int main() {
   if (useAnalyticalVelocity) {
     advectionKernel.setVelocityField(analyticalVelocities);
     // Analytical velocity fields and dissipation coefficients
-    // can only be used with this integration scheme
-    advectionKernel.setIntegrationScheme(
-        // ls::IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER);
-        ls::IntegrationSchemeEnum::WENO_5TH_ORDER);
+    // can only be used with this spatial discretization scheme
+    advectionKernel.setDiscretizationScheme(
+        // ls::DiscretizationSchemeEnum::LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER);
+        ls::DiscretizationSchemeEnum::WENO_5TH_ORDER);
   } else {
     // for numerical velocities, just use the default
-    // integration scheme, which is not accurate for certain
+    // spatial discretization scheme, which is not accurate for certain
     // velocity functions but very fast
     advectionKernel.setVelocityField(velocities);
 
     // For coordinate independent velocity functions
     // this numerical scheme is superior though.
     // However, it is slower.
-    // advectionKernel.setIntegrationScheme(
-    //     ls::IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER);
+    // advectionKernel.setDiscretizationScheme(
+    //     ls::DiscretizationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER);
   }
 
   // advect the level set until 50s have passed

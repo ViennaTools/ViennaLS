@@ -12,8 +12,8 @@ namespace lsInternal {
 
 using namespace viennacore;
 
-/// Engquist-Osher integration scheme based on the
-/// upwind integration scheme. Offers high performance
+/// Engquist-Osher spatial discretization scheme based on the
+/// upwind spatial discretization scheme. Offers high performance
 /// but lower accuracy for complex velocity fields.
 template <class T, int D, int order> class EngquistOsher {
   SmartPointer<viennals::Domain<T, D>> levelSet;
@@ -69,7 +69,7 @@ public:
       T diffPos = (phiPos - phi0) / deltaPos;
       T diffNeg = (phiNeg - phi0) / deltaNeg;
 
-      if (order == 2) { // if second order time integration scheme is used
+      if (order == 2) { // if second order spatial discretization scheme is used
         const T deltaPosPos = 2 * gridDelta;
         const T deltaNegNeg = -2 * gridDelta;
 

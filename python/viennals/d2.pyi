@@ -133,7 +133,7 @@ class Advect:
 
     def setDissipationAlpha(self, arg0: typing.SupportsFloat) -> None:
         """
-        Set the dissipation value to use for Lax Friedrichs integration.
+        Set the dissipation value to use for Lax Friedrichs spatial discretization.
         """
 
     def setIgnoreVoids(self, arg0: bool) -> None:
@@ -141,9 +141,9 @@ class Advect:
         Set whether voids in the geometry should be ignored during advection or not.
         """
 
-    def setIntegrationScheme(self, arg0: viennals._core.IntegrationSchemeEnum) -> None:
+    def setDiscretizationScheme(self, arg0: viennals._core.DiscretizationSchemeEnum) -> None:
         """
-        Set the integration scheme to use during advection.
+        Set the spatial discretization scheme to use during advection.
         """
 
     def setSaveAdvectionVelocities(self, arg0: bool) -> None:

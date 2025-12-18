@@ -65,16 +65,16 @@ int main() {
   advectFE.insertNextLevelSet(sphereFE);
   advectFE.setVelocityField(velocityField);
   advectFE.setAdvectionTime(2.0);
-  advectFE.setIntegrationScheme(
-      ls::IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
+  advectFE.setDiscretizationScheme(
+      ls::DiscretizationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
 
   // Setup Advection: Runge-Kutta 3
   ls::AdvectRungeKutta3<T, D> advectRK3;
   advectRK3.insertNextLevelSet(sphereRK3);
   advectRK3.setVelocityField(velocityField);
   advectRK3.setAdvectionTime(2.0);
-  advectRK3.setIntegrationScheme(
-      ls::IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
+  advectRK3.setDiscretizationScheme(
+      ls::DiscretizationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
 
   // Run Advection
   std::cout << "Running Forward Euler Advection..." << std::endl;

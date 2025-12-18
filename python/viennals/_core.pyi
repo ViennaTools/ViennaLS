@@ -18,7 +18,7 @@ __all__: list[str] = [
     "Extrude",
     "FeatureDetectionEnum",
     "FileFormatEnum",
-    "IntegrationSchemeEnum",
+    "DiscretizationSchemeEnum",
     "LogLevel",
     "Logger",
     "MaterialMap",
@@ -187,40 +187,40 @@ class FileFormatEnum(enum.IntEnum):
         Convert to a string according to format_spec.
         """
 
-class IntegrationSchemeEnum(enum.IntEnum):
+class DiscretizationSchemeEnum(enum.IntEnum):
     ENGQUIST_OSHER_1ST_ORDER: typing.ClassVar[
-        IntegrationSchemeEnum
-    ]  # value = <IntegrationSchemeEnum.ENGQUIST_OSHER_1ST_ORDER: 0>
+        DiscretizationSchemeEnum
+    ]  # value = <DiscretizationSchemeEnum.ENGQUIST_OSHER_1ST_ORDER: 0>
     ENGQUIST_OSHER_2ND_ORDER: typing.ClassVar[
-        IntegrationSchemeEnum
-    ]  # value = <IntegrationSchemeEnum.ENGQUIST_OSHER_2ND_ORDER: 1>
+        DiscretizationSchemeEnum
+    ]  # value = <DiscretizationSchemeEnum.ENGQUIST_OSHER_2ND_ORDER: 1>
     LAX_FRIEDRICHS_1ST_ORDER: typing.ClassVar[
-        IntegrationSchemeEnum
-    ]  # value = <IntegrationSchemeEnum.LAX_FRIEDRICHS_1ST_ORDER: 2>
+        DiscretizationSchemeEnum
+    ]  # value = <DiscretizationSchemeEnum.LAX_FRIEDRICHS_1ST_ORDER: 2>
     LAX_FRIEDRICHS_2ND_ORDER: typing.ClassVar[
-        IntegrationSchemeEnum
-    ]  # value = <IntegrationSchemeEnum.LAX_FRIEDRICHS_2ND_ORDER: 3>
+        DiscretizationSchemeEnum
+    ]  # value = <DiscretizationSchemeEnum.LAX_FRIEDRICHS_2ND_ORDER: 3>
     LOCAL_LAX_FRIEDRICHS_1ST_ORDER: typing.ClassVar[
-        IntegrationSchemeEnum
-    ]  # value = <IntegrationSchemeEnum.LOCAL_LAX_FRIEDRICHS_1ST_ORDER: 7>
+        DiscretizationSchemeEnum
+    ]  # value = <DiscretizationSchemeEnum.LOCAL_LAX_FRIEDRICHS_1ST_ORDER: 7>
     LOCAL_LAX_FRIEDRICHS_2ND_ORDER: typing.ClassVar[
-        IntegrationSchemeEnum
-    ]  # value = <IntegrationSchemeEnum.LOCAL_LAX_FRIEDRICHS_2ND_ORDER: 8>
+        DiscretizationSchemeEnum
+    ]  # value = <DiscretizationSchemeEnum.LOCAL_LAX_FRIEDRICHS_2ND_ORDER: 8>
     LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER: typing.ClassVar[
-        IntegrationSchemeEnum
-    ]  # value = <IntegrationSchemeEnum.LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER: 4>
+        DiscretizationSchemeEnum
+    ]  # value = <DiscretizationSchemeEnum.LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER: 4>
     LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER: typing.ClassVar[
-        IntegrationSchemeEnum
-    ]  # value = <IntegrationSchemeEnum.LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER: 5>
+        DiscretizationSchemeEnum
+    ]  # value = <DiscretizationSchemeEnum.LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER: 5>
     LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER: typing.ClassVar[
-        IntegrationSchemeEnum
-    ]  # value = <IntegrationSchemeEnum.LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER: 6>
+        DiscretizationSchemeEnum
+    ]  # value = <DiscretizationSchemeEnum.LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER: 6>
     STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER: typing.ClassVar[
-        IntegrationSchemeEnum
-    ]  # value = <IntegrationSchemeEnum.STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER: 9>
+        DiscretizationSchemeEnum
+    ]  # value = <DiscretizationSchemeEnum.STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER: 9>
     WENO_5TH_ORDER: typing.ClassVar[
-        IntegrationSchemeEnum
-    ]  # value = <IntegrationSchemeEnum.WENO_5TH_ORDER: 10>
+        DiscretizationSchemeEnum
+    ]  # value = <DiscretizationSchemeEnum.WENO_5TH_ORDER: 10>
     @classmethod
     def __new__(cls, value): ...
     def __format__(self, format_spec):

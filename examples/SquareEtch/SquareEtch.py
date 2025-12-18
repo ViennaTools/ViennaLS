@@ -143,8 +143,8 @@ def main():
     advectionKernel.setSaveAdvectionVelocities(True)
     advectionKernel.setVelocityField(etching)
     
-    # Use default integration scheme (Lax Friedrichs 1st order) as in the C++ else branch
-    # advectionKernel.setIntegrationScheme(viennals.IntegrationSchemeEnum.LAX_FRIEDRICHS_1ST_ORDER)
+    # Use default spatial discretization scheme (Lax Friedrichs 1st order) as in the C++ else branch
+    # advectionKernel.setDiscretizationScheme(viennals.DiscretizationSchemeEnum.LAX_FRIEDRICHS_1ST_ORDER)
 
     # 7. Time Loop
     finalTime = 10.0

@@ -139,8 +139,8 @@ int main() {
     auto velocities = ls::SmartPointer<velocityField>::New();
     advectionKernel.setVelocityField(velocities);
     advectionKernel.setAdvectionTime(depositionDistance);
-    advectionKernel.setIntegrationScheme(
-        static_cast<ls::IntegrationSchemeEnum>(i));
+    advectionKernel.setDiscretizationScheme(
+        static_cast<ls::DiscretizationSchemeEnum>(i));
     {
       auto start = std::chrono::high_resolution_clock::now();
       advectionKernel.apply();

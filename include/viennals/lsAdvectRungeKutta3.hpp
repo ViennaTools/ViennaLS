@@ -102,8 +102,8 @@ private:
     Base::rebuildLS();
 
     // Adjust lower layers
-    if (Base::integrationScheme !=
-        IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+    if (Base::discretizationScheme !=
+        DiscretizationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       for (unsigned i = 0; i < levelSets.size() - 1; ++i) {
         BooleanOperation<T, D>(levelSets[i], levelSets.back(),
                                BooleanOperationEnum::INTERSECT)

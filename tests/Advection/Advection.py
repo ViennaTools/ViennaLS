@@ -21,19 +21,19 @@ def main():
 
     gridDelta = 0.6999999
 
-    integrationSchemes = [
-        vls.IntegrationSchemeEnum.ENGQUIST_OSHER_1ST_ORDER,
-        vls.IntegrationSchemeEnum.ENGQUIST_OSHER_2ND_ORDER,
-        vls.IntegrationSchemeEnum.LAX_FRIEDRICHS_1ST_ORDER,
-        vls.IntegrationSchemeEnum.LAX_FRIEDRICHS_2ND_ORDER,
-        vls.IntegrationSchemeEnum.LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
-        vls.IntegrationSchemeEnum.LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER,
-        vls.IntegrationSchemeEnum.LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
-        vls.IntegrationSchemeEnum.LOCAL_LAX_FRIEDRICHS_2ND_ORDER,
-        vls.IntegrationSchemeEnum.WENO_5TH_ORDER
+    discretizationSchemes = [
+        vls.DiscretizationSchemeEnum.ENGQUIST_OSHER_1ST_ORDER,
+        vls.DiscretizationSchemeEnum.ENGQUIST_OSHER_2ND_ORDER,
+        vls.DiscretizationSchemeEnum.LAX_FRIEDRICHS_1ST_ORDER,
+        vls.DiscretizationSchemeEnum.LAX_FRIEDRICHS_2ND_ORDER,
+        vls.DiscretizationSchemeEnum.LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
+        vls.DiscretizationSchemeEnum.LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER,
+        vls.DiscretizationSchemeEnum.LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
+        vls.DiscretizationSchemeEnum.LOCAL_LAX_FRIEDRICHS_2ND_ORDER,
+        vls.DiscretizationSchemeEnum.WENO_5TH_ORDER
     ]
 
-    for scheme in integrationSchemes:
+    for scheme in discretizationSchemes:
         sphere1 = vls.Domain(gridDelta)
 
         origin = [5.0, 0.0, 0.0]
@@ -47,7 +47,7 @@ def main():
         advectionKernel = vls.AdvectRungeKutta3()
         advectionKernel.insertNextLevelSet(sphere1)
         advectionKernel.setVelocityField(velocities)
-        advectionKernel.setIntegrationScheme(scheme)
+        advectionKernel.setDiscretizationScheme(scheme)
         advectionKernel.setSaveAdvectionVelocities(True)
 
         time = 0.0

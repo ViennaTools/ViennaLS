@@ -81,29 +81,29 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("print", [](Logger &instance) { instance.print(std::cout); });
 
   // ------ ENUMS ------
-  py::native_enum<IntegrationSchemeEnum>(module, "IntegrationSchemeEnum",
+  py::native_enum<DiscretizationSchemeEnum>(module, "DiscretizationSchemeEnum",
                                          "enum.IntEnum")
       .value("ENGQUIST_OSHER_1ST_ORDER",
-             IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER)
+             DiscretizationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER)
       .value("ENGQUIST_OSHER_2ND_ORDER",
-             IntegrationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER)
+             DiscretizationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER)
       .value("LAX_FRIEDRICHS_1ST_ORDER",
-             IntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER)
+             DiscretizationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER)
       .value("LAX_FRIEDRICHS_2ND_ORDER",
-             IntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER)
+             DiscretizationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER)
       .value("LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER",
-             IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER)
+             DiscretizationSchemeEnum::LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER)
       .value("LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER",
-             IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER)
+             DiscretizationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER)
       .value("LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER",
-             IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER)
+             DiscretizationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER)
       .value("LOCAL_LAX_FRIEDRICHS_1ST_ORDER",
-             IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER)
+             DiscretizationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER)
       .value("LOCAL_LAX_FRIEDRICHS_2ND_ORDER",
-             IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER)
+             DiscretizationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER)
       .value("STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER",
-             IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER)
-      .value("WENO_5TH_ORDER", IntegrationSchemeEnum::WENO_5TH_ORDER)
+             DiscretizationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER)
+      .value("WENO_5TH_ORDER", DiscretizationSchemeEnum::WENO_5TH_ORDER)
       .finalize();
 
   py::native_enum<BooleanOperationEnum>(module, "BooleanOperationEnum",

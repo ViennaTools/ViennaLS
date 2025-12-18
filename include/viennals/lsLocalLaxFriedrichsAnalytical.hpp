@@ -12,11 +12,11 @@ namespace lsInternal {
 
 using namespace viennacore;
 
-/// Lax Friedrichs integration scheme, which uses alpha values
+/// Lax Friedrichs spatial discretization scheme, which uses alpha values
 /// provided by the user in getDissipationAlphas in lsVelocityField.
 /// If it is possible to derive analytical solutions for the velocityField
-/// and the alpha values, this integration scheme should be used and never
-/// otherwise.
+/// and the alpha values, this spatial discretization scheme should be used and
+/// never otherwise.
 template <class T, int D, int order> class LocalLaxFriedrichsAnalytical {
   SmartPointer<viennals::Domain<T, D>> levelSet;
   SmartPointer<viennals::VelocityField<T>> velocities;
@@ -104,7 +104,7 @@ public:
       T diffPos = (phiPos - phi0) / deltaPos;
       T diffNeg = (phiNeg - phi0) / deltaNeg;
 
-      if (order == 2) { // if second order time integration scheme is used
+      if (order == 2) { // if second order spatial discretization scheme is used
         posUnit[i] = 2;
         negUnit[i] = -2;
 

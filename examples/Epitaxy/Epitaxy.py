@@ -80,7 +80,7 @@ def main():
     for ls in level_sets:
         advection.insertNextLevelSet(ls)
     advection.setVelocityField(velocity_field)
-    advection.setIntegrationScheme(vls.IntegrationSchemeEnum.STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER)
+    advection.setDiscretizationScheme(vls.DiscretizationSchemeEnum.STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER)
     advection.setAdvectionTime(0.5)
 
     start_time = time.time()

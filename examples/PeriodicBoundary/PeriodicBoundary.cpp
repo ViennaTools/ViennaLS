@@ -90,8 +90,8 @@ int main() {
   ls::Advect<double, D> advectionKernel;
   advectionKernel.insertNextLevelSet(substrate);
   advectionKernel.setVelocityField(velocities);
-  advectionKernel.setIntegrationScheme(
-      ls::IntegrationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER);
+  advectionKernel.setDiscretizationScheme(
+      ls::DiscretizationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER);
 
   // Now advect the level set 50 times, outputting every
   // advection step. Save the physical time that
