@@ -583,7 +583,7 @@ protected:
   /// This function applies the integration scheme and calculates the rates and
   /// the maximum time step, but it does **not** move the surface.
   void computeRates(double maxTimeStep = std::numeric_limits<double>::max()) {
-    // prepareLS();
+    prepareLS();
     if (integrationScheme == IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER) {
       auto is = lsInternal::EngquistOsher<T, D, 1>(levelSets.back(), velocities,
                                                    calculateNormalVectors);
@@ -772,7 +772,7 @@ protected:
   /// internal function used as a wrapper to call specialized integrateTime
   /// with the chosen integrationScheme
   virtual double advect(double maxTimeStep) {
-    prepareLS();
+    // prepareLS();
 
     if (currentTimeStep < 0. || storedRates.empty())
       computeRates(maxTimeStep);
