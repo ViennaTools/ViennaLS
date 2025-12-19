@@ -62,9 +62,8 @@ public:
     return velocity * std::abs(normalVector[D - 1]);
   }
 
-  double getDissipationAlpha(
-      int direction, int material,
-      const std::array<double, 3> &centralDifferences) {
+  double getDissipationAlpha(int direction, int material,
+                             const std::array<double, 3> &centralDifferences) {
     if (material != 1)
       return 0;
 
@@ -181,8 +180,8 @@ int main() {
   advectionKernel.setSaveAdvectionVelocities(true);
 
   if (useAnalyticalVelocity) {
-    advectionKernel.setVelocityField(
-        ls::SmartPointer<analyticalField>(&analyticalVelocities, [](analyticalField *) {}));
+    advectionKernel.setVelocityField(ls::SmartPointer<analyticalField>(
+        &analyticalVelocities, [](analyticalField *) {}));
     // Analytical velocity fields and dissipation coefficients
     // can only be used with this integration scheme
     advectionKernel.setIntegrationScheme(
@@ -197,7 +196,6 @@ int main() {
     // advectionKernel.setIntegrationScheme(
     //     ls::IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER);
   }
-
 
   // advect the level set until 50s have passed
   double finalTime = 50;
