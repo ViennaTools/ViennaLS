@@ -23,14 +23,18 @@ namespace ls = viennals;
 // Advection scheme will take care of numerical
 // artefacts itself.
 class velocityField : public ls::VelocityField<double> {
+  int D;
+
 public:
+  velocityField(int D) : D(D) {}
+
   double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
                            int material,
                            const std::array<double, 3> &normalVector,
                            unsigned long /*pointId*/) {
     // if the surface of material 1 is facing upwards, etch it anisotropically
-    if (material == 1 && normalVector[1] > 0.) {
-      return -std::abs(normalVector[1]);
+    if (material == 1 && normalVector[D - 1] > 0.) {
+      return -std::abs(normalVector[D - 1]);
     } else
       return 0.;
   }
@@ -43,8 +47,11 @@ public:
 // to be used for advection.
 class analyticalField : public ls::VelocityField<double> {
   const double velocity = -1;
+  int D;
 
 public:
+  analyticalField(int D) : D(D) {}
+
   double getScalarVelocity(const std::array<double, 3> & /*coordinate*/,
                            int material,
                            const std::array<double, 3> &normalVector,
@@ -52,11 +59,12 @@ public:
     if (material != 1)
       return 0.;
 
-    return velocity * std::abs(normalVector[1]);
+    return velocity * std::abs(normalVector[D - 1]);
   }
 
-  double getDissipationAlpha(int direction, int material,
-                             const std::array<double, 3> &centralDifferences) {
+  double getDissipationAlpha(
+      int direction, int material,
+      const std::array<double, 3> &centralDifferences) {
     if (material != 1)
       return 0;
 
@@ -67,9 +75,7 @@ public:
     gradient = std::sqrt(gradient);
 
     // alpha for different directions
-    if (direction == 0) {
-      return 0;
-    } else if (direction == 1) {
+    if (direction == D - 1) {
       return std::abs(velocity);
     } else {
       return 0;
@@ -79,7 +85,7 @@ public:
 
 int main() {
 
-  constexpr int D = 2;
+  constexpr int D = 3;
   omp_set_num_threads(8);
 
   // Change this to use the analytical velocity field
@@ -111,8 +117,14 @@ int main() {
     auto trench = ls::SmartPointer<ls::Domain<double, D>>::New(
         bounds, boundaryCons, gridDelta);
     // trench bottom is the initial bottom of the trench
-    double minCorner[D] = {-extent / 1.5, trenchBottom};
-    double maxCorner[D] = {extent / 1.5, 1.};
+    double minCorner[D];
+    double maxCorner[D];
+    for (int i = 0; i < D - 1; ++i) {
+      minCorner[i] = -extent / 1.5;
+      maxCorner[i] = extent / 1.5;
+    }
+    minCorner[D - 1] = trenchBottom;
+    maxCorner[D - 1] = 1.;
     auto box = ls::SmartPointer<ls::Box<double, D>>::New(minCorner, maxCorner);
     ls::MakeGeometry<double, D>(trench, box).apply();
 
@@ -156,8 +168,8 @@ int main() {
   }
 
   // START ADVECTION
-  auto velocities = ls::SmartPointer<velocityField>::New();
-  auto analyticalVelocities = ls::SmartPointer<analyticalField>::New();
+  velocityField velocities(D);
+  analyticalField analyticalVelocities(D);
 
   std::cout << "Advecting" << std::endl;
   ls::Advect<double, D> advectionKernel;
@@ -169,7 +181,8 @@ int main() {
   advectionKernel.setSaveAdvectionVelocities(true);
 
   if (useAnalyticalVelocity) {
-    advectionKernel.setVelocityField(analyticalVelocities);
+    advectionKernel.setVelocityField(
+        ls::SmartPointer<analyticalField>(&analyticalVelocities, [](analyticalField *) {}));
     // Analytical velocity fields and dissipation coefficients
     // can only be used with this integration scheme
     advectionKernel.setIntegrationScheme(
@@ -179,14 +192,12 @@ int main() {
     // for numerical velocities, just use the default
     // integration scheme, which is not accurate for certain
     // velocity functions but very fast
-    advectionKernel.setVelocityField(velocities);
-
-    // For coordinate independent velocity functions
-    // this numerical scheme is superior though.
-    // However, it is slower.
+    advectionKernel.setVelocityField(
+        ls::SmartPointer<velocityField>(&velocities, [](velocityField *) {}));
     // advectionKernel.setIntegrationScheme(
     //     ls::IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER);
   }
+
 
   // advect the level set until 50s have passed
   double finalTime = 50;

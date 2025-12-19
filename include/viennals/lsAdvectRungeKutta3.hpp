@@ -80,6 +80,7 @@ private:
 
     // 4. Stage 2: u^(2) = 3/4 u^n + 1/4 (u^(1) + dt * L(u^(1)))
     // Calculate rates based on u^(1) (current levelSets.back())
+    limit = (maxTimeStep - totalDt) / 2.0;
     Base::computeRates(limit);
     dt = Base::getCurrentTimeStep();
     // Update to get u^* = u^(1) + dt * L(u^(1))
@@ -90,6 +91,7 @@ private:
 
     // 5. Stage 3: u^(n+1) = 1/3 u^n + 2/3 (u^(2) + dt * L(u^(2)))
     // Calculate rates based on u^(2) (current levelSets.back())
+    limit = (maxTimeStep - totalDt);
     Base::computeRates(limit);
     dt = Base::getCurrentTimeStep();
     // Update to get u^** = u^(2) + dt * L(u^(2))

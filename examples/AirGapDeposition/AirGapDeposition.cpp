@@ -1,7 +1,6 @@
 #include <iostream>
 
 #include <lsAdvect.hpp>
-#include <lsAdvectForwardEuler.hpp>
 #include <lsAdvectRungeKutta3.hpp>
 #include <lsBooleanOperation.hpp>
 #include <lsDomain.hpp>
@@ -34,8 +33,9 @@ public:
                     const std::array<NumericType, 3> &normalVector,
                     unsigned long /*pointId*/) {
     // velocity is proportional to the normal vector
-    NumericType velocity =
-        std::abs(normalVector[0]) + std::abs(normalVector[1]);
+    NumericType velocity = 0.;
+    for (int i = 0; i < 3; ++i)
+      velocity += std::abs(normalVector[i]);
     return velocity;
   }
 
@@ -92,17 +92,25 @@ int main() {
   NumericType extent = 30;
   NumericType gridDelta = 0.5;
 
-  double bounds[2 * D] = {-extent, extent, -extent, extent};
+  double bounds[2 * D];
+  for (int i = 0; i < D; ++i) {
+    bounds[2 * i] = -extent;
+    bounds[2 * i + 1] = extent;
+  }
+
   ls::Domain<NumericType, D>::BoundaryType boundaryCons[D];
-  boundaryCons[0] =
-      ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
-  boundaryCons[1] = ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
+  for (int i = 0; i < D - 1; ++i)
+    boundaryCons[i] =
+        ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+  boundaryCons[D - 1] =
+      ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
   auto substrate = ls::SmartPointer<ls::Domain<NumericType, D>>::New(
       bounds, boundaryCons, gridDelta);
 
-  NumericType origin[2] = {0., 0.};
-  NumericType planeNormal[2] = {0., 1.};
+  NumericType origin[D] = {0.};
+  NumericType planeNormal[D] = {0.};
+  planeNormal[D - 1] = 1.;
 
   {
     auto plane =
@@ -123,8 +131,14 @@ int main() {
     auto trench = ls::SmartPointer<ls::Domain<NumericType, D>>::New(
         bounds, boundaryCons, gridDelta);
     NumericType xlimit = extent / 6.;
-    NumericType minCorner[D] = {-xlimit, -25.};
-    NumericType maxCorner[D] = {xlimit, 1.};
+    NumericType minCorner[D];
+    NumericType maxCorner[D];
+    for (int i = 0; i < D - 1; ++i) {
+      minCorner[i] = -xlimit;
+      maxCorner[i] = xlimit;
+    }
+    minCorner[D - 1] = -25.;
+    maxCorner[D - 1] = 1.;
     auto box =
         ls::SmartPointer<ls::Box<NumericType, D>>::New(minCorner, maxCorner);
     ls::MakeGeometry<NumericType, D>(trench, box).apply();
@@ -165,7 +179,7 @@ int main() {
   std::cout << "Advecting" << std::endl;
 
   // FE Kernel
-  ls::AdvectForwardEuler<NumericType, D> advectionKernelFE;
+  ls::Advect<NumericType, D> advectionKernelFE;
   advectionKernelFE.insertNextLevelSet(substrateFE);
   advectionKernelFE.insertNextLevelSet(newLayerFE);
   advectionKernelFE.setVelocityField(velocities);
