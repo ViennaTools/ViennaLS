@@ -402,8 +402,8 @@ public:
       // here add translation of old index to new index for new points
       std::array<unsigned, D> newElement;
       for (unsigned j = 0; j < D; ++j) {
-        auto insertion = oldToNewNodes.insert(
-            std::make_pair(hullElements[i][j], oldToNewNodes.size()));
+        auto insertion = oldToNewNodes.insert(std::make_pair(
+            hullElements[i][j], static_cast<unsigned>(oldToNewNodes.size())));
 
         // if insertion took place, add the point to the nodes
         if (insertion.second) {
