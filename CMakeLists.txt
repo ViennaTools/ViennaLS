@@ -165,13 +165,15 @@ elseif(VIENNALS_USE_VTK)
       "VTK_MODULE_ENABLE_VTK_RenderingCore YES"
       "CMAKE_PROJECT_NAME VTK")
   if(VIENNALS_VTK_RENDERING)
-    list(APPEND VTK_OPTIONS "VTK_MODULE_ENABLE_VTK_RenderingOpenGL2 YES"
-         "VTK_MODULE_ENABLE_VTK_RenderingUI YES" "VTK_MODULE_ENABLE_VTK_InteractionStyle YES"
-         "VTK_MODULE_ENABLE_VTK_RenderingFreeType YES")
-  else()
-    list(APPEND VTK_OPTIONS "VTK_MODULE_ENABLE_VTK_RenderingOpenGL2 NO"
-         "VTK_MODULE_ENABLE_VTK_RenderingUI NO" "VTK_MODULE_ENABLE_VTK_InteractionStyle NO"
-         "VTK_MODULE_ENABLE_VTK_RenderingFreeType NO")
+    list(
+      APPEND
+      VTK_OPTIONS
+      "VTK_MODULE_ENABLE_VTK_RenderingOpenGL2 YES"
+      "VTK_MODULE_ENABLE_VTK_RenderingUI YES"
+      "VTK_MODULE_ENABLE_VTK_InteractionStyle YES"
+      "VTK_MODULE_ENABLE_VTK_RenderingFreeType YES"
+      "VTK_MODULE_ENABLE_VTK_IOImage YES"
+      "VTK_MODULE_ENABLE_VTK_RenderingAnnotation YES")
   endif()
 
   # macOS-specific adds
@@ -204,8 +206,7 @@ elseif(VIENNALS_USE_VTK)
       VTK::FiltersCore
       VTK::FiltersGeneral
       VTK::FiltersGeometry
-      CACHE INTERNAL "")
-
+      CACHE INTERNAL "VTK Libraries")
   if(VIENNALS_VTK_RENDERING)
     list(
       APPEND
@@ -215,6 +216,7 @@ elseif(VIENNALS_USE_VTK)
       VTK::RenderingUI
       VTK::InteractionStyle
       VTK::RenderingFreeType
+      VTK::RenderingAnnotation
       VTK::IOImage)
     target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_VTK_RENDERING=1)
   endif()
