@@ -245,7 +245,7 @@ public:
       if (detectLargestSurface) {
         topComponent = calculateTopID(components, pointsPerConnected);
       } else { // if component does not contain points, take the next one
-        while (pointsPerConnected[topComponent] == 0) {
+        while (topComponent >= 0 && pointsPerConnected[topComponent] == 0) {
           if (reverseVoidDetection)
             ++topComponent;
           else

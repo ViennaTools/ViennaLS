@@ -43,6 +43,7 @@
 #include <lsToVoxelMesh.hpp>
 #include <lsTransformMesh.hpp>
 #include <lsVTKReader.hpp>
+#include <lsVTKRenderWindow.hpp>
 #include <lsVTKWriter.hpp>
 #include <lsVelocityField.hpp>
 #include <lsVersion.hpp>

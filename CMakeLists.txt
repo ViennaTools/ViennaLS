@@ -9,6 +9,7 @@ project(
 # --------------------------------------------------------------------------------------------------------
 
 option(VIENNALS_USE_VTK "Build with VTK file support" ON)
+option(VIENNALS_VTK_RENDERING "Build with VTK rendering support" ON)
 
 option(VIENNALS_PRECOMPILE_HEADERS "Build template specialisations for shorter compile times" OFF)
 option(VIENNALS_STATIC_BUILD "Build dependencies as static libraries" OFF)
@@ -161,7 +162,19 @@ elseif(VIENNALS_USE_VTK)
       "VTK_MODULE_ENABLE_VTK_FiltersCore YES"
       "VTK_MODULE_ENABLE_VTK_FiltersGeneral YES"
       "VTK_MODULE_ENABLE_VTK_FiltersGeometry YES"
+      "VTK_MODULE_ENABLE_VTK_RenderingCore YES"
       "CMAKE_PROJECT_NAME VTK")
+  if(VIENNALS_VTK_RENDERING)
+    list(
+      APPEND
+      VTK_OPTIONS
+      "VTK_MODULE_ENABLE_VTK_RenderingOpenGL2 YES"
+      "VTK_MODULE_ENABLE_VTK_RenderingUI YES"
+      "VTK_MODULE_ENABLE_VTK_InteractionStyle YES"
+      "VTK_MODULE_ENABLE_VTK_RenderingFreeType YES"
+      "VTK_MODULE_ENABLE_VTK_IOImage YES"
+      "VTK_MODULE_ENABLE_VTK_RenderingAnnotation YES")
+  endif()
 
   # macOS-specific adds
   if(APPLE)
@@ -179,21 +192,35 @@ elseif(VIENNALS_USE_VTK)
 
   target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_USE_VTK=1)
 
-  target_link_libraries(
-    ${PROJECT_NAME}
-    INTERFACE VTK::CommonExecutionModel
-              VTK::CommonMisc
-              VTK::CommonSystem
-              VTK::CommonMath
-              VTK::CommonCore
-              VTK::CommonTransforms
-              VTK::CommonComputationalGeometry
-              VTK::IOCore
-              VTK::IOXMLParser
-              VTK::IOXML
-              VTK::FiltersCore
-              VTK::FiltersGeneral
-              VTK::FiltersGeometry)
+  set(VTK_LIBRARIES
+      VTK::CommonExecutionModel
+      VTK::CommonMisc
+      VTK::CommonSystem
+      VTK::CommonMath
+      VTK::CommonCore
+      VTK::CommonTransforms
+      VTK::CommonComputationalGeometry
+      VTK::IOCore
+      VTK::IOXMLParser
+      VTK::IOXML
+      VTK::FiltersCore
+      VTK::FiltersGeneral
+      VTK::FiltersGeometry
+      CACHE INTERNAL "VTK Libraries")
+  if(VIENNALS_VTK_RENDERING)
+    list(
+      APPEND
+      VTK_LIBRARIES
+      VTK::RenderingCore
+      VTK::RenderingOpenGL2
+      VTK::RenderingUI
+      VTK::InteractionStyle
+      VTK::RenderingFreeType
+      VTK::RenderingAnnotation
+      VTK::IOImage)
+    target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_VTK_RENDERING=1)
+  endif()
+  target_link_libraries(${PROJECT_NAME} INTERFACE ${VTK_LIBRARIES})
 endif()
 
 # --------------------------------------------------------------------------------------------------------
