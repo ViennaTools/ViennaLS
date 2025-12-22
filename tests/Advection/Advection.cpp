@@ -49,18 +49,18 @@ int main() {
 
   double gridDelta = 0.6999999;
 
-  std::vector<ls::DiscretizationSchemeEnum> discretizationSchemes = {
-      ls::DiscretizationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER,
-      ls::DiscretizationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER,
-      ls::DiscretizationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER,
-      ls::DiscretizationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER,
-      ls::DiscretizationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
-      ls::DiscretizationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER,
-      ls::DiscretizationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
-      ls::DiscretizationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER,
-      ls::DiscretizationSchemeEnum::WENO_5TH_ORDER};
+  std::vector<ls::SpatialSchemeEnum> spatialSchemes = {
+      ls::SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER,
+      ls::SpatialSchemeEnum::ENGQUIST_OSHER_2ND_ORDER,
+      ls::SpatialSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER,
+      ls::SpatialSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER,
+      ls::SpatialSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
+      ls::SpatialSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER,
+      ls::SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
+      ls::SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER,
+      ls::SpatialSchemeEnum::WENO_5TH_ORDER};
 
-  for (auto discretizationScheme : discretizationSchemes) {
+  for (auto scheme : spatialSchemes) {
     auto sphere1 = ls::Domain<double, D>::New(gridDelta);
 
     double origin[3] = {5., 0., 0.};
@@ -93,7 +93,7 @@ int main() {
     ls::AdvectForwardEuler<double, D> advectionKernel;
     advectionKernel.insertNextLevelSet(sphere1);
     advectionKernel.setVelocityField(velocities);
-    advectionKernel.setDiscretizationScheme(discretizationScheme);
+    advectionKernel.setSpatialScheme(scheme);
     advectionKernel.setSaveAdvectionVelocities(true);
 
     double time = 0.;

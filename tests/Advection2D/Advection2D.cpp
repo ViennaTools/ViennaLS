@@ -105,8 +105,8 @@ int main() {
   ls::Advect<double, D> advectionKernel;
   advectionKernel.insertNextLevelSet(sphere1);
   advectionKernel.setVelocityField(velocities);
-  advectionKernel.setDiscretizationScheme(
-      ls::DiscretizationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER);
+  advectionKernel.setSpatialScheme(
+      ls::SpatialSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER);
   advectionKernel.setAdvectionTime(20.);
   advectionKernel.apply();
 

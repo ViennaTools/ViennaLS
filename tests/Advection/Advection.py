@@ -2,6 +2,7 @@ import viennals as vls
 
 vls.setDimension(3)
 
+
 # Implement own velocity field
 class VelocityField(vls.VelocityField):
     def __init__(self):
@@ -15,6 +16,7 @@ class VelocityField(vls.VelocityField):
     def getVectorVelocity(self, coord, material, normal, pointId):
         return [0.0, 0.0, 0.0]
 
+
 def main():
     # Set number of threads
     vls.setNumThreads(8)
@@ -22,15 +24,15 @@ def main():
     gridDelta = 0.6999999
 
     discretizationSchemes = [
-        vls.DiscretizationSchemeEnum.ENGQUIST_OSHER_1ST_ORDER,
-        vls.DiscretizationSchemeEnum.ENGQUIST_OSHER_2ND_ORDER,
-        vls.DiscretizationSchemeEnum.LAX_FRIEDRICHS_1ST_ORDER,
-        vls.DiscretizationSchemeEnum.LAX_FRIEDRICHS_2ND_ORDER,
-        vls.DiscretizationSchemeEnum.LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
-        vls.DiscretizationSchemeEnum.LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER,
-        vls.DiscretizationSchemeEnum.LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
-        vls.DiscretizationSchemeEnum.LOCAL_LAX_FRIEDRICHS_2ND_ORDER,
-        vls.DiscretizationSchemeEnum.WENO_5TH_ORDER
+        vls.SpatialSchemeEnum.ENGQUIST_OSHER_1ST_ORDER,
+        vls.SpatialSchemeEnum.ENGQUIST_OSHER_2ND_ORDER,
+        vls.SpatialSchemeEnum.LAX_FRIEDRICHS_1ST_ORDER,
+        vls.SpatialSchemeEnum.LAX_FRIEDRICHS_2ND_ORDER,
+        vls.SpatialSchemeEnum.LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
+        vls.SpatialSchemeEnum.LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER,
+        vls.SpatialSchemeEnum.LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
+        vls.SpatialSchemeEnum.LOCAL_LAX_FRIEDRICHS_2ND_ORDER,
+        vls.SpatialSchemeEnum.WENO_5TH_ORDER,
     ]
 
     for scheme in discretizationSchemes:
@@ -47,7 +49,7 @@ def main():
         advectionKernel = vls.AdvectRungeKutta3()
         advectionKernel.insertNextLevelSet(sphere1)
         advectionKernel.setVelocityField(velocities)
-        advectionKernel.setDiscretizationScheme(scheme)
+        advectionKernel.setSpatialScheme(scheme)
         advectionKernel.setSaveAdvectionVelocities(True)
 
         time = 0.0
@@ -64,6 +66,7 @@ def main():
             vls.VTKWriter(mesh, "surface_" + fileName).apply()
             i += 1
         print(f"Done scheme {scheme}")
+
 
 if __name__ == "__main__":
     main()

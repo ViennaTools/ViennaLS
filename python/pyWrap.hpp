@@ -220,8 +220,11 @@ template <int D> void bindApi(py::module &module) {
       .def("getCalculateNormalVectors",
            &Advect<T, D>::getCalculateNormalVectors,
            "Get whether normal vectors are computed during advection.")
-      .def("setDiscretizationScheme", &Advect<T, D>::setDiscretizationScheme,
+      .def("setSpatialScheme", &Advect<T, D>::setSpatialScheme,
            "Set the spatial discretization scheme to use during advection.")
+      .def("setIntegrationScheme", &Advect<T, D>::setIntegrationScheme,
+           "(DEPRECATED, use setSpatialScheme instead) Set the spatial "
+           "discretization scheme to use during advection.")
       .def("setDissipationAlpha", &Advect<T, D>::setDissipationAlpha,
            "Set the dissipation value to use for Lax Friedrichs spatial "
            "discretization.")
@@ -621,26 +624,26 @@ template <int D> void bindApi(py::module &module) {
       .def("setLevelSet", &MakeGeometry<T, D>::setLevelSet,
            "Set the levelset in which to create the geometry.")
       .def("setGeometry",
-           (void(MakeGeometry<T, D>::*)(SmartPointer<Sphere<T, D>>)) &
-               MakeGeometry<T, D>::setGeometry)
+           (void (MakeGeometry<T, D>::*)(
+               SmartPointer<Sphere<T, D>>))&MakeGeometry<T, D>::setGeometry)
       .def("setGeometry",
-           (void(MakeGeometry<T, D>::*)(SmartPointer<Plane<T, D>>)) &
-               MakeGeometry<T, D>::setGeometry)
+           (void (MakeGeometry<T, D>::*)(
+               SmartPointer<Plane<T, D>>))&MakeGeometry<T, D>::setGeometry)
       .def("setGeometry",
-           (void(MakeGeometry<T, D>::*)(SmartPointer<Box<T, D>>)) &
-               MakeGeometry<T, D>::setGeometry)
+           (void (MakeGeometry<T, D>::*)(
+               SmartPointer<Box<T, D>>))&MakeGeometry<T, D>::setGeometry)
       .def("setGeometry",
-           (void(MakeGeometry<T, D>::*)(SmartPointer<Cylinder<T, D>>)) &
-               MakeGeometry<T, D>::setGeometry)
+           (void (MakeGeometry<T, D>::*)(
+               SmartPointer<Cylinder<T, D>>))&MakeGeometry<T, D>::setGeometry)
       .def("setGeometry",
-           (void(MakeGeometry<T, D>::*)(SmartPointer<PointCloud<T, D>>)) &
-               MakeGeometry<T, D>::setGeometry)
+           (void (MakeGeometry<T, D>::*)(
+               SmartPointer<PointCloud<T, D>>))&MakeGeometry<T, D>::setGeometry)
       .def("setIgnoreBoundaryConditions",
-           (void(MakeGeometry<T, D>::*)(bool)) &
-               MakeGeometry<T, D>::setIgnoreBoundaryConditions)
+           (void (MakeGeometry<T, D>::*)(
+               bool))&MakeGeometry<T, D>::setIgnoreBoundaryConditions)
       .def("setIgnoreBoundaryConditions",
-           (void(MakeGeometry<T, D>::*)(std::array<bool, 3>)) &
-               MakeGeometry<T, D>::setIgnoreBoundaryConditions)
+           (void (MakeGeometry<T, D>::*)(std::array<bool, 3>))&MakeGeometry<
+               T, D>::setIgnoreBoundaryConditions)
       .def("apply", &MakeGeometry<T, D>::apply, "Generate the geometry.");
 
   // MarkVoidPoints

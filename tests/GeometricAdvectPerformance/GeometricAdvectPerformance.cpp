@@ -126,7 +126,7 @@ int main() {
   // ls::ToSurfaceMesh<double, D>(newLayer, mesh).apply();
   // ls::VTKWriter<double>(mesh, "finalSurface.vtk").apply();
 
-  // now rund lsAdvect for all other advection schemes
+  // now run lsAdvect for all other advection schemes
   // last scheme is SLLFS with i == 9
   for (unsigned i = 0; i < 10; ++i) {
     if (i == 4) {
@@ -139,8 +139,7 @@ int main() {
     auto velocities = ls::SmartPointer<velocityField>::New();
     advectionKernel.setVelocityField(velocities);
     advectionKernel.setAdvectionTime(depositionDistance);
-    advectionKernel.setDiscretizationScheme(
-        static_cast<ls::DiscretizationSchemeEnum>(i));
+    advectionKernel.setSpatialScheme(static_cast<ls::SpatialSchemeEnum>(i));
     {
       auto start = std::chrono::high_resolution_clock::now();
       advectionKernel.apply();

@@ -40,7 +40,7 @@ using namespace viennacore;
 
 /// Enumeration for the different spatial discretization schemes
 /// used by the advection kernel
-enum struct DiscretizationSchemeEnum : unsigned {
+enum struct SpatialSchemeEnum : unsigned {
   ENGQUIST_OSHER_1ST_ORDER = 0,
   ENGQUIST_OSHER_2ND_ORDER = 1,
   LAX_FRIEDRICHS_1ST_ORDER = 2,
@@ -53,6 +53,9 @@ enum struct DiscretizationSchemeEnum : unsigned {
   STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 9,
   WENO_5TH_ORDER = 10
 };
+
+// Legacy naming (deprecated, will be removed in future versions)
+using IntegrationSchemeEnum = SpatialSchemeEnum;
 
 /// This class is used to advance level sets over time.
 /// Level sets are passed to the constructor in a std::vector, with
@@ -71,8 +74,7 @@ template <class T, int D> class Advect {
 protected:
   std::vector<SmartPointer<Domain<T, D>>> levelSets;
   SmartPointer<VelocityField<T>> velocities = nullptr;
-  DiscretizationSchemeEnum discretizationScheme =
-      DiscretizationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER;
+  SpatialSchemeEnum spatialScheme = SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER;
   double timeStepRatio = 0.4999;
   double dissipationAlpha = 1.0;
   bool calculateNormalVectors = true;
@@ -217,8 +219,8 @@ protected:
     // immediate re-expansion
     T cutoff = 1.0;
     int finalWidth = 2;
-    if (discretizationScheme ==
-        DiscretizationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+    if (spatialScheme ==
+        SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       cutoff = 1.5;
       finalWidth = 3;
     }
@@ -400,7 +402,7 @@ protected:
   /// be used. This function fills up the storedRates to be used when moving the
   /// LS
   template <class DiscretizationSchemeType>
-  double integrateTime(DiscretizationSchemeType discretizationScheme,
+  double integrateTime(DiscretizationSchemeType spatialScheme,
                        double maxTimeStep) {
 
     auto &topDomain = levelSets.back()->getDomain();
@@ -458,7 +460,7 @@ protected:
         iterators.emplace_back(ls->getDomain());
       }
 
-      DiscretizationSchemeType scheme(discretizationScheme);
+      DiscretizationSchemeType scheme(spatialScheme);
 
       for (ConstSparseIterator it(topDomain, startVector);
            it.getStartIndices() < endVector; ++it) {
@@ -585,64 +587,57 @@ protected:
   /// and the maximum time step, but it does **not** move the surface.
   void computeRates(double maxTimeStep = std::numeric_limits<double>::max()) {
     prepareLS();
-    if (discretizationScheme ==
-        DiscretizationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER) {
+    if (spatialScheme == SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER) {
       auto is = lsInternal::EngquistOsher<T, D, 1>(levelSets.back(), velocities,
                                                    calculateNormalVectors);
       currentTimeStep = integrateTime(is, maxTimeStep);
-    } else if (discretizationScheme ==
-               DiscretizationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER) {
+    } else if (spatialScheme == SpatialSchemeEnum::ENGQUIST_OSHER_2ND_ORDER) {
       auto is = lsInternal::EngquistOsher<T, D, 2>(levelSets.back(), velocities,
                                                    calculateNormalVectors);
       currentTimeStep = integrateTime(is, maxTimeStep);
-    } else if (discretizationScheme ==
-               DiscretizationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
+    } else if (spatialScheme == SpatialSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
       auto alphas = findGlobalAlphas();
       auto is = lsInternal::LaxFriedrichs<T, D, 1>(levelSets.back(), velocities,
                                                    dissipationAlpha, alphas,
                                                    calculateNormalVectors);
       currentTimeStep = integrateTime(is, maxTimeStep);
-    } else if (discretizationScheme ==
-               DiscretizationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER) {
+    } else if (spatialScheme == SpatialSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER) {
       auto alphas = findGlobalAlphas();
       auto is = lsInternal::LaxFriedrichs<T, D, 2>(levelSets.back(), velocities,
                                                    dissipationAlpha, alphas,
                                                    calculateNormalVectors);
       currentTimeStep = integrateTime(is, maxTimeStep);
-    } else if (discretizationScheme ==
-               DiscretizationSchemeEnum::
-                   LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER) {
+    } else if (spatialScheme ==
+               SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER) {
       auto is = lsInternal::LocalLaxFriedrichsAnalytical<T, D, 1>(
           levelSets.back(), velocities);
       currentTimeStep = integrateTime(is, maxTimeStep);
-    } else if (discretizationScheme ==
-               DiscretizationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+    } else if (spatialScheme ==
+               SpatialSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       auto is = lsInternal::LocalLocalLaxFriedrichs<T, D, 1>(
           levelSets.back(), velocities, dissipationAlpha);
       currentTimeStep = integrateTime(is, maxTimeStep);
-    } else if (discretizationScheme ==
-               DiscretizationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
+    } else if (spatialScheme ==
+               SpatialSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
       auto is = lsInternal::LocalLocalLaxFriedrichs<T, D, 2>(
           levelSets.back(), velocities, dissipationAlpha);
       currentTimeStep = integrateTime(is, maxTimeStep);
-    } else if (discretizationScheme ==
-               DiscretizationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+    } else if (spatialScheme ==
+               SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       auto is = lsInternal::LocalLaxFriedrichs<T, D, 1>(
           levelSets.back(), velocities, dissipationAlpha);
       currentTimeStep = integrateTime(is, maxTimeStep);
-    } else if (discretizationScheme ==
-               DiscretizationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
+    } else if (spatialScheme ==
+               SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
       auto is = lsInternal::LocalLaxFriedrichs<T, D, 2>(
           levelSets.back(), velocities, dissipationAlpha);
       currentTimeStep = integrateTime(is, maxTimeStep);
-    } else if (discretizationScheme ==
-               DiscretizationSchemeEnum::
-                   STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+    } else if (spatialScheme ==
+               SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       auto is = lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>(
           levelSets.back(), velocities, dissipationAlpha);
       currentTimeStep = integrateTime(is, maxTimeStep);
-    } else if (discretizationScheme ==
-               DiscretizationSchemeEnum::WENO_5TH_ORDER) {
+    } else if (spatialScheme == SpatialSchemeEnum::WENO_5TH_ORDER) {
       // Instantiate WENO5 with order 3 (neighbors +/- 3)
       auto is = lsInternal::WENO5<T, D, 3>(levelSets.back(), velocities,
                                            dissipationAlpha);
@@ -786,8 +781,8 @@ protected:
     rebuildLS();
 
     // Adjust all level sets below the advected one
-    if (discretizationScheme !=
-        DiscretizationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+    if (spatialScheme !=
+        SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       for (unsigned i = 0; i < levelSets.size() - 1; ++i) {
         BooleanOperation<T, D>(levelSets[i], levelSets.back(),
                                BooleanOperationEnum::INTERSECT)
@@ -901,9 +896,15 @@ public:
   bool getCalculateNormalVectors() const { return calculateNormalVectors; }
 
   /// Set which spatial discretization scheme should be used out of the ones
-  /// specified in DiscretizationSchemeEnum.
-  void setDiscretizationScheme(DiscretizationSchemeEnum scheme) {
-    discretizationScheme = scheme;
+  /// specified in SpatialSchemeEnum.
+  void setSpatialScheme(SpatialSchemeEnum scheme) { spatialScheme = scheme; }
+
+  // Deprecated, will be remove in future versions: use setSpatialScheme instead
+  void setIntegrationScheme(IntegrationSchemeEnum scheme) {
+    VIENNACORE_LOG_WARNING(
+        "Advect::setIntegrationScheme is deprecated and will be removed in "
+        "future versions. Use setSpatialScheme instead.");
+    spatialScheme = scheme;
   }
 
   /// Set the alpha dissipation coefficient.
@@ -929,46 +930,38 @@ public:
       return;
     }
 
-    if (discretizationScheme ==
-        DiscretizationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER) {
+    if (spatialScheme == SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER) {
       lsInternal::EngquistOsher<T, D, 1>::prepareLS(levelSets.back());
-    } else if (discretizationScheme ==
-               DiscretizationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER) {
+    } else if (spatialScheme == SpatialSchemeEnum::ENGQUIST_OSHER_2ND_ORDER) {
       lsInternal::EngquistOsher<T, D, 2>::prepareLS(levelSets.back());
-    } else if (discretizationScheme ==
-               DiscretizationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
+    } else if (spatialScheme == SpatialSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
       lsInternal::LaxFriedrichs<T, D, 1>::prepareLS(levelSets.back());
-    } else if (discretizationScheme ==
-               DiscretizationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER) {
+    } else if (spatialScheme == SpatialSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER) {
       lsInternal::LaxFriedrichs<T, D, 2>::prepareLS(levelSets.back());
-    } else if (discretizationScheme ==
-               DiscretizationSchemeEnum::
-                   LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER) {
+    } else if (spatialScheme ==
+               SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER) {
       lsInternal::LocalLaxFriedrichsAnalytical<T, D, 1>::prepareLS(
           levelSets.back());
-    } else if (discretizationScheme ==
-               DiscretizationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+    } else if (spatialScheme ==
+               SpatialSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       lsInternal::LocalLocalLaxFriedrichs<T, D, 1>::prepareLS(levelSets.back());
-    } else if (discretizationScheme ==
-               DiscretizationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
+    } else if (spatialScheme ==
+               SpatialSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
       lsInternal::LocalLocalLaxFriedrichs<T, D, 2>::prepareLS(levelSets.back());
-    } else if (discretizationScheme ==
-               DiscretizationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+    } else if (spatialScheme ==
+               SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       lsInternal::LocalLaxFriedrichs<T, D, 1>::prepareLS(levelSets.back());
-    } else if (discretizationScheme ==
-               DiscretizationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
+    } else if (spatialScheme ==
+               SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
       lsInternal::LocalLaxFriedrichs<T, D, 2>::prepareLS(levelSets.back());
-    } else if (discretizationScheme ==
-               DiscretizationSchemeEnum::
-                   STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+    } else if (spatialScheme ==
+               SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>::prepareLS(
           levelSets.back());
-    } else if (discretizationScheme ==
-               DiscretizationSchemeEnum::WENO_5TH_ORDER) {
+    } else if (spatialScheme == SpatialSchemeEnum::WENO_5TH_ORDER) {
       // WENO5 requires a stencil radius of 3 (template parameter 3)
       lsInternal::WENO5<T, D, 3>::prepareLS(levelSets.back());
-    } else if (discretizationScheme ==
-               DiscretizationSchemeEnum::WENO_5TH_ORDER) {
+    } else if (spatialScheme == SpatialSchemeEnum::WENO_5TH_ORDER) {
       // WENO5 requires a stencil radius of 3 (template parameter 3)
       lsInternal::WENO5<T, D, 3>::prepareLS(levelSets.back());
     } else {

@@ -113,8 +113,7 @@ int main() {
   advectionKernel.setVelocityField(velocities);
   // advectionKernel.setAdvectionTime(4.);
   unsigned counter = 1;
-  advectionKernel.setDiscretizationScheme(
-      ls::DiscretizationSchemeEnum::WENO_5TH_ORDER);
+  advectionKernel.setSpatialScheme(ls::SpatialSchemeEnum::WENO_5TH_ORDER);
   for (NumericType time = 0; time < 4.;
        time += advectionKernel.getAdvectedTime()) {
     advectionKernel.apply();
