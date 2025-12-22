@@ -21,86 +21,93 @@ public:
   using Base::Base; // inherit all constructors
 
 private:
-  // Helper function for linear combination: target = wTarget * target + wSource
-  // * source
+  // Helper function for linear combination:
+  // target = wTarget * target + wSource * source
   void combineLevelSets(double wTarget,
                         const SmartPointer<Domain<T, D>> &target,
-                        double wSource,
-                        const SmartPointer<Domain<T, D>> &source) {
-    // We write the result into levelSets.back() (which is passed as 'target' or
-    // 'source' usually, but here we assume target is the destination)
-    // Actually, to support u_new = a*u_old + b*u_new, we should write to
-    // levelSets.back().
+                        double wSource) {
+
     auto &domainDest = levelSets.back()->getDomain();
-    const auto &domainTarget = target->getDomain();
-    const auto &domainSource = source->getDomain();
+    auto &grid = levelSets.back()->getGrid();
 
-    if (domainTarget.getNumberOfSegments() !=
-        domainSource.getNumberOfSegments()) {
-      VIENNACORE_LOG_ERROR(
-          "AdvectRungeKutta3: Topology mismatch in combineLevelSets.");
-      return;
-    }
-
-#pragma omp parallel for schedule(static)
-    for (int p = 0; p < static_cast<int>(domainDest.getNumberOfSegments());
-         ++p) {
+#pragma omp parallel num_threads(domainDest.getNumberOfSegments())
+    {
+      int p = 0;
+#ifdef _OPENMP
+      p = omp_get_thread_num();
+#endif
       auto &segDest = domainDest.getDomainSegment(p);
-      const auto &segTarget = domainTarget.getDomainSegment(p);
-      const auto &segSource = domainSource.getDomainSegment(p);
 
-      if (segTarget.definedValues.size() == segSource.definedValues.size() &&
-          segDest.definedValues.size() == segTarget.definedValues.size()) {
-        for (size_t i = 0; i < segDest.definedValues.size(); ++i) {
-          segDest.definedValues[i] = wTarget * segTarget.definedValues[i] +
-                                     wSource * segSource.definedValues[i];
+      viennahrle::Index<D> start = (p == 0)
+                                       ? grid.getMinGridPoint()
+                                       : domainDest.getSegmentation()[p - 1];
+      viennahrle::Index<D> end =
+          (p != static_cast<int>(domainDest.getNumberOfSegments()) - 1)
+              ? domainDest.getSegmentation()[p]
+              : grid.incrementIndices(grid.getMaxGridPoint());
+
+      viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType> itDest(
+          domainDest, start);
+      viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>
+          itTarget(target->getDomain(), start);
+
+      unsigned definedValueIndex = 0;
+      for (; itDest.getStartIndices() < end; ++itDest) {
+        if (itDest.isDefined()) {
+          itTarget.goToIndicesSequential(itDest.getStartIndices());
+          T valSource = itDest.getValue();
+          T valTarget = itTarget.getValue();
+          segDest.definedValues[definedValueIndex++] =
+              wTarget * valTarget + wSource * valSource;
         }
       }
     }
   }
 
   double advect(double maxTimeStep) override {
-    // 1. Prepare and Expand
-    Base::prepareLS();
+    Base::timeIntegrationScheme =
+        TimeIntegrationSchemeEnum::RUNGE_KUTTA_3RD_ORDER;
 
-    // 2. Save u^n (Deep copy with identical topology)
+    // 1. Save u^n (Deep copy to preserve topology)
     if (originalLevelSet == nullptr) {
       originalLevelSet = Domain<T, D>::New(levelSets.back()->getGrid());
     }
     originalLevelSet->deepCopy(levelSets.back());
 
-    double limit = maxTimeStep / 3.0;
-    double totalDt = 0.0;
+    // 2. Determine the single time step 'dt' for all stages.
+    // This is the maximum stable time step for a forward Euler step from u^n.
+    Base::computeRates(maxTimeStep);
+    const double dt = Base::getCurrentTimeStep();
 
-    // 3. Stage 1: u^(1) = u^n + dt * L(u^n)
-    Base::computeRates(limit);
-    double dt = Base::getCurrentTimeStep();
+    // If dt is 0 or negative, no advection is possible or needed.
+    if (dt <= 0) {
+      return 0.;
+    }
+
+    // Stage 1: u^(1) = u^n + dt * L(u^n)
+    // L(u^n) is already in storedRates from the computeRates call above.
+    // updateLevelSet modifies levelSets.back() from u^n to u^(1).
     Base::updateLevelSet(dt);
-    totalDt += dt;
 
-    // 4. Stage 2: u^(2) = 3/4 u^n + 1/4 (u^(1) + dt * L(u^(1)))
-    // Calculate rates based on u^(1) (current levelSets.back())
-    limit = (maxTimeStep - totalDt) / 2.0;
-    Base::computeRates(limit);
-    dt = Base::getCurrentTimeStep();
-    // Update to get u^* = u^(1) + dt * L(u^(1))
+    // Stage 2: u^(2) = 3/4 u^n + 1/4 (u^(1) + dt * L(u^(1)))
+    // The current levelSets.back() is u^(1). Compute L(u^(1)).
+    Base::computeRates(dt);
+    // Update levelSets.back() from u^(1) to u* = u^(1) + dt * L(u^(1)).
     Base::updateLevelSet(dt);
-    // Combine: u^(2) = 0.75 * u^n + 0.25 * u^*
-    combineLevelSets(0.75, originalLevelSet, 0.25, levelSets.back());
-    totalDt += dt;
+    // Combine to get u^(2) = 0.75 * u^n + 0.25 * u*.
+    // The result is written to levelSets.back().
+    combineLevelSets(0.75, originalLevelSet, 0.25);
 
-    // 5. Stage 3: u^(n+1) = 1/3 u^n + 2/3 (u^(2) + dt * L(u^(2)))
-    // Calculate rates based on u^(2) (current levelSets.back())
-    limit = (maxTimeStep - totalDt);
-    Base::computeRates(limit);
-    dt = Base::getCurrentTimeStep();
-    // Update to get u^** = u^(2) + dt * L(u^(2))
+    // Stage 3: u^(n+1) = 1/3 u^n + 2/3 (u^(2) + dt * L(u^(2)))
+    // The current levelSets.back() is u^(2). Compute L(u^(2)).
+    Base::computeRates(dt);
+    // Update levelSets.back() from u^(2) to u** = u^(2) + dt * L(u^(2)).
     Base::updateLevelSet(dt);
-    // Combine: u^(n+1) = 1/3 * u^n + 2/3 * u^**
-    combineLevelSets(1.0 / 3.0, originalLevelSet, 2.0 / 3.0, levelSets.back());
-    totalDt += dt;
+    // Combine to get u^(n+1) = 1/3 * u^n + 2/3 * u**.
+    // The result is written to levelSets.back().
+    combineLevelSets(1.0 / 3.0, originalLevelSet, 2.0 / 3.0);
 
-    // 6. Finalize: Re-segment and renormalize only at the end
+    // Finalize: Re-segment and renormalize the final result.
     Base::rebuildLS();
 
     // Adjust lower layers
@@ -113,7 +120,7 @@ private:
       }
     }
 
-    return totalDt;
+    return dt;
   }
 };
 

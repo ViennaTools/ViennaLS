@@ -54,6 +54,12 @@ enum struct IntegrationSchemeEnum : unsigned {
   WENO_5TH_ORDER = 10
 };
 
+/// Enumeration for the different Time Integration schemes
+enum struct TimeIntegrationSchemeEnum : unsigned {
+  FORWARD_EULER = 0,
+  RUNGE_KUTTA_3RD_ORDER = 1
+};
+
 /// This class is used to advance level sets over time.
 /// Level sets are passed to the constructor in a std::vector, with
 /// the last element being the level set to advect, or "top level set", while
@@ -73,6 +79,8 @@ protected:
   SmartPointer<VelocityField<T>> velocities = nullptr;
   IntegrationSchemeEnum integrationScheme =
       IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER;
+  TimeIntegrationSchemeEnum timeIntegrationScheme =
+      TimeIntegrationSchemeEnum::FORWARD_EULER;
   double timeStepRatio = 0.4999;
   double dissipationAlpha = 1.0;
   bool calculateNormalVectors = true;
@@ -84,6 +92,7 @@ protected:
   bool saveAdvectionVelocities = false;
   bool updatePointData = true;
   bool checkDissipation = true;
+  double integrationCutoff = 0.5;
   bool adaptiveTimeStepping = false;
   unsigned adaptiveTimeStepSubdivisions = 20;
   static constexpr double wrappingLayerEpsilon = 1e-4;
@@ -132,7 +141,7 @@ protected:
       for (ConstSparseIterator it(topDomain, startVector);
            it.getStartIndices() < endVector; ++it) {
 
-        if (!it.isDefined() || std::abs(it.getValue()) > 0.5)
+        if (!it.isDefined() || std::abs(it.getValue()) > integrationCutoff)
           continue;
 
         const T value = it.getValue();
@@ -462,7 +471,7 @@ protected:
       for (ConstSparseIterator it(topDomain, startVector);
            it.getStartIndices() < endVector; ++it) {
 
-        if (!it.isDefined() || std::abs(it.getValue()) > 0.5)
+        if (!it.isDefined() || std::abs(it.getValue()) > integrationCutoff)
           continue;
 
         T value = it.getValue();
@@ -696,9 +705,9 @@ protected:
       for (unsigned localId = 0; localId < maxId; ++localId) {
         T &value = segment.definedValues[localId];
 
-        // // Skip points that were not part of computeRates (outer layers)
-        // if (std::abs(value) > 0.5)
-        //   continue;
+        // Skip points that were not part of computeRates (outer layers)
+        if (std::abs(value) > integrationCutoff)
+          continue;
 
         double time = dt;
 
@@ -900,6 +909,11 @@ public:
   /// in IntegrationSchemeEnum.
   void setIntegrationScheme(IntegrationSchemeEnum scheme) {
     integrationScheme = scheme;
+  }
+
+  /// Set which time integration scheme should be used.
+  void setTimeIntegrationScheme(TimeIntegrationSchemeEnum scheme) {
+    timeIntegrationScheme = scheme;
   }
 
   /// Set the alpha dissipation coefficient.
