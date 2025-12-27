@@ -81,30 +81,33 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("print", [](Logger &instance) { instance.print(std::cout); });
 
   // ------ ENUMS ------
-  py::native_enum<IntegrationSchemeEnum>(module, "IntegrationSchemeEnum",
-                                         "enum.IntEnum")
+  py::native_enum<SpatialSchemeEnum>(module, "SpatialSchemeEnum",
+                                     "enum.IntEnum")
       .value("ENGQUIST_OSHER_1ST_ORDER",
-             IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER)
+             SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER)
       .value("ENGQUIST_OSHER_2ND_ORDER",
-             IntegrationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER)
+             SpatialSchemeEnum::ENGQUIST_OSHER_2ND_ORDER)
       .value("LAX_FRIEDRICHS_1ST_ORDER",
-             IntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER)
+             SpatialSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER)
       .value("LAX_FRIEDRICHS_2ND_ORDER",
-             IntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER)
+             SpatialSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER)
       .value("LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER",
-             IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER)
+             SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER)
       .value("LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER",
-             IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER)
+             SpatialSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER)
       .value("LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER",
-             IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER)
+             SpatialSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER)
       .value("LOCAL_LAX_FRIEDRICHS_1ST_ORDER",
-             IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER)
+             SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER)
       .value("LOCAL_LAX_FRIEDRICHS_2ND_ORDER",
-             IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER)
+             SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER)
       .value("STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER",
-             IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER)
-      .value("WENO_5TH_ORDER", IntegrationSchemeEnum::WENO_5TH_ORDER)
+             SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER)
+      .value("WENO_5TH_ORDER", SpatialSchemeEnum::WENO_5TH_ORDER)
       .finalize();
+
+  module.attr("IntegrationSchemeEnum") =
+      module.attr("SpatialSchemeEnum"); // IntegrationSchemeEnum is deprecated
 
   py::native_enum<BooleanOperationEnum>(module, "BooleanOperationEnum",
                                         "enum.IntEnum")

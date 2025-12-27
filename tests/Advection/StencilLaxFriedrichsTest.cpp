@@ -61,9 +61,9 @@ int main() {
   advectionKernel.setVelocityField(velocityField);
   advectionKernel.setAdvectionTime(0.5);
 
-  // Set the specific integration scheme
-  advectionKernel.setIntegrationScheme(
-      ls::IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER);
+  // Set the specific spatial discretization scheme
+  advectionKernel.setSpatialScheme(
+      ls::SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER);
 
   // Run Advection
   std::cout << "Running Stencil Local Lax Friedrichs Advection..." << std::endl;

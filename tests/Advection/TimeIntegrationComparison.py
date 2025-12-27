@@ -1,5 +1,7 @@
 import viennals as vls
+
 vls.setDimension(3)
+
 
 # Define a constant velocity field
 class ConstantVelocity(vls.VelocityField):
@@ -12,6 +14,7 @@ class ConstantVelocity(vls.VelocityField):
 
     def getVectorVelocity(self, coord, material, normal, pointId):
         return self.velocity
+
 
 def main():
     # Define grid and domain bounds
@@ -38,19 +41,19 @@ def main():
     advectFE.insertNextLevelSet(sphereFE)
     advectFE.setVelocityField(velocityField)
     advectFE.setAdvectionTime(2.0)
-    advectFE.setIntegrationScheme(vls.IntegrationSchemeEnum.ENGQUIST_OSHER_1ST_ORDER)
+    advectFE.setSpatialScheme(vls.SpatialSchemeEnum.ENGQUIST_OSHER_1ST_ORDER)
 
     # Setup Advection: Runge-Kutta 3
     advectRK3 = vls.AdvectRungeKutta3()
     advectRK3.insertNextLevelSet(sphereRK3)
     advectRK3.setVelocityField(velocityField)
     advectRK3.setAdvectionTime(2.0)
-    advectRK3.setIntegrationScheme(vls.IntegrationSchemeEnum.ENGQUIST_OSHER_1ST_ORDER)
+    advectRK3.setSpatialScheme(vls.SpatialSchemeEnum.ENGQUIST_OSHER_1ST_ORDER)
 
     # Run Advection
     print("Running Forward Euler Advection...")
     advectFE.apply()
-    
+
     checkFE = vls.Check(sphereFE)
     checkFE.apply()
 
@@ -60,13 +63,14 @@ def main():
 
     print("Running Runge-Kutta 3 Advection...")
     advectRK3.apply()
-    
+
     checkRK3 = vls.Check(sphereRK3)
     checkRK3.apply()
 
     meshRK3 = vls.Mesh()
     vls.ToSurfaceMesh(sphereRK3, meshRK3).apply()
     vls.VTKWriter(meshRK3, "sphereRK3.vtp").apply()
+
 
 if __name__ == "__main__":
     main()

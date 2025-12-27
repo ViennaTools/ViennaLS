@@ -63,8 +63,7 @@ private:
   }
 
   double advect(double maxTimeStep) override {
-    Base::timeIntegrationScheme =
-        TimeIntegrationSchemeEnum::RUNGE_KUTTA_3RD_ORDER;
+    Base::temporalScheme = TemporalSchemeEnum::RUNGE_KUTTA_3RD_ORDER;
 
     // 1. Determine the single time step 'dt' for all stages.
     Base::computeRates(maxTimeStep);
@@ -109,8 +108,8 @@ private:
     Base::rebuildLS();
 
     // Adjust lower layers
-    if (Base::integrationScheme !=
-        IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+    if (Base::spatialScheme !=
+        SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       for (unsigned i = 0; i < levelSets.size() - 1; ++i) {
         BooleanOperation<T, D>(levelSets[i], levelSets.back(),
                                BooleanOperationEnum::INTERSECT)

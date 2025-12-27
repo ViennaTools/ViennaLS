@@ -5,6 +5,7 @@ import time
 D = 3
 vls.setNumThreads(8)
 
+
 class EpitaxyVelocity(vls.VelocityField):
     def __init__(self, velocities):
         super().__init__()
@@ -30,12 +31,14 @@ class EpitaxyVelocity(vls.VelocityField):
         return vel * mat_vel
 
     def getVectorVelocity(self, coord, material, normal, point_id):
-        return (0., 0., 0.)
+        return (0.0, 0.0, 0.0)
+
 
 def write_surface(domain, filename):
     mesh = vls.Mesh()
     vls.ToSurfaceMesh(domain, mesh).apply()
     vls.VTKWriter(mesh, filename).apply()
+
 
 def main():
     # Set dimension to 3D
@@ -50,7 +53,7 @@ def main():
     boundary_conditions = [
         vls.BoundaryConditionEnum.REFLECTIVE_BOUNDARY,
         vls.BoundaryConditionEnum.REFLECTIVE_BOUNDARY,
-        vls.BoundaryConditionEnum.INFINITE_BOUNDARY
+        vls.BoundaryConditionEnum.INFINITE_BOUNDARY,
     ]
 
     # Create Geometry
@@ -80,7 +83,9 @@ def main():
     for ls in level_sets:
         advection.insertNextLevelSet(ls)
     advection.setVelocityField(velocity_field)
-    advection.setIntegrationScheme(vls.IntegrationSchemeEnum.STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER)
+    advection.setSpatialScheme(
+        vls.SpatialSchemeEnum.STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER
+    )
     advection.setAdvectionTime(0.5)
 
     start_time = time.time()
@@ -91,6 +96,7 @@ def main():
     vls.FinalizeStencilLocalLaxFriedrichs(level_sets)
 
     write_surface(substrate, "epitaxy.vtp")
+
 
 if __name__ == "__main__":
     main()

@@ -154,7 +154,7 @@ public:
     if constexpr (scheme == DifferentiationSchemeEnum::FIRST_ORDER) {
       return (values[1] - values[0]) / delta;
     } else if (scheme == DifferentiationSchemeEnum::SECOND_ORDER) {
-      // TODO: implement second order integration here
+      // TODO: implement second order differentiation here
       Logger::getInstance().addError("Second order scheme not implemented!");
       return 0;
     } else if (scheme == DifferentiationSchemeEnum::WENO3) {
@@ -177,8 +177,8 @@ public:
     if constexpr (scheme == DifferentiationSchemeEnum::FIRST_ORDER) {
       return (values[2] - values[1]) / delta;
     } else if (scheme == DifferentiationSchemeEnum::SECOND_ORDER) {
-      // TODO: implement second order integration here
-      Logger::getInstance().addError("Seconed order scheme not implemented!");
+      // TODO: implement second order differentiation here
+      Logger::getInstance().addError("Second order scheme not implemented!");
       return 0;
     } else if (scheme == DifferentiationSchemeEnum::WENO3) {
       return weno3(values, delta, true);

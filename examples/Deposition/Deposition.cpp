@@ -131,8 +131,7 @@ int main() {
   advectionKernel.setVelocityField(velocities);
   // advectionKernel.setAdvectionTime(4.);
   unsigned counter = 1;
-  advectionKernel.setIntegrationScheme(
-      ls::IntegrationSchemeEnum::WENO_5TH_ORDER);
+  advectionKernel.setSpatialScheme(ls::SpatialSchemeEnum::WENO_5TH_ORDER);
   for (NumericType time = 0; time < 4.;
        time += advectionKernel.getAdvectedTime()) {
     advectionKernel.apply();

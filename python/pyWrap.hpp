@@ -221,10 +221,14 @@ template <int D> void bindApi(py::module &module) {
       .def("getCalculateNormalVectors",
            &Advect<T, D>::getCalculateNormalVectors,
            "Get whether normal vectors are computed during advection.")
+      .def("setSpatialScheme", &Advect<T, D>::setSpatialScheme,
+           "Set the spatial discretization scheme to use during advection.")
       .def("setIntegrationScheme", &Advect<T, D>::setIntegrationScheme,
-           "Set the integration scheme to use during advection.")
+           "(DEPRECATED, use setSpatialScheme instead) Set the spatial "
+           "discretization scheme to use during advection.")
       .def("setDissipationAlpha", &Advect<T, D>::setDissipationAlpha,
-           "Set the dissipation value to use for Lax Friedrichs integration.")
+           "Set the dissipation value to use for Lax Friedrichs spatial "
+           "discretization.")
       .def("setUpdatePointData", &Advect<T, D>::setUpdatePointData,
            "Set whether the point data in the old LS should be translated to "
            "the advected LS. Defaults to true.")
