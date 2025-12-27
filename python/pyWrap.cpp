@@ -313,6 +313,24 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Add metadata to the file.")
       .def("apply", &VTKWriter<T>::apply, "Write the mesh.");
 
+#ifdef VIENNALS_VTK_RENDERING
+  // VTK Renderer
+  py::class_<VTKRenderWindow<T>, SmartPointer<VTKRenderWindow<T>>>(
+      module, "VTKRenderWindow")
+      // constructors
+      .def(py::init(&SmartPointer<VTKRenderWindow<T>>::New<>))
+      .def(py::init(
+          &SmartPointer<VTKRenderWindow<T>>::New<SmartPointer<Mesh<T>> &>))
+      // methods
+      .def("setMesh", &VTKRenderWindow<T>::setMesh,
+           "Add a mesh to the renderer.")
+      //  .def("setVolumeMesh", &VTKRenderWindow<T>::setVolumeMesh,
+      //       "Add a volume mesh to the renderer.")
+      //  .def("enable2DMode", &VTKRenderWindow<T>::enable2DMode,
+      //       "Enable 2D mode for rendering.")
+      .def("render", &VTKRenderWindow<T>::render, "Render the added meshes.");
+#endif
+
   // --------------- OTHER CLASSES ----------------
   // MaterialMap
   py::class_<MaterialMap, SmartPointer<MaterialMap>>(module, "MaterialMap")

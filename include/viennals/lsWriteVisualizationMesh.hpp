@@ -52,8 +52,12 @@ template <class T, int D> class WriteVisualizationMesh {
   bool extractVolumeMesh = true;
   bool extractHullMesh = false;
   bool bottomRemoved = false;
+  bool writeToFile = true;
   double LSEpsilon = 1e-2;
   std::unordered_map<std::string, std::vector<double>> metaData;
+
+  vtkSmartPointer<vtkUnstructuredGrid> volumeVTK;
+  vtkSmartPointer<vtkPolyData> hullVTK;
 
   /// This function removes duplicate points and agjusts the pointIDs in the
   /// cells
@@ -461,6 +465,10 @@ public:
     extractVolumeMesh = passedExtractVolumeMesh;
   }
 
+  void setWriteToFile(bool passedWriteToFile) {
+    writeToFile = passedWriteToFile;
+  }
+
   void setMaterialMap(SmartPointer<MaterialMap> passedMaterialMap) {
     materialMap = passedMaterialMap;
   }
@@ -486,6 +494,10 @@ public:
       metaData[pair.first] = pair.second;
     }
   }
+
+  auto getVolumeMesh() const { return volumeVTK; }
+
+  auto getHullMesh() const { return hullVTK; }
 
   void apply() {
     // check if level sets have enough layers
@@ -689,8 +701,8 @@ public:
     }
 
     // do not need tetrahedral volume mesh if we do not print volume
-    auto volumeVTK = vtkSmartPointer<vtkUnstructuredGrid>::New();
-    auto hullVTK = vtkSmartPointer<vtkPolyData>::New();
+    volumeVTK = vtkSmartPointer<vtkUnstructuredGrid>::New();
+    hullVTK = vtkSmartPointer<vtkPolyData>::New();
     if (extractVolumeMesh) {
       appendFilter->Update();
 
@@ -740,10 +752,12 @@ public:
       // add meta data to volume mesh
       addMetaDataToVTK(volumeVTK);
 
-      auto writer = vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
-      writer->SetFileName((fileName + "_volume.vtu").c_str());
-      writer->SetInputData(volumeVTK);
-      writer->Write();
+      if (writeToFile) {
+        auto writer = vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
+        writer->SetFileName((fileName + "_volume.vtu").c_str());
+        writer->SetInputData(volumeVTK);
+        writer->Write();
+      }
     }
 
     // Now make hull mesh if necessary
@@ -763,10 +777,14 @@ public:
       // add meta data to hull mesh
       addMetaDataToVTK(hullVTK);
 
-      auto writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
-      writer->SetFileName((fileName + "_hull.vtp").c_str());
-      writer->SetInputData(hullVTK);
-      writer->Write();
+      if (writeToFile) {
+        auto writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+        writer->SetFileName((fileName + "_hull.vtp").c_str());
+        writer->SetInputData(hullVTK);
+        writer->Write();
+      } else {
+        hullTriangleFilter->Update();
+      }
     }
   }
 };
