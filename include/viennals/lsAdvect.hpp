@@ -423,8 +423,6 @@ protected:
       if (voidMarkerPointer == nullptr) {
         VIENNACORE_LOG_WARNING("Advect: Cannot find void point markers. Not "
                                "ignoring void points.");
-        VIENNACORE_LOG_WARNING("Advect: Cannot find void point markers. Not "
-                               "ignoring void points.");
         ignoreVoids = false;
       }
     }
@@ -432,7 +430,6 @@ protected:
     const bool useAdaptiveTimeStepping = adaptiveTimeStepping;
 
     if (!storedRates.empty()) {
-      VIENNACORE_LOG_WARNING("Advect: Overwriting previously stored rates.");
       VIENNACORE_LOG_WARNING("Advect: Overwriting previously stored rates.");
     }
 
@@ -543,8 +540,7 @@ protected:
             } else {
               // Sub-case 3b: Interface Interaction
               auto adaptiveFactor = 1.0 / adaptiveTimeStepSubdivisions;
-              if (useAdaptiveTimeStepping &&
-                  difference > adaptiveFactor * cfl) {
+              if (useAdaptiveTimeStepping && difference > 0.2 * cfl) {
                 // Adaptive Sub-stepping:
                 // Approaching boundary: Force small steps to gather
                 // flux statistics and prevent numerical overshoot ("Soft
@@ -662,9 +658,6 @@ protected:
   // depth accordingly if there would be a material change.
   void updateLevelSet(double dt) {
     if (timeStepRatio >= 0.5) {
-      VIENNACORE_LOG_WARNING(
-          "Integration time step ratio should be smaller than 0.5. "
-          "Advection might fail!");
       VIENNACORE_LOG_WARNING(
           "Integration time step ratio should be smaller than 0.5. "
           "Advection might fail!");
@@ -934,7 +927,6 @@ public:
   void prepareLS() {
     // check whether a level set and velocities have been given
     if (levelSets.empty()) {
-      VIENNACORE_LOG_ERROR("No level sets passed to Advect.");
       VIENNACORE_LOG_ERROR("No level sets passed to Advect.");
       return;
     }

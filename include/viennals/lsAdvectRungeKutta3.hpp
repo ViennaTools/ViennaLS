@@ -23,9 +23,7 @@ public:
 private:
   // Helper function for linear combination:
   // target = wTarget * target + wSource * source
-  void combineLevelSets(double wTarget,
-                        const SmartPointer<Domain<T, D>> &target,
-                        double wSource) {
+  void combineLevelSets(double wTarget, double wSource) {
 
     auto &domainDest = levelSets.back()->getDomain();
     auto &grid = levelSets.back()->getGrid();
@@ -49,7 +47,7 @@ private:
       viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType> itDest(
           domainDest, start);
       viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>
-          itTarget(target->getDomain(), start);
+          itTarget(originalLevelSet->getDomain(), start);
 
       unsigned definedValueIndex = 0;
       for (; itDest.getStartIndices() < end; ++itDest) {
@@ -68,21 +66,21 @@ private:
     Base::timeIntegrationScheme =
         TimeIntegrationSchemeEnum::RUNGE_KUTTA_3RD_ORDER;
 
-    // 1. Save u^n (Deep copy to preserve topology)
+    // 1. Determine the single time step 'dt' for all stages.
+    Base::computeRates(maxTimeStep);
+    const double dt = Base::getCurrentTimeStep();
+
+    // 2. Save u^n (Deep copy to preserve topology)
+    // Ensure the level set is prepared (expanded) before taking the snapshot.
+    // This ensures originalLevelSet has sufficient padding for the first stage.
     if (originalLevelSet == nullptr) {
       originalLevelSet = Domain<T, D>::New(levelSets.back()->getGrid());
     }
     originalLevelSet->deepCopy(levelSets.back());
 
-    // 2. Determine the single time step 'dt' for all stages.
-    // This is the maximum stable time step for a forward Euler step from u^n.
-    Base::computeRates(maxTimeStep);
-    const double dt = Base::getCurrentTimeStep();
-
     // If dt is 0 or negative, no advection is possible or needed.
-    if (dt <= 0) {
+    if (dt <= 0)
       return 0.;
-    }
 
     // Stage 1: u^(1) = u^n + dt * L(u^n)
     // L(u^n) is already in storedRates from the computeRates call above.
@@ -96,7 +94,7 @@ private:
     Base::updateLevelSet(dt);
     // Combine to get u^(2) = 0.75 * u^n + 0.25 * u*.
     // The result is written to levelSets.back().
-    combineLevelSets(0.75, originalLevelSet, 0.25);
+    combineLevelSets(0.75, 0.25);
 
     // Stage 3: u^(n+1) = 1/3 u^n + 2/3 (u^(2) + dt * L(u^(2)))
     // The current levelSets.back() is u^(2). Compute L(u^(2)).
@@ -105,7 +103,7 @@ private:
     Base::updateLevelSet(dt);
     // Combine to get u^(n+1) = 1/3 * u^n + 2/3 * u**.
     // The result is written to levelSets.back().
-    combineLevelSets(1.0 / 3.0, originalLevelSet, 2.0 / 3.0);
+    combineLevelSets(1.0 / 3.0, 2.0 / 3.0);
 
     // Finalize: Re-segment and renormalize the final result.
     Base::rebuildLS();
