@@ -29,9 +29,9 @@ public:
     return Vec3D<T>{0, 0, 0};
   }
 
-  /// If lsLocalLaxFriedrichsAnalytical is used as the advection scheme,
-  /// this is called to provide the analytical solution for the alpha
-  /// values, needed for stable integration.
+  /// If lsLocalLaxFriedrichsAnalytical is used as the spatial discretization
+  /// scheme, this is called to provide the analytical solution for the alpha
+  /// values, needed for numerical stability.
   virtual T getDissipationAlpha(int /*direction*/, int /*material*/,
                                 const Vec3D<T> & /*centralDifferences*/) {
     return 0;

@@ -17,13 +17,14 @@ from viennals._core import CurvatureEnum
 from viennals._core import Extrude
 from viennals._core import FeatureDetectionEnum
 from viennals._core import FileFormatEnum
-from viennals._core import IntegrationSchemeEnum
 from viennals._core import LogLevel
 from viennals._core import Logger
 from viennals._core import MaterialMap
 from viennals._core import Mesh
 from viennals._core import PointData
 from viennals._core import Slice
+from viennals._core import SpatialSchemeEnum
+from viennals._core import SpatialSchemeEnum as IntegrationSchemeEnum
 from viennals._core import TransformEnum
 from viennals._core import TransformMesh
 from viennals._core import VTKReader
@@ -32,6 +33,8 @@ from viennals._core import VelocityField
 from viennals._core import VoidTopSurfaceEnum
 from viennals._core import setNumThreads
 from viennals.d2 import Advect
+from viennals.d2 import AdvectForwardEuler
+from viennals.d2 import AdvectRungeKutta3
 from viennals.d2 import BooleanOperation
 from viennals.d2 import Box
 from viennals.d2 import BoxDistribution
@@ -82,6 +85,8 @@ from . import d3
 
 __all__: list[str] = [
     "Advect",
+    "AdvectForwardEuler",
+    "AdvectRungeKutta3",
     "BooleanOperation",
     "BooleanOperationEnum",
     "BoundaryConditionEnum",
@@ -129,6 +134,7 @@ __all__: list[str] = [
     "Reduce",
     "RemoveStrayPoints",
     "Slice",
+    "SpatialSchemeEnum",
     "Sphere",
     "SphereDistribution",
     "StencilLocalLaxFriedrichsScalar",
@@ -161,22 +167,20 @@ def getDimension() -> int:
     """
     Get the current dimension of the simulation.
 
-        Returns
-        -------
-        int
-            The currently set dimension (2 or 3).
-
+    Returns
+    -------
+    int
+        The currently set dimension (2 or 3).
     """
 
 def setDimension(d: int):
     """
     Set the dimension of the simulation (2 or 3).
 
-        Parameters
-        ----------
-        d: int
-            Dimension of the simulation (2 or 3).
-
+    Parameters
+    ----------
+    d: int
+        Dimension of the simulation (2 or 3).
     """
 
 PROXY_DIM: int = 2

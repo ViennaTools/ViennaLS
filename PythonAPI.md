@@ -60,7 +60,7 @@ These are imported directly from the **root** `viennals` module.
 
 ### **Enums**
 - `LogLevel`
-- `IntegrationSchemeEnum`
+- `SpatialSchemeEnum`
 - `BooleanOperationEnum`
 - `CurvatureEnum`
 - `FeatureDetectionEnum`

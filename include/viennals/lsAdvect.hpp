@@ -16,7 +16,7 @@
 #include <lsMarkVoidPoints.hpp>
 #include <lsReduce.hpp>
 
-// Integration schemes
+// Spatial discretization schemes
 #include <lsEngquistOsher.hpp>
 #include <lsLaxFriedrichs.hpp>
 #include <lsLocalLaxFriedrichs.hpp>
@@ -38,9 +38,9 @@ namespace viennals {
 
 using namespace viennacore;
 
-/// Enumeration for the different Integration schemes
+/// Enumeration for the different spatial discretization schemes
 /// used by the advection kernel
-enum struct IntegrationSchemeEnum : unsigned {
+enum struct SpatialSchemeEnum : unsigned {
   ENGQUIST_OSHER_1ST_ORDER = 0,
   ENGQUIST_OSHER_2ND_ORDER = 1,
   LAX_FRIEDRICHS_1ST_ORDER = 2,
@@ -52,6 +52,16 @@ enum struct IntegrationSchemeEnum : unsigned {
   LOCAL_LAX_FRIEDRICHS_2ND_ORDER = 8,
   STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 9,
   WENO_5TH_ORDER = 10
+};
+
+// Legacy naming (deprecated, will be removed in future versions)
+using IntegrationSchemeEnum = SpatialSchemeEnum;
+
+/// Enumeration for the different time integration schemes
+/// used to select the advection kernel
+enum struct TemporalSchemeEnum : unsigned {
+  FORWARD_EULER = 0,
+  RUNGE_KUTTA_3RD_ORDER = 1
 };
 
 /// This class is used to advance level sets over time.
@@ -68,10 +78,11 @@ template <class T, int D> class Advect {
       viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>;
   using hrleIndexType = viennahrle::IndexType;
 
+protected:
   std::vector<SmartPointer<Domain<T, D>>> levelSets;
   SmartPointer<VelocityField<T>> velocities = nullptr;
-  IntegrationSchemeEnum integrationScheme =
-      IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER;
+  SpatialSchemeEnum spatialScheme = SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER;
+  TemporalSchemeEnum temporalScheme = TemporalSchemeEnum::FORWARD_EULER;
   double timeStepRatio = 0.4999;
   double dissipationAlpha = 1.0;
   bool calculateNormalVectors = true;
@@ -83,8 +94,9 @@ template <class T, int D> class Advect {
   bool saveAdvectionVelocities = false;
   bool updatePointData = true;
   bool checkDissipation = true;
+  double integrationCutoff = 0.5;
   bool adaptiveTimeStepping = false;
-  double adaptiveTimeStepThreshold = 0.05;
+  unsigned adaptiveTimeStepSubdivisions = 20;
   static constexpr double wrappingLayerEpsilon = 1e-4;
 
   // this vector will hold the maximum time step for each point and the
@@ -131,7 +143,7 @@ template <class T, int D> class Advect {
       for (ConstSparseIterator it(topDomain, startVector);
            it.getStartIndices() < endVector; ++it) {
 
-        if (!it.isDefined() || std::abs(it.getValue()) > 0.5)
+        if (!it.isDefined() || std::abs(it.getValue()) > integrationCutoff)
           continue;
 
         const T value = it.getValue();
@@ -211,6 +223,16 @@ template <class T, int D> class Advect {
     auto newlsDomain = SmartPointer<Domain<T, D>>::New(grid);
     auto &newDomain = newlsDomain->getDomain();
     auto &domain = levelSets.back()->getDomain();
+
+    // Determine cutoff and width based on discretization scheme to avoid
+    // immediate re-expansion
+    T cutoff = 1.0;
+    int finalWidth = 2;
+    if (spatialScheme ==
+        SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+      cutoff = 1.5;
+      finalWidth = 3;
+    }
 
     newDomain.initialize(domain.getNewSegmentation(),
                          domain.getAllocation() *
@@ -333,7 +355,7 @@ template <class T, int D> class Advect {
               }
             }
 
-            if (distance <= 1.) {
+            if (distance <= cutoff) {
               domainSegment.insertNextDefinedPoint(it.getIndices(), distance);
               if (updateData)
                 newDataSourceIds[p].push_back(
@@ -357,7 +379,7 @@ template <class T, int D> class Advect {
               }
             }
 
-            if (distance >= -1.) {
+            if (distance >= -cutoff) {
               domainSegment.insertNextDefinedPoint(it.getIndices(), distance);
               if (updateData)
                 newDataSourceIds[p].push_back(
@@ -381,52 +403,15 @@ template <class T, int D> class Advect {
     newDomain.finalize();
     newDomain.segment();
     levelSets.back()->deepCopy(newlsDomain);
-    levelSets.back()->finalize(2);
-  }
-
-  /// internal function used as a wrapper to call specialized integrateTime
-  /// with the chosen integrationScheme
-  double advect(double maxTimeStep) {
-    // check whether a level set and velocities have been given
-    if (levelSets.empty()) {
-      VIENNACORE_LOG_ERROR("No level sets passed to Advect. Not advecting.");
-      return std::numeric_limits<double>::max();
-    }
-    if (velocities == nullptr) {
-      VIENNACORE_LOG_ERROR(
-          "No velocity field passed to Advect. Not advecting.");
-      return std::numeric_limits<double>::max();
-    }
-
-    if (currentTimeStep < 0. || storedRates.empty())
-      applyIntegration(maxTimeStep);
-
-    moveSurface();
-
-    rebuildLS();
-
-    // Adjust all level sets below the advected one
-    // This means, that when the top level-set and one below
-    // are etched, the lower one is moved with the top level-set
-    // TODO: Adjust lower layers also when they have grown,
-    // to allow for two different growth rates of materials
-    if (integrationScheme !=
-        IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-      for (unsigned i = 0; i < levelSets.size() - 1; ++i) {
-        BooleanOperation<T, D>(levelSets[i], levelSets.back(),
-                               BooleanOperationEnum::INTERSECT)
-            .apply();
-      }
-    }
-
-    return getCurrentTimeStep();
+    levelSets.back()->finalize(finalWidth);
   }
 
   /// Internal function used to calculate the deltas to be applied to the LS
-  /// values from the given velocities and the integration scheme to be used.
-  /// This function fills up the storedRates to be used when moving the LS
-  template <class IntegrationSchemeType>
-  double integrateTime(IntegrationSchemeType IntegrationScheme,
+  /// values from the given velocities and the spatial discretization scheme to
+  /// be used. This function fills up the storedRates to be used when moving the
+  /// LS
+  template <class DiscretizationSchemeType>
+  double integrateTime(DiscretizationSchemeType spatialScheme,
                        double maxTimeStep) {
 
     auto &topDomain = levelSets.back()->getDomain();
@@ -446,7 +431,6 @@ template <class T, int D> class Advect {
     }
     const bool ignoreVoidPoints = ignoreVoids;
     const bool useAdaptiveTimeStepping = adaptiveTimeStepping;
-    const double atsThreshold = adaptiveTimeStepThreshold;
 
     if (!storedRates.empty()) {
       VIENNACORE_LOG_WARNING("Advect: Overwriting previously stored rates.");
@@ -482,12 +466,12 @@ template <class T, int D> class Advect {
         iterators.emplace_back(ls->getDomain());
       }
 
-      IntegrationSchemeType scheme(IntegrationScheme);
+      DiscretizationSchemeType scheme(spatialScheme);
 
       for (ConstSparseIterator it(topDomain, startVector);
            it.getStartIndices() < endVector; ++it) {
 
-        if (!it.isDefined() || std::abs(it.getValue()) > 0.5)
+        if (!it.isDefined() || std::abs(it.getValue()) > integrationCutoff)
           continue;
 
         T value = it.getValue();
@@ -558,11 +542,13 @@ template <class T, int D> class Advect {
 
             } else {
               // Sub-case 3b: Interface Interaction
-              if (useAdaptiveTimeStepping && difference > atsThreshold * cfl) {
+              auto adaptiveFactor = 1.0 / adaptiveTimeStepSubdivisions;
+              if (useAdaptiveTimeStepping && difference > 0.2 * cfl) {
                 // Adaptive Sub-stepping:
-                // Approaching boundary: Force small steps to gather flux
-                // statistics and prevent numerical overshoot ("Soft Landing").
-                maxStepTime -= atsThreshold * cfl / velocity;
+                // Approaching boundary: Force small steps to gather
+                // flux statistics and prevent numerical overshoot ("Soft
+                // Landing").
+                maxStepTime -= adaptiveFactor * cfl / velocity;
                 tempRates.push_back(std::make_pair(
                     gradNDissipation, std::numeric_limits<T>::min()));
               } else {
@@ -602,9 +588,74 @@ template <class T, int D> class Advect {
     return maxTimeStep;
   }
 
+  /// This function applies the discretization scheme and calculates the rates
+  /// and the maximum time step, but it does **not** move the surface.
+  void computeRates(double maxTimeStep = std::numeric_limits<double>::max()) {
+    prepareLS();
+    if (spatialScheme == SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER) {
+      auto is = lsInternal::EngquistOsher<T, D, 1>(levelSets.back(), velocities,
+                                                   calculateNormalVectors);
+      currentTimeStep = integrateTime(is, maxTimeStep);
+    } else if (spatialScheme == SpatialSchemeEnum::ENGQUIST_OSHER_2ND_ORDER) {
+      auto is = lsInternal::EngquistOsher<T, D, 2>(levelSets.back(), velocities,
+                                                   calculateNormalVectors);
+      currentTimeStep = integrateTime(is, maxTimeStep);
+    } else if (spatialScheme == SpatialSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
+      auto alphas = findGlobalAlphas();
+      auto is = lsInternal::LaxFriedrichs<T, D, 1>(levelSets.back(), velocities,
+                                                   dissipationAlpha, alphas,
+                                                   calculateNormalVectors);
+      currentTimeStep = integrateTime(is, maxTimeStep);
+    } else if (spatialScheme == SpatialSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER) {
+      auto alphas = findGlobalAlphas();
+      auto is = lsInternal::LaxFriedrichs<T, D, 2>(levelSets.back(), velocities,
+                                                   dissipationAlpha, alphas,
+                                                   calculateNormalVectors);
+      currentTimeStep = integrateTime(is, maxTimeStep);
+    } else if (spatialScheme ==
+               SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER) {
+      auto is = lsInternal::LocalLaxFriedrichsAnalytical<T, D, 1>(
+          levelSets.back(), velocities);
+      currentTimeStep = integrateTime(is, maxTimeStep);
+    } else if (spatialScheme ==
+               SpatialSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+      auto is = lsInternal::LocalLocalLaxFriedrichs<T, D, 1>(
+          levelSets.back(), velocities, dissipationAlpha);
+      currentTimeStep = integrateTime(is, maxTimeStep);
+    } else if (spatialScheme ==
+               SpatialSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
+      auto is = lsInternal::LocalLocalLaxFriedrichs<T, D, 2>(
+          levelSets.back(), velocities, dissipationAlpha);
+      currentTimeStep = integrateTime(is, maxTimeStep);
+    } else if (spatialScheme ==
+               SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+      auto is = lsInternal::LocalLaxFriedrichs<T, D, 1>(
+          levelSets.back(), velocities, dissipationAlpha);
+      currentTimeStep = integrateTime(is, maxTimeStep);
+    } else if (spatialScheme ==
+               SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
+      auto is = lsInternal::LocalLaxFriedrichs<T, D, 2>(
+          levelSets.back(), velocities, dissipationAlpha);
+      currentTimeStep = integrateTime(is, maxTimeStep);
+    } else if (spatialScheme ==
+               SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+      auto is = lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>(
+          levelSets.back(), velocities, dissipationAlpha);
+      currentTimeStep = integrateTime(is, maxTimeStep);
+    } else if (spatialScheme == SpatialSchemeEnum::WENO_5TH_ORDER) {
+      // Instantiate WENO5 with order 3 (neighbors +/- 3)
+      auto is = lsInternal::WENO5<T, D, 3>(levelSets.back(), velocities,
+                                           dissipationAlpha);
+      currentTimeStep = integrateTime(is, maxTimeStep);
+    } else {
+      VIENNACORE_LOG_ERROR("Advect: Discretization scheme not found.");
+      currentTimeStep = -1.;
+    }
+  }
+
   // Level Sets below are also considered in order to adjust the advection
   // depth accordingly if there would be a material change.
-  void moveSurface() {
+  void updateLevelSet(double dt) {
     if (timeStepRatio >= 0.5) {
       VIENNACORE_LOG_WARNING(
           "Integration time step ratio should be smaller than 0.5. "
@@ -612,9 +663,8 @@ template <class T, int D> class Advect {
     }
 
     auto &topDomain = levelSets.back()->getDomain();
-    auto &grid = levelSets.back()->getGrid();
 
-    assert(currentTimeStep >= 0. && "No time step set!");
+    assert(dt >= 0. && "No time step set!");
     assert(storedRates.size() == topDomain.getNumberOfSegments());
 
     // reduce to one layer thickness and apply new values directly to the
@@ -646,7 +696,12 @@ template <class T, int D> class Advect {
 
       for (unsigned localId = 0; localId < maxId; ++localId) {
         T &value = segment.definedValues[localId];
-        double time = currentTimeStep;
+
+        // Skip points that were not part of computeRates (outer layers)
+        if (std::abs(value) > integrationCutoff)
+          continue;
+
+        double time = dt;
 
         // if there is a change in materials during one time step, deduct
         // the time taken to advect up to the end of the top material and
@@ -713,6 +768,31 @@ template <class T, int D> class Advect {
 
     // clear the stored rates since surface has changed
     storedRates.clear();
+  }
+
+  /// internal function used as a wrapper to call specialized integrateTime
+  /// with the chosen spatial discretization scheme
+  virtual double advect(double maxTimeStep) {
+    // prepareLS();
+
+    if (currentTimeStep < 0. || storedRates.empty())
+      computeRates(maxTimeStep);
+
+    updateLevelSet(currentTimeStep);
+
+    rebuildLS();
+
+    // Adjust all level sets below the advected one
+    if (spatialScheme !=
+        SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+      for (unsigned i = 0; i < levelSets.size() - 1; ++i) {
+        BooleanOperation<T, D>(levelSets[i], levelSets.back(),
+                               BooleanOperationEnum::INTERSECT)
+            .apply();
+      }
+    }
+
+    return currentTimeStep;
   }
 
 public:
@@ -787,13 +867,14 @@ public:
   /// Set whether adaptive time stepping should be used
   /// when approaching material boundaries during etching.
   /// Defaults to false.
-  void setAdaptiveTimeStepping(bool aTS) { adaptiveTimeStepping = aTS; }
-
-  /// Set the threshold (in fraction of the CFL condition)
-  /// below which adaptive time stepping is applied.
-  /// Defaults to 0.05 (5% of the CFL condition).
-  void setAdaptiveTimeStepThreshold(double threshold) {
-    adaptiveTimeStepThreshold = threshold;
+  void setAdaptiveTimeStepping(bool aTS = true, unsigned subdivisions = 20) {
+    adaptiveTimeStepping = aTS;
+    if (subdivisions < 1) {
+      VIENNACORE_LOG_WARNING("Advect: Adaptive time stepping subdivisions must "
+                             "be at least 1. Setting to 1.");
+      subdivisions = 1;
+    }
+    adaptiveTimeStepSubdivisions = subdivisions;
   }
 
   /// Set whether the velocities applied to each point should be saved in
@@ -816,11 +897,20 @@ public:
   /// Get whether normal vectors were calculated.
   bool getCalculateNormalVectors() const { return calculateNormalVectors; }
 
-  /// Set which integration scheme should be used out of the ones specified
-  /// in IntegrationSchemeEnum.
+  /// Set which spatial discretization scheme should be used out of the ones
+  /// specified in SpatialSchemeEnum.
+  void setSpatialScheme(SpatialSchemeEnum scheme) { spatialScheme = scheme; }
+
+  // Deprecated, will be remove in future versions: use setSpatialScheme instead
   void setIntegrationScheme(IntegrationSchemeEnum scheme) {
-    integrationScheme = scheme;
+    VIENNACORE_LOG_WARNING(
+        "Advect::setIntegrationScheme is deprecated and will be removed in "
+        "future versions. Use setSpatialScheme instead.");
+    spatialScheme = scheme;
   }
+
+  /// Set which time integration scheme should be used.
+  void setTemporalScheme(TemporalSchemeEnum scheme) { temporalScheme = scheme; }
 
   /// Set the alpha dissipation coefficient.
   /// For lsLaxFriedrichs, this is used as the alpha value.
@@ -835,8 +925,8 @@ public:
   /// be translated to the advected LS. Defaults to true.
   void setUpdatePointData(bool update) { updatePointData = update; }
 
-  // Prepare the levelset for advection, based on the provided integration
-  // scheme.
+  // Prepare the levelset for advection, based on the provided spatial
+  // discretization scheme.
   void prepareLS() {
     // check whether a level set and velocities have been given
     if (levelSets.empty()) {
@@ -844,48 +934,57 @@ public:
       return;
     }
 
-    if (integrationScheme == IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER) {
+    if (spatialScheme == SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER) {
       lsInternal::EngquistOsher<T, D, 1>::prepareLS(levelSets.back());
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER) {
+    } else if (spatialScheme == SpatialSchemeEnum::ENGQUIST_OSHER_2ND_ORDER) {
       lsInternal::EngquistOsher<T, D, 2>::prepareLS(levelSets.back());
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
+    } else if (spatialScheme == SpatialSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
       lsInternal::LaxFriedrichs<T, D, 1>::prepareLS(levelSets.back());
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER) {
+    } else if (spatialScheme == SpatialSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER) {
       lsInternal::LaxFriedrichs<T, D, 2>::prepareLS(levelSets.back());
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::
-                   LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER) {
+    } else if (spatialScheme ==
+               SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER) {
       lsInternal::LocalLaxFriedrichsAnalytical<T, D, 1>::prepareLS(
           levelSets.back());
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+    } else if (spatialScheme ==
+               SpatialSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       lsInternal::LocalLocalLaxFriedrichs<T, D, 1>::prepareLS(levelSets.back());
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
+    } else if (spatialScheme ==
+               SpatialSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
       lsInternal::LocalLocalLaxFriedrichs<T, D, 2>::prepareLS(levelSets.back());
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+    } else if (spatialScheme ==
+               SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       lsInternal::LocalLaxFriedrichs<T, D, 1>::prepareLS(levelSets.back());
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
+    } else if (spatialScheme ==
+               SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
       lsInternal::LocalLaxFriedrichs<T, D, 2>::prepareLS(levelSets.back());
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+    } else if (spatialScheme ==
+               SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>::prepareLS(
           levelSets.back());
-    } else if (integrationScheme == IntegrationSchemeEnum::WENO_5TH_ORDER) {
+    } else if (spatialScheme == SpatialSchemeEnum::WENO_5TH_ORDER) {
+      // WENO5 requires a stencil radius of 3 (template parameter 3)
+      lsInternal::WENO5<T, D, 3>::prepareLS(levelSets.back());
+    } else if (spatialScheme == SpatialSchemeEnum::WENO_5TH_ORDER) {
       // WENO5 requires a stencil radius of 3 (template parameter 3)
       lsInternal::WENO5<T, D, 3>::prepareLS(levelSets.back());
     } else {
-      VIENNACORE_LOG_ERROR("Advect: Integration scheme not found.");
+      VIENNACORE_LOG_ERROR("Advect: Discretization scheme not found.");
     }
   }
 
-  /// Perform the advection.
   void apply() {
+    // check whether a level set and velocities have been given
+    if (levelSets.empty()) {
+      VIENNACORE_LOG_ERROR("No level sets passed to Advect. Not advecting.");
+      return;
+    }
+    if (velocities == nullptr) {
+      VIENNACORE_LOG_ERROR(
+          "No velocity field passed to Advect. Not advecting.");
+      return;
+    }
+
     if (advectionTime == 0.) {
       advectedTime = advect(std::numeric_limits<double>::max());
       numberOfTimeSteps = 1;
@@ -899,76 +998,6 @@ public:
           break;
       }
       advectedTime = currentTime;
-    }
-  }
-
-  /// This function applies the integration scheme and calculates the rates and
-  /// the maximum time step, but it does **not** move the surface.
-  void
-  applyIntegration(double maxTimeStep = std::numeric_limits<double>::max()) {
-    prepareLS();
-    if (integrationScheme == IntegrationSchemeEnum::ENGQUIST_OSHER_1ST_ORDER) {
-      auto is = lsInternal::EngquistOsher<T, D, 1>(levelSets.back(), velocities,
-                                                   calculateNormalVectors);
-      currentTimeStep = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::ENGQUIST_OSHER_2ND_ORDER) {
-      auto is = lsInternal::EngquistOsher<T, D, 2>(levelSets.back(), velocities,
-                                                   calculateNormalVectors);
-      currentTimeStep = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER) {
-      auto alphas = findGlobalAlphas();
-      auto is = lsInternal::LaxFriedrichs<T, D, 1>(levelSets.back(), velocities,
-                                                   dissipationAlpha, alphas,
-                                                   calculateNormalVectors);
-      currentTimeStep = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER) {
-      auto alphas = findGlobalAlphas();
-      auto is = lsInternal::LaxFriedrichs<T, D, 2>(levelSets.back(), velocities,
-                                                   dissipationAlpha, alphas,
-                                                   calculateNormalVectors);
-      currentTimeStep = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::
-                   LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER) {
-      auto is = lsInternal::LocalLaxFriedrichsAnalytical<T, D, 1>(
-          levelSets.back(), velocities);
-      currentTimeStep = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-      auto is = lsInternal::LocalLocalLaxFriedrichs<T, D, 1>(
-          levelSets.back(), velocities, dissipationAlpha);
-      currentTimeStep = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
-      auto is = lsInternal::LocalLocalLaxFriedrichs<T, D, 2>(
-          levelSets.back(), velocities, dissipationAlpha);
-      currentTimeStep = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-      auto is = lsInternal::LocalLaxFriedrichs<T, D, 1>(
-          levelSets.back(), velocities, dissipationAlpha);
-      currentTimeStep = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER) {
-      auto is = lsInternal::LocalLaxFriedrichs<T, D, 2>(
-          levelSets.back(), velocities, dissipationAlpha);
-      currentTimeStep = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme ==
-               IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-      auto is = lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>(
-          levelSets.back(), velocities, dissipationAlpha);
-      currentTimeStep = integrateTime(is, maxTimeStep);
-    } else if (integrationScheme == IntegrationSchemeEnum::WENO_5TH_ORDER) {
-      // Instantiate WENO5 with order 3 (neighbors +/- 3)
-      auto is = lsInternal::WENO5<T, D, 3>(levelSets.back(), velocities,
-                                           calculateNormalVectors);
-      currentTimeStep = integrateTime(is, maxTimeStep);
-    } else {
-      VIENNACORE_LOG_ERROR("Advect: Integration scheme not found.");
-      currentTimeStep = -1.;
     }
   }
 };

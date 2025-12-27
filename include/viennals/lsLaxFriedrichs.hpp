@@ -12,7 +12,7 @@ namespace lsInternal {
 
 using namespace viennacore;
 
-/// Lax Friedrichs integration scheme with constant alpha
+/// Lax Friedrichs spatial discretization scheme with constant alpha
 /// value for dissipation. This alpha value should be fitted
 /// based on the results of the advection and passed to the
 /// advection Kernel.
@@ -76,7 +76,7 @@ public:
       T diffPos = (phiPos - phi0) / deltaPos;
       T diffNeg = (phiNeg - phi0) / deltaNeg;
 
-      if (order == 2) { // if second order time integration scheme is used
+      if (order == 2) { // if second order spatial discretization scheme is used
         const T deltaPosPos = 2 * gridDelta;
         const T deltaNegNeg = -2 * gridDelta;
 

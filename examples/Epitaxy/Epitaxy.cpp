@@ -82,8 +82,8 @@ int main(int argc, char *argv[]) {
   auto velocityField = SmartPointer<epitaxy>::New(std::vector<double>{0., -.5});
 
   Advect<T, D> advectionKernel(levelSets, velocityField);
-  advectionKernel.setIntegrationScheme(
-      IntegrationSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER);
+  advectionKernel.setSpatialScheme(
+      SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER);
   advectionKernel.setAdvectionTime(.5);
 
   Timer timer;

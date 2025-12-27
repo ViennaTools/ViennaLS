@@ -52,18 +52,25 @@ int main() {
   NumericType extent = 30;
   NumericType gridDelta = 0.5;
 
-  double bounds[2 * D] = {-extent, extent, -extent, extent, -extent, extent};
+  double bounds[2 * D];
+  for (int i = 0; i < D; ++i) {
+    bounds[2 * i] = -extent;
+    bounds[2 * i + 1] = extent;
+  }
+
   ls::Domain<NumericType, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D - 1; ++i)
     boundaryCons[i] =
         ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
-  boundaryCons[2] = ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
+  boundaryCons[D - 1] =
+      ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
   auto substrate = ls::SmartPointer<ls::Domain<NumericType, D>>::New(
       bounds, boundaryCons, gridDelta);
 
-  NumericType origin[3] = {0., 0., 0.};
-  NumericType planeNormal[3] = {0., 0., 1.};
+  NumericType origin[D] = {0.};
+  NumericType planeNormal[D] = {0.};
+  planeNormal[D - 1] = 1.;
 
   {
     auto plane =
@@ -76,8 +83,19 @@ int main() {
         bounds, boundaryCons, gridDelta);
     // make -x and +x greater than domain for numerical stability
     NumericType ylimit = extent / 4.;
-    NumericType minCorner[D] = {-extent - 1, -ylimit, -15.};
-    NumericType maxCorner[D] = {extent + 1, ylimit, 1.};
+    NumericType minCorner[D];
+    NumericType maxCorner[D];
+    if constexpr (D == 2) {
+      minCorner[0] = -ylimit;
+      maxCorner[0] = ylimit;
+    } else {
+      minCorner[0] = -extent - 1;
+      maxCorner[0] = extent + 1;
+      minCorner[1] = -ylimit;
+      maxCorner[1] = ylimit;
+    }
+    minCorner[D - 1] = -15.;
+    maxCorner[D - 1] = 1.;
     auto box =
         ls::SmartPointer<ls::Box<NumericType, D>>::New(minCorner, maxCorner);
     ls::MakeGeometry<NumericType, D>(trench, box).apply();
@@ -113,8 +131,7 @@ int main() {
   advectionKernel.setVelocityField(velocities);
   // advectionKernel.setAdvectionTime(4.);
   unsigned counter = 1;
-  advectionKernel.setIntegrationScheme(
-      ls::IntegrationSchemeEnum::WENO_5TH_ORDER);
+  advectionKernel.setSpatialScheme(ls::SpatialSchemeEnum::WENO_5TH_ORDER);
   for (NumericType time = 0; time < 4.;
        time += advectionKernel.getAdvectedTime()) {
     advectionKernel.apply();
