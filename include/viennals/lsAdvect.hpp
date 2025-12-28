@@ -902,9 +902,10 @@ public:
   /// specified in SpatialSchemeEnum.
   void setSpatialScheme(SpatialSchemeEnum scheme) { spatialScheme = scheme; }
 
-  // Deprecated, will be removed in future versions: use setSpatialScheme instead
-  [[deprecated("Use setSpatialScheme instead")]] void setIntegrationScheme(
-      IntegrationSchemeEnum scheme) {
+  // Deprecated and will be removed in future versions:
+  // use setSpatialScheme instead
+  [[deprecated("Use setSpatialScheme instead")]] void
+  setIntegrationScheme(IntegrationSchemeEnum scheme) {
     VIENNACORE_LOG_WARNING(
         "Advect::setIntegrationScheme is deprecated and will be removed in "
         "future versions. Use setSpatialScheme instead.");
