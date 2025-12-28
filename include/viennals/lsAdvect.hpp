@@ -55,7 +55,8 @@ enum struct SpatialSchemeEnum : unsigned {
 };
 
 // Legacy naming (deprecated, will be removed in future versions)
-using IntegrationSchemeEnum = SpatialSchemeEnum;
+using IntegrationSchemeEnum [[deprecated("Use SpatialSchemeEnum instead")]] =
+    SpatialSchemeEnum;
 
 /// Enumeration for the different time integration schemes
 /// used to select the advection kernel
@@ -901,8 +902,9 @@ public:
   /// specified in SpatialSchemeEnum.
   void setSpatialScheme(SpatialSchemeEnum scheme) { spatialScheme = scheme; }
 
-  // Deprecated, will be remove in future versions: use setSpatialScheme instead
-  void setIntegrationScheme(IntegrationSchemeEnum scheme) {
+  // Deprecated, will be removed in future versions: use setSpatialScheme instead
+  [[deprecated("Use setSpatialScheme instead")]] void setIntegrationScheme(
+      IntegrationSchemeEnum scheme) {
     VIENNACORE_LOG_WARNING(
         "Advect::setIntegrationScheme is deprecated and will be removed in "
         "future versions. Use setSpatialScheme instead.");
