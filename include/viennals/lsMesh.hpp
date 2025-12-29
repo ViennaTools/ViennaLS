@@ -29,6 +29,7 @@ public:
   std::vector<std::array<unsigned, 8>> hexas;
   PointData<T> pointData;
   PointData<T> cellData;
+  std::vector<int> materialIds;
   Vec3D<T> minimumExtent;
   Vec3D<T> maximumExtent;
 
@@ -98,6 +99,10 @@ public:
   PointData<T> &getCellData() { return cellData; }
 
   const PointData<T> &getCellData() const { return cellData; }
+
+  std::vector<int> &getMaterialIds() { return materialIds; }
+
+  const std::vector<int> &getMaterialIds() const { return materialIds; }
 
   unsigned insertNextNode(const Vec3D<T> &node) {
     nodes.push_back(node);
@@ -242,10 +247,13 @@ public:
     }
 
     // Append data
-    // TODO need to adjust lsVTKWriter to deal with different data correctly
-    // currently this only works for vertex only meshes
+    /// TODO: need to adjust lsVTKWriter to deal with different data correctly
+    /// currently this only works for vertex only meshes
     pointData.append(passedMesh.pointData);
     cellData.append(passedMesh.cellData);
+
+    materialIds.insert(materialIds.end(), passedMesh.materialIds.begin(),
+                       passedMesh.materialIds.end());
 
     // if(lsPointData<T>::scalarData.size() < nodes.size())
     for (unsigned i = 0; i < pointData.getScalarDataSize(); ++i) {
@@ -272,6 +280,7 @@ public:
     hexas.clear();
     pointData.clear();
     cellData.clear();
+    materialIds.clear();
   }
 
   void print() {
@@ -321,7 +330,7 @@ public:
   }
 };
 
-// add all template specialisations for this class
+// add all template specializations for this class
 PRECOMPILE_PRECISION(Mesh);
 
 } // namespace viennals

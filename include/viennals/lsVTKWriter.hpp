@@ -69,6 +69,32 @@ template <class T> class VTKWriter {
     }
   }
 
+  void addMaterialIdsToVTK(vtkPolyData *data) const {
+    if (mesh->materialIds.empty()) {
+      return;
+    }
+
+    auto materialIdArray = vtkSmartPointer<vtkIntArray>::New();
+    materialIdArray->SetName("Material");
+    materialIdArray->SetNumberOfValues(mesh->materialIds.size());
+    for (size_t i = 0; i < mesh->materialIds.size(); ++i) {
+      materialIdArray->SetValue(i, mesh->materialIds[i]);
+    }
+    if (mesh->materialIds.size() == mesh->nodes.size()) {
+      data->GetPointData()->AddArray(materialIdArray);
+      data->GetPointData()->SetActiveScalars("Material");
+    } else if (mesh->materialIds.size() ==
+               mesh->triangles.size() + mesh->lines.size() +
+                   mesh->vertices.size() + mesh->tetras.size() +
+                   mesh->hexas.size()) {
+      data->GetCellData()->AddArray(materialIdArray);
+      data->GetCellData()->SetActiveScalars("Material");
+    } else {
+      VIENNACORE_LOG_WARNING(
+          "Number of material IDs does not match number of points or cells.");
+    }
+  }
+
   void addMetaDataToVTK(vtkDataSet *data) const {
     if (metaData.empty()) {
       return;
@@ -202,19 +228,14 @@ public:
 private:
 #ifdef VIENNALS_USE_VTK
   void writeVTP(std::string filename) const {
-    if (mesh == nullptr) {
-      Logger::getInstance()
-          .addError("No mesh was passed to VTKWriter.")
-          .print();
-      return;
-    }
-
+    // append .vtp if not present
     if (filename.find(".vtp") != filename.size() - 4)
       filename += ".vtp";
-    vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
+
+    auto polyData = vtkSmartPointer<vtkPolyData>::New();
 
     // Points
-    vtkSmartPointer<vtkPoints> polyPoints = vtkSmartPointer<vtkPoints>::New();
+    auto polyPoints = vtkSmartPointer<vtkPoints>::New();
     for (auto it = mesh->getNodes().begin(); it != mesh->getNodes().end();
          ++it) {
       polyPoints->InsertNextPoint((*it)[0], (*it)[1], (*it)[2]);
@@ -222,49 +243,62 @@ private:
     polyData->SetPoints(polyPoints);
 
     // Vertices
-    if (mesh->vertices.size() > 0) {
-      vtkSmartPointer<vtkCellArray> polyCells =
-          vtkSmartPointer<vtkCellArray>::New();
-      for (auto it = mesh->vertices.begin(); it != mesh->vertices.end(); ++it) {
-        polyCells->InsertNextCell(1);
-        polyCells->InsertCellPoint((*it)[0]);
+    if (!mesh->vertices.empty()) {
+      auto verts = vtkSmartPointer<vtkCellArray>::New();
+      for (const auto &vertex : mesh->vertices) {
+        verts->InsertNextCell(1);
+        verts->InsertCellPoint(vertex[0]);
       }
-      polyData->SetVerts(polyCells);
+      polyData->SetVerts(verts);
     }
 
     // Lines
-    if (mesh->lines.size() > 0) {
-      vtkSmartPointer<vtkCellArray> polyCells =
-          vtkSmartPointer<vtkCellArray>::New();
-      for (auto it = mesh->lines.begin(); it != mesh->lines.end(); ++it) {
-        polyCells->InsertNextCell(2);
-        for (unsigned i = 0; i < 2; ++i) {
-          polyCells->InsertCellPoint((*it)[i]);
-        }
+    if (!mesh->lines.empty()) {
+      auto lines = vtkSmartPointer<vtkCellArray>::New();
+      for (const auto &line : mesh->lines) {
+        lines->InsertNextCell(2);
+        lines->InsertCellPoint(line[0]);
+        lines->InsertCellPoint(line[1]);
       }
-      polyData->SetLines(polyCells);
+      polyData->SetLines(lines);
     }
 
     // Triangles
     if (mesh->triangles.size() > 0) {
-      vtkSmartPointer<vtkCellArray> polyCells =
-          vtkSmartPointer<vtkCellArray>::New();
-      for (auto it = mesh->triangles.begin(); it != mesh->triangles.end();
-           ++it) {
-        polyCells->InsertNextCell(3);
-        for (unsigned i = 0; i < 3; ++i) {
-          polyCells->InsertCellPoint((*it)[i]);
-        }
+      auto polys = vtkSmartPointer<vtkCellArray>::New();
+      for (const auto &triangle : mesh->triangles) {
+        polys->InsertNextCell(3);
+        polys->InsertCellPoint(triangle[0]);
+        polys->InsertCellPoint(triangle[1]);
+        polys->InsertCellPoint(triangle[2]);
       }
-      polyData->SetPolys(polyCells);
+      polyData->SetPolys(polys);
     }
 
     addDataFromMesh(mesh->pointData, polyData->GetPointData());
     addDataFromMesh(mesh->cellData, polyData->GetCellData());
     addMetaDataToVTK(polyData);
 
-    vtkSmartPointer<vtkXMLPolyDataWriter> pwriter =
-        vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+    // add material ids
+    if (!mesh->materialIds.empty()) {
+      auto materialIdArray = vtkSmartPointer<vtkIntArray>::New();
+      materialIdArray->SetName("Material");
+      materialIdArray->SetNumberOfValues(mesh->materialIds.size());
+      for (size_t i = 0; i < mesh->materialIds.size(); ++i) {
+        materialIdArray->SetValue(i, mesh->materialIds[i]);
+      }
+      if (mesh->materialIds.size() ==
+          mesh->triangles.size() + mesh->lines.size() + mesh->vertices.size() +
+              mesh->tetras.size() + mesh->hexas.size()) {
+        polyData->GetCellData()->AddArray(materialIdArray);
+        polyData->GetCellData()->SetActiveScalars("Material");
+      } else {
+        VIENNACORE_LOG_WARNING(
+            "Number of material IDs does not match number of points or cells.");
+      }
+    }
+
+    auto pwriter = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
     pwriter->SetFileName(filename.c_str());
     pwriter->SetInputData(polyData);
     pwriter->Write();

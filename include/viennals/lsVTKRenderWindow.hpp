@@ -62,10 +62,6 @@ public:
 
   void setMesh(SmartPointer<Mesh<T>> passedMesh) {
     mesh = passedMesh;
-    auto matIds = mesh->getCellData().getScalarData("MaterialIds", false);
-    if (matIds) {
-      materialIds = *matIds;
-    }
     updatePolyData();
   }
 
@@ -73,8 +69,6 @@ public:
     volumeMesh = volumeVTK;
     updateVolumeMesh();
   }
-
-  void setMaterialIds(const std::vector<T> &ids) { materialIds = ids; }
 
   auto setBackgroundColor(const std::array<double, 3> &color) {
     backgroundColor = color;
@@ -197,14 +191,14 @@ private:
     }
 
     // Material IDs as cell data
+    const auto &materialIds = mesh->getMaterialIds();
     bool useMaterialIds =
         !materialIds.empty() &&
         (materialIds.size() == mesh->lines.size() + mesh->triangles.size());
     int minId = std::numeric_limits<int>::max();
     int maxId = std::numeric_limits<int>::min();
     if (useMaterialIds) {
-      vtkSmartPointer<vtkIntArray> matIdArray =
-          vtkSmartPointer<vtkIntArray>::New();
+      auto matIdArray = vtkSmartPointer<vtkIntArray>::New();
       matIdArray->SetName("MaterialIds");
       for (const auto &id : materialIds) {
         int mId = static_cast<int>(id);

@@ -110,9 +110,8 @@ public:
     size_t currentPointId = 0;
 
     // prepare mesh for material ids
-    mesh->cellData.insertNextScalarData(typename PointData<T>::ScalarDataType(),
-                                        "Material");
-    auto &materialIds = *(mesh->cellData.getScalarData(0));
+    std::vector<int> &materialIds = mesh->getMaterialIds();
+    materialIds.clear();
     const bool useMaterialMap = materialMap != nullptr;
 
     // set up iterators for all materials

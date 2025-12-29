@@ -113,7 +113,7 @@ public:
     // set up data arrays
     std::vector<N> values;
     std::vector<Vec3D<N>> normals;
-    std::vector<N> materialIds;
+    std::vector<int> materialIds;
 
     // save the extent of the resulting mesh
     Vec3D<N> minimumExtent;
@@ -236,7 +236,7 @@ public:
 
     mesh->cellData.insertNextScalarData(values, "LSValues");
     mesh->cellData.insertNextVectorData(normals, "Normals");
-    mesh->cellData.insertNextScalarData(materialIds, "MaterialIds");
+    mesh->materialIds = std::move(materialIds);
     mesh->minimumExtent = minimumExtent;
     mesh->maximumExtent = maximumExtent;
   }

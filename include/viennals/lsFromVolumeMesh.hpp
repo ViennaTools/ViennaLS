@@ -69,12 +69,10 @@ public:
 
     // get the unique material numbers for explicit booling
     std::vector<int> materialInts;
-    typename PointData<T>::ScalarDataType *materialData =
-        mesh->cellData.getScalarData("Material", true);
-    if (materialData != nullptr) {
+    auto const &materialIds = mesh->materialIds;
+    if (!materialIds.empty()) {
       // make unique list of materialIds
-      materialInts =
-          std::vector<int>(materialData->begin(), materialData->end());
+      materialInts = materialIds;
       std::sort(materialInts.begin(), materialInts.end());
       auto it = std::unique(materialInts.begin(), materialInts.end());
       materialInts.erase(it, materialInts.end());
@@ -147,8 +145,7 @@ public:
                   "Element: " +
                   std::to_string(i));
             }
-            it->second.second =
-                (materialData == nullptr) ? 0 : (*materialData)[i];
+            it->second.second = materialIds.empty() ? 0 : materialIds[i];
           } else {
             if (it->second.first != materialInts.back() + 1) {
               VIENNACORE_LOG_WARNING(
@@ -156,8 +153,7 @@ public:
                   "Element: " +
                   std::to_string(i));
             }
-            it->second.first =
-                (materialData == nullptr) ? 0 : (*materialData)[i];
+            it->second.first = materialIds.empty() ? 0 : materialIds[i];
           }
 
           if (it->second.first == it->second.second)
@@ -166,18 +162,18 @@ public:
         } else {
           if (Orientation(currentElementPoints)) {
             surfaceElements.insert(
-                it, std::make_pair(currentSurfaceElement,
-                                   std::make_pair(materialInts.back() + 1,
-                                                  (materialData == nullptr)
-                                                      ? 0
-                                                      : (*materialData)[i])));
+                it,
+                std::make_pair(
+                    currentSurfaceElement,
+                    std::make_pair(materialInts.back() + 1,
+                                   materialIds.empty() ? 0 : materialIds[i])));
           } else {
             surfaceElements.insert(
-                it, std::make_pair(currentSurfaceElement,
-                                   std::make_pair((materialData == nullptr)
-                                                      ? 0
-                                                      : (*materialData)[i],
-                                                  materialInts.back() + 1)));
+                it,
+                std::make_pair(
+                    currentSurfaceElement,
+                    std::make_pair((materialIds.empty()) ? 0 : materialIds[i],
+                                   materialInts.back() + 1)));
           }
         }
       }

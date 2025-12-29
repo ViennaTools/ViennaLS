@@ -124,7 +124,7 @@ public:
     typename nodeContainerType::iterator nodeIt;
 
     std::vector<Vec3D<T>> normals;
-    std::vector<T> materials;
+    std::vector<int> materials;
 
     const bool checkNodeFlag = minNodeDistanceFactor > 0;
     const bool useMaterialMap = materialMap != nullptr;
@@ -294,7 +294,7 @@ public:
                 if (useMaterialMap) {
                   materials.push_back(materialMap->getMaterialId(l));
                 } else {
-                  materials.push_back(static_cast<T>(l));
+                  materials.push_back(static_cast<int>(l));
                 }
               }
             }
@@ -303,7 +303,7 @@ public:
       }
     }
 
-    mesh->cellData.insertNextScalarData(materials, "MaterialIds");
+    mesh->materialIds = std::move(materials);
     mesh->cellData.insertNextVectorData(normals, "Normals");
     mesh->triangles.shrink_to_fit();
     mesh->nodes.shrink_to_fit();
