@@ -109,6 +109,13 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
   module.attr("IntegrationSchemeEnum") =
       module.attr("SpatialSchemeEnum"); // IntegrationSchemeEnum is deprecated
 
+  py::native_enum<TemporalSchemeEnum>(module, "TemporalSchemeEnum",
+                                      "enum.IntEnum")
+      .value("FORWARD_EULER", TemporalSchemeEnum::FORWARD_EULER)
+      .value("RUNGE_KUTTA_2ND_ORDER", TemporalSchemeEnum::RUNGE_KUTTA_2ND_ORDER)
+      .value("RUNGE_KUTTA_3RD_ORDER", TemporalSchemeEnum::RUNGE_KUTTA_3RD_ORDER)
+      .finalize();
+
   py::native_enum<BooleanOperationEnum>(module, "BooleanOperationEnum",
                                         "enum.IntEnum")
       .value("INTERSECT", BooleanOperationEnum::INTERSECT)

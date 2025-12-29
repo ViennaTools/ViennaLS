@@ -1,7 +1,7 @@
 #include <array>
 #include <iostream>
 
-#include <lsAdvectForwardEuler.hpp>
+#include <lsAdvect.hpp>
 #include <lsDomain.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsTestAsserts.hpp>
@@ -56,7 +56,7 @@ int main() {
   auto velocityField = ls::SmartPointer<ConstantScalarVelocity<T>>::New();
 
   // Setup Advection
-  ls::AdvectForwardEuler<T, D> advectionKernel;
+  ls::Advect<T, D> advectionKernel;
   advectionKernel.insertNextLevelSet(sphere);
   advectionKernel.setVelocityField(velocityField);
   advectionKernel.setAdvectionTime(0.5);

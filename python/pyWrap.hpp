@@ -4,8 +4,6 @@
 
 // all header files which define API functions
 #include <lsAdvect.hpp>
-#include <lsAdvectForwardEuler.hpp>
-#include <lsAdvectRungeKutta3.hpp>
 #include <lsBooleanOperation.hpp>
 #include <lsCalculateCurvatures.hpp>
 #include <lsCalculateNormalVectors.hpp>
@@ -223,6 +221,8 @@ template <int D> void bindApi(py::module &module) {
            "Get whether normal vectors are computed during advection.")
       .def("setSpatialScheme", &Advect<T, D>::setSpatialScheme,
            "Set the spatial discretization scheme to use during advection.")
+      .def("setTemporalScheme", &Advect<T, D>::setTemporalScheme,
+           "Set the time integration scheme to use during advection.")
       .def("setIntegrationScheme", &Advect<T, D>::setIntegrationScheme,
            "(DEPRECATED, use setSpatialScheme instead) Set the spatial "
            "discretization scheme to use during advection.")
@@ -237,27 +237,6 @@ template <int D> void bindApi(py::module &module) {
       // parallelised C++ code here
       .def("apply", &Advect<T, D>::apply,
            py::call_guard<py::gil_scoped_release>(), "Perform advection.");
-
-  // AdvectForwardEuler
-  py::class_<AdvectForwardEuler<T, D>, Advect<T, D>,
-             SmartPointer<AdvectForwardEuler<T, D>>>(module,
-                                                     "AdvectForwardEuler")
-      .def(py::init(&SmartPointer<AdvectForwardEuler<T, D>>::template New<>))
-      .def(py::init(&SmartPointer<AdvectForwardEuler<T, D>>::template New<
-                    SmartPointer<Domain<T, D>> &>))
-      .def(py::init(
-          &SmartPointer<AdvectForwardEuler<T, D>>::template New<
-              SmartPointer<Domain<T, D>> &, SmartPointer<VelocityField<T>> &>));
-
-  // AdvectRungeKutta3
-  py::class_<AdvectRungeKutta3<T, D>, Advect<T, D>,
-             SmartPointer<AdvectRungeKutta3<T, D>>>(module, "AdvectRungeKutta3")
-      .def(py::init(&SmartPointer<AdvectRungeKutta3<T, D>>::template New<>))
-      .def(py::init(&SmartPointer<AdvectRungeKutta3<T, D>>::template New<
-                    SmartPointer<Domain<T, D>> &>))
-      .def(py::init(
-          &SmartPointer<AdvectRungeKutta3<T, D>>::template New<
-              SmartPointer<Domain<T, D>> &, SmartPointer<VelocityField<T>> &>));
 
   py::class_<lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>>(
       module, "StencilLocalLaxFriedrichsScalar")

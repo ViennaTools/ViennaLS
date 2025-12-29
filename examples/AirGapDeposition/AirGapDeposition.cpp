@@ -1,7 +1,6 @@
 #include <iostream>
 
 #include <lsAdvect.hpp>
-#include <lsAdvectRungeKutta3.hpp>
 #include <lsBooleanOperation.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
@@ -166,6 +165,11 @@ int main() {
   auto newLayerFE =
       ls::SmartPointer<ls::Domain<NumericType, D>>::New(substrateFE);
 
+  auto substrateRK2 =
+      ls::SmartPointer<ls::Domain<NumericType, D>>::New(substrate);
+  auto newLayerRK2 =
+      ls::SmartPointer<ls::Domain<NumericType, D>>::New(substrateRK2);
+
   auto substrateRK =
       ls::SmartPointer<ls::Domain<NumericType, D>>::New(substrate);
   auto newLayerRK =
@@ -184,22 +188,40 @@ int main() {
   advectionKernelFE.insertNextLevelSet(newLayerFE);
   advectionKernelFE.setVelocityField(velocities);
   advectionKernelFE.setIgnoreVoids(true);
+  advectionKernelFE.setTemporalScheme(ls::TemporalSchemeEnum::FORWARD_EULER);
 
   double passedTimeFE = runSimulation(
       advectionKernelFE, newLayerFE, totalSimulationTime, outputInterval, "FE");
 
-  // RK Kernel
-  ls::AdvectRungeKutta3<NumericType, D> advectionKernelRK;
+  // RK2 Kernel
+  ls::Advect<NumericType, D> advectionKernelRK2;
+  advectionKernelRK2.insertNextLevelSet(substrateRK2);
+  advectionKernelRK2.insertNextLevelSet(newLayerRK2);
+  advectionKernelRK2.setVelocityField(velocities);
+  advectionKernelRK2.setIgnoreVoids(true);
+  advectionKernelRK2.setTemporalScheme(
+      ls::TemporalSchemeEnum::RUNGE_KUTTA_2ND_ORDER);
+
+  double passedTimeRK2 =
+      runSimulation(advectionKernelRK2, newLayerRK2, totalSimulationTime,
+                    outputInterval, "RK2");
+
+  // RK3 Kernel
+  ls::Advect<NumericType, D> advectionKernelRK;
   advectionKernelRK.insertNextLevelSet(substrateRK);
   advectionKernelRK.insertNextLevelSet(newLayerRK);
   advectionKernelRK.setVelocityField(velocities);
   advectionKernelRK.setIgnoreVoids(true);
+  advectionKernelRK.setTemporalScheme(
+      ls::TemporalSchemeEnum::RUNGE_KUTTA_3RD_ORDER);
 
-  double passedTimeRK = runSimulation(
-      advectionKernelRK, newLayerRK, totalSimulationTime, outputInterval, "RK");
+  double passedTimeRK =
+      runSimulation(advectionKernelRK, newLayerRK, totalSimulationTime,
+                    outputInterval, "RK3");
 
   std::cout << "Time passed FE: " << passedTimeFE << std::endl;
-  std::cout << "Time passed RK: " << passedTimeRK << std::endl;
+  std::cout << "Time passed RK2: " << passedTimeRK2 << std::endl;
+  std::cout << "Time passed RK3: " << passedTimeRK << std::endl;
 
   // FE Output
   {
@@ -220,13 +242,32 @@ int main() {
     ls::VTKWriter<NumericType>(multiMesh, "multimesh_FE.vtp").apply();
   }
 
-  // RK Output
+  // RK2 Output
+  {
+    ls::WriteVisualizationMesh<NumericType, D> writer;
+    writer.insertNextLevelSet(substrateRK2);
+    writer.insertNextLevelSet(newLayerRK2);
+    writer.addMetaData("time", passedTimeRK2);
+    writer.setFileName("airgap_RK2");
+    writer.setExtractHullMesh(true);
+    writer.apply();
+
+    ls::ToMultiSurfaceMesh<NumericType, D> multiMeshKernel;
+    multiMeshKernel.insertNextLevelSet(substrateRK2);
+    multiMeshKernel.insertNextLevelSet(newLayerRK2);
+    auto multiMesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
+    multiMeshKernel.setMesh(multiMesh);
+    multiMeshKernel.apply();
+    ls::VTKWriter<NumericType>(multiMesh, "multimesh_RK2.vtp").apply();
+  }
+
+  // RK3 Output
   {
     ls::WriteVisualizationMesh<NumericType, D> writer;
     writer.insertNextLevelSet(substrateRK);
     writer.insertNextLevelSet(newLayerRK);
     writer.addMetaData("time", passedTimeRK);
-    writer.setFileName("airgap_RK");
+    writer.setFileName("airgap_RK3");
     writer.setExtractHullMesh(true);
     writer.apply();
 
@@ -236,7 +277,7 @@ int main() {
     auto multiMesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
     multiMeshKernel.setMesh(multiMesh);
     multiMeshKernel.apply();
-    ls::VTKWriter<NumericType>(multiMesh, "multimesh_RK.vtp").apply();
+    ls::VTKWriter<NumericType>(multiMesh, "multimesh_RK3.vtp").apply();
   }
 
   return 0;

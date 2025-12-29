@@ -73,6 +73,7 @@ advectionKernel.insertNextLevelSet(newLayer)
 
 advectionKernel.setVelocityField(velocities)
 advectionKernel.setIgnoreVoids(True)
+advectionKernel.setTemporalScheme(vls.TemporalSchemeEnum.RUNGE_KUTTA_3RD_ORDER)
 
 # Now advect the level set 50 times, outputting every
 # advection step. Save the physical time that

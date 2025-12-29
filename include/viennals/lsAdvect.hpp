@@ -34,6 +34,11 @@
 #include <lsVTKWriter.hpp>
 #endif
 
+// Forward declaration for Time Integration Schemes
+namespace lsInternal {
+template <class T, int D, class AdvectType> struct AdvectTimeIntegration;
+}
+
 namespace viennals {
 
 using namespace viennacore;
@@ -62,7 +67,8 @@ using IntegrationSchemeEnum [[deprecated("Use SpatialSchemeEnum instead")]] =
 /// used to select the advection kernel
 enum struct TemporalSchemeEnum : unsigned {
   FORWARD_EULER = 0,
-  RUNGE_KUTTA_3RD_ORDER = 1
+  RUNGE_KUTTA_2ND_ORDER = 1,
+  RUNGE_KUTTA_3RD_ORDER = 2
 };
 
 /// This class is used to advance level sets over time.
@@ -78,6 +84,9 @@ template <class T, int D> class Advect {
   using ConstSparseIterator =
       viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>;
   using hrleIndexType = viennahrle::IndexType;
+
+  // Allow the time integration struct to access protected members
+  friend struct lsInternal::AdvectTimeIntegration<T, D, Advect<T, D>>;
 
 protected:
   std::vector<SmartPointer<Domain<T, D>>> levelSets;
@@ -99,6 +108,7 @@ protected:
   bool adaptiveTimeStepping = false;
   unsigned adaptiveTimeStepSubdivisions = 20;
   static constexpr double wrappingLayerEpsilon = 1e-4;
+  SmartPointer<Domain<T, D>> originalLevelSet = nullptr;
 
   // this vector will hold the maximum time step for each point and the
   // corresponding velocity
@@ -213,6 +223,45 @@ protected:
     } // end of parallel section
 
     return finalAlphas;
+  }
+
+  // Helper function for linear combination:
+  // target = wTarget * target + wSource * source
+  void combineLevelSets(double wTarget, double wSource) {
+
+    auto &domainDest = levelSets.back()->getDomain();
+    auto &grid = levelSets.back()->getGrid();
+
+#pragma omp parallel num_threads(domainDest.getNumberOfSegments())
+    {
+      int p = 0;
+#ifdef _OPENMP
+      p = omp_get_thread_num();
+#endif
+      auto &segDest = domainDest.getDomainSegment(p);
+
+      viennahrle::Index<D> start = (p == 0)
+                                       ? grid.getMinGridPoint()
+                                       : domainDest.getSegmentation()[p - 1];
+      viennahrle::Index<D> end =
+          (p != static_cast<int>(domainDest.getNumberOfSegments()) - 1)
+              ? domainDest.getSegmentation()[p]
+              : grid.incrementIndices(grid.getMaxGridPoint());
+
+      ConstSparseIterator itDest(domainDest, start);
+      ConstSparseIterator itTarget(originalLevelSet->getDomain(), start);
+
+      unsigned definedValueIndex = 0;
+      for (; itDest.getStartIndices() < end; ++itDest) {
+        if (itDest.isDefined()) {
+          itTarget.goToIndicesSequential(itDest.getStartIndices());
+          T valSource = itDest.getValue();
+          T valTarget = itTarget.getValue();
+          segDest.definedValues[definedValueIndex++] =
+              wTarget * valTarget + wSource * valSource;
+        }
+      }
+    }
   }
 
   void rebuildLS() {
@@ -774,26 +823,18 @@ protected:
   /// internal function used as a wrapper to call specialized integrateTime
   /// with the chosen spatial discretization scheme
   virtual double advect(double maxTimeStep) {
-    // prepareLS();
-
-    if (currentTimeStep < 0. || storedRates.empty())
-      computeRates(maxTimeStep);
-
-    updateLevelSet(currentTimeStep);
-
-    rebuildLS();
-
-    // Adjust all level sets below the advected one
-    if (spatialScheme !=
-        SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-      for (unsigned i = 0; i < levelSets.size() - 1; ++i) {
-        BooleanOperation<T, D>(levelSets[i], levelSets.back(),
-                               BooleanOperationEnum::INTERSECT)
-            .apply();
-      }
+    switch (temporalScheme) {
+    case TemporalSchemeEnum::RUNGE_KUTTA_2ND_ORDER:
+      return lsInternal::AdvectTimeIntegration<
+          T, D, Advect<T, D>>::evolveRungeKutta2(*this, maxTimeStep);
+    case TemporalSchemeEnum::RUNGE_KUTTA_3RD_ORDER:
+      return lsInternal::AdvectTimeIntegration<
+          T, D, Advect<T, D>>::evolveRungeKutta3(*this, maxTimeStep);
+    case TemporalSchemeEnum::FORWARD_EULER:
+    default:
+      return lsInternal::AdvectTimeIntegration<
+          T, D, Advect<T, D>>::evolveForwardEuler(*this, maxTimeStep);
     }
-
-    return currentTimeStep;
   }
 
 public:
@@ -968,9 +1009,6 @@ public:
     } else if (spatialScheme == SpatialSchemeEnum::WENO_5TH_ORDER) {
       // WENO5 requires a stencil radius of 3 (template parameter 3)
       lsInternal::WENO5<T, D, 3>::prepareLS(levelSets.back());
-    } else if (spatialScheme == SpatialSchemeEnum::WENO_5TH_ORDER) {
-      // WENO5 requires a stencil radius of 3 (template parameter 3)
-      lsInternal::WENO5<T, D, 3>::prepareLS(levelSets.back());
     } else {
       VIENNACORE_LOG_ERROR("Advect: Discretization scheme not found.");
     }
@@ -1009,3 +1047,6 @@ public:
 PRECOMPILE_PRECISION_DIMENSION(Advect)
 
 } // namespace viennals
+
+// Include implementation of time integration schemes
+#include <lsAdvectTimeIntegration.hpp>

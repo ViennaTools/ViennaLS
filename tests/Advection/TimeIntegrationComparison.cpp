@@ -1,8 +1,7 @@
 #include <array>
 #include <iostream>
 
-#include <lsAdvectForwardEuler.hpp>
-#include <lsAdvectRungeKutta3.hpp>
+#include <lsAdvect.hpp>
 #include <lsDomain.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsTestAsserts.hpp>
@@ -52,8 +51,9 @@ int main() {
   T radius = 1.5;
   ls::MakeGeometry<T, D>(sphere, ls::Sphere<T, D>::New(origin, radius)).apply();
 
-  // Create copies for Forward Euler and RK3
+  // Create copies for Forward Euler, RK2 and RK3
   auto sphereFE = ls::SmartPointer<ls::Domain<T, D>>::New(sphere);
+  auto sphereRK2 = ls::SmartPointer<ls::Domain<T, D>>::New(sphere);
   auto sphereRK3 = ls::SmartPointer<ls::Domain<T, D>>::New(sphere);
 
   // Define constant velocity field (moving in x-direction)
@@ -61,18 +61,28 @@ int main() {
   auto velocityField = ls::SmartPointer<ConstantVelocity<T>>::New(vel);
 
   // Setup Advection: Forward Euler
-  ls::AdvectForwardEuler<T, D> advectFE;
+  ls::Advect<T, D> advectFE;
   advectFE.insertNextLevelSet(sphereFE);
   advectFE.setVelocityField(velocityField);
   advectFE.setAdvectionTime(2.0);
   advectFE.setSpatialScheme(ls::SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
+  advectFE.setTemporalScheme(ls::TemporalSchemeEnum::FORWARD_EULER);
+
+  // Setup Advection: Runge-Kutta 2
+  ls::Advect<T, D> advectRK2;
+  advectRK2.insertNextLevelSet(sphereRK2);
+  advectRK2.setVelocityField(velocityField);
+  advectRK2.setAdvectionTime(2.0);
+  advectRK2.setSpatialScheme(ls::SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
+  advectRK2.setTemporalScheme(ls::TemporalSchemeEnum::RUNGE_KUTTA_2ND_ORDER);
 
   // Setup Advection: Runge-Kutta 3
-  ls::AdvectRungeKutta3<T, D> advectRK3;
+  ls::Advect<T, D> advectRK3;
   advectRK3.insertNextLevelSet(sphereRK3);
   advectRK3.setVelocityField(velocityField);
   advectRK3.setAdvectionTime(2.0);
   advectRK3.setSpatialScheme(ls::SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
+  advectRK3.setTemporalScheme(ls::TemporalSchemeEnum::RUNGE_KUTTA_3RD_ORDER);
 
   // Run Advection
   std::cout << "Running Forward Euler Advection..." << std::endl;
@@ -82,6 +92,14 @@ int main() {
   auto meshFE = ls::Mesh<T>::New();
   ls::ToSurfaceMesh<T, D>(sphereFE, meshFE).apply();
   ls::VTKWriter<T>(meshFE, "sphereFE.vtp").apply();
+
+  std::cout << "Running Runge-Kutta 2 Advection..." << std::endl;
+  advectRK2.apply();
+  LSTEST_ASSERT_VALID_LS(sphereRK2, T, D);
+
+  auto meshRK2 = ls::Mesh<T>::New();
+  ls::ToSurfaceMesh<T, D>(sphereRK2, meshRK2).apply();
+  ls::VTKWriter<T>(meshRK2, "sphereRK2.vtp").apply();
 
   std::cout << "Running Runge-Kutta 3 Advection..." << std::endl;
   advectRK3.apply();
