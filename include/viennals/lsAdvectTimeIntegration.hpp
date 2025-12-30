@@ -2,6 +2,7 @@
 
 #include <lsBooleanOperation.hpp>
 #include <lsDomain.hpp>
+#include <vcLogger.hpp>
 
 namespace lsInternal {
 
@@ -48,6 +49,13 @@ template <class T, int D, class AdvectType> struct AdvectTimeIntegration {
     // Stage 1: u^(1) = u^n + dt * L(u^n)
     kernel.updateLevelSet(dt);
 
+    if (kernel.velocityUpdateCallback) {
+      if (!kernel.velocityUpdateCallback(kernel.levelSets.back())) {
+        VIENNACORE_LOG_WARNING(
+            "Velocity update callback returned false in RK2 stage 1.");
+      }
+    }
+
     // Stage 2: u^(n+1) = 1/2 u^n + 1/2 (u^(1) + dt * L(u^(1)))
     // Current level set is u^(1). Compute L(u^(1)).
     kernel.computeRates(dt);
@@ -91,11 +99,25 @@ template <class T, int D, class AdvectType> struct AdvectTimeIntegration {
     // Stage 1: u^(1) = u^n + dt * L(u^n)
     kernel.updateLevelSet(dt);
 
+    if (kernel.velocityUpdateCallback) {
+      if (!kernel.velocityUpdateCallback(kernel.levelSets.back())) {
+        VIENNACORE_LOG_WARNING(
+            "Velocity update callback returned false in RK3 stage 1.");
+      }
+    }
+
     // Stage 2: u^(2) = 3/4 u^n + 1/4 (u^(1) + dt * L(u^(1)))
     kernel.computeRates(dt);
     kernel.updateLevelSet(dt);
     // Combine to get u^(2) = 0.75 * u^n + 0.25 * u*.
     kernel.combineLevelSets(0.75, 0.25);
+
+    if (kernel.velocityUpdateCallback) {
+      if (!kernel.velocityUpdateCallback(kernel.levelSets.back())) {
+        VIENNACORE_LOG_WARNING(
+            "Velocity update callback returned false in RK3 stage 2.");
+      }
+    }
 
     // Stage 3: u^(n+1) = 1/3 u^n + 2/3 (u^(2) + dt * L(u^(2)))
     kernel.computeRates(dt);

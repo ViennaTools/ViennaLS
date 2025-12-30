@@ -2,6 +2,7 @@
 
 #include <lsPreCompileMacros.hpp>
 
+#include <functional>
 #include <limits>
 #include <vector>
 
@@ -109,6 +110,8 @@ protected:
   unsigned adaptiveTimeStepSubdivisions = 20;
   static constexpr double wrappingLayerEpsilon = 1e-4;
   SmartPointer<Domain<T, D>> originalLevelSet = nullptr;
+  std::function<bool(SmartPointer<Domain<T, D>>)> velocityUpdateCallback =
+      nullptr;
 
   // this vector will hold the maximum time step for each point and the
   // corresponding velocity
@@ -968,6 +971,13 @@ public:
   /// Set whether the point data in the old LS should
   /// be translated to the advected LS. Defaults to true.
   void setUpdatePointData(bool update) { updatePointData = update; }
+
+  /// Set a callback function that is called after the level set has been
+  /// updated during intermediate time integration steps (e.g. RK2, RK3).
+  void setVelocityUpdateCallback(
+      std::function<bool(SmartPointer<Domain<T, D>>)> callback) {
+    velocityUpdateCallback = callback;
+  }
 
   // Prepare the levelset for advection, based on the provided spatial
   // discretization scheme.
