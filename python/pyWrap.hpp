@@ -1,6 +1,7 @@
 #include <pybind11/iostream.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/functional.h>
 
 // all header files which define API functions
 #include <lsAdvect.hpp>
@@ -232,6 +233,9 @@ template <int D> void bindApi(py::module &module) {
       .def("setUpdatePointData", &Advect<T, D>::setUpdatePointData,
            "Set whether the point data in the old LS should be translated to "
            "the advected LS. Defaults to true.")
+      .def("setVelocityUpdateCallback", &Advect<T, D>::setVelocityUpdateCallback,
+           "Set a callback function that is called after the level set has been "
+           "updated during intermediate time integration steps (e.g. RK2, RK3).")
       .def("prepareLS", &Advect<T, D>::prepareLS, "Prepare the level-set.")
       // need scoped release since we are calling a python method from
       // parallelised C++ code here
