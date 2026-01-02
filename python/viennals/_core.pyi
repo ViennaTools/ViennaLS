@@ -6,8 +6,8 @@ from __future__ import annotations
 import collections.abc
 import enum
 import typing
-from viennals import d2
 import viennals.d2
+from viennals import d2
 from viennals import d3
 import viennals.d3
 
@@ -25,9 +25,12 @@ __all__: list[str] = [
     "Mesh",
     "PointData",
     "Slice",
+    "SpatialSchemeEnum",
+    "TemporalSchemeEnum",
     "TransformEnum",
     "TransformMesh",
     "VTKReader",
+    "VTKRenderWindow",
     "VTKWriter",
     "VelocityField",
     "VoidTopSurfaceEnum",
@@ -180,47 +183,6 @@ class FileFormatEnum(enum.IntEnum):
     ]  # value = <FileFormatEnum.VTK_LEGACY: 0>
     VTP: typing.ClassVar[FileFormatEnum]  # value = <FileFormatEnum.VTP: 1>
     VTU: typing.ClassVar[FileFormatEnum]  # value = <FileFormatEnum.VTU: 2>
-    @classmethod
-    def __new__(cls, value): ...
-    def __format__(self, format_spec):
-        """
-        Convert to a string according to format_spec.
-        """
-
-class IntegrationSchemeEnum(enum.IntEnum):
-    ENGQUIST_OSHER_1ST_ORDER: typing.ClassVar[
-        IntegrationSchemeEnum
-    ]  # value = <IntegrationSchemeEnum.ENGQUIST_OSHER_1ST_ORDER: 0>
-    ENGQUIST_OSHER_2ND_ORDER: typing.ClassVar[
-        IntegrationSchemeEnum
-    ]  # value = <IntegrationSchemeEnum.ENGQUIST_OSHER_2ND_ORDER: 1>
-    LAX_FRIEDRICHS_1ST_ORDER: typing.ClassVar[
-        IntegrationSchemeEnum
-    ]  # value = <IntegrationSchemeEnum.LAX_FRIEDRICHS_1ST_ORDER: 2>
-    LAX_FRIEDRICHS_2ND_ORDER: typing.ClassVar[
-        IntegrationSchemeEnum
-    ]  # value = <IntegrationSchemeEnum.LAX_FRIEDRICHS_2ND_ORDER: 3>
-    LOCAL_LAX_FRIEDRICHS_1ST_ORDER: typing.ClassVar[
-        IntegrationSchemeEnum
-    ]  # value = <IntegrationSchemeEnum.LOCAL_LAX_FRIEDRICHS_1ST_ORDER: 7>
-    LOCAL_LAX_FRIEDRICHS_2ND_ORDER: typing.ClassVar[
-        IntegrationSchemeEnum
-    ]  # value = <IntegrationSchemeEnum.LOCAL_LAX_FRIEDRICHS_2ND_ORDER: 8>
-    LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER: typing.ClassVar[
-        IntegrationSchemeEnum
-    ]  # value = <IntegrationSchemeEnum.LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER: 4>
-    LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER: typing.ClassVar[
-        IntegrationSchemeEnum
-    ]  # value = <IntegrationSchemeEnum.LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER: 5>
-    LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER: typing.ClassVar[
-        IntegrationSchemeEnum
-    ]  # value = <IntegrationSchemeEnum.LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER: 6>
-    STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER: typing.ClassVar[
-        IntegrationSchemeEnum
-    ]  # value = <IntegrationSchemeEnum.STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER: 9>
-    WENO_5TH_ORDER: typing.ClassVar[
-        IntegrationSchemeEnum
-    ]  # value = <IntegrationSchemeEnum.WENO_5TH_ORDER: 10>
     @classmethod
     def __new__(cls, value): ...
     def __format__(self, format_spec):
@@ -539,6 +501,64 @@ class Slice:
         Set the path where the slice should be written to.
         """
 
+class SpatialSchemeEnum(enum.IntEnum):
+    ENGQUIST_OSHER_1ST_ORDER: typing.ClassVar[
+        SpatialSchemeEnum
+    ]  # value = <SpatialSchemeEnum.ENGQUIST_OSHER_1ST_ORDER: 0>
+    ENGQUIST_OSHER_2ND_ORDER: typing.ClassVar[
+        SpatialSchemeEnum
+    ]  # value = <SpatialSchemeEnum.ENGQUIST_OSHER_2ND_ORDER: 1>
+    LAX_FRIEDRICHS_1ST_ORDER: typing.ClassVar[
+        SpatialSchemeEnum
+    ]  # value = <SpatialSchemeEnum.LAX_FRIEDRICHS_1ST_ORDER: 2>
+    LAX_FRIEDRICHS_2ND_ORDER: typing.ClassVar[
+        SpatialSchemeEnum
+    ]  # value = <SpatialSchemeEnum.LAX_FRIEDRICHS_2ND_ORDER: 3>
+    LOCAL_LAX_FRIEDRICHS_1ST_ORDER: typing.ClassVar[
+        SpatialSchemeEnum
+    ]  # value = <SpatialSchemeEnum.LOCAL_LAX_FRIEDRICHS_1ST_ORDER: 7>
+    LOCAL_LAX_FRIEDRICHS_2ND_ORDER: typing.ClassVar[
+        SpatialSchemeEnum
+    ]  # value = <SpatialSchemeEnum.LOCAL_LAX_FRIEDRICHS_2ND_ORDER: 8>
+    LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER: typing.ClassVar[
+        SpatialSchemeEnum
+    ]  # value = <SpatialSchemeEnum.LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER: 4>
+    LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER: typing.ClassVar[
+        SpatialSchemeEnum
+    ]  # value = <SpatialSchemeEnum.LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER: 5>
+    LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER: typing.ClassVar[
+        SpatialSchemeEnum
+    ]  # value = <SpatialSchemeEnum.LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER: 6>
+    STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER: typing.ClassVar[
+        SpatialSchemeEnum
+    ]  # value = <SpatialSchemeEnum.STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER: 9>
+    WENO_5TH_ORDER: typing.ClassVar[
+        SpatialSchemeEnum
+    ]  # value = <SpatialSchemeEnum.WENO_5TH_ORDER: 10>
+    @classmethod
+    def __new__(cls, value): ...
+    def __format__(self, format_spec):
+        """
+        Convert to a string according to format_spec.
+        """
+
+class TemporalSchemeEnum(enum.IntEnum):
+    FORWARD_EULER: typing.ClassVar[
+        TemporalSchemeEnum
+    ]  # value = <TemporalSchemeEnum.FORWARD_EULER: 0>
+    RUNGE_KUTTA_2ND_ORDER: typing.ClassVar[
+        TemporalSchemeEnum
+    ]  # value = <TemporalSchemeEnum.RUNGE_KUTTA_2ND_ORDER: 1>
+    RUNGE_KUTTA_3RD_ORDER: typing.ClassVar[
+        TemporalSchemeEnum
+    ]  # value = <TemporalSchemeEnum.RUNGE_KUTTA_3RD_ORDER: 2>
+    @classmethod
+    def __new__(cls, value): ...
+    def __format__(self, format_spec):
+        """
+        Convert to a string according to format_spec.
+        """
+
 class TransformEnum(enum.IntEnum):
     ROTATION: typing.ClassVar[TransformEnum]  # value = <TransformEnum.ROTATION: 1>
     SCALE: typing.ClassVar[TransformEnum]  # value = <TransformEnum.SCALE: 2>
@@ -599,6 +619,21 @@ class VTKReader:
     def setMesh(self, arg0: Mesh) -> None:
         """
         Set the mesh to read into.
+        """
+
+class VTKRenderWindow:
+    @typing.overload
+    def __init__(self) -> None: ...
+    @typing.overload
+    def __init__(self, arg0: Mesh) -> None: ...
+    def render(self) -> None:
+        """
+        Render the added meshes.
+        """
+
+    def setMesh(self, arg0: Mesh) -> None:
+        """
+        Add a mesh to the renderer.
         """
 
 class VTKWriter:
@@ -733,3 +768,4 @@ def setNumThreads(arg0: typing.SupportsInt) -> None: ...
 
 __version__: str = "5.3.0"
 version: str = "5.3.0"
+IntegrationSchemeEnum = SpatialSchemeEnum

@@ -12,7 +12,7 @@ namespace lsInternal {
 
 using namespace viennacore;
 
-/// Lax Friedrichs integration scheme, which uses a first neighbour
+/// Lax Friedrichs spatial discretization scheme, which uses a first neighbour
 /// stencil to calculate the alpha values for all neighbours.
 /// The largest alpha value is then chosen for dissipation.
 /// Slower than lsLocalLocalLaxFriedrichs or lsEngquistOsher
@@ -105,7 +105,7 @@ public:
       T diffPos = (phiPos - phi0) / deltaPos;
       T diffNeg = (phiNeg - phi0) / deltaNeg;
 
-      if (order == 2) { // if second order time integration scheme is used
+      if (order == 2) { // if second order spatial discretization scheme is used
         posUnit[i] = 2;
         negUnit[i] = -2;
 

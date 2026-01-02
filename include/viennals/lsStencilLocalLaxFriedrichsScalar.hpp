@@ -21,7 +21,7 @@ namespace lsInternal {
 
 using namespace viennacore;
 
-/// Stencil Local Lax Friedrichs Integration Scheme.
+/// Stencil Local Lax Friedrichs Discretization Scheme.
 /// It uses a stencil of order around active points, in order to
 /// evaluate dissipation values for each point, taking into account
 /// the mathematical nature of the speed function.
@@ -447,7 +447,7 @@ namespace viennals {
 using namespace viennacore;
 
 /// This function creates the specialized layer wrapping which
-/// produces better results for the SSLF integration scheme.
+/// produces better results for the SSLF spatial discretization scheme.
 /// isDepo must contain whether the corresponding level sets
 /// are used for deposition or not.
 /// This function assumes that the layers where deposition is

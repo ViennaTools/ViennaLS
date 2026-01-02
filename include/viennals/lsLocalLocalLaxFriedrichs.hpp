@@ -12,8 +12,8 @@ namespace lsInternal {
 
 using namespace viennacore;
 
-/// Lax Friedrichs integration scheme, which considers only the current
-/// point for alpha calculation. Faster than lsLocalLaxFriedrichs but
+/// Lax Friedrichs spatial discretization scheme, which considers only the
+/// current point for alpha calculation. Faster than lsLocalLaxFriedrichs but
 /// not as accurate.
 template <class T, int D, int order> class LocalLocalLaxFriedrichs {
   SmartPointer<viennals::Domain<T, D>> levelSet;
@@ -79,7 +79,7 @@ public:
       T diffPos = (phiPos - phi0) / deltaPos;
       T diffNeg = (phiNeg - phi0) / deltaNeg;
 
-      if (order == 2) { // if second order time integration scheme is used
+      if (order == 2) { // if second order spatial discretization scheme is used
         const T deltaPosPos = 2 * gridDelta;
         const T deltaNegNeg = -2 * gridDelta;
 

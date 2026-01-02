@@ -181,6 +181,8 @@ template <int D> void bindApi(py::module &module) {
            "Set the velocity to use for advection.")
       .def("setAdvectionTime", &Advect<T, D>::setAdvectionTime,
            "Set the time until when the level set should be advected.")
+      .def("setSingleStep", &Advect<T, D>::setSingleStep, py::arg("singleStep"),
+           "Set whether only a single advection step should be performed.")
       .def("setTimeStepRatio", &Advect<T, D>::setTimeStepRatio,
            "Set the maximum time step size relative to grid size. Advection is "
            "only stable for <0.5.")
@@ -192,19 +194,19 @@ template <int D> void bindApi(py::module &module) {
            "Set whether voids in the geometry should be ignored during "
            "advection or not.")
       .def("setAdaptiveTimeStepping", &Advect<T, D>::setAdaptiveTimeStepping,
-           "Set whether adaptive time stepping should be used when approaching "
-           "material boundaries during etching.")
-      .def("setAdaptiveTimeStepThreshold",
-           &Advect<T, D>::setAdaptiveTimeStepThreshold,
-           "Set the threshold (in fraction of the CFL condition) below which "
-           "adaptive time stepping is applied. Defaults to 0.05.")
-      .def("setSingleStep", &Advect<T, D>::setSingleStep,
-           "Set whether only a single advection step should be performed.")
+           py::arg("enabled") = true, py::arg("subdivisions") = 20,
+           "Enable/disable adaptive time stepping and set the number of "
+           "subdivisions.")
       .def(
           "setSaveAdvectionVelocities",
           &Advect<T, D>::setSaveAdvectionVelocities,
           "Set whether the velocities applied to each point should be saved in "
           "the level set for debug purposes.")
+      .def("setCheckDissipation", &Advect<T, D>::setCheckDissipation,
+           py::arg("check"), "Enable/disable dissipation checking.")
+      .def("setUpdatePointData", &Advect<T, D>::setUpdatePointData,
+           py::arg("update"),
+           "Enable/disable updating point data after advection.")
       .def("getAdvectedTime", &Advect<T, D>::getAdvectedTime,
            "Get the time passed during advection.")
       .def("getNumberOfTimeSteps", &Advect<T, D>::getNumberOfTimeSteps,
@@ -217,10 +219,16 @@ template <int D> void bindApi(py::module &module) {
       .def("getCalculateNormalVectors",
            &Advect<T, D>::getCalculateNormalVectors,
            "Get whether normal vectors are computed during advection.")
+      .def("setSpatialScheme", &Advect<T, D>::setSpatialScheme,
+           "Set the spatial discretization scheme to use during advection.")
+      .def("setTemporalScheme", &Advect<T, D>::setTemporalScheme,
+           "Set the time integration scheme to use during advection.")
       .def("setIntegrationScheme", &Advect<T, D>::setIntegrationScheme,
-           "Set the integration scheme to use during advection.")
+           "(DEPRECATED, use setSpatialScheme instead) Set the spatial "
+           "discretization scheme to use during advection.")
       .def("setDissipationAlpha", &Advect<T, D>::setDissipationAlpha,
-           "Set the dissipation value to use for Lax Friedrichs integration.")
+           "Set the dissipation value to use for Lax Friedrichs spatial "
+           "discretization.")
       .def("setUpdatePointData", &Advect<T, D>::setUpdatePointData,
            "Set whether the point data in the old LS should be translated to "
            "the advected LS. Defaults to true.")
@@ -228,11 +236,7 @@ template <int D> void bindApi(py::module &module) {
       // need scoped release since we are calling a python method from
       // parallelised C++ code here
       .def("apply", &Advect<T, D>::apply,
-           py::call_guard<py::gil_scoped_release>(), "Perform advection.")
-      .def("applyIntegration", &Advect<T, D>::applyIntegration,
-           py::call_guard<py::gil_scoped_release>(),
-           "Apply the integration scheme and calculate rates and maximum time "
-           "step, but it do **not** move the surface.");
+           py::call_guard<py::gil_scoped_release>(), "Perform advection.");
 
   py::class_<lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>>(
       module, "StencilLocalLaxFriedrichsScalar")
