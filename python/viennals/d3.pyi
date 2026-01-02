@@ -9,8 +9,6 @@ import viennals._core
 
 __all__: list[str] = [
     "Advect",
-    "AdvectForwardEuler",
-    "AdvectRungeKutta3",
     "BooleanOperation",
     "Box",
     "BoxDistribution",
@@ -156,6 +154,11 @@ class Advect:
         Set the spatial discretization scheme to use during advection.
         """
 
+    def setTemporalScheme(self, arg0: viennals._core.TemporalSchemeEnum) -> None:
+        """
+        Set the time integration scheme to use during advection.
+        """
+
     def setTimeStepRatio(self, arg0: typing.SupportsFloat) -> None:
         """
         Set the maximum time step size relative to grid size. Advection is only stable for <0.5.
@@ -177,22 +180,6 @@ class Advect:
         """
         Set the velocity to use for advection.
         """
-
-class AdvectForwardEuler(Advect):
-    @typing.overload
-    def __init__(self) -> None: ...
-    @typing.overload
-    def __init__(self, arg0: Domain) -> None: ...
-    @typing.overload
-    def __init__(self, arg0: Domain, arg1: viennals._core.VelocityField) -> None: ...
-
-class AdvectRungeKutta3(Advect):
-    @typing.overload
-    def __init__(self) -> None: ...
-    @typing.overload
-    def __init__(self, arg0: Domain) -> None: ...
-    @typing.overload
-    def __init__(self, arg0: Domain, arg1: viennals._core.VelocityField) -> None: ...
 
 class BooleanOperation:
     @typing.overload

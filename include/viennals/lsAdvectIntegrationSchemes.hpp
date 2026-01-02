@@ -3,9 +3,44 @@
 #include <lsBooleanOperation.hpp>
 #include <lsDomain.hpp>
 
+namespace viennals {
+
+/// Enumeration for the different spatial discretization schemes
+/// used by the advection kernel
+enum class SpatialSchemeEnum : unsigned {
+  ENGQUIST_OSHER_1ST_ORDER = 0,
+  ENGQUIST_OSHER_2ND_ORDER = 1,
+  LAX_FRIEDRICHS_1ST_ORDER = 2,
+  LAX_FRIEDRICHS_2ND_ORDER = 3,
+  LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER = 4,
+  LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 5,
+  LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER = 6,
+  LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 7,
+  LOCAL_LAX_FRIEDRICHS_2ND_ORDER = 8,
+  STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 9,
+  WENO_5TH_ORDER = 10
+};
+
+// Legacy naming (deprecated, will be removed in future versions)
+using IntegrationSchemeEnum [[deprecated("Use SpatialSchemeEnum instead")]] =
+    SpatialSchemeEnum;
+
+/// Enumeration for the different time integration schemes
+/// used to select the advection kernel
+enum class TemporalSchemeEnum : unsigned {
+  FORWARD_EULER = 0,
+  RUNGE_KUTTA_2ND_ORDER = 1,
+  RUNGE_KUTTA_3RD_ORDER = 2
+};
+
+// Forward declaration
+template <class T, int D> class Advect;
+} // namespace viennals
+
 namespace lsInternal {
 
-template <class T, int D, class AdvectType> struct AdvectTimeIntegration {
+template <class T, int D> struct AdvectTimeIntegration {
+  using AdvectType = viennals::Advect<T, D>;
 
   static double evolveForwardEuler(AdvectType &kernel, double maxTimeStep) {
     if (kernel.currentTimeStep < 0. || kernel.storedRates.empty())
@@ -15,16 +50,7 @@ template <class T, int D, class AdvectType> struct AdvectTimeIntegration {
 
     kernel.rebuildLS();
 
-    // Adjust all level sets below the advected one
-    if (kernel.spatialScheme !=
-        viennals::SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-      for (unsigned i = 0; i < kernel.levelSets.size() - 1; ++i) {
-        viennals::BooleanOperation<T, D>(
-            kernel.levelSets[i], kernel.levelSets.back(),
-            viennals::BooleanOperationEnum::INTERSECT)
-            .apply();
-      }
-    }
+    kernel.adjustLowerLayers();
 
     return kernel.currentTimeStep;
   }
@@ -59,16 +85,8 @@ template <class T, int D, class AdvectType> struct AdvectTimeIntegration {
     // Finalize
     kernel.rebuildLS();
 
-    // Adjust lower layers
-    if (kernel.spatialScheme !=
-        viennals::SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-      for (unsigned i = 0; i < kernel.levelSets.size() - 1; ++i) {
-        viennals::BooleanOperation<T, D>(
-            kernel.levelSets[i], kernel.levelSets.back(),
-            viennals::BooleanOperationEnum::INTERSECT)
-            .apply();
-      }
-    }
+    kernel.adjustLowerLayers();
+
     return dt;
   }
 
@@ -106,16 +124,7 @@ template <class T, int D, class AdvectType> struct AdvectTimeIntegration {
     // Finalize: Re-segment and renormalize the final result.
     kernel.rebuildLS();
 
-    // Adjust lower layers
-    if (kernel.spatialScheme !=
-        viennals::SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-      for (unsigned i = 0; i < kernel.levelSets.size() - 1; ++i) {
-        viennals::BooleanOperation<T, D>(
-            kernel.levelSets[i], kernel.levelSets.back(),
-            viennals::BooleanOperationEnum::INTERSECT)
-            .apply();
-      }
-    }
+    kernel.adjustLowerLayers();
 
     return dt;
   }

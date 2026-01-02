@@ -6,10 +6,10 @@ from __future__ import annotations
 import collections.abc
 import enum
 import typing
-from viennals import d2
 import viennals.d2
-import viennals.d3
+from viennals import d2
 from viennals import d3
+import viennals.d3
 
 __all__: list[str] = [
     "BooleanOperationEnum",
@@ -26,9 +26,11 @@ __all__: list[str] = [
     "PointData",
     "Slice",
     "SpatialSchemeEnum",
+    "TemporalSchemeEnum",
     "TransformEnum",
     "TransformMesh",
     "VTKReader",
+    "VTKRenderWindow",
     "VTKWriter",
     "VelocityField",
     "VoidTopSurfaceEnum",
@@ -540,6 +542,23 @@ class SpatialSchemeEnum(enum.IntEnum):
         Convert to a string according to format_spec.
         """
 
+class TemporalSchemeEnum(enum.IntEnum):
+    FORWARD_EULER: typing.ClassVar[
+        TemporalSchemeEnum
+    ]  # value = <TemporalSchemeEnum.FORWARD_EULER: 0>
+    RUNGE_KUTTA_2ND_ORDER: typing.ClassVar[
+        TemporalSchemeEnum
+    ]  # value = <TemporalSchemeEnum.RUNGE_KUTTA_2ND_ORDER: 1>
+    RUNGE_KUTTA_3RD_ORDER: typing.ClassVar[
+        TemporalSchemeEnum
+    ]  # value = <TemporalSchemeEnum.RUNGE_KUTTA_3RD_ORDER: 2>
+    @classmethod
+    def __new__(cls, value): ...
+    def __format__(self, format_spec):
+        """
+        Convert to a string according to format_spec.
+        """
+
 class TransformEnum(enum.IntEnum):
     ROTATION: typing.ClassVar[TransformEnum]  # value = <TransformEnum.ROTATION: 1>
     SCALE: typing.ClassVar[TransformEnum]  # value = <TransformEnum.SCALE: 2>
@@ -600,6 +619,21 @@ class VTKReader:
     def setMesh(self, arg0: Mesh) -> None:
         """
         Set the mesh to read into.
+        """
+
+class VTKRenderWindow:
+    @typing.overload
+    def __init__(self) -> None: ...
+    @typing.overload
+    def __init__(self, arg0: Mesh) -> None: ...
+    def render(self) -> None:
+        """
+        Render the added meshes.
+        """
+
+    def setMesh(self, arg0: Mesh) -> None:
+        """
+        Add a mesh to the renderer.
         """
 
 class VTKWriter:
