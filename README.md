@@ -109,19 +109,16 @@ pip install .
 
 ## Using the Python package
 
-All functions which are available in C++ are also available in Python. The 2D version of the library can be imported as follows:
+The ViennaLS Python package can be used by importing it in your Python scripts:
 ```python
-import viennals.d2 as vls 
-import viennals # for common functions
+import viennals as vls
 ```
 
-To switch to 3D, only the import changes:
-
+By default, ViennaLS operates in two dimensions. You can set the dimension using:
 ```python
-import viennals.d3 as vls
+vls.setDimension(2)  # For 2D simulations
+vls.setDimension(3)  # For 3D simulations
 ```
-Functions that operate on a domain object (e.g. `Advect`, `ToSurfaceMesh`, ...) are provided in the respective `d2` or `d3` modules.
-Common functions, enums, and dimension-independent utilities (such as `Mesh`) are available directly in the `viennals` namespace.
 
 A complete list of functions and their locations can be found in the [API documentation](PythonAPI.md).
 
@@ -157,7 +154,7 @@ We recommend using [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) to consum
 
 * Installation with CPM
   ```cmake
-  CPMAddPackage("gh:viennatools/viennals@5.3.0")
+  CPMAddPackage("gh:viennatools/viennals@5.4.0")
   ```
 
 * With a local installation
