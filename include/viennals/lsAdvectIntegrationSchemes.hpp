@@ -85,7 +85,9 @@ template <class T, int D> struct AdvectTimeIntegration {
     // Combine: u^(n+1) = 0.5 * u^n + 0.5 * u*
     kernel.combineLevelSets(0.5, 0.5);
 
-    if (kernel.velocityUpdateCallback)
+    // If we are in single step mode, the level set will be rebuilt immediately
+    // after this, invalidating the velocity field. Thus, we skip the update.
+    if (kernel.velocityUpdateCallback && !kernel.performOnlySingleStep)
       kernel.velocityUpdateCallback(kernel.levelSets.back());
 
     // Finalize
@@ -133,7 +135,9 @@ template <class T, int D> struct AdvectTimeIntegration {
     // Combine to get u^(n+1) = 1/3 * u^n + 2/3 * u**.
     kernel.combineLevelSets(1.0 / 3.0, 2.0 / 3.0);
 
-    if (kernel.velocityUpdateCallback)
+    // If we are in single step mode, the level set will be rebuilt immediately
+    // after this, invalidating the velocity field. Thus, we skip the update.
+    if (kernel.velocityUpdateCallback && !kernel.performOnlySingleStep)
       kernel.velocityUpdateCallback(kernel.levelSets.back());
 
     // Finalize: Re-segment and renormalize the final result.
