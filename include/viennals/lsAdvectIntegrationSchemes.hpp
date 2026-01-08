@@ -2,11 +2,45 @@
 
 #include <lsBooleanOperation.hpp>
 #include <lsDomain.hpp>
-#include <vcLogger.hpp>
+
+namespace viennals {
+
+/// Enumeration for the different spatial discretization schemes
+/// used by the advection kernel
+enum class SpatialSchemeEnum : unsigned {
+  ENGQUIST_OSHER_1ST_ORDER = 0,
+  ENGQUIST_OSHER_2ND_ORDER = 1,
+  LAX_FRIEDRICHS_1ST_ORDER = 2,
+  LAX_FRIEDRICHS_2ND_ORDER = 3,
+  LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER = 4,
+  LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 5,
+  LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER = 6,
+  LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 7,
+  LOCAL_LAX_FRIEDRICHS_2ND_ORDER = 8,
+  STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 9,
+  WENO_5TH_ORDER = 10
+};
+
+// Legacy naming (deprecated, will be removed in future versions)
+using IntegrationSchemeEnum [[deprecated("Use SpatialSchemeEnum instead")]] =
+    SpatialSchemeEnum;
+
+/// Enumeration for the different time integration schemes
+/// used to select the advection kernel
+enum class TemporalSchemeEnum : unsigned {
+  FORWARD_EULER = 0,
+  RUNGE_KUTTA_2ND_ORDER = 1,
+  RUNGE_KUTTA_3RD_ORDER = 2
+};
+
+// Forward declaration
+template <class T, int D> class Advect;
+} // namespace viennals
 
 namespace lsInternal {
 
-template <class T, int D, class AdvectType> struct AdvectTimeIntegration {
+template <class T, int D> struct AdvectTimeIntegration {
+  using AdvectType = viennals::Advect<T, D>;
 
   static double evolveForwardEuler(AdvectType &kernel, double maxTimeStep) {
     if (kernel.currentTimeStep < 0. || kernel.storedRates.empty())
@@ -16,16 +50,7 @@ template <class T, int D, class AdvectType> struct AdvectTimeIntegration {
 
     kernel.rebuildLS();
 
-    // Adjust all level sets below the advected one
-    if (kernel.spatialScheme !=
-        viennals::SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-      for (unsigned i = 0; i < kernel.levelSets.size() - 1; ++i) {
-        viennals::BooleanOperation<T, D>(
-            kernel.levelSets[i], kernel.levelSets.back(),
-            viennals::BooleanOperationEnum::INTERSECT)
-            .apply();
-      }
-    }
+    kernel.adjustLowerLayers();
 
     return kernel.currentTimeStep;
   }
@@ -49,13 +74,6 @@ template <class T, int D, class AdvectType> struct AdvectTimeIntegration {
     // Stage 1: u^(1) = u^n + dt * L(u^n)
     kernel.updateLevelSet(dt);
 
-    if (kernel.velocityUpdateCallback) {
-      if (!kernel.velocityUpdateCallback(kernel.levelSets.back())) {
-        VIENNACORE_LOG_WARNING(
-            "Velocity update callback returned false in RK2 stage 1.");
-      }
-    }
-
     // Stage 2: u^(n+1) = 1/2 u^n + 1/2 (u^(1) + dt * L(u^(1)))
     // Current level set is u^(1). Compute L(u^(1)).
     kernel.computeRates(dt);
@@ -67,16 +85,8 @@ template <class T, int D, class AdvectType> struct AdvectTimeIntegration {
     // Finalize
     kernel.rebuildLS();
 
-    // Adjust lower layers
-    if (kernel.spatialScheme !=
-        viennals::SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-      for (unsigned i = 0; i < kernel.levelSets.size() - 1; ++i) {
-        viennals::BooleanOperation<T, D>(
-            kernel.levelSets[i], kernel.levelSets.back(),
-            viennals::BooleanOperationEnum::INTERSECT)
-            .apply();
-      }
-    }
+    kernel.adjustLowerLayers();
+
     return dt;
   }
 
@@ -99,25 +109,11 @@ template <class T, int D, class AdvectType> struct AdvectTimeIntegration {
     // Stage 1: u^(1) = u^n + dt * L(u^n)
     kernel.updateLevelSet(dt);
 
-    if (kernel.velocityUpdateCallback) {
-      if (!kernel.velocityUpdateCallback(kernel.levelSets.back())) {
-        VIENNACORE_LOG_WARNING(
-            "Velocity update callback returned false in RK3 stage 1.");
-      }
-    }
-
     // Stage 2: u^(2) = 3/4 u^n + 1/4 (u^(1) + dt * L(u^(1)))
     kernel.computeRates(dt);
     kernel.updateLevelSet(dt);
     // Combine to get u^(2) = 0.75 * u^n + 0.25 * u*.
     kernel.combineLevelSets(0.75, 0.25);
-
-    if (kernel.velocityUpdateCallback) {
-      if (!kernel.velocityUpdateCallback(kernel.levelSets.back())) {
-        VIENNACORE_LOG_WARNING(
-            "Velocity update callback returned false in RK3 stage 2.");
-      }
-    }
 
     // Stage 3: u^(n+1) = 1/3 u^n + 2/3 (u^(2) + dt * L(u^(2)))
     kernel.computeRates(dt);
@@ -128,16 +124,7 @@ template <class T, int D, class AdvectType> struct AdvectTimeIntegration {
     // Finalize: Re-segment and renormalize the final result.
     kernel.rebuildLS();
 
-    // Adjust lower layers
-    if (kernel.spatialScheme !=
-        viennals::SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
-      for (unsigned i = 0; i < kernel.levelSets.size() - 1; ++i) {
-        viennals::BooleanOperation<T, D>(
-            kernel.levelSets[i], kernel.levelSets.back(),
-            viennals::BooleanOperationEnum::INTERSECT)
-            .apply();
-      }
-    }
+    kernel.adjustLowerLayers();
 
     return dt;
   }

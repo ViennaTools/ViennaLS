@@ -26,6 +26,9 @@
 #include <lsStencilLocalLaxFriedrichsScalar.hpp>
 #include <lsWENO5.hpp>
 
+// Include implementation of time integration schemes
+#include <lsAdvectIntegrationSchemes.hpp>
+
 // Velocity accessor
 #include <lsVelocityField.hpp>
 
@@ -35,42 +38,14 @@
 #include <lsVTKWriter.hpp>
 #endif
 
-// Forward declaration for Time Integration Schemes
-namespace lsInternal {
-template <class T, int D, class AdvectType> struct AdvectTimeIntegration;
-}
+// // Forward declaration for Time Integration Schemes
+// namespace lsInternal {
+// template <class T, int D, class AdvectType> struct AdvectTimeIntegration;
+// }
 
 namespace viennals {
 
 using namespace viennacore;
-
-/// Enumeration for the different spatial discretization schemes
-/// used by the advection kernel
-enum struct SpatialSchemeEnum : unsigned {
-  ENGQUIST_OSHER_1ST_ORDER = 0,
-  ENGQUIST_OSHER_2ND_ORDER = 1,
-  LAX_FRIEDRICHS_1ST_ORDER = 2,
-  LAX_FRIEDRICHS_2ND_ORDER = 3,
-  LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER = 4,
-  LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 5,
-  LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER = 6,
-  LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 7,
-  LOCAL_LAX_FRIEDRICHS_2ND_ORDER = 8,
-  STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 9,
-  WENO_5TH_ORDER = 10
-};
-
-// Legacy naming (deprecated, will be removed in future versions)
-using IntegrationSchemeEnum [[deprecated("Use SpatialSchemeEnum instead")]] =
-    SpatialSchemeEnum;
-
-/// Enumeration for the different time integration schemes
-/// used to select the advection kernel
-enum struct TemporalSchemeEnum : unsigned {
-  FORWARD_EULER = 0,
-  RUNGE_KUTTA_2ND_ORDER = 1,
-  RUNGE_KUTTA_3RD_ORDER = 2
-};
 
 /// This class is used to advance level sets over time.
 /// Level sets are passed to the constructor in a std::vector, with
@@ -86,10 +61,9 @@ template <class T, int D> class Advect {
       viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>;
   using hrleIndexType = viennahrle::IndexType;
 
-  // Allow the time integration struct to access protected members
-  friend struct lsInternal::AdvectTimeIntegration<T, D, Advect<T, D>>;
+  // Allow the time integration struct to access private members
+  friend struct lsInternal::AdvectTimeIntegration<T, D>;
 
-protected:
   std::vector<SmartPointer<Domain<T, D>>> levelSets;
   SmartPointer<VelocityField<T>> velocities = nullptr;
   SpatialSchemeEnum spatialScheme = SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER;
@@ -823,20 +797,33 @@ protected:
     storedRates.clear();
   }
 
+  void adjustLowerLayers() {
+    // Adjust all level sets below the advected one
+    if (spatialScheme !=
+        viennals::SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+      for (unsigned i = 0; i < levelSets.size() - 1; ++i) {
+        viennals::BooleanOperation<T, D>(
+            levelSets[i], levelSets.back(),
+            viennals::BooleanOperationEnum::INTERSECT)
+            .apply();
+      }
+    }
+  }
+
   /// internal function used as a wrapper to call specialized integrateTime
   /// with the chosen spatial discretization scheme
-  virtual double advect(double maxTimeStep) {
+  double advect(double maxTimeStep) {
     switch (temporalScheme) {
     case TemporalSchemeEnum::RUNGE_KUTTA_2ND_ORDER:
-      return lsInternal::AdvectTimeIntegration<
-          T, D, Advect<T, D>>::evolveRungeKutta2(*this, maxTimeStep);
+      return lsInternal::AdvectTimeIntegration<T, D>::evolveRungeKutta2(
+          *this, maxTimeStep);
     case TemporalSchemeEnum::RUNGE_KUTTA_3RD_ORDER:
-      return lsInternal::AdvectTimeIntegration<
-          T, D, Advect<T, D>>::evolveRungeKutta3(*this, maxTimeStep);
+      return lsInternal::AdvectTimeIntegration<T, D>::evolveRungeKutta3(
+          *this, maxTimeStep);
     case TemporalSchemeEnum::FORWARD_EULER:
     default:
-      return lsInternal::AdvectTimeIntegration<
-          T, D, Advect<T, D>>::evolveForwardEuler(*this, maxTimeStep);
+      return lsInternal::AdvectTimeIntegration<T, D>::evolveForwardEuler(
+          *this, maxTimeStep);
     }
   }
 
@@ -1057,6 +1044,3 @@ public:
 PRECOMPILE_PRECISION_DIMENSION(Advect)
 
 } // namespace viennals
-
-// Include implementation of time integration schemes
-#include <lsAdvectTimeIntegration.hpp>

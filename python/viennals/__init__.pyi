@@ -8,7 +8,6 @@ topography simulations. The main design goals are simplicity and efficiency,
 tailored towards scientific simulations. ViennaLS can also be used for
 visualisation applications, although this is not the main design target.
 """
-
 from __future__ import annotations
 import sys as _sys
 from viennals._core import BooleanOperationEnum
@@ -23,11 +22,13 @@ from viennals._core import MaterialMap
 from viennals._core import Mesh
 from viennals._core import PointData
 from viennals._core import Slice
-from viennals._core import SpatialSchemeEnum
 from viennals._core import SpatialSchemeEnum as IntegrationSchemeEnum
+from viennals._core import SpatialSchemeEnum
+from viennals._core import TemporalSchemeEnum
 from viennals._core import TransformEnum
 from viennals._core import TransformMesh
 from viennals._core import VTKReader
+from viennals._core import VTKRenderWindow
 from viennals._core import VTKWriter
 from viennals._core import VelocityField
 from viennals._core import VoidTopSurfaceEnum
@@ -82,108 +83,34 @@ from viennals.d2 import hrleGrid
 from . import _core
 from . import d2
 from . import d3
-
-__all__: list[str] = [
-    "Advect",
-    "AdvectForwardEuler",
-    "AdvectRungeKutta3",
-    "BooleanOperation",
-    "BooleanOperationEnum",
-    "BoundaryConditionEnum",
-    "Box",
-    "BoxDistribution",
-    "CalculateCurvatures",
-    "CalculateNormalVectors",
-    "CalculateVisibilities",
-    "Check",
-    "CompareArea",
-    "CompareChamfer",
-    "CompareCriticalDimensions",
-    "CompareNarrowBand",
-    "CompareSparseField",
-    "ConvexHull",
-    "CurvatureEnum",
-    "CustomSphereDistribution",
-    "Cylinder",
-    "DetectFeatures",
-    "Domain",
-    "Expand",
-    "Extrude",
-    "FeatureDetectionEnum",
-    "FileFormatEnum",
-    "FinalizeStencilLocalLaxFriedrichs",
-    "FromMesh",
-    "FromSurfaceMesh",
-    "FromVolumeMesh",
-    "GeometricAdvect",
-    "GeometricAdvectDistribution",
-    "IntegrationSchemeEnum",
-    "LogLevel",
-    "Logger",
-    "MakeGeometry",
-    "MarkVoidPoints",
-    "MaterialMap",
-    "Mesh",
-    "PROXY_DIM",
-    "Plane",
-    "PointCloud",
-    "PointData",
-    "PrepareStencilLocalLaxFriedrichs",
-    "Prune",
-    "Reader",
-    "Reduce",
-    "RemoveStrayPoints",
-    "Slice",
-    "SpatialSchemeEnum",
-    "Sphere",
-    "SphereDistribution",
-    "StencilLocalLaxFriedrichsScalar",
-    "ToDiskMesh",
-    "ToMesh",
-    "ToMultiSurfaceMesh",
-    "ToSurfaceMesh",
-    "ToVoxelMesh",
-    "TransformEnum",
-    "TransformMesh",
-    "VTKReader",
-    "VTKWriter",
-    "VelocityField",
-    "VoidTopSurfaceEnum",
-    "WriteVisualizationMesh",
-    "Writer",
-    "d2",
-    "d3",
-    "getDimension",
-    "hrleGrid",
-    "setDimension",
-    "setNumThreads",
-    "version",
-]
-
-def __dir__(): ...
-def __getattr__(name): ...
-def _windows_dll_path(): ...
+__all__: list[str] = ['Advect', 'BooleanOperation', 'BooleanOperationEnum', 'BoundaryConditionEnum', 'Box', 'BoxDistribution', 'CalculateCurvatures', 'CalculateNormalVectors', 'CalculateVisibilities', 'Check', 'CompareArea', 'CompareChamfer', 'CompareCriticalDimensions', 'CompareNarrowBand', 'CompareSparseField', 'ConvexHull', 'CurvatureEnum', 'CustomSphereDistribution', 'Cylinder', 'DetectFeatures', 'Domain', 'Expand', 'Extrude', 'FeatureDetectionEnum', 'FileFormatEnum', 'FinalizeStencilLocalLaxFriedrichs', 'FromMesh', 'FromSurfaceMesh', 'FromVolumeMesh', 'GeometricAdvect', 'GeometricAdvectDistribution', 'IntegrationSchemeEnum', 'LogLevel', 'Logger', 'MakeGeometry', 'MarkVoidPoints', 'MaterialMap', 'Mesh', 'PROXY_DIM', 'Plane', 'PointCloud', 'PointData', 'PrepareStencilLocalLaxFriedrichs', 'Prune', 'Reader', 'Reduce', 'RemoveStrayPoints', 'Slice', 'SpatialSchemeEnum', 'Sphere', 'SphereDistribution', 'StencilLocalLaxFriedrichsScalar', 'TemporalSchemeEnum', 'ToDiskMesh', 'ToMesh', 'ToMultiSurfaceMesh', 'ToSurfaceMesh', 'ToVoxelMesh', 'TransformEnum', 'TransformMesh', 'VTKReader', 'VTKRenderWindow', 'VTKWriter', 'VelocityField', 'VoidTopSurfaceEnum', 'WriteVisualizationMesh', 'Writer', 'd2', 'd3', 'getDimension', 'hrleGrid', 'setDimension', 'setNumThreads', 'version']
+def __dir__():
+    ...
+def __getattr__(name):
+    ...
+def _windows_dll_path():
+    ...
 def getDimension() -> int:
     """
     Get the current dimension of the simulation.
-
-    Returns
-    -------
-    int
-        The currently set dimension (2 or 3).
+    
+        Returns
+        -------
+        int
+            The currently set dimension (2 or 3).
+        
     """
-
 def setDimension(d: int):
     """
     Set the dimension of the simulation (2 or 3).
-
-    Parameters
-    ----------
-    d: int
-        Dimension of the simulation (2 or 3).
+    
+        Parameters
+        ----------
+        d: int
+            Dimension of the simulation (2 or 3).
+        
     """
-
 PROXY_DIM: int = 2
-__version__: str = "5.3.0"
-version: str = "5.3.0"
+__version__: str = '5.4.0'
+version: str = '5.4.0'
 _C = _core
