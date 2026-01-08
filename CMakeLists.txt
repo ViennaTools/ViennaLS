@@ -126,7 +126,6 @@ CPMAddPackage(
 CPMFindPackage(
   NAME ViennaHRLE
   VERSION 0.7.0
-  GIT_TAG minor-fixes
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaHRLE"
   EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 
