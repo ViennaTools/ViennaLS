@@ -133,12 +133,12 @@ template <class T, int D = 2> class CompareSparseField {
   }
 
 public:
-  CompareSparseField() {  }
+  CompareSparseField() {}
 
   CompareSparseField(SmartPointer<Domain<T, D>> passedLevelSetExpanded,
                      SmartPointer<Domain<T, D>> passedLevelSetIterated)
       : levelSetExpanded(passedLevelSetExpanded),
-        levelSetIterated(passedLevelSetIterated) {  }
+        levelSetIterated(passedLevelSetIterated) {}
 
   void setLevelSetExpanded(SmartPointer<Domain<T, D>> passedLevelSet) {
     levelSetExpanded = passedLevelSet;

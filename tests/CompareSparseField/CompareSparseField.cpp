@@ -90,8 +90,7 @@ template <int D> void runTest() {
   {
     auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
     ls::ToMesh<double, D>(sphere2, mesh).apply();
-    ls::VTKWriter<double>(mesh,
-                          "sphere2_sparse_iterated_" + dimString + ".vtp")
+    ls::VTKWriter<double>(mesh, "sphere2_sparse_iterated_" + dimString + ".vtp")
         .apply();
     auto meshSurface = ls::SmartPointer<ls::Mesh<>>::New();
     ls::ToSurfaceMesh<double, D>(sphere2, meshSurface).apply();

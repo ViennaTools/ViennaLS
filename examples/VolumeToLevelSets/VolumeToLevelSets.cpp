@@ -27,11 +27,8 @@ int main(int argc, char *argv[]) {
                    {-1., 1., -1.},  {-1., -1., 1.}, {1., -1., 1.},
                    {1., 1., 1.},    {-1., 1., 1.}};
     // 5-tetra decomposition of a cube
-    mesh->tetras = {{0, 1, 3, 4},
-                    {1, 2, 3, 6},
-                    {1, 4, 5, 6},
-                    {3, 4, 6, 7},
-                    {1, 3, 4, 6}};
+    mesh->tetras = {
+        {0, 1, 3, 4}, {1, 2, 3, 6}, {1, 4, 5, 6}, {3, 4, 6, 7}, {1, 3, 4, 6}};
     // Assign materials
     std::vector<double> materials = {0, 0, 1, 1, 1};
     mesh->cellData.insertNextScalarData(materials, "Material");
