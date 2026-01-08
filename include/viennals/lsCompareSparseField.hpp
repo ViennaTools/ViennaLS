@@ -133,20 +133,12 @@ template <class T, int D = 2> class CompareSparseField {
   }
 
 public:
-  CompareSparseField() {
-    assert(
-        D == 2 &&
-        "CompareSparseField is currently only implemented for 2D level sets.");
-  }
+  CompareSparseField() {  }
 
   CompareSparseField(SmartPointer<Domain<T, D>> passedLevelSetExpanded,
                      SmartPointer<Domain<T, D>> passedLevelSetIterated)
       : levelSetExpanded(passedLevelSetExpanded),
-        levelSetIterated(passedLevelSetIterated) {
-    assert(
-        D == 2 &&
-        "CompareSparseField is currently only implemented for 2D level sets.");
-  }
+        levelSetIterated(passedLevelSetIterated) {  }
 
   void setLevelSetExpanded(SmartPointer<Domain<T, D>> passedLevelSet) {
     levelSetExpanded = passedLevelSet;
@@ -278,7 +270,8 @@ public:
       // Calculate coordinates
       T xCoord = indices[0] * gridDelta;
       T yCoord = indices[1] * gridDelta;
-      T zCoord = 0.0; // Always use 0 for z-coordinate in 2D
+      T zCoord = (D == 3) ? indices[2] * gridDelta
+                          : 0.0; // Always use 0 for z-coordinate in 2D
 
       // Skip if outside the specified x-range
       if (useXRange && (xCoord < xRangeMin || xCoord > xRangeMax)) {

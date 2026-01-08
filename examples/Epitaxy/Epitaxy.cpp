@@ -47,6 +47,7 @@ void writeSurface(SmartPointer<Domain<T, D>> domain,
 
 int main(int argc, char *argv[]) {
 
+  omp_set_num_threads(8);
   // Create hole geometry
   double bounds[2 * D] = {-1.0, 1.0, -1.0, 1.0, -1.0, 1.0};
   BoundaryConditionEnum boundaryConditions[2 * D] = {

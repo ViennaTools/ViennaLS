@@ -22,16 +22,17 @@
 
 namespace ls = viennals;
 
-int main() {
-  constexpr int D = 2;
-
-  omp_set_num_threads(4);
-
+template <int D> void runTest() {
   double extent = 15;
   double gridDelta = 0.5;
 
-  double bounds[2 * D] = {-extent, extent, -extent, extent};
-  ls::Domain<double, D>::BoundaryType boundaryCons[D];
+  double bounds[2 * D];
+  for (unsigned i = 0; i < D; ++i) {
+    bounds[2 * i] = -extent;
+    bounds[2 * i + 1] = extent;
+  }
+
+  typename ls::Domain<double, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D; ++i)
     boundaryCons[i] = ls::Domain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
 
@@ -39,7 +40,9 @@ int main() {
   auto sphere1 = ls::SmartPointer<ls::Domain<double, D>>::New(
       bounds, boundaryCons, gridDelta);
 
-  double origin1[D] = {0., 0.};
+  double origin1[D];
+  for (int i = 0; i < D; ++i)
+    origin1[i] = 0.;
   double radius1 = 5.0;
 
   ls::MakeGeometry<double, D>(
@@ -50,7 +53,12 @@ int main() {
   auto sphere2 = ls::SmartPointer<ls::Domain<double, D>>::New(
       bounds, boundaryCons, gridDelta);
 
-  double origin2[D] = {2., 1.}; // Shifted center
+  double origin2[D];
+  for (int i = 0; i < D; ++i)
+    origin2[i] = 0.;
+  origin2[0] = 2.;
+  if (D > 1)
+    origin2[1] = 1.;
   // double origin2[D] = {0., 0.}; // Same center
   double radius2 = 5.0; // Same radius
 
@@ -65,23 +73,30 @@ int main() {
   // Reduce the sample level set to a sparse field
   ls::Reduce<double, D>(sphere2, 1).apply();
 
+  std::string dimString = std::to_string(D) + "D";
+
   // Export both spheres as VTK files for visualization
   {
     auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
     ls::ToMesh<double, D>(sphere1, mesh).apply();
-    ls::VTKWriter<double>(mesh, "sphere1_expanded.vtp").apply();
+    ls::VTKWriter<double>(mesh, "sphere1_expanded_" + dimString + ".vtp")
+        .apply();
     auto meshSurface = ls::SmartPointer<ls::Mesh<>>::New();
     ls::ToSurfaceMesh<double, D>(sphere1, meshSurface).apply();
-    ls::VTKWriter<double>(meshSurface, "sphere1_surface.vtp").apply();
+    ls::VTKWriter<double>(meshSurface, "sphere1_surface_" + dimString + ".vtp")
+        .apply();
   }
 
   {
     auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
     ls::ToMesh<double, D>(sphere2, mesh).apply();
-    ls::VTKWriter<double>(mesh, "sphere2_sparse_iterated.vtp").apply();
+    ls::VTKWriter<double>(mesh,
+                          "sphere2_sparse_iterated_" + dimString + ".vtp")
+        .apply();
     auto meshSurface = ls::SmartPointer<ls::Mesh<>>::New();
     ls::ToSurfaceMesh<double, D>(sphere2, meshSurface).apply();
-    ls::VTKWriter<double>(meshSurface, "sphere2_surface.vtp").apply();
+    ls::VTKWriter<double>(meshSurface, "sphere2_surface_" + dimString + ".vtp")
+        .apply();
   }
 
   // Compare using sparse field comparison
@@ -102,11 +117,12 @@ int main() {
   auto meshWithPointData =
       ls::SmartPointer<ls::Mesh<>>::New(); // Mesh with point data
   ls::ToMesh<double, D>(sphere2, meshWithPointData).apply();
-  ls::VTKWriter<double>(meshWithPointData, "sphere2_LS_with_point_data.vtp")
+  ls::VTKWriter<double>(meshWithPointData,
+                        "sphere2_LS_with_point_data_" + dimString + ".vtp")
       .apply();
 
   // Save mesh to file
-  ls::VTKWriter<double>(mesh, "sparsefield.vtp").apply();
+  ls::VTKWriter<double>(mesh, "sparsefield_" + dimString + ".vtp").apply();
 
   // Get the calculated difference metrics
   double sumSquaredDifferences = compareSparseField.getSumSquaredDifferences();
@@ -117,11 +133,15 @@ int main() {
   unsigned numSkippedPoints =
       compareSparseField.getNumSkippedPoints(); // Number of skipped points
 
-  std::cout << "\nComparison Results:" << std::endl;
-  std::cout << "Sphere 1 center: (" << origin1[0] << ", " << origin1[1] << ")"
-            << std::endl;
-  std::cout << "Sphere 2 center: (" << origin2[0] << ", " << origin2[1] << ")"
-            << std::endl;
+  std::cout << "\nComparison Results (" << dimString << "):" << std::endl;
+  std::cout << "Sphere 1 center: (";
+  for (int i = 0; i < D; ++i)
+    std::cout << origin1[i] << ((i == D - 1) ? "" : ", ");
+  std::cout << ")" << std::endl;
+  std::cout << "Sphere 2 center: (";
+  for (int i = 0; i < D; ++i)
+    std::cout << origin2[i] << ((i == D - 1) ? "" : ", ");
+  std::cout << ")" << std::endl;
   std::cout << "Sphere 1 level set width after expansion: "
             << sphere1->getLevelSetWidth() << std::endl;
   std::cout << "Sum of squared differences: " << sumSquaredDifferences
@@ -177,7 +197,8 @@ int main() {
   // Create a mesh output with squared differences
   compareSparseField.setOutputMesh(mesh);
   compareSparseField.apply();
-  ls::VTKWriter<double>(mesh, "sparsefield_restricted.vtp").apply();
+  ls::VTKWriter<double>(mesh, "sparsefield_restricted_" + dimString + ".vtp")
+      .apply();
 
   // Test with different expansion widths
   std::cout << "\nTesting with different expansion widths:" << std::endl;
@@ -248,6 +269,11 @@ int main() {
   //           << std::endl;
   // std::cout << "Performance ratio: "
   //           << narrowband_ms.count() / sparse_ms.count() << "x" << std::endl;
+}
 
+int main() {
+  omp_set_num_threads(8);
+  runTest<2>();
+  runTest<3>();
   return 0;
 }
