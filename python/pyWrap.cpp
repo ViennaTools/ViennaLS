@@ -231,9 +231,11 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Get a list of hexahedrons of the mesh.")
       .def("getPointData",
            (PointData<T> & (Mesh<T>::*)()) & Mesh<T>::getPointData,
+           py::return_value_policy::reference_internal,
            "Return a reference to the point data of the mesh.")
       .def("getCellData",
            (PointData<T> & (Mesh<T>::*)()) & Mesh<T>::getCellData,
+           py::return_value_policy::reference_internal,
            "Return a reference to the cell data of the mesh.")
       .def("insertNextNode", &Mesh<T>::insertNextNode,
            "Insert a node in the mesh.")

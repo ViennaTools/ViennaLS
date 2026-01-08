@@ -329,7 +329,7 @@ class WrappingTest(unittest.TestCase):
         
         # FromMesh requires "LSValues" in cellData corresponding to nodes
         ls_values = [-1.0, 1.0, 1.0, 1.0]
-        mesh.getCellData().insertNextScalarData(ls_values, "LSValues")
+        mesh.getPointData().insertNextScalarData(ls_values, "LSValues")
 
         dom = d3.Domain(0.2)
         # FromMesh should handle volume meshes if implemented in the wrapper logic
@@ -581,6 +581,7 @@ class WrappingTest(unittest.TestCase):
         
         print("  > MarkVoidPoints")
         marker = d3.MarkVoidPoints(dom)
+        marker.setSaveComponentIds(True)
         marker.apply()
         
         # Should find 3 connected components (2 spheres + 1 background)

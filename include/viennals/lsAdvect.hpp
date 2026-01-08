@@ -38,11 +38,6 @@
 #include <lsVTKWriter.hpp>
 #endif
 
-// // Forward declaration for Time Integration Schemes
-// namespace lsInternal {
-// template <class T, int D, class AdvectType> struct AdvectTimeIntegration;
-// }
-
 namespace viennals {
 
 using namespace viennacore;

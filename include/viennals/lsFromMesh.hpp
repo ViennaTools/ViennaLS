@@ -53,7 +53,10 @@ public:
 
     auto &domain = levelSet->getDomain();
     auto &nodes = mesh->getNodes();
-    auto values = mesh->cellData.getScalarData("LSValues", true);
+    auto values = mesh->getPointData().getScalarData("LSValues", true);
+    if (values == nullptr) {
+      values = mesh->getCellData().getScalarData("LSValues", true);
+    }
 
     if (values == nullptr) {
       Logger::getInstance()

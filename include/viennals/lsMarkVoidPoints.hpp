@@ -317,7 +317,7 @@ public:
       auto maxComponent =
           *std::max_element(componentMarkers.begin(), componentMarkers.end());
       assert(maxComponent >= 0);
-      numComponents = maxComponent;
+      numComponents = maxComponent + 1;
 
       auto componentMarkersPointer =
           pointData.getScalarData("ConnectedComponentId", true);

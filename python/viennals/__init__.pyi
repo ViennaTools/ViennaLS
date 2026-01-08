@@ -34,8 +34,6 @@ from viennals._core import VelocityField
 from viennals._core import VoidTopSurfaceEnum
 from viennals._core import setNumThreads
 from viennals.d2 import Advect
-from viennals.d2 import AdvectForwardEuler
-from viennals.d2 import AdvectRungeKutta3
 from viennals.d2 import BooleanOperation
 from viennals.d2 import Box
 from viennals.d2 import BoxDistribution

@@ -652,7 +652,7 @@ template <int D> void bindApi(py::module &module) {
       .def("setVoidTopSurface", &MarkVoidPoints<T, D>::setVoidTopSurface,
            "Set the logic by which to choose the surface which is non-void. "
            "All other connected surfaces will then be marked as void points.")
-      .def("setSaveComponentsId", &MarkVoidPoints<T, D>::setSaveComponentIds,
+      .def("setSaveComponentIds", &MarkVoidPoints<T, D>::setSaveComponentIds,
            "Save the connectivity information of all LS points in the "
            "pointData of the level set.")
       .def("getNumberOfComponents",

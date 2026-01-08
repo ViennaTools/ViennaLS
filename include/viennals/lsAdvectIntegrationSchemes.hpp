@@ -74,6 +74,9 @@ template <class T, int D> struct AdvectTimeIntegration {
     // Stage 1: u^(1) = u^n + dt * L(u^n)
     kernel.updateLevelSet(dt);
 
+    if (kernel.velocityUpdateCallback)
+      kernel.velocityUpdateCallback(kernel.levelSets.back());
+
     // Stage 2: u^(n+1) = 1/2 u^n + 1/2 (u^(1) + dt * L(u^(1)))
     // Current level set is u^(1). Compute L(u^(1)).
     kernel.computeRates(dt);
@@ -81,6 +84,9 @@ template <class T, int D> struct AdvectTimeIntegration {
     kernel.updateLevelSet(dt);
     // Combine: u^(n+1) = 0.5 * u^n + 0.5 * u*
     kernel.combineLevelSets(0.5, 0.5);
+
+    if (kernel.velocityUpdateCallback)
+      kernel.velocityUpdateCallback(kernel.levelSets.back());
 
     // Finalize
     kernel.rebuildLS();
@@ -109,17 +115,26 @@ template <class T, int D> struct AdvectTimeIntegration {
     // Stage 1: u^(1) = u^n + dt * L(u^n)
     kernel.updateLevelSet(dt);
 
+    if (kernel.velocityUpdateCallback)
+      kernel.velocityUpdateCallback(kernel.levelSets.back());
+
     // Stage 2: u^(2) = 3/4 u^n + 1/4 (u^(1) + dt * L(u^(1)))
     kernel.computeRates(dt);
     kernel.updateLevelSet(dt);
     // Combine to get u^(2) = 0.75 * u^n + 0.25 * u*.
     kernel.combineLevelSets(0.75, 0.25);
 
+    if (kernel.velocityUpdateCallback)
+      kernel.velocityUpdateCallback(kernel.levelSets.back());
+
     // Stage 3: u^(n+1) = 1/3 u^n + 2/3 (u^(2) + dt * L(u^(2)))
     kernel.computeRates(dt);
     kernel.updateLevelSet(dt);
     // Combine to get u^(n+1) = 1/3 * u^n + 2/3 * u**.
     kernel.combineLevelSets(1.0 / 3.0, 2.0 / 3.0);
+
+    if (kernel.velocityUpdateCallback)
+      kernel.velocityUpdateCallback(kernel.levelSets.back());
 
     // Finalize: Re-segment and renormalize the final result.
     kernel.rebuildLS();
