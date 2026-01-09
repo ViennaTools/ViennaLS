@@ -42,6 +42,26 @@ template <class T, int D> class ConvexHull {
       ++nextIndex;
     }
 
+    // Robust initialization: find a point that is not collinear
+    if constexpr (D == 3) {
+      unsigned searchIndex = nextIndex;
+      for (; searchIndex < points.size(); ++searchIndex) {
+        if (searchIndex == currentEdge[0] || searchIndex == currentEdge[1])
+          continue;
+
+        auto v1 = points[currentEdge[1]] - points[currentEdge[0]];
+        auto v2 = points[searchIndex] - points[currentEdge[0]];
+        auto cross = CrossProduct(v1, v2);
+        if (DotProduct(cross, cross) > 1e-10) {
+          nextIndex = searchIndex;
+          break;
+        }
+      }
+    }
+
+    // Keep track of candidates we've already selected to prevent cycles
+    std::vector<unsigned> previousCandidates;
+
     for (unsigned i = 0; i < points.size(); ++i) {
       if (i == currentEdge[0] || i == nextIndex)
         continue;
@@ -67,6 +87,8 @@ template <class T, int D> class ConvexHull {
       }
 
       auto product = DotProduct(distance, normal);
+      bool update = false;
+
       // if dot product is very small, point is very close to plane
       // we need to check if we already have the correct point
       // or if it is the next correct one
@@ -88,12 +110,37 @@ template <class T, int D> class ConvexHull {
         edges[1][1] = i;
 
         if (!wasEdgeVisited(edges[0]) && !wasEdgeVisited(edges[1])) {
-          nextIndex = i;
+          // Tie-breaker: prefer closer points to avoid long chords
+          auto distI = DotProduct(distance, distance);
+          auto distNextVec = points[nextIndex] - points[currentEdge[0]];
+          auto distNext = DotProduct(distNextVec, distNextVec);
+          if (distI < distNext) {
+            update = true;
+          }
         }
       }
       // check if point is to the right of current element
       else if (product > 0) {
+        update = true;
+      }
+
+      if (update) {
+        // Check for cycles
+        bool cycleDetected = false;
+        for (unsigned prev : previousCandidates) {
+          if (prev == i) {
+            cycleDetected = true;
+            break;
+          }
+        }
+
+        if (cycleDetected) {
+          continue;
+        }
+
+        previousCandidates.push_back(nextIndex);
         nextIndex = i;
+        i = -1;
       }
     }
     return nextIndex;
