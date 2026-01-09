@@ -175,14 +175,26 @@ template <int D> void runTest() {
   std::cout << "Number of points in X range: "
             << compareSparseField.getNumPoints() << std::endl;
 
-  // // Test with restricted Y range
-  // compareSparseField.clearXRange();
-  // compareSparseField.setYRange(-5, 5);
-  // compareSparseField.apply();
-  // std::cout << "RMSE with Y range [-5, 5]: " << compareSparseField.getRMSE()
-  //           << std::endl;
-  // std::cout << "Number of points in Y range: "
-  //           << compareSparseField.getNumPoints() << std::endl;
+  // Test with restricted Y range
+  compareSparseField.clearXRange();
+  compareSparseField.setYRange(-5, 5);
+  compareSparseField.apply();
+  std::cout << "RMSE with Y range [-5, 5]: " << compareSparseField.getRMSE()
+            << std::endl;
+  std::cout << "Number of points in Y range: "
+            << compareSparseField.getNumPoints() << std::endl;
+
+  if constexpr (D == 3) {
+    // Test with restricted Z range
+    compareSparseField.clearYRange();
+    compareSparseField.setZRange(-5, 5);
+    compareSparseField.apply();
+    std::cout << "RMSE with Z range [-5, 5]: " << compareSparseField.getRMSE()
+              << std::endl;
+    std::cout << "Number of points in Z range: "
+              << compareSparseField.getNumPoints() << std::endl;
+    compareSparseField.clearZRange();
+  }
 
   // Test with both X and Y range restrictions
   compareSparseField.setXRange(-3, 3);

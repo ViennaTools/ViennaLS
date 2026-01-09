@@ -15,7 +15,7 @@ using namespace viennacore;
 /// Calculate distance measure between two level sets by comparing their SDF
 /// values on a narrow band. Returns the sum of squared differences between
 /// corresponding grid points.
-/// The code is currently tended for 2D level sets only.
+/// The code is intended for 2D and 3D level sets.
 template <class T, int D = 2> class CompareNarrowBand {
   using hrleIndexType = viennahrle::IndexType;
   SmartPointer<Domain<T, D>> levelSetTarget = nullptr;
@@ -27,8 +27,11 @@ template <class T, int D = 2> class CompareNarrowBand {
   T xRangeMax = std::numeric_limits<T>::max();
   T yRangeMin = std::numeric_limits<T>::lowest();
   T yRangeMax = std::numeric_limits<T>::max();
+  T zRangeMin = std::numeric_limits<T>::lowest();
+  T zRangeMax = std::numeric_limits<T>::max();
   bool useXRange = false;
   bool useYRange = false;
+  bool useZRange = false;
 
   // Fields to store the calculation results
   T sumSquaredDifferences = 0.0;
@@ -135,20 +138,12 @@ template <class T, int D = 2> class CompareNarrowBand {
   }
 
 public:
-  CompareNarrowBand() {
-    assert(
-        D == 2 &&
-        "CompareNarrowBand is currently only implemented for 2D level sets.");
-  }
+  CompareNarrowBand() {}
 
   CompareNarrowBand(SmartPointer<Domain<T, D>> passedLevelSetTarget,
                     SmartPointer<Domain<T, D>> passedlevelSetSample)
       : levelSetTarget(passedLevelSetTarget),
-        levelSetSample(passedlevelSetSample) {
-    assert(
-        D == 2 &&
-        "CompareNarrowBand is currently only implemented for 2D level sets.");
-  }
+        levelSetSample(passedlevelSetSample) {}
 
   void setLevelSetTarget(SmartPointer<Domain<T, D>> passedLevelSet) {
     levelSetTarget = passedLevelSet;
@@ -184,6 +179,20 @@ public:
     useYRange = false;
     yRangeMin = std::numeric_limits<T>::lowest();
     yRangeMax = std::numeric_limits<T>::max();
+  }
+
+  /// Set the z-coordinate range to restrict the comparison area
+  void setZRange(T minZRange, T maxZRange) {
+    zRangeMin = minZRange;
+    zRangeMax = maxZRange;
+    useZRange = true;
+  }
+
+  /// Clear the z-range restriction
+  void clearZRange() {
+    useZRange = false;
+    zRangeMin = std::numeric_limits<T>::lowest();
+    zRangeMax = std::numeric_limits<T>::max();
   }
 
   /// Set the output mesh where difference values will be stored
@@ -233,9 +242,11 @@ public:
       outputMesh->clear();
 
       // Initialize mesh extent
-      for (unsigned i = 0; i < D; ++i) {
-        outputMesh->minimumExtent[i] = std::numeric_limits<T>::max();
-        outputMesh->maximumExtent[i] = std::numeric_limits<T>::lowest();
+      for (unsigned i = 0; i < 3; ++i) {
+        outputMesh->minimumExtent[i] =
+            (i < D) ? std::numeric_limits<T>::max() : 0.0;
+        outputMesh->maximumExtent[i] =
+            (i < D) ? std::numeric_limits<T>::lowest() : 0.0;
       }
     }
 
@@ -244,6 +255,7 @@ public:
       // Check if current point is within specified x and y ranges
       T xCoord = itSample.getIndices()[0] * gridDelta;
       T yCoord = (D > 1) ? itSample.getIndices()[1] * gridDelta : 0;
+      T zCoord = (D > 2) ? itSample.getIndices()[2] * gridDelta : 0;
 
       // Skip if outside the specified x-range
       if (useXRange && (xCoord < xRangeMin || xCoord > xRangeMax)) {
@@ -252,6 +264,11 @@ public:
 
       // Skip if outside the specified y-range (only check in 2D and 3D)
       if (D > 1 && useYRange && (yCoord < yRangeMin || yCoord > yRangeMax)) {
+        continue;
+      }
+
+      // Skip if outside the specified z-range (only check in 3D)
+      if (D > 2 && useZRange && (zCoord < zRangeMin || zCoord > zRangeMax)) {
         continue;
       }
 

@@ -27,8 +27,8 @@ using namespace viennacore;
 /// - RMS Chamfer distance: root mean square of nearest-neighbor distances
 /// - Maximum distance: maximum nearest-neighbor distance across both directions
 ///
-/// The code is currently intended for 2D level sets only, where surfaces are
-/// represented as line segments.
+/// The code works for 2D and 3D level sets. Surfaces are represented as line
+/// segments in 2D and triangles in 3D.
 ///
 /// Both level sets must have a width of at least 2 to extract surfaces. If
 /// not, they will be automatically expanded.
@@ -73,20 +73,12 @@ template <class T, int D = 2> class CompareChamfer {
   }
 
 public:
-  CompareChamfer() {
-    static_assert(
-        D == 2,
-        "CompareChamfer is currently only implemented for 2D level sets.");
-  }
+  CompareChamfer() {}
 
   CompareChamfer(SmartPointer<Domain<T, D>> passedLevelSetTarget,
                  SmartPointer<Domain<T, D>> passedLevelSetSample)
       : levelSetTarget(passedLevelSetTarget),
-        levelSetSample(passedLevelSetSample) {
-    static_assert(
-        D == 2,
-        "CompareChamfer is currently only implemented for 2D level sets.");
-  }
+        levelSetSample(passedLevelSetSample) {}
 
   /// Set the target level set
   void setLevelSetTarget(SmartPointer<Domain<T, D>> passedLevelSet) {
@@ -171,8 +163,7 @@ public:
       return;
     }
 
-    // Convert nodes to format suitable for KDTree (only using x, y
-    // coordinates)
+    // Convert nodes to format suitable for KDTree
     std::vector<std::array<T, D>> targetPoints(numTargetPoints);
     std::vector<std::array<T, D>> samplePoints(numSamplePoints);
 
@@ -255,10 +246,11 @@ public:
       outputMeshTarget->clear();
       outputMeshTarget->nodes = targetNodes;
 
-      // Create vertices for visualization
-      outputMeshTarget->vertices.reserve(numTargetPoints);
-      for (unsigned i = 0; i < numTargetPoints; ++i) {
-        outputMeshTarget->vertices.push_back({i});
+      // Copy topology for visualization
+      if constexpr (D == 2) {
+        outputMeshTarget->lines = targetSurfaceMesh->lines;
+      } else {
+        outputMeshTarget->triangles = targetSurfaceMesh->triangles;
       }
 
       // Add distance data
@@ -266,9 +258,13 @@ public:
           std::move(targetDistances), "DistanceToSample");
 
       // Set mesh extent
+      for (unsigned d = 0; d < 3; ++d) {
+        outputMeshTarget->minimumExtent[d] =
+            (d < D) ? std::numeric_limits<T>::max() : 0.0;
+        outputMeshTarget->maximumExtent[d] =
+            (d < D) ? std::numeric_limits<T>::lowest() : 0.0;
+      }
       for (unsigned d = 0; d < D; ++d) {
-        outputMeshTarget->minimumExtent[d] = std::numeric_limits<T>::max();
-        outputMeshTarget->maximumExtent[d] = std::numeric_limits<T>::lowest();
         for (const auto &node : targetNodes) {
           outputMeshTarget->minimumExtent[d] =
               std::min(outputMeshTarget->minimumExtent[d], node[d]);
@@ -282,10 +278,11 @@ public:
       outputMeshSample->clear();
       outputMeshSample->nodes = sampleNodes;
 
-      // Create vertices for visualization
-      outputMeshSample->vertices.reserve(numSamplePoints);
-      for (unsigned i = 0; i < numSamplePoints; ++i) {
-        outputMeshSample->vertices.push_back({i});
+      // Copy topology for visualization
+      if constexpr (D == 2) {
+        outputMeshSample->lines = sampleSurfaceMesh->lines;
+      } else {
+        outputMeshSample->triangles = sampleSurfaceMesh->triangles;
       }
 
       // Add distance data
@@ -293,9 +290,13 @@ public:
           std::move(sampleDistances), "DistanceToTarget");
 
       // Set mesh extent
+      for (unsigned d = 0; d < 3; ++d) {
+        outputMeshSample->minimumExtent[d] =
+            (d < D) ? std::numeric_limits<T>::max() : 0.0;
+        outputMeshSample->maximumExtent[d] =
+            (d < D) ? std::numeric_limits<T>::lowest() : 0.0;
+      }
       for (unsigned d = 0; d < D; ++d) {
-        outputMeshSample->minimumExtent[d] = std::numeric_limits<T>::max();
-        outputMeshSample->maximumExtent[d] = std::numeric_limits<T>::lowest();
         for (const auto &node : sampleNodes) {
           outputMeshSample->minimumExtent[d] =
               std::min(outputMeshSample->minimumExtent[d], node[d]);

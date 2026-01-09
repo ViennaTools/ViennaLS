@@ -27,8 +27,6 @@ using namespace viennacore;
 /// zero. Multiple ranges can be specified to compare different critical
 /// dimensions.
 ///
-/// The code is currently intended for 2D level sets only.
-///
 /// Note for the future: lsToDiskMesh could be used instead of lsToSurfaceMesh,
 /// which is probably more efficient but slightly less accurate.
 
@@ -40,9 +38,9 @@ template <class T, int D = 2> class CompareCriticalDimensions {
 
   // Structure to hold a range specification
   struct RangeSpec {
-    bool isXRange; // true if X range, false if Y range
-    T rangeMin;
-    T rangeMax;
+    int measureDimension;
+    std::array<T, D> minBounds;
+    std::array<T, D> maxBounds;
     bool findMaximum; // true for maximum, false for minimum
   };
 
@@ -50,9 +48,9 @@ template <class T, int D = 2> class CompareCriticalDimensions {
 
   // Structure to hold critical dimension results
   struct CriticalDimensionResult {
-    bool isXRange;
-    T rangeMin;
-    T rangeMax;
+    int measureDimension;
+    std::array<T, D> minBounds;
+    std::array<T, D> maxBounds;
     bool findMaximum;
     T positionTarget; // Critical dimension position in target LS
     T positionSample; // Critical dimension position in sample LS
@@ -94,32 +92,27 @@ template <class T, int D = 2> class CompareCriticalDimensions {
   // Extract surface positions from mesh nodes within the specified range
   // Returns the position coordinates (Y if isXRange=true, X if isXRange=false)
   std::vector<T> findSurfaceCrossings(SmartPointer<Mesh<T>> surfaceMesh,
-                                      bool isXRange, T scanMin, T scanMax,
-                                      T perpMin, T perpMax) {
+                                      const RangeSpec &spec) {
     std::vector<T> crossings;
 
     // Iterate through all surface mesh nodes
     for (const auto &node : surfaceMesh->nodes) {
-      T xCoord = node[0];
-      T yCoord = node[1];
-
       // Check if point is in our scan range
-      bool inRange = false;
-      if (isXRange) {
-        // X range specified - check if X is in scan range
-        inRange = (xCoord >= scanMin && xCoord <= scanMax);
-      } else {
-        // Y range specified - check if Y is in scan range
-        inRange = (yCoord >= scanMin && yCoord <= scanMax);
+      bool inRange = true;
+      for (int i = 0; i < D; ++i) {
+        if (i == spec.measureDimension)
+          continue;
+        if (node[i] < spec.minBounds[i] || node[i] > spec.maxBounds[i]) {
+          inRange = false;
+          break;
+        }
       }
 
       if (inRange) {
-        // Extract perpendicular coordinate
-        T perpCoord = isXRange ? yCoord : xCoord;
-
-        // Check if perpendicular coordinate is in range
-        if (perpCoord >= perpMin && perpCoord <= perpMax) {
-          crossings.push_back(perpCoord);
+        T val = node[spec.measureDimension];
+        if (val >= spec.minBounds[spec.measureDimension] &&
+            val <= spec.maxBounds[spec.measureDimension]) {
+          crossings.push_back(val);
         }
       }
     }
@@ -142,18 +135,12 @@ template <class T, int D = 2> class CompareCriticalDimensions {
   }
 
 public:
-  CompareCriticalDimensions() {
-    static_assert(D == 2 && "CompareCriticalDimensions is currently only "
-                            "implemented for 2D level sets.");
-  }
+  CompareCriticalDimensions() {}
 
   CompareCriticalDimensions(SmartPointer<Domain<T, D>> passedLevelSetTarget,
                             SmartPointer<Domain<T, D>> passedLevelSetSample)
       : levelSetTarget(passedLevelSetTarget),
-        levelSetSample(passedLevelSetSample) {
-    static_assert(D == 2 && "CompareCriticalDimensions is currently only "
-                            "implemented for 2D level sets.");
-  }
+        levelSetSample(passedLevelSetSample) {}
 
   void setLevelSetTarget(SmartPointer<Domain<T, D>> passedLevelSet) {
     levelSetTarget = passedLevelSet;
@@ -163,24 +150,39 @@ public:
     levelSetSample = passedLevelSet;
   }
 
-  /// Add an X range to find maximum or minimum Y position
-  void addXRange(T minX, T maxX, bool findMaximum = true) {
+  /// Add a generic range specification
+  void addRange(int measureDimension, const std::array<T, D> &minBounds,
+                const std::array<T, D> &maxBounds, bool findMaximum = true) {
     RangeSpec spec;
-    spec.isXRange = true;
-    spec.rangeMin = minX;
-    spec.rangeMax = maxX;
+    spec.measureDimension = measureDimension;
+    spec.minBounds = minBounds;
+    spec.maxBounds = maxBounds;
     spec.findMaximum = findMaximum;
     rangeSpecs.push_back(spec);
   }
 
+  /// Add an X range to find maximum or minimum Y position
+  void addXRange(T minX, T maxX, bool findMaximum = true) {
+    if constexpr (D == 2) {
+      std::array<T, D> minBounds = {minX, std::numeric_limits<T>::lowest()};
+      std::array<T, D> maxBounds = {maxX, std::numeric_limits<T>::max()};
+      addRange(1, minBounds, maxBounds, findMaximum);
+    } else {
+      VIENNACORE_LOG_WARNING(
+          "addXRange is only supported for 2D. Use addRange for 3D.");
+    }
+  }
+
   /// Add a Y range to find maximum or minimum X position
   void addYRange(T minY, T maxY, bool findMaximum = true) {
-    RangeSpec spec;
-    spec.isXRange = false;
-    spec.rangeMin = minY;
-    spec.rangeMax = maxY;
-    spec.findMaximum = findMaximum;
-    rangeSpecs.push_back(spec);
+    if constexpr (D == 2) {
+      std::array<T, D> minBounds = {std::numeric_limits<T>::lowest(), minY};
+      std::array<T, D> maxBounds = {std::numeric_limits<T>::max(), maxY};
+      addRange(0, minBounds, maxBounds, findMaximum);
+    } else {
+      VIENNACORE_LOG_WARNING(
+          "addYRange is only supported for 2D. Use addRange for 3D.");
+    }
   }
 
   /// Clear all range specifications
@@ -209,27 +211,6 @@ public:
     ToSurfaceMesh<T, D>(levelSetTarget, surfaceMeshRef).apply();
     ToSurfaceMesh<T, D>(levelSetSample, surfaceMeshCmp).apply();
 
-    // Get actual mesh extents instead of grid bounds
-    // This ensures we don't filter out surface points that extend beyond grid
-    // bounds
-    T xMin = std::numeric_limits<T>::max();
-    T xMax = std::numeric_limits<T>::lowest();
-    T yMin = std::numeric_limits<T>::max();
-    T yMax = std::numeric_limits<T>::lowest();
-
-    for (const auto &node : surfaceMeshRef->nodes) {
-      xMin = std::min(xMin, node[0]);
-      xMax = std::max(xMax, node[0]);
-      yMin = std::min(yMin, node[1]);
-      yMax = std::max(yMax, node[1]);
-    }
-    for (const auto &node : surfaceMeshCmp->nodes) {
-      xMin = std::min(xMin, node[0]);
-      xMax = std::max(xMax, node[0]);
-      yMin = std::min(yMin, node[1]);
-      yMax = std::max(yMax, node[1]);
-    }
-
     // Pre-allocate results vector to avoid race conditions
     results.resize(rangeSpecs.size());
 
@@ -238,33 +219,15 @@ public:
     for (size_t specIdx = 0; specIdx < rangeSpecs.size(); ++specIdx) {
       const auto &spec = rangeSpecs[specIdx];
       CriticalDimensionResult result;
-      result.isXRange = spec.isXRange;
-      result.rangeMin = spec.rangeMin;
-      result.rangeMax = spec.rangeMax;
+      result.measureDimension = spec.measureDimension;
+      result.minBounds = spec.minBounds;
+      result.maxBounds = spec.maxBounds;
       result.findMaximum = spec.findMaximum;
       result.valid = false;
 
-      // Determine scan and perpendicular ranges
-      T scanMin, scanMax, perpMin, perpMax;
-      if (spec.isXRange) {
-        // X range specified - scan along X, find Y positions
-        scanMin = spec.rangeMin;
-        scanMax = spec.rangeMax;
-        perpMin = yMin;
-        perpMax = yMax;
-      } else {
-        // Y range specified - scan along Y, find X positions
-        scanMin = spec.rangeMin;
-        scanMax = spec.rangeMax;
-        perpMin = xMin;
-        perpMax = xMax;
-      }
-
       // Find all surface crossings from the mesh nodes
-      auto crossingsRef = findSurfaceCrossings(
-          surfaceMeshRef, spec.isXRange, scanMin, scanMax, perpMin, perpMax);
-      auto crossingsCmp = findSurfaceCrossings(
-          surfaceMeshCmp, spec.isXRange, scanMin, scanMax, perpMin, perpMax);
+      auto crossingsRef = findSurfaceCrossings(surfaceMeshRef, spec);
+      auto crossingsCmp = findSurfaceCrossings(surfaceMeshCmp, spec);
 
       // Find critical dimensions
       auto [validRef, cdRef] =
@@ -363,9 +326,11 @@ private:
     std::vector<T> targetValues;
     std::vector<T> sampleValues;
 
-    for (unsigned i = 0; i < D; ++i) {
-      outputMesh->minimumExtent[i] = std::numeric_limits<T>::max();
-      outputMesh->maximumExtent[i] = std::numeric_limits<T>::lowest();
+    for (unsigned i = 0; i < 3; ++i) {
+      outputMesh->minimumExtent[i] =
+          (i < D) ? std::numeric_limits<T>::max() : 0.0;
+      outputMesh->maximumExtent[i] =
+          (i < D) ? std::numeric_limits<T>::lowest() : 0.0;
     }
 
     unsigned pointId = 0;
@@ -374,18 +339,21 @@ private:
         continue;
 
       // Create points for target and sample positions
-      Vec3D<T> coordTarget, coordSample;
+      Vec3D<T> coordTarget = {0.0, 0.0, 0.0}, coordSample = {0.0, 0.0, 0.0};
 
-      if (result.isXRange) {
-        // Critical dimension is in Y, position is along X range
-        T xMid = (result.rangeMin + result.rangeMax) / 2.0;
-        coordTarget = {xMid, result.positionTarget, 0.0};
-        coordSample = {xMid, result.positionSample, 0.0};
-      } else {
-        // Critical dimension is in X, position is along Y range
-        T yMid = (result.rangeMin + result.rangeMax) / 2.0;
-        coordTarget = {result.positionTarget, yMid, 0.0};
-        coordSample = {result.positionSample, yMid, 0.0};
+      for (int i = 0; i < D; ++i) {
+        if (i == result.measureDimension) {
+          coordTarget[i] = result.positionTarget;
+          coordSample[i] = result.positionSample;
+        } else {
+          // Use midpoint of range for other dimensions
+          T mid = (result.minBounds[i] + result.maxBounds[i]) / 2.0;
+          // If bounds are infinite, use 0
+          if (std::abs(mid) > std::numeric_limits<T>::max() / 2.0)
+            mid = 0.0;
+          coordTarget[i] = mid;
+          coordSample[i] = mid;
+        }
       }
 
       // Add target point
