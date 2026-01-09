@@ -1,6 +1,7 @@
 #include <chrono>
 #include <cmath>
 #include <iostream>
+#include <string>
 
 #include <lsCompareArea.hpp>
 #include <lsCompareChamfer.hpp>
@@ -24,72 +25,74 @@
 
 namespace ls = viennals;
 
-int main() {
-  constexpr int D = 2;
-
-  omp_set_num_threads(4);
-
+template <int D> void runTest() {
+  std::cout << "Running " << D << "D Test..." << std::endl;
   double extent = 15;
   double gridDelta = 0.5;
 
-  double bounds[2 * D] = {-extent, extent, -extent, extent};
-  ls::Domain<double, D>::BoundaryType boundaryCons[D];
+  double bounds[2 * D];
+  for (int i = 0; i < 2 * D; ++i)
+    bounds[i] = (i % 2 == 0) ? -extent : extent;
+
+  typename ls::Domain<double, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D; ++i)
     boundaryCons[i] = ls::Domain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
 
-  // Create first circle (target)
-  auto circle1 = ls::SmartPointer<ls::Domain<double, D>>::New(
+  // Create first sphere (target)
+  auto sphere1 = ls::SmartPointer<ls::Domain<double, D>>::New(
       bounds, boundaryCons, gridDelta);
 
-  double origin1[D] = {0., 0.};
+  std::vector<double> origin1(D, 0.0);
   double radius1 = 5.0;
 
   ls::MakeGeometry<double, D>(
-      circle1, ls::SmartPointer<ls::Sphere<double, D>>::New(origin1, radius1))
+      sphere1, ls::SmartPointer<ls::Sphere<double, D>>::New(origin1, radius1))
       .apply();
 
-  // Create second circle (sample) with different center
-  auto circle2 = ls::SmartPointer<ls::Domain<double, D>>::New(
+  // Create second sphere (sample) with different center
+  auto sphere2 = ls::SmartPointer<ls::Domain<double, D>>::New(
       bounds, boundaryCons, gridDelta);
 
-  double origin2[D] = {2., 1.}; // Shifted center
-  // double origin2[D] = {0., 0.}; // Same center (for testing)
+  std::vector<double> origin2(D, 0.0);
+  origin2[0] = 2.;
+  origin2[1] = 1.;
   double radius2 = 5.0; // Same radius
 
   ls::MakeGeometry<double, D>(
-      circle2, ls::SmartPointer<ls::Sphere<double, D>>::New(origin2, radius2))
+      sphere2, ls::SmartPointer<ls::Sphere<double, D>>::New(origin2, radius2))
       .apply();
 
-  // Export both circles as VTK files for visualization
-  std::cout << "Exporting surface meshes..." << std::endl;
+  // Export both spheres as VTK files for visualization
+  std::string suffix = "_" + std::to_string(D) + "D.vtp";
+  std::cout << "Exporting surface meshes to *" << suffix << "..." << std::endl;
   {
     auto meshSurface = ls::SmartPointer<ls::Mesh<>>::New();
-    ls::ToSurfaceMesh<double, D>(circle1, meshSurface).apply();
-    ls::VTKWriter<double>(meshSurface, "circle1_surface.vtp").apply();
-    std::cout << "  Circle 1 surface points: " << meshSurface->nodes.size()
+    ls::ToSurfaceMesh<double, D>(sphere1, meshSurface).apply();
+    ls::VTKWriter<double>(meshSurface, "sphere1_surface" + suffix).apply();
+    std::cout << "  Sphere 1 surface points: " << meshSurface->nodes.size()
               << std::endl;
   }
 
   {
     auto meshSurface = ls::SmartPointer<ls::Mesh<>>::New();
-    ls::ToSurfaceMesh<double, D>(circle2, meshSurface).apply();
-    ls::VTKWriter<double>(meshSurface, "circle2_surface.vtp").apply();
-    std::cout << "  Circle 2 surface points: " << meshSurface->nodes.size()
+    ls::ToSurfaceMesh<double, D>(sphere2, meshSurface).apply();
+    ls::VTKWriter<double>(meshSurface, "sphere2_surface" + suffix).apply();
+    std::cout << "  Sphere 2 surface points: " << meshSurface->nodes.size()
               << std::endl;
   }
 
   // Test 1: Basic Chamfer distance calculation
   std::cout << "\n=== Test 1: Basic Chamfer Distance ===" << std::endl;
-  std::cout << "Circle 1 center: (" << origin1[0] << ", " << origin1[1] << ")"
+  std::cout << "Sphere 1 center: (" << origin1[0] << ", " << origin1[1] << ")"
             << std::endl;
-  std::cout << "Circle 2 center: (" << origin2[0] << ", " << origin2[1] << ")"
+  std::cout << "Sphere 2 center: (" << origin2[0] << ", " << origin2[1] << ")"
             << std::endl;
-  std::cout << "Expected geometric shift: "
-            << std::sqrt((origin2[0] - origin1[0]) * (origin2[0] - origin1[0]) +
-                         (origin2[1] - origin1[1]) * (origin2[1] - origin1[1]))
-            << std::endl;
+  double distSq = 0.0;
+  for (int i = 0; i < D; ++i)
+    distSq += (origin2[i] - origin1[i]) * (origin2[i] - origin1[i]);
+  std::cout << "Expected geometric shift: " << std::sqrt(distSq) << std::endl;
 
-  ls::CompareChamfer<double, D> compareChamfer(circle1, circle2);
+  ls::CompareChamfer<double, D> compareChamfer(sphere1, sphere2);
 
   // Create output meshes with distance information
   auto targetMesh = ls::SmartPointer<ls::Mesh<>>::New();
@@ -121,20 +124,20 @@ int main() {
   std::cout << "  Execution time: " << chamfer_ms.count() << " ms" << std::endl;
 
   // Save meshes with distance data
-  ls::VTKWriter<double>(targetMesh, "chamfer_target_distances.vtp").apply();
-  ls::VTKWriter<double>(sampleMesh, "chamfer_sample_distances.vtp").apply();
+  ls::VTKWriter<double>(targetMesh, "chamfer_target_distances" + suffix).apply();
+  ls::VTKWriter<double>(sampleMesh, "chamfer_sample_distances" + suffix).apply();
 
   // Test 2: Compare with other metrics
   std::cout << "\n=== Test 2: Comparison with Other Metrics ===" << std::endl;
 
   // Sparse Field comparison
-  auto circle1_expanded = ls::SmartPointer<ls::Domain<double, D>>::New(circle1);
-  ls::Expand<double, D>(circle1_expanded, 50).apply();
-  auto circle2_reduced = ls::SmartPointer<ls::Domain<double, D>>::New(circle2);
-  ls::Reduce<double, D>(circle2_reduced, 1).apply();
+  auto sphere1_expanded = ls::SmartPointer<ls::Domain<double, D>>::New(sphere1);
+  ls::Expand<double, D>(sphere1_expanded, 50).apply();
+  auto sphere2_reduced = ls::SmartPointer<ls::Domain<double, D>>::New(sphere2);
+  ls::Reduce<double, D>(sphere2_reduced, 1).apply();
 
-  ls::CompareSparseField<double, D> compareSparseField(circle1_expanded,
-                                                       circle2_reduced);
+  ls::CompareSparseField<double, D> compareSparseField(sphere1_expanded,
+                                                       sphere2_reduced);
   auto t3 = std::chrono::high_resolution_clock::now();
   compareSparseField.apply();
   auto t4 = std::chrono::high_resolution_clock::now();
@@ -148,46 +151,46 @@ int main() {
   std::cout << "  Execution time: " << sparse_ms.count() << " ms" << std::endl;
 
   // Area comparison
-  ls::CompareArea<double, D> compareArea(circle1, circle2);
+  ls::CompareDomain<double, D> compareDomain(sphere1, sphere2);
   auto t5 = std::chrono::high_resolution_clock::now();
-  compareArea.apply();
+  compareDomain.apply();
   auto t6 = std::chrono::high_resolution_clock::now();
 
   std::chrono::duration<double, std::milli> area_ms = t6 - t5;
 
-  std::cout << "\nArea Comparison Results:" << std::endl;
-  std::cout << "  Area mismatch: " << compareArea.getAreaMismatch()
+  std::cout << "\nArea/Volume Comparison Results:" << std::endl;
+  std::cout << "  Area/Volume mismatch: " << compareDomain.getVolumeMismatch()
             << std::endl;
-  std::cout << "  Different cells: " << compareArea.getCellCount() << std::endl;
+  std::cout << "  Different cells: " << compareDomain.getCellCount() << std::endl;
   std::cout << "  Execution time: " << area_ms.count() << " ms" << std::endl;
 
   // Test 3: Different geometric configurations
   std::cout << "\n=== Test 3: Different Geometric Configurations ==="
             << std::endl;
 
-  // Test 3a: Identical circles (should give near-zero Chamfer distance)
-  auto circle3 = ls::SmartPointer<ls::Domain<double, D>>::New(
+  // Test 3a: Identical spheres (should give near-zero Chamfer distance)
+  auto sphere3 = ls::SmartPointer<ls::Domain<double, D>>::New(
       bounds, boundaryCons, gridDelta);
   ls::MakeGeometry<double, D>(
-      circle3, ls::SmartPointer<ls::Sphere<double, D>>::New(origin1, radius1))
+      sphere3, ls::SmartPointer<ls::Sphere<double, D>>::New(origin1, radius1))
       .apply();
 
-  ls::CompareChamfer<double, D> compareIdentical(circle1, circle3);
+  ls::CompareChamfer<double, D> compareIdentical(sphere1, sphere3);
   compareIdentical.apply();
 
-  std::cout << "Identical circles:" << std::endl;
+  std::cout << "Identical spheres:" << std::endl;
   std::cout << "  Chamfer distance: " << compareIdentical.getChamferDistance()
             << " (expected ~0)" << std::endl;
 
   // Test 3b: Different radii
-  auto circle4 = ls::SmartPointer<ls::Domain<double, D>>::New(
+  auto sphere4 = ls::SmartPointer<ls::Domain<double, D>>::New(
       bounds, boundaryCons, gridDelta);
   double radius4 = 7.0; // Larger radius
   ls::MakeGeometry<double, D>(
-      circle4, ls::SmartPointer<ls::Sphere<double, D>>::New(origin1, radius4))
+      sphere4, ls::SmartPointer<ls::Sphere<double, D>>::New(origin1, radius4))
       .apply();
 
-  ls::CompareChamfer<double, D> compareDifferentSize(circle1, circle4);
+  ls::CompareChamfer<double, D> compareDifferentSize(sphere1, sphere4);
   compareDifferentSize.apply();
 
   std::cout << "\nDifferent radii (r1=" << radius1 << ", r2=" << radius4
@@ -202,14 +205,15 @@ int main() {
             << compareDifferentSize.getBackwardDistance() << std::endl;
 
   // Test 3c: Large shift
-  auto circle5 = ls::SmartPointer<ls::Domain<double, D>>::New(
+  auto sphere5 = ls::SmartPointer<ls::Domain<double, D>>::New(
       bounds, boundaryCons, gridDelta);
-  double origin5[D] = {5., 0.}; // Larger shift
+  std::vector<double> origin5(D, 0.0);
+  origin5[0] = 5.; // Larger shift
   ls::MakeGeometry<double, D>(
-      circle5, ls::SmartPointer<ls::Sphere<double, D>>::New(origin5, radius1))
+      sphere5, ls::SmartPointer<ls::Sphere<double, D>>::New(origin5, radius1))
       .apply();
 
-  ls::CompareChamfer<double, D> compareLargeShift(circle1, circle5);
+  ls::CompareChamfer<double, D> compareLargeShift(sphere1, sphere5);
   compareLargeShift.apply();
 
   std::cout << "\nLarge shift (5 units in x-direction):" << std::endl;
@@ -220,10 +224,14 @@ int main() {
   // Test 4: Performance summary
   std::cout << "\n=== Performance Summary ===" << std::endl;
   std::cout << "Chamfer distance: " << chamfer_ms.count() << " ms" << std::endl;
-  std::cout << "Sparse field:     " << sparse_ms.count() << " ms" << std::endl;
-  std::cout << "Area comparison:  " << area_ms.count() << " ms" << std::endl;
 
-  std::cout << "\n=== All Tests Completed Successfully ===" << std::endl;
+}
+
+int main() {
+  omp_set_num_threads(8);
+
+  runTest<2>();
+  runTest<3>();
 
   return 0;
 }

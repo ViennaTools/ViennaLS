@@ -1,4 +1,6 @@
 #include <iostream>
+#include <string>
+#include <vector>
 
 #include <lsCompareCriticalDimensions.hpp>
 #include <lsDomain.hpp>
@@ -16,16 +18,16 @@
 
 namespace ls = viennals;
 
-int main() {
-  constexpr int D = 2;
-
-  omp_set_num_threads(4);
-
+template <int D> void runTest() {
+  std::cout << "Running " << D << "D Test..." << std::endl;
   double extent = 15;
   double gridDelta = 0.1;
 
-  double bounds[2 * D] = {-extent, extent, -extent, extent};
-  ls::Domain<double, D>::BoundaryType boundaryCons[D];
+  double bounds[2 * D];
+  for (int i = 0; i < 2 * D; ++i)
+    bounds[i] = (i % 2 == 0) ? -extent : extent;
+
+  typename ls::Domain<double, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D; ++i)
     boundaryCons[i] = ls::Domain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
 
@@ -33,7 +35,7 @@ int main() {
   auto circle1 = ls::SmartPointer<ls::Domain<double, D>>::New(
       bounds, boundaryCons, gridDelta);
 
-  double origin1[D] = {0., 0.};
+  std::vector<double> origin1(D, 0.0);
   double radius1 = 5.0;
 
   ls::MakeGeometry<double, D>(
@@ -44,39 +46,61 @@ int main() {
   auto circle2 = ls::SmartPointer<ls::Domain<double, D>>::New(
       bounds, boundaryCons, gridDelta);
 
-  double origin2[D] = {1.5, 0.5}; // Shifted center
-  double radius2 = 5.0;           // Same radius
+  std::vector<double> origin2(D, 0.0);
+  origin2[0] = 1.5;
+  origin2[1] = 0.5;
+  double radius2 = 5.0; // Same radius
 
   ls::MakeGeometry<double, D>(
       circle2, ls::SmartPointer<ls::Sphere<double, D>>::New(origin2, radius2))
       .apply();
 
+  std::string suffix = "_" + std::to_string(D) + "D.vtp";
   // Export both circles as VTK files for visualization
   {
     auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
     ls::ToSurfaceMesh<double, D>(circle1, mesh).apply();
-    ls::VTKWriter<double>(mesh, "circle1_target.vtp").apply();
+    ls::VTKWriter<double>(mesh, "circle1_target" + suffix).apply();
   }
 
   {
     auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
     ls::ToSurfaceMesh<double, D>(circle2, mesh).apply();
-    ls::VTKWriter<double>(mesh, "circle2_sample.vtp").apply();
+    ls::VTKWriter<double>(mesh, "circle2_sample" + suffix).apply();
   }
 
   // Compare critical dimensions
   ls::CompareCriticalDimensions<double, D> compareCriticalDims(circle1,
                                                                circle2);
 
-  // Add X ranges to find maximum and minimum Y positions (top and bottom)
-  // Search in the central X range where both circles overlap
-  compareCriticalDims.addXRange(-0, 0, true);  // Find maximum Y (top)
-  compareCriticalDims.addXRange(-0, 0, false); // Find minimum Y (bottom)
+  if constexpr (D == 2) {
+    // Add X ranges to find maximum and minimum Y positions (top and bottom)
+    // Search in the central X range where both circles overlap
+    compareCriticalDims.addXRange(-0.1, 0.1, true);  // Find maximum Y (top)
+    compareCriticalDims.addXRange(-0.1, 0.1, false); // Find minimum Y (bottom)
 
-  // Add Y ranges to find maximum and minimum X positions (right and left)
-  // Search in the central Y range where both circles overlap
-  compareCriticalDims.addYRange(-0, 0, true);  // Find maximum X (right)
-  compareCriticalDims.addYRange(-0, 0, false); // Find minimum X (left)
+    // Add Y ranges to find maximum and minimum X positions (right and left)
+    // Search in the central Y range where both circles overlap
+    compareCriticalDims.addYRange(-0.1, 0.1, true);  // Find maximum X (right)
+    compareCriticalDims.addYRange(-0.1, 0.1, false); // Find minimum X (left)
+  } else {
+    // For 3D, measure Z extent (top/bottom) at center (X=0, Y=0)
+    // And X extent (right/left) at center (Y=0, Z=0)
+    double inf = std::numeric_limits<double>::max();
+    double lowest = std::numeric_limits<double>::lowest();
+
+    // Measure Z (dim 2) at X~0, Y~0
+    std::array<double, D> minB = {-0.1, -0.1, lowest};
+    std::array<double, D> maxB = {0.1, 0.1, inf};
+    compareCriticalDims.addRange(2, minB, maxB, true);  // Max Z
+    compareCriticalDims.addRange(2, minB, maxB, false); // Min Z
+
+    // Measure X (dim 0) at Y~0, Z~0
+    minB = {lowest, -0.1, -0.1};
+    maxB = {inf, 0.1, 0.1};
+    compareCriticalDims.addRange(0, minB, maxB, true);  // Max X
+    compareCriticalDims.addRange(0, minB, maxB, false); // Min X
+  }
 
   // Create mesh for output
   auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
@@ -86,7 +110,7 @@ int main() {
   compareCriticalDims.apply();
 
   // Save mesh to file
-  ls::VTKWriter<double>(mesh, "criticalDimensions.vtp").apply();
+  ls::VTKWriter<double>(mesh, "criticalDimensions" + suffix).apply();
 
   // Debug: Print some surface mesh nodes to see actual positions
   std::cout << "\nDebug - Sample surface nodes from circle1:" << std::endl;
@@ -145,13 +169,18 @@ int main() {
   std::cout << "Left/Right (max/min X): should be close to X-shift = "
             << std::abs(origin2[0] - origin1[0]) << std::endl;
 
-  // Additional test: Test with wider ranges
-  std::cout << "\n--- Testing with wider X range ---" << std::endl;
-  compareCriticalDims.clearRanges();
-  compareCriticalDims.addXRange(-10, 10, true);  // Find maximum Y
-  compareCriticalDims.addXRange(-10, 10, false); // Find minimum Y
-  compareCriticalDims.setOutputMesh(nullptr);    // Don't create mesh
-  compareCriticalDims.apply();
+  if constexpr (D == 2) {
+    // Additional test: Test with wider ranges
+    std::cout << "\n--- Testing with wider X range ---" << std::endl;
+    compareCriticalDims.clearRanges();
+    compareCriticalDims.addXRange(-10, 10, true);  // Find maximum Y
+    compareCriticalDims.addXRange(-10, 10, false); // Find minimum Y
+    compareCriticalDims.setOutputMesh(nullptr);    // Don't create mesh
+    compareCriticalDims.apply();
+  } else {
+    // Skip additional tests for 3D to keep it simple
+    return;
+  }
 
   std::cout << "Number of critical dimensions: "
             << compareCriticalDims.getNumCriticalDimensions() << std::endl;
@@ -181,6 +210,12 @@ int main() {
                 << std::endl;
     }
   }
+}
+
+int main() {
+  omp_set_num_threads(4);
+  runTest<2>();
+  runTest<3>();
 
   return 0;
 }

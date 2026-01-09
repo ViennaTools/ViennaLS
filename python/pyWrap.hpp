@@ -848,6 +848,59 @@ template <int D> void bindApi(py::module &module) {
            "Set the filename for the output file.")
       .def("apply", &Writer<T, D>::apply, "Write to file.");
 
+  // CompareSparseField
+  py::class_<CompareSparseField<T, D>,
+             SmartPointer<CompareSparseField<T, D>>>(module,
+                                                     "CompareSparseField")
+      // constructors
+      .def(py::init(&SmartPointer<CompareSparseField<T, D>>::template New<>))
+      .def(py::init(
+          &SmartPointer<CompareSparseField<T, D>>::template New<
+              SmartPointer<Domain<T, D>> &, SmartPointer<Domain<T, D>> &>))
+      // methods
+      .def("setLevelSetExpanded",
+           &CompareSparseField<T, D>::setLevelSetExpanded,
+           "Sets the expanded level set for comparison.")
+      .def("setLevelSetIterated",
+           &CompareSparseField<T, D>::setLevelSetIterated,
+           "Sets the iterated level set to compare against the expanded one.")
+      .def("setXRange", &CompareSparseField<T, D>::setXRange,
+           "Set the x-coordinate range to restrict the comparison area")
+      .def("setYRange", &CompareSparseField<T, D>::setYRange,
+           "Set the y-coordinate range to restrict the comparison area")
+      .def("clearXRange", &CompareSparseField<T, D>::clearXRange,
+           "Clear the x-range restriction")
+      .def("clearYRange", &CompareSparseField<T, D>::clearYRange,
+           "Clear the y-range restriction")
+      .def("setZRange", &CompareSparseField<T, D>::setZRange,
+           "Set the z-coordinate range to restrict the comparison area")
+      .def("clearZRange", &CompareSparseField<T, D>::clearZRange,
+           "Clear the z-range restriction")
+      .def("setOutputMesh", &CompareSparseField<T, D>::setOutputMesh,
+           "Set the output mesh where difference values will be stored")
+      .def("setFillIteratedWithDistances",
+           &CompareSparseField<T, D>::setFillIteratedWithDistances,
+           "Set whether to fill the iterated level set with distance values")
+      .def("setExpandedLevelSetWidth",
+           &CompareSparseField<T, D>::setExpandedLevelSetWidth,
+           "Set the expansion width for the expanded level set")
+      .def("apply", &CompareSparseField<T, D>::apply,
+           "Apply the comparison and calculate the sum of squared "
+           "differences.")
+      .def("getSumSquaredDifferences",
+           &CompareSparseField<T, D>::getSumSquaredDifferences,
+           "Return the sum of squared differences calculated by apply().")
+      .def("getSumDifferences", &CompareSparseField<T, D>::getSumDifferences,
+           "Return the sum of absolute differences calculated by apply().")
+      .def("getNumPoints", &CompareSparseField<T, D>::getNumPoints,
+           "Return the number of points used in the comparison.")
+      .def("getNumSkippedPoints",
+           &CompareSparseField<T, D>::getNumSkippedPoints,
+           "Return the number of points skipped during comparison.")
+      .def("getRMSE", &CompareSparseField<T, D>::getRMSE,
+           "Calculate the root mean square error from previously computed "
+           "values.");
+
 // WriteVisualizationMesh
 #ifdef VIENNALS_USE_VTK
   py::class_<WriteVisualizationMesh<T, D>,
@@ -890,7 +943,6 @@ template <int D> void bindApi(py::module &module) {
            "Make and write mesh.");
 #endif
 
-  if constexpr (D == 2) {
     // CompareArea
     py::class_<CompareArea<T, D>, SmartPointer<CompareArea<T, D>>>(
         module, "CompareArea")
@@ -910,6 +962,8 @@ template <int D> void bindApi(py::module &module) {
              "Sets the x-range and custom increment value")
         .def("setYRangeAndIncrement", &CompareArea<T, D>::setYRangeAndIncrement,
              "Sets the y-range and custom increment value")
+        .def("setZRangeAndIncrement", &CompareArea<T, D>::setZRangeAndIncrement,
+             "Sets the z-range and custom increment value")
         .def("setOutputMesh", &CompareArea<T, D>::setOutputMesh,
              "Set the output mesh where difference areas will be stored")
         .def("getAreaMismatch", &CompareArea<T, D>::getAreaMismatch,
@@ -979,6 +1033,10 @@ template <int D> void bindApi(py::module &module) {
         .def("setLevelSetSample",
              &CompareCriticalDimensions<T, D>::setLevelSetSample,
              "Sets the sample level set.")
+        .def("addRange", &CompareCriticalDimensions<T, D>::addRange,
+             py::arg("measureDimension"), py::arg("minBounds"),
+             py::arg("maxBounds"), py::arg("findMaximum") = true,
+             "Add a generic range specification.")
         .def("addXRange", &CompareCriticalDimensions<T, D>::addXRange,
              py::arg("minX"), py::arg("maxX"), py::arg("findMaximum") = true,
              "Add an X range to find maximum or minimum Y position.")
@@ -1044,6 +1102,10 @@ template <int D> void bindApi(py::module &module) {
              "Clear the x-range restriction")
         .def("clearYRange", &CompareNarrowBand<T, D>::clearYRange,
              "Clear the y-range restriction")
+        .def("setZRange", &CompareNarrowBand<T, D>::setZRange,
+             "Set the z-coordinate range to restrict the comparison area")
+        .def("clearZRange", &CompareNarrowBand<T, D>::clearZRange,
+             "Clear the z-range restriction")
         .def("setOutputMesh", &CompareNarrowBand<T, D>::setOutputMesh,
              "Set the output mesh where difference values will be stored")
         .def("setOutputMeshSquaredDifferences",
@@ -1063,54 +1125,4 @@ template <int D> void bindApi(py::module &module) {
         .def("getRMSE", &CompareNarrowBand<T, D>::getRMSE,
              "Calculate the root mean square error from previously computed "
              "values.");
-
-    // CompareSparseField
-    py::class_<CompareSparseField<T, D>,
-               SmartPointer<CompareSparseField<T, D>>>(module,
-                                                       "CompareSparseField")
-        // constructors
-        .def(py::init(&SmartPointer<CompareSparseField<T, D>>::template New<>))
-        .def(py::init(
-            &SmartPointer<CompareSparseField<T, D>>::template New<
-                SmartPointer<Domain<T, D>> &, SmartPointer<Domain<T, D>> &>))
-        // methods
-        .def("setLevelSetExpanded",
-             &CompareSparseField<T, D>::setLevelSetExpanded,
-             "Sets the expanded level set for comparison.")
-        .def("setLevelSetIterated",
-             &CompareSparseField<T, D>::setLevelSetIterated,
-             "Sets the iterated level set to compare against the expanded one.")
-        .def("setXRange", &CompareSparseField<T, D>::setXRange,
-             "Set the x-coordinate range to restrict the comparison area")
-        .def("setYRange", &CompareSparseField<T, D>::setYRange,
-             "Set the y-coordinate range to restrict the comparison area")
-        .def("clearXRange", &CompareSparseField<T, D>::clearXRange,
-             "Clear the x-range restriction")
-        .def("clearYRange", &CompareSparseField<T, D>::clearYRange,
-             "Clear the y-range restriction")
-        .def("setOutputMesh", &CompareSparseField<T, D>::setOutputMesh,
-             "Set the output mesh where difference values will be stored")
-        .def("setFillIteratedWithDistances",
-             &CompareSparseField<T, D>::setFillIteratedWithDistances,
-             "Set whether to fill the iterated level set with distance values")
-        .def("setExpandedLevelSetWidth",
-             &CompareSparseField<T, D>::setExpandedLevelSetWidth,
-             "Set the expansion width for the expanded level set")
-        .def("apply", &CompareSparseField<T, D>::apply,
-             "Apply the comparison and calculate the sum of squared "
-             "differences.")
-        .def("getSumSquaredDifferences",
-             &CompareSparseField<T, D>::getSumSquaredDifferences,
-             "Return the sum of squared differences calculated by apply().")
-        .def("getSumDifferences", &CompareSparseField<T, D>::getSumDifferences,
-             "Return the sum of absolute differences calculated by apply().")
-        .def("getNumPoints", &CompareSparseField<T, D>::getNumPoints,
-             "Return the number of points used in the comparison.")
-        .def("getNumSkippedPoints",
-             &CompareSparseField<T, D>::getNumSkippedPoints,
-             "Return the number of points skipped during comparison.")
-        .def("getRMSE", &CompareSparseField<T, D>::getRMSE,
-             "Calculate the root mean square error from previously computed "
-             "values.");
-  }
 }
