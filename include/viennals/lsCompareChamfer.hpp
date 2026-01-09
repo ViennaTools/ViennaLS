@@ -73,14 +73,12 @@ template <class T, int D = 2> class CompareChamfer {
   }
 
 public:
-  CompareChamfer() {
-  }
+  CompareChamfer() {}
 
   CompareChamfer(SmartPointer<Domain<T, D>> passedLevelSetTarget,
                  SmartPointer<Domain<T, D>> passedLevelSetSample)
       : levelSetTarget(passedLevelSetTarget),
-        levelSetSample(passedLevelSetSample) {
-  }
+        levelSetSample(passedLevelSetSample) {}
 
   /// Set the target level set
   void setLevelSetTarget(SmartPointer<Domain<T, D>> passedLevelSet) {

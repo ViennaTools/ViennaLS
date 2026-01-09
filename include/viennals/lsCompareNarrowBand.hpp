@@ -138,14 +138,12 @@ template <class T, int D = 2> class CompareNarrowBand {
   }
 
 public:
-  CompareNarrowBand() {
-  }
+  CompareNarrowBand() {}
 
   CompareNarrowBand(SmartPointer<Domain<T, D>> passedLevelSetTarget,
                     SmartPointer<Domain<T, D>> passedlevelSetSample)
       : levelSetTarget(passedLevelSetTarget),
-        levelSetSample(passedlevelSetSample) {
-  }
+        levelSetSample(passedlevelSetSample) {}
 
   void setLevelSetTarget(SmartPointer<Domain<T, D>> passedLevelSet) {
     levelSetTarget = passedLevelSet;

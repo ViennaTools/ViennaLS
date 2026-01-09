@@ -124,8 +124,10 @@ template <int D> void runTest() {
   std::cout << "  Execution time: " << chamfer_ms.count() << " ms" << std::endl;
 
   // Save meshes with distance data
-  ls::VTKWriter<double>(targetMesh, "chamfer_target_distances" + suffix).apply();
-  ls::VTKWriter<double>(sampleMesh, "chamfer_sample_distances" + suffix).apply();
+  ls::VTKWriter<double>(targetMesh, "chamfer_target_distances" + suffix)
+      .apply();
+  ls::VTKWriter<double>(sampleMesh, "chamfer_sample_distances" + suffix)
+      .apply();
 
   // Test 2: Compare with other metrics
   std::cout << "\n=== Test 2: Comparison with Other Metrics ===" << std::endl;
@@ -161,7 +163,8 @@ template <int D> void runTest() {
   std::cout << "\nArea/Volume Comparison Results:" << std::endl;
   std::cout << "  Area/Volume mismatch: " << compareDomain.getVolumeMismatch()
             << std::endl;
-  std::cout << "  Different cells: " << compareDomain.getCellCount() << std::endl;
+  std::cout << "  Different cells: " << compareDomain.getCellCount()
+            << std::endl;
   std::cout << "  Execution time: " << area_ms.count() << " ms" << std::endl;
 
   // Test 3: Different geometric configurations
@@ -224,7 +227,6 @@ template <int D> void runTest() {
   // Test 4: Performance summary
   std::cout << "\n=== Performance Summary ===" << std::endl;
   std::cout << "Chamfer distance: " << chamfer_ms.count() << " ms" << std::endl;
-
 }
 
 int main() {

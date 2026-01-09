@@ -17,11 +17,11 @@ using namespace viennacore;
 /// Computes an estimate of the volume/area where two level sets differ.
 /// The volume is calculated by iterating through the bounding box of the two
 /// level sets and comparing the cell values. The grid delta is used as the unit
-/// of volume. Custom increment values can be set for specific x, y and z ranges,
-/// allowing to count certain areas multiple times or skip them. Optionally, a
-/// passed mesh can be filled with the volume information, allowing for
-/// visualization of the differences.
-/// The code is intended for 2D and 3D level sets.
+/// of volume. Custom increment values can be set for specific x, y and z
+/// ranges, allowing to count certain areas multiple times or skip them.
+/// Optionally, a passed mesh can be filled with the volume information,
+/// allowing for visualization of the differences. The code is intended for 2D
+/// and 3D level sets.
 template <class T, int D = 2> class CompareDomain {
   using hrleDomainType = typename Domain<T, D>::DomainType;
   using hrleIndexType = viennahrle::IndexType;
@@ -108,14 +108,12 @@ template <class T, int D = 2> class CompareDomain {
   }
 
 public:
-  CompareDomain() {
-  }
+  CompareDomain() {}
 
   CompareDomain(SmartPointer<Domain<T, D>> passedLevelSetTarget,
                 SmartPointer<Domain<T, D>> passedLevelSetSample)
       : levelSetTarget(passedLevelSetTarget),
-        levelSetSample(passedLevelSetSample) {
-  }
+        levelSetSample(passedLevelSetSample) {}
 
   /// Sets the target level set.
   void setLevelSetTarget(SmartPointer<Domain<T, D>> passedLevelSet) {
@@ -288,9 +286,10 @@ public:
       bool inYRange = useCustomYIncrement &&
                       (itTarget.getIndices()[1] * gridDelta >= yRangeMin &&
                        itTarget.getIndices()[1] * gridDelta <= yRangeMax);
-      bool inZRange = (D < 3) || (useCustomZIncrement &&
-                                  (itTarget.getIndices()[2] * gridDelta >= zRangeMin &&
-                                   itTarget.getIndices()[2] * gridDelta <= zRangeMax));
+      bool inZRange =
+          (D < 3) || (useCustomZIncrement &&
+                      (itTarget.getIndices()[2] * gridDelta >= zRangeMin &&
+                       itTarget.getIndices()[2] * gridDelta <= zRangeMax));
 
       // Calculate increment to add based on ranges
       unsigned short int incrementToAdd = defaultIncrement;
@@ -302,9 +301,9 @@ public:
       } else if (inYRange) {
         incrementToAdd = customYIncrement;
       }
-      
+
       if (D == 3 && inZRange) {
-          incrementToAdd += customZIncrement;
+        incrementToAdd += customZIncrement;
       }
 
       // If cells differ, update the counters

@@ -135,14 +135,12 @@ template <class T, int D = 2> class CompareCriticalDimensions {
   }
 
 public:
-  CompareCriticalDimensions() {
-  }
+  CompareCriticalDimensions() {}
 
   CompareCriticalDimensions(SmartPointer<Domain<T, D>> passedLevelSetTarget,
                             SmartPointer<Domain<T, D>> passedLevelSetSample)
       : levelSetTarget(passedLevelSetTarget),
-        levelSetSample(passedLevelSetSample) {
-  }
+        levelSetSample(passedLevelSetSample) {}
 
   void setLevelSetTarget(SmartPointer<Domain<T, D>> passedLevelSet) {
     levelSetTarget = passedLevelSet;
