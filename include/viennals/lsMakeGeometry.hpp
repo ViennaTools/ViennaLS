@@ -525,7 +525,7 @@ private:
       mesher.apply();
     } else if constexpr (D == 2) {
       VIENNACORE_LOG_WARNING(
-          "MakeGeometry: Cylinder in 2D creates a trench, not a cylinder.");
+          "MakeGeometry: Cylinder in 2D creates a box, not a cylinder.");
 
       auto mesh = Mesh<T>::New();
 
@@ -583,11 +583,6 @@ private:
       FromSurfaceMesh<T, D> mesher(levelSet, mesh);
       mesher.setRemoveBoundaryTriangles(ignoreBoundaryConditions);
       mesher.apply();
-    } else {
-      Logger::getInstance()
-          .addError("MakeGeometry: Cylinder can only be "
-                    "created in 2D or 3D!")
-          .print();
     }
   }
 
