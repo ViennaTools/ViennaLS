@@ -22,7 +22,7 @@ using namespace viennacore;
 /// Optionally, a passed mesh can be filled with the volume information,
 /// allowing for visualization of the differences. The code is intended for 2D
 /// and 3D level sets.
-template <class T, int D = 2> class CompareDomain {
+template <class T, int D = 3> class CompareVolume {
   using hrleDomainType = typename Domain<T, D>::DomainType;
   using hrleIndexType = viennahrle::IndexType;
 
@@ -53,10 +53,17 @@ template <class T, int D = 2> class CompareDomain {
   // Mesh output related members
   SmartPointer<Mesh<T>> outputMesh = nullptr;
 
+  // Helper to get the class name for logging
+  static const char *getClassName() {
+    if constexpr (D == 2)
+      return "CompareArea";
+    return "CompareVolume";
+  }
+
   bool checkAndCalculateBounds() {
     if (levelSetTarget == nullptr || levelSetSample == nullptr) {
       Logger::getInstance()
-          .addError("Missing level set in CompareDomain.")
+          .addError(std::string("Missing level set in ") + getClassName() + ".")
           .print();
       return false;
     }
@@ -67,8 +74,8 @@ template <class T, int D = 2> class CompareDomain {
 
     if (gridTarget.getGridDelta() != gridSample.getGridDelta()) {
       Logger::getInstance()
-          .addError("Grid delta mismatch in CompareDomain. The grid deltas of "
-                    "the two level sets must be equal.")
+          .addError(std::string("Grid delta mismatch in ") + getClassName() +
+                    ". The grid deltas of the two level sets must be equal.")
           .print();
       return false;
     } else {
@@ -108,9 +115,9 @@ template <class T, int D = 2> class CompareDomain {
   }
 
 public:
-  CompareDomain() {}
+  CompareVolume() {}
 
-  CompareDomain(SmartPointer<Domain<T, D>> passedLevelSetTarget,
+  CompareVolume(SmartPointer<Domain<T, D>> passedLevelSetTarget,
                 SmartPointer<Domain<T, D>> passedLevelSetSample)
       : levelSetTarget(passedLevelSetTarget),
         levelSetSample(passedLevelSetSample) {}
@@ -214,7 +221,8 @@ public:
     if (levelSetTarget->getLevelSetWidth() < minimumWidth) {
       workingTarget = SmartPointer<Domain<T, D>>::New(levelSetTarget);
       Expand<T, D>(workingTarget, minimumWidth).apply();
-      VIENNACORE_LOG_INFO("CompareDomain: Expanded target level set to width " +
+      VIENNACORE_LOG_INFO(std::string(getClassName()) +
+                          ": Expanded target level set to width " +
                           std::to_string(minimumWidth) +
                           " to avoid undefined values.");
     }
@@ -222,7 +230,8 @@ public:
     if (levelSetSample->getLevelSetWidth() < minimumWidth) {
       workingSample = SmartPointer<Domain<T, D>>::New(levelSetSample);
       Expand<T, D>(workingSample, minimumWidth).apply();
-      VIENNACORE_LOG_INFO("CompareDomain: Expanded sample level set to width " +
+      VIENNACORE_LOG_INFO(std::string(getClassName()) +
+                          ": Expanded sample level set to width " +
                           std::to_string(minimumWidth) +
                           " to avoid undefined values.");
     }
@@ -399,10 +408,9 @@ public:
 };
 
 // Aliases for backward compatibility and clarity
-template <class T, int D = 2> using CompareArea = CompareDomain<T, D>;
-template <class T, int D = 2> using CompareVolume = CompareDomain<T, D>;
+template <class T> using CompareArea = CompareVolume<T, 2>;
 
 // Precompile for common precision and dimensions
-PRECOMPILE_PRECISION_DIMENSION(CompareDomain)
+PRECOMPILE_PRECISION_DIMENSION(CompareVolume)
 
 } // namespace viennals

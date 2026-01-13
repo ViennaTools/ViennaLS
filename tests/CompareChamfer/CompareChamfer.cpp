@@ -3,9 +3,9 @@
 #include <iostream>
 #include <string>
 
-#include <lsCompareArea.hpp>
 #include <lsCompareChamfer.hpp>
 #include <lsCompareSparseField.hpp>
+#include <lsCompareVolume.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
@@ -152,18 +152,18 @@ template <int D> void runTest() {
             << std::endl;
   std::cout << "  Execution time: " << sparse_ms.count() << " ms" << std::endl;
 
-  // Area comparison
-  ls::CompareDomain<double, D> compareDomain(sphere1, sphere2);
+  // Area/Volume comparison
+  ls::CompareVolume<double, D> compareVolume(sphere1, sphere2);
   auto t5 = std::chrono::high_resolution_clock::now();
-  compareDomain.apply();
+  compareVolume.apply();
   auto t6 = std::chrono::high_resolution_clock::now();
 
   std::chrono::duration<double, std::milli> area_ms = t6 - t5;
 
   std::cout << "\nArea/Volume Comparison Results:" << std::endl;
-  std::cout << "  Area/Volume mismatch: " << compareDomain.getVolumeMismatch()
+  std::cout << "  Area/Volume mismatch: " << compareVolume.getVolumeMismatch()
             << std::endl;
-  std::cout << "  Different cells: " << compareDomain.getCellCount()
+  std::cout << "  Different cells: " << compareVolume.getCellCount()
             << std::endl;
   std::cout << "  Execution time: " << area_ms.count() << " ms" << std::endl;
 

@@ -10,11 +10,11 @@
 #include <lsCalculateNormalVectors.hpp>
 #include <lsCalculateVisibilities.hpp>
 #include <lsCheck.hpp>
-#include <lsCompareArea.hpp>
 #include <lsCompareChamfer.hpp>
 #include <lsCompareCriticalDimensions.hpp>
 #include <lsCompareNarrowBand.hpp>
 #include <lsCompareSparseField.hpp>
+#include <lsCompareVolume.hpp>
 #include <lsConvexHull.hpp>
 #include <lsDetectFeatures.hpp>
 #include <lsDomain.hpp>
@@ -942,41 +942,51 @@ template <int D> void bindApi(py::module &module) {
            "Make and write mesh.");
 #endif
 
-  // CompareArea
-  py::class_<CompareArea<T, D>, SmartPointer<CompareArea<T, D>>>(module,
-                                                                 "CompareArea")
+  // CompareVolume
+  py::class_<CompareVolume<T, D>, SmartPointer<CompareVolume<T, D>>>(
+      module, "CompareVolume")
       // constructors
-      .def(py::init(&SmartPointer<CompareArea<T, D>>::template New<>))
+      .def(py::init(&SmartPointer<CompareVolume<T, D>>::template New<>))
       .def(
-          py::init(&SmartPointer<CompareArea<T, D>>::template New<
+          py::init(&SmartPointer<CompareVolume<T, D>>::template New<
                    SmartPointer<Domain<T, D>> &, SmartPointer<Domain<T, D>> &>))
       // methods
-      .def("setLevelSetTarget", &CompareArea<T, D>::setLevelSetTarget,
+      .def("setLevelSetTarget", &CompareVolume<T, D>::setLevelSetTarget,
            "Sets the target level set.")
-      .def("setLevelSetSample", &CompareArea<T, D>::setLevelSetSample,
+      .def("setLevelSetSample", &CompareVolume<T, D>::setLevelSetSample,
            "Sets the sample level set.")
-      .def("setDefaultIncrement", &CompareArea<T, D>::setDefaultIncrement,
+      .def("setDefaultIncrement", &CompareVolume<T, D>::setDefaultIncrement,
            "Set default increment value")
-      .def("setXRangeAndIncrement", &CompareArea<T, D>::setXRangeAndIncrement,
+      .def("setXRangeAndIncrement", &CompareVolume<T, D>::setXRangeAndIncrement,
            "Sets the x-range and custom increment value")
-      .def("setYRangeAndIncrement", &CompareArea<T, D>::setYRangeAndIncrement,
+      .def("setYRangeAndIncrement", &CompareVolume<T, D>::setYRangeAndIncrement,
            "Sets the y-range and custom increment value")
-      .def("setZRangeAndIncrement", &CompareArea<T, D>::setZRangeAndIncrement,
+      .def("setZRangeAndIncrement", &CompareVolume<T, D>::setZRangeAndIncrement,
            "Sets the z-range and custom increment value")
-      .def("setOutputMesh", &CompareArea<T, D>::setOutputMesh,
+      .def("setOutputMesh", &CompareVolume<T, D>::setOutputMesh,
            "Set the output mesh where difference areas will be stored")
-      .def("getAreaMismatch", &CompareArea<T, D>::getAreaMismatch,
+      .def("getVolumeMismatch", &CompareVolume<T, D>::getVolumeMismatch,
+           "Returns the computed volume mismatch.")
+      .def("getAreaMismatch", &CompareVolume<T, D>::getAreaMismatch,
            "Returns the computed area mismatch.")
-      .def("getCustomAreaMismatch", &CompareArea<T, D>::getCustomAreaMismatch,
+      .def("getCustomVolumeMismatch",
+           &CompareVolume<T, D>::getCustomVolumeMismatch,
+           "Returns the computed volume mismatch, with custom increments "
+           "applied.")
+      .def("getCustomAreaMismatch", &CompareVolume<T, D>::getCustomAreaMismatch,
            "Returns the computed area mismatch, with custom increments "
            "applied.")
-      .def("getCellCount", &CompareArea<T, D>::getCellCount,
+      .def("getCellCount", &CompareVolume<T, D>::getCellCount,
            "Returns the number of cells where the level sets differ.")
-      .def("getCustomCellCount", &CompareArea<T, D>::getCustomCellCount,
+      .def("getCustomCellCount", &CompareVolume<T, D>::getCustomCellCount,
            "Returns the number of cells where the level sets differ, with "
            "custom increments applied.")
-      .def("apply", &CompareArea<T, D>::apply,
-           "Computes the area difference between the two level sets.");
+      .def("apply", &CompareVolume<T, D>::apply,
+           "Computes the volume difference between the two level sets.");
+
+  if constexpr (D == 2) {
+    module.attr("CompareArea") = module.attr("CompareVolume");
+  }
 
   // CompareChamfer
   py::class_<CompareChamfer<T, D>, SmartPointer<CompareChamfer<T, D>>>(

@@ -9,9 +9,10 @@
 #include <lsCalculateCurvatures.hpp>
 #include <lsCalculateNormalVectors.hpp>
 #include <lsCheck.hpp>
-#include <lsCompareArea.hpp>
+#include <lsCompareChamfer.hpp>
 #include <lsCompareNarrowBand.hpp>
 #include <lsCompareSparseField.hpp>
+#include <lsCompareVolume.hpp>
 #include <lsDetectFeatures.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
@@ -46,7 +47,8 @@ PRECOMPILE_SPECIALIZE(CalculateCurvatures)
 PRECOMPILE_SPECIALIZE(CalculateNormalVectors)
 PRECOMPILE_SPECIALIZE(Check)
 PRECOMPILE_SPECIALIZE(ConvexHull)
-PRECOMPILE_SPECIALIZE(CompareArea)
+PRECOMPILE_SPECIALIZE(CompareChamfer)
+PRECOMPILE_SPECIALIZE(CompareVolume)
 PRECOMPILE_SPECIALIZE(CompareNarrowBand)
 PRECOMPILE_SPECIALIZE(CompareSparseField)
 PRECOMPILE_SPECIALIZE(Domain)

@@ -204,9 +204,12 @@ private:
 
         bool flag = false;
 
-        for (unsigned dir = 0; dir < (D * D * D); dir++) {
-          Vec3D<T> currentNormal =
-              normals[neighborIt.getNeighbor(dir).getPointId()];
+        constexpr unsigned numNeighbors = (D == 3) ? 27 : 9;
+        for (unsigned dir = 0; dir < numNeighbors; dir++) {
+          auto neighbor = neighborIt.getNeighbor(dir);
+          if (!neighbor.isDefined())
+            continue;
+          Vec3D<T> currentNormal = normals[neighbor.getPointId()];
 
           if (currentNormal != zeroVector) {
             T skp = 0.;

@@ -18,6 +18,11 @@ They must be imported from either `viennals.d2` or `viennals.d3`.
 - `CalculateNormalVectors`
 - `CalculateVisibilities`
 - `Check`
+- `CompareChamfer`
+- `CompareCriticalDimensions`
+- `CompareNarrowBand`
+- `CompareSparseField`
+- `CompareVolume`
 - `PointCloud`
 - `ConvexHull`
 - `DetectFeatures`
@@ -49,8 +54,6 @@ They must be imported from either `viennals.d2` or `viennals.d3`.
 
 ### **2D-Only Functions**
 - `CompareArea`
-- `CompareNarrowBand`
-- `CompareSparseField`
 
 ---
 
