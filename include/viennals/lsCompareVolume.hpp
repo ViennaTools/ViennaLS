@@ -302,17 +302,17 @@ public:
 
       // Calculate increment to add based on ranges
       unsigned short int incrementToAdd = defaultIncrement;
-      if (inXRange && inYRange) {
-        // Apply both increments
-        incrementToAdd = customXIncrement + customYIncrement;
-      } else if (inXRange) {
-        incrementToAdd = customXIncrement;
-      } else if (inYRange) {
-        incrementToAdd = customYIncrement;
-      }
 
-      if (D == 3 && inZRange) {
-        incrementToAdd += customZIncrement;
+      // If any custom range is active, start from 0 and add the custom
+      // increments
+      if (inXRange || inYRange || (D == 3 && inZRange)) {
+        incrementToAdd = 0;
+        if (inXRange)
+          incrementToAdd += customXIncrement;
+        if (inYRange)
+          incrementToAdd += customYIncrement;
+        if (D == 3 && inZRange)
+          incrementToAdd += customZIncrement;
       }
 
       // If cells differ, update the counters
