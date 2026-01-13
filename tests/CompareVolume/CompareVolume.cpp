@@ -10,9 +10,9 @@
 #include <lsVTKWriter.hpp>
 
 /**
-  Test for lsCompareArea that compares the area difference between two level
-  sets. This test creates two different spheres and measures their area
-  difference. \example CompareArea.cpp
+  Test for lsCompareVolume that compares the area/volume difference between two
+  level sets. This test creates two different spheres and measures their
+  area/volume difference. \example CompareVolume.cpp
 */
 
 namespace ls = viennals;
@@ -52,18 +52,18 @@ template <int D> void runTest() {
       sphere2, ls::SmartPointer<ls::Sphere<double, D>>::New(origin2, radius2))
       .apply();
 
-  std::string suffix = "_" + std::to_string(D) + "D.vtp";
+  std::string suffix = "_" + std::to_string(D) + "D";
   // Export both spheres as VTK files for visualization
   {
     auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
     ls::ToMesh<double, D>(sphere1, mesh).apply();
-    ls::VTKWriter<double>(mesh, "sphere1" + suffix).apply();
+    ls::VTKWriter<double>(mesh, "sphere1" + suffix + ".vtp").apply();
   }
 
   {
     auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
     ls::ToMesh<double, D>(sphere2, mesh).apply();
-    ls::VTKWriter<double>(mesh, "sphere2" + suffix).apply();
+    ls::VTKWriter<double>(mesh, "sphere2" + suffix + ".vtp").apply();
   }
 
   // Compare the volumes/areas with mesh Output

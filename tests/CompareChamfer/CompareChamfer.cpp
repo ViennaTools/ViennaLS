@@ -207,6 +207,19 @@ template <int D> void runTest() {
   std::cout << "  Backward distance: "
             << compareDifferentSize.getBackwardDistance() << std::endl;
 
+  // Validation: Check if Chamfer distance is close to expected radius
+  // difference
+  double expectedDiff = std::abs(radius4 - radius1);
+  double actualChamfer = compareDifferentSize.getChamferDistance();
+  double tolerance = 0.01 * expectedDiff; // 1% tolerance
+  if (std::abs(actualChamfer - expectedDiff) > tolerance) {
+    std::cerr << "ERROR: Chamfer distance " << actualChamfer
+              << " differs significantly from expected " << expectedDiff
+              << " (tolerance: " << tolerance << ")" << std::endl;
+    return;
+  }
+  std::cout << "  Validation: PASSED (within 1% tolerance)" << std::endl;
+
   // Test 3c: Large shift
   auto sphere5 = ls::SmartPointer<ls::Domain<double, D>>::New(
       bounds, boundaryCons, gridDelta);
@@ -226,7 +239,13 @@ template <int D> void runTest() {
 
   // Test 4: Performance summary
   std::cout << "\n=== Performance Summary ===" << std::endl;
-  std::cout << "Chamfer distance: " << chamfer_ms.count() << " ms" << std::endl;
+  std::cout << "Chamfer distance:     " << chamfer_ms.count() << " ms"
+            << std::endl;
+  std::cout << "Sparse Field:         " << sparse_ms.count() << " ms"
+            << std::endl;
+  std::cout << "Area/Volume:          " << area_ms.count() << " ms"
+            << std::endl;
+  std::cout << "==========================" << std::endl;
 }
 
 int main() {
