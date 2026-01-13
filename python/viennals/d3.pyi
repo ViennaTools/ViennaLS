@@ -114,6 +114,10 @@ class Advect:
         """
         Set the velocity to use for advection.
         """
+    def setVelocityUpdateCallback(self, arg0: collections.abc.Callable[[Domain], bool]) -> None:
+        """
+        Set a callback function that is called after the level set has been updated during intermediate time integration steps (e.g. RK2, RK3).
+        """
 class BooleanOperation:
     @typing.overload
     def __init__(self) -> None:
@@ -287,7 +291,7 @@ class CompareCriticalDimensions:
     @typing.overload
     def __init__(self, arg0: Domain, arg1: Domain) -> None:
         ...
-    def addRange(self, measureDimension: typing.SupportsInt, minBounds: typing.SupportsFloat, maxBounds: typing.SupportsFloat, findMaximum: bool = True) -> None:
+    def addRange(self, measureDimension: typing.SupportsInt, minBounds: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], maxBounds: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], findMaximum: bool = True) -> None:
         """
         Add a generic range specification.
         """
@@ -875,7 +879,7 @@ class MarkVoidPoints:
         """
         Reverse the logic of detecting the top surface.
         """
-    def setSaveComponentsId(self, arg0: bool) -> None:
+    def setSaveComponentIds(self, arg0: bool) -> None:
         """
         Save the connectivity information of all LS points in the pointData of the level set.
         """
