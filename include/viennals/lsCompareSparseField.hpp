@@ -248,9 +248,11 @@ public:
       outputMesh->clear();
 
       // Initialize mesh extent
-      for (unsigned i = 0; i < D; ++i) {
-        outputMesh->minimumExtent[i] = std::numeric_limits<T>::max();
-        outputMesh->maximumExtent[i] = std::numeric_limits<T>::lowest();
+      for (unsigned i = 0; i < 3; ++i) {
+        outputMesh->minimumExtent[i] =
+            (i < D) ? std::numeric_limits<T>::max() : 0.0;
+        outputMesh->maximumExtent[i] =
+            (i < D) ? std::numeric_limits<T>::lowest() : 0.0;
       }
 
       // Reserve space for mesh data
@@ -303,7 +305,7 @@ public:
       }
 
       // Skip if outside the specified z-range
-      if (useZRange && (zCoord < zRangeMin || zCoord > zRangeMax)) {
+      if (D == 3 && useZRange && (zCoord < zRangeMin || zCoord > zRangeMax)) {
         itIterated.next();
         continue;
       }
