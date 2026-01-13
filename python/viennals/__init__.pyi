@@ -8,6 +8,7 @@ topography simulations. The main design goals are simplicity and efficiency,
 tailored towards scientific simulations. ViennaLS can also be used for
 visualisation applications, although this is not the main design target.
 """
+
 from __future__ import annotations
 import sys as _sys
 from viennals._core import BooleanOperationEnum
@@ -41,6 +42,7 @@ from viennals.d2 import CalculateCurvatures
 from viennals.d2 import CalculateNormalVectors
 from viennals.d2 import CalculateVisibilities
 from viennals.d2 import Check
+from viennals.d2 import CompareVolume
 from viennals.d2 import CompareChamfer
 from viennals.d2 import CompareCriticalDimensions
 from viennals.d2 import CompareNarrowBand
@@ -82,34 +84,110 @@ from viennals.d2 import hrleGrid
 from . import _core
 from . import d2
 from . import d3
-__all__: list[str] = ['Advect', 'BooleanOperation', 'BooleanOperationEnum', 'BoundaryConditionEnum', 'Box', 'BoxDistribution', 'CalculateCurvatures', 'CalculateNormalVectors', 'CalculateVisibilities', 'Check', 'CompareArea', 'CompareChamfer', 'CompareCriticalDimensions', 'CompareNarrowBand', 'CompareSparseField', 'CompareVolume', 'ConvexHull', 'CurvatureEnum', 'CustomSphereDistribution', 'Cylinder', 'DetectFeatures', 'Domain', 'Expand', 'Extrude', 'FeatureDetectionEnum', 'FileFormatEnum', 'FinalizeStencilLocalLaxFriedrichs', 'FromMesh', 'FromSurfaceMesh', 'FromVolumeMesh', 'GeometricAdvect', 'GeometricAdvectDistribution', 'IntegrationSchemeEnum', 'LogLevel', 'Logger', 'MakeGeometry', 'MarkVoidPoints', 'MaterialMap', 'Mesh', 'PROXY_DIM', 'Plane', 'PointCloud', 'PointData', 'PrepareStencilLocalLaxFriedrichs', 'Prune', 'Reader', 'Reduce', 'RemoveStrayPoints', 'Slice', 'SpatialSchemeEnum', 'Sphere', 'SphereDistribution', 'StencilLocalLaxFriedrichsScalar', 'TemporalSchemeEnum', 'ToDiskMesh', 'ToMesh', 'ToMultiSurfaceMesh', 'ToSurfaceMesh', 'ToVoxelMesh', 'TransformEnum', 'TransformMesh', 'VTKReader', 'VTKRenderWindow', 'VTKWriter', 'VelocityField', 'VoidTopSurfaceEnum', 'WriteVisualizationMesh', 'Writer', 'd2', 'd3', 'getDimension', 'hrleGrid', 'setDimension', 'setNumThreads', 'version']
-def __dir__():
-    ...
-def __getattr__(name):
-    ...
-def _windows_dll_path():
-    ...
+
+__all__: list[str] = [
+    "Advect",
+    "BooleanOperation",
+    "BooleanOperationEnum",
+    "BoundaryConditionEnum",
+    "Box",
+    "BoxDistribution",
+    "CalculateCurvatures",
+    "CalculateNormalVectors",
+    "CalculateVisibilities",
+    "Check",
+    "CompareChamfer",
+    "CompareCriticalDimensions",
+    "CompareNarrowBand",
+    "CompareSparseField",
+    "CompareVolume",
+    "ConvexHull",
+    "CurvatureEnum",
+    "CustomSphereDistribution",
+    "Cylinder",
+    "DetectFeatures",
+    "Domain",
+    "Expand",
+    "Extrude",
+    "FeatureDetectionEnum",
+    "FileFormatEnum",
+    "FinalizeStencilLocalLaxFriedrichs",
+    "FromMesh",
+    "FromSurfaceMesh",
+    "FromVolumeMesh",
+    "GeometricAdvect",
+    "GeometricAdvectDistribution",
+    "IntegrationSchemeEnum",
+    "LogLevel",
+    "Logger",
+    "MakeGeometry",
+    "MarkVoidPoints",
+    "MaterialMap",
+    "Mesh",
+    "PROXY_DIM",
+    "Plane",
+    "PointCloud",
+    "PointData",
+    "PrepareStencilLocalLaxFriedrichs",
+    "Prune",
+    "Reader",
+    "Reduce",
+    "RemoveStrayPoints",
+    "Slice",
+    "SpatialSchemeEnum",
+    "Sphere",
+    "SphereDistribution",
+    "StencilLocalLaxFriedrichsScalar",
+    "TemporalSchemeEnum",
+    "ToDiskMesh",
+    "ToMesh",
+    "ToMultiSurfaceMesh",
+    "ToSurfaceMesh",
+    "ToVoxelMesh",
+    "TransformEnum",
+    "TransformMesh",
+    "VTKReader",
+    "VTKRenderWindow",
+    "VTKWriter",
+    "VelocityField",
+    "VoidTopSurfaceEnum",
+    "WriteVisualizationMesh",
+    "Writer",
+    "d2",
+    "d3",
+    "getDimension",
+    "hrleGrid",
+    "setDimension",
+    "setNumThreads",
+    "version",
+]
+
+def __dir__(): ...
+def __getattr__(name): ...
+def _windows_dll_path(): ...
 def getDimension() -> int:
     """
     Get the current dimension of the simulation.
-    
+
         Returns
         -------
         int
             The currently set dimension (2 or 3).
-        
+
     """
+
 def setDimension(d: int):
     """
     Set the dimension of the simulation (2 or 3).
-    
+
         Parameters
         ----------
         d: int
             Dimension of the simulation (2 or 3).
-        
+
     """
+
 PROXY_DIM: int = 2
-__version__: str = '5.4.0'
-version: str = '5.4.0'
+__version__: str = "5.4.0"
+version: str = "5.4.0"
 _C = _core
