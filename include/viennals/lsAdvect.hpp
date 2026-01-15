@@ -24,7 +24,7 @@
 #include <lsLocalLaxFriedrichsAnalytical.hpp>
 #include <lsLocalLocalLaxFriedrichs.hpp>
 #include <lsStencilLocalLaxFriedrichsScalar.hpp>
-#include <lsWENO5.hpp>
+#include <lsWENO.hpp>
 
 // Include implementation of time integration schemes
 #include <lsAdvectIntegrationSchemes.hpp>
