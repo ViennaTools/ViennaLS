@@ -539,6 +539,6 @@ class VoidTopSurfaceEnum(enum.IntEnum):
         """
 def setNumThreads(arg0: typing.SupportsInt) -> None:
     ...
-__version__: str = '5.4.0'
-version: str = '5.4.0'
+__version__: str = '5.5.0'
+version: str = '5.5.0'
 IntegrationSchemeEnum = SpatialSchemeEnum
