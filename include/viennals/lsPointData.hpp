@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <utility>
 #include <vector>
+#include <cstring>
 
 #include <lsConcepts.hpp>
 
@@ -385,7 +386,8 @@ public:
   std::istream &deserialize(std::istream &stream) {
     char identifier[11];
     stream.read(identifier, 11);
-    if (std::string(identifier).compare(0, 11, "lsPointData")) {
+    // if (std::string(identifier).compare(0, 11, "lsPointData")) {
+    if (std::memcmp(identifier, "lsPointData", 11) != 0) {
       Logger::getInstance()
           .addError("Reading PointData from stream failed. Header could "
                     "not be found.")
