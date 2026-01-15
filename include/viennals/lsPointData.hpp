@@ -3,9 +3,9 @@
 #include <lsPreCompileMacros.hpp>
 
 #include <cstdint>
+#include <cstring>
 #include <utility>
 #include <vector>
-#include <cstring>
 
 #include <lsConcepts.hpp>
 

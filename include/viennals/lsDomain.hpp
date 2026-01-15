@@ -2,8 +2,8 @@
 
 #include <lsPreCompileMacros.hpp>
 
-#include <limits>
 #include <cstring>
+#include <limits>
 
 #include <hrleDomain.hpp>
 #include <hrleFillDomainWithSignedDistance.hpp>
