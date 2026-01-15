@@ -222,7 +222,6 @@ public:
     // Check identifier
     char identifier[8];
     stream.read(identifier, 8);
-    // if (std::string(identifier).compare(0, 8, "lsDomain")) {
     if (std::memcmp(identifier, "lsDomain", 8) != 0) {
       Logger::getInstance()
           .addError(
