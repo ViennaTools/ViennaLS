@@ -116,8 +116,8 @@ public:
     std::vector<N> materialIds;
 
     // save the extent of the resulting mesh
-    Vec3D<N> minimumExtent;
-    Vec3D<N> maximumExtent;
+    Vec3D<N> minimumExtent{};
+    Vec3D<N> maximumExtent{};
     for (unsigned i = 0; i < D; ++i) {
       minimumExtent[i] = std::numeric_limits<T>::max();
       maximumExtent[i] = std::numeric_limits<T>::lowest();
@@ -181,7 +181,7 @@ public:
 
       // insert corresponding node shifted by ls value in direction of the
       // normal vector
-      Vec3D<N> node;
+      Vec3D<N> node{};
       node[2] = 0.;
       double max = 0.;
       for (unsigned i = 0; i < D; ++i) {
@@ -210,7 +210,7 @@ public:
 
       // add data into mesh
       // copy normal
-      Vec3D<N> normal;
+      Vec3D<N> normal{};
       if (D == 2)
         normal[2] = 0.;
       for (unsigned i = 0; i < D; ++i) {

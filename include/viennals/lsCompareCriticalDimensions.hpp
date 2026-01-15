@@ -326,11 +326,9 @@ private:
     std::vector<T> targetValues;
     std::vector<T> sampleValues;
 
-    for (unsigned i = 0; i < 3; ++i) {
-      outputMesh->minimumExtent[i] =
-          (i < D) ? std::numeric_limits<T>::max() : 0.0;
-      outputMesh->maximumExtent[i] =
-          (i < D) ? std::numeric_limits<T>::lowest() : 0.0;
+    for (unsigned i = 0; i < D; ++i) {
+      outputMesh->minimumExtent[i] = std::numeric_limits<T>::max();
+      outputMesh->maximumExtent[i] = std::numeric_limits<T>::lowest();
     }
 
     unsigned pointId = 0;
@@ -339,7 +337,8 @@ private:
         continue;
 
       // Create points for target and sample positions
-      Vec3D<T> coordTarget = {0.0, 0.0, 0.0}, coordSample = {0.0, 0.0, 0.0};
+      Vec3D<T> coordTarget{};
+      Vec3D<T> coordSample{};
 
       for (int i = 0; i < D; ++i) {
         if (i == result.measureDimension) {

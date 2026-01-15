@@ -29,8 +29,8 @@ public:
   std::vector<std::array<unsigned, 8>> hexas;
   PointData<T> pointData;
   PointData<T> cellData;
-  Vec3D<T> minimumExtent;
-  Vec3D<T> maximumExtent;
+  Vec3D<T> minimumExtent{};
+  Vec3D<T> maximumExtent{};
 
 private:
   // iterator typedef
@@ -272,6 +272,8 @@ public:
     hexas.clear();
     pointData.clear();
     cellData.clear();
+    minimumExtent = Vec3D<T>{};
+    maximumExtent = Vec3D<T>{};
   }
 
   void print() {

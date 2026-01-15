@@ -109,7 +109,7 @@ public:
       mesh->insertNextVertex(vertex);
 
       // insert corresponding node
-      Vec3D<T> node;
+      Vec3D<T> node{};
       if (D == 2)
         node[2] = 0.;
       for (unsigned i = 0; i < D; ++i) {

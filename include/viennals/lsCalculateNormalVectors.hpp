@@ -134,12 +134,12 @@ public:
           continue;
         } else if (std::abs(center.getValue()) > maxValue) {
           // push an empty vector to keep ordering correct
-          Vec3D<T> tmp = {};
+          Vec3D<T> tmp{};
           normalVectors.push_back(tmp);
           continue;
         }
 
-        Vec3D<T> n;
+        Vec3D<T> n{};
 
         T denominator = 0;
         for (int i = 0; i < D; i++) {

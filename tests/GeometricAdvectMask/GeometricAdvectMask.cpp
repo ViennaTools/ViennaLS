@@ -43,7 +43,7 @@ int main() {
   // create mask
   {
     NumericType normal[3] = {0., (D == 2) ? 1. : 0., (D == 3) ? 1. : 0.};
-    NumericType origin[3] = {};
+    NumericType origin[3]{};
     ls::MakeGeometry<NumericType, D>(
         mask, ls::SmartPointer<ls::Plane<NumericType, D>>::New(origin, normal))
         .apply();

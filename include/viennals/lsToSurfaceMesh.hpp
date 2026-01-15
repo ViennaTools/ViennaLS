@@ -140,7 +140,7 @@ public:
           } else { // if node does not exist yet
 
             // calculate coordinate of new node
-            Vec3D<T> cc = {0., 0., 0.}; // initialise with zeros
+            Vec3D<T> cc{}; // initialise with zeros
             std::size_t currentPointId = 0;
             for (int z = 0; z < D; z++) {
               if (z != dir) {

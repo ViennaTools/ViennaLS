@@ -441,10 +441,9 @@ private:
 
         // create and insert points at base
         for (double angle = 0.; angle < limit; angle += smallAngle) {
-          Vec3D<T> point;
+          Vec3D<T> point{};
           point[0] = cylinder->radius * std::cos(angle);
           point[1] = cylinder->radius * std::sin(angle);
-          point[2] = 0.0;
           points.push_back(point);
           mesh->insertNextNode(point);
         }

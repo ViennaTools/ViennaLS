@@ -24,3 +24,4 @@ _generate/
 .mypy_cache/
 .eggs/
 test.ipynb
+testall.sh

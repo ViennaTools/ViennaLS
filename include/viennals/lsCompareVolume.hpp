@@ -250,11 +250,9 @@ public:
     if (generateMesh) {
       // Save the extent of the resulting mesh
       outputMesh->clear();
-      for (unsigned i = 0; i < 3; ++i) {
-        outputMesh->minimumExtent[i] =
-            (i < D) ? std::numeric_limits<T>::max() : 0.0;
-        outputMesh->maximumExtent[i] =
-            (i < D) ? std::numeric_limits<T>::lowest() : 0.0;
+      for (unsigned i = 0; i < D; ++i) {
+        outputMesh->minimumExtent[i] = std::numeric_limits<T>::max();
+        outputMesh->maximumExtent[i] = std::numeric_limits<T>::lowest();
       }
     }
 
@@ -383,7 +381,7 @@ public:
       // Insert points into the mesh
       outputMesh->nodes.resize(pointIdMapping.size());
       for (auto it = pointIdMapping.begin(); it != pointIdMapping.end(); ++it) {
-        Vec3D<T> coords = {0.0, 0.0, 0.0};
+        Vec3D<T> coords{};
         for (unsigned i = 0; i < D; ++i) {
           coords[i] = gridDelta * it->first[i];
 

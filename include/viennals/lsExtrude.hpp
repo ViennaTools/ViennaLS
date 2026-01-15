@@ -19,7 +19,7 @@ template <class T> class Extrude {
   SmartPointer<Domain<T, 3>> outputLevelSet = nullptr;
   Vec2D<T> extent = {0., 0.};
   int extrusionAxis = 0;
-  std::array<BoundaryConditionEnum, 3> boundaryConds = {};
+  std::array<BoundaryConditionEnum, 3> boundaryConds{};
 
 public:
   Extrude() = default;

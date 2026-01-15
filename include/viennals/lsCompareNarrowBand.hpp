@@ -242,11 +242,9 @@ public:
       outputMesh->clear();
 
       // Initialize mesh extent
-      for (unsigned i = 0; i < 3; ++i) {
-        outputMesh->minimumExtent[i] =
-            (i < D) ? std::numeric_limits<T>::max() : 0.0;
-        outputMesh->maximumExtent[i] =
-            (i < D) ? std::numeric_limits<T>::lowest() : 0.0;
+      for (unsigned i = 0; i < D; ++i) {
+        outputMesh->minimumExtent[i] = std::numeric_limits<T>::max();
+        outputMesh->maximumExtent[i] = std::numeric_limits<T>::lowest();
       }
     }
 
