@@ -40,7 +40,6 @@ int main() {
   using T = double;
   omp_set_num_threads(8);
 
-
   // Define grid and domain bounds
   double gridDelta = 0.1;
   double bounds[2 * D] = {-5.0, 5.0, -5.0, 5.0, -5.0, 5.0};
@@ -173,7 +172,8 @@ int main() {
 
   auto chamferFE = ls::CompareChamfer<T, D>(sphereRef, sphereFE);
   chamferFE.apply();
-  std::cout << "Chamfer distance: " << chamferFE.getChamferDistance() << std::endl;
+  std::cout << "Chamfer distance: " << chamferFE.getChamferDistance()
+            << std::endl;
   VC_TEST_ASSERT(chamferFE.getChamferDistance() < 0.038);
 
   std::cout << "Running Runge-Kutta 2 Advection..." << std::endl;
@@ -189,7 +189,8 @@ int main() {
 
   auto chamferRK2 = ls::CompareChamfer<T, D>(sphereRef, sphereRK2);
   chamferRK2.apply();
-  std::cout << "Chamfer distance: " << chamferRK2.getChamferDistance() << std::endl;
+  std::cout << "Chamfer distance: " << chamferRK2.getChamferDistance()
+            << std::endl;
   VC_TEST_ASSERT(chamferRK2.getChamferDistance() < 0.067);
 
   std::cout << "Running Runge-Kutta 3 Advection..." << std::endl;
@@ -205,7 +206,8 @@ int main() {
 
   auto chamferRK3 = ls::CompareChamfer<T, D>(sphereRef, sphereRK3);
   chamferRK3.apply();
-  std::cout << "Chamfer distance: " << chamferRK3.getChamferDistance() << std::endl;
+  std::cout << "Chamfer distance: " << chamferRK3.getChamferDistance()
+            << std::endl;
   VC_TEST_ASSERT(chamferRK3.getChamferDistance() < 0.068);
 
   std::cout << "Running WENO3 Forward Euler Advection..." << std::endl;
@@ -221,7 +223,8 @@ int main() {
 
   auto chamferWENO3_FE = ls::CompareChamfer<T, D>(sphereRef, sphereWENO3_FE);
   chamferWENO3_FE.apply();
-  std::cout << "Chamfer distance: " << chamferWENO3_FE.getChamferDistance() << std::endl;
+  std::cout << "Chamfer distance: " << chamferWENO3_FE.getChamferDistance()
+            << std::endl;
   VC_TEST_ASSERT(chamferWENO3_FE.getChamferDistance() < 0.025);
 
   std::cout << "Running WENO3 Runge-Kutta 2 Advection..." << std::endl;
@@ -237,7 +240,8 @@ int main() {
 
   auto chamferWENO3_RK2 = ls::CompareChamfer<T, D>(sphereRef, sphereWENO3_RK2);
   chamferWENO3_RK2.apply();
-  std::cout << "Chamfer distance: " << chamferWENO3_RK2.getChamferDistance() << std::endl;
+  std::cout << "Chamfer distance: " << chamferWENO3_RK2.getChamferDistance()
+            << std::endl;
   VC_TEST_ASSERT(chamferWENO3_RK2.getChamferDistance() < 0.01);
 
   std::cout << "Running WENO3 Runge-Kutta 3 Advection..." << std::endl;
@@ -253,7 +257,8 @@ int main() {
 
   auto chamferWENO3_RK3 = ls::CompareChamfer<T, D>(sphereRef, sphereWENO3_RK3);
   chamferWENO3_RK3.apply();
-  std::cout << "Chamfer distance: " << chamferWENO3_RK3.getChamferDistance() << std::endl;
+  std::cout << "Chamfer distance: " << chamferWENO3_RK3.getChamferDistance()
+            << std::endl;
   VC_TEST_ASSERT(chamferWENO3_RK3.getChamferDistance() < 0.01);
 
   std::cout << "Running WENO5 Forward Euler Advection..." << std::endl;
@@ -269,7 +274,8 @@ int main() {
 
   auto chamferWENO5_FE = ls::CompareChamfer<T, D>(sphereRef, sphereWENO5_FE);
   chamferWENO5_FE.apply();
-  std::cout << "Chamfer distance: " << chamferWENO5_FE.getChamferDistance() << std::endl;
+  std::cout << "Chamfer distance: " << chamferWENO5_FE.getChamferDistance()
+            << std::endl;
   VC_TEST_ASSERT(chamferWENO5_FE.getChamferDistance() < 0.018);
 
   std::cout << "Running WENO5 Runge-Kutta 2 Advection..." << std::endl;
@@ -285,7 +291,8 @@ int main() {
 
   auto chamferWENO5_RK2 = ls::CompareChamfer<T, D>(sphereRef, sphereWENO5_RK2);
   chamferWENO5_RK2.apply();
-  std::cout << "Chamfer distance: " << chamferWENO5_RK2.getChamferDistance() << std::endl;
+  std::cout << "Chamfer distance: " << chamferWENO5_RK2.getChamferDistance()
+            << std::endl;
   VC_TEST_ASSERT(chamferWENO5_RK2.getChamferDistance() < 0.004);
 
   std::cout << "Running WENO5 Runge-Kutta 3 Advection..." << std::endl;
@@ -301,7 +308,8 @@ int main() {
 
   auto chamferWENO5_RK3 = ls::CompareChamfer<T, D>(sphereRef, sphereWENO5_RK3);
   chamferWENO5_RK3.apply();
-  std::cout << "Chamfer distance: " << chamferWENO5_RK3.getChamferDistance() << std::endl;
+  std::cout << "Chamfer distance: " << chamferWENO5_RK3.getChamferDistance()
+            << std::endl;
   VC_TEST_ASSERT(chamferWENO5_RK3.getChamferDistance() < 0.0034);
 
   return 0;

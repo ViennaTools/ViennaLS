@@ -18,6 +18,8 @@ using namespace viennacore;
 /// This kernel acts as the grid-interface for the mathematical logic
 /// defined in lsFiniteDifferences.hpp.
 template <class T, int D, int order> class WENO {
+  static_assert(order == 3 || order == 5, "WENO order must be 3 or 5.");
+
   SmartPointer<viennals::Domain<T, D>> levelSet;
   SmartPointer<viennals::VelocityField<T>> velocities;
 
@@ -30,9 +32,9 @@ template <class T, int D, int order> class WENO {
   const bool calculateNormalVectors = true;
 
   // Use the existing math engine with WENO scheme
-  using MathScheme = FiniteDifferences<
-      T, (order == 3) ? DifferentiationSchemeEnum::WENO3
-                      : DifferentiationSchemeEnum::WENO5>;
+  using MathScheme =
+      FiniteDifferences<T, (order == 3) ? DifferentiationSchemeEnum::WENO3
+                                        : DifferentiationSchemeEnum::WENO5>;
 
   static T pow2(const T &value) { return value * value; }
 
