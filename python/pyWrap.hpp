@@ -1,3 +1,4 @@
+#include <pybind11/functional.h>
 #include <pybind11/iostream.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -9,11 +10,11 @@
 #include <lsCalculateNormalVectors.hpp>
 #include <lsCalculateVisibilities.hpp>
 #include <lsCheck.hpp>
-#include <lsCompareArea.hpp>
 #include <lsCompareChamfer.hpp>
 #include <lsCompareCriticalDimensions.hpp>
 #include <lsCompareNarrowBand.hpp>
 #include <lsCompareSparseField.hpp>
+#include <lsCompareVolume.hpp>
 #include <lsConvexHull.hpp>
 #include <lsDetectFeatures.hpp>
 #include <lsDomain.hpp>
@@ -232,6 +233,10 @@ template <int D> void bindApi(py::module &module) {
       .def("setUpdatePointData", &Advect<T, D>::setUpdatePointData,
            "Set whether the point data in the old LS should be translated to "
            "the advected LS. Defaults to true.")
+      .def(
+          "setVelocityUpdateCallback", &Advect<T, D>::setVelocityUpdateCallback,
+          "Set a callback function that is called after the level set has been "
+          "updated during intermediate time integration steps (e.g. RK2, RK3).")
       .def("prepareLS", &Advect<T, D>::prepareLS, "Prepare the level-set.")
       // need scoped release since we are calling a python method from
       // parallelised C++ code here
@@ -648,7 +653,7 @@ template <int D> void bindApi(py::module &module) {
       .def("setVoidTopSurface", &MarkVoidPoints<T, D>::setVoidTopSurface,
            "Set the logic by which to choose the surface which is non-void. "
            "All other connected surfaces will then be marked as void points.")
-      .def("setSaveComponentsId", &MarkVoidPoints<T, D>::setSaveComponentIds,
+      .def("setSaveComponentIds", &MarkVoidPoints<T, D>::setSaveComponentIds,
            "Save the connectivity information of all LS points in the "
            "pointData of the level set.")
       .def("getNumberOfComponents",
@@ -843,6 +848,58 @@ template <int D> void bindApi(py::module &module) {
            "Set the filename for the output file.")
       .def("apply", &Writer<T, D>::apply, "Write to file.");
 
+  // CompareSparseField
+  py::class_<CompareSparseField<T, D>, SmartPointer<CompareSparseField<T, D>>>(
+      module, "CompareSparseField")
+      // constructors
+      .def(py::init(&SmartPointer<CompareSparseField<T, D>>::template New<>))
+      .def(
+          py::init(&SmartPointer<CompareSparseField<T, D>>::template New<
+                   SmartPointer<Domain<T, D>> &, SmartPointer<Domain<T, D>> &>))
+      // methods
+      .def("setLevelSetExpanded",
+           &CompareSparseField<T, D>::setLevelSetExpanded,
+           "Sets the expanded level set for comparison.")
+      .def("setLevelSetIterated",
+           &CompareSparseField<T, D>::setLevelSetIterated,
+           "Sets the iterated level set to compare against the expanded one.")
+      .def("setXRange", &CompareSparseField<T, D>::setXRange,
+           "Set the x-coordinate range to restrict the comparison area")
+      .def("setYRange", &CompareSparseField<T, D>::setYRange,
+           "Set the y-coordinate range to restrict the comparison area")
+      .def("clearXRange", &CompareSparseField<T, D>::clearXRange,
+           "Clear the x-range restriction")
+      .def("clearYRange", &CompareSparseField<T, D>::clearYRange,
+           "Clear the y-range restriction")
+      .def("setZRange", &CompareSparseField<T, D>::setZRange,
+           "Set the z-coordinate range to restrict the comparison area")
+      .def("clearZRange", &CompareSparseField<T, D>::clearZRange,
+           "Clear the z-range restriction")
+      .def("setOutputMesh", &CompareSparseField<T, D>::setOutputMesh,
+           "Set the output mesh where difference values will be stored")
+      .def("setFillIteratedWithDistances",
+           &CompareSparseField<T, D>::setFillIteratedWithDistances,
+           "Set whether to fill the iterated level set with distance values")
+      .def("setExpandedLevelSetWidth",
+           &CompareSparseField<T, D>::setExpandedLevelSetWidth,
+           "Set the expansion width for the expanded level set")
+      .def("apply", &CompareSparseField<T, D>::apply,
+           "Apply the comparison and calculate the sum of squared "
+           "differences.")
+      .def("getSumSquaredDifferences",
+           &CompareSparseField<T, D>::getSumSquaredDifferences,
+           "Return the sum of squared differences calculated by apply().")
+      .def("getSumDifferences", &CompareSparseField<T, D>::getSumDifferences,
+           "Return the sum of absolute differences calculated by apply().")
+      .def("getNumPoints", &CompareSparseField<T, D>::getNumPoints,
+           "Return the number of points used in the comparison.")
+      .def("getNumSkippedPoints",
+           &CompareSparseField<T, D>::getNumSkippedPoints,
+           "Return the number of points skipped during comparison.")
+      .def("getRMSE", &CompareSparseField<T, D>::getRMSE,
+           "Calculate the root mean square error from previously computed "
+           "values.");
+
 // WriteVisualizationMesh
 #ifdef VIENNALS_USE_VTK
   py::class_<WriteVisualizationMesh<T, D>,
@@ -885,227 +942,196 @@ template <int D> void bindApi(py::module &module) {
            "Make and write mesh.");
 #endif
 
+  // CompareVolume
+  py::class_<CompareVolume<T, D>, SmartPointer<CompareVolume<T, D>>>(
+      module, "CompareVolume")
+      // constructors
+      .def(py::init(&SmartPointer<CompareVolume<T, D>>::template New<>))
+      .def(
+          py::init(&SmartPointer<CompareVolume<T, D>>::template New<
+                   SmartPointer<Domain<T, D>> &, SmartPointer<Domain<T, D>> &>))
+      // methods
+      .def("setLevelSetTarget", &CompareVolume<T, D>::setLevelSetTarget,
+           "Sets the target level set.")
+      .def("setLevelSetSample", &CompareVolume<T, D>::setLevelSetSample,
+           "Sets the sample level set.")
+      .def("setDefaultIncrement", &CompareVolume<T, D>::setDefaultIncrement,
+           "Set default increment value")
+      .def("setXRangeAndIncrement", &CompareVolume<T, D>::setXRangeAndIncrement,
+           "Sets the x-range and custom increment value")
+      .def("setYRangeAndIncrement", &CompareVolume<T, D>::setYRangeAndIncrement,
+           "Sets the y-range and custom increment value")
+      .def("setZRangeAndIncrement", &CompareVolume<T, D>::setZRangeAndIncrement,
+           "Sets the z-range and custom increment value")
+      .def("setOutputMesh", &CompareVolume<T, D>::setOutputMesh,
+           "Set the output mesh where difference areas will be stored")
+      .def("getVolumeMismatch", &CompareVolume<T, D>::getVolumeMismatch,
+           "Returns the computed volume mismatch.")
+      .def("getAreaMismatch", &CompareVolume<T, D>::getAreaMismatch,
+           "Returns the computed area mismatch.")
+      .def("getCustomVolumeMismatch",
+           &CompareVolume<T, D>::getCustomVolumeMismatch,
+           "Returns the computed volume mismatch, with custom increments "
+           "applied.")
+      .def("getCustomAreaMismatch", &CompareVolume<T, D>::getCustomAreaMismatch,
+           "Returns the computed area mismatch, with custom increments "
+           "applied.")
+      .def("getCellCount", &CompareVolume<T, D>::getCellCount,
+           "Returns the number of cells where the level sets differ.")
+      .def("getCustomCellCount", &CompareVolume<T, D>::getCustomCellCount,
+           "Returns the number of cells where the level sets differ, with "
+           "custom increments applied.")
+      .def("apply", &CompareVolume<T, D>::apply,
+           "Computes the volume difference between the two level sets.");
+
   if constexpr (D == 2) {
-    // CompareArea
-    py::class_<CompareArea<T, D>, SmartPointer<CompareArea<T, D>>>(
-        module, "CompareArea")
-        // constructors
-        .def(py::init(&SmartPointer<CompareArea<T, D>>::template New<>))
-        .def(py::init(
-            &SmartPointer<CompareArea<T, D>>::template New<
-                SmartPointer<Domain<T, D>> &, SmartPointer<Domain<T, D>> &>))
-        // methods
-        .def("setLevelSetTarget", &CompareArea<T, D>::setLevelSetTarget,
-             "Sets the target level set.")
-        .def("setLevelSetSample", &CompareArea<T, D>::setLevelSetSample,
-             "Sets the sample level set.")
-        .def("setDefaultIncrement", &CompareArea<T, D>::setDefaultIncrement,
-             "Set default increment value")
-        .def("setXRangeAndIncrement", &CompareArea<T, D>::setXRangeAndIncrement,
-             "Sets the x-range and custom increment value")
-        .def("setYRangeAndIncrement", &CompareArea<T, D>::setYRangeAndIncrement,
-             "Sets the y-range and custom increment value")
-        .def("setOutputMesh", &CompareArea<T, D>::setOutputMesh,
-             "Set the output mesh where difference areas will be stored")
-        .def("getAreaMismatch", &CompareArea<T, D>::getAreaMismatch,
-             "Returns the computed area mismatch.")
-        .def("getCustomAreaMismatch", &CompareArea<T, D>::getCustomAreaMismatch,
-             "Returns the computed area mismatch, with custom increments "
-             "applied.")
-        .def("getCellCount", &CompareArea<T, D>::getCellCount,
-             "Returns the number of cells where the level sets differ.")
-        .def("getCustomCellCount", &CompareArea<T, D>::getCustomCellCount,
-             "Returns the number of cells where the level sets differ, with "
-             "custom increments applied.")
-        .def("apply", &CompareArea<T, D>::apply,
-             "Computes the area difference between the two level sets.");
-
-    // CompareChamfer
-    py::class_<CompareChamfer<T, D>, SmartPointer<CompareChamfer<T, D>>>(
-        module, "CompareChamfer")
-        // constructors
-        .def(py::init(&SmartPointer<CompareChamfer<T, D>>::template New<>))
-        .def(py::init(
-            &SmartPointer<CompareChamfer<T, D>>::template New<
-                SmartPointer<Domain<T, D>> &, SmartPointer<Domain<T, D>> &>))
-        // methods
-        .def("setLevelSetTarget", &CompareChamfer<T, D>::setLevelSetTarget,
-             "Set the target level set.")
-        .def("setLevelSetSample", &CompareChamfer<T, D>::setLevelSetSample,
-             "Set the sample level set.")
-        .def("setOutputMeshTarget", &CompareChamfer<T, D>::setOutputMeshTarget,
-             "Set output mesh for target surface points with distance data.")
-        .def("setOutputMeshSample", &CompareChamfer<T, D>::setOutputMeshSample,
-             "Set output mesh for sample surface points with distance data.")
-        .def("apply", &CompareChamfer<T, D>::apply,
-             "Apply the Chamfer distance calculation.")
-        .def("getForwardDistance", &CompareChamfer<T, D>::getForwardDistance,
-             "Get the forward distance (average distance from target to "
-             "sample).")
-        .def("getBackwardDistance", &CompareChamfer<T, D>::getBackwardDistance,
-             "Get the backward distance (average distance from sample to "
-             "target).")
-        .def("getChamferDistance", &CompareChamfer<T, D>::getChamferDistance,
-             "Get the Chamfer distance (average of forward and backward).")
-        .def("getRMSChamferDistance",
-             &CompareChamfer<T, D>::getRMSChamferDistance,
-             "Get the RMS Chamfer distance.")
-        .def("getMaxDistance", &CompareChamfer<T, D>::getMaxDistance,
-             "Get the maximum nearest-neighbor distance.")
-        .def("getNumTargetPoints", &CompareChamfer<T, D>::getNumTargetPoints,
-             "Get the number of target surface points.")
-        .def("getNumSamplePoints", &CompareChamfer<T, D>::getNumSamplePoints,
-             "Get the number of sample surface points.");
-
-    // CompareCriticalDimensions
-    py::class_<CompareCriticalDimensions<T, D>,
-               SmartPointer<CompareCriticalDimensions<T, D>>>(
-        module, "CompareCriticalDimensions")
-        // constructors
-        .def(py::init(
-            &SmartPointer<CompareCriticalDimensions<T, D>>::template New<>))
-        .def(py::init(
-            &SmartPointer<CompareCriticalDimensions<T, D>>::template New<
-                SmartPointer<Domain<T, D>> &, SmartPointer<Domain<T, D>> &>))
-        // methods
-        .def("setLevelSetTarget",
-             &CompareCriticalDimensions<T, D>::setLevelSetTarget,
-             "Sets the target level set.")
-        .def("setLevelSetSample",
-             &CompareCriticalDimensions<T, D>::setLevelSetSample,
-             "Sets the sample level set.")
-        .def("addXRange", &CompareCriticalDimensions<T, D>::addXRange,
-             py::arg("minX"), py::arg("maxX"), py::arg("findMaximum") = true,
-             "Add an X range to find maximum or minimum Y position.")
-        .def("addYRange", &CompareCriticalDimensions<T, D>::addYRange,
-             py::arg("minY"), py::arg("maxY"), py::arg("findMaximum") = true,
-             "Add a Y range to find maximum or minimum X position.")
-        .def("clearRanges", &CompareCriticalDimensions<T, D>::clearRanges,
-             "Clear all range specifications.")
-        .def("setOutputMesh", &CompareCriticalDimensions<T, D>::setOutputMesh,
-             "Set the output mesh where critical dimension locations will be "
-             "stored.")
-        .def("apply", &CompareCriticalDimensions<T, D>::apply,
-             "Apply the comparison.")
-        .def("getNumCriticalDimensions",
-             &CompareCriticalDimensions<T, D>::getNumCriticalDimensions,
-             "Get the number of critical dimensions compared.")
-        .def(
-            "getCriticalDimensionResult",
-            [](CompareCriticalDimensions<T, D> &self, size_t index) {
-              T posRef, posCmp, diff;
-              bool valid =
-                  self.getCriticalDimensionResult(index, posRef, posCmp, diff);
-              if (valid) {
-                return py::make_tuple(true, posRef, posCmp, diff);
-              } else {
-                return py::make_tuple(false, 0.0, 0.0, 0.0);
-              }
-            },
-            py::arg("index"),
-            "Get a specific critical dimension result. Returns (valid, "
-            "positionTarget, positionSample, difference).")
-        .def("getMeanDifference",
-             &CompareCriticalDimensions<T, D>::getMeanDifference,
-             "Get mean absolute difference across all valid critical "
-             "dimensions.")
-        .def("getMaxDifference",
-             &CompareCriticalDimensions<T, D>::getMaxDifference,
-             "Get maximum difference across all valid critical dimensions.")
-        .def("getRMSE", &CompareCriticalDimensions<T, D>::getRMSE,
-             "Get RMSE across all valid critical dimensions.")
-        .def("getAllDifferences",
-             &CompareCriticalDimensions<T, D>::getAllDifferences,
-             "Get all valid differences as a list.");
-
-    // CompareNarrowBand
-    py::class_<CompareNarrowBand<T, D>, SmartPointer<CompareNarrowBand<T, D>>>(
-        module, "CompareNarrowBand")
-        // constructors
-        .def(py::init(&SmartPointer<CompareNarrowBand<T, D>>::template New<>))
-        .def(py::init(
-            &SmartPointer<CompareNarrowBand<T, D>>::template New<
-                SmartPointer<Domain<T, D>> &, SmartPointer<Domain<T, D>> &>))
-        // methods
-        .def("setLevelSetTarget", &CompareNarrowBand<T, D>::setLevelSetTarget,
-             "Sets the target level set.")
-        .def("setLevelSetSample", &CompareNarrowBand<T, D>::setLevelSetSample,
-             "Sets the sample level set.")
-        .def("setXRange", &CompareNarrowBand<T, D>::setXRange,
-             "Set the x-coordinate range to restrict the comparison area")
-        .def("setYRange", &CompareNarrowBand<T, D>::setYRange,
-             "Set the y-coordinate range to restrict the comparison area")
-        .def("clearXRange", &CompareNarrowBand<T, D>::clearXRange,
-             "Clear the x-range restriction")
-        .def("clearYRange", &CompareNarrowBand<T, D>::clearYRange,
-             "Clear the y-range restriction")
-        .def("setOutputMesh", &CompareNarrowBand<T, D>::setOutputMesh,
-             "Set the output mesh where difference values will be stored")
-        .def("setOutputMeshSquaredDifferences",
-             &CompareNarrowBand<T, D>::setOutputMeshSquaredDifferences,
-             "Set whether to output squared differences (true) or absolute "
-             "differences (false)")
-        .def("apply", &CompareNarrowBand<T, D>::apply,
-             "Apply the comparison and calculate the sum of squared "
-             "differences.")
-        .def("getSumSquaredDifferences",
-             &CompareNarrowBand<T, D>::getSumSquaredDifferences,
-             "Return the sum of squared differences calculated by apply().")
-        .def("getSumDifferences", &CompareNarrowBand<T, D>::getSumDifferences,
-             "Return the sum of absolute differences calculated by apply().")
-        .def("getNumPoints", &CompareNarrowBand<T, D>::getNumPoints,
-             "Return the number of points used in the comparison.")
-        .def("getRMSE", &CompareNarrowBand<T, D>::getRMSE,
-             "Calculate the root mean square error from previously computed "
-             "values.");
-
-    // CompareSparseField
-    py::class_<CompareSparseField<T, D>,
-               SmartPointer<CompareSparseField<T, D>>>(module,
-                                                       "CompareSparseField")
-        // constructors
-        .def(py::init(&SmartPointer<CompareSparseField<T, D>>::template New<>))
-        .def(py::init(
-            &SmartPointer<CompareSparseField<T, D>>::template New<
-                SmartPointer<Domain<T, D>> &, SmartPointer<Domain<T, D>> &>))
-        // methods
-        .def("setLevelSetExpanded",
-             &CompareSparseField<T, D>::setLevelSetExpanded,
-             "Sets the expanded level set for comparison.")
-        .def("setLevelSetIterated",
-             &CompareSparseField<T, D>::setLevelSetIterated,
-             "Sets the iterated level set to compare against the expanded one.")
-        .def("setXRange", &CompareSparseField<T, D>::setXRange,
-             "Set the x-coordinate range to restrict the comparison area")
-        .def("setYRange", &CompareSparseField<T, D>::setYRange,
-             "Set the y-coordinate range to restrict the comparison area")
-        .def("clearXRange", &CompareSparseField<T, D>::clearXRange,
-             "Clear the x-range restriction")
-        .def("clearYRange", &CompareSparseField<T, D>::clearYRange,
-             "Clear the y-range restriction")
-        .def("setOutputMesh", &CompareSparseField<T, D>::setOutputMesh,
-             "Set the output mesh where difference values will be stored")
-        .def("setFillIteratedWithDistances",
-             &CompareSparseField<T, D>::setFillIteratedWithDistances,
-             "Set whether to fill the iterated level set with distance values")
-        .def("setExpandedLevelSetWidth",
-             &CompareSparseField<T, D>::setExpandedLevelSetWidth,
-             "Set the expansion width for the expanded level set")
-        .def("apply", &CompareSparseField<T, D>::apply,
-             "Apply the comparison and calculate the sum of squared "
-             "differences.")
-        .def("getSumSquaredDifferences",
-             &CompareSparseField<T, D>::getSumSquaredDifferences,
-             "Return the sum of squared differences calculated by apply().")
-        .def("getSumDifferences", &CompareSparseField<T, D>::getSumDifferences,
-             "Return the sum of absolute differences calculated by apply().")
-        .def("getNumPoints", &CompareSparseField<T, D>::getNumPoints,
-             "Return the number of points used in the comparison.")
-        .def("getNumSkippedPoints",
-             &CompareSparseField<T, D>::getNumSkippedPoints,
-             "Return the number of points skipped during comparison.")
-        .def("getRMSE", &CompareSparseField<T, D>::getRMSE,
-             "Calculate the root mean square error from previously computed "
-             "values.");
+    module.attr("CompareArea") = module.attr("CompareVolume");
   }
+
+  // CompareChamfer
+  py::class_<CompareChamfer<T, D>, SmartPointer<CompareChamfer<T, D>>>(
+      module, "CompareChamfer")
+      // constructors
+      .def(py::init(&SmartPointer<CompareChamfer<T, D>>::template New<>))
+      .def(
+          py::init(&SmartPointer<CompareChamfer<T, D>>::template New<
+                   SmartPointer<Domain<T, D>> &, SmartPointer<Domain<T, D>> &>))
+      // methods
+      .def("setLevelSetTarget", &CompareChamfer<T, D>::setLevelSetTarget,
+           "Set the target level set.")
+      .def("setLevelSetSample", &CompareChamfer<T, D>::setLevelSetSample,
+           "Set the sample level set.")
+      .def("setOutputMeshTarget", &CompareChamfer<T, D>::setOutputMeshTarget,
+           "Set output mesh for target surface points with distance data.")
+      .def("setOutputMeshSample", &CompareChamfer<T, D>::setOutputMeshSample,
+           "Set output mesh for sample surface points with distance data.")
+      .def("apply", &CompareChamfer<T, D>::apply,
+           "Apply the Chamfer distance calculation.")
+      .def("getForwardDistance", &CompareChamfer<T, D>::getForwardDistance,
+           "Get the forward distance (average distance from target to "
+           "sample).")
+      .def("getBackwardDistance", &CompareChamfer<T, D>::getBackwardDistance,
+           "Get the backward distance (average distance from sample to "
+           "target).")
+      .def("getChamferDistance", &CompareChamfer<T, D>::getChamferDistance,
+           "Get the Chamfer distance (average of forward and backward).")
+      .def("getRMSChamferDistance",
+           &CompareChamfer<T, D>::getRMSChamferDistance,
+           "Get the RMS Chamfer distance.")
+      .def("getMaxDistance", &CompareChamfer<T, D>::getMaxDistance,
+           "Get the maximum nearest-neighbor distance.")
+      .def("getNumTargetPoints", &CompareChamfer<T, D>::getNumTargetPoints,
+           "Get the number of target surface points.")
+      .def("getNumSamplePoints", &CompareChamfer<T, D>::getNumSamplePoints,
+           "Get the number of sample surface points.");
+
+  // CompareCriticalDimensions
+  py::class_<CompareCriticalDimensions<T, D>,
+             SmartPointer<CompareCriticalDimensions<T, D>>>(
+      module, "CompareCriticalDimensions")
+      // constructors
+      .def(py::init(
+          &SmartPointer<CompareCriticalDimensions<T, D>>::template New<>))
+      .def(
+          py::init(&SmartPointer<CompareCriticalDimensions<T, D>>::template New<
+                   SmartPointer<Domain<T, D>> &, SmartPointer<Domain<T, D>> &>))
+      // methods
+      .def("setLevelSetTarget",
+           &CompareCriticalDimensions<T, D>::setLevelSetTarget,
+           "Sets the target level set.")
+      .def("setLevelSetSample",
+           &CompareCriticalDimensions<T, D>::setLevelSetSample,
+           "Sets the sample level set.")
+      .def("addRange", &CompareCriticalDimensions<T, D>::addRange,
+           py::arg("measureDimension"), py::arg("minBounds"),
+           py::arg("maxBounds"), py::arg("findMaximum") = true,
+           "Add a generic range specification.")
+      .def("addXRange", &CompareCriticalDimensions<T, D>::addXRange,
+           py::arg("minX"), py::arg("maxX"), py::arg("findMaximum") = true,
+           "Add an X range to find maximum or minimum Y position.")
+      .def("addYRange", &CompareCriticalDimensions<T, D>::addYRange,
+           py::arg("minY"), py::arg("maxY"), py::arg("findMaximum") = true,
+           "Add a Y range to find maximum or minimum X position.")
+      .def("clearRanges", &CompareCriticalDimensions<T, D>::clearRanges,
+           "Clear all range specifications.")
+      .def("setOutputMesh", &CompareCriticalDimensions<T, D>::setOutputMesh,
+           "Set the output mesh where critical dimension locations will be "
+           "stored.")
+      .def("apply", &CompareCriticalDimensions<T, D>::apply,
+           "Apply the comparison.")
+      .def("getNumCriticalDimensions",
+           &CompareCriticalDimensions<T, D>::getNumCriticalDimensions,
+           "Get the number of critical dimensions compared.")
+      .def(
+          "getCriticalDimensionResult",
+          [](CompareCriticalDimensions<T, D> &self, size_t index) {
+            T posRef, posCmp, diff;
+            bool valid =
+                self.getCriticalDimensionResult(index, posRef, posCmp, diff);
+            if (valid) {
+              return py::make_tuple(true, posRef, posCmp, diff);
+            } else {
+              return py::make_tuple(false, 0.0, 0.0, 0.0);
+            }
+          },
+          py::arg("index"),
+          "Get a specific critical dimension result. Returns (valid, "
+          "positionTarget, positionSample, difference).")
+      .def("getMeanDifference",
+           &CompareCriticalDimensions<T, D>::getMeanDifference,
+           "Get mean absolute difference across all valid critical "
+           "dimensions.")
+      .def("getMaxDifference",
+           &CompareCriticalDimensions<T, D>::getMaxDifference,
+           "Get maximum difference across all valid critical dimensions.")
+      .def("getRMSE", &CompareCriticalDimensions<T, D>::getRMSE,
+           "Get RMSE across all valid critical dimensions.")
+      .def("getAllDifferences",
+           &CompareCriticalDimensions<T, D>::getAllDifferences,
+           "Get all valid differences as a list.");
+
+  // CompareNarrowBand
+  py::class_<CompareNarrowBand<T, D>, SmartPointer<CompareNarrowBand<T, D>>>(
+      module, "CompareNarrowBand")
+      // constructors
+      .def(py::init(&SmartPointer<CompareNarrowBand<T, D>>::template New<>))
+      .def(
+          py::init(&SmartPointer<CompareNarrowBand<T, D>>::template New<
+                   SmartPointer<Domain<T, D>> &, SmartPointer<Domain<T, D>> &>))
+      // methods
+      .def("setLevelSetTarget", &CompareNarrowBand<T, D>::setLevelSetTarget,
+           "Sets the target level set.")
+      .def("setLevelSetSample", &CompareNarrowBand<T, D>::setLevelSetSample,
+           "Sets the sample level set.")
+      .def("setXRange", &CompareNarrowBand<T, D>::setXRange,
+           "Set the x-coordinate range to restrict the comparison area")
+      .def("setYRange", &CompareNarrowBand<T, D>::setYRange,
+           "Set the y-coordinate range to restrict the comparison area")
+      .def("clearXRange", &CompareNarrowBand<T, D>::clearXRange,
+           "Clear the x-range restriction")
+      .def("clearYRange", &CompareNarrowBand<T, D>::clearYRange,
+           "Clear the y-range restriction")
+      .def("setZRange", &CompareNarrowBand<T, D>::setZRange,
+           "Set the z-coordinate range to restrict the comparison area")
+      .def("clearZRange", &CompareNarrowBand<T, D>::clearZRange,
+           "Clear the z-range restriction")
+      .def("setOutputMesh", &CompareNarrowBand<T, D>::setOutputMesh,
+           "Set the output mesh where difference values will be stored")
+      .def("setOutputMeshSquaredDifferences",
+           &CompareNarrowBand<T, D>::setOutputMeshSquaredDifferences,
+           "Set whether to output squared differences (true) or absolute "
+           "differences (false)")
+      .def("apply", &CompareNarrowBand<T, D>::apply,
+           "Apply the comparison and calculate the sum of squared "
+           "differences.")
+      .def("getSumSquaredDifferences",
+           &CompareNarrowBand<T, D>::getSumSquaredDifferences,
+           "Return the sum of squared differences calculated by apply().")
+      .def("getSumDifferences", &CompareNarrowBand<T, D>::getSumDifferences,
+           "Return the sum of absolute differences calculated by apply().")
+      .def("getNumPoints", &CompareNarrowBand<T, D>::getNumPoints,
+           "Return the number of points used in the comparison.")
+      .def("getRMSE", &CompareNarrowBand<T, D>::getRMSE,
+           "Calculate the root mean square error from previously computed "
+           "values.");
 }

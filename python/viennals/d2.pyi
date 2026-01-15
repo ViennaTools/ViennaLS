@@ -5,7 +5,7 @@ from __future__ import annotations
 import collections.abc
 import typing
 import viennals._core
-__all__: list[str] = ['Advect', 'BooleanOperation', 'Box', 'BoxDistribution', 'CalculateCurvatures', 'CalculateNormalVectors', 'CalculateVisibilities', 'Check', 'CompareArea', 'CompareChamfer', 'CompareCriticalDimensions', 'CompareNarrowBand', 'CompareSparseField', 'ConvexHull', 'CustomSphereDistribution', 'Cylinder', 'DetectFeatures', 'Domain', 'Expand', 'FinalizeStencilLocalLaxFriedrichs', 'FromMesh', 'FromSurfaceMesh', 'FromVolumeMesh', 'GeometricAdvect', 'GeometricAdvectDistribution', 'MakeGeometry', 'MarkVoidPoints', 'Plane', 'PointCloud', 'PrepareStencilLocalLaxFriedrichs', 'Prune', 'Reader', 'Reduce', 'RemoveStrayPoints', 'Sphere', 'SphereDistribution', 'StencilLocalLaxFriedrichsScalar', 'ToDiskMesh', 'ToMesh', 'ToMultiSurfaceMesh', 'ToSurfaceMesh', 'ToVoxelMesh', 'WriteVisualizationMesh', 'Writer', 'hrleGrid']
+__all__: list[str] = ['Advect', 'BooleanOperation', 'Box', 'BoxDistribution', 'CalculateCurvatures', 'CalculateNormalVectors', 'CalculateVisibilities', 'Check', 'CompareArea', 'CompareChamfer', 'CompareCriticalDimensions', 'CompareNarrowBand', 'CompareSparseField', 'CompareVolume', 'ConvexHull', 'CustomSphereDistribution', 'Cylinder', 'DetectFeatures', 'Domain', 'Expand', 'FinalizeStencilLocalLaxFriedrichs', 'FromMesh', 'FromSurfaceMesh', 'FromVolumeMesh', 'GeometricAdvect', 'GeometricAdvectDistribution', 'MakeGeometry', 'MarkVoidPoints', 'Plane', 'PointCloud', 'PrepareStencilLocalLaxFriedrichs', 'Prune', 'Reader', 'Reduce', 'RemoveStrayPoints', 'Sphere', 'SphereDistribution', 'StencilLocalLaxFriedrichsScalar', 'ToDiskMesh', 'ToMesh', 'ToMultiSurfaceMesh', 'ToSurfaceMesh', 'ToVoxelMesh', 'WriteVisualizationMesh', 'Writer', 'hrleGrid']
 class Advect:
     @typing.overload
     def __init__(self) -> None:
@@ -113,6 +113,10 @@ class Advect:
     def setVelocityField(self, arg0: viennals._core.VelocityField) -> None:
         """
         Set the velocity to use for advection.
+        """
+    def setVelocityUpdateCallback(self, arg0: collections.abc.Callable[[Domain], bool]) -> None:
+        """
+        Set a callback function that is called after the level set has been updated during intermediate time integration steps (e.g. RK2, RK3).
         """
 class BooleanOperation:
     @typing.overload
@@ -225,57 +229,6 @@ class Check:
         """
         Set levelset for which to calculate normal vectors.
         """
-class CompareArea:
-    @typing.overload
-    def __init__(self) -> None:
-        ...
-    @typing.overload
-    def __init__(self, arg0: Domain, arg1: Domain) -> None:
-        ...
-    def apply(self) -> None:
-        """
-        Computes the area difference between the two level sets.
-        """
-    def getAreaMismatch(self) -> float:
-        """
-        Returns the computed area mismatch.
-        """
-    def getCellCount(self) -> int:
-        """
-        Returns the number of cells where the level sets differ.
-        """
-    def getCustomAreaMismatch(self) -> float:
-        """
-        Returns the computed area mismatch, with custom increments applied.
-        """
-    def getCustomCellCount(self) -> int:
-        """
-        Returns the number of cells where the level sets differ, with custom increments applied.
-        """
-    def setDefaultIncrement(self, arg0: typing.SupportsInt) -> None:
-        """
-        Set default increment value
-        """
-    def setLevelSetSample(self, arg0: Domain) -> None:
-        """
-        Sets the sample level set.
-        """
-    def setLevelSetTarget(self, arg0: Domain) -> None:
-        """
-        Sets the target level set.
-        """
-    def setOutputMesh(self, arg0: viennals._core.Mesh) -> None:
-        """
-        Set the output mesh where difference areas will be stored
-        """
-    def setXRangeAndIncrement(self, arg0: typing.SupportsInt, arg1: typing.SupportsInt, arg2: typing.SupportsInt) -> None:
-        """
-        Sets the x-range and custom increment value
-        """
-    def setYRangeAndIncrement(self, arg0: typing.SupportsInt, arg1: typing.SupportsInt, arg2: typing.SupportsInt) -> None:
-        """
-        Sets the y-range and custom increment value
-        """
 class CompareChamfer:
     @typing.overload
     def __init__(self) -> None:
@@ -338,6 +291,10 @@ class CompareCriticalDimensions:
     @typing.overload
     def __init__(self, arg0: Domain, arg1: Domain) -> None:
         ...
+    def addRange(self, measureDimension: typing.SupportsInt, minBounds: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(2)"], maxBounds: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(2)"], findMaximum: bool = True) -> None:
+        """
+        Add a generic range specification.
+        """
     def addXRange(self, minX: typing.SupportsFloat, maxX: typing.SupportsFloat, findMaximum: bool = True) -> None:
         """
         Add an X range to find maximum or minimum Y position.
@@ -409,6 +366,10 @@ class CompareNarrowBand:
         """
         Clear the y-range restriction
         """
+    def clearZRange(self) -> None:
+        """
+        Clear the z-range restriction
+        """
     def getNumPoints(self) -> int:
         """
         Return the number of points used in the comparison.
@@ -449,6 +410,10 @@ class CompareNarrowBand:
         """
         Set the y-coordinate range to restrict the comparison area
         """
+    def setZRange(self, arg0: typing.SupportsFloat, arg1: typing.SupportsFloat) -> None:
+        """
+        Set the z-coordinate range to restrict the comparison area
+        """
 class CompareSparseField:
     @typing.overload
     def __init__(self) -> None:
@@ -467,6 +432,10 @@ class CompareSparseField:
     def clearYRange(self) -> None:
         """
         Clear the y-range restriction
+        """
+    def clearZRange(self) -> None:
+        """
+        Clear the z-range restriction
         """
     def getNumPoints(self) -> int:
         """
@@ -515,6 +484,73 @@ class CompareSparseField:
     def setYRange(self, arg0: typing.SupportsFloat, arg1: typing.SupportsFloat) -> None:
         """
         Set the y-coordinate range to restrict the comparison area
+        """
+    def setZRange(self, arg0: typing.SupportsFloat, arg1: typing.SupportsFloat) -> None:
+        """
+        Set the z-coordinate range to restrict the comparison area
+        """
+class CompareVolume:
+    @typing.overload
+    def __init__(self) -> None:
+        ...
+    @typing.overload
+    def __init__(self, arg0: Domain, arg1: Domain) -> None:
+        ...
+    def apply(self) -> None:
+        """
+        Computes the volume difference between the two level sets.
+        """
+    def getAreaMismatch(self) -> float:
+        """
+        Returns the computed area mismatch.
+        """
+    def getCellCount(self) -> int:
+        """
+        Returns the number of cells where the level sets differ.
+        """
+    def getCustomAreaMismatch(self) -> float:
+        """
+        Returns the computed area mismatch, with custom increments applied.
+        """
+    def getCustomCellCount(self) -> int:
+        """
+        Returns the number of cells where the level sets differ, with custom increments applied.
+        """
+    def getCustomVolumeMismatch(self) -> float:
+        """
+        Returns the computed volume mismatch, with custom increments applied.
+        """
+    def getVolumeMismatch(self) -> float:
+        """
+        Returns the computed volume mismatch.
+        """
+    def setDefaultIncrement(self, arg0: typing.SupportsInt) -> None:
+        """
+        Set default increment value
+        """
+    def setLevelSetSample(self, arg0: Domain) -> None:
+        """
+        Sets the sample level set.
+        """
+    def setLevelSetTarget(self, arg0: Domain) -> None:
+        """
+        Sets the target level set.
+        """
+    def setOutputMesh(self, arg0: viennals._core.Mesh) -> None:
+        """
+        Set the output mesh where difference areas will be stored
+        """
+    def setXRangeAndIncrement(self, arg0: typing.SupportsInt, arg1: typing.SupportsInt, arg2: typing.SupportsInt) -> None:
+        """
+        Sets the x-range and custom increment value
+        """
+    def setYRangeAndIncrement(self, arg0: typing.SupportsInt, arg1: typing.SupportsInt, arg2: typing.SupportsInt) -> None:
+        """
+        Sets the y-range and custom increment value
+        """
+    def setZRangeAndIncrement(self, arg0: typing.SupportsInt, arg1: typing.SupportsInt, arg2: typing.SupportsInt) -> None:
+        """
+        Sets the z-range and custom increment value
         """
 class ConvexHull:
     @typing.overload
@@ -843,7 +879,7 @@ class MarkVoidPoints:
         """
         Reverse the logic of detecting the top surface.
         """
-    def setSaveComponentsId(self, arg0: bool) -> None:
+    def setSaveComponentIds(self, arg0: bool) -> None:
         """
         Save the connectivity information of all LS points in the pointData of the level set.
         """
@@ -1189,3 +1225,4 @@ def FinalizeStencilLocalLaxFriedrichs(levelSets: collections.abc.Sequence[Domain
     ...
 def PrepareStencilLocalLaxFriedrichs(levelSets: collections.abc.Sequence[Domain], isDepo: collections.abc.Sequence[bool]) -> None:
     ...
+CompareArea = CompareVolume

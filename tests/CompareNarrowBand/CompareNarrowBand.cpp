@@ -1,5 +1,7 @@
 #include <cmath>
 #include <iostream>
+#include <string>
+#include <vector>
 
 #include <lsCompareNarrowBand.hpp>
 #include <lsDomain.hpp>
@@ -17,16 +19,16 @@
 
 namespace ls = viennals;
 
-int main() {
-  constexpr int D = 2;
-
-  omp_set_num_threads(4);
-
+template <int D> void runTest() {
+  std::cout << "Running " << D << "D Test..." << std::endl;
   double extent = 15;
   double gridDelta = 0.5;
 
-  double bounds[2 * D] = {-extent, extent, -extent, extent};
-  ls::Domain<double, D>::BoundaryType boundaryCons[D];
+  double bounds[2 * D];
+  for (int i = 0; i < 2 * D; ++i)
+    bounds[i] = (i % 2 == 0) ? -extent : extent;
+
+  typename ls::Domain<double, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D; ++i)
     boundaryCons[i] = ls::Domain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
 
@@ -34,7 +36,7 @@ int main() {
   auto sphere1 = ls::SmartPointer<ls::Domain<double, D>>::New(
       bounds, boundaryCons, gridDelta);
 
-  double origin1[D] = {0., 0.};
+  std::vector<double> origin1(D, 0.0);
   double radius1 = 5.0;
 
   ls::MakeGeometry<double, D>(
@@ -45,24 +47,27 @@ int main() {
   auto sphere2 = ls::SmartPointer<ls::Domain<double, D>>::New(
       bounds, boundaryCons, gridDelta);
 
-  double origin2[D] = {2., 1.}; // Shifted center
-  double radius2 = 5.0;         // Same radius
+  std::vector<double> origin2(D, 0.0);
+  origin2[0] = 2.;
+  origin2[1] = 1.;
+  double radius2 = 5.0; // Same radius
 
   ls::MakeGeometry<double, D>(
       sphere2, ls::SmartPointer<ls::Sphere<double, D>>::New(origin2, radius2))
       .apply();
 
+  std::string suffix = "_" + std::to_string(D) + "D.vtp";
   // Export both spheres as VTK files for visualization
   {
     auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
     ls::ToMesh<double, D>(sphere1, mesh).apply();
-    ls::VTKWriter<double>(mesh, "sphere1_narrowband.vtp").apply();
+    ls::VTKWriter<double>(mesh, "sphere1_narrowband" + suffix).apply();
   }
 
   {
     auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
     ls::ToMesh<double, D>(sphere2, mesh).apply();
-    ls::VTKWriter<double>(mesh, "sphere2_narrowband.vtp").apply();
+    ls::VTKWriter<double>(mesh, "sphere2_narrowband" + suffix).apply();
   }
 
   // Compare the narrow bands
@@ -75,7 +80,9 @@ int main() {
   compareNarrowBand.apply();
 
   // Save mesh to file
-  ls::VTKWriter<double>(mesh, "narrowband_absolute_differences.vtu").apply();
+  ls::VTKWriter<double>(mesh,
+                        "narrowband_absolute_differences" + suffix + ".vtu")
+      .apply();
 
   // Get the calculated difference metrics
   double sumSquaredDifferences = compareNarrowBand.getSumSquaredDifferences();
@@ -123,13 +130,33 @@ int main() {
   std::cout << "Number of points in both ranges: "
             << compareNarrowBand.getNumPoints() << std::endl;
 
+  if constexpr (D == 3) {
+    // Test with restricted Z range
+    compareNarrowBand.clearXRange();
+    compareNarrowBand.clearYRange();
+    compareNarrowBand.setZRange(-5, 5);
+    compareNarrowBand.apply();
+    std::cout << "RMSE with Z range [-5, 5]: " << compareNarrowBand.getRMSE()
+              << std::endl;
+    std::cout << "Number of points in Z range: "
+              << compareNarrowBand.getNumPoints() << std::endl;
+    compareNarrowBand.clearZRange();
+  }
+
   // Create a mesh output with squared differences
   compareNarrowBand.setOutputMesh(mesh);
   compareNarrowBand.setOutputMeshSquaredDifferences(true);
   compareNarrowBand.apply();
-  ls::VTKWriter<double>(mesh,
-                        "narrowband_resctricted-range_squared_differences.vtu")
+  ls::VTKWriter<double>(mesh, "narrowband_resctricted-range_squared_"
+                              "differences" +
+                                  suffix + ".vtu")
       .apply();
+}
+
+int main() {
+  omp_set_num_threads(4);
+  runTest<2>();
+  runTest<3>();
 
   return 0;
 }

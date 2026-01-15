@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <limits>
 #include <unordered_map>
 
@@ -13,15 +14,15 @@ namespace viennals {
 
 using namespace viennacore;
 
-/// Computes an estimate of the area where two level sets differ.
-/// The area is calculated by iterating through the bounding box of the two
+/// Computes an estimate of the volume/area where two level sets differ.
+/// The volume is calculated by iterating through the bounding box of the two
 /// level sets and comparing the cell values. The grid delta is used as the unit
-/// of area. Custom increment values can be set for specific x and y ranges,
-/// allowing to count certain areas multiple times or skip them. Optionally, a
-/// passed mesh can be filled with the area information, allowing for
-/// visualization of the differences.
-/// The code is currently itended for 2D level sets only.
-template <class T, int D = 2> class CompareArea {
+/// of volume. Custom increment values can be set for specific x, y and z
+/// ranges, allowing to count certain areas multiple times or skip them.
+/// Optionally, a passed mesh can be filled with the volume information,
+/// allowing for visualization of the differences. The code is intended for 2D
+/// and 3D level sets.
+template <class T, int D = 3> class CompareVolume {
   using hrleDomainType = typename Domain<T, D>::DomainType;
   using hrleIndexType = viennahrle::IndexType;
 
@@ -36,11 +37,15 @@ template <class T, int D = 2> class CompareArea {
   hrleIndexType xRangeMax = std::numeric_limits<hrleIndexType>::max();
   hrleIndexType yRangeMin = std::numeric_limits<hrleIndexType>::lowest();
   hrleIndexType yRangeMax = std::numeric_limits<hrleIndexType>::max();
+  hrleIndexType zRangeMin = std::numeric_limits<hrleIndexType>::lowest();
+  hrleIndexType zRangeMax = std::numeric_limits<hrleIndexType>::max();
   bool useCustomXIncrement = false;
   bool useCustomYIncrement = false;
+  bool useCustomZIncrement = false;
 
   unsigned short int customXIncrement = 0;
   unsigned short int customYIncrement = 0;
+  unsigned short int customZIncrement = 0;
   unsigned short int defaultIncrement = 1;
 
   double gridDelta = 0.0;
@@ -48,10 +53,17 @@ template <class T, int D = 2> class CompareArea {
   // Mesh output related members
   SmartPointer<Mesh<T>> outputMesh = nullptr;
 
+  // Helper to get the class name for logging
+  static const char *getClassName() {
+    if constexpr (D == 2)
+      return "CompareArea";
+    return "CompareVolume";
+  }
+
   bool checkAndCalculateBounds() {
     if (levelSetTarget == nullptr || levelSetSample == nullptr) {
       Logger::getInstance()
-          .addError("Missing level set in CompareArea.")
+          .addError(std::string("Missing level set in ") + getClassName() + ".")
           .print();
       return false;
     }
@@ -62,8 +74,8 @@ template <class T, int D = 2> class CompareArea {
 
     if (gridTarget.getGridDelta() != gridSample.getGridDelta()) {
       Logger::getInstance()
-          .addError("Grid delta mismatch in CompareArea. The grid deltas of "
-                    "the two level sets must be equal.")
+          .addError(std::string("Grid delta mismatch in ") + getClassName() +
+                    ". The grid deltas of the two level sets must be equal.")
           .print();
       return false;
     } else {
@@ -103,18 +115,12 @@ template <class T, int D = 2> class CompareArea {
   }
 
 public:
-  CompareArea() {
-    assert(D == 2 &&
-           "CompareArea is currently only implemented for 2D level sets.");
-  }
+  CompareVolume() {}
 
-  CompareArea(SmartPointer<Domain<T, D>> passedLevelSetTarget,
-              SmartPointer<Domain<T, D>> passedLevelSetSample)
+  CompareVolume(SmartPointer<Domain<T, D>> passedLevelSetTarget,
+                SmartPointer<Domain<T, D>> passedLevelSetSample)
       : levelSetTarget(passedLevelSetTarget),
-        levelSetSample(passedLevelSetSample) {
-    assert(D == 2 &&
-           "CompareArea is currently only implemented for 2D level sets.");
-  }
+        levelSetSample(passedLevelSetSample) {}
 
   /// Sets the target level set.
   void setLevelSetTarget(SmartPointer<Domain<T, D>> passedLevelSet) {
@@ -149,6 +155,15 @@ public:
     useCustomYIncrement = true;
   }
 
+  /// Sets the z-range and custom increment value
+  void setZRangeAndIncrement(hrleIndexType minZRange, hrleIndexType maxZRange,
+                             unsigned short int Zincrement) {
+    zRangeMin = minZRange;
+    zRangeMax = maxZRange;
+    customZIncrement = Zincrement;
+    useCustomZIncrement = true;
+  }
+
   /// Set the output mesh where difference areas will be stored for
   /// visualization. Each cell in the mesh will have a cell data:
   ///   0: Areas where both level sets are inside
@@ -157,16 +172,22 @@ public:
     outputMesh = passedMesh;
   }
 
-  /// Returns the computed area mismatch.
-  double getAreaMismatch() const {
-    return static_cast<double>(differentCellsCount) * gridDelta * gridDelta;
+  /// Returns the computed volume/area mismatch.
+  double getVolumeMismatch() const {
+    return static_cast<double>(differentCellsCount) * std::pow(gridDelta, D);
   }
 
-  /// Returns the computed area mismatch, with custom increments applied.
-  double getCustomAreaMismatch() const {
-    return static_cast<double>(customDifferentCellCount) * gridDelta *
-           gridDelta;
+  /// Alias for getVolumeMismatch for 2D compatibility
+  double getAreaMismatch() const { return getVolumeMismatch(); }
+
+  /// Returns the computed volume/area mismatch, with custom increments applied.
+  double getCustomVolumeMismatch() const {
+    return static_cast<double>(customDifferentCellCount) *
+           std::pow(gridDelta, D);
   }
+
+  /// Alias for getCustomVolumeMismatch for 2D compatibility
+  double getCustomAreaMismatch() const { return getCustomVolumeMismatch(); }
 
   /// Returns the number of cells where the level sets differ.
   unsigned long int getCellCount() const { return differentCellsCount; }
@@ -177,7 +198,7 @@ public:
     return customDifferentCellCount;
   }
 
-  /// Computes the area difference between the two level sets.
+  /// Computes the volume/area difference between the two level sets.
   void apply() {
     // Calculate the bounds for iteration
     if (!checkAndCalculateBounds()) {
@@ -200,7 +221,8 @@ public:
     if (levelSetTarget->getLevelSetWidth() < minimumWidth) {
       workingTarget = SmartPointer<Domain<T, D>>::New(levelSetTarget);
       Expand<T, D>(workingTarget, minimumWidth).apply();
-      VIENNACORE_LOG_INFO("CompareArea: Expanded target level set to width " +
+      VIENNACORE_LOG_INFO(std::string(getClassName()) +
+                          ": Expanded target level set to width " +
                           std::to_string(minimumWidth) +
                           " to avoid undefined values.");
     }
@@ -208,7 +230,8 @@ public:
     if (levelSetSample->getLevelSetWidth() < minimumWidth) {
       workingSample = SmartPointer<Domain<T, D>>::New(levelSetSample);
       Expand<T, D>(workingSample, minimumWidth).apply();
-      VIENNACORE_LOG_INFO("CompareArea: Expanded sample level set to width " +
+      VIENNACORE_LOG_INFO(std::string(getClassName()) +
+                          ": Expanded sample level set to width " +
                           std::to_string(minimumWidth) +
                           " to avoid undefined values.");
     }
@@ -227,9 +250,11 @@ public:
     if (generateMesh) {
       // Save the extent of the resulting mesh
       outputMesh->clear();
-      for (unsigned i = 0; i < D; ++i) {
-        outputMesh->minimumExtent[i] = std::numeric_limits<T>::max();
-        outputMesh->maximumExtent[i] = std::numeric_limits<T>::lowest();
+      for (unsigned i = 0; i < 3; ++i) {
+        outputMesh->minimumExtent[i] =
+            (i < D) ? std::numeric_limits<T>::max() : 0.0;
+        outputMesh->maximumExtent[i] =
+            (i < D) ? std::numeric_limits<T>::lowest() : 0.0;
       }
     }
 
@@ -270,16 +295,24 @@ public:
       bool inYRange = useCustomYIncrement &&
                       (itTarget.getIndices()[1] * gridDelta >= yRangeMin &&
                        itTarget.getIndices()[1] * gridDelta <= yRangeMax);
+      bool inZRange =
+          (D < 3) || (useCustomZIncrement &&
+                      (itTarget.getIndices()[2] * gridDelta >= zRangeMin &&
+                       itTarget.getIndices()[2] * gridDelta <= zRangeMax));
 
       // Calculate increment to add based on ranges
       unsigned short int incrementToAdd = defaultIncrement;
-      if (inXRange && inYRange) {
-        // Apply both increments
-        incrementToAdd = customXIncrement + customYIncrement;
-      } else if (inXRange) {
-        incrementToAdd = customXIncrement;
-      } else if (inYRange) {
-        incrementToAdd = customYIncrement;
+
+      // If any custom range is active, start from 0 and add the custom
+      // increments
+      if (inXRange || inYRange || (D == 3 && inZRange)) {
+        incrementToAdd = 0;
+        if (inXRange)
+          incrementToAdd += customXIncrement;
+        if (inYRange)
+          incrementToAdd += customYIncrement;
+        if (D == 3 && inZRange)
+          incrementToAdd += customZIncrement;
       }
 
       // If cells differ, update the counters
@@ -350,7 +383,7 @@ public:
       // Insert points into the mesh
       outputMesh->nodes.resize(pointIdMapping.size());
       for (auto it = pointIdMapping.begin(); it != pointIdMapping.end(); ++it) {
-        Vec3D<T> coords;
+        Vec3D<T> coords = {0.0, 0.0, 0.0};
         for (unsigned i = 0; i < D; ++i) {
           coords[i] = gridDelta * it->first[i];
 
@@ -374,7 +407,10 @@ public:
   }
 };
 
+// Aliases for backward compatibility and clarity
+template <class T> using CompareArea = CompareVolume<T, 2>;
+
 // Precompile for common precision and dimensions
-PRECOMPILE_PRECISION_DIMENSION(CompareArea)
+PRECOMPILE_PRECISION_DIMENSION(CompareVolume)
 
 } // namespace viennals

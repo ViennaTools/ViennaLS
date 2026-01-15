@@ -5,7 +5,7 @@ from __future__ import annotations
 import collections.abc
 import typing
 import viennals._core
-__all__: list[str] = ['Advect', 'BooleanOperation', 'Box', 'BoxDistribution', 'CalculateCurvatures', 'CalculateNormalVectors', 'CalculateVisibilities', 'Check', 'ConvexHull', 'CustomSphereDistribution', 'Cylinder', 'DetectFeatures', 'Domain', 'Expand', 'FinalizeStencilLocalLaxFriedrichs', 'FromMesh', 'FromSurfaceMesh', 'FromVolumeMesh', 'GeometricAdvect', 'GeometricAdvectDistribution', 'MakeGeometry', 'MarkVoidPoints', 'Plane', 'PointCloud', 'PrepareStencilLocalLaxFriedrichs', 'Prune', 'Reader', 'Reduce', 'RemoveStrayPoints', 'Sphere', 'SphereDistribution', 'StencilLocalLaxFriedrichsScalar', 'ToDiskMesh', 'ToMesh', 'ToMultiSurfaceMesh', 'ToSurfaceMesh', 'ToVoxelMesh', 'WriteVisualizationMesh', 'Writer', 'hrleGrid']
+__all__: list[str] = ['Advect', 'BooleanOperation', 'Box', 'BoxDistribution', 'CalculateCurvatures', 'CalculateNormalVectors', 'CalculateVisibilities', 'Check', 'CompareChamfer', 'CompareCriticalDimensions', 'CompareNarrowBand', 'CompareSparseField', 'CompareVolume', 'ConvexHull', 'CustomSphereDistribution', 'Cylinder', 'DetectFeatures', 'Domain', 'Expand', 'FinalizeStencilLocalLaxFriedrichs', 'FromMesh', 'FromSurfaceMesh', 'FromVolumeMesh', 'GeometricAdvect', 'GeometricAdvectDistribution', 'MakeGeometry', 'MarkVoidPoints', 'Plane', 'PointCloud', 'PrepareStencilLocalLaxFriedrichs', 'Prune', 'Reader', 'Reduce', 'RemoveStrayPoints', 'Sphere', 'SphereDistribution', 'StencilLocalLaxFriedrichsScalar', 'ToDiskMesh', 'ToMesh', 'ToMultiSurfaceMesh', 'ToSurfaceMesh', 'ToVoxelMesh', 'WriteVisualizationMesh', 'Writer', 'hrleGrid']
 class Advect:
     @typing.overload
     def __init__(self) -> None:
@@ -113,6 +113,10 @@ class Advect:
     def setVelocityField(self, arg0: viennals._core.VelocityField) -> None:
         """
         Set the velocity to use for advection.
+        """
+    def setVelocityUpdateCallback(self, arg0: collections.abc.Callable[[Domain], bool]) -> None:
+        """
+        Set a callback function that is called after the level set has been updated during intermediate time integration steps (e.g. RK2, RK3).
         """
 class BooleanOperation:
     @typing.overload
@@ -224,6 +228,329 @@ class Check:
     def setLevelSet(self, arg0: Domain) -> None:
         """
         Set levelset for which to calculate normal vectors.
+        """
+class CompareChamfer:
+    @typing.overload
+    def __init__(self) -> None:
+        ...
+    @typing.overload
+    def __init__(self, arg0: Domain, arg1: Domain) -> None:
+        ...
+    def apply(self) -> None:
+        """
+        Apply the Chamfer distance calculation.
+        """
+    def getBackwardDistance(self) -> float:
+        """
+        Get the backward distance (average distance from sample to target).
+        """
+    def getChamferDistance(self) -> float:
+        """
+        Get the Chamfer distance (average of forward and backward).
+        """
+    def getForwardDistance(self) -> float:
+        """
+        Get the forward distance (average distance from target to sample).
+        """
+    def getMaxDistance(self) -> float:
+        """
+        Get the maximum nearest-neighbor distance.
+        """
+    def getNumSamplePoints(self) -> int:
+        """
+        Get the number of sample surface points.
+        """
+    def getNumTargetPoints(self) -> int:
+        """
+        Get the number of target surface points.
+        """
+    def getRMSChamferDistance(self) -> float:
+        """
+        Get the RMS Chamfer distance.
+        """
+    def setLevelSetSample(self, arg0: Domain) -> None:
+        """
+        Set the sample level set.
+        """
+    def setLevelSetTarget(self, arg0: Domain) -> None:
+        """
+        Set the target level set.
+        """
+    def setOutputMeshSample(self, arg0: viennals._core.Mesh) -> None:
+        """
+        Set output mesh for sample surface points with distance data.
+        """
+    def setOutputMeshTarget(self, arg0: viennals._core.Mesh) -> None:
+        """
+        Set output mesh for target surface points with distance data.
+        """
+class CompareCriticalDimensions:
+    @typing.overload
+    def __init__(self) -> None:
+        ...
+    @typing.overload
+    def __init__(self, arg0: Domain, arg1: Domain) -> None:
+        ...
+    def addRange(self, measureDimension: typing.SupportsInt, minBounds: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], maxBounds: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], findMaximum: bool = True) -> None:
+        """
+        Add a generic range specification.
+        """
+    def addXRange(self, minX: typing.SupportsFloat, maxX: typing.SupportsFloat, findMaximum: bool = True) -> None:
+        """
+        Add an X range to find maximum or minimum Y position.
+        """
+    def addYRange(self, minY: typing.SupportsFloat, maxY: typing.SupportsFloat, findMaximum: bool = True) -> None:
+        """
+        Add a Y range to find maximum or minimum X position.
+        """
+    def apply(self) -> None:
+        """
+        Apply the comparison.
+        """
+    def clearRanges(self) -> None:
+        """
+        Clear all range specifications.
+        """
+    def getAllDifferences(self) -> list[float]:
+        """
+        Get all valid differences as a list.
+        """
+    def getCriticalDimensionResult(self, index: typing.SupportsInt) -> tuple:
+        """
+        Get a specific critical dimension result. Returns (valid, positionTarget, positionSample, difference).
+        """
+    def getMaxDifference(self) -> float:
+        """
+        Get maximum difference across all valid critical dimensions.
+        """
+    def getMeanDifference(self) -> float:
+        """
+        Get mean absolute difference across all valid critical dimensions.
+        """
+    def getNumCriticalDimensions(self) -> int:
+        """
+        Get the number of critical dimensions compared.
+        """
+    def getRMSE(self) -> float:
+        """
+        Get RMSE across all valid critical dimensions.
+        """
+    def setLevelSetSample(self, arg0: Domain) -> None:
+        """
+        Sets the sample level set.
+        """
+    def setLevelSetTarget(self, arg0: Domain) -> None:
+        """
+        Sets the target level set.
+        """
+    def setOutputMesh(self, arg0: viennals._core.Mesh) -> None:
+        """
+        Set the output mesh where critical dimension locations will be stored.
+        """
+class CompareNarrowBand:
+    @typing.overload
+    def __init__(self) -> None:
+        ...
+    @typing.overload
+    def __init__(self, arg0: Domain, arg1: Domain) -> None:
+        ...
+    def apply(self) -> None:
+        """
+        Apply the comparison and calculate the sum of squared differences.
+        """
+    def clearXRange(self) -> None:
+        """
+        Clear the x-range restriction
+        """
+    def clearYRange(self) -> None:
+        """
+        Clear the y-range restriction
+        """
+    def clearZRange(self) -> None:
+        """
+        Clear the z-range restriction
+        """
+    def getNumPoints(self) -> int:
+        """
+        Return the number of points used in the comparison.
+        """
+    def getRMSE(self) -> float:
+        """
+        Calculate the root mean square error from previously computed values.
+        """
+    def getSumDifferences(self) -> float:
+        """
+        Return the sum of absolute differences calculated by apply().
+        """
+    def getSumSquaredDifferences(self) -> float:
+        """
+        Return the sum of squared differences calculated by apply().
+        """
+    def setLevelSetSample(self, arg0: Domain) -> None:
+        """
+        Sets the sample level set.
+        """
+    def setLevelSetTarget(self, arg0: Domain) -> None:
+        """
+        Sets the target level set.
+        """
+    def setOutputMesh(self, arg0: viennals._core.Mesh, arg1: bool) -> None:
+        """
+        Set the output mesh where difference values will be stored
+        """
+    def setOutputMeshSquaredDifferences(self, arg0: bool) -> None:
+        """
+        Set whether to output squared differences (true) or absolute differences (false)
+        """
+    def setXRange(self, arg0: typing.SupportsFloat, arg1: typing.SupportsFloat) -> None:
+        """
+        Set the x-coordinate range to restrict the comparison area
+        """
+    def setYRange(self, arg0: typing.SupportsFloat, arg1: typing.SupportsFloat) -> None:
+        """
+        Set the y-coordinate range to restrict the comparison area
+        """
+    def setZRange(self, arg0: typing.SupportsFloat, arg1: typing.SupportsFloat) -> None:
+        """
+        Set the z-coordinate range to restrict the comparison area
+        """
+class CompareSparseField:
+    @typing.overload
+    def __init__(self) -> None:
+        ...
+    @typing.overload
+    def __init__(self, arg0: Domain, arg1: Domain) -> None:
+        ...
+    def apply(self) -> None:
+        """
+        Apply the comparison and calculate the sum of squared differences.
+        """
+    def clearXRange(self) -> None:
+        """
+        Clear the x-range restriction
+        """
+    def clearYRange(self) -> None:
+        """
+        Clear the y-range restriction
+        """
+    def clearZRange(self) -> None:
+        """
+        Clear the z-range restriction
+        """
+    def getNumPoints(self) -> int:
+        """
+        Return the number of points used in the comparison.
+        """
+    def getNumSkippedPoints(self) -> int:
+        """
+        Return the number of points skipped during comparison.
+        """
+    def getRMSE(self) -> float:
+        """
+        Calculate the root mean square error from previously computed values.
+        """
+    def getSumDifferences(self) -> float:
+        """
+        Return the sum of absolute differences calculated by apply().
+        """
+    def getSumSquaredDifferences(self) -> float:
+        """
+        Return the sum of squared differences calculated by apply().
+        """
+    def setExpandedLevelSetWidth(self, arg0: typing.SupportsInt) -> None:
+        """
+        Set the expansion width for the expanded level set
+        """
+    def setFillIteratedWithDistances(self, arg0: bool) -> None:
+        """
+        Set whether to fill the iterated level set with distance values
+        """
+    def setLevelSetExpanded(self, arg0: Domain) -> None:
+        """
+        Sets the expanded level set for comparison.
+        """
+    def setLevelSetIterated(self, arg0: Domain) -> None:
+        """
+        Sets the iterated level set to compare against the expanded one.
+        """
+    def setOutputMesh(self, arg0: viennals._core.Mesh) -> None:
+        """
+        Set the output mesh where difference values will be stored
+        """
+    def setXRange(self, arg0: typing.SupportsFloat, arg1: typing.SupportsFloat) -> None:
+        """
+        Set the x-coordinate range to restrict the comparison area
+        """
+    def setYRange(self, arg0: typing.SupportsFloat, arg1: typing.SupportsFloat) -> None:
+        """
+        Set the y-coordinate range to restrict the comparison area
+        """
+    def setZRange(self, arg0: typing.SupportsFloat, arg1: typing.SupportsFloat) -> None:
+        """
+        Set the z-coordinate range to restrict the comparison area
+        """
+class CompareVolume:
+    @typing.overload
+    def __init__(self) -> None:
+        ...
+    @typing.overload
+    def __init__(self, arg0: Domain, arg1: Domain) -> None:
+        ...
+    def apply(self) -> None:
+        """
+        Computes the volume difference between the two level sets.
+        """
+    def getAreaMismatch(self) -> float:
+        """
+        Returns the computed area mismatch.
+        """
+    def getCellCount(self) -> int:
+        """
+        Returns the number of cells where the level sets differ.
+        """
+    def getCustomAreaMismatch(self) -> float:
+        """
+        Returns the computed area mismatch, with custom increments applied.
+        """
+    def getCustomCellCount(self) -> int:
+        """
+        Returns the number of cells where the level sets differ, with custom increments applied.
+        """
+    def getCustomVolumeMismatch(self) -> float:
+        """
+        Returns the computed volume mismatch, with custom increments applied.
+        """
+    def getVolumeMismatch(self) -> float:
+        """
+        Returns the computed volume mismatch.
+        """
+    def setDefaultIncrement(self, arg0: typing.SupportsInt) -> None:
+        """
+        Set default increment value
+        """
+    def setLevelSetSample(self, arg0: Domain) -> None:
+        """
+        Sets the sample level set.
+        """
+    def setLevelSetTarget(self, arg0: Domain) -> None:
+        """
+        Sets the target level set.
+        """
+    def setOutputMesh(self, arg0: viennals._core.Mesh) -> None:
+        """
+        Set the output mesh where difference areas will be stored
+        """
+    def setXRangeAndIncrement(self, arg0: typing.SupportsInt, arg1: typing.SupportsInt, arg2: typing.SupportsInt) -> None:
+        """
+        Sets the x-range and custom increment value
+        """
+    def setYRangeAndIncrement(self, arg0: typing.SupportsInt, arg1: typing.SupportsInt, arg2: typing.SupportsInt) -> None:
+        """
+        Sets the y-range and custom increment value
+        """
+    def setZRangeAndIncrement(self, arg0: typing.SupportsInt, arg1: typing.SupportsInt, arg2: typing.SupportsInt) -> None:
+        """
+        Sets the z-range and custom increment value
         """
 class ConvexHull:
     @typing.overload
@@ -552,7 +879,7 @@ class MarkVoidPoints:
         """
         Reverse the logic of detecting the top surface.
         """
-    def setSaveComponentsId(self, arg0: bool) -> None:
+    def setSaveComponentIds(self, arg0: bool) -> None:
         """
         Save the connectivity information of all LS points in the pointData of the level set.
         """

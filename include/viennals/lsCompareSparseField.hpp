@@ -29,7 +29,7 @@ using namespace viennacore;
 /// The iterated level set is expected to be sparse. The reduction is performed
 /// automatically if this is not the case.
 ///
-/// The code is currently intended for 2D level sets only.
+/// The code is intended for 2D and 3D level sets.
 
 template <class T, int D = 2> class CompareSparseField {
   using hrleIndexType = viennahrle::IndexType;
@@ -42,8 +42,11 @@ template <class T, int D = 2> class CompareSparseField {
   T xRangeMax = std::numeric_limits<T>::max();
   T yRangeMin = std::numeric_limits<T>::lowest();
   T yRangeMax = std::numeric_limits<T>::max();
+  T zRangeMin = std::numeric_limits<T>::lowest();
+  T zRangeMax = std::numeric_limits<T>::max();
   bool useXRange = false;
   bool useYRange = false;
+  bool useZRange = false;
 
   // Fields to store the calculation results
   T sumSquaredDifferences = 0.0;
@@ -176,6 +179,20 @@ public:
     yRangeMax = std::numeric_limits<T>::max();
   }
 
+  /// Set the z-coordinate range to restrict the comparison area
+  void setZRange(T minZRange, T maxZRange) {
+    zRangeMin = minZRange;
+    zRangeMax = maxZRange;
+    useZRange = true;
+  }
+
+  /// Clear the z-range restriction
+  void clearZRange() {
+    useZRange = false;
+    zRangeMin = std::numeric_limits<T>::lowest();
+    zRangeMax = std::numeric_limits<T>::max();
+  }
+
   /// Set the output mesh where difference values will be stored
   void setOutputMesh(SmartPointer<Mesh<T>> passedMesh) {
     outputMesh = passedMesh;
@@ -231,9 +248,11 @@ public:
       outputMesh->clear();
 
       // Initialize mesh extent
-      for (unsigned i = 0; i < D; ++i) {
-        outputMesh->minimumExtent[i] = std::numeric_limits<T>::max();
-        outputMesh->maximumExtent[i] = std::numeric_limits<T>::lowest();
+      for (unsigned i = 0; i < 3; ++i) {
+        outputMesh->minimumExtent[i] =
+            (i < D) ? std::numeric_limits<T>::max() : 0.0;
+        outputMesh->maximumExtent[i] =
+            (i < D) ? std::numeric_limits<T>::lowest() : 0.0;
       }
 
       // Reserve space for mesh data
@@ -281,6 +300,12 @@ public:
 
       // Skip if outside the specified y-range
       if (useYRange && (yCoord < yRangeMin || yCoord > yRangeMax)) {
+        itIterated.next();
+        continue;
+      }
+
+      // Skip if outside the specified z-range
+      if (D == 3 && useZRange && (zCoord < zRangeMin || zCoord > zRangeMax)) {
         itIterated.next();
         continue;
       }

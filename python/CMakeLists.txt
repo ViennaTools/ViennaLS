@@ -77,7 +77,6 @@ add_dependencies(${PROJECT_NAME} ${MOD})
 
 set(VIENNALS_LIB_FOLDER ${CMAKE_BINARY_DIR}/${PKG}.libs)
 
-# Not required for both targets, one will suffice
 viennacore_setup_vtk_env(${MOD} ${VIENNALS_LIB_FOLDER})
 
 install(
