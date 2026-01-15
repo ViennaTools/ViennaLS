@@ -258,9 +258,13 @@ public:
           std::move(targetDistances), "DistanceToSample");
 
       // Set mesh extent
+      for (unsigned d = 0; d < 3; ++d) {
+        outputMeshTarget->minimumExtent[d] =
+            (d < D) ? std::numeric_limits<T>::max() : 0.0;
+        outputMeshTarget->maximumExtent[d] =
+            (d < D) ? std::numeric_limits<T>::lowest() : 0.0;
+      }
       for (unsigned d = 0; d < D; ++d) {
-        outputMeshTarget->minimumExtent[d] = std::numeric_limits<T>::max();
-        outputMeshTarget->maximumExtent[d] = std::numeric_limits<T>::lowest();
         for (const auto &node : targetNodes) {
           outputMeshTarget->minimumExtent[d] =
               std::min(outputMeshTarget->minimumExtent[d], node[d]);
@@ -286,9 +290,13 @@ public:
           std::move(sampleDistances), "DistanceToTarget");
 
       // Set mesh extent
+      for (unsigned d = 0; d < 3; ++d) {
+        outputMeshSample->minimumExtent[d] =
+            (d < D) ? std::numeric_limits<T>::max() : 0.0;
+        outputMeshSample->maximumExtent[d] =
+            (d < D) ? std::numeric_limits<T>::lowest() : 0.0;
+      }
       for (unsigned d = 0; d < D; ++d) {
-        outputMeshSample->minimumExtent[d] = std::numeric_limits<T>::max();
-        outputMeshSample->maximumExtent[d] = std::numeric_limits<T>::lowest();
         for (const auto &node : sampleNodes) {
           outputMeshSample->minimumExtent[d] =
               std::min(outputMeshSample->minimumExtent[d], node[d]);

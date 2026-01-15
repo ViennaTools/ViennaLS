@@ -424,12 +424,29 @@ private:
       // them manually
       // cylinder axis will be (0,0,1)
       auto gridDelta = levelSet->getGrid().getGridDelta();
+    if constexpr (D == 3) {
+      // generate the points on the edges of the cylinders and mesh
+      // them manually
+      // cylinder axis will be (0,0,1)
+      auto gridDelta = levelSet->getGrid().getGridDelta();
 
       auto points = PointCloud<T, D>::New();
       const unsigned numPoints =
           std::ceil(2 * M_PI * cylinder->radius / gridDelta);
       const double smallAngle = 2.0 * M_PI / static_cast<double>(numPoints);
+      auto points = PointCloud<T, D>::New();
+      const unsigned numPoints =
+          std::ceil(2 * M_PI * cylinder->radius / gridDelta);
+      const double smallAngle = 2.0 * M_PI / static_cast<double>(numPoints);
 
+      auto mesh = Mesh<T>::New();
+      // insert midpoint at base
+      mesh->insertNextNode(Vec3D<T>{0.0, 0.0, 0.0});
+      {
+        constexpr double limit = 2 * M_PI - 1e-6;
+        std::vector<Vec3D<T>> points;
+        if (cylinder->topRadius)
+          std::vector<Vec3D<T>> pointsTop;
       auto mesh = Mesh<T>::New();
       // insert midpoint at base
       mesh->insertNextNode(Vec3D<T>{0.0, 0.0, 0.0});
@@ -450,7 +467,17 @@ private:
 
         // insert midpoint at top
         mesh->insertNextNode(Vec3D<T>{0.0, 0.0, cylinder->height});
+        // insert midpoint at top
+        mesh->insertNextNode(Vec3D<T>{0.0, 0.0, cylinder->height});
 
+        double angle = 0;
+        for (unsigned i = 0; i < numPoints; ++i) {
+          // create triangles at base
+          std::array<unsigned, 3> triangle{};
+          triangle[0] = (i + 1) % numPoints + 1;
+          triangle[1] = i + 1;
+          triangle[2] = 0;
+          mesh->insertNextTriangle(triangle);
         double angle = 0;
         for (unsigned i = 0; i < numPoints; ++i) {
           // create triangles at base
@@ -470,7 +497,23 @@ private:
           }
           points[i][2] = cylinder->height;
           mesh->insertNextNode(points[i]);
+          // insert points at top
+          // If topRadius is specified, update the first two coordinates of the
+          // points
+          if (cylinder->topRadius) {
+            points[i][0] = cylinder->topRadius * std::cos(angle);
+            points[i][1] = cylinder->topRadius * std::sin(angle);
+            angle += smallAngle;
+          }
+          points[i][2] = cylinder->height;
+          mesh->insertNextNode(points[i]);
 
+          // insert triangles at top
+          triangle[0] = numPoints + 1;
+          triangle[1] = numPoints + i + 2;
+          triangle[2] = (i + 1) % numPoints + 2 + numPoints;
+          mesh->insertNextTriangle(triangle);
+        }
           // insert triangles at top
           triangle[0] = numPoints + 1;
           triangle[1] = numPoints + i + 2;
@@ -485,7 +528,20 @@ private:
           triangle[1] = (i + 1) % numPoints + 1;
           triangle[2] = i + numPoints + 2;
           mesh->insertNextTriangle(triangle);
+        // insert sidewall triangles
+        for (unsigned i = 0; i < numPoints; ++i) {
+          std::array<unsigned, 3> triangle{};
+          triangle[0] = i + 1;
+          triangle[1] = (i + 1) % numPoints + 1;
+          triangle[2] = i + numPoints + 2;
+          mesh->insertNextTriangle(triangle);
 
+          triangle[0] = (i + 1) % numPoints + 1;
+          triangle[1] = (i + 1) % numPoints + 2 + numPoints;
+          triangle[2] = i + numPoints + 2;
+          mesh->insertNextTriangle(triangle);
+        }
+      }
           triangle[0] = (i + 1) % numPoints + 1;
           triangle[1] = (i + 1) % numPoints + 2 + numPoints;
           triangle[2] = i + numPoints + 2;
@@ -505,7 +561,22 @@ private:
       Vec3D<T> rotAxis = {-cylinderAxis[1], cylinderAxis[0], 0.0};
       // angle is acos of dot product
       T rotationAngle = std::acos(cylinderAxis[2]);
+      // rotate mesh
+      // normalise axis vector
+      T unit = std::sqrt(
+          DotProduct(cylinder->axisDirection, cylinder->axisDirection));
+      Vec3D<T> cylinderAxis;
+      for (int i = 0; i < 3; ++i) {
+        cylinderAxis[i] = cylinder->axisDirection[i] / unit;
+      }
+      // get rotation axis via cross product of (0,0,1) and axis of cylinder
+      Vec3D<T> rotAxis = {-cylinderAxis[1], cylinderAxis[0], 0.0};
+      // angle is acos of dot product
+      T rotationAngle = std::acos(cylinderAxis[2]);
 
+      // rotate mesh
+      TransformMesh<T>(mesh, TransformEnum::ROTATION, rotAxis, rotationAngle)
+          .apply();
       // rotate mesh
       TransformMesh<T>(mesh, TransformEnum::ROTATION, rotAxis, rotationAngle)
           .apply();
@@ -517,7 +588,79 @@ private:
       }
       TransformMesh<T>(mesh, TransformEnum::TRANSLATION, translationVector)
           .apply();
+      // translate mesh
+      Vec3D<T> translationVector;
+      for (int i = 0; i < 3; ++i) {
+        translationVector[i] = cylinder->origin[i];
+      }
+      TransformMesh<T>(mesh, TransformEnum::TRANSLATION, translationVector)
+          .apply();
 
+      // read mesh from surface
+      FromSurfaceMesh<T, D> mesher(levelSet, mesh);
+      mesher.setRemoveBoundaryTriangles(ignoreBoundaryConditions);
+      mesher.apply();
+    } else if constexpr (D == 2) {
+      VIENNACORE_LOG_WARNING(
+          "MakeGeometry: Cylinder in 2D creates a box, not a cylinder.");
+
+      auto mesh = Mesh<T>::New();
+
+      // Calculate axis length for normalization
+      T axisLen = 0;
+      for (unsigned i = 0; i < D; ++i)
+        axisLen += cylinder->axisDirection[i] * cylinder->axisDirection[i];
+      axisLen = std::sqrt(axisLen);
+
+      // Normalized axis and perpendicular vector
+      // In 2D, if axis is (u, v), perpendicular is (v, -u) for CCW winding
+      T axis[2] = {cylinder->axisDirection[0] / axisLen,
+                   cylinder->axisDirection[1] / axisLen};
+      T perp[2] = {axis[1], -axis[0]};
+
+      T topRadius =
+          (cylinder->topRadius != 0.) ? cylinder->topRadius : cylinder->radius;
+
+      // Define the 4 corners of the rectangle/trapezoid
+      std::array<Vec3D<T>, 4> corners;
+
+      // Base Right
+      corners[0][0] = cylinder->origin[0] + cylinder->radius * perp[0];
+      corners[0][1] = cylinder->origin[1] + cylinder->radius * perp[1];
+      corners[0][2] = 0.;
+
+      // Top Right
+      corners[1][0] = cylinder->origin[0] + cylinder->height * axis[0] +
+                      topRadius * perp[0];
+      corners[1][1] = cylinder->origin[1] + cylinder->height * axis[1] +
+                      topRadius * perp[1];
+      corners[1][2] = 0.;
+
+      // Top Left
+      corners[2][0] = cylinder->origin[0] + cylinder->height * axis[0] -
+                      topRadius * perp[0];
+      corners[2][1] = cylinder->origin[1] + cylinder->height * axis[1] -
+                      topRadius * perp[1];
+      corners[2][2] = 0.;
+
+      // Base Left
+      corners[3][0] = cylinder->origin[0] - cylinder->radius * perp[0];
+      corners[3][1] = cylinder->origin[1] - cylinder->radius * perp[1];
+      corners[3][2] = 0.;
+
+      for (const auto &p : corners) {
+        mesh->insertNextNode(p);
+      }
+
+      mesh->insertNextLine({0, 1});
+      mesh->insertNextLine({1, 2});
+      mesh->insertNextLine({2, 3});
+      mesh->insertNextLine({3, 0});
+
+      FromSurfaceMesh<T, D> mesher(levelSet, mesh);
+      mesher.setRemoveBoundaryTriangles(ignoreBoundaryConditions);
+      mesher.apply();
+    }
       // read mesh from surface
       FromSurfaceMesh<T, D> mesher(levelSet, mesh);
       mesher.setRemoveBoundaryTriangles(ignoreBoundaryConditions);

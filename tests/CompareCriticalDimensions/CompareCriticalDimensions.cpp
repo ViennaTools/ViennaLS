@@ -49,6 +49,8 @@ template <int D> void runTest() {
   std::vector<double> origin2(D, 0.0);
   origin2[0] = 1.5;
   origin2[1] = 0.5;
+  if (D > 2)
+    origin2[2] = 0.3;
   double radius2 = 5.0; // Same radius
 
   ls::MakeGeometry<double, D>(
@@ -119,18 +121,26 @@ template <int D> void runTest() {
   std::cout << "Total nodes in circle1 surface: " << debugMesh1->nodes.size()
             << std::endl;
   for (size_t i = 0; i < std::min(size_t(10), debugMesh1->nodes.size()); ++i) {
-    std::cout << "  Node " << i << ": (" << debugMesh1->nodes[i][0] << ", "
-              << debugMesh1->nodes[i][1] << ")" << std::endl;
+    std::cout << "  Node " << i << ": (";
+    for (int j = 0; j < D; ++j)
+      std::cout << debugMesh1->nodes[i][j] << (j == D - 1 ? "" : ", ");
+    std::cout << ")" << std::endl;
   }
 
   // Print results
-  std::cout << "Circle 1 center: (" << origin1[0] << ", " << origin1[1] << ")"
-            << std::endl;
-  std::cout << "Circle 2 center: (" << origin2[0] << ", " << origin2[1] << ")"
-            << std::endl;
+  std::cout << "Circle 1 center: (";
+  for (int i = 0; i < D; ++i)
+    std::cout << origin1[i] << (i == D - 1 ? "" : ", ");
+  std::cout << ")" << std::endl;
+  std::cout << "Circle 2 center: (";
+  for (int i = 0; i < D; ++i)
+    std::cout << origin2[i] << (i == D - 1 ? "" : ", ");
+  std::cout << ")" << std::endl;
   std::cout << "Radius: " << radius1 << std::endl;
-  std::cout << "Center shift: (" << (origin2[0] - origin1[0]) << ", "
-            << (origin2[1] - origin1[1]) << ")" << std::endl;
+  std::cout << "Center shift: (";
+  for (int i = 0; i < D; ++i)
+    std::cout << (origin2[i] - origin1[i]) << (i == D - 1 ? "" : ", ");
+  std::cout << ")" << std::endl;
   std::cout << std::endl;
 
   // Get statistics
@@ -138,6 +148,14 @@ template <int D> void runTest() {
   std::cout << "Number of critical dimensions compared: " << numCriticalDims
             << std::endl;
 
+  // Compute shifts for expected value calculations
+  double xShift = origin2[0] - origin1[0];
+  double yShift = origin2[1] - origin1[1];
+  double zShift = (D > 2) ? origin2[2] - origin1[2] : 0.0;
+
+  // Analytical differences based on geometry:
+  // For max: diff = shift + sqrt(r² - perp²) - r
+  // For min: diff = |shift - sqrt(r² - perp²) + r|
   std::cout << "\nIndividual critical dimension results:" << std::endl;
   for (size_t i = 0; i < numCriticalDims; ++i) {
     double posRef, posCmp, diff;
@@ -147,6 +165,35 @@ template <int D> void runTest() {
       std::cout << "    Target position: " << posRef << std::endl;
       std::cout << "    Sample position: " << posCmp << std::endl;
       std::cout << "    Difference: " << diff << std::endl;
+
+      // Compute expected difference based on dimension index
+      double expected = 0.0;
+      if constexpr (D == 2) {
+        double rEffectiveY = std::sqrt(radius1 * radius1 - xShift * xShift);
+        double rEffectiveX = std::sqrt(radius1 * radius1 - yShift * yShift);
+        if (i == 0) // max Y
+          expected = std::abs(yShift + rEffectiveY - radius1);
+        else if (i == 1) // min Y
+          expected = std::abs(yShift - rEffectiveY + radius1);
+        else if (i == 2) // max X
+          expected = std::abs(xShift + rEffectiveX - radius1);
+        else if (i == 3) // min X
+          expected = std::abs(xShift - rEffectiveX + radius1);
+      } else if constexpr (D == 3) {
+        double rEffectiveZ =
+            std::sqrt(radius1 * radius1 - xShift * xShift - yShift * yShift);
+        double rEffectiveX =
+            std::sqrt(radius1 * radius1 - yShift * yShift - zShift * zShift);
+        if (i == 0) // max Z
+          expected = std::abs(zShift + rEffectiveZ - radius1);
+        else if (i == 1) // min Z
+          expected = std::abs(zShift - rEffectiveZ + radius1);
+        else if (i == 2) // max X
+          expected = std::abs(xShift + rEffectiveX - radius1);
+        else if (i == 3) // min X
+          expected = std::abs(xShift - rEffectiveX + radius1);
+      }
+      std::cout << "    Analytical: " << expected << std::endl;
     } else {
       std::cout << "  Dimension " << i << ": Invalid (not found)" << std::endl;
     }
@@ -158,16 +205,6 @@ template <int D> void runTest() {
   std::cout << "Max difference: " << compareCriticalDims.getMaxDifference()
             << std::endl;
   std::cout << "RMSE: " << compareCriticalDims.getRMSE() << std::endl;
-
-  // Theoretical validation
-  // For circles with the same radius but shifted centers,
-  // the critical dimensions should differ by approximately the shift amount
-  // in the corresponding direction
-  std::cout << "\nExpected differences based on geometry:" << std::endl;
-  std::cout << "Top/Bottom (max/min Y): should be close to Y-shift = "
-            << std::abs(origin2[1] - origin1[1]) << std::endl;
-  std::cout << "Left/Right (max/min X): should be close to X-shift = "
-            << std::abs(origin2[0] - origin1[0]) << std::endl;
 
   if constexpr (D == 2) {
     // Additional test: Test with wider ranges
@@ -182,6 +219,9 @@ template <int D> void runTest() {
     return;
   }
 
+  // With wide X range covering entire sphere, expected diff = yShift
+  std::cout << "Analytical difference (wide range): " << std::abs(yShift)
+            << std::endl;
   std::cout << "Number of critical dimensions: "
             << compareCriticalDims.getNumCriticalDimensions() << std::endl;
   for (size_t i = 0; i < compareCriticalDims.getNumCriticalDimensions(); ++i) {
@@ -200,6 +240,9 @@ template <int D> void runTest() {
   compareCriticalDims.addYRange(-10, 10, false); // Find minimum X
   compareCriticalDims.apply();
 
+  // With wide Y range covering entire sphere, expected diff = xShift
+  std::cout << "Analytical difference (wide range): " << std::abs(xShift)
+            << std::endl;
   std::cout << "Number of critical dimensions: "
             << compareCriticalDims.getNumCriticalDimensions() << std::endl;
   for (size_t i = 0; i < compareCriticalDims.getNumCriticalDimensions(); ++i) {

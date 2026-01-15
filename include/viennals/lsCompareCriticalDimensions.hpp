@@ -41,6 +41,9 @@ template <class T, int D = 2> class CompareCriticalDimensions {
     int measureDimension;
     std::array<T, D> minBounds;
     std::array<T, D> maxBounds;
+    int measureDimension;
+    std::array<T, D> minBounds;
+    std::array<T, D> maxBounds;
     bool findMaximum; // true for maximum, false for minimum
   };
 
@@ -48,6 +51,9 @@ template <class T, int D = 2> class CompareCriticalDimensions {
 
   // Structure to hold critical dimension results
   struct CriticalDimensionResult {
+    int measureDimension;
+    std::array<T, D> minBounds;
+    std::array<T, D> maxBounds;
     int measureDimension;
     std::array<T, D> minBounds;
     std::array<T, D> maxBounds;
@@ -93,6 +99,7 @@ template <class T, int D = 2> class CompareCriticalDimensions {
   // Returns the position coordinates (Y if isXRange=true, X if isXRange=false)
   std::vector<T> findSurfaceCrossings(SmartPointer<Mesh<T>> surfaceMesh,
                                       const RangeSpec &spec) {
+                                      const RangeSpec &spec) {
     std::vector<T> crossings;
 
     // Iterate through all surface mesh nodes
@@ -106,9 +113,21 @@ template <class T, int D = 2> class CompareCriticalDimensions {
           inRange = false;
           break;
         }
+      bool inRange = true;
+      for (int i = 0; i < D; ++i) {
+        if (i == spec.measureDimension)
+          continue;
+        if (node[i] < spec.minBounds[i] || node[i] > spec.maxBounds[i]) {
+          inRange = false;
+          break;
+        }
       }
 
       if (inRange) {
+        T val = node[spec.measureDimension];
+        if (val >= spec.minBounds[spec.measureDimension] &&
+            val <= spec.maxBounds[spec.measureDimension]) {
+          crossings.push_back(val);
         T val = node[spec.measureDimension];
         if (val >= spec.minBounds[spec.measureDimension] &&
             val <= spec.maxBounds[spec.measureDimension]) {
@@ -136,10 +155,12 @@ template <class T, int D = 2> class CompareCriticalDimensions {
 
 public:
   CompareCriticalDimensions() {}
+  CompareCriticalDimensions() {}
 
   CompareCriticalDimensions(SmartPointer<Domain<T, D>> passedLevelSetTarget,
                             SmartPointer<Domain<T, D>> passedLevelSetSample)
       : levelSetTarget(passedLevelSetTarget),
+        levelSetSample(passedLevelSetSample) {}
         levelSetSample(passedLevelSetSample) {}
 
   void setLevelSetTarget(SmartPointer<Domain<T, D>> passedLevelSet) {
@@ -153,7 +174,13 @@ public:
   /// Add a generic range specification
   void addRange(int measureDimension, const std::array<T, D> &minBounds,
                 const std::array<T, D> &maxBounds, bool findMaximum = true) {
+  /// Add a generic range specification
+  void addRange(int measureDimension, const std::array<T, D> &minBounds,
+                const std::array<T, D> &maxBounds, bool findMaximum = true) {
     RangeSpec spec;
+    spec.measureDimension = measureDimension;
+    spec.minBounds = minBounds;
+    spec.maxBounds = maxBounds;
     spec.measureDimension = measureDimension;
     spec.minBounds = minBounds;
     spec.maxBounds = maxBounds;
@@ -173,8 +200,28 @@ public:
     }
   }
 
+  /// Add an X range to find maximum or minimum Y position
+  void addXRange(T minX, T maxX, bool findMaximum = true) {
+    if constexpr (D == 2) {
+      std::array<T, D> minBounds = {minX, std::numeric_limits<T>::lowest()};
+      std::array<T, D> maxBounds = {maxX, std::numeric_limits<T>::max()};
+      addRange(1, minBounds, maxBounds, findMaximum);
+    } else {
+      VIENNACORE_LOG_WARNING(
+          "addXRange is only supported for 2D. Use addRange for 3D.");
+    }
+  }
+
   /// Add a Y range to find maximum or minimum X position
   void addYRange(T minY, T maxY, bool findMaximum = true) {
+    if constexpr (D == 2) {
+      std::array<T, D> minBounds = {std::numeric_limits<T>::lowest(), minY};
+      std::array<T, D> maxBounds = {std::numeric_limits<T>::max(), maxY};
+      addRange(0, minBounds, maxBounds, findMaximum);
+    } else {
+      VIENNACORE_LOG_WARNING(
+          "addYRange is only supported for 2D. Use addRange for 3D.");
+    }
     if constexpr (D == 2) {
       std::array<T, D> minBounds = {std::numeric_limits<T>::lowest(), minY};
       std::array<T, D> maxBounds = {std::numeric_limits<T>::max(), maxY};
@@ -222,10 +269,15 @@ public:
       result.measureDimension = spec.measureDimension;
       result.minBounds = spec.minBounds;
       result.maxBounds = spec.maxBounds;
+      result.measureDimension = spec.measureDimension;
+      result.minBounds = spec.minBounds;
+      result.maxBounds = spec.maxBounds;
       result.findMaximum = spec.findMaximum;
       result.valid = false;
 
       // Find all surface crossings from the mesh nodes
+      auto crossingsRef = findSurfaceCrossings(surfaceMeshRef, spec);
+      auto crossingsCmp = findSurfaceCrossings(surfaceMeshCmp, spec);
       auto crossingsRef = findSurfaceCrossings(surfaceMeshRef, spec);
       auto crossingsCmp = findSurfaceCrossings(surfaceMeshCmp, spec);
 
@@ -326,9 +378,11 @@ private:
     std::vector<T> targetValues;
     std::vector<T> sampleValues;
 
-    for (unsigned i = 0; i < D; ++i) {
-      outputMesh->minimumExtent[i] = std::numeric_limits<T>::max();
-      outputMesh->maximumExtent[i] = std::numeric_limits<T>::lowest();
+    for (unsigned i = 0; i < 3; ++i) {
+      outputMesh->minimumExtent[i] =
+          (i < D) ? std::numeric_limits<T>::max() : 0.0;
+      outputMesh->maximumExtent[i] =
+          (i < D) ? std::numeric_limits<T>::lowest() : 0.0;
     }
 
     unsigned pointId = 0;
