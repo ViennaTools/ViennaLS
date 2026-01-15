@@ -108,7 +108,7 @@ public:
   }
 
   std::array<viennahrle::CoordType, 6> getBounds() const override {
-    std::array<viennahrle::CoordType, 6> bounds = {};
+    std::array<viennahrle::CoordType, 6> bounds{};
     for (unsigned i = 0; i < D; ++i) {
       bounds[2 * i] = -radius;
       bounds[2 * i + 1] = radius;
@@ -157,7 +157,7 @@ public:
   }
 
   std::array<viennahrle::CoordType, 6> getBounds() const override {
-    std::array<viennahrle::CoordType, 6> bounds = {};
+    std::array<viennahrle::CoordType, 6> bounds{};
     for (unsigned i = 0; i < D; ++i) {
       bounds[2 * i] = -posExtent[i];
       bounds[2 * i + 1] = posExtent[i];
@@ -240,7 +240,7 @@ public:
   }
 
   std::array<viennahrle::CoordType, 6> getBounds() const override {
-    std::array<viennahrle::CoordType, 6> bounds = {};
+    std::array<viennahrle::CoordType, 6> bounds{};
     for (unsigned i = 0; i < D; ++i) {
       bounds[2 * i] = -maxRadius_;
       bounds[2 * i + 1] = maxRadius_;

@@ -2,6 +2,7 @@
 
 #include <lsPreCompileMacros.hpp>
 
+#include <cstring>
 #include <limits>
 
 #include <hrleDomain.hpp>

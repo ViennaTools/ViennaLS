@@ -103,6 +103,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
              SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER)
       .value("STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER",
              SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER)
+      .value("WENO_3RD_ORDER", SpatialSchemeEnum::WENO_3RD_ORDER)
       .value("WENO_5TH_ORDER", SpatialSchemeEnum::WENO_5TH_ORDER)
       .finalize();
 

@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include <lsAdvect.hpp>
+#include <lsCompareChamfer.hpp>
 #include <lsDomain.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsTestAsserts.hpp>
@@ -43,14 +44,14 @@ int main() {
   // Create initial level set (Sphere)
   auto sphere =
       ls::SmartPointer<ls::Domain<T, D>>::New(bounds, boundaryCons, gridDelta);
-  T origin[3] = {0.0, 0.0, 0.0};
+  T origin[3]{};
   T radius = 1.0;
   ls::MakeGeometry<T, D>(sphere, ls::Sphere<T, D>::New(origin, radius)).apply();
 
   // Output initial geometry
-  auto mesh = ls::SmartPointer<ls::Mesh<T>>::New();
-  ls::ToSurfaceMesh<T, D>(sphere, mesh).apply();
-  ls::VTKWriter<T>(mesh, "sphere_initial.vtp").apply();
+  // auto mesh = ls::SmartPointer<ls::Mesh<T>>::New();
+  // ls::ToSurfaceMesh<T, D>(sphere, mesh).apply();
+  // ls::VTKWriter<T>(mesh, "sphere_initial.vtp").apply();
 
   // Define constant velocity field
   auto velocityField = ls::SmartPointer<ConstantScalarVelocity<T>>::New();
@@ -72,9 +73,19 @@ int main() {
   // Verify the result is a valid level set
   LSTEST_ASSERT_VALID_LS(sphere, T, D);
 
+  // Check result against analytical solution
+  auto sphereRef =
+      ls::SmartPointer<ls::Domain<T, D>>::New(bounds, boundaryCons, gridDelta);
+  ls::MakeGeometry<T, D>(sphereRef, ls::Sphere<T, D>::New(origin, radius + 0.5))
+      .apply();
+
+  auto chamfer = ls::CompareChamfer<T, D>(sphereRef, sphere);
+  chamfer.apply();
+  VC_TEST_ASSERT(chamfer.getChamferDistance() < 0.035);
+
   // Output final geometry
-  ls::ToSurfaceMesh<T, D>(sphere, mesh).apply();
-  ls::VTKWriter<T>(mesh, "sphere_final.vtp").apply();
+  // ls::ToSurfaceMesh<T, D>(sphere, mesh).apply();
+  // ls::VTKWriter<T>(mesh, "sphere_final.vtp").apply();
 
   std::cout << "Test passed!" << std::endl;
 

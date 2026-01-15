@@ -41,8 +41,8 @@ public:
       std::fill(visibilities.begin(), visibilities.end(), static_cast<T>(1.0));
     } else {
       // *** Determine extents of domain ***
-      Vec3D<T> minDefinedPoint;
-      Vec3D<T> maxDefinedPoint;
+      Vec3D<T> minDefinedPoint{};
+      Vec3D<T> maxDefinedPoint{};
       // Initialize with extreme values
       for (int i = 0; i < D; ++i) {
         minDefinedPoint[i] = std::numeric_limits<T>::max();
@@ -87,7 +87,7 @@ public:
             continue;
 
           // Starting position of the point
-          Vec3D<T> currentPos;
+          Vec3D<T> currentPos{};
           for (int i = 0; i < D; ++i) {
             currentPos[i] = it.getStartIndices(i);
           }

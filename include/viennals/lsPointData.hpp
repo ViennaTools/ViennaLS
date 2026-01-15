@@ -3,6 +3,7 @@
 #include <lsPreCompileMacros.hpp>
 
 #include <cstdint>
+#include <cstring>
 #include <utility>
 #include <vector>
 
