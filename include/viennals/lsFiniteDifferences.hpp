@@ -11,7 +11,8 @@ enum class DifferentiationSchemeEnum : unsigned {
   FIRST_ORDER = 0,
   SECOND_ORDER = 1,
   WENO3 = 2,
-  WENO5 = 3
+  WENO5 = 3,
+  WENO5_Z = 4
 };
 
 template <class T, DifferentiationSchemeEnum scheme =
@@ -30,6 +31,7 @@ public:
     case DifferentiationSchemeEnum::WENO3:
       return 5;
     case DifferentiationSchemeEnum::WENO5:
+    case DifferentiationSchemeEnum::WENO5_Z:
       return 7;
     default:
       Logger::getInstance().addError("Invalid finite differences scheme!");
@@ -45,6 +47,7 @@ public:
     case DifferentiationSchemeEnum::WENO3:
       return 5;
     case DifferentiationSchemeEnum::WENO5:
+    case DifferentiationSchemeEnum::WENO5_Z:
       return 7;
     default:
       Logger::getInstance().addError("Invalid finite differences scheme!");
@@ -63,14 +66,14 @@ public:
 
     T result = 0;
     if (plus) {
-      T rp = (eps + FiniteDifferences::square(dx[3] - dx[2])) /
-             (eps + FiniteDifferences::square(dx[2] - dx[1]));
-      T wp = 1.0 / (1 + 2.0 * FiniteDifferences::square(rp));
+      T num = eps + FiniteDifferences::square(dx[3] - dx[2]);
+      T den = eps + FiniteDifferences::square(dx[2] - dx[1]);
+      T wp = (den * den) / (den * den + 2.0 * num * num);
       result = dx[1] + dx[2] - wp * (dx[3] - 2.0 * dx[2] + dx[1]);
     } else {
-      T rp = (eps + FiniteDifferences::square(dx[1] - dx[0])) /
-             (eps + FiniteDifferences::square(dx[2] - dx[1]));
-      T wp = 1.0 / (1 + 2.0 * FiniteDifferences::square(rp));
+      T num = eps + FiniteDifferences::square(dx[1] - dx[0]);
+      T den = eps + FiniteDifferences::square(dx[2] - dx[1]);
+      T wp = (den * den) / (den * den + 2.0 * num * num);
       result = dx[1] + dx[2] - wp * (dx[0] - 2.0 * dx[1] + dx[2]);
     }
 
@@ -81,65 +84,121 @@ public:
   // x1 ... x7 stencil points from left to right
   // plus == true => right-sided
   static T weno5(const T *x, T dx, bool plus, T eps = 1e-6) {
+    const T inv_dx = T(1) / dx;
+    const T c1_6 = T(1) / T(6);
+    const T c13_12 = T(13) / T(12);
+    const T c1_4 = T(1) / T(4);
 
     if (plus == false) {
-      T v1 = (x[1] - x[0]) / dx; // i-3
-      T v2 = (x[2] - x[1]) / dx; // i-2
-      T v3 = (x[3] - x[2]) / dx; // i-1
-      T v4 = (x[4] - x[3]) / dx; // i
-      T v5 = (x[5] - x[4]) / dx; // i+1
+      T v1 = (x[1] - x[0]) * inv_dx; // i-3
+      T v2 = (x[2] - x[1]) * inv_dx; // i-2
+      T v3 = (x[3] - x[2]) * inv_dx; // i-1
+      T v4 = (x[4] - x[3]) * inv_dx; // i
+      T v5 = (x[5] - x[4]) * inv_dx; // i+1
 
-      T p1 = v1 / 3.0 - 7 * v2 / 6.0 + 11 * v3 / 6.0;
-      T p2 = -v2 / 6.0 + 5 * v3 / 6.0 + v4 / 3.0;
-      T p3 = v3 / 3.0 + 5 * v4 / 6.0 - v5 / 6.0;
+      T p1 = (T(2) * v1 - T(7) * v2 + T(11) * v3) * c1_6;
+      T p2 = (-v2 + T(5) * v3 + T(2) * v4) * c1_6;
+      T p3 = (T(2) * v3 + T(5) * v4 - v5) * c1_6;
 
-      T s1 = 13 / 12.0 * FiniteDifferences::square(v1 - 2 * v2 + v3) +
-             1 / 4.0 * FiniteDifferences::square(v1 - 4 * v2 + 3 * v3);
-      T s2 = 13 / 12.0 * FiniteDifferences::square(v2 - 2 * v3 + v4) +
-             1 / 4.0 * FiniteDifferences::square(v2 - v4);
-      T s3 = 13 / 12.0 * FiniteDifferences::square(v3 - 2 * v4 + v5) +
-             1 / 4.0 * FiniteDifferences::square(3 * v3 - 4 * v4 + v5);
+      T s1 = c13_12 * FiniteDifferences::square(v1 - T(2) * v2 + v3) +
+             c1_4 * FiniteDifferences::square(v1 - T(4) * v2 + T(3) * v3);
+      T s2 = c13_12 * FiniteDifferences::square(v2 - T(2) * v3 + v4) +
+             c1_4 * FiniteDifferences::square(v2 - v4);
+      T s3 = c13_12 * FiniteDifferences::square(v3 - T(2) * v4 + v5) +
+             c1_4 * FiniteDifferences::square(T(3) * v3 - T(4) * v4 + v5);
 
-      T al1 = 0.1 / (eps + s1);
-      T al2 = 0.6 / (eps + s2);
-      T al3 = 0.3 / (eps + s3);
+      T al1 = T(0.1) / (eps + s1);
+      T al2 = T(0.6) / (eps + s2);
+      T al3 = T(0.3) / (eps + s3);
 
-      T alsum = al1 + al2 + al3;
-
-      T w1 = al1 / alsum;
-      T w2 = al2 / alsum;
-      T w3 = al3 / alsum;
-
-      return w1 * p1 + w2 * p2 + w3 * p3;
+      return (al1 * p1 + al2 * p2 + al3 * p3) / (al1 + al2 + al3);
     } else {
-      T v1 = (x[6] - x[5]) / dx;
-      T v2 = (x[5] - x[4]) / dx;
-      T v3 = (x[4] - x[3]) / dx;
-      T v4 = (x[3] - x[2]) / dx;
-      T v5 = (x[2] - x[1]) / dx;
+      T v1 = (x[6] - x[5]) * inv_dx;
+      T v2 = (x[5] - x[4]) * inv_dx;
+      T v3 = (x[4] - x[3]) * inv_dx;
+      T v4 = (x[3] - x[2]) * inv_dx;
+      T v5 = (x[2] - x[1]) * inv_dx;
 
-      T p1 = v1 / 3.0 - 7 * v2 / 6.0 + 11 * v3 / 6.0;
-      T p2 = -v2 / 6.0 + 5 * v3 / 6.0 + v4 / 3.0;
-      T p3 = v3 / 3.0 + 5 * v4 / 6.0 - v5 / 6.0;
+      T p1 = (T(2) * v1 - T(7) * v2 + T(11) * v3) * c1_6;
+      T p2 = (-v2 + T(5) * v3 + T(2) * v4) * c1_6;
+      T p3 = (T(2) * v3 + T(5) * v4 - v5) * c1_6;
 
-      T s1 = 13 / 12.0 * FiniteDifferences::square(v1 - 2 * v2 + v3) +
-             1 / 4.0 * FiniteDifferences::square(v1 - 4 * v2 + 3 * v3);
-      T s2 = 13 / 12.0 * FiniteDifferences::square(v2 - 2 * v3 + v4) +
-             1 / 4.0 * FiniteDifferences::square(v2 - v4);
-      T s3 = 13 / 12.0 * FiniteDifferences::square(v3 - 2 * v4 + v5) +
-             1 / 4.0 * FiniteDifferences::square(3 * v3 - 4 * v4 + v5);
+      T s1 = c13_12 * FiniteDifferences::square(v1 - T(2) * v2 + v3) +
+             c1_4 * FiniteDifferences::square(v1 - T(4) * v2 + T(3) * v3);
+      T s2 = c13_12 * FiniteDifferences::square(v2 - T(2) * v3 + v4) +
+             c1_4 * FiniteDifferences::square(v2 - v4);
+      T s3 = c13_12 * FiniteDifferences::square(v3 - T(2) * v4 + v5) +
+             c1_4 * FiniteDifferences::square(T(3) * v3 - T(4) * v4 + v5);
 
-      T al1 = 0.1 / (eps + s1);
-      T al2 = 0.6 / (eps + s2);
-      T al3 = 0.3 / (eps + s3);
+      T al1 = T(0.1) / (eps + s1);
+      T al2 = T(0.6) / (eps + s2);
+      T al3 = T(0.3) / (eps + s3);
 
-      T alsum = al1 + al2 + al3;
+      return (al1 * p1 + al2 * p2 + al3 * p3) / (al1 + al2 + al3);
+    }
+  }
 
-      T w1 = al1 / alsum;
-      T w2 = al2 / alsum;
-      T w3 = al3 / alsum;
+  // Weighted essentially non-oscillatory differentiation scheme 5th order (Z)
+  // x1 ... x7 stencil points from left to right
+  // plus == true => right-sided
+  static T weno5z(const T *x, T dx, bool plus, T eps = 1e-6) {
+    const T inv_dx = T(1) / dx;
+    const T c1_6 = T(1) / T(6);
+    const T c13_12 = T(13) / T(12);
+    const T c1_4 = T(1) / T(4);
 
-      return w1 * p1 + w2 * p2 + w3 * p3;
+    if (plus == false) {
+      T v1 = (x[1] - x[0]) * inv_dx; // i-3
+      T v2 = (x[2] - x[1]) * inv_dx; // i-2
+      T v3 = (x[3] - x[2]) * inv_dx; // i-1
+      T v4 = (x[4] - x[3]) * inv_dx; // i
+      T v5 = (x[5] - x[4]) * inv_dx; // i+1
+
+      T p1 = (T(2) * v1 - T(7) * v2 + T(11) * v3) * c1_6;
+      T p2 = (-v2 + T(5) * v3 + T(2) * v4) * c1_6;
+      T p3 = (T(2) * v3 + T(5) * v4 - v5) * c1_6;
+
+      T s1 = c13_12 * FiniteDifferences::square(v1 - T(2) * v2 + v3) +
+             c1_4 * FiniteDifferences::square(v1 - T(4) * v2 + T(3) * v3);
+      T s2 = c13_12 * FiniteDifferences::square(v2 - T(2) * v3 + v4) +
+             c1_4 * FiniteDifferences::square(v2 - v4);
+      T s3 = c13_12 * FiniteDifferences::square(v3 - T(2) * v4 + v5) +
+             c1_4 * FiniteDifferences::square(T(3) * v3 - T(4) * v4 + v5);
+
+      T tau5 = std::abs(s1 - s3);
+      T tau5sq = FiniteDifferences::square(tau5);
+
+      T al1 = T(0.1) * (T(1) + tau5sq / FiniteDifferences::square(eps + s1));
+      T al2 = T(0.6) * (T(1) + tau5sq / FiniteDifferences::square(eps + s2));
+      T al3 = T(0.3) * (T(1) + tau5sq / FiniteDifferences::square(eps + s3));
+
+      return (al1 * p1 + al2 * p2 + al3 * p3) / (al1 + al2 + al3);
+    } else {
+      T v1 = (x[6] - x[5]) * inv_dx;
+      T v2 = (x[5] - x[4]) * inv_dx;
+      T v3 = (x[4] - x[3]) * inv_dx;
+      T v4 = (x[3] - x[2]) * inv_dx;
+      T v5 = (x[2] - x[1]) * inv_dx;
+
+      T p1 = (T(2) * v1 - T(7) * v2 + T(11) * v3) * c1_6;
+      T p2 = (-v2 + T(5) * v3 + T(2) * v4) * c1_6;
+      T p3 = (T(2) * v3 + T(5) * v4 - v5) * c1_6;
+
+      T s1 = c13_12 * FiniteDifferences::square(v1 - T(2) * v2 + v3) +
+             c1_4 * FiniteDifferences::square(v1 - T(4) * v2 + T(3) * v3);
+      T s2 = c13_12 * FiniteDifferences::square(v2 - T(2) * v3 + v4) +
+             c1_4 * FiniteDifferences::square(v2 - v4);
+      T s3 = c13_12 * FiniteDifferences::square(v3 - T(2) * v4 + v5) +
+             c1_4 * FiniteDifferences::square(T(3) * v3 - T(4) * v4 + v5);
+
+      T tau5 = std::abs(s1 - s3);
+      T tau5sq = FiniteDifferences::square(tau5);
+
+      T al1 = T(0.1) * (T(1) + tau5sq / FiniteDifferences::square(eps + s1));
+      T al2 = T(0.6) * (T(1) + tau5sq / FiniteDifferences::square(eps + s2));
+      T al3 = T(0.3) * (T(1) + tau5sq / FiniteDifferences::square(eps + s3));
+
+      return (al1 * p1 + al2 * p2 + al3 * p3) / (al1 + al2 + al3);
     }
   }
 
@@ -150,6 +209,7 @@ public:
   // Second order: x_-2, x_-1, x, x_+1, x_+2
   // WENO3: x_-2, x_-1, x, x_+1, x_+2
   // WENO5: x_-3, x_-2, x_-1, x, x_+1, x_+2, x_+3
+  // WENO5_Z: x_-3, x_-2, x_-1, x, x_+1, x_+2, x_+3
   static T differenceNegative(const T *values, const double &delta) {
     if constexpr (scheme == DifferentiationSchemeEnum::FIRST_ORDER) {
       return (values[1] - values[0]) / delta;
@@ -161,6 +221,8 @@ public:
       return weno3(values, delta, false);
     } else if (scheme == DifferentiationSchemeEnum::WENO5) {
       return weno5(values, delta, false);
+    } else if (scheme == DifferentiationSchemeEnum::WENO5_Z) {
+      return weno5z(values, delta, false);
     } else {
       Logger::getInstance().addError("Invalid finite differences scheme!");
       return 0;
@@ -173,6 +235,7 @@ public:
   // First order:       x_-1, x, x_+1
   // WENO3:       x_-2, x_-1, x, x_+1, x_+2
   // WENO5: x_-3, x_-2, x_-1, x, x_+1, x_+2, x_+3
+  // WENO5_Z: x_-3, x_-2, x_-1, x, x_+1, x_+2, x_+3
   static T differencePositive(const T *values, const double &delta) {
     if constexpr (scheme == DifferentiationSchemeEnum::FIRST_ORDER) {
       return (values[2] - values[1]) / delta;
@@ -184,6 +247,8 @@ public:
       return weno3(values, delta, true);
     } else if (scheme == DifferentiationSchemeEnum::WENO5) {
       return weno5(values, delta, true);
+    } else if (scheme == DifferentiationSchemeEnum::WENO5_Z) {
+      return weno5z(values, delta, true);
     } else {
       Logger::getInstance().addError("Invalid finite differences scheme!");
       return 0;
@@ -195,6 +260,7 @@ public:
   // First order:       x_-1, x, x_+1
   // WENO3:       x_-2, x_-1, x, x_+1, x_+2
   // WENO5: x_-3, x_-2, x_-1, x, x_+1, x_+2, x_+3
+  // WENO5_Z: x_-3, x_-2, x_-1, x, x_+1, x_+2, x_+3
   static T calculateGradient(const T *values, const double &delta) {
     return (differencePositive(values, delta) +
             differenceNegative(values, delta)) *

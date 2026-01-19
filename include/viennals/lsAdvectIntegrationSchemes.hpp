@@ -19,7 +19,8 @@ enum class SpatialSchemeEnum : unsigned {
   LOCAL_LAX_FRIEDRICHS_2ND_ORDER = 8,
   STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER = 9,
   WENO_3RD_ORDER = 10,
-  WENO_5TH_ORDER = 11
+  WENO_5TH_ORDER = 11,
+  WENO_Z_5TH_ORDER = 12
 };
 
 // Legacy naming (deprecated, will be removed in future versions)

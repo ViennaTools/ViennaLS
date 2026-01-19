@@ -666,13 +666,18 @@ template <class T, int D> class Advect {
       currentTimeStep = integrateTime(is, maxTimeStep);
     } else if (spatialScheme == SpatialSchemeEnum::WENO_3RD_ORDER) {
       // Instantiate WENO with order 3
-      auto is = lsInternal::WENO<T, D, 3>(levelSets.back(), velocities,
-                                          dissipationAlpha);
+      auto is = lsInternal::WENO<T, D, lsInternal::DifferentiationSchemeEnum::WENO3>(levelSets.back(), velocities,
+                                          calculateNormalVectors);
       currentTimeStep = integrateTime(is, maxTimeStep);
     } else if (spatialScheme == SpatialSchemeEnum::WENO_5TH_ORDER) {
       // Instantiate WENO with order 5
-      auto is = lsInternal::WENO<T, D, 5>(levelSets.back(), velocities,
-                                          dissipationAlpha);
+      auto is = lsInternal::WENO<T, D, lsInternal::DifferentiationSchemeEnum::WENO5>(levelSets.back(), velocities,
+                                          calculateNormalVectors);
+      currentTimeStep = integrateTime(is, maxTimeStep);
+    } else if (spatialScheme == SpatialSchemeEnum::WENO_Z_5TH_ORDER) {
+      // Instantiate WENO with order 5
+      auto is = lsInternal::WENO<T, D, lsInternal::DifferentiationSchemeEnum::WENO5_Z>(levelSets.back(), velocities,
+                                          calculateNormalVectors);
       currentTimeStep = integrateTime(is, maxTimeStep);
     } else {
       VIENNACORE_LOG_ERROR("Advect: Discretization scheme not found.");
@@ -1004,9 +1009,11 @@ public:
       lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>::prepareLS(
           levelSets.back());
     } else if (spatialScheme == SpatialSchemeEnum::WENO_3RD_ORDER) {
-      lsInternal::WENO<T, D, 3>::prepareLS(levelSets.back());
+      lsInternal::WENO<T, D, lsInternal::DifferentiationSchemeEnum::WENO3>::prepareLS(levelSets.back());
     } else if (spatialScheme == SpatialSchemeEnum::WENO_5TH_ORDER) {
-      lsInternal::WENO<T, D, 5>::prepareLS(levelSets.back());
+      lsInternal::WENO<T, D, lsInternal::DifferentiationSchemeEnum::WENO5>::prepareLS(levelSets.back());
+    } else if (spatialScheme == SpatialSchemeEnum::WENO_Z_5TH_ORDER) {
+      lsInternal::WENO<T, D, lsInternal::DifferentiationSchemeEnum::WENO5_Z>::prepareLS(levelSets.back());
     } else {
       VIENNACORE_LOG_ERROR("Advect: Discretization scheme not found.");
     }

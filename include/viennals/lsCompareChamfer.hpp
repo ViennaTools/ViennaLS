@@ -58,17 +58,6 @@ template <class T, int D = 2> class CompareChamfer {
       VIENNACORE_LOG_WARNING("Missing level set in CompareChamfer.");
       return false;
     }
-
-    // Check if the grids are compatible
-    const auto &gridTarget = levelSetTarget->getGrid();
-    const auto &gridSample = levelSetSample->getGrid();
-
-    if (gridTarget.getGridDelta() != gridSample.getGridDelta()) {
-      VIENNACORE_LOG_WARNING("Grid delta mismatch in CompareChamfer. The grid "
-                             "deltas of the two level sets must be equal.");
-      return false;
-    }
-
     return true;
   }
 

@@ -17,8 +17,13 @@ using namespace viennacore;
 /// Weighted Essentially Non-Oscillatory (WENO) scheme.
 /// This kernel acts as the grid-interface for the mathematical logic
 /// defined in lsFiniteDifferences.hpp.
-template <class T, int D, int order> class WENO {
-  static_assert(order == 3 || order == 5, "WENO order must be 3 or 5.");
+template <class T, int D, DifferentiationSchemeEnum scheme> class WENO {
+  static_assert(scheme == DifferentiationSchemeEnum::WENO3 ||
+                    scheme == DifferentiationSchemeEnum::WENO5 ||
+                    scheme == DifferentiationSchemeEnum::WENO5_Z,
+                "WENO scheme must be WENO3, WENO5, or WENO5_Z.");
+
+  static constexpr int order = (scheme == DifferentiationSchemeEnum::WENO3) ? 3 : 5;
 
   SmartPointer<viennals::Domain<T, D>> levelSet;
   SmartPointer<viennals::VelocityField<T>> velocities;
@@ -32,9 +37,7 @@ template <class T, int D, int order> class WENO {
   const bool calculateNormalVectors = true;
 
   // Use the existing math engine with WENO scheme
-  using MathScheme =
-      FiniteDifferences<T, (order == 3) ? DifferentiationSchemeEnum::WENO3
-                                        : DifferentiationSchemeEnum::WENO5>;
+  using MathScheme = FiniteDifferences<T, scheme>;
 
   static T pow2(const T &value) { return value * value; }
 
@@ -63,51 +66,6 @@ public:
     // Move iterator to the current grid point
     neighborIterator.goToIndicesSequential(indices);
 
-    T gradPosTotal = 0;
-    T gradNegTotal = 0;
-
-    // --- OPTIMIZATION: Store derivatives to avoid re-calculation ---
-    T wenoGradMinus[D]; // Approximates derivative from left (phi_x^-)
-    T wenoGradPlus[D];  // Approximates derivative from right (phi_x^+)
-
-    // Array to hold the stencil values
-    T stencil[2 * stencilRadius + 1];
-
-    for (int i = 0; i < D; i++) {
-      // 1. GATHER STENCIL
-      // We map the SparseStarIterator (which uses encoded directions)
-      // to the flat array expected by FiniteDifferences.
-
-      // Center
-      stencil[stencilRadius] = neighborIterator.getCenter().getValue();
-
-      for (int k = 1; k <= stencilRadius; ++k) {
-        stencil[stencilRadius + k] =
-            neighborIterator.getNeighbor((k - 1) * 2 * D + i).getValue();
-        stencil[stencilRadius - k] =
-            neighborIterator.getNeighbor((k - 1) * 2 * D + D + i).getValue();
-      }
-
-      // 2. COMPUTE DERIVATIVES
-      // Delegate the math to your existing library and store results
-      wenoGradMinus[i] = MathScheme::differenceNegative(stencil, gridDelta);
-      wenoGradPlus[i] = MathScheme::differencePositive(stencil, gridDelta);
-
-      // 3. GODUNOV FLUX PREPARATION
-      // We accumulate the gradient magnitudes for the scalar velocity case.
-      // This is part of the standard level set equation logic (Osher-Sethian).
-
-      // For Positive Scalar Velocity (Deposition): Use upwind selection
-      gradPosTotal += pow2(std::max(wenoGradMinus[i], T(0))) +
-                      pow2(std::min(wenoGradPlus[i], T(0)));
-
-      // For Negative Scalar Velocity (Etching): Use upwind selection
-      gradNegTotal += pow2(std::min(wenoGradMinus[i], T(0))) +
-                      pow2(std::max(wenoGradPlus[i], T(0)));
-    }
-
-    T vel_grad = 0.;
-
     // --- Standard Normal Vector Calculation (for velocity lookup) ---
     Vec3D<T> normalVector{};
     if (calculateNormalVectors) {
@@ -128,7 +86,7 @@ public:
       }
     }
 
-    // --- Retrieve Velocity ---
+    // --- Retrieve Velocity First ---
     double scalarVelocity = velocities->getScalarVelocity(
         coordinate, material, normalVector,
         neighborIterator.getCenter().getPointId());
@@ -136,24 +94,58 @@ public:
         coordinate, material, normalVector,
         neighborIterator.getCenter().getPointId());
 
-    // --- Apply Velocities ---
+    T gradPosTotal = 0;
+    T gradNegTotal = 0;
+    T vel_grad = 0.;
 
-    // Scalar term (Etching/Deposition)
-    if (scalarVelocity > 0) {
-      vel_grad += std::sqrt(gradPosTotal) * scalarVelocity;
-    } else {
-      vel_grad += std::sqrt(gradNegTotal) * scalarVelocity;
+    // Array to hold the stencil values
+    T stencil[2 * stencilRadius + 1];
+
+    for (int i = 0; i < D; i++) {
+      // Optimization: Only calculate what is needed based on velocity direction
+      bool calcMinus = (scalarVelocity != 0.) || (vectorVelocity[i] > 0.);
+      bool calcPlus = (scalarVelocity != 0.) || (vectorVelocity[i] < 0.);
+
+      if (!calcMinus && !calcPlus)
+        continue;
+
+      // 1. GATHER STENCIL (Only if needed)
+      stencil[stencilRadius] = neighborIterator.getCenter().getValue();
+      for (int k = 1; k <= stencilRadius; ++k) {
+        stencil[stencilRadius + k] =
+            neighborIterator.getNeighbor((k - 1) * 2 * D + i).getValue();
+        stencil[stencilRadius - k] =
+            neighborIterator.getNeighbor((k - 1) * 2 * D + D + i).getValue();
+      }
+
+      // 2. COMPUTE DERIVATIVES & FLUX
+      T wenoMinus = 0.;
+      T wenoPlus = 0.;
+
+      if (calcMinus)
+        wenoMinus = MathScheme::differenceNegative(stencil, gridDelta);
+      if (calcPlus)
+        wenoPlus = MathScheme::differencePositive(stencil, gridDelta);
+
+      if (scalarVelocity > 0.) {
+        gradPosTotal +=
+            pow2(std::max(wenoMinus, T(0))) + pow2(std::min(wenoPlus, T(0)));
+      } else if (scalarVelocity < 0.) {
+        gradNegTotal +=
+            pow2(std::min(wenoMinus, T(0))) + pow2(std::max(wenoPlus, T(0)));
+      }
+
+      if (vectorVelocity[i] > 0.)
+        vel_grad += vectorVelocity[i] * wenoMinus;
+      else if (vectorVelocity[i] < 0.)
+        vel_grad += vectorVelocity[i] * wenoPlus;
     }
 
-    // Vector term (Advection)
-    // Here we REUSE the derivatives stored in wenoGradMinus/Plus.
-    // This is the optimization compared to recalculating.
-    for (int w = 0; w < D; w++) {
-      if (vectorVelocity[w] > 0.) {
-        vel_grad += vectorVelocity[w] * wenoGradMinus[w];
-      } else {
-        vel_grad += vectorVelocity[w] * wenoGradPlus[w];
-      }
+    // Finalize Scalar term
+    if (scalarVelocity > 0) {
+      vel_grad += std::sqrt(gradPosTotal) * scalarVelocity;
+    } else if (scalarVelocity < 0) {
+      vel_grad += std::sqrt(gradNegTotal) * scalarVelocity;
     }
 
     // WENO is an upwind scheme, so explicit dissipation is 0.
