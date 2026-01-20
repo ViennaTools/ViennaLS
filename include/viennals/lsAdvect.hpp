@@ -158,10 +158,7 @@ template <class T, int D> class Advect {
               const T phiPos = neighborIterator.getNeighbor(i).getValue();
               const T phiNeg = neighborIterator.getNeighbor(i + D).getValue();
 
-              T diffPos = (phiPos - value) / deltaPos;
-              T diffNeg = (phiNeg - value) / deltaNeg;
-
-              normal[i] = (diffNeg + diffPos) * 0.5;
+              normal[i] = phiPos - phiNeg;
               normalModulus += normal[i] * normal[i];
             }
             normalModulus = std::sqrt(normalModulus);
