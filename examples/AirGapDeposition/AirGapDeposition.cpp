@@ -86,7 +86,7 @@ double runSimulation(AdvectKernelType &kernel,
 int main() {
 
   constexpr int D = 2;
-  omp_set_num_threads(16);
+  omp_set_num_threads(8);
 
   NumericType extent = 30;
   NumericType gridDelta = 0.5;
