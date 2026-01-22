@@ -33,7 +33,8 @@ template <typename NumericType> class Delaunay2D {
   SmartPointer<MaterialMap> materialMap = nullptr;
   double maxTriangleSize = -1.;
   int bottomExtent = 1;
-  int bottomLayerMaterialId = 0;
+  int bottomLayerMaterialId = -1;
+  bool closeDomain = true;
 
 private:
   void cdtToMesh(const CDT &cdt, const bool inDomain = true) {
@@ -158,6 +159,8 @@ public:
     materialMap = matMap;
   }
 
+  void setCloseDomain(bool close) { closeDomain = close; }
+
   void apply() {
     mesh->clear();
 
@@ -172,10 +175,13 @@ public:
     mesher.apply();
     visMesh.apply();
 
-    // remomve normals
+    // surface line mesh is now in mesh
+
+    // remove normals
     mesh->getCellData().clear();
 
-    closeMesh();
+    if (closeDomain)
+      closeMesh();
 
     // create constraints
     CDT cdt;
@@ -211,11 +217,15 @@ public:
       vtkIdType cellId = cellLocator->FindCell(centroid.data());
 
       if (cellId == -1) {
-        double materialId = static_cast<double>(bottomLayerMaterialId);
-        if (materialMap) {
-          materialId = materialMap->getMaterialId(bottomLayerMaterialId);
+        if (bottomLayerMaterialId == -1) {
+          double materialId = 0.0;
+          if (materialMap) {
+            materialId = materialMap->getMaterialId(0);
+          }
+          materialIds.push_back(materialId);
+        } else {
+          materialIds.push_back(static_cast<double>(bottomLayerMaterialId));
         }
-        materialIds.push_back(materialId);
       } else {
         double materialId = materials->GetTuple1(cellId);
         if (materialMap) {
