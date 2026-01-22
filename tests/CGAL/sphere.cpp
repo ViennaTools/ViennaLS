@@ -1,4 +1,3 @@
-#include <CreateSurfaceMesh.hpp>
 #include <lsDomain.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsToSurfaceMesh.hpp>

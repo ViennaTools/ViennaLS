@@ -97,6 +97,7 @@ int main() {
 
   ls::Delaunay2D<NumericType> delaunay;
   delaunay.setMesh(mesh);
+  delaunay.insertNextLevelSet(substrate);
   delaunay.insertNextLevelSet(newLayer);
   delaunay.setMaxTriangleSize(gridDelta * 2.);
   delaunay.setBottomExtent(10);

@@ -1,7 +1,9 @@
 #pragma once
 
+#include <lsConstraintCleaner.hpp>
 #include <lsDomain.hpp>
 #include <lsToMultiSurfaceMesh.hpp>
+#include <lsVTKWriter.hpp>
 #include <lsWriteVisualizationMesh.hpp>
 
 #include <CGAL/Constrained_Delaunay_triangulation_2.h>
@@ -35,6 +37,11 @@ template <typename NumericType> class Delaunay2D {
   int bottomExtent = 1;
   int bottomLayerMaterialId = -1;
   bool closeDomain = true;
+  bool cleanConstraints = true;
+  bool verboseConstraintCleaning = false;
+  NumericType constraintTargetSpacing = -1;
+  NumericType constraintMergeThreshold = -1;
+  NumericType constraintMinEdgeLength = -1;
 
 private:
   void cdtToMesh(const CDT &cdt, const bool inDomain = true) {
@@ -161,6 +168,29 @@ public:
 
   void setCloseDomain(bool close) { closeDomain = close; }
 
+  /// Enable/disable constraint cleaning before CDT
+  void setCleanConstraints(bool clean) { cleanConstraints = clean; }
+
+  /// Enable verbose output for constraint cleaning
+  void setVerboseConstraintCleaning(bool verbose) {
+    verboseConstraintCleaning = verbose;
+  }
+
+  /// Set target edge spacing for constraint cleaning (auto if < 0)
+  void setConstraintTargetSpacing(NumericType spacing) {
+    constraintTargetSpacing = spacing;
+  }
+
+  /// Set merge threshold for near-duplicate vertices (auto if < 0)
+  void setConstraintMergeThreshold(NumericType threshold) {
+    constraintMergeThreshold = threshold;
+  }
+
+  /// Set minimum edge length for constraint cleaning (auto if < 0)
+  void setConstraintMinEdgeLength(NumericType length) {
+    constraintMinEdgeLength = length;
+  }
+
   void apply() {
     mesh->clear();
 
@@ -180,8 +210,31 @@ public:
     // remove normals
     mesh->getCellData().clear();
 
+    // Clean constraints before CDT if enabled
+    if (cleanConstraints) {
+      ConstraintCleaner<NumericType> cleaner;
+      cleaner.setPoints(mesh->nodes);
+      cleaner.setEdges(mesh->lines);
+      cleaner.setVerbose(verboseConstraintCleaning);
+
+      if (constraintTargetSpacing > 0) {
+        cleaner.setTargetSpacing(constraintTargetSpacing);
+      }
+      if (constraintMergeThreshold > 0) {
+        cleaner.setMergeThreshold(constraintMergeThreshold);
+      }
+      if (constraintMinEdgeLength > 0) {
+        cleaner.setMinEdgeLength(constraintMinEdgeLength);
+      }
+
+      cleaner.apply();
+      cleaner.applyToMesh(mesh);
+    }
+
     if (closeDomain)
       closeMesh();
+
+    VTKWriter<NumericType>(mesh, "surface_mesh").apply();
 
     // create constraints
     CDT cdt;
