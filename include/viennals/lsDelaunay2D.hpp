@@ -36,6 +36,7 @@ template <typename NumericType> class Delaunay2D {
   double maxTriangleSize = -1.;
   int bottomExtent = 1;
   int bottomLayerMaterialId = -1;
+  int voidMaterialId = -1;
   bool closeDomain = true;
   bool cleanConstraints = true;
   bool verboseConstraintCleaning = false;
@@ -113,23 +114,6 @@ private:
     return res;
   }
 
-  void closeMesh() {
-    // close mesh
-    auto const gridDelta = domains.back()->getGrid().getGridDelta();
-    auto const extremeIndices = findExtremePointIndices(mesh->nodes);
-    auto const &minExtent = mesh->minimumExtent;
-    auto const &maxExtent = mesh->maximumExtent;
-
-    auto p1 = mesh->insertNextNode(
-        {minExtent[0], minExtent[1] - bottomExtent * gridDelta, 0.});
-    auto p2 = mesh->insertNextNode(
-        {maxExtent[0], minExtent[1] - bottomExtent * gridDelta, 0.});
-
-    mesh->insertNextLine({extremeIndices.maxX_maxY, p2});
-    mesh->insertNextLine({p2, p1});
-    mesh->insertNextLine({p1, extremeIndices.minX_maxY});
-  }
-
   void createConstraints(CDT &cdt) {
     std::vector<CDT::Vertex_handle> vertexMap(mesh->nodes.size());
     for (unsigned i = 0; i < mesh->nodes.size(); ++i) {
@@ -161,6 +145,8 @@ public:
   void setBottomLayerMaterialId(int materialId) {
     bottomLayerMaterialId = materialId;
   }
+
+  void setVoidMaterialId(int materialId) { voidMaterialId = materialId; }
 
   void setMaterialMap(SmartPointer<MaterialMap> matMap) {
     materialMap = matMap;
@@ -231,8 +217,22 @@ public:
       cleaner.applyToMesh(mesh);
     }
 
-    if (closeDomain)
-      closeMesh();
+    auto const &minExtent = mesh->minimumExtent;
+    auto const &maxExtent = mesh->maximumExtent;
+    auto const gridDelta = domains.back()->getGrid().getGridDelta();
+    if (closeDomain) {
+      // close mesh
+      auto const extremeIndices = findExtremePointIndices(mesh->nodes);
+
+      auto p1 = mesh->insertNextNode(
+          {minExtent[0], minExtent[1] - bottomExtent * gridDelta, 0.});
+      auto p2 = mesh->insertNextNode(
+          {maxExtent[0], minExtent[1] - bottomExtent * gridDelta, 0.});
+
+      mesh->insertNextLine({extremeIndices.maxX_maxY, p2});
+      mesh->insertNextLine({p2, p1});
+      mesh->insertNextLine({p1, extremeIndices.minX_maxY});
+    }
 
     VTKWriter<NumericType>(mesh, "surface_mesh").apply();
 
@@ -241,7 +241,6 @@ public:
     createConstraints(cdt);
 
     // run meshing
-    auto const gridDelta = domains.back()->getGrid().getGridDelta();
     maxTriangleSize = std::max(maxTriangleSize, gridDelta);
     CGAL::refine_Delaunay_mesh_2(
         cdt, CGAL::parameters::criteria(Criteria(0.125, maxTriangleSize)));
@@ -270,15 +269,22 @@ public:
       vtkIdType cellId = cellLocator->FindCell(centroid.data());
 
       if (cellId == -1) {
-        if (bottomLayerMaterialId == -1) {
-          double materialId = 0.0;
-          if (materialMap) {
-            materialId = materialMap->getMaterialId(0);
+        if (centroid[1] < minExtent[1]) {
+          // below level set domain
+          if (bottomLayerMaterialId == -1) {
+            double materialId = 0.0;
+            if (materialMap) {
+              materialId = materialMap->getMaterialId(0);
+            }
+            materialIds.push_back(materialId);
+          } else {
+            materialIds.push_back(static_cast<double>(bottomLayerMaterialId));
           }
-          materialIds.push_back(materialId);
         } else {
-          materialIds.push_back(static_cast<double>(bottomLayerMaterialId));
+          // void
+          materialIds.push_back(voidMaterialId);
         }
+
       } else {
         double materialId = materials->GetTuple1(cellId);
         if (materialMap) {
