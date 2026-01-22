@@ -33,6 +33,7 @@ template <typename NumericType> class Delaunay2D {
   SmartPointer<MaterialMap> materialMap = nullptr;
   double maxTriangleSize = -1.;
   int bottomExtent = 1;
+  int bottomLayerMaterialId = 0;
 
 private:
   void cdtToMesh(const CDT &cdt, const bool inDomain = true) {
@@ -149,6 +150,10 @@ public:
 
   void setBottomExtent(int extent) { bottomExtent = extent; }
 
+  void setBottomLayerMaterialId(int materialId) {
+    bottomLayerMaterialId = materialId;
+  }
+
   void setMaterialMap(SmartPointer<MaterialMap> matMap) {
     materialMap = matMap;
   }
@@ -182,8 +187,8 @@ public:
     CGAL::refine_Delaunay_mesh_2(
         cdt, CGAL::parameters::criteria(Criteria(0.125, maxTriangleSize)));
 
-    std::fstream ofs("cdt_mesh.vtu", std::ios::out);
-    CGAL::IO::write_VTU(ofs, cdt);
+    // std::fstream ofs("cdt_mesh.vtu", std::ios::out);
+    // CGAL::IO::write_VTU(ofs, cdt);
 
     auto rgrid = visMesh.getVolumeMesh();
     auto materials = rgrid->GetCellData()->GetArray("Material");
@@ -206,9 +211,9 @@ public:
       vtkIdType cellId = cellLocator->FindCell(centroid.data());
 
       if (cellId == -1) {
-        double materialId = 0.0;
+        double materialId = static_cast<double>(bottomLayerMaterialId);
         if (materialMap) {
-          materialId = materialMap->getMaterialId(0);
+          materialId = materialMap->getMaterialId(bottomLayerMaterialId);
         }
         materialIds.push_back(materialId);
       } else {
