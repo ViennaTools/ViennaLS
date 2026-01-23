@@ -21,11 +21,11 @@ using namespace viennacore;
 template <class NumericType, int D, class T = NumericType>
 class ToMultiSurfaceMesh {
 
-  typedef viennals::Domain<NumericType, D> lsDomainType;
-  typedef typename viennals::Domain<NumericType, D>::DomainType hrleDomainType;
+  typedef Domain<NumericType, D> lsDomainType;
+  typedef typename Domain<NumericType, D>::DomainType hrleDomainType;
 
   std::vector<SmartPointer<lsDomainType>> levelSets;
-  SmartPointer<viennals::Mesh<T>> mesh = nullptr;
+  SmartPointer<Mesh<T>> mesh = nullptr;
   SmartPointer<MaterialMap> materialMap = nullptr;
 
   const double epsilon;
@@ -56,8 +56,8 @@ public:
       : epsilon(eps), minNodeDistanceFactor(minNodeDistFactor) {}
 
   ToMultiSurfaceMesh(SmartPointer<lsDomainType> passedLevelSet,
-                     SmartPointer<viennals::Mesh<T>> passedMesh,
-                     double eps = 1e-12, double minNodeDistFactor = 0.05)
+                     SmartPointer<Mesh<T>> passedMesh, double eps = 1e-12,
+                     double minNodeDistFactor = 0.05)
       : mesh(passedMesh), epsilon(eps),
         minNodeDistanceFactor(minNodeDistFactor) {
     levelSets.push_back(passedLevelSet);
@@ -65,19 +65,17 @@ public:
 
   ToMultiSurfaceMesh(
       std::vector<SmartPointer<lsDomainType>> const &passedLevelSets,
-      SmartPointer<viennals::Mesh<T>> passedMesh, double eps = 1e-12,
+      SmartPointer<Mesh<T>> passedMesh, double eps = 1e-12,
       double minNodeDistFactor = 0.05)
       : levelSets(passedLevelSets), mesh(passedMesh), epsilon(eps),
         minNodeDistanceFactor(minNodeDistFactor) {}
 
-  ToMultiSurfaceMesh(SmartPointer<viennals::Mesh<T>> passedMesh,
-                     double eps = 1e-12, double minNodeDistFactor = 0.05)
+  ToMultiSurfaceMesh(SmartPointer<Mesh<T>> passedMesh, double eps = 1e-12,
+                     double minNodeDistFactor = 0.05)
       : mesh(passedMesh), epsilon(eps),
         minNodeDistanceFactor(minNodeDistFactor) {}
 
-  void setMesh(SmartPointer<viennals::Mesh<T>> passedMesh) {
-    mesh = passedMesh;
-  }
+  void setMesh(SmartPointer<Mesh<T>> passedMesh) { mesh = passedMesh; }
 
   void insertNextLevelSet(SmartPointer<lsDomainType> passedLevelSet) {
     levelSets.push_back(passedLevelSet);

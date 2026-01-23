@@ -36,6 +36,7 @@ template <typename NumericType> class Delaunay2D {
   std::vector<SmartPointer<Domain<NumericType, 2>>> domains;
   SmartPointer<MaterialMap> materialMap = nullptr;
   double maxTriangleSize = -1.;
+  double minNodeDistance = 0.05;
   int bottomExtent = 1;
   int bottomLayerMaterialId = -1;
   int voidMaterialId = -1;
@@ -180,10 +181,14 @@ public:
     constraintMinEdgeLength = length;
   }
 
+  void setSurfaceMeshMinNodeDistanceFactor(double distance) {
+    minNodeDistance = distance;
+  }
+
   void apply() {
     mesh->clear();
 
-    ToMultiSurfaceMesh<NumericType, 2> mesher;
+    ToMultiSurfaceMesh<NumericType, 2> mesher(1e-12, minNodeDistance);
     WriteVisualizationMesh<NumericType, 2> visMesh;
     mesher.setMesh(mesh);
 #ifndef NDEBUG
