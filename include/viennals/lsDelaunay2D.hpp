@@ -24,7 +24,7 @@ namespace viennals {
 using namespace viennacore;
 
 template <typename NumericType> class Delaunay2D {
-protected:
+
   typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
   typedef CGAL::Triangulation_vertex_base_2<K> Vb;
   typedef CGAL::Delaunay_mesh_face_base_2<K> Fb;
@@ -184,6 +184,8 @@ public:
   void setSurfaceMeshMinNodeDistanceFactor(double distance) {
     minNodeDistance = distance;
   }
+
+  void clear() { domains.clear(); }
 
   void apply() {
     mesh->clear();
