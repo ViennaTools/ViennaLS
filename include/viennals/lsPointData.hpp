@@ -11,6 +11,7 @@
 
 #include <vcLogger.hpp>
 #include <vcSmartPointer.hpp>
+#include <vcVectorType.hpp>
 
 namespace viennals {
 
