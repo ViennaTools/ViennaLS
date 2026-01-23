@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef VIENNALS_USE_CGAL
+
 #include <lsConstraintCleaner.hpp>
 #include <lsDomain.hpp>
 #include <lsToMultiSurfaceMesh.hpp>
@@ -115,20 +117,21 @@ private:
   }
 
   void createConstraints(CDT &cdt) {
-    std::vector<CDT::Vertex_handle> vertexMap(mesh->nodes.size());
-    for (unsigned i = 0; i < mesh->nodes.size(); ++i) {
+    auto const numNodes = mesh->nodes.size();
+    std::vector<CDT::Vertex_handle> vertexMap(numNodes);
+    for (size_t i = 0; i < numNodes; ++i) {
       const auto &node = mesh->nodes[i];
       vertexMap[i] = cdt.insert(CDT::Point(node[0], node[1]));
     }
 
-    auto const &lines = mesh->lines;
-    for (const auto &line : lines) {
+    for (const auto &line : mesh->lines) {
       cdt.insert_constraint(vertexMap[line[0]], vertexMap[line[1]]);
     }
   }
 
 public:
   Delaunay2D() = default;
+  Delaunay2D(SmartPointer<Mesh<NumericType>> passedMesh) : mesh(passedMesh) {}
 
   void insertNextLevelSet(SmartPointer<Domain<NumericType, 2>> domain) {
     domains.push_back(domain);
@@ -183,14 +186,17 @@ public:
     ToMultiSurfaceMesh<NumericType, 2> mesher;
     WriteVisualizationMesh<NumericType, 2> visMesh;
     mesher.setMesh(mesh);
+#ifndef NDEBUG
+    visMesh.setFileName("delaunay2D_visualization_mesh");
+#else
+    visMesh.setWriteToFile(false);
+#endif
     for (const auto &d : domains) {
       mesher.insertNextLevelSet(d);
       visMesh.insertNextLevelSet(d);
     }
-    visMesh.setWriteToFile(false);
     mesher.apply();
     visMesh.apply();
-
     // surface line mesh is now in mesh
 
     // remove normals
@@ -217,8 +223,8 @@ public:
       cleaner.applyToMesh(mesh);
     }
 
-    auto const &minExtent = mesh->minimumExtent;
-    auto const &maxExtent = mesh->maximumExtent;
+    auto const minExtent = mesh->minimumExtent;
+    auto const maxExtent = mesh->maximumExtent;
     auto const gridDelta = domains.back()->getGrid().getGridDelta();
     if (closeDomain) {
       // close mesh
@@ -234,9 +240,11 @@ public:
       mesh->insertNextLine({p1, extremeIndices.minX_maxY});
     }
 
-    VTKWriter<NumericType>(mesh, "surface_mesh").apply();
+#ifndef NDEBUG
+    VTKWriter<NumericType>(mesh, "delaunay2D_surface_mesh").apply();
+#endif
 
-    // create constraints
+    // create constraints from surface mesh
     CDT cdt;
     createConstraints(cdt);
 
@@ -245,8 +253,11 @@ public:
     CGAL::refine_Delaunay_mesh_2(
         cdt, CGAL::parameters::criteria(Criteria(0.125, maxTriangleSize)));
 
-    // std::fstream ofs("cdt_mesh.vtu", std::ios::out);
-    // CGAL::IO::write_VTU(ofs, cdt);
+#ifndef NDEBUG
+    std::fstream ofs("delaunay2D_cdt_mesh.vtu", std::ios::out);
+    CGAL::IO::write_VTU(ofs, cdt);
+    ofs.close();
+#endif
 
     auto rgrid = visMesh.getVolumeMesh();
     auto materials = rgrid->GetCellData()->GetArray("Material");
@@ -257,7 +268,7 @@ public:
 
     cdtToMesh(cdt);
 
-    std::vector<double> materialIds;
+    std::vector<NumericType> materialIds;
     for (const auto &tri : mesh->triangles) {
       auto &p1 = mesh->nodes[tri[0]];
       auto &p2 = mesh->nodes[tri[1]];
@@ -266,30 +277,31 @@ public:
                                         (p1[1] + p2[1] + p3[1]) / 3.,
                                         (p1[2] + p2[2] + p3[2]) / 3.};
 
+      /// TODO: use multi-threaded version here
       vtkIdType cellId = cellLocator->FindCell(centroid.data());
 
       if (cellId == -1) {
-        if (centroid[1] < minExtent[1]) {
+        // no cell found, determine if below level set domain
+        if (p1[1] < minExtent[1] || p2[1] < minExtent[1] ||
+            p3[1] < minExtent[1]) {
           // below level set domain
           if (bottomLayerMaterialId == -1) {
-            double materialId = 0.0;
-            if (materialMap) {
-              materialId = materialMap->getMaterialId(0);
-            }
-            materialIds.push_back(materialId);
+            materialIds.push_back(materialMap ? materialMap->getMaterialId(0)
+                                              : 0.0);
           } else {
-            materialIds.push_back(static_cast<double>(bottomLayerMaterialId));
+            materialIds.push_back(
+                static_cast<NumericType>(bottomLayerMaterialId));
           }
         } else {
           // void
           materialIds.push_back(voidMaterialId);
         }
-
       } else {
-        double materialId = materials->GetTuple1(cellId);
+        // cell found
+        NumericType materialId = materials->GetTuple1(cellId);
         if (materialMap) {
           materialId =
-              materialMap->getMaterialId(static_cast<std::size_t>(materialId));
+              materialMap->getMaterialId(static_cast<size_t>(materialId));
         }
         materialIds.push_back(materialId);
       }
@@ -298,3 +310,5 @@ public:
   }
 };
 } // namespace viennals
+
+#endif // VIENNALS_USE_CGAL

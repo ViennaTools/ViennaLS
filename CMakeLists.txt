@@ -131,6 +131,14 @@ CPMFindPackage(
 
 target_link_libraries(${PROJECT_NAME} INTERFACE ViennaHRLE ViennaCore)
 
+find_package(CGAL QUIET)
+if (CGAL_FOUND)
+  target_link_libraries(${PROJECT_NAME} INTERFACE CGAL::CGAL)
+  target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_USE_CGAL=1)
+else()
+  message(WARNING "[ViennaLS] CGAL not found. Delaunay2D functionality will be disabled.")
+endif()
+
 if(VIENNALS_USE_VTK AND VIENNALS_VTK_PYTHON_LIBS)
   import_vtk_python()
   target_link_libraries(${PROJECT_NAME} INTERFACE VTK::PythonLibs)
