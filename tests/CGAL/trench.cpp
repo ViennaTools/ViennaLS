@@ -3,6 +3,7 @@
 #include <lsAdvect.hpp>
 #include <lsBooleanOperation.hpp>
 #include <lsDelaunay2D.hpp>
+#include <lsDelaunay3D.hpp>
 #include <lsDomain.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsVTKWriter.hpp>
@@ -11,7 +12,6 @@ namespace ls = viennals;
 
 using NumericType = double;
 
-// implement own velocity field
 class velocityField : public ls::VelocityField<NumericType> {
 public:
   NumericType
@@ -19,19 +19,16 @@ public:
                     int /*material*/,
                     const std::array<NumericType, 3> & /*normalVector*/,
                     unsigned long /*pointId*/) {
-    // Some arbitrary velocity function of your liking
-    // (try changing it and see what happens :)
-    NumericType velocity = 1.;
-    return velocity;
+    return 1.;
   }
 };
 
 int main() {
 
-  constexpr int D = 2;
+  constexpr int D = 3;
 
   NumericType extent = 30;
-  NumericType gridDelta = 0.5;
+  NumericType gridDelta = 0.9;
 
   double bounds[2 * D];
   for (int i = 0; i < D; ++i) {
@@ -95,15 +92,15 @@ int main() {
 
   auto mesh = ls::Mesh<NumericType>::New();
 
-  ls::Delaunay2D<NumericType> delaunay;
+  ls::Delaunay3D<NumericType> delaunay;
   delaunay.setMesh(mesh);
   delaunay.insertNextLevelSet(substrate);
   delaunay.insertNextLevelSet(newLayer);
-  delaunay.setMaxTriangleSize(gridDelta * 2.);
-  delaunay.setBottomExtent(10);
+  // delaunay.setMaxTriangleSize(gridDelta * 2.);
+  // delaunay.setBottomExtent(10);
   delaunay.apply();
 
-  ls::VTKWriter<NumericType>(mesh, "trench").apply();
+  ls::VTKWriter<NumericType>(mesh, "trench_mesh.vtu").apply();
 
   return 0;
 }
