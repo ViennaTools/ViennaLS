@@ -76,6 +76,9 @@ double runSimulation(AdvectKernelType &kernel,
         mesh, "trench_" + name + "_" + std::to_string(stepCounter) + ".vtp");
     writer.addMetaData("time", passedTime);
     writer.apply();
+    ls::ToMesh<NumericType, D>(newLayer, mesh).apply();
+    ls::VTKWriter<NumericType>(
+        mesh, "trench_" + name + "_" + std::to_string(stepCounter) + ".vtu").apply();
 
     ++stepCounter;
   }
@@ -146,6 +149,8 @@ int main() {
       std::cout << "Extracting..." << std::endl;
       auto mesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
       ls::ToMesh<NumericType, D>(trench, mesh).apply();
+      ls::VTKWriter<NumericType>(mesh, "box.vtu").apply();
+      ls::ToSurfaceMesh<NumericType, D>(trench, mesh).apply();
       ls::VTKWriter<NumericType>(mesh, "box.vtp").apply();
     }
 
@@ -154,6 +159,13 @@ int main() {
     ls::BooleanOperation<NumericType, D>(
         substrate, trench, ls::BooleanOperationEnum::RELATIVE_COMPLEMENT)
         .apply();
+    {
+      auto mesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
+      ls::ToMesh<NumericType, D>(substrate, mesh).apply();
+      ls::VTKWriter<NumericType>(mesh, "trench.vtu").apply();
+      ls::ToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
+      ls::VTKWriter<NumericType>(mesh, "trench.vtp").apply();
+    }
   }
 
   // Now grow new material

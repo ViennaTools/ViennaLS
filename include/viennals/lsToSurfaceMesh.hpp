@@ -83,6 +83,7 @@ public:
     typedef std::map<viennahrle::Index<D>, unsigned> nodeContainerType;
 
     nodeContainerType nodes[D];
+    nodeContainerType faceNodes[D];
     typename nodeContainerType::iterator nodeIt;
     const bool updateData = updatePointData;
 
@@ -123,12 +124,32 @@ public:
           if (neighborIt.getCenter().isDefined()) {
             Vec3D<T> grad{};
             for (int i = 0; i < D; ++i) {
-              T vals[3];
-              vals[0] = neighborIt.getNeighbor(i + D).getValue();
-              vals[1] = neighborIt.getCenter().getValue();
-              vals[2] = neighborIt.getNeighbor(i).getValue();
-              grad[i] = lsInternal::FiniteDifferences<T>::calculateGradient(
-                  vals, grid.getGridDelta());
+              bool negDefined = neighborIt.getNeighbor(i + D).isDefined();
+              bool posDefined = neighborIt.getNeighbor(i).isDefined();
+
+              if (negDefined && posDefined) {
+                T valNeg = neighborIt.getNeighbor(i + D).getValue();
+                T valCenter = neighborIt.getCenter().getValue();
+                T valPos = neighborIt.getNeighbor(i).getValue();
+
+                bool centerSign = valCenter > 0;
+                bool negSign = valNeg > 0;
+                bool posSign = valPos > 0;
+
+                if (centerSign != negSign && centerSign == posSign) {
+                  grad[i] = (valCenter - valNeg) / grid.getGridDelta();
+                } else if (centerSign != posSign && centerSign == negSign) {
+                  grad[i] = (valPos - valCenter) / grid.getGridDelta();
+                } else {
+                  grad[i] = (valPos - valNeg) / (2 * grid.getGridDelta());
+                }
+              } else if (negDefined) {
+                grad[i] = (neighborIt.getCenter().getValue() - neighborIt.getNeighbor(i + D).getValue()) / grid.getGridDelta();
+              } else if (posDefined) {
+                grad[i] = (neighborIt.getNeighbor(i).getValue() - neighborIt.getCenter().getValue()) / grid.getGridDelta();
+              } else {
+                grad[i] = 0;
+              }
             }
             Normalize(grad);
             nodeNormals[neighborIt.getCenter().getPointId()] = grad;
@@ -147,6 +168,11 @@ public:
                nodes[u].begin()->first <
                    viennahrle::Index<D>(cellIt.getIndices()))
           nodes[u].erase(nodes[u].begin());
+
+        while (!faceNodes[u].empty() &&
+               faceNodes[u].begin()->first <
+                   viennahrle::Index<D>(cellIt.getIndices()))
+          faceNodes[u].erase(faceNodes[u].begin());
       }
 
       unsigned signs = 0;
@@ -169,25 +195,7 @@ public:
           if (corner.isDefined()) {
             return nodeNormals[corner.getPointId()];
           }
-
-          viennahrle::Index<D> idx(cellIt.getIndices());
-          idx += viennahrle::BitMaskToIndex<D>(cornerID);
-
-          // Fallback for undefined points
-          viennahrle::SparseStarIterator<hrleDomainType, 1> neighborIt(
-              levelSet->getDomain());
-          neighborIt.goToIndicesSequential(idx);
-          Vec3D<T> grad{};
-          for (int i = 0; i < D; ++i) {
-            T vals[3];
-            vals[0] = neighborIt.getNeighbor(i + D).getValue();
-            vals[1] = neighborIt.getCenter().getValue();
-            vals[2] = neighborIt.getNeighbor(i).getValue();
-            grad[i] = lsInternal::FiniteDifferences<T>::calculateGradient(
-                vals, levelSet->getGrid().getGridDelta());
-          }
-          Normalize(grad);
-          return grad;
+          return Vec3D<T>{};
         };
 
         // Check for perfect corner (2D only)
@@ -219,9 +227,8 @@ public:
             Vec3D<T> norm1 = getGradient(n1);
             Vec3D<T> norm2 = getGradient(n2);
 
-            if (std::abs(DotProduct(norm1, norm2)) < 0.98) {
-              perfectCornerFound = true;
-
+            // if ((std::abs(DotProduct(norm1, norm2)) < 0.1e-4) && (DotProduct(norm1, norm2) > -1e-8)) {
+            // if (DotProduct(norm1, norm2) < 0.9) {
               int edgeX = -1, edgeY = -1;
               if (cornerIdx == 0) {
                 edgeX = 0;
@@ -297,7 +304,7 @@ public:
               double d2 = DotProduct(norm2, pY);
               double det = norm1[0] * norm2[1] - norm1[1] * norm2[0];
 
-              Vec3D<T> cornerPos;
+              Vec3D<T> cornerPos{};
               if (std::abs(det) > 1e-6) {
                 cornerPos[0] = (d1 * norm2[1] - d2 * norm1[1]) / det;
                 cornerPos[1] = (d2 * norm1[0] - d1 * norm2[0]) / det;
@@ -305,16 +312,27 @@ public:
                 for (int i = 0; i < D; ++i)
                   cornerPos[i] = (pX[i] + pY[i]) * 0.5;
               }
-              cornerPos[2] = 0.0;
+              // cornerPos[2] = 0.0;
 
-              unsigned nCorner = mesh->insertNextNode(cornerPos);
-              if (updateData)
-                newDataSourceIds[0].push_back(newDataSourceIds[0].back());
+              // Check if point is valid (does not cross the linear segment in a wrong way)
+              // The intersection point should be on the "void" side of the linear segment (dot > 0)
+              Vec3D<T> midPoint{};
+              for (int i = 0; i < D; ++i)
+                  midPoint[i] = (pX[i] + pY[i]) * 0.5;
+              Vec3D<T> avgNorm = norm1 + norm2;
+              T dot = DotProduct(cornerPos - midPoint, avgNorm);
 
-              // Add lines
-              mesh->insertNextElement(std::array<unsigned, 2>{nX, nCorner});
-              mesh->insertNextElement(std::array<unsigned, 2>{nCorner, nY});
-            }
+              if (dot > 0) {
+                perfectCornerFound = true;
+                unsigned nCorner = mesh->insertNextNode(cornerPos);
+                if (updateData)
+                  newDataSourceIds[0].push_back(newDataSourceIds[0].back());
+
+                // Add lines
+                mesh->insertNextElement(std::array<unsigned, 2>{nX, nCorner});
+                mesh->insertNextElement(std::array<unsigned, 2>{nCorner, nY});
+              }
+            // }
           }
         } else if constexpr (D == 3) {
           int insideCount = 0;
@@ -454,7 +472,12 @@ public:
             Vec3D<T> cross23 = CrossProduct(normY, normZ);
             T det = DotProduct(normX, cross23);
 
-            if (std::abs(det) > 1e-3 && resF_yz.first && resF_xz.first &&
+            bool isOrthogonal = (std::abs(DotProduct(normX, normY)) < 0.1) &&
+                                (std::abs(DotProduct(normX, normZ)) < 0.1) &&
+                                (std::abs(DotProduct(normY, normZ)) < 0.1);
+
+            if (isOrthogonal && std::abs(det) > 1e-3 && resF_yz.first &&
+                resF_xz.first &&
                 resF_xy.first) {
               Vec3D<T> cornerPos =
                   (d1 * cross23 + d2 * CrossProduct(normZ, normX) +
@@ -466,15 +489,24 @@ public:
               if (updateData)
                 newDataSourceIds[0].push_back(newDataSourceIds[0].back());
 
-              unsigned nF_yz = mesh->insertNextNode(resF_yz.second);
-              unsigned nF_xz = mesh->insertNextNode(resF_xz.second);
-              unsigned nF_xy = mesh->insertNextNode(resF_xy.second);
+              auto handleFaceNode = [&](int axis, Vec3D<T> pos) {
+                viennahrle::Index<D> fIdx(cellIt.getIndices());
+                if (cornerIdx & (1 << axis))
+                  fIdx[axis]++;
 
-              if (updateData) {
-                newDataSourceIds[0].push_back(newDataSourceIds[0].back());
-                newDataSourceIds[0].push_back(newDataSourceIds[0].back());
-                newDataSourceIds[0].push_back(newDataSourceIds[0].back());
-              }
+                if (faceNodes[axis].find(fIdx) != faceNodes[axis].end()) {
+                  return faceNodes[axis][fIdx];
+                }
+                unsigned nid = mesh->insertNextNode(pos);
+                faceNodes[axis][fIdx] = nid;
+                if (updateData)
+                  newDataSourceIds[0].push_back(newDataSourceIds[0].back());
+                return nid;
+              };
+
+              unsigned nF_yz = handleFaceNode(0, resF_yz.second);
+              unsigned nF_xz = handleFaceNode(1, resF_xz.second);
+              unsigned nF_xy = handleFaceNode(2, resF_xy.second);
 
               auto addQuad = [&](unsigned a, unsigned b, unsigned c,
                                  unsigned d) {
@@ -623,7 +655,7 @@ public:
               Vec3D<T> g1 = getGradient(n1);
               Vec3D<T> g2 = getGradient(n2);
 
-              if (std::abs(DotProduct(g1, g2)) < 0.98) {
+              if (std::abs(DotProduct(g1, g2)) < 0.1) {
                 unsigned node1 = getNode(corner, n1);
                 unsigned node2 = getNode(corner, n2);
                 nodesMap[axes[0]] = node1;
@@ -656,12 +688,24 @@ public:
 
             if (res0.first && res1.first) {
               perfectCornerFound = true;
-              unsigned s0 = mesh->insertNextNode(res0.second);
-              unsigned s1 = mesh->insertNextNode(res1.second);
-              if (updateData) {
-                newDataSourceIds[0].push_back(newDataSourceIds[0].back());
-                newDataSourceIds[0].push_back(newDataSourceIds[0].back());
-              }
+
+              auto handleFaceNode = [&](int sliceIdx, Vec3D<T> pos) {
+                viennahrle::Index<D> fIdx(cellIt.getIndices());
+                if (sliceIdx == 1)
+                  fIdx[edgeAxis]++;
+
+                if (faceNodes[edgeAxis].find(fIdx) != faceNodes[edgeAxis].end()) {
+                  return faceNodes[edgeAxis][fIdx];
+                }
+                unsigned nid = mesh->insertNextNode(pos);
+                faceNodes[edgeAxis][fIdx] = nid;
+                if (updateData)
+                  newDataSourceIds[0].push_back(newDataSourceIds[0].back());
+                return nid;
+              };
+
+              unsigned s0 = handleFaceNode(0, res0.second);
+              unsigned s1 = handleFaceNode(1, res1.second);
 
               for (auto const &[axis, n0] : nodes0) {
                 unsigned n1 = nodes1[axis];
