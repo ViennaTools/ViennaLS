@@ -80,6 +80,8 @@ public:
       Expand<T, D>(levelSet, 2).apply();
     }
 
+    viennahrle::ConstSparseIterator<hrleDomainType> valueIt(levelSet->getDomain());
+
     typedef std::map<viennahrle::Index<D>, unsigned> nodeContainerType;
 
     nodeContainerType nodes[D];
@@ -501,6 +503,96 @@ public:
                 faceNodes[axis][fIdx] = nid;
                 if (updateData)
                   newDataSourceIds[0].push_back(newDataSourceIds[0].back());
+
+                // Stitching logic for processed neighbors
+                viennahrle::Index<D> neighborIdx = cellIt.getIndices();
+                if (cornerIdx & (1 << axis)) neighborIdx[axis]++;
+                else neighborIdx[axis]--;
+
+                if (neighborIdx < cellIt.getIndices()) {
+                  unsigned int neighborSigns = 0;
+                  for (int i = 0; i < 8; ++i) {
+                    viennahrle::Index<D> cIdx = neighborIdx;
+                    if (i & 1) cIdx[0]++;
+                    if (i & 2) cIdx[1]++;
+                    if (i & 4) cIdx[2]++;
+                    valueIt.goToIndices(cIdx);
+                    if (valueIt.getValue() >= 0)
+                      neighborSigns |= (1 << i);
+                  }
+
+                  if (neighborSigns != 0 && neighborSigns != 255) {
+                    const int *Triangles =
+                        lsInternal::MarchingCubes::polygonize3d(neighborSigns);
+                    for (; Triangles[0] != -1; Triangles += 3) {
+                      std::vector<unsigned> face_edge_nodes;
+                      for (int k = 0; k < 3; ++k) {
+                        int edge = Triangles[k];
+                        int c0 = corner0[edge];
+                        int c1 = corner1[edge];
+                        int neighborFaceBit = (cornerIdx & (1 << axis)) ? 0 : 1;
+                        bool onFace = (((c0 >> axis) & 1) == neighborFaceBit) &&
+                                      (((c1 >> axis) & 1) == neighborFaceBit);
+
+                        if (onFace) {
+                          unsigned p0 = corner0[edge];
+                          auto dir = direction[edge];
+                          viennahrle::Index<D> nodeKey(neighborIdx);
+                          nodeKey += viennahrle::BitMaskToIndex<D>(p0);
+
+                          auto nIt = nodes[dir].find(nodeKey);
+                          if (nIt != nodes[dir].end()) {
+                            face_edge_nodes.push_back(nIt->second);
+                          } else {
+                            // Create node if missing
+                            Vec3D<T> cc{};
+                            unsigned p1 = corner1[edge];
+                            for (int z = 0; z < D; z++) {
+                              if (z != dir) {
+                                cc[z] = static_cast<double>(
+                                    neighborIdx[z] +
+                                    viennahrle::BitMaskToIndex<D>(p0)[z]);
+                              } else {
+                                viennahrle::Index<D> c0Idx = neighborIdx;
+                                c0Idx += viennahrle::BitMaskToIndex<D>(p0);
+                                viennahrle::Index<D> c1Idx = neighborIdx;
+                                c1Idx += viennahrle::BitMaskToIndex<D>(p1);
+                                valueIt.goToIndices(c0Idx);
+                                T d0 = valueIt.getValue();
+                                valueIt.goToIndices(c1Idx);
+                                T d1 = valueIt.getValue();
+                                if (d0 == -d1)
+                                  cc[z] = static_cast<T>(neighborIdx[z]) + 0.5;
+                                else if (std::abs(d0) <= std::abs(d1))
+                                  cc[z] = static_cast<T>(neighborIdx[z]) +
+                                          (d0 / (d0 - d1));
+                                else
+                                  cc[z] = static_cast<T>(neighborIdx[z] + 1) -
+                                          (d1 / (d1 - d0));
+                                cc[z] =
+                                    std::max(cc[z], neighborIdx[z] + epsilon);
+                                cc[z] = std::min(
+                                    cc[z], (neighborIdx[z] + 1) - epsilon);
+                              }
+                              cc[z] =
+                                  levelSet->getGrid().getGridDelta() * cc[z];
+                            }
+                            unsigned newNodeId = mesh->insertNextNode(cc);
+                            nodes[dir][nodeKey] = newNodeId;
+                            if (updateData)
+                              newDataSourceIds[0].push_back(0);
+                            face_edge_nodes.push_back(newNodeId);
+                          }
+                        }
+                      }
+                      if (face_edge_nodes.size() == 2) {
+                        mesh->insertNextElement(std::array<unsigned, 3>{
+                            face_edge_nodes[0], face_edge_nodes[1], nid});
+                      }
+                    }
+                  }
+                }
+
                 return nid;
               };
 
@@ -508,20 +600,27 @@ public:
               unsigned nF_xz = handleFaceNode(1, resF_xz.second);
               unsigned nF_xy = handleFaceNode(2, resF_xy.second);
 
-              auto addQuad = [&](unsigned a, unsigned b, unsigned c,
-                                 unsigned d) {
-                if (isConvex) {
-                  mesh->insertNextElement(std::array<unsigned, 3>{a, b, c});
-                  mesh->insertNextElement(std::array<unsigned, 3>{a, c, d});
-                } else {
-                  mesh->insertNextElement(std::array<unsigned, 3>{a, c, b});
-                  mesh->insertNextElement(std::array<unsigned, 3>{a, d, c});
-                }
-              };
+              // auto addTriangle = [&](unsigned a, unsigned b, unsigned c) {
+              //   if (isConvex) {
+              //     mesh->insertNextElement(std::array<unsigned, 3>{a, b, c});
+              //   } else {
+              //     mesh->insertNextElement(std::array<unsigned, 3>{a, c, b});
+              //   }
+              // };
 
-              addQuad(nCorner, nF_xy, nX, nF_xz); // Plane X
-              addQuad(nCorner, nF_yz, nY, nF_xy); // Plane Y
-              addQuad(nCorner, nF_xz, nZ, nF_yz); // Plane Z
+              // addTriangle(nCorner, nF_xy, nX);
+              // addTriangle(nCorner, nX, nF_xz);
+
+              // addTriangle(nCorner, nF_yz, nY);
+              // addTriangle(nCorner, nY, nF_xy);
+
+              // addTriangle(nCorner, nF_xz, nZ);
+              // addTriangle(nCorner, nZ, nF_yz);
+
+              // addTriangle(nX, nY, nF_xy);
+              // addTriangle(nY, nZ, nF_yz);
+              // addTriangle(nZ, nX, nF_xz);
+              // addTriangle(nF_xy, nF_yz, nF_xz);
             }
           }
 
@@ -701,6 +800,95 @@ public:
                 faceNodes[edgeAxis][fIdx] = nid;
                 if (updateData)
                   newDataSourceIds[0].push_back(newDataSourceIds[0].back());
+
+                // Stitching logic for processed neighbors
+                viennahrle::Index<D> neighborIdx = cellIt.getIndices();
+                if (sliceIdx == 1) neighborIdx[edgeAxis]++;
+                else neighborIdx[edgeAxis]--;
+
+                if (neighborIdx < cellIt.getIndices()) {
+                  unsigned int neighborSigns = 0;
+                  for (int i = 0; i < 8; ++i) {
+                    viennahrle::Index<D> cIdx = neighborIdx;
+                    if (i & 1) cIdx[0]++;
+                    if (i & 2) cIdx[1]++;
+                    if (i & 4) cIdx[2]++;
+                    valueIt.goToIndices(cIdx);
+                    if (valueIt.getValue() >= 0)
+                      neighborSigns |= (1 << i);
+                  }
+
+                  if (neighborSigns != 0 && neighborSigns != 255) {
+                    const int *Triangles =
+                        lsInternal::MarchingCubes::polygonize3d(neighborSigns);
+                    for (; Triangles[0] != -1; Triangles += 3) {
+                      std::vector<unsigned> face_edge_nodes;
+                      for (int k = 0; k < 3; ++k) {
+                        int edge = Triangles[k];
+                        int c0 = corner0[edge];
+                        int c1 = corner1[edge];
+                        int neighborFaceBit = (sliceIdx == 1) ? 0 : 1;
+                        bool onFace = (((c0 >> edgeAxis) & 1) == neighborFaceBit) &&
+                                      (((c1 >> edgeAxis) & 1) == neighborFaceBit);
+
+                        if (onFace) {
+                          unsigned p0 = corner0[edge];
+                          auto dir = direction[edge];
+                          viennahrle::Index<D> nodeKey(neighborIdx);
+                          nodeKey += viennahrle::BitMaskToIndex<D>(p0);
+
+                          auto nIt = nodes[dir].find(nodeKey);
+                          if (nIt != nodes[dir].end()) {
+                            face_edge_nodes.push_back(nIt->second);
+                          } else {
+                            // Create node if missing
+                            Vec3D<T> cc{};
+                            unsigned p1 = corner1[edge];
+                            for (int z = 0; z < D; z++) {
+                              if (z != dir) {
+                                cc[z] = static_cast<double>(
+                                    neighborIdx[z] +
+                                    viennahrle::BitMaskToIndex<D>(p0)[z]);
+                              } else {
+                                viennahrle::Index<D> c0Idx = neighborIdx;
+                                c0Idx += viennahrle::BitMaskToIndex<D>(p0);
+                                viennahrle::Index<D> c1Idx = neighborIdx;
+                                c1Idx += viennahrle::BitMaskToIndex<D>(p1);
+                                valueIt.goToIndices(c0Idx);
+                                T d0 = valueIt.getValue();
+                                valueIt.goToIndices(c1Idx);
+                                T d1 = valueIt.getValue();
+                                if (d0 == -d1)
+                                  cc[z] = static_cast<T>(neighborIdx[z]) + 0.5;
+                                else if (std::abs(d0) <= std::abs(d1))
+                                  cc[z] = static_cast<T>(neighborIdx[z]) +
+                                          (d0 / (d0 - d1));
+                                else
+                                  cc[z] = static_cast<T>(neighborIdx[z] + 1) -
+                                          (d1 / (d1 - d0));
+                                cc[z] =
+                                    std::max(cc[z], neighborIdx[z] + epsilon);
+                                cc[z] = std::min(
+                                    cc[z], (neighborIdx[z] + 1) - epsilon);
+                              }
+                              cc[z] =
+                                  levelSet->getGrid().getGridDelta() * cc[z];
+                            }
+                            unsigned newNodeId = mesh->insertNextNode(cc);
+                            nodes[dir][nodeKey] = newNodeId;
+                            if (updateData)
+                              newDataSourceIds[0].push_back(0);
+                            face_edge_nodes.push_back(newNodeId);
+                          }
+                        }
+                      }
+                      if (face_edge_nodes.size() == 2) {
+                        mesh->insertNextElement(std::array<unsigned, 3>{
+                            face_edge_nodes[0], face_edge_nodes[1], nid});
+                      }
+                    }
+                  }
+                }
                 return nid;
               };
 
@@ -736,6 +924,92 @@ public:
       if (perfectCornerFound)
         continue;
 
+
+      if constexpr (D == 3) {
+        // Stitch to perfect corners/edges
+        for (int axis = 0; axis < 3; ++axis) {
+          for (int d = 0; d < 2; ++d) {
+            viennahrle::Index<D> faceKey(cellIt.getIndices());
+            if (d == 1)
+              faceKey[axis]++;
+
+            auto it = faceNodes[axis].find(faceKey);
+            if (it != faceNodes[axis].end()) {
+              const unsigned faceNodeId = it->second;
+              const int *Triangles = lsInternal::MarchingCubes::polygonize3d(signs);
+
+              auto getNodeOnEdge = [&](int edge) -> unsigned {
+                unsigned p0 = corner0[edge];
+                unsigned p1 = corner1[edge];
+                auto dir = direction[edge];
+                viennahrle::Index<D> nodeKey(cellIt.getIndices());
+                nodeKey += viennahrle::BitMaskToIndex<D>(p0);
+
+                auto nodeIt = nodes[dir].find(nodeKey);
+                if (nodeIt != nodes[dir].end()) {
+                  return nodeIt->second;
+                }
+
+                // if node does not exist yet, create it
+                Vec3D<T> cc{}; // initialise with zeros
+                std::size_t currentPointId = 0;
+                for (int z = 0; z < D; z++) {
+                  if (z != dir) {
+                    cc[z] = static_cast<double>(
+                        cellIt.getIndices(z) +
+                        viennahrle::BitMaskToIndex<D>(p0)[z]);
+                  } else {
+                    T d0 = cellIt.getCorner(p0).getValue();
+                    T d1 = cellIt.getCorner(p1).getValue();
+                    if (d0 == -d1) {
+                      currentPointId = cellIt.getCorner(p0).getPointId();
+                      cc[z] = static_cast<T>(cellIt.getIndices(z)) + 0.5;
+                    } else {
+                      if (std::abs(d0) <= std::abs(d1)) {
+                        currentPointId = cellIt.getCorner(p0).getPointId();
+                        cc[z] = static_cast<T>(cellIt.getIndices(z)) +
+                                (d0 / (d0 - d1));
+                      } else {
+                        currentPointId = cellIt.getCorner(p1).getPointId();
+                        cc[z] = static_cast<T>(cellIt.getIndices(z) + 1) -
+                                (d1 / (d1 - d0));
+                      }
+                    }
+                    cc[z] = std::max(cc[z], cellIt.getIndices(z) + epsilon);
+                    cc[z] =
+                        std::min(cc[z], (cellIt.getIndices(z) + 1) - epsilon);
+                  }
+                  cc[z] = levelSet->getGrid().getGridDelta() * cc[z];
+                }
+
+                unsigned nodeId = mesh->insertNextNode(cc);
+                nodes[dir][nodeKey] = nodeId;
+                if (updateData)
+                  newDataSourceIds[0].push_back(currentPointId);
+
+                return nodeId;
+              };
+
+              for (; Triangles[0] != -1; Triangles += 3) {
+                std::vector<unsigned> face_edge_nodes;
+                for (int i = 0; i < 3; ++i) {
+                  int edge = Triangles[i];
+                  int c0 = corner0[edge];
+                  int c1 = corner1[edge];
+                  bool onFace = (((c0 >> axis) & 1) == d) && (((c1 >> axis) & 1) == d);
+                  if (onFace) {
+                    face_edge_nodes.push_back(getNodeOnEdge(edge));
+                  }
+                }
+                if (face_edge_nodes.size() == 2) {
+                  mesh->insertNextElement(std::array<unsigned, 3>{
+                      face_edge_nodes[0], face_edge_nodes[1], faceNodeId});
+                }
+              }
+            }
+          }
+        }
+      }
 
       // for each element
       const int *Triangles =
