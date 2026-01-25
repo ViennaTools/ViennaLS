@@ -80,6 +80,7 @@ public:
       Expand<T, D>(levelSet, 2).apply();
     }
 
+    // levelSet->getDomain().segment();
     viennahrle::ConstSparseIterator<hrleDomainType> valueIt(levelSet->getDomain());
 
     typedef std::map<viennahrle::Index<D>, unsigned> nodeContainerType;
@@ -139,9 +140,9 @@ public:
                 bool posSign = valPos > 0;
 
                 if (centerSign != negSign && centerSign == posSign) {
-                  grad[i] = (valCenter - valNeg) / grid.getGridDelta();
-                } else if (centerSign != posSign && centerSign == negSign) {
                   grad[i] = (valPos - valCenter) / grid.getGridDelta();
+                } else if (centerSign != posSign && centerSign == negSign) {
+                  grad[i] = (valCenter - valNeg) / grid.getGridDelta();
                 } else {
                   grad[i] = (valPos - valNeg) / (2 * grid.getGridDelta());
                 }
@@ -324,7 +325,9 @@ public:
               Vec3D<T> avgNorm = norm1 + norm2;
               T dot = DotProduct(cornerPos - midPoint, avgNorm);
 
-              if (dot > 0) {
+              // For convex corners of the positive region (insideCount == 1), the gradient points inwards,
+              // but the corner points outwards, so dot product is negative.
+              if ((insideCount == 1 && dot < 0) || (insideCount == 3 && dot > 0)) {
                 perfectCornerFound = true;
                 unsigned nCorner = mesh->insertNextNode(cornerPos);
                 if (updateData)
@@ -600,27 +603,27 @@ public:
               unsigned nF_xz = handleFaceNode(1, resF_xz.second);
               unsigned nF_xy = handleFaceNode(2, resF_xy.second);
 
-              // auto addTriangle = [&](unsigned a, unsigned b, unsigned c) {
-              //   if (isConvex) {
-              //     mesh->insertNextElement(std::array<unsigned, 3>{a, b, c});
-              //   } else {
-              //     mesh->insertNextElement(std::array<unsigned, 3>{a, c, b});
-              //   }
-              // };
+              auto addTriangle = [&](unsigned a, unsigned b, unsigned c) {
+                if (isConvex) {
+                  mesh->insertNextElement(std::array<unsigned, 3>{a, b, c});
+                } else {
+                  mesh->insertNextElement(std::array<unsigned, 3>{a, c, b});
+                }
+              };
 
-              // addTriangle(nCorner, nF_xy, nX);
-              // addTriangle(nCorner, nX, nF_xz);
+              addTriangle(nCorner, nF_xy, nX);
+              addTriangle(nCorner, nX, nF_xz);
 
-              // addTriangle(nCorner, nF_yz, nY);
-              // addTriangle(nCorner, nY, nF_xy);
+              addTriangle(nCorner, nF_yz, nY);
+              addTriangle(nCorner, nY, nF_xy);
 
-              // addTriangle(nCorner, nF_xz, nZ);
-              // addTriangle(nCorner, nZ, nF_yz);
+              addTriangle(nCorner, nF_xz, nZ);
+              addTriangle(nCorner, nZ, nF_yz);
 
-              // addTriangle(nX, nY, nF_xy);
-              // addTriangle(nY, nZ, nF_yz);
-              // addTriangle(nZ, nX, nF_xz);
-              // addTriangle(nF_xy, nF_yz, nF_xz);
+              addTriangle(nX, nY, nF_xy);
+              addTriangle(nY, nZ, nF_yz);
+              addTriangle(nZ, nX, nF_xz);
+              addTriangle(nF_xy, nF_yz, nF_xz);
             }
           }
 

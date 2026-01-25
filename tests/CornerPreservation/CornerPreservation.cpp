@@ -13,7 +13,7 @@ template <int D> void runTest() {
   using T = double;
 
   // 1. Setup Domain
-  double gridDelta = (D == 2) ? 0.0485 : 0.0495;
+  double gridDelta = (D == 2) ? 0.0485 : 0.0485;
   // Define bounds large enough for the box
   double bounds[2 * D];
   for (int i = 0; i < 2 * D; ++i)
@@ -158,11 +158,11 @@ template <int D> void runTest() {
 
   {
     // create spheres used for booling
-    std::cout << "Creating spheres..." << std::endl;
+    std::cout << "Creating sphere..." << std::endl;
     auto sphere = viennals::SmartPointer<viennals::Domain<double, D>>::New(
         bounds, boundaryCons, gridDelta);
 
-    origin[D - 1] = -0.0;
+    origin[D - 1] = -0.6;
     double radius = 1.0;
     viennals::MakeGeometry<double, D>(
         sphere, viennals::SmartPointer<viennals::Sphere<double, D>>::New(origin, radius))
@@ -180,7 +180,6 @@ template <int D> void runTest() {
     viennals::BooleanOperation<double, D> boolOp(
         substrate, sphere, viennals::BooleanOperationEnum::RELATIVE_COMPLEMENT);
     boolOp.apply();
-  }
 
   std::cout << "Converting Cavity Level Set to Mesh..." << std::endl;
   auto meshCavity = viennals::SmartPointer<viennals::Mesh<T>>::New();
@@ -195,6 +194,61 @@ template <int D> void runTest() {
   std::cout << "Written mesh to " << filenameCavity << std::endl;
 
   std::cout << std::endl;
+  }
+
+  // 9. Create Plane with Box Cavity
+  {
+    std::cout << "--- Box Cavity Test ---" << std::endl;
+    // Reset substrate
+    substrate = viennals::SmartPointer<viennals::Domain<double, D>>::New(
+        bounds, boundaryCons, gridDelta);
+
+    T planeNormal[D];
+    for (int i = 0; i < D; ++i)
+      planeNormal[i] = 0.0;
+    planeNormal[D - 1] = 1.0;
+
+    // Reset origin
+    for (int i = 0; i < D; ++i) origin[i] = 0.0;
+
+    auto plane =
+        viennals::SmartPointer<viennals::Plane<double, D>>::New(origin,
+                                                                planeNormal);
+    viennals::MakeGeometry<double, D>(substrate, plane).apply();
+
+    // Create box used for booling
+    std::cout << "Creating box..." << std::endl;
+    auto boxDomain = viennals::SmartPointer<viennals::Domain<double, D>>::New(
+        bounds, boundaryCons, gridDelta);
+
+    T minBox[D];
+    T maxBox[D];
+    for (int i = 0; i < D; ++i) {
+      minBox[i] = -1.0;
+      maxBox[i] = 1.0;
+    }
+
+    viennals::MakeGeometry<double, D>(
+        boxDomain, viennals::SmartPointer<viennals::Box<double, D>>::New(minBox, maxBox))
+        .apply();
+
+    viennals::BooleanOperation<double, D> boolOp(
+        substrate, boxDomain, viennals::BooleanOperationEnum::RELATIVE_COMPLEMENT);
+    boolOp.apply();
+
+    std::cout << "Converting Box Cavity Level Set to Mesh..." << std::endl;
+    auto meshBoxCavity = viennals::SmartPointer<viennals::Mesh<T>>::New();
+    viennals::ToSurfaceMesh<T, D>(substrate, meshBoxCavity).apply();
+
+    std::string filenameBoxCavity = "CavityBoxFinal_" + std::to_string(D) + "D.vtp";
+    viennals::VTKWriter<T>(meshBoxCavity, filenameBoxCavity).apply();
+
+    viennals::ToMesh<T, D>(substrate, meshBoxCavity).apply();
+    filenameBoxCavity = "CavityBoxFinal_" + std::to_string(D) + "D.vtu";
+    viennals::VTKWriter<T>(meshBoxCavity, filenameBoxCavity).apply();
+    std::cout << "Written mesh to " << filenameBoxCavity << std::endl;
+    std::cout << std::endl;
+  }
 }
 
 int main() {
