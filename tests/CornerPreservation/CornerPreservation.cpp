@@ -181,19 +181,19 @@ template <int D> void runTest() {
         substrate, sphere, viennals::BooleanOperationEnum::RELATIVE_COMPLEMENT);
     boolOp.apply();
 
-  std::cout << "Converting Cavity Level Set to Mesh..." << std::endl;
-  auto meshCavity = viennals::SmartPointer<viennals::Mesh<T>>::New();
-  viennals::ToSurfaceMesh<T, D>(substrate, meshCavity).apply();
+    std::cout << "Converting Cavity Level Set to Mesh..." << std::endl;
+    auto meshCavity = viennals::SmartPointer<viennals::Mesh<T>>::New();
+    viennals::ToSurfaceMesh<T, D>(substrate, meshCavity).apply();
 
-  std::string filenameCavity = "CavityFinal_" + std::to_string(D) + "D.vtp";
-  viennals::VTKWriter<T>(meshCavity, filenameCavity).apply();
-  viennals::ToMesh<T, D>(substrate, meshCavity).apply();
+    std::string filenameCavity = "CavityFinal_" + std::to_string(D) + "D.vtp";
+    viennals::VTKWriter<T>(meshCavity, filenameCavity).apply();
+    viennals::ToMesh<T, D>(substrate, meshCavity).apply();
 
-  filenameCavity = "CavityFinal_" + std::to_string(D) + "D.vtu";
-  viennals::VTKWriter<T>(meshCavity, filenameCavity).apply();
-  std::cout << "Written mesh to " << filenameCavity << std::endl;
+    filenameCavity = "CavityFinal_" + std::to_string(D) + "D.vtu";
+    viennals::VTKWriter<T>(meshCavity, filenameCavity).apply();
+    std::cout << "Written mesh to " << filenameCavity << std::endl;
 
-  std::cout << std::endl;
+    std::cout << std::endl;
   }
 
   // 9. Create Plane with Box Cavity
@@ -254,6 +254,6 @@ template <int D> void runTest() {
 int main() {
   // omp_set_num_threads(1);
   runTest<2>();
-  runTest<3>();
+  // runTest<3>();
   return 0;
 }

@@ -235,43 +235,43 @@ int main() {
   std::cout << "Time passed RK2: " << passedTimeRK2 << std::endl;
   std::cout << "Time passed RK3: " << passedTimeRK << std::endl;
 
-  // FE Output
-  {
-    ls::WriteVisualizationMesh<NumericType, D> writer;
-    writer.insertNextLevelSet(substrateFE);
-    writer.insertNextLevelSet(newLayerFE);
-    writer.addMetaData("time", passedTimeFE);
-    writer.setFileName("airgap_FE");
-    writer.setExtractHullMesh(true);
-    writer.apply();
+  // // FE Output
+  // {
+  //   ls::WriteVisualizationMesh<NumericType, D> writer;
+  //   writer.insertNextLevelSet(substrateFE);
+  //   writer.insertNextLevelSet(newLayerFE);
+  //   writer.addMetaData("time", passedTimeFE);
+  //   writer.setFileName("airgap_FE");
+  //   writer.setExtractHullMesh(true);
+  //   writer.apply();
 
-    ls::ToMultiSurfaceMesh<NumericType, D> multiMeshKernel;
-    multiMeshKernel.insertNextLevelSet(substrateFE);
-    multiMeshKernel.insertNextLevelSet(newLayerFE);
-    auto multiMesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
-    multiMeshKernel.setMesh(multiMesh);
-    multiMeshKernel.apply();
-    ls::VTKWriter<NumericType>(multiMesh, "multimesh_FE.vtp").apply();
-  }
+  //   ls::ToMultiSurfaceMesh<NumericType, D> multiMeshKernel;
+  //   multiMeshKernel.insertNextLevelSet(substrateFE);
+  //   multiMeshKernel.insertNextLevelSet(newLayerFE);
+  //   auto multiMesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
+  //   multiMeshKernel.setMesh(multiMesh);
+  //   multiMeshKernel.apply();
+  //   ls::VTKWriter<NumericType>(multiMesh, "multimesh_FE.vtp").apply();
+  // }
 
-  // RK2 Output
-  {
-    ls::WriteVisualizationMesh<NumericType, D> writer;
-    writer.insertNextLevelSet(substrateRK2);
-    writer.insertNextLevelSet(newLayerRK2);
-    writer.addMetaData("time", passedTimeRK2);
-    writer.setFileName("airgap_RK2");
-    writer.setExtractHullMesh(true);
-    writer.apply();
+  // // RK2 Output
+  // {
+  //   ls::WriteVisualizationMesh<NumericType, D> writer;
+  //   writer.insertNextLevelSet(substrateRK2);
+  //   writer.insertNextLevelSet(newLayerRK2);
+  //   writer.addMetaData("time", passedTimeRK2);
+  //   writer.setFileName("airgap_RK2");
+  //   writer.setExtractHullMesh(true);
+  //   writer.apply();
 
-    ls::ToMultiSurfaceMesh<NumericType, D> multiMeshKernel;
-    multiMeshKernel.insertNextLevelSet(substrateRK2);
-    multiMeshKernel.insertNextLevelSet(newLayerRK2);
-    auto multiMesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
-    multiMeshKernel.setMesh(multiMesh);
-    multiMeshKernel.apply();
-    ls::VTKWriter<NumericType>(multiMesh, "multimesh_RK2.vtp").apply();
-  }
+  //   ls::ToMultiSurfaceMesh<NumericType, D> multiMeshKernel;
+  //   multiMeshKernel.insertNextLevelSet(substrateRK2);
+  //   multiMeshKernel.insertNextLevelSet(newLayerRK2);
+  //   auto multiMesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
+  //   multiMeshKernel.setMesh(multiMesh);
+  //   multiMeshKernel.apply();
+  //   ls::VTKWriter<NumericType>(multiMesh, "multimesh_RK2.vtp").apply();
+  // }
 
   // RK3 Output
   {
