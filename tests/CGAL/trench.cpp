@@ -28,7 +28,7 @@ int main() {
   constexpr int D = 3;
 
   NumericType extent = 30;
-  NumericType gridDelta = 0.9;
+  NumericType gridDelta = 1.7;
 
   double bounds[2 * D];
   for (int i = 0; i < D; ++i) {
@@ -87,7 +87,7 @@ int main() {
   advectionKernel.insertNextLevelSet(substrate);
   advectionKernel.insertNextLevelSet(newLayer);
   advectionKernel.setVelocityField(velocities);
-  advectionKernel.setAdvectionTime(4.);
+  advectionKernel.setAdvectionTime(6.);
   advectionKernel.apply();
 
   auto mesh = ls::Mesh<NumericType>::New();
