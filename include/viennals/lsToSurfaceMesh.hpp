@@ -2,8 +2,6 @@
 
 #include <lsPreCompileMacros.hpp>
 
-#include <iostream>
-#include <iomanip>
 #include <map>
 
 #include <hrleSparseCellIterator.hpp>
@@ -26,10 +24,9 @@ template <class T, int D> class ToSurfaceMesh {
 
   SmartPointer<Domain<T, D>> levelSet = nullptr;
   SmartPointer<Mesh<T>> mesh = nullptr;
-  // std::vector<hrleIndexType> meshNodeToPointIdMapping;
   const T epsilon;
   bool updatePointData = true;
-  bool checkCornersAndEdges = true;
+  bool sharpCorners = true;
 
 public:
   explicit ToSurfaceMesh(double eps = 1e-12) : epsilon(eps) {}
@@ -46,7 +43,7 @@ public:
 
   void setUpdatePointData(bool update) { updatePointData = update; }
 
-  void setCheckCornersAndEdges(bool check) { checkCornersAndEdges = check; }
+  void setSharpCorners(bool check) { sharpCorners = check; }
 
   void apply() {
     if (levelSet == nullptr) {
@@ -81,7 +78,6 @@ public:
       Expand<T, D>(levelSet, 2).apply();
     }
 
-    // levelSet->getDomain().segment();
     viennahrle::ConstSparseIterator<hrleDomainType> valueIt(levelSet->getDomain());
 
     typedef std::map<viennahrle::Index<D>, unsigned> nodeContainerType;
@@ -100,7 +96,7 @@ public:
 
     // Cache for gradients to avoid re-calculation
     std::vector<Vec3D<T>> nodeNormals;
-    if (checkCornersAndEdges) {
+    if (sharpCorners) {
       nodeNormals.resize(levelSet->getNumberOfPoints());
 
       auto &domain = levelSet->getDomain();
@@ -126,7 +122,6 @@ public:
 
         for (; neighborIt.getIndices() < endVector; neighborIt.next()) {
           if (neighborIt.getCenter().isDefined()) {
-            bool debugOutput = std::abs(neighborIt.getCenter().getValue() - 0.0130826) < 1e-6;
             Vec3D<T> grad{};
             for (int i = 0; i < D; ++i) {
               bool negDefined = neighborIt.getNeighbor(i + D).isDefined();
@@ -136,24 +131,17 @@ public:
                 T valNeg = neighborIt.getNeighbor(i + D).getValue();
                 T valCenter = neighborIt.getCenter().getValue();
                 T valPos = neighborIt.getNeighbor(i).getValue();
-                if (debugOutput) {
-                  std::cout << std::fixed << std::setprecision(3);
-                  std::cout << std::endl << "valNeg: " << valNeg << " valCenter: " << valCenter << " valPos: " << valPos << std::endl;
-                }
 
                 bool centerSign = valCenter > 0;
                 bool negSign = valNeg > 0;
                 bool posSign = valPos > 0;
-                if (debugOutput) {
-                  std::cout << "negSign: " << negSign << " centerSign: " << centerSign << " posSign: " << posSign << std::endl;
-                }
 
                 if (centerSign != negSign && centerSign == posSign) {
                   grad[i] = (valPos - valCenter);
                 } else if (centerSign != posSign && centerSign == negSign) {
                   grad[i] = (valCenter - valNeg);
                 } else {
-                  grad[i] = 0.5 * (valPos - valNeg);
+                  grad[i] = 0;
                 }
               } else if (negDefined) {
                 grad[i] = (neighborIt.getCenter().getValue() - neighborIt.getNeighbor(i + D).getValue());
@@ -200,7 +188,7 @@ public:
         continue;
 
       bool perfectCornerFound = false;
-      if (checkCornersAndEdges) {
+      if (sharpCorners) {
         auto getGradient = [&](int cornerID) {
           auto corner = cellIt.getCorner(cornerID);
 
@@ -326,31 +314,39 @@ public:
 
         // Check for perfect corner (2D only)
         if constexpr (D == 2) {
-          int insideCount = 0;
-          int cornerIdx = -1;
+          int countNeg = 0;
+          int countPos = 0;
+          int negIdx = -1;
+          int posIdx = -1;
+
           for (int i = 0; i < 4; ++i) {
-            if (!(signs & (1 << i)))
-              insideCount++;
+            T val = cellIt.getCorner(i).getValue();
+            if (val < -epsilon) {
+              countNeg++;
+              negIdx = i;
+            } else if (val > epsilon) {
+              countPos++;
+              posIdx = i;
+            }
           }
 
-          // Identify the "corner" vertex of the cell
-          if (insideCount == 1) {
-            // Convex corner: the inside vertex is the corner
-            for (int i = 0; i < 4; ++i)
-              if (!(signs & (1 << i)))
-                cornerIdx = i;
-          } else if (insideCount == 3) {
-            // Concave corner: the outside vertex is the corner
-            for (int i = 0; i < 4; ++i)
-              if (signs & (1 << i))
-                cornerIdx = i;
+          int cornerIdx = -1;
+          int insideCount = 0;
+
+          if (countNeg == 1) {
+            cornerIdx = negIdx;
+            insideCount = 1;
+          } else if (countPos == 1) {
+            cornerIdx = posIdx;
+            insideCount = 3;
           }
 
           if (cornerIdx != -1) {
             // Check if this corner is also a corner in any neighboring cell
             bool isSharedCorner = false;
             viennahrle::Index<D> pIdx = cellIt.getIndices() + viennahrle::BitMaskToIndex<D>(cornerIdx);
-            bool pSign = cellIt.getCorner(cornerIdx).getValue() >= 0;
+            T pVal = cellIt.getCorner(cornerIdx).getValue();
+            auto &grid = levelSet->getGrid();
 
             for(int i=0; i<(1<<D); ++i) {
                 if (i == cornerIdx) continue;
@@ -363,9 +359,13 @@ public:
                 // Check edge-connected neighbors in the neighbor cell
                 for(int k=0; k<D; ++k) {
                     int neighborLocal = i ^ (1 << k);
-                    valueIt.goToIndices(neighborIndices + viennahrle::BitMaskToIndex<D>(neighborLocal));
-                    bool nSign = valueIt.getValue() >= 0;
-                    if (nSign == pSign) {
+                    viennahrle::Index<D> checkIdx = neighborIndices + viennahrle::BitMaskToIndex<D>(neighborLocal);
+                    if (grid.isOutsideOfDomain(checkIdx)) {
+                        checkIdx = grid.globalIndices2LocalIndices(checkIdx);
+                    }
+                    valueIt.goToIndices(checkIdx);
+                    T nVal = valueIt.getValue();
+                    if (std::abs(nVal) > epsilon && ((pVal >= 0) == (nVal > 0))) {
                         neighborIsCorner = false;
                         break;
                     }
@@ -384,7 +384,7 @@ public:
             Vec3D<T> norm1 = getGradient(n1);
             Vec3D<T> norm2 = getGradient(n2);
 
-            if (std::abs(DotProduct(norm1, norm2)) < 0.95) {
+            if (std::abs(DotProduct(norm1, norm2)) < 0.9) {
               int edgeX = -1, edgeY = -1;
               if (cornerIdx == 0) {
                 edgeX = 0;
@@ -456,29 +456,9 @@ public:
               auto pX = mesh->getNodes()[nX];
               auto pY = mesh->getNodes()[nY];
 
-              bool debugOutput = std::abs(cellIt.getCorner(cornerIdx).getValue() - 0.0130826) < 1e-7;
-
-              if (debugOutput) {
-                std::cout << std::fixed << std::setprecision(3);
-                std::cout << std::endl << "--- 2D Corner Candidate ---" << std::endl;
-                std::cout << "Cell: " << cellIt.getIndices() << std::endl;
-                std::cout << "corner values: ";
-                for (int i = 0; i < (1 << D); ++i) {
-                    std::cout << cellIt.getCorner(i).getValue() << " ";
-                }
-                std::cout << std::endl;
-                std::cout << "cornerIdx: " << cornerIdx << " insideCount: " << insideCount << std::endl;
-                std::cout << "norm1: " << norm1[0] << " " << norm1[1] << " " << norm1[2] << std::endl;
-                std::cout << "norm2: " << norm2[0] << " " << norm2[1] << " " << norm2[2] << std::endl;
-                std::cout << "pX: " << pX[0] << " " << pX[1] << " " << pX[2] << std::endl;
-                std::cout << "pY: " << pY[0] << " " << pY[1] << " " << pY[2] << std::endl;
-              }
-
               double d1 = DotProduct(norm1, pX);
               double d2 = DotProduct(norm2, pY);
               double det = norm1[0] * norm2[1] - norm1[1] * norm2[0];
-
-              if (debugOutput) std::cout << "d1: " << d1 << " d2: " << d2 << " det: " << det << std::endl;
 
               Vec3D<T> cornerPos{};
               if (std::abs(det) > 1e-6) {
@@ -488,41 +468,15 @@ public:
                 for (int i = 0; i < D; ++i)
                   cornerPos[i] = (pX[i] + pY[i]) * 0.5;
               }
-              // cornerPos[2] = 0.0;
 
-              // if (debugOutput) std::cout << "cornerPos: " << cornerPos[0] << " " << cornerPos[1] << " " << cornerPos[2] << std::endl;
+              perfectCornerFound = true;
+              unsigned nCorner = mesh->insertNextNode(cornerPos);
+              if (updateData)
+                newDataSourceIds[0].push_back(newDataSourceIds[0].back());
 
-              // Check if point is valid (does not cross the linear segment in a wrong way)
-              // The intersection point should be on the "void" side of the linear segment (dot > 0)
-              // Vec3D<T> midPoint{};
-              // for (int i = 0; i < D; ++i)
-                  // midPoint[i] = (pX[i] + pY[i]) * 0.5;
-              // Vec3D<T> avgNorm = norm1 + norm2;
-              // T dot = DotProduct(cornerPos - midPoint, avgNorm);
-
-              if (debugOutput) {
-                // std::cout << "midPoint: " << midPoint[0] << " " << midPoint[1] << " " << midPoint[2] << std::endl;
-                // std::cout << "avgNorm: " << avgNorm[0] << " " << avgNorm[1] << " " << avgNorm[2] << std::endl;
-                // std::cout << "dot: " << dot << std::endl;
-              }
-
-              // For convex corners of the positive region (insideCount == 3), the gradient points inwards,
-              // and the corner should also point inwards, so the dot product is positive.
-              // if (dot >= 0) {
-              // if (true) { //((insideCount == 3 && dot <= 0) || (insideCount == 1 && dot >= 0)) {
-                if (debugOutput) std::cout << "-> ACCEPTED" << std::endl;
-                perfectCornerFound = true;
-                unsigned nCorner = mesh->insertNextNode(cornerPos);
-                if (updateData)
-                  newDataSourceIds[0].push_back(newDataSourceIds[0].back());
-
-                // Add lines
-                mesh->insertNextElement(std::array<unsigned, 2>{nX, nCorner});
-                mesh->insertNextElement(std::array<unsigned, 2>{nCorner, nY});
-              // } else {
-                // if (debugOutput) std::cout << "-> REJECTED" << std::endl;
-              // }
-              if (debugOutput) std::cout << "---------------------------" << std::endl;
+              // Add lines
+              mesh->insertNextElement(std::array<unsigned, 2>{nX, nCorner});
+              mesh->insertNextElement(std::array<unsigned, 2>{nCorner, nY});
             }
           }
           }
@@ -600,6 +554,42 @@ public:
           }
 
           if (cornerIdx != -1) {
+            // Check if this corner is also a corner in any neighboring cell
+            bool isSharedCorner = false;
+            viennahrle::Index<D> pIdx = cellIt.getIndices() + viennahrle::BitMaskToIndex<D>(cornerIdx);
+            T pVal = cellIt.getCorner(cornerIdx).getValue();
+            auto &grid = levelSet->getGrid();
+
+            for(int i=0; i<(1<<D); ++i) {
+                if (i == cornerIdx) continue;
+
+                viennahrle::Index<D> neighborIndices;
+                for(int k=0; k<D; ++k) neighborIndices[k] = pIdx[k] - ((i >> k) & 1);
+
+                bool neighborIsCorner = true;
+
+                // Check edge-connected neighbors in the neighbor cell
+                for(int k=0; k<D; ++k) {
+                    int neighborLocal = i ^ (1 << k);
+                    viennahrle::Index<D> checkIdx = neighborIndices + viennahrle::BitMaskToIndex<D>(neighborLocal);
+                    if (grid.isOutsideOfDomain(checkIdx)) {
+                        checkIdx = grid.globalIndices2LocalIndices(checkIdx);
+                    }
+                    valueIt.goToIndices(checkIdx);
+                    T nVal = valueIt.getValue();
+                    if (std::abs(nVal) > epsilon && ((pVal >= 0) == (nVal > 0))) {
+                        neighborIsCorner = false;
+                        break;
+                    }
+                }
+
+                if (neighborIsCorner) {
+                    isSharedCorner = true;
+                    break;
+                }
+            }
+
+            if (!isSharedCorner) {
             // cornerIdx is the single point in- or outside the geometry
             // The three edges connected to this point are the basis for our calculation
             int edgeIdx[3];
@@ -904,7 +894,7 @@ public:
               }
             }
           }
-          // TODO: Implement 3D stitching logic.
+          }
         }
       }
 
