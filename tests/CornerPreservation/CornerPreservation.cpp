@@ -158,7 +158,8 @@ template <int D> void runTest() {
 
     T origin[D];
     for (int i = 0; i < D; ++i)
-      origin[i] = 0.0;
+      origin[i] = 0.015;
+    // origin[D - 1] = 0.025;
 
     T planeNormal[D];
     for (int i = 0; i < D; ++i)
@@ -195,6 +196,9 @@ template <int D> void runTest() {
     viennals::ToSurfaceMesh<T, D>(substrate, meshBoxCavity).apply();
     std::string filenameBoxCavity = "CavityBoxFinal_" + std::to_string(D) + "D.vtp";
     viennals::VTKWriter<T>(meshBoxCavity, filenameBoxCavity).apply();
+    viennals::ToMesh<T, D>(substrate, meshBoxCavity).apply();
+    filenameBoxCavity = "CavityBoxFinal_" + std::to_string(D) + "D.vtu";
+    viennals::VTKWriter<T>(meshBoxCavity, filenameBoxCavity).apply();
     std::cout << "Written mesh to " << filenameBoxCavity << std::endl;
     std::cout << std::endl;
   }
@@ -203,6 +207,6 @@ template <int D> void runTest() {
 int main() {
   omp_set_num_threads(8);
   runTest<2>();
-  // runTest<3>();
+  runTest<3>();
   return 0;
 }
