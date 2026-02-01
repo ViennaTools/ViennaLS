@@ -169,7 +169,7 @@ public:
           }
           if (!perfectCornerFound) {
             perfectCornerFound = generateSharpL3D(
-                cellIt, nodes, faceNodes, newDataSourceIds);
+                cellIt, nodes, faceNodes, newDataSourceIds, valueIt);
           }
         }
       }
@@ -312,6 +312,56 @@ private:
     if (updatePointData)
       newDataSourceIds[0].push_back(currentPointId);
     return nodeId;
+  }
+
+  void stitchToNeighbor(
+      viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
+      int axis, bool isHighFace, unsigned faceNodeId,
+      std::map<viennahrle::Index<D>, unsigned> *nodes,
+      viennahrle::ConstSparseIterator<hrleDomainType> &valueIt) {
+    // Backward stitching: Check if neighbor on this face is "past" and needs stitching
+    viennahrle::Index<D> neighborIdx = cellIt.getIndices();
+    if (isHighFace) neighborIdx[axis]++; else neighborIdx[axis]--;
+
+    if (neighborIdx < cellIt.getIndices()) {
+      unsigned nSigns = 0;
+      auto &grid = levelSet->getGrid();
+      for(int i=0; i<8; ++i) {
+        viennahrle::Index<D> cIdx = neighborIdx + viennahrle::BitMaskToIndex<D>(i);
+        if (!grid.isOutsideOfDomain(cIdx)) {
+          valueIt.goToIndices(cIdx);
+          if (valueIt.getValue() >= 0) nSigns |= (1<<i);
+        }
+      }
+
+      if (nSigns != 0 && nSigns != 255) {
+        const int *nTriangles = lsInternal::MarchingCubes::polygonize3d(nSigns);
+        int nFaceD = isHighFace ? 0 : 1;
+
+        for (; nTriangles[0] != -1; nTriangles += 3) {
+          std::vector<unsigned> face_edge_nodes;
+          for (int i = 0; i < 3; ++i) {
+            int edge = nTriangles[i];
+            int c0 = corner0[edge];
+            int c1 = corner1[edge];
+            bool onFace = (((c0 >> axis) & 1) == nFaceD) && (((c1 >> axis) & 1) == nFaceD);
+            if (onFace) {
+              unsigned p0 = corner0[edge];
+              auto dir = direction[edge];
+              viennahrle::Index<D> d = neighborIdx + viennahrle::BitMaskToIndex<D>(p0);
+              auto itN = nodes[dir].find(d);
+              if (itN != nodes[dir].end()) {
+                face_edge_nodes.push_back(itN->second);
+              }
+            }
+          }
+          if (face_edge_nodes.size() == 2) {
+            mesh->insertNextElement(std::array<unsigned, 3>{
+                face_edge_nodes[0], face_edge_nodes[1], faceNodeId});
+          }
+        }
+      }
+    }
   }
 
   const unsigned int corner0[12] = {0, 1, 2, 0, 4, 5, 6, 4, 0, 1, 3, 2};
@@ -530,7 +580,8 @@ private:
       viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
       std::map<viennahrle::Index<D>, unsigned> *nodes,
       std::map<viennahrle::Index<D>, unsigned> *faceNodes,
-      std::vector<std::vector<unsigned>> &newDataSourceIds) {
+      std::vector<std::vector<unsigned>> &newDataSourceIds,
+      viennahrle::ConstSparseIterator<hrleDomainType> &valueIt) {
 
     int countNeg = 0;
     int countPos = 0;
@@ -632,7 +683,7 @@ private:
         Vec3D<T> N1 = getNormal(n1);
         Vec3D<T> N2 = getNormal(n2);
         
-        if (std::abs(DotProduct(N1, N2)) >= 0.8) return std::nullopt;
+        if (std::abs(DotProduct(N1, N2)) >= 0.1) return std::nullopt;
 
         int u = (axis + 1) % 3;
         int v = (axis + 2) % 3;
@@ -672,6 +723,8 @@ private:
         unsigned nodeId = mesh->insertNextNode(globalP);
         faceNodes[axis][faceIdx] = nodeId;
         if (updatePointData) newDataSourceIds[0].push_back(cellIt.getCorner(corner).getPointId());
+
+        stitchToNeighbor(cellIt, axis, (corner >> axis) & 1, nodeId, nodes, valueIt);
         
         return P;
     };
@@ -712,6 +765,8 @@ private:
         return gS;
     }());
     if (updatePointData) newDataSourceIds[0].push_back(cellIt.getCorner(C).getPointId());
+
+    stitchToNeighbor(cellIt, axisZ, (C >> axisZ) & 1, nS_Face, nodes, valueIt);
 
     // Get face nodes
     viennahrle::Index<D> faceIdxA = cellIt.getIndices(); if ((A >> axisA) & 1) faceIdxA[axisA]++;
@@ -905,7 +960,7 @@ private:
         Vec3D<T> n_y = toCanonical(getNormal(mapIdx(c_y)));
         Vec3D<T> n_z = toCanonical(getNormal(mapIdx(c_z)));
 
-        if (std::abs(DotProduct(n_y, n_z)) >= 0.8) {
+        if (std::abs(DotProduct(n_y, n_z)) >= 0.1) {
           return false;
         }
 
@@ -961,49 +1016,7 @@ private:
         faceNodes[axis][faceIdx] = faceNodeIds[k];
         if (updatePointData) newDataSourceIds[0].push_back(cellIt.getCorner(mapIdx(c0)).getPointId());
 
-        // Backward stitching: Check if neighbor on this face is "past" and needs stitching
-        viennahrle::Index<D> neighborIdx = cellIt.getIndices();
-        if (isHighFace) neighborIdx[axis]++; else neighborIdx[axis]--;
-
-        if (neighborIdx < cellIt.getIndices()) {
-          unsigned nSigns = 0;
-          auto &grid = levelSet->getGrid();
-          for(int i=0; i<8; ++i) {
-            viennahrle::Index<D> cIdx = neighborIdx + viennahrle::BitMaskToIndex<D>(i);
-            if (!grid.isOutsideOfDomain(cIdx)) {
-              valueIt.goToIndices(cIdx);
-              if (valueIt.getValue() >= 0) nSigns |= (1<<i);
-            }
-          }
-
-          if (nSigns != 0 && nSigns != 255) {
-            const int *nTriangles = lsInternal::MarchingCubes::polygonize3d(nSigns);
-            int nFaceD = isHighFace ? 0 : 1;
-
-            for (; nTriangles[0] != -1; nTriangles += 3) {
-              std::vector<unsigned> face_edge_nodes;
-              for (int i = 0; i < 3; ++i) {
-                int edge = nTriangles[i];
-                int c0 = corner0[edge];
-                int c1 = corner1[edge];
-                bool onFace = (((c0 >> axis) & 1) == nFaceD) && (((c1 >> axis) & 1) == nFaceD);
-                if (onFace) {
-                  unsigned p0 = corner0[edge];
-                  auto dir = direction[edge];
-                  viennahrle::Index<D> d = neighborIdx + viennahrle::BitMaskToIndex<D>(p0);
-                  auto itN = nodes[dir].find(d);
-                  if (itN != nodes[dir].end()) {
-                    face_edge_nodes.push_back(itN->second);
-                  }
-                }
-              }
-              if (face_edge_nodes.size() == 2) {
-                mesh->insertNextElement(std::array<unsigned, 3>{
-                    face_edge_nodes[0], face_edge_nodes[1], faceNodeIds[k]});
-              }
-            }
-          }
-        }
+        stitchToNeighbor(cellIt, axis, isHighFace, faceNodeIds[k], nodes, valueIt);
       }
     }
 
@@ -1121,7 +1134,10 @@ private:
   bool generateCanonicalSharpCorner3D(
       viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
       int transform, bool inverted,
+      std::map<viennahrle::Index<D>, unsigned> *nodes,
       std::map<viennahrle::Index<D>, unsigned> *faceNodes,
+      std::vector<std::vector<unsigned>> &newDataSourceIds,
+      viennahrle::ConstSparseIterator<hrleDomainType> &valueIt,
       Vec3D<T> &cornerPos) {
 
     const auto *normalVectorData = levelSet->getPointData().getVectorData(
@@ -1202,9 +1218,9 @@ private:
     d2 = DotProduct(norm2, P2);
     d3 = DotProduct(norm3, P4);
 
-    if (std::abs(DotProduct(norm1, norm2)) >= 0.8 ||
-        std::abs(DotProduct(norm1, norm3)) >= 0.8 ||
-        std::abs(DotProduct(norm2, norm3)) >= 0.8) {
+    if (std::abs(DotProduct(norm1, norm2)) >= 0.1 ||
+        std::abs(DotProduct(norm1, norm3)) >= 0.1 ||
+        std::abs(DotProduct(norm2, norm3)) >= 0.1) {
       return false;
     }
 
@@ -1309,7 +1325,7 @@ private:
         viennals::CalculateNormalVectors<T, D>::normalVectorsLabel);
 
     Vec3D<T> cornerPos;
-    if (generateCanonicalSharpCorner3D(cellIt, transform, inverted, faceNodes, cornerPos)) {
+    if (generateCanonicalSharpCorner3D(cellIt, transform, inverted, nodes, faceNodes, newDataSourceIds, valueIt, cornerPos)) {
         unsigned nCorner;
         viennahrle::Index<D> cornerIdx = cellIt.getIndices();
         cornerIdx += viennahrle::BitMaskToIndex<D>(transform);
@@ -1461,6 +1477,7 @@ private:
                     unsigned nodeId = mesh->insertNextNode(globalPos);
                     faceNodes[axis][faceIdx] = nodeId;
                     if (updatePointData) newDataSourceIds[0].push_back(cellIt.getCorner(transform).getPointId());
+                    stitchToNeighbor(cellIt, axis, (transform >> axis) & 1, nodeId, nodes, valueIt);
                     return nodeId;
                 };
 
