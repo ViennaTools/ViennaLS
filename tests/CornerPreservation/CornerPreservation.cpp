@@ -158,8 +158,8 @@ template <int D> void runTest() {
 
     T origin[D];
     for (int i = 0; i < D; ++i)
-      origin[i] = 0.015;
-    // origin[D - 1] = 0.025;
+      origin[i] = 0.0;
+    origin[D - 1] = 0.025;
 
     T planeNormal[D];
     for (int i = 0; i < D; ++i)
