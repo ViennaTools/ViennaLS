@@ -53,12 +53,12 @@ public:
 
   CalculateNormalVectors() = default;
 
-  CalculateNormalVectors(
-      SmartPointer<Domain<T, D>> passedLevelSet,
-      T passedMaxValue = DEFAULT_MAX_VALUE,
-      lsNormalCalculationMethodEnum passedMethod =
-          lsNormalCalculationMethodEnum::CENTRAL_DIFFERENCES)
-      : levelSet(passedLevelSet), maxValue(passedMaxValue), method(passedMethod) {}
+  CalculateNormalVectors(SmartPointer<Domain<T, D>> passedLevelSet,
+                         T passedMaxValue = DEFAULT_MAX_VALUE,
+                         lsNormalCalculationMethodEnum passedMethod =
+                             lsNormalCalculationMethodEnum::CENTRAL_DIFFERENCES)
+      : levelSet(passedLevelSet), maxValue(passedMaxValue),
+        method(passedMethod) {}
 
   void setLevelSet(SmartPointer<Domain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
@@ -253,7 +253,7 @@ private:
               if (centerSign != negSign && centerSign != posSign) {
                 // Center is an extremum, use minmod to be safe
                 grad[i] = 0.;
-                    // (std::abs(d_pos) < std::abs(d_neg)) ? d_pos : d_neg;
+                // (std::abs(d_pos) < std::abs(d_neg)) ? d_pos : d_neg;
               } else if (centerSign != negSign) {
                 // Interface is on the negative side, use backward difference
                 grad[i] = d_neg;
@@ -262,8 +262,7 @@ private:
                 grad[i] = d_pos;
               } else {
                 // No sign change, use minmod to handle sharp features smoothly
-                grad[i] = 
-                    (std::abs(d_pos) < std::abs(d_neg)) ? d_pos : d_neg;
+                grad[i] = (std::abs(d_pos) < std::abs(d_neg)) ? d_pos : d_neg;
               }
             } else if (negDefined) {
               grad[i] = (neighborIt.getCenter().getValue() -
@@ -293,8 +292,8 @@ private:
     }
   }
 
-  void insertIntoPointData(
-      std::vector<std::vector<Vec3D<T>>> &normalVectorsVector) {
+  void
+  insertIntoPointData(std::vector<std::vector<Vec3D<T>>> &normalVectorsVector) {
     // copy all normals
     unsigned numberOfNormals = 0;
     for (unsigned i = 0; i < levelSet->getNumberOfSegments(); ++i) {

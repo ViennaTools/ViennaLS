@@ -77,8 +77,9 @@ double runSimulation(AdvectKernelType &kernel,
     writer.addMetaData("time", passedTime);
     writer.apply();
     ls::ToMesh<NumericType, D>(newLayer, mesh).apply();
-    ls::VTKWriter<NumericType>(
-        mesh, "trench_" + name + "_" + std::to_string(stepCounter) + ".vtu").apply();
+    ls::VTKWriter<NumericType>(mesh, "trench_" + name + "_" +
+                                         std::to_string(stepCounter) + ".vtu")
+        .apply();
 
     ++stepCounter;
   }

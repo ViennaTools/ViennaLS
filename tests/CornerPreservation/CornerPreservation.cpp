@@ -2,14 +2,13 @@
 #include <string>
 
 #include <lsBooleanOperation.hpp>
+#include <lsCompareChamfer.hpp>
 #include <lsDomain.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsMarchingCubes.hpp>
 #include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
-#include <lsCompareChamfer.hpp>
-
 
 template <int D> void runTest() {
   using T = double;
@@ -106,9 +105,8 @@ template <int D> void runTest() {
       for (int i = 0; i < D; ++i)
         planeNormal[i] = 0.0;
       planeNormal[D - 1] = 1.0;
-      auto plane =
-          viennals::SmartPointer<viennals::Plane<double, D>>::New(origin,
-                                                                  planeNormal);
+      auto plane = viennals::SmartPointer<viennals::Plane<double, D>>::New(
+          origin, planeNormal);
       std::cout << "Creating Cavity Level Set..." << std::endl;
       viennals::MakeGeometry<double, D>(substrate, plane).apply();
     }
@@ -166,9 +164,8 @@ template <int D> void runTest() {
       planeNormal[i] = 0.0;
     planeNormal[D - 1] = 1.0;
 
-    auto plane =
-        viennals::SmartPointer<viennals::Plane<double, D>>::New(origin,
-                                                                planeNormal);
+    auto plane = viennals::SmartPointer<viennals::Plane<double, D>>::New(
+        origin, planeNormal);
     std::cout << "Creating Box Cavity Level Set..." << std::endl;
     viennals::MakeGeometry<double, D>(substrate, plane).apply();
 
@@ -184,17 +181,20 @@ template <int D> void runTest() {
     }
 
     viennals::MakeGeometry<double, D>(
-        boxDomain, viennals::SmartPointer<viennals::Box<double, D>>::New(minBox, maxBox))
+        boxDomain,
+        viennals::SmartPointer<viennals::Box<double, D>>::New(minBox, maxBox))
         .apply();
 
     viennals::BooleanOperation<double, D> boolOp(
-        substrate, boxDomain, viennals::BooleanOperationEnum::RELATIVE_COMPLEMENT);
+        substrate, boxDomain,
+        viennals::BooleanOperationEnum::RELATIVE_COMPLEMENT);
     boolOp.apply();
 
     std::cout << "Converting Box Cavity Level Set to Mesh..." << std::endl;
     auto meshBoxCavity = viennals::SmartPointer<viennals::Mesh<T>>::New();
     viennals::ToSurfaceMesh<T, D>(substrate, meshBoxCavity).apply();
-    std::string filenameBoxCavity = "CavityBoxFinal_" + std::to_string(D) + "D.vtp";
+    std::string filenameBoxCavity =
+        "CavityBoxFinal_" + std::to_string(D) + "D.vtp";
     viennals::VTKWriter<T>(meshBoxCavity, filenameBoxCavity).apply();
     viennals::ToMesh<T, D>(substrate, meshBoxCavity).apply();
     filenameBoxCavity = "CavityBoxFinal_" + std::to_string(D) + "D.vtu";
