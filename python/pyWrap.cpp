@@ -138,6 +138,12 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .value("NORMALS_ANGLE", FeatureDetectionEnum::NORMALS_ANGLE)
       .finalize();
 
+  py::native_enum<lsNormalCalculationMethodEnum>(
+      module, "lsNormalCalculationMethodEnum", "enum.IntEnum")
+      .value("CENTRAL_DIFFERENCES", lsNormalCalculationMethodEnum::CENTRAL_DIFFERENCES)
+      .value("ONE_SIDED_MIN_MOD", lsNormalCalculationMethodEnum::ONE_SIDED_MIN_MOD)
+      .finalize();
+
   py::native_enum<BoundaryConditionEnum>(module, "BoundaryConditionEnum",
                                          "enum.IntEnum")
       .value("REFLECTIVE_BOUNDARY", BoundaryConditionEnum::REFLECTIVE_BOUNDARY)

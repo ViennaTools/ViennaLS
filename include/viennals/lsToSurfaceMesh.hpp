@@ -27,7 +27,7 @@ template <class T, int D> class ToSurfaceMesh {
   SmartPointer<Mesh<T>> mesh = nullptr;
   const T epsilon;
   bool updatePointData = true;
-  bool sharpCorners = true;
+  bool sharpCorners = false;
   typename PointData<T>::VectorDataType *normalVectorData = nullptr;
 
 public:

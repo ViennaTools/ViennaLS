@@ -324,6 +324,10 @@ template <int D> void bindApi(py::module &module) {
       // methods
       .def("setLevelSet", &CalculateNormalVectors<T, D>::setLevelSet,
            "Set levelset for which to calculate normal vectors.")
+      .def("setMaxValue", &CalculateNormalVectors<T, D>::setMaxValue,
+           "Set the maximum value for which normals should be calculated.")
+      .def("setMethod", &CalculateNormalVectors<T, D>::setMethod,
+           "Set the method to use for normal calculation.")
       .def("apply", &CalculateNormalVectors<T, D>::apply,
            "Perform normal vector calculation.");
 
@@ -775,6 +779,10 @@ template <int D> void bindApi(py::module &module) {
            "Set levelset to mesh.")
       .def("setMesh", &ToSurfaceMesh<T, D>::setMesh,
            "Set the mesh to generate.")
+      .def("setUpdatePointData", &ToSurfaceMesh<T, D>::setUpdatePointData,
+           "Set whether to update point data. Defaults to true.")
+      .def("setSharpCorners", &ToSurfaceMesh<T, D>::setSharpCorners,
+           "Set whether to preserve sharp corners. Defaults to false.")
       .def("apply", &ToSurfaceMesh<T, D>::apply,
            "Convert the levelset to a surface mesh.");
 

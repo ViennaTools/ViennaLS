@@ -48,7 +48,11 @@ template <int D> void runTest() {
     // 3. Convert Level Set back to Mesh
     std::cout << "Converting Level Set to Mesh..." << std::endl;
     auto mesh = viennals::SmartPointer<viennals::Mesh<T>>::New();
-    viennals::ToSurfaceMesh<T, D>(domain, mesh).apply();
+    {
+      viennals::ToSurfaceMesh<T, D> toSurfaceMesh(domain, mesh);
+      toSurfaceMesh.setSharpCorners(true);
+      toSurfaceMesh.apply();
+    }
 
     // 5. Write to file
     std::string filename = "BoxFinal_" + std::to_string(D) + "D.vtp";
@@ -77,7 +81,11 @@ template <int D> void runTest() {
 
     std::cout << "Converting Sphere Level Set to Mesh..." << std::endl;
     auto meshSphere = viennals::SmartPointer<viennals::Mesh<T>>::New();
-    viennals::ToSurfaceMesh<T, D>(domainSphere, meshSphere).apply();
+    {
+      viennals::ToSurfaceMesh<T, D> toSurfaceMesh(domainSphere, meshSphere);
+      toSurfaceMesh.setSharpCorners(true);
+      toSurfaceMesh.apply();
+    }
     std::string filenameSphere = "SphereFinal_" + std::to_string(D) + "D.vtp";
     viennals::VTKWriter<T>(meshSphere, filenameSphere).apply();
     std::cout << "Written mesh to " << filenameSphere << std::endl;
@@ -130,7 +138,11 @@ template <int D> void runTest() {
 
       std::cout << "Converting Cavity Level Set to Mesh..." << std::endl;
       auto meshCavity = viennals::SmartPointer<viennals::Mesh<T>>::New();
-      viennals::ToSurfaceMesh<T, D>(substrate, meshCavity).apply();
+      {
+        viennals::ToSurfaceMesh<T, D> toSurfaceMesh(substrate, meshCavity);
+        toSurfaceMesh.setSharpCorners(true);
+        toSurfaceMesh.apply();
+      }
       std::string filenameCavity = "CavityFinal_" + std::to_string(D) + "D.vtp";
       viennals::VTKWriter<T>(meshCavity, filenameCavity).apply();
       std::cout << "Written mesh to " << filenameCavity << std::endl;
@@ -192,7 +204,11 @@ template <int D> void runTest() {
 
     std::cout << "Converting Box Cavity Level Set to Mesh..." << std::endl;
     auto meshBoxCavity = viennals::SmartPointer<viennals::Mesh<T>>::New();
-    viennals::ToSurfaceMesh<T, D>(substrate, meshBoxCavity).apply();
+    {
+      viennals::ToSurfaceMesh<T, D> toSurfaceMesh(substrate, meshBoxCavity);
+      toSurfaceMesh.setSharpCorners(true);
+      toSurfaceMesh.apply();
+    }
     std::string filenameBoxCavity =
         "CavityBoxFinal_" + std::to_string(D) + "D.vtp";
     viennals::VTKWriter<T>(meshBoxCavity, filenameBoxCavity).apply();
