@@ -27,28 +27,28 @@ template <class T, int D> class ToSurfaceMesh {
   SmartPointer<Mesh<T>> mesh = nullptr;
   const T epsilon;
   bool updatePointData = true;
-  bool sharpCorners = true;
+  bool sharpCorners = false;
+  typename PointData<T>::VectorDataType *normalVectorData = nullptr;
 
 public:
   explicit ToSurfaceMesh(double eps = 1e-12) : epsilon(eps) {}
 
   ToSurfaceMesh(const SmartPointer<Domain<T, D>> passedLevelSet,
-                SmartPointer<Mesh<T>> passedMesh, double eps = 1e-12)
-      : levelSet(passedLevelSet), mesh(passedMesh), epsilon(eps) {
-        // if constexpr (D == 3) {
-        //   sharpCorners = false;
-        // }
-      }
+                SmartPointer<Mesh<T>> passedMesh, double eps = 1e-12)//, sharpCorners = false)
+      : levelSet(passedLevelSet), mesh(passedMesh), epsilon(eps) {      }
 
   void setLevelSet(SmartPointer<Domain<T, D>> passedlsDomain) {
     levelSet = passedlsDomain;
+    normalVectorData = nullptr;
   }
 
   void setMesh(SmartPointer<Mesh<T>> passedMesh) { mesh = passedMesh; }
 
   void setUpdatePointData(bool update) { updatePointData = update; }
 
-  void setSharpCorners(bool check) { sharpCorners = check; }
+  void setSharpCorners(bool check) {
+    sharpCorners = check; 
+  }
 
   void apply() {
     if (levelSet == nullptr) {
@@ -71,13 +71,12 @@ public:
     }
 
     mesh->clear();
-
-    // test if level set function consists of at least 2 layers of
-    // defined grid points
-    if (levelSet->getLevelSetWidth() < 2) {
-      VIENNACORE_LOG_WARNING("Levelset is less than 2 layers wide. Expanding "
-                             "levelset to 2 layers.");
-      Expand<T, D>(levelSet, 2).apply();
+    if (levelSet != nullptr) {
+      if (levelSet->getLevelSetWidth() < 2) {
+        VIENNACORE_LOG_WARNING("Levelset is less than 2 layers wide. Expanding "
+                                "levelset to 2 layers.");
+        Expand<T, D>(levelSet, 2).apply();
+      }
     }
 
     viennahrle::ConstSparseIterator<hrleDomainType> valueIt(levelSet->getDomain());
@@ -96,17 +95,16 @@ public:
     if (updatePointData)
       newDataSourceIds.resize(1);
 
-    typename PointData<T>::VectorDataType *normalVectorData = nullptr;
     if (sharpCorners) {
-      viennals::CalculateNormalVectors<T, D> normalCalculator(levelSet);
-      normalCalculator.setMethod(
-          viennals::lsNormalCalculationMethodEnum::ONE_SIDED_MIN_MOD);
-      normalCalculator.setMaxValue(std::numeric_limits<T>::max());
-      normalCalculator.apply();
-      normalVectorData = levelSet->getPointData().getVectorData(
-          viennals::CalculateNormalVectors<T, D>::normalVectorsLabel);
+        viennals::CalculateNormalVectors<T, D> normalCalculator(levelSet);
+        normalCalculator.setMethod(
+            viennals::lsNormalCalculationMethodEnum::ONE_SIDED_MIN_MOD);
+        normalCalculator.setMaxValue(std::numeric_limits<T>::max());
+        normalCalculator.apply();
+        normalVectorData = levelSet->getPointData().getVectorData(
+            viennals::CalculateNormalVectors<T, D>::normalVectorsLabel);
     }
-
+      
     // iterate over all cells with active points
     for (viennahrle::ConstSparseCellIterator<hrleDomainType> cellIt(
              levelSet->getDomain());
@@ -150,7 +148,7 @@ public:
         auto getGradient = [&](int cornerID) {
           auto corner = cellIt.getCorner(cornerID);
 
-          if (corner.isDefined()) {
+          if (corner.isDefined() && normalVectorData) {
             return (*normalVectorData)[corner.getPointId()];
           }
           return Vec3D<T>{};
@@ -371,9 +369,6 @@ private:
   bool generateCanonicalSharpCorner2D(
       viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
       int transform, Vec3D<T> &cornerPos) {
-
-    const auto *normalVectorData = levelSet->getPointData().getVectorData(
-        viennals::CalculateNormalVectors<T, D>::normalVectorsLabel);
 
     if (normalVectorData == nullptr)
       return false;
@@ -637,9 +632,7 @@ private:
       }
     }
 
-    const auto *normalVectorData = levelSet->getPointData().getVectorData(
-        viennals::CalculateNormalVectors<T, D>::normalVectorsLabel);
-    if (!normalVectorData) return false;
+    if (normalVectorData == nullptr) return false;
 
     auto getNormal = [&](int idx) {
       auto corner = cellIt.getCorner(idx);
@@ -837,9 +830,6 @@ private:
       std::map<viennahrle::Index<D>, unsigned> *faceNodes,
       std::vector<std::vector<unsigned>> &newDataSourceIds,
       viennahrle::ConstSparseIterator<hrleDomainType> &valueIt) {
-
-    const auto *normalVectorData = levelSet->getPointData().getVectorData(
-        viennals::CalculateNormalVectors<T, D>::normalVectorsLabel);
 
     if (normalVectorData == nullptr)
       return false;
@@ -1321,9 +1311,6 @@ private:
     if (transform == -1)
       return false;
 
-    const auto *normalVectorData = levelSet->getPointData().getVectorData(
-        viennals::CalculateNormalVectors<T, D>::normalVectorsLabel);
-
     Vec3D<T> cornerPos;
     if (generateCanonicalSharpCorner3D(cellIt, transform, inverted, nodes, faceNodes, newDataSourceIds, valueIt, cornerPos)) {
         unsigned nCorner;
@@ -1370,9 +1357,6 @@ private:
         unsigned n1 = getEdgeNode(transform ^ 1);
         unsigned n2 = getEdgeNode(transform ^ 2);
         unsigned n4 = getEdgeNode(transform ^ 4);
-
-        const auto *normalVectorData = levelSet->getPointData().getVectorData(
-            viennals::CalculateNormalVectors<T, D>::normalVectorsLabel);
 
         // Try to generate cube corner topology
         if (normalVectorData) {
