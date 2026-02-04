@@ -251,6 +251,7 @@ int main() {
     multiMeshKernel.insertNextLevelSet(newLayerFE);
     auto multiMesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
     multiMeshKernel.setMesh(multiMesh);
+    multiMeshKernel.setSharpCorners(true);
     multiMeshKernel.apply();
     ls::VTKWriter<NumericType>(multiMesh, "multimesh_FE.vtp").apply();
   }
@@ -270,6 +271,7 @@ int main() {
     multiMeshKernel.insertNextLevelSet(newLayerRK2);
     auto multiMesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
     multiMeshKernel.setMesh(multiMesh);
+    multiMeshKernel.setSharpCorners(true);
     multiMeshKernel.apply();
     ls::VTKWriter<NumericType>(multiMesh, "multimesh_RK2.vtp").apply();
   }
@@ -289,6 +291,7 @@ int main() {
     multiMeshKernel.insertNextLevelSet(newLayerRK);
     auto multiMesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
     multiMeshKernel.setMesh(multiMesh);
+    multiMeshKernel.setSharpCorners(true);
     multiMeshKernel.apply();
     ls::VTKWriter<NumericType>(multiMesh, "multimesh_RK3.vtp").apply();
   }
