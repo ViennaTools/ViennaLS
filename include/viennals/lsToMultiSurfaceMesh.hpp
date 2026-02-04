@@ -7,11 +7,11 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include <lsCalculateNormalVectors.hpp>
-#include <lsFiniteDifferences.hpp>
 #include <hrleSparseCellIterator.hpp>
+#include <lsCalculateNormalVectors.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
+#include <lsFiniteDifferences.hpp>
 #include <lsMarchingCubes.hpp>
 #include <lsMaterialMap.hpp>
 #include <lsMesh.hpp>
@@ -55,9 +55,12 @@ class ToMultiSurfaceMesh {
     }
   };
 
-  static constexpr unsigned int corner0[12] = {0, 1, 2, 0, 4, 5, 6, 4, 0, 1, 3, 2};
-  static constexpr unsigned int corner1[12] = {1, 3, 3, 2, 5, 7, 7, 6, 4, 5, 7, 6};
-  static constexpr unsigned int direction[12] = {0, 1, 0, 1, 0, 1, 0, 1, 2, 2, 2, 2};
+  static constexpr unsigned int corner0[12] = {0, 1, 2, 0, 4, 5,
+                                               6, 4, 0, 1, 3, 2};
+  static constexpr unsigned int corner1[12] = {1, 3, 3, 2, 5, 7,
+                                               7, 6, 4, 5, 7, 6};
+  static constexpr unsigned int direction[12] = {0, 1, 0, 1, 0, 1,
+                                                 0, 1, 2, 2, 2, 2};
 
   typename PointData<T>::VectorDataType *normalVectorData = nullptr;
   SmartPointer<lsDomainType> currentLevelSet = nullptr;
@@ -169,7 +172,8 @@ public:
 
       normalVectorData = nullptr;
       if (sharpCorners) {
-        viennals::CalculateNormalVectors<T, D> normalCalculator(currentLevelSet);
+        viennals::CalculateNormalVectors<T, D> normalCalculator(
+            currentLevelSet);
         normalCalculator.setMethod(
             viennals::lsNormalCalculationMethodEnum::ONE_SIDED_MIN_MOD);
         normalCalculator.setMaxValue(std::numeric_limits<T>::max());
@@ -178,7 +182,8 @@ public:
             viennals::CalculateNormalVectors<T, D>::normalVectorsLabel);
       }
 
-      viennahrle::ConstSparseIterator<hrleDomainType> valueIt(currentLevelSet->getDomain());
+      viennahrle::ConstSparseIterator<hrleDomainType> valueIt(
+          currentLevelSet->getDomain());
 
       // iterate over all active surface points
       for (auto cellIt = cellIts[l]; !cellIt.isFinished(); cellIt.next()) {
@@ -194,7 +199,9 @@ public:
             faceNodes[u].erase(faceNodes[u].begin());
 
           if (u == 0) {
-            while (!cornerNodes.empty() && cornerNodes.begin()->first < viennahrle::Index<D>(cellIt.getIndices()))
+            while (!cornerNodes.empty() &&
+                   cornerNodes.begin()->first <
+                       viennahrle::Index<D>(cellIt.getIndices()))
               cornerNodes.erase(cornerNodes.begin());
           }
         }
@@ -234,17 +241,17 @@ public:
                 cellIt, countNeg, countPos, negMask, posMask, nodes, valueIt);
           } else if constexpr (D == 3) {
             if (countNeg == 2 || countPos == 2) {
-              perfectCornerFound = generateSharpEdge3D(
-                  cellIt, countNeg, countPos, negMask, posMask, nodes,
-                  faceNodes, valueIt);
+              perfectCornerFound =
+                  generateSharpEdge3D(cellIt, countNeg, countPos, negMask,
+                                      posMask, nodes, faceNodes, valueIt);
             } else if (countNeg == 1 || countPos == 1) {
               perfectCornerFound = generateSharpCorner3D(
                   cellIt, countNeg, countPos, negMask, posMask, nodes,
                   cornerNodes, faceNodes, valueIt);
             } else if (countNeg == 3 || countPos == 3) {
-              perfectCornerFound = generateSharpL3D(
-                  cellIt, countNeg, countPos, negMask, posMask, nodes,
-                  faceNodes, valueIt);
+              perfectCornerFound =
+                  generateSharpL3D(cellIt, countNeg, countPos, negMask, posMask,
+                                   nodes, faceNodes, valueIt);
             }
           }
         }
@@ -283,9 +290,8 @@ public:
                     }
                   }
                   if (face_edge_nodes.size() == 2) {
-                    insertElement(std::array<unsigned, 3>{face_edge_nodes[0],
-                                                          face_edge_nodes[1],
-                                                          faceNodeId});
+                    insertElement(std::array<unsigned, 3>{
+                        face_edge_nodes[0], face_edge_nodes[1], faceNodeId});
                   }
                 }
               }
@@ -396,8 +402,8 @@ private:
                                  mesh->nodes[nod_numbers[2]]);
       }
 
-      double n2 = normal[0] * normal[0] + normal[1] * normal[1] +
-                  normal[2] * normal[2];
+      double n2 =
+          normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2];
       if (n2 > epsilon) {
         mesh->insertNextElement(nod_numbers);
         T invn = static_cast<T>(1.) / std::sqrt(static_cast<T>(n2));
@@ -499,9 +505,8 @@ private:
             }
           }
           if (face_edge_nodes.size() == 2) {
-            insertElement(std::array<unsigned, 3>{face_edge_nodes[0],
-                                                  face_edge_nodes[1],
-                                                  faceNodeId});
+            insertElement(std::array<unsigned, 3>{
+                face_edge_nodes[0], face_edge_nodes[1], faceNodeId});
           }
         }
       }
