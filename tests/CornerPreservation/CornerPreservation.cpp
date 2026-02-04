@@ -1,11 +1,14 @@
+#include <cmath>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include <lsBooleanOperation.hpp>
 #include <lsCompareChamfer.hpp>
 #include <lsDomain.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsMarchingCubes.hpp>
+#include <lsTestAsserts.hpp>
 #include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
@@ -58,6 +61,16 @@ template <int D> void runTest() {
     std::string filename = "BoxFinal_" + std::to_string(D) + "D.vtp";
     viennals::VTKWriter<T>(mesh, filename).apply();
     std::cout << "Written mesh to " << filename << std::endl;
+
+    std::vector<std::vector<T>> expectedCorners;
+    for (int i = 0; i < (1 << D); ++i) {
+      std::vector<T> corner(D);
+      for (int j = 0; j < D; ++j) {
+        corner[j] = ((i >> j) & 1) ? 1.0 : -1.0;
+      }
+      expectedCorners.push_back(corner);
+    }
+    LSTEST_ASSERT_MESH_CORNERS(mesh, expectedCorners, D);
   }
 
   // 6. Create Sphere Geometry
@@ -212,6 +225,18 @@ template <int D> void runTest() {
     std::string filenameBoxCavity =
         "CavityBoxFinal_" + std::to_string(D) + "D.vtp";
     viennals::VTKWriter<T>(meshBoxCavity, filenameBoxCavity).apply();
+
+    std::vector<std::vector<T>> expectedCornersCavity;
+    for (int i = 0; i < (1 << D); ++i) {
+      std::vector<T> corner(D);
+      for (int j = 0; j < D - 1; ++j) {
+        corner[j] = ((i >> j) & 1) ? 1.0 : -1.0;
+      }
+      corner[D - 1] = ((i >> (D - 1)) & 1) ? 0.025 : -1.0;
+      expectedCornersCavity.push_back(corner);
+    }
+    LSTEST_ASSERT_MESH_CORNERS(meshBoxCavity, expectedCornersCavity, D);
+
     viennals::ToMesh<T, D>(substrate, meshBoxCavity).apply();
     filenameBoxCavity = "CavityBoxFinal_" + std::to_string(D) + "D.vtu";
     viennals::VTKWriter<T>(meshBoxCavity, filenameBoxCavity).apply();

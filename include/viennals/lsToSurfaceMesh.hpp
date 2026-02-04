@@ -94,6 +94,8 @@ public:
     if (updatePointData)
       newDataSourceIds.resize(1);
 
+    // If sharp corners are enabled, calculate normals first as they are needed
+    // for feature reconstruction
     if (sharpCorners) {
       viennals::CalculateNormalVectors<T, D> normalCalculator(levelSet);
       normalCalculator.setMethod(
@@ -109,6 +111,7 @@ public:
              levelSet->getDomain());
          !cellIt.isFinished(); cellIt.next()) {
 
+      // Clear node caches for dimensions that have moved out of scope
       for (int u = 0; u < D; u++) {
         while (!nodes[u].empty() &&
                nodes[u].begin()->first <
@@ -128,6 +131,7 @@ public:
         }
       }
 
+      // Calculate signs of all corners to determine the marching cubes case
       unsigned signs = 0;
       bool hasZero = false;
       for (int i = 0; i < (1 << D); i++) {
@@ -144,6 +148,7 @@ public:
       if (signs == (1 << (1 << D)) - 1 && !hasZero)
         continue;
 
+      // Attempt to generate sharp features if enabled
       bool perfectCornerFound = false;
       if (sharpCorners) {
         int countNeg = 0;
@@ -168,14 +173,17 @@ public:
                                     posMask, nodes, newDataSourceIds, valueIt);
         } else if constexpr (D == 3) {
           if (countNeg == 2 || countPos == 2) {
+            // Try to generate a sharp edge (2 corners active)
             perfectCornerFound = generateSharpEdge3D(
                 cellIt, countNeg, countPos, negMask, posMask, nodes, faceNodes,
                 newDataSourceIds, valueIt);
           } else if (countNeg == 1 || countPos == 1) {
+            // Try to generate a sharp corner (1 corner active)
             perfectCornerFound = generateSharpCorner3D(
                 cellIt, countNeg, countPos, negMask, posMask, nodes,
                 cornerNodes, faceNodes, newDataSourceIds, valueIt);
           } else if (countNeg == 3 || countPos == 3) {
+            // Try to generate an L-shape corner (3 corners active)
             perfectCornerFound =
                 generateSharpL3D(cellIt, countNeg, countPos, negMask, posMask,
                                  nodes, faceNodes, newDataSourceIds, valueIt);
@@ -183,11 +191,15 @@ public:
         }
       }
 
+      // If a sharp feature was successfully generated, skip standard Marching
+      // Cubes for this cell
       if (perfectCornerFound)
         continue;
 
       if constexpr (D == 3) {
         // Stitch to perfect corners/edges
+        // Check if neighbors have generated nodes on shared faces that we need
+        // to connect to
         for (int axis = 0; axis < 3; ++axis) {
           for (int d = 0; d < 2; ++d) {
             viennahrle::Index<D> faceKey(cellIt.getIndices());
@@ -226,6 +238,7 @@ public:
         }
       }
 
+      // Standard Marching Cubes / Squares algorithm
       // for each element
       const int *Triangles =
           (D == 2) ? lsInternal::MarchingCubes::polygonize2d(signs)
@@ -270,6 +283,7 @@ public:
   }
 
 private:
+  // Helper to get or create a node on an edge using linear interpolation
   unsigned getNode(viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
                    int edge, std::map<viennahrle::Index<D>, unsigned> *nodes,
                    std::vector<std::vector<unsigned>> &newDataSourceIds) {
@@ -318,6 +332,8 @@ private:
     return nodeId;
   }
 
+  // Helper to stitch a sharp feature node on a face to the standard mesh in a
+  // neighboring cell
   void
   stitchToNeighbor(viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
                    int axis, bool isHighFace, unsigned faceNodeId,
@@ -380,6 +396,7 @@ private:
   const unsigned int corner1[12] = {1, 3, 3, 2, 5, 7, 7, 6, 4, 5, 7, 6};
   const unsigned int direction[12] = {0, 1, 0, 1, 0, 1, 0, 1, 2, 2, 2, 2};
 
+  // Solves for a sharp corner position in 2D by intersecting normals
   bool generateCanonicalSharpCorner2D(
       viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
       int transform, Vec3D<T> &cornerPos) {
@@ -456,6 +473,8 @@ private:
     return true;
   }
 
+  // Wrapper for 2D sharp corner generation handling different
+  // rotations/reflections
   bool generateSharpCorner2D(
       viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt, int countNeg,
       int countPos, int negMask, int posMask,
@@ -569,6 +588,7 @@ private:
     return false;
   }
 
+  // Generates geometry for an "L-shaped" configuration (3 active corners) in 3D
   bool
   generateSharpL3D(viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
                    int countNeg, int countPos, int negMask, int posMask,
@@ -872,6 +892,8 @@ private:
     return true;
   }
 
+  // Generates geometry for a sharp edge (2 active corners) in 3D (canonical
+  // orientation)
   bool generateCanonicalSharpEdge3D(
       viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
       int transform, int axis, bool inverted,
@@ -1147,6 +1169,8 @@ private:
     return true;
   }
 
+  // Wrapper for 3D sharp edge generation handling different
+  // rotations/reflections
   bool generateSharpEdge3D(
       viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt, int countNeg,
       int countPos, int negMask, int posMask,
@@ -1194,6 +1218,8 @@ private:
                                         valueIt);
   }
 
+  // Generates geometry for a sharp corner (1 active corner) in 3D (canonical
+  // orientation)
   bool generateCanonicalSharpCorner3D(
       viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
       int transform, bool inverted,
@@ -1330,6 +1356,8 @@ private:
     return true;
   }
 
+  // Wrapper for 3D sharp corner generation handling different
+  // rotations/reflections
   bool generateSharpCorner3D(
       viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt, int countNeg,
       int countPos, int negMask, int posMask,

@@ -73,9 +73,9 @@ int main() {
   auto sphereWENO5_RK2 = ls::SmartPointer<ls::Domain<T, D>>::New(sphere);
   auto sphereWENO5_RK3 = ls::SmartPointer<ls::Domain<T, D>>::New(sphere);
 
-  auto meshInit = ls::Mesh<T>::New();
-  ls::ToSurfaceMesh<T, D>(sphere, meshInit).apply();
-  ls::VTKWriter<T>(meshInit, "sphereInit.vtp").apply();
+  // auto meshInit = ls::Mesh<T>::New();
+  // ls::ToSurfaceMesh<T, D>(sphere, meshInit).apply();
+  // ls::VTKWriter<T>(meshInit, "sphereInit.vtp").apply();
 
   // Define constant velocity field (moving in x-direction)
   std::array<T, 3> vel = {1.0, 0.0, 0.0};
@@ -166,9 +166,9 @@ int main() {
   std::cout << "Time: " << timer.currentDuration / 1e9 << "s" << std::endl;
   LSTEST_ASSERT_VALID_LS(sphereFE, T, D);
 
-  auto meshFE = ls::Mesh<T>::New();
-  ls::ToSurfaceMesh<T, D>(sphereFE, meshFE).apply();
-  ls::VTKWriter<T>(meshFE, "sphereFE.vtp").apply();
+  // auto meshFE = ls::Mesh<T>::New();
+  // ls::ToSurfaceMesh<T, D>(sphereFE, meshFE).apply();
+  // ls::VTKWriter<T>(meshFE, "sphereFE.vtp").apply();
 
   auto chamferFE = ls::CompareChamfer<T, D>(sphereRef, sphereFE);
   chamferFE.apply();
@@ -183,9 +183,9 @@ int main() {
   std::cout << "Time: " << timer.currentDuration / 1e9 << "s" << std::endl;
   LSTEST_ASSERT_VALID_LS(sphereRK2, T, D);
 
-  auto meshRK2 = ls::Mesh<T>::New();
-  ls::ToSurfaceMesh<T, D>(sphereRK2, meshRK2).apply();
-  ls::VTKWriter<T>(meshRK2, "sphereRK2.vtp").apply();
+  // auto meshRK2 = ls::Mesh<T>::New();
+  // ls::ToSurfaceMesh<T, D>(sphereRK2, meshRK2).apply();
+  // ls::VTKWriter<T>(meshRK2, "sphereRK2.vtp").apply();
 
   auto chamferRK2 = ls::CompareChamfer<T, D>(sphereRef, sphereRK2);
   chamferRK2.apply();
@@ -200,9 +200,9 @@ int main() {
   std::cout << "Time: " << timer.currentDuration / 1e9 << "s" << std::endl;
   LSTEST_ASSERT_VALID_LS(sphereRK3, T, D);
 
-  auto meshRK3 = ls::Mesh<T>::New();
-  ls::ToSurfaceMesh<T, D>(sphereRK3, meshRK3).apply();
-  ls::VTKWriter<T>(meshRK3, "sphereRK3.vtp").apply();
+  // auto meshRK3 = ls::Mesh<T>::New();
+  // ls::ToSurfaceMesh<T, D>(sphereRK3, meshRK3).apply();
+  // ls::VTKWriter<T>(meshRK3, "sphereRK3.vtp").apply();
 
   auto chamferRK3 = ls::CompareChamfer<T, D>(sphereRef, sphereRK3);
   chamferRK3.apply();
@@ -217,9 +217,9 @@ int main() {
   std::cout << "Time: " << timer.currentDuration / 1e9 << "s" << std::endl;
   LSTEST_ASSERT_VALID_LS(sphereWENO3_FE, T, D);
 
-  auto meshWENO3_FE = ls::Mesh<T>::New();
-  ls::ToSurfaceMesh<T, D>(sphereWENO3_FE, meshWENO3_FE).apply();
-  ls::VTKWriter<T>(meshWENO3_FE, "sphereWENO3_FE.vtp").apply();
+  // auto meshWENO3_FE = ls::Mesh<T>::New();
+  // ls::ToSurfaceMesh<T, D>(sphereWENO3_FE, meshWENO3_FE).apply();
+  // ls::VTKWriter<T>(meshWENO3_FE, "sphereWENO3_FE.vtp").apply();
 
   auto chamferWENO3_FE = ls::CompareChamfer<T, D>(sphereRef, sphereWENO3_FE);
   chamferWENO3_FE.apply();
@@ -234,9 +234,9 @@ int main() {
   std::cout << "Time: " << timer.currentDuration / 1e9 << "s" << std::endl;
   LSTEST_ASSERT_VALID_LS(sphereWENO3_RK2, T, D);
 
-  auto meshWENO3_RK2 = ls::Mesh<T>::New();
-  ls::ToSurfaceMesh<T, D>(sphereWENO3_RK2, meshWENO3_RK2).apply();
-  ls::VTKWriter<T>(meshWENO3_RK2, "sphereWENO3_RK2.vtp").apply();
+  // auto meshWENO3_RK2 = ls::Mesh<T>::New();
+  // ls::ToSurfaceMesh<T, D>(sphereWENO3_RK2, meshWENO3_RK2).apply();
+  // ls::VTKWriter<T>(meshWENO3_RK2, "sphereWENO3_RK2.vtp").apply();
 
   auto chamferWENO3_RK2 = ls::CompareChamfer<T, D>(sphereRef, sphereWENO3_RK2);
   chamferWENO3_RK2.apply();
@@ -251,9 +251,9 @@ int main() {
   std::cout << "Time: " << timer.currentDuration / 1e9 << "s" << std::endl;
   LSTEST_ASSERT_VALID_LS(sphereWENO3_RK3, T, D);
 
-  auto meshWENO3_RK3 = ls::Mesh<T>::New();
-  ls::ToSurfaceMesh<T, D>(sphereWENO3_RK3, meshWENO3_RK3).apply();
-  ls::VTKWriter<T>(meshWENO3_RK3, "sphereWENO3_RK3.vtp").apply();
+  // auto meshWENO3_RK3 = ls::Mesh<T>::New();
+  // ls::ToSurfaceMesh<T, D>(sphereWENO3_RK3, meshWENO3_RK3).apply();
+  // ls::VTKWriter<T>(meshWENO3_RK3, "sphereWENO3_RK3.vtp").apply();
 
   auto chamferWENO3_RK3 = ls::CompareChamfer<T, D>(sphereRef, sphereWENO3_RK3);
   chamferWENO3_RK3.apply();
@@ -268,9 +268,9 @@ int main() {
   std::cout << "Time: " << timer.currentDuration / 1e9 << "s" << std::endl;
   LSTEST_ASSERT_VALID_LS(sphereWENO5_FE, T, D);
 
-  auto meshWENO5_FE = ls::Mesh<T>::New();
-  ls::ToSurfaceMesh<T, D>(sphereWENO5_FE, meshWENO5_FE).apply();
-  ls::VTKWriter<T>(meshWENO5_FE, "sphereWENO5_FE.vtp").apply();
+  // auto meshWENO5_FE = ls::Mesh<T>::New();
+  // ls::ToSurfaceMesh<T, D>(sphereWENO5_FE, meshWENO5_FE).apply();
+  // ls::VTKWriter<T>(meshWENO5_FE, "sphereWENO5_FE.vtp").apply();
 
   auto chamferWENO5_FE = ls::CompareChamfer<T, D>(sphereRef, sphereWENO5_FE);
   chamferWENO5_FE.apply();
@@ -285,9 +285,9 @@ int main() {
   std::cout << "Time: " << timer.currentDuration / 1e9 << "s" << std::endl;
   LSTEST_ASSERT_VALID_LS(sphereWENO5_RK2, T, D);
 
-  auto meshWENO5_RK2 = ls::Mesh<T>::New();
-  ls::ToSurfaceMesh<T, D>(sphereWENO5_RK2, meshWENO5_RK2).apply();
-  ls::VTKWriter<T>(meshWENO5_RK2, "sphereWENO5_RK2.vtp").apply();
+  // auto meshWENO5_RK2 = ls::Mesh<T>::New();
+  // ls::ToSurfaceMesh<T, D>(sphereWENO5_RK2, meshWENO5_RK2).apply();
+  // ls::VTKWriter<T>(meshWENO5_RK2, "sphereWENO5_RK2.vtp").apply();
 
   auto chamferWENO5_RK2 = ls::CompareChamfer<T, D>(sphereRef, sphereWENO5_RK2);
   chamferWENO5_RK2.apply();
@@ -302,9 +302,9 @@ int main() {
   std::cout << "Time: " << timer.currentDuration / 1e9 << "s" << std::endl;
   LSTEST_ASSERT_VALID_LS(sphereWENO5_RK3, T, D);
 
-  auto meshWENO5_RK3 = ls::Mesh<T>::New();
-  ls::ToSurfaceMesh<T, D>(sphereWENO5_RK3, meshWENO5_RK3).apply();
-  ls::VTKWriter<T>(meshWENO5_RK3, "sphereWENO5_RK3.vtp").apply();
+  // auto meshWENO5_RK3 = ls::Mesh<T>::New();
+  // ls::ToSurfaceMesh<T, D>(sphereWENO5_RK3, meshWENO5_RK3).apply();
+  // ls::VTKWriter<T>(meshWENO5_RK3, "sphereWENO5_RK3.vtp").apply();
 
   auto chamferWENO5_RK3 = ls::CompareChamfer<T, D>(sphereRef, sphereWENO5_RK3);
   chamferWENO5_RK3.apply();
