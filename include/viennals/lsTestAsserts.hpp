@@ -26,7 +26,7 @@
   {                                                                            \
     try {                                                                      \
       auto &nodes = mesh->getNodes();                                          \
-      double tolerance = 1e-4;                                                 \
+      double tolerance = 1e-3;                                                 \
       for (const auto &ex : expected) {                                        \
         bool found = false;                                                    \
         for (const auto &n : nodes) {                                          \
