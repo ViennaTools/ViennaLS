@@ -235,7 +235,7 @@ public:
                     lsInternal::MarchingCubes::polygonize3d(signs);
 
                 auto getNode = [&](int edge) -> unsigned {
-                  return this->getNode(cellIt, edge, nodes);
+                  return this->getNode(cellIt, edge, nodes, nullptr);
                 };
 
                 for (; Triangles[0] != -1; Triangles += 3) {

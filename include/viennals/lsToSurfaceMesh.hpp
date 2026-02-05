@@ -75,12 +75,12 @@ protected:
                                                  0, 1, 2, 2, 2, 2};
 
 public:
-  explicit ToSurfaceMesh(double eps = 1e-12, double mnd = 0.1)
+  explicit ToSurfaceMesh(double eps = 1e-12, double mnd = 0.02)
       : epsilon(eps), minNodeDistanceFactor(mnd) {}
 
   ToSurfaceMesh(const SmartPointer<lsDomainType> passedLevelSet,
                 SmartPointer<Mesh<T>> passedMesh, double eps = 1e-12,
-                double mnd = 0.1)
+                double mnd = 0.02)
       : levelSets({passedLevelSet}), mesh(passedMesh), epsilon(eps),
         minNodeDistanceFactor(mnd) {}
 
