@@ -112,7 +112,7 @@ include(cmake/vtk.cmake)
 
 CPMAddPackage(
   NAME ViennaCore
-  VERSION 1.9.3
+  VERSION 1.9.5
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaCore"
   OPTIONS "VIENNACORE_FORMAT_EXCLUDE build/"
   EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})

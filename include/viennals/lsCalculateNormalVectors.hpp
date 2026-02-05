@@ -17,7 +17,7 @@ namespace viennals {
 
 using namespace viennacore;
 
-enum class lsNormalCalculationMethodEnum {
+enum class NormalCalculationMethodEnum {
   CENTRAL_DIFFERENCES,
   ONE_SIDED_MIN_MOD
 };
@@ -40,8 +40,8 @@ enum class lsNormalCalculationMethodEnum {
 template <class T, int D> class CalculateNormalVectors {
   SmartPointer<Domain<T, D>> levelSet = nullptr;
   T maxValue = 0.5;
-  lsNormalCalculationMethodEnum method =
-      lsNormalCalculationMethodEnum::CENTRAL_DIFFERENCES;
+  NormalCalculationMethodEnum method =
+      NormalCalculationMethodEnum::CENTRAL_DIFFERENCES;
 
   // Constants for calculation
   static constexpr T DEFAULT_MAX_VALUE = 0.5;
@@ -55,8 +55,8 @@ public:
 
   CalculateNormalVectors(SmartPointer<Domain<T, D>> passedLevelSet,
                          T passedMaxValue = DEFAULT_MAX_VALUE,
-                         lsNormalCalculationMethodEnum passedMethod =
-                             lsNormalCalculationMethodEnum::CENTRAL_DIFFERENCES)
+                         NormalCalculationMethodEnum passedMethod =
+                             NormalCalculationMethodEnum::CENTRAL_DIFFERENCES)
       : levelSet(passedLevelSet), maxValue(passedMaxValue),
         method(passedMethod) {}
 
@@ -76,7 +76,7 @@ public:
     }
   }
 
-  void setMethod(lsNormalCalculationMethodEnum passedMethod) {
+  void setMethod(NormalCalculationMethodEnum passedMethod) {
     method = passedMethod;
   }
 
@@ -100,10 +100,10 @@ public:
     }
 
     switch (method) {
-    case lsNormalCalculationMethodEnum::CENTRAL_DIFFERENCES:
+    case NormalCalculationMethodEnum::CENTRAL_DIFFERENCES:
       calculateCentralDifferences();
       break;
-    case lsNormalCalculationMethodEnum::ONE_SIDED_MIN_MOD:
+    case NormalCalculationMethodEnum::ONE_SIDED_MIN_MOD:
       calculateOneSidedMinMod();
       break;
     }

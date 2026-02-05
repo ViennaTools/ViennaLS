@@ -1,103 +1,57 @@
 #pragma once
 
-#include <lsPreCompileMacros.hpp>
-
-#include <iostream>
-#include <map>
-#include <unordered_map>
-#include <unordered_set>
-
-#include <hrleSparseCellIterator.hpp>
-#include <lsCalculateNormalVectors.hpp>
-#include <lsDomain.hpp>
-#include <lsExpand.hpp>
-#include <lsFiniteDifferences.hpp>
-#include <lsMarchingCubes.hpp>
 #include <lsMaterialMap.hpp>
-#include <lsMesh.hpp>
+#include <lsToSurfaceMesh.hpp>
 
 namespace viennals {
 
 using namespace viennacore;
 
-template <class NumericType, int D, class T = NumericType>
-class ToMultiSurfaceMesh {
+template <class NumericType, int D>
+class ToMultiSurfaceMesh : public ToSurfaceMesh<NumericType, D> {
+  using lsDomainType = viennals::Domain<NumericType, D>;
+  using hrleDomainType = typename lsDomainType::DomainType;
+  using hrleIndex = viennahrle::Index<D>;
+  using ConstSparseIterator = viennahrle::ConstSparseIterator<hrleDomainType>;
 
-  typedef viennals::Domain<NumericType, D> lsDomainType;
-  typedef typename viennals::Domain<NumericType, D>::DomainType hrleDomainType;
+  using ToSurfaceMesh<NumericType, D>::mesh;
+  using ToSurfaceMesh<NumericType, D>::levelSets;
+  using ToSurfaceMesh<NumericType, D>::currentLevelSet;
+  using ToSurfaceMesh<NumericType, D>::currentGridDelta;
+  using ToSurfaceMesh<NumericType, D>::currentMaterialId;
+  using ToSurfaceMesh<NumericType, D>::minNodeDistanceFactor;
+  using ToSurfaceMesh<NumericType, D>::epsilon;
+  using ToSurfaceMesh<NumericType, D>::nodeIdByBin;
+  using ToSurfaceMesh<NumericType, D>::uniqueElements;
+  using ToSurfaceMesh<NumericType, D>::currentNormals;
+  using ToSurfaceMesh<NumericType, D>::currentMaterials;
+  using ToSurfaceMesh<NumericType, D>::normalVectorData;
+  using ToSurfaceMesh<NumericType, D>::sharpCorners;
 
-  std::vector<SmartPointer<lsDomainType>> levelSets;
-  SmartPointer<viennals::Mesh<T>> mesh = nullptr;
   SmartPointer<MaterialMap> materialMap = nullptr;
-
-  bool sharpCorners = false;
-
-  const double epsilon;
-  const double minNodeDistanceFactor;
-
-  struct I3 {
-    int x, y, z;
-    bool operator==(const I3 &o) const {
-      return x == o.x && y == o.y && z == o.z;
-    }
-  };
-
-  struct I3Hash {
-    size_t operator()(const I3 &k) const {
-      // 64-bit mix
-      uint64_t a = (uint64_t)(uint32_t)k.x;
-      uint64_t b = (uint64_t)(uint32_t)k.y;
-      uint64_t c = (uint64_t)(uint32_t)k.z;
-      uint64_t h = a * 0x9E3779B185EBCA87ULL;
-      h ^= b + 0xC2B2AE3D27D4EB4FULL + (h << 6) + (h >> 2);
-      h ^= c + 0x165667B19E3779F9ULL + (h << 6) + (h >> 2);
-      return (size_t)h;
-    }
-  };
-
-  static constexpr unsigned int corner0[12] = {0, 1, 2, 0, 4, 5,
-                                               6, 4, 0, 1, 3, 2};
-  static constexpr unsigned int corner1[12] = {1, 3, 3, 2, 5, 7,
-                                               7, 6, 4, 5, 7, 6};
-  static constexpr unsigned int direction[12] = {0, 1, 0, 1, 0, 1,
-                                                 0, 1, 2, 2, 2, 2};
-
-  typename PointData<T>::VectorDataType *normalVectorData = nullptr;
-  SmartPointer<lsDomainType> currentLevelSet = nullptr;
-
-  // Context for mesh generation to share between helpers
-  std::unordered_map<I3, unsigned, I3Hash> nodeIdByBin;
-  std::unordered_set<I3, I3Hash> uniqueElements;
-  std::vector<Vec3D<T>> currentNormals;
-  std::vector<T> currentMaterials;
-  unsigned currentMaterialId;
-  double currentGridDelta;
 
 public:
   ToMultiSurfaceMesh(double eps = 1e-12, double minNodeDistFactor = 0.02)
-      : epsilon(eps), minNodeDistanceFactor(minNodeDistFactor) {}
+      : ToSurfaceMesh<NumericType, D>(eps, minNodeDistFactor) {}
 
   ToMultiSurfaceMesh(SmartPointer<lsDomainType> passedLevelSet,
-                     SmartPointer<viennals::Mesh<T>> passedMesh,
+                     SmartPointer<viennals::Mesh<NumericType>> passedMesh,
                      double eps = 1e-12, double minNodeDistFactor = 0.02)
-      : mesh(passedMesh), epsilon(eps),
-        minNodeDistanceFactor(minNodeDistFactor) {
-    levelSets.push_back(passedLevelSet);
-  }
+      : ToSurfaceMesh<NumericType, D>(passedLevelSet, passedMesh, eps,
+                                      minNodeDistFactor) {}
 
   ToMultiSurfaceMesh(
       std::vector<SmartPointer<lsDomainType>> const &passedLevelSets,
-      SmartPointer<viennals::Mesh<T>> passedMesh, double eps = 1e-12,
+      SmartPointer<viennals::Mesh<NumericType>> passedMesh, double eps = 1e-12,
       double minNodeDistFactor = 0.02)
-      : levelSets(passedLevelSets), mesh(passedMesh), epsilon(eps),
-        minNodeDistanceFactor(minNodeDistFactor) {}
+      : ToSurfaceMesh<NumericType, D>(eps, minNodeDistFactor) {
+    levelSets = passedLevelSets;
+    mesh = passedMesh;
+  }
 
-  ToMultiSurfaceMesh(SmartPointer<viennals::Mesh<T>> passedMesh,
+  ToMultiSurfaceMesh(SmartPointer<viennals::Mesh<NumericType>> passedMesh,
                      double eps = 1e-12, double minNodeDistFactor = 0.02)
-      : mesh(passedMesh), epsilon(eps),
-        minNodeDistanceFactor(minNodeDistFactor) {}
-
-  void setMesh(SmartPointer<viennals::Mesh<T>> passedMesh) {
+      : ToSurfaceMesh<NumericType, D>(eps, minNodeDistFactor) {
     mesh = passedMesh;
   }
 
@@ -110,8 +64,6 @@ public:
   void setMaterialMap(SmartPointer<MaterialMap> passedMaterialMap) {
     materialMap = passedMaterialMap;
   }
-
-  void setSharpCorners(bool check) { sharpCorners = check; }
 
   void apply() {
     if (levelSets.empty()) {
@@ -128,7 +80,7 @@ public:
     }
 
     mesh->clear();
-    const auto gridDelta = levelSets.front()->getGrid().getGridDelta();
+    currentGridDelta = levelSets.front()->getGrid().getGridDelta();
     for (unsigned i = 0; i < D; ++i) {
       mesh->minimumExtent[i] = std::numeric_limits<NumericType>::max();
       mesh->maximumExtent[i] = std::numeric_limits<NumericType>::lowest();
@@ -140,7 +92,6 @@ public:
     nodeContainerType faceNodes[D];
     nodeContainerType cornerNodes;
 
-    currentGridDelta = gridDelta;
     nodeIdByBin.clear();
     uniqueElements.clear();
     currentNormals.clear();
@@ -150,12 +101,13 @@ public:
 
     const bool useMaterialMap = materialMap != nullptr;
 
-    auto elementI3 = [&](const std::array<unsigned, D> &element) -> I3 {
-      if constexpr (D == 2)
-        return {(int)element[0], (int)element[1], 0};
-      else
-        return {(int)element[0], (int)element[1], (int)element[2]};
-    };
+    auto elementI3 = [&](const std::array<unsigned, D> &element) ->
+        typename ToSurfaceMesh<NumericType, D>::I3 {
+          if constexpr (D == 2)
+            return {(int)element[0], (int)element[1], 0};
+          else
+            return {(int)element[0], (int)element[1], (int)element[2]};
+        };
 
     // an iterator for each level set
     std::vector<viennahrle::ConstSparseCellIterator<hrleDomainType>> cellIts;
@@ -172,14 +124,14 @@ public:
 
       normalVectorData = nullptr;
       if (sharpCorners) {
-        viennals::CalculateNormalVectors<T, D> normalCalculator(
+        CalculateNormalVectors<NumericType, D> normalCalculator(
             currentLevelSet);
         normalCalculator.setMethod(
-            viennals::lsNormalCalculationMethodEnum::ONE_SIDED_MIN_MOD);
-        normalCalculator.setMaxValue(std::numeric_limits<T>::max());
+            NormalCalculationMethodEnum::ONE_SIDED_MIN_MOD);
+        normalCalculator.setMaxValue(std::numeric_limits<NumericType>::max());
         normalCalculator.apply();
         normalVectorData = currentLevelSet->getPointData().getVectorData(
-            viennals::CalculateNormalVectors<T, D>::normalVectorsLabel);
+            CalculateNormalVectors<NumericType, D>::normalVectorsLabel);
       }
 
       viennahrle::ConstSparseIterator<hrleDomainType> valueIt(
@@ -226,7 +178,7 @@ public:
           int negMask = 0;
           int posMask = 0;
           for (int i = 0; i < (1 << D); ++i) {
-            T val = cellIt.getCorner(i).getValue();
+            NumericType val = cellIt.getCorner(i).getValue();
             if (val < -epsilon) {
               countNeg++;
               negMask |= (1 << i);
@@ -245,21 +197,22 @@ public:
           }
 
           if constexpr (D == 2) {
-            perfectCornerFound = generateSharpCorner2D(
-                cellIt, countNeg, countPos, negMask, posMask, nodes, valueIt);
+            perfectCornerFound =
+                this->generateSharpCorner2D(cellIt, countNeg, countPos, negMask,
+                                            posMask, nodes, nullptr, valueIt);
           } else if constexpr (D == 3) {
             if (countNeg == 2 || countPos == 2) {
-              perfectCornerFound =
-                  generateSharpEdge3D(cellIt, countNeg, countPos, negMask,
-                                      posMask, nodes, faceNodes, valueIt);
-            } else if (countNeg == 1 || countPos == 1) {
-              perfectCornerFound = generateSharpCorner3D(
+              perfectCornerFound = this->generateSharpEdge3D(
                   cellIt, countNeg, countPos, negMask, posMask, nodes,
-                  cornerNodes, faceNodes, valueIt);
+                  faceNodes, nullptr, valueIt);
+            } else if (countNeg == 1 || countPos == 1) {
+              perfectCornerFound = this->generateSharpCorner3D(
+                  cellIt, countNeg, countPos, negMask, posMask, nodes,
+                  cornerNodes, faceNodes, nullptr, valueIt);
             } else if (countNeg == 3 || countPos == 3) {
-              perfectCornerFound =
-                  generateSharpL3D(cellIt, countNeg, countPos, negMask, posMask,
-                                   nodes, faceNodes, valueIt);
+              perfectCornerFound = this->generateSharpL3D(
+                  cellIt, countNeg, countPos, negMask, posMask, nodes,
+                  faceNodes, nullptr, valueIt);
             }
           }
         }
@@ -289,8 +242,8 @@ public:
                   std::vector<unsigned> face_edge_nodes;
                   for (int i = 0; i < 3; ++i) {
                     int edge = Triangles[i];
-                    int c0 = corner0[edge];
-                    int c1 = corner1[edge];
+                    int c0 = this->corner0[edge];
+                    int c1 = this->corner1[edge];
                     bool onFace =
                         (((c0 >> axis) & 1) == d) && (((c1 >> axis) & 1) == d);
                     if (onFace) {
@@ -298,7 +251,7 @@ public:
                     }
                   }
                   if (face_edge_nodes.size() == 2) {
-                    insertElement(std::array<unsigned, 3>{
+                    this->insertElement(std::array<unsigned, 3>{
                         face_edge_nodes[0], face_edge_nodes[1], faceNodeId});
                   }
                 }
@@ -322,11 +275,11 @@ public:
           for (int n = 0; n < D; n++) {
             const int edge = Triangles[n];
 
-            unsigned p0 = corner0[edge];
-            unsigned p1 = corner1[edge];
+            unsigned p0 = this->corner0[edge];
+            unsigned p1 = this->corner1[edge];
 
             // determine direction of edge
-            unsigned dir = direction[edge];
+            unsigned dir = this->direction[edge];
 
             // look for existing surface node
             viennahrle::Index<D> d(cellIt.getIndices());
@@ -338,11 +291,11 @@ public:
               nod_numbers[n] = nodeIt->second;
             } else {
               // if node does not exist yet
-              nod_numbers[n] = getNode(cellIt, edge, nodes);
+              nod_numbers[n] = this->getNode(cellIt, edge, nodes, nullptr);
             }
           }
 
-          insertElement(nod_numbers);
+          this->insertElement(nod_numbers);
         }
       }
     }
@@ -351,1100 +304,6 @@ public:
     mesh->cellData.insertNextVectorData(currentNormals, "Normals");
     mesh->triangles.shrink_to_fit();
     mesh->nodes.shrink_to_fit();
-  }
-
-private:
-  unsigned insertNode(Vec3D<T> pos) {
-    auto quantize = [&](const Vec3D<T> &p) -> I3 {
-      const T inv = T(1) / (currentGridDelta * minNodeDistanceFactor);
-      return {(int)std::llround(p[0] * inv), (int)std::llround(p[1] * inv),
-              (int)std::llround(p[2] * inv)};
-    };
-
-    int nodeIdx = -1;
-    if (minNodeDistanceFactor > 0) {
-      auto q = quantize(pos);
-      auto it = nodeIdByBin.find(q);
-      if (it != nodeIdByBin.end())
-        nodeIdx = it->second;
-    }
-
-    if (nodeIdx >= 0) {
-      return nodeIdx;
-    } else {
-      unsigned newNodeId = mesh->insertNextNode(pos);
-      if (minNodeDistanceFactor > 0) {
-        nodeIdByBin.emplace(quantize(pos), newNodeId);
-      }
-      for (int a = 0; a < D; a++) {
-        if (pos[a] < mesh->minimumExtent[a])
-          mesh->minimumExtent[a] = pos[a];
-        if (pos[a] > mesh->maximumExtent[a])
-          mesh->maximumExtent[a] = pos[a];
-      }
-      return newNodeId;
-    }
-  }
-
-  void insertElement(const std::array<unsigned, D> &nod_numbers) {
-    if (triangleMisformed(nod_numbers))
-      return;
-
-    auto elementI3 = [&](const std::array<unsigned, D> &element) -> I3 {
-      if constexpr (D == 2)
-        return {(int)element[0], (int)element[1], 0};
-      else
-        return {(int)element[0], (int)element[1], (int)element[2]};
-    };
-
-    if (uniqueElements.insert(elementI3(nod_numbers)).second) {
-      Vec3D<T> normal;
-      if constexpr (D == 2) {
-        normal = Vec3D<T>{
-            -(mesh->nodes[nod_numbers[1]][1] - mesh->nodes[nod_numbers[0]][1]),
-            mesh->nodes[nod_numbers[1]][0] - mesh->nodes[nod_numbers[0]][0],
-            T(0)};
-      } else {
-        normal = calculateNormal(mesh->nodes[nod_numbers[0]],
-                                 mesh->nodes[nod_numbers[1]],
-                                 mesh->nodes[nod_numbers[2]]);
-      }
-
-      double n2 =
-          normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2];
-      if (n2 > epsilon) {
-        mesh->insertNextElement(nod_numbers);
-        T invn = static_cast<T>(1.) / std::sqrt(static_cast<T>(n2));
-        for (int d = 0; d < D; d++) {
-          normal[d] *= invn;
-        }
-        currentNormals.push_back(normal);
-        currentMaterials.push_back(static_cast<T>(currentMaterialId));
-      }
-    }
-  }
-
-  unsigned getNode(viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
-                   int edge, std::map<viennahrle::Index<D>, unsigned> *nodes) {
-    unsigned p0 = corner0[edge];
-    unsigned p1 = corner1[edge];
-    auto dir = direction[edge];
-    viennahrle::Index<D> d(cellIt.getIndices());
-    d += viennahrle::BitMaskToIndex<D>(p0);
-
-    if (nodes[dir].find(d) != nodes[dir].end()) {
-      return nodes[dir][d];
-    }
-
-    Vec3D<T> cc{};
-    for (int z = 0; z < D; z++) {
-      if (z != dir) {
-        cc[z] = static_cast<T>(cellIt.getIndices(z) +
-                               viennahrle::BitMaskToIndex<D>(p0)[z]);
-      } else {
-        T d0 = static_cast<T>(cellIt.getCorner(p0).getValue());
-        T d1 = static_cast<T>(cellIt.getCorner(p1).getValue());
-        if (d0 == -d1) {
-          cc[z] = static_cast<T>(cellIt.getIndices(z)) + 0.5;
-        } else {
-          if (std::abs(d0) <= std::abs(d1)) {
-            cc[z] = static_cast<T>(cellIt.getIndices(z)) + (d0 / (d0 - d1));
-          } else {
-            cc[z] = static_cast<T>(cellIt.getIndices(z) + 1) - (d1 / (d1 - d0));
-          }
-        }
-        cc[z] = std::max(cc[z], static_cast<T>(cellIt.getIndices(z) + epsilon));
-        cc[z] = std::min(cc[z],
-                         static_cast<T>((cellIt.getIndices(z) + 1) - epsilon));
-      }
-      cc[z] *= currentGridDelta;
-    }
-
-    unsigned nodeId = insertNode(cc);
-    nodes[dir][d] = nodeId;
-    return nodeId;
-  }
-
-  void
-  stitchToNeighbor(viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
-                   int axis, bool isHighFace, unsigned faceNodeId,
-                   std::map<viennahrle::Index<D>, unsigned> *nodes,
-                   viennahrle::ConstSparseIterator<hrleDomainType> &valueIt) {
-    viennahrle::Index<D> neighborIdx = cellIt.getIndices();
-    if (isHighFace)
-      neighborIdx[axis]++;
-    else
-      neighborIdx[axis]--;
-
-    if (neighborIdx < cellIt.getIndices()) {
-      unsigned nSigns = 0;
-      auto &grid = currentLevelSet->getGrid();
-      for (int i = 0; i < 8; ++i) {
-        viennahrle::Index<D> cIdx =
-            neighborIdx + viennahrle::BitMaskToIndex<D>(i);
-        if (!grid.isOutsideOfDomain(cIdx)) {
-          valueIt.goToIndices(cIdx);
-          if (valueIt.getValue() >= 0)
-            nSigns |= (1 << i);
-        }
-      }
-
-      if (nSigns != 0 && nSigns != 255) {
-        const int *nTriangles = lsInternal::MarchingCubes::polygonize3d(nSigns);
-        int nFaceD = isHighFace ? 0 : 1;
-
-        for (; nTriangles[0] != -1; nTriangles += 3) {
-          std::vector<unsigned> face_edge_nodes;
-          for (int i = 0; i < 3; ++i) {
-            int edge = nTriangles[i];
-            int c0 = corner0[edge];
-            int c1 = corner1[edge];
-            bool onFace = (((c0 >> axis) & 1) == nFaceD) &&
-                          (((c1 >> axis) & 1) == nFaceD);
-            if (onFace) {
-              unsigned p0 = corner0[edge];
-              auto dir = direction[edge];
-              viennahrle::Index<D> d =
-                  neighborIdx + viennahrle::BitMaskToIndex<D>(p0);
-              auto itN = nodes[dir].find(d);
-              if (itN != nodes[dir].end()) {
-                face_edge_nodes.push_back(itN->second);
-              }
-            }
-          }
-          if (face_edge_nodes.size() == 2) {
-            insertElement(std::array<unsigned, 3>{
-                face_edge_nodes[0], face_edge_nodes[1], faceNodeId});
-          }
-        }
-      }
-    }
-  }
-
-  bool generateCanonicalSharpCorner2D(
-      viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
-      int transform, Vec3D<T> &cornerPos) {
-    if (normalVectorData == nullptr)
-      return false;
-
-    auto getTransformedGradient = [&](int cornerID) {
-      auto corner = cellIt.getCorner(cornerID ^ transform);
-      if (corner.isDefined()) {
-        auto normal = (*normalVectorData)[corner.getPointId()];
-        normal[2] = 0;
-        if ((transform & 1) != 0)
-          normal[0] = -normal[0];
-        if ((transform & 2) != 0)
-          normal[1] = -normal[1];
-        return normal;
-      }
-      return Vec3D<T>{};
-    };
-
-    Vec3D<T> norm1 = getTransformedGradient(1);
-    Vec3D<T> norm2 = getTransformedGradient(2);
-
-    if (std::abs(DotProduct(norm1, norm2)) >= 0.8)
-      return false;
-
-    auto getValue = [&](int cornerIdx) {
-      return cellIt.getCorner(cornerIdx ^ transform).getValue();
-    };
-
-    auto calculateNodePos = [&](int edge, Vec3D<T> &pos) {
-      unsigned p0 = corner0[edge];
-      unsigned p1 = corner1[edge];
-      auto dir = direction[edge];
-      for (int z = 0; z < D; z++) {
-        if (z != dir) {
-          pos[z] = static_cast<T>(viennahrle::BitMaskToIndex<D>(p0)[z]);
-        } else {
-          T d0 = getValue(p0);
-          T d1 = getValue(p1);
-          if (d0 == -d1) {
-            pos[z] = T(0.5);
-          } else {
-            if (std::abs(d0) <= std::abs(d1)) {
-              pos[z] = (d0 / (d0 - d1));
-            } else {
-              pos[z] = T(1.0) - (d1 / (d1 - d0));
-            }
-          }
-          pos[z] = std::max(pos[z], static_cast<T>(epsilon));
-          pos[z] = std::min(pos[z], T(1.0) - static_cast<T>(epsilon));
-        }
-      }
-    };
-
-    Vec3D<T> pX{}, pY{};
-    calculateNodePos(0, pX);
-    calculateNodePos(3, pY);
-
-    double d1 = DotProduct(norm1, pX);
-    double d2 = DotProduct(norm2, pY);
-    double det = norm1[0] * norm2[1] - norm1[1] * norm2[0];
-
-    if (std::abs(det) > 1e-6) {
-      cornerPos[0] = (d1 * norm2[1] - d2 * norm1[1]) / det;
-      cornerPos[1] = (d2 * norm1[0] - d1 * norm2[0]) / det;
-    } else {
-      for (int i = 0; i < D; ++i)
-        cornerPos[i] = (pX[i] + pY[i]) * T(0.5);
-    }
-    return true;
-  }
-
-  bool generateSharpCorner2D(
-      viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt, int countNeg,
-      int countPos, int negMask, int posMask,
-      std::map<viennahrle::Index<D>, unsigned> *nodes,
-      viennahrle::ConstSparseIterator<hrleDomainType> &valueIt) {
-    int cornerIdx = -1;
-    if (countNeg == 1) {
-      for (int i = 0; i < 4; ++i)
-        if ((negMask >> i) & 1) {
-          cornerIdx = i;
-          break;
-        }
-    } else if (countPos == 1) {
-      for (int i = 0; i < 4; ++i)
-        if ((posMask >> i) & 1) {
-          cornerIdx = i;
-          break;
-        }
-    }
-
-    if (cornerIdx != -1) {
-      bool isSharedCorner = false;
-      viennahrle::Index<D> pIdx =
-          cellIt.getIndices() + viennahrle::BitMaskToIndex<D>(cornerIdx);
-      T pVal = cellIt.getCorner(cornerIdx).getValue();
-      auto &grid = currentLevelSet->getGrid();
-
-      for (int i = 0; i < (1 << D); ++i) {
-        if (i == cornerIdx)
-          continue;
-        viennahrle::Index<D> neighborIndices;
-        for (int k = 0; k < D; ++k)
-          neighborIndices[k] = pIdx[k] - ((i >> k) & 1);
-        bool neighborIsCorner = true;
-        for (int k = 0; k < D; ++k) {
-          int neighborLocal = i ^ (1 << k);
-          viennahrle::Index<D> checkIdx =
-              neighborIndices + viennahrle::BitMaskToIndex<D>(neighborLocal);
-          if (grid.isOutsideOfDomain(checkIdx)) {
-            checkIdx = grid.globalIndices2LocalIndices(checkIdx);
-          }
-          valueIt.goToIndices(checkIdx);
-          T nVal = valueIt.getValue();
-          if (((pVal > epsilon) && (nVal > epsilon)) ||
-              ((pVal < -epsilon) && (nVal < -epsilon))) {
-            neighborIsCorner = false;
-            break;
-          }
-        }
-        if (neighborIsCorner) {
-          isSharedCorner = true;
-          break;
-        }
-      }
-
-      if (!isSharedCorner) {
-        Vec3D<T> cornerPos{};
-        if (generateCanonicalSharpCorner2D(cellIt, cornerIdx, cornerPos)) {
-          if ((cornerIdx & 1) != 0)
-            cornerPos[0] = T(1.0) - cornerPos[0];
-          if ((cornerIdx & 2) != 0)
-            cornerPos[1] = T(1.0) - cornerPos[1];
-          for (int i = 0; i < D; ++i) {
-            cornerPos[i] =
-                (cornerPos[i] + cellIt.getIndices(i)) * currentGridDelta;
-          }
-
-          int edgeX = -1, edgeY = -1;
-          if (cornerIdx == 0) {
-            edgeX = 0;
-            edgeY = 3;
-          } else if (cornerIdx == 1) {
-            edgeX = 0;
-            edgeY = 1;
-          } else if (cornerIdx == 2) {
-            edgeX = 2;
-            edgeY = 3;
-          } else if (cornerIdx == 3) {
-            edgeX = 2;
-            edgeY = 1;
-          }
-
-          unsigned nX = this->getNode(cellIt, edgeX, nodes);
-          unsigned nY = this->getNode(cellIt, edgeY, nodes);
-          unsigned nCorner = insertNode(cornerPos);
-
-          insertElement(std::array<unsigned, 2>{nX, nCorner});
-          insertElement(std::array<unsigned, 2>{nCorner, nY});
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  bool
-  generateSharpL3D(viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
-                   int countNeg, int countPos, int negMask, int posMask,
-                   std::map<viennahrle::Index<D>, unsigned> *nodes,
-                   std::map<viennahrle::Index<D>, unsigned> *faceNodes,
-                   viennahrle::ConstSparseIterator<hrleDomainType> &valueIt) {
-    bool inverted = false;
-    int mask = 0;
-    if (countNeg == 3) {
-      mask = negMask;
-      inverted = false;
-    } else if (countPos == 3) {
-      mask = posMask;
-      inverted = true;
-    } else {
-      return false;
-    }
-
-    int C = -1, A = -1, B = -1;
-    for (int i = 0; i < 8; ++i) {
-      if ((mask >> i) & 1) {
-        int neighbors = 0;
-        for (int k = 0; k < 3; ++k) {
-          if ((mask >> (i ^ (1 << k))) & 1)
-            neighbors++;
-        }
-        if (neighbors == 2) {
-          C = i;
-          break;
-        }
-      }
-    }
-    if (C == -1)
-      return false;
-    for (int k = 0; k < 3; ++k) {
-      int n = C ^ (1 << k);
-      if ((mask >> n) & 1) {
-        if (A == -1)
-          A = n;
-        else
-          B = n;
-      }
-    }
-
-    if (normalVectorData == nullptr)
-      return false;
-
-    auto getNormal = [&](int idx) {
-      auto corner = cellIt.getCorner(idx);
-      if (corner.isDefined()) {
-        Vec3D<T> n = (*normalVectorData)[corner.getPointId()];
-        if (inverted)
-          for (int i = 0; i < 3; ++i)
-            n[i] = -n[i];
-        return n;
-      }
-      return Vec3D<T>{};
-    };
-
-    auto getValue = [&](int idx) {
-      T val = cellIt.getCorner(idx).getValue();
-      return inverted ? -val : val;
-    };
-
-    auto getInterp = [&](int p_a, int p_b) {
-      const T v_a = getValue(p_a);
-      const T v_b = getValue(p_b);
-      if (std::abs(v_a - v_b) < epsilon)
-        return T(0.5);
-      return v_a / (v_a - v_b);
-    };
-
-    int axisA = 0;
-    while ((C ^ A) != (1 << axisA))
-      axisA++;
-    int axisB = 0;
-    while ((C ^ B) != (1 << axisB))
-      axisB++;
-    int axisZ = 3 - axisA - axisB;
-
-    auto calculateFace = [&](int axis, int corner, int n1,
-                             int n2) -> std::optional<Vec3D<T>> {
-      viennahrle::Index<D> faceIdx = cellIt.getIndices();
-      if ((corner >> axis) & 1)
-        faceIdx[axis]++;
-      if (faceNodes[axis].find(faceIdx) != faceNodes[axis].end()) {
-        unsigned nodeId = faceNodes[axis][faceIdx];
-        Vec3D<T> pos = mesh->nodes[nodeId];
-        for (int d = 0; d < 3; ++d)
-          pos[d] = pos[d] / currentGridDelta - cellIt.getIndices(d);
-        return pos;
-      }
-      Vec3D<T> N1 = getNormal(n1);
-      Vec3D<T> N2 = getNormal(n2);
-      if (std::abs(DotProduct(N1, N2)) >= 0.8)
-        return std::nullopt;
-      int u = (axis + 1) % 3;
-      int v = (axis + 2) % 3;
-      int axis1 = 0;
-      while ((corner ^ n1) != (1 << axis1))
-        axis1++;
-      T t1 = getInterp(corner, n1);
-      int axis2 = 0;
-      while ((corner ^ n2) != (1 << axis2))
-        axis2++;
-      T t2 = getInterp(corner, n2);
-      Vec3D<T> P1;
-      P1[0] = ((corner >> 0) & 1);
-      P1[1] = ((corner >> 1) & 1);
-      P1[2] = ((corner >> 2) & 1);
-      P1[axis1] = ((corner >> axis1) & 1) ? (1.0 - t1) : t1;
-      Vec3D<T> P2;
-      P2[0] = ((corner >> 0) & 1);
-      P2[1] = ((corner >> 1) & 1);
-      P2[2] = ((corner >> 2) & 1);
-      P2[axis2] = ((corner >> axis2) & 1) ? (1.0 - t2) : t2;
-      double det = N1[u] * N2[v] - N1[v] * N2[u];
-      if (std::abs(det) < 1e-6)
-        return std::nullopt;
-      double c1 = N1[u] * P1[u] + N1[v] * P1[v];
-      double c2 = N2[u] * P2[u] + N2[v] * P2[v];
-      Vec3D<T> P;
-      P[axis] = P1[axis];
-      P[u] = (c1 * N2[v] - c2 * N1[v]) / det;
-      P[v] = (c2 * N1[u] - c1 * N2[u]) / det;
-      auto distSq = [](const Vec3D<T> &a, const Vec3D<T> &b) {
-        return (a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]) +
-               (a[2] - b[2]) * (a[2] - b[2]);
-      };
-      if (distSq(P, P1) > 9.0 || distSq(P, P2) > 9.0)
-        return std::nullopt;
-      return P;
-    };
-
-    auto commitFace = [&](int axis, int corner, Vec3D<T> P) -> unsigned {
-      viennahrle::Index<D> faceIdx = cellIt.getIndices();
-      if ((corner >> axis) & 1)
-        faceIdx[axis]++;
-      if (faceNodes[axis].find(faceIdx) != faceNodes[axis].end()) {
-        return faceNodes[axis][faceIdx];
-      }
-      Vec3D<T> globalP = P;
-      for (int d = 0; d < 3; ++d)
-        globalP[d] = (globalP[d] + cellIt.getIndices(d)) * currentGridDelta;
-      unsigned nodeId = insertNode(globalP);
-      faceNodes[axis][faceIdx] = nodeId;
-      stitchToNeighbor(cellIt, axis, (corner >> axis) & 1, nodeId, nodes,
-                       valueIt);
-      return nodeId;
-    };
-
-    int D_corner = A ^ (1 << axisB);
-    int A_z = A ^ (1 << axisZ);
-    int B_z = B ^ (1 << axisZ);
-    int C_z = C ^ (1 << axisZ);
-    auto P_A_opt = calculateFace(axisA, A, D_corner, A_z);
-    auto P_B_opt = calculateFace(axisB, B, D_corner, B_z);
-    if (!P_A_opt || !P_B_opt)
-      return false;
-    Vec3D<T> P_A = *P_A_opt;
-    Vec3D<T> P_B = *P_B_opt;
-    Vec3D<T> S;
-    S[axisA] = P_B[axisA];
-    S[axisB] = P_A[axisB];
-    S[axisZ] = (P_A[axisZ] + P_B[axisZ]) * 0.5;
-    unsigned nS = insertNode([&]() {
-      Vec3D<T> gS = S;
-      for (int i = 0; i < 3; ++i)
-        gS[i] = (gS[i] + cellIt.getIndices(i)) * currentGridDelta;
-      return gS;
-    }());
-    Vec3D<T> S_Face = S;
-    S_Face[axisZ] = static_cast<T>((C >> axisZ) & 1);
-    unsigned nS_Face;
-    viennahrle::Index<D> faceIdxZ = cellIt.getIndices();
-    if ((C >> axisZ) & 1)
-      faceIdxZ[axisZ]++;
-    if (faceNodes[axisZ].find(faceIdxZ) != faceNodes[axisZ].end()) {
-      nS_Face = faceNodes[axisZ][faceIdxZ];
-    } else {
-      nS_Face = insertNode([&]() {
-        Vec3D<T> gS = S_Face;
-        for (int i = 0; i < 3; ++i)
-          gS[i] = (gS[i] + cellIt.getIndices(i)) * currentGridDelta;
-        return gS;
-      }());
-      faceNodes[axisZ][faceIdxZ] = nS_Face;
-      stitchToNeighbor(cellIt, axisZ, (C >> axisZ) & 1, nS_Face, nodes,
-                       valueIt);
-    }
-    unsigned nNA = commitFace(axisA, A, P_A);
-    unsigned nNB = commitFace(axisB, B, P_B);
-    auto getEdgeNode = [&](int v1, int v2) {
-      int edgeIdx = -1;
-      for (int e = 0; e < 12; ++e) {
-        if ((corner0[e] == static_cast<unsigned>(v1) &&
-             corner1[e] == static_cast<unsigned>(v2)) ||
-            (corner0[e] == static_cast<unsigned>(v2) &&
-             corner1[e] == static_cast<unsigned>(v1))) {
-          edgeIdx = e;
-          break;
-        }
-      }
-      return this->getNode(cellIt, edgeIdx, nodes);
-    };
-    unsigned nI_AD = getEdgeNode(A, D_corner);
-    unsigned nI_AZ = getEdgeNode(A, A_z);
-    unsigned nI_BD = getEdgeNode(B, D_corner);
-    unsigned nI_BZ = getEdgeNode(B, B_z);
-    unsigned nI_CZ = getEdgeNode(C, C_z);
-    int parity = (C & 1) + ((C >> 1) & 1) + ((C >> 2) & 1);
-    bool flip = (parity % 2 != 0) ^ inverted;
-    int vA = 0;
-    while ((A ^ C) != (1 << vA))
-      vA++;
-    int vB = 0;
-    while ((B ^ C) != (1 << vB))
-      vB++;
-    bool is_cyclic = ((vA + 1) % 3 == vB);
-    if (!is_cyclic) {
-      std::swap(nNA, nNB);
-      std::swap(nI_AD, nI_BD);
-      std::swap(nI_AZ, nI_BZ);
-    }
-    if (!flip) {
-      insertElement(std::array<unsigned, 3>{nS, nNA, nI_AD});
-      insertElement(std::array<unsigned, 3>{nS, nI_AD, nS_Face});
-      insertElement(std::array<unsigned, 3>{nS, nS_Face, nI_BD});
-      insertElement(std::array<unsigned, 3>{nS, nI_BD, nNB});
-      insertElement(std::array<unsigned, 3>{nS, nNB, nI_BZ});
-      insertElement(std::array<unsigned, 3>{nS, nI_BZ, nI_CZ});
-      insertElement(std::array<unsigned, 3>{nS, nI_CZ, nI_AZ});
-      insertElement(std::array<unsigned, 3>{nS, nI_AZ, nNA});
-    } else {
-      insertElement(std::array<unsigned, 3>{nS, nI_AD, nNA});
-      insertElement(std::array<unsigned, 3>{nS, nS_Face, nI_AD});
-      insertElement(std::array<unsigned, 3>{nS, nI_BD, nS_Face});
-      insertElement(std::array<unsigned, 3>{nS, nNB, nI_BD});
-      insertElement(std::array<unsigned, 3>{nS, nI_BZ, nNB});
-      insertElement(std::array<unsigned, 3>{nS, nI_CZ, nI_BZ});
-      insertElement(std::array<unsigned, 3>{nS, nI_AZ, nI_CZ});
-      insertElement(std::array<unsigned, 3>{nS, nNA, nI_AZ});
-    }
-    return true;
-  }
-
-  bool generateCanonicalSharpEdge3D(
-      viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
-      int transform, int axis, bool inverted,
-      std::map<viennahrle::Index<D>, unsigned> *nodes,
-      std::map<viennahrle::Index<D>, unsigned> *faceNodes,
-      viennahrle::ConstSparseIterator<hrleDomainType> &valueIt) {
-    if (normalVectorData == nullptr)
-      return false;
-    auto toCanonical = [&](Vec3D<T> v) {
-      Vec3D<T> res;
-      if (transform & 1)
-        v[0] = -v[0];
-      if (transform & 2)
-        v[1] = -v[1];
-      if (transform & 4)
-        v[2] = -v[2];
-      if (axis == 0)
-        res = v;
-      else if (axis == 1)
-        res = Vec3D<T>{v[1], v[2], v[0]};
-      else
-        res = Vec3D<T>{v[2], v[0], v[1]};
-      return res;
-    };
-    auto fromCanonical = [&](Vec3D<T> v) {
-      Vec3D<T> res;
-      if (axis == 0)
-        res = v;
-      else if (axis == 1)
-        res = Vec3D<T>{v[2], v[0], v[1]};
-      else
-        res = Vec3D<T>{v[1], v[2], v[0]};
-      if (transform & 1)
-        res[0] = T(1.0) - res[0];
-      if (transform & 2)
-        res[1] = T(1.0) - res[1];
-      if (transform & 4)
-        res[2] = T(1.0) - res[2];
-      return res;
-    };
-    auto getValue = [&](int idx) {
-      T val = cellIt.getCorner(idx).getValue();
-      return inverted ? -val : val;
-    };
-    auto getNormal = [&](int idx) {
-      auto corner = cellIt.getCorner(idx);
-      if (corner.isDefined()) {
-        Vec3D<T> n = (*normalVectorData)[corner.getPointId()];
-        if (inverted) {
-          for (int i = 0; i < 3; ++i)
-            n[i] = -n[i];
-        }
-        return n;
-      }
-      return Vec3D<T>{};
-    };
-    Vec3D<T> P[2];
-    unsigned faceNodeIds[2];
-    bool nodeExists[2] = {false, false};
-    auto mapIdx = [&](int c) {
-      int x = (c & 1), y = (c >> 1) & 1, z = (c >> 2) & 1;
-      int gx, gy, gz;
-      if (axis == 0) {
-        gx = x;
-        gy = y;
-        gz = z;
-      } else if (axis == 1) {
-        gx = z;
-        gy = x;
-        gz = y;
-      } else {
-        gx = y;
-        gy = z;
-        gz = x;
-      }
-      if (transform & 1)
-        gx = 1 - gx;
-      if (transform & 2)
-        gy = 1 - gy;
-      if (transform & 4)
-        gz = 1 - gz;
-      return gx | (gy << 1) | (gz << 2);
-    };
-    for (int k = 0; k < 2; ++k) {
-      viennahrle::Index<D> faceIdx = cellIt.getIndices();
-      bool isHighFace = (k == 1) ^ ((transform >> axis) & 1);
-      if (isHighFace)
-        faceIdx[axis]++;
-      auto it = faceNodes[axis].find(faceIdx);
-      if (it != faceNodes[axis].end()) {
-        nodeExists[k] = true;
-        faceNodeIds[k] = it->second;
-        Vec3D<T> relPos = mesh->nodes[faceNodeIds[k]];
-        for (int d = 0; d < 3; ++d) {
-          relPos[d] /= currentGridDelta;
-          relPos[d] -= static_cast<T>(cellIt.getIndices(d));
-        }
-        P[k] = toCanonical(relPos);
-      } else {
-        int c0 = k;
-        int c_y = c0 | 2;
-        int c_z = c0 | 4;
-        Vec3D<T> n_y = toCanonical(getNormal(mapIdx(c_y)));
-        Vec3D<T> n_z = toCanonical(getNormal(mapIdx(c_z)));
-        if (std::abs(DotProduct(n_y, n_z)) >= 0.8) {
-          return false;
-        }
-        auto getInterp = [&](int p_a, int p_b) {
-          T v_a = getValue(mapIdx(p_a));
-          T v_b = getValue(mapIdx(p_b));
-          return v_a / (v_a - v_b);
-        };
-        T t_y = getInterp(c0, c_y);
-        T t_z = getInterp(c0, c_z);
-        double det = n_y[1] * n_z[2] - n_y[2] * n_z[1];
-        if (std::abs(det) < 1e-6)
-          return false;
-        double d1 = n_y[1] * t_y;
-        double d2 = n_z[2] * t_z;
-        double y = (d1 * n_z[2] - d2 * n_y[2]) / det;
-        double z = (d2 * n_y[1] - d1 * n_z[1]) / det;
-        P[k] = Vec3D<T>{(T)k, (T)y, (T)z};
-        auto distSq = [](const Vec3D<T> &a, const Vec3D<T> &b) {
-          return (a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]) +
-                 (a[2] - b[2]) * (a[2] - b[2]);
-        };
-        if (distSq(P[k], Vec3D<T>{(T)k, t_y, 0}) > 9.0 ||
-            distSq(P[k], Vec3D<T>{(T)k, 0, t_z}) > 9.0) {
-          return false;
-        }
-      }
-    }
-    for (int k = 0; k < 2; ++k) {
-      if (!nodeExists[k]) {
-        int c0 = k;
-        viennahrle::Index<D> faceIdx = cellIt.getIndices();
-        bool isHighFace = (k == 1) ^ ((transform >> axis) & 1);
-        if (isHighFace)
-          faceIdx[axis]++;
-        Vec3D<T> globalP = fromCanonical(P[k]);
-        for (int d = 0; d < 3; ++d)
-          globalP[d] = (globalP[d] + cellIt.getIndices(d)) * currentGridDelta;
-        faceNodeIds[k] = insertNode(globalP);
-        faceNodes[axis][faceIdx] = faceNodeIds[k];
-        stitchToNeighbor(cellIt, axis, isHighFace, faceNodeIds[k], nodes,
-                         valueIt);
-      }
-    }
-    auto getEdgeNode = [&](int c1, int c2) {
-      int g1 = mapIdx(c1);
-      int g2 = mapIdx(c2);
-      int edgeIdx = -1;
-      for (int e = 0; e < 12; ++e) {
-        if ((corner0[e] == static_cast<unsigned>(g1) &&
-             corner1[e] == static_cast<unsigned>(g2)) ||
-            (corner0[e] == static_cast<unsigned>(g2) &&
-             corner1[e] == static_cast<unsigned>(g1))) {
-          edgeIdx = e;
-          break;
-        }
-      }
-      return this->getNode(cellIt, edgeIdx, nodes);
-    };
-    unsigned n02 = getEdgeNode(0, 2);
-    unsigned n04 = getEdgeNode(0, 4);
-    unsigned n13 = getEdgeNode(1, 3);
-    unsigned n15 = getEdgeNode(1, 5);
-    insertElement(std::array<unsigned, 3>{n02, faceNodeIds[0], faceNodeIds[1]});
-    insertElement(std::array<unsigned, 3>{n02, faceNodeIds[1], n13});
-    insertElement(std::array<unsigned, 3>{n04, n15, faceNodeIds[1]});
-    insertElement(std::array<unsigned, 3>{n04, faceNodeIds[1], faceNodeIds[0]});
-    return true;
-  }
-
-  bool generateSharpEdge3D(
-      viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt, int countNeg,
-      int countPos, int negMask, int posMask,
-      std::map<viennahrle::Index<D>, unsigned> *nodes,
-      std::map<viennahrle::Index<D>, unsigned> *faceNodes,
-      viennahrle::ConstSparseIterator<hrleDomainType> &valueIt) {
-    bool inverted = false;
-    int mask = 0;
-    if (countNeg == 2) {
-      mask = negMask;
-      inverted = false;
-    } else if (countPos == 2) {
-      mask = posMask;
-      inverted = true;
-    } else {
-      return false;
-    }
-    int v1 = -1, v2 = -1;
-    for (int i = 0; i < 8; ++i) {
-      if ((mask >> i) & 1) {
-        if (v1 == -1)
-          v1 = i;
-        else
-          v2 = i;
-      }
-    }
-    int diff = v1 ^ v2;
-    if ((diff & (diff - 1)) != 0)
-      return false;
-    int axis = 0;
-    while ((diff >> (axis + 1)) > 0)
-      axis++;
-    int transform = v1;
-    return generateCanonicalSharpEdge3D(cellIt, transform, axis, inverted,
-                                        nodes, faceNodes, valueIt);
-  }
-
-  bool generateCanonicalSharpCorner3D(
-      viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
-      int transform, bool inverted,
-      std::map<viennahrle::Index<D>, unsigned> *nodes,
-      std::map<viennahrle::Index<D>, unsigned> *faceNodes,
-      viennahrle::ConstSparseIterator<hrleDomainType> &valueIt,
-      Vec3D<T> &cornerPos) {
-    if (normalVectorData == nullptr)
-      return false;
-    auto toCanonical = [&](Vec3D<T> v) {
-      if (transform & 1)
-        v[0] = -v[0];
-      if (transform & 2)
-        v[1] = -v[1];
-      if (transform & 4)
-        v[2] = -v[2];
-      return v;
-    };
-    auto fromCanonical = [&](Vec3D<T> v) {
-      if (transform & 1)
-        v[0] = T(1.0) - v[0];
-      if (transform & 2)
-        v[1] = T(1.0) - v[1];
-      if (transform & 4)
-        v[2] = T(1.0) - v[2];
-      return v;
-    };
-    auto getValue = [&](int idx) {
-      T val = cellIt.getCorner(idx).getValue();
-      return inverted ? -val : val;
-    };
-    auto getNormal = [&](int idx) {
-      auto corner = cellIt.getCorner(idx);
-      if (corner.isDefined()) {
-        Vec3D<T> n = (*normalVectorData)[corner.getPointId()];
-        if (inverted) {
-          for (int i = 0; i < 3; ++i)
-            n[i] = -n[i];
-        }
-        return n;
-      }
-      return Vec3D<T>{};
-    };
-    auto getInterp = [&](int p_a, int p_b) {
-      const T v_a = getValue(p_a);
-      const T v_b = getValue(p_b);
-      if (std::abs(v_a - v_b) < epsilon)
-        return T(0.5);
-      return v_a / (v_a - v_b);
-    };
-    Vec3D<T> norm1, norm2, norm3;
-    double d1, d2, d3;
-    Vec3D<T> P1, P2, P4;
-    const int g1 = transform ^ 1;
-    const int g2 = transform ^ 2;
-    const int g4 = transform ^ 4;
-    norm1 = toCanonical(getNormal(g1));
-    norm2 = toCanonical(getNormal(g2));
-    norm3 = toCanonical(getNormal(g4));
-    const T t1 = getInterp(transform, g1);
-    const T t2 = getInterp(transform, g2);
-    const T t4 = getInterp(transform, g4);
-    P1 = {t1, 0, 0};
-    P2 = {0, t2, 0};
-    P4 = {0, 0, t4};
-    d1 = DotProduct(norm1, P1);
-    d2 = DotProduct(norm2, P2);
-    d3 = DotProduct(norm3, P4);
-    if (std::abs(DotProduct(norm1, norm2)) >= 0.8 ||
-        std::abs(DotProduct(norm1, norm3)) >= 0.8 ||
-        std::abs(DotProduct(norm2, norm3)) >= 0.8) {
-      return false;
-    }
-    const Vec3D<T> c23 = CrossProduct(norm2, norm3);
-    const Vec3D<T> c31 = CrossProduct(norm3, norm1);
-    const Vec3D<T> c12 = CrossProduct(norm1, norm2);
-    const double det = DotProduct(norm1, c23);
-    if (std::abs(det) < epsilon)
-      return false;
-    const T invDet = 1.0 / det;
-    Vec3D<T> S;
-    for (int i = 0; i < 3; ++i) {
-      S[i] = (d1 * c23[i] + d2 * c31[i] + d3 * c12[i]) * invDet;
-    }
-    auto distSq = [](const Vec3D<T> &a, const Vec3D<T> &b) {
-      return (a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]) +
-             (a[2] - b[2]) * (a[2] - b[2]);
-    };
-    if (distSq(S, P1) > 9.0 || distSq(S, P2) > 9.0 || distSq(S, P4) > 9.0) {
-      return false;
-    }
-    Vec3D<T> globalS = fromCanonical(S);
-    for (int d = 0; d < 3; ++d) {
-      cornerPos[d] = (globalS[d] + cellIt.getIndices(d)) * currentGridDelta;
-    }
-    return true;
-  }
-
-  bool generateSharpCorner3D(
-      viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt, int countNeg,
-      int countPos, int negMask, int posMask,
-      std::map<viennahrle::Index<D>, unsigned> *nodes,
-      std::map<viennahrle::Index<D>, unsigned> &cornerNodes,
-      std::map<viennahrle::Index<D>, unsigned> *faceNodes,
-      viennahrle::ConstSparseIterator<hrleDomainType> &valueIt) {
-    bool inverted = false;
-    int transform = -1;
-    if (countNeg == 1) {
-      transform = 0;
-      while (!((negMask >> transform) & 1))
-        transform++;
-      inverted = false;
-    } else if (countPos == 1) {
-      transform = 0;
-      while (!((posMask >> transform) & 1))
-        transform++;
-      inverted = true;
-    }
-    if (transform == -1)
-      return false;
-    Vec3D<T> cornerPos;
-    if (generateCanonicalSharpCorner3D(cellIt, transform, inverted, nodes,
-                                       faceNodes, valueIt, cornerPos)) {
-      unsigned nCorner;
-      viennahrle::Index<D> cornerIdx = cellIt.getIndices();
-      cornerIdx += viennahrle::BitMaskToIndex<D>(transform);
-      auto it = cornerNodes.find(cornerIdx);
-      if (it != cornerNodes.end()) {
-        nCorner = it->second;
-      } else {
-        nCorner = insertNode(cornerPos);
-        cornerNodes[cornerIdx] = nCorner;
-      }
-      auto getEdgeNode = [&](int neighbor) {
-        int v1 = transform;
-        int v2 = neighbor;
-        int edgeIdx = -1;
-        for (int e = 0; e < 12; ++e) {
-          if ((corner0[e] == static_cast<unsigned>(v1) &&
-               corner1[e] == static_cast<unsigned>(v2)) ||
-              (corner0[e] == static_cast<unsigned>(v2) &&
-               corner1[e] == static_cast<unsigned>(v1))) {
-            edgeIdx = e;
-            break;
-          }
-        }
-        return this->getNode(cellIt, edgeIdx, nodes);
-      };
-      unsigned n1 = getEdgeNode(transform ^ 1);
-      unsigned n2 = getEdgeNode(transform ^ 2);
-      unsigned n4 = getEdgeNode(transform ^ 4);
-      if (normalVectorData) {
-        auto toCanonical = [&](Vec3D<T> v) {
-          if (transform & 1)
-            v[0] = -v[0];
-          if (transform & 2)
-            v[1] = -v[1];
-          if (transform & 4)
-            v[2] = -v[2];
-          return v;
-        };
-        auto fromCanonical = [&](Vec3D<T> v) {
-          if (transform & 1)
-            v[0] = T(1.0) - v[0];
-          if (transform & 2)
-            v[1] = T(1.0) - v[1];
-          if (transform & 4)
-            v[2] = T(1.0) - v[2];
-          return v;
-        };
-        auto getNormal = [&](int idx) {
-          auto corner = cellIt.getCorner(idx);
-          if (corner.isDefined()) {
-            Vec3D<T> n = (*normalVectorData)[corner.getPointId()];
-            if (inverted)
-              for (int i = 0; i < 3; ++i)
-                n[i] = -n[i];
-            return n;
-          }
-          return Vec3D<T>{};
-        };
-        auto getValue = [&](int idx) {
-          T val = cellIt.getCorner(idx).getValue();
-          return inverted ? -val : val;
-        };
-        auto getInterp = [&](int p_a, int p_b) {
-          const T v_a = getValue(p_a);
-          const T v_b = getValue(p_b);
-          if (std::abs(v_a - v_b) < epsilon)
-            return T(0.5);
-          return v_a / (v_a - v_b);
-        };
-        Vec3D<T> norm1, norm2, norm3;
-        double d1, d2, d3;
-        norm1 = toCanonical(getNormal(transform ^ 1));
-        norm2 = toCanonical(getNormal(transform ^ 2));
-        norm3 = toCanonical(getNormal(transform ^ 4));
-        d1 = norm1[0] * getInterp(transform, transform ^ 1);
-        d2 = norm2[1] * getInterp(transform, transform ^ 2);
-        d3 = norm3[2] * getInterp(transform, transform ^ 4);
-        auto solve2x2 = [&](double a1, double b1, double c1, double a2,
-                            double b2, double c2, T &res1, T &res2) {
-          double det = a1 * b2 - a2 * b1;
-          if (std::abs(det) < 1e-6)
-            return false;
-          res1 = (c1 * b2 - c2 * b1) / det;
-          res2 = (a1 * c2 - a2 * c1) / det;
-          return true;
-        };
-        Vec3D<T> Fx, Fy, Fz;
-        Fx[0] = 0.0;
-        Fy[1] = 0.0;
-        Fz[2] = 0.0;
-        bool valid = true;
-        valid &= solve2x2(norm2[1], norm2[2], d2 - norm2[0] * Fx[0], norm3[1],
-                          norm3[2], d3 - norm3[0] * Fx[0], Fx[1], Fx[2]);
-        valid &= solve2x2(norm1[0], norm1[2], d1 - norm1[1] * Fy[1], norm3[0],
-                          norm3[2], d3 - norm3[1] * Fy[1], Fy[0], Fy[2]);
-        valid &= solve2x2(norm1[0], norm1[1], d1 - norm1[2] * Fz[2], norm2[0],
-                          norm2[1], d2 - norm2[2] * Fz[2], Fz[0], Fz[1]);
-        auto checkBounds = [&](Vec3D<T> p) {
-          return p[0] >= -1e-4 && p[0] <= 1.0 + 1e-4 && p[1] >= -1e-4 &&
-                 p[1] <= 1.0 + 1e-4 && p[2] >= -1e-4 && p[2] <= 1.0 + 1e-4;
-        };
-        if (valid && checkBounds(Fx) && checkBounds(Fy) && checkBounds(Fz)) {
-          auto getFaceNode = [&](int axis, Vec3D<T> pos) {
-            viennahrle::Index<D> faceIdx = cellIt.getIndices();
-            if ((transform >> axis) & 1)
-              faceIdx[axis]++;
-            if (faceNodes[axis].find(faceIdx) != faceNodes[axis].end()) {
-              return faceNodes[axis][faceIdx];
-            }
-            Vec3D<T> globalPos = fromCanonical(pos);
-            for (int d = 0; d < 3; ++d)
-              globalPos[d] =
-                  (globalPos[d] + cellIt.getIndices(d)) * currentGridDelta;
-            unsigned nodeId = insertNode(globalPos);
-            faceNodes[axis][faceIdx] = nodeId;
-            stitchToNeighbor(cellIt, axis, (transform >> axis) & 1, nodeId,
-                             nodes, valueIt);
-            return nodeId;
-          };
-          unsigned nFx = getFaceNode(0, Fx);
-          unsigned nFy = getFaceNode(1, Fy);
-          unsigned nFz = getFaceNode(2, Fz);
-          int parity =
-              (transform & 1) + ((transform >> 1) & 1) + ((transform >> 2) & 1);
-          bool flip = (parity % 2 != 0) ^ inverted;
-          if (!flip) {
-            insertElement(std::array<unsigned, 3>{nCorner, nFy, n1});
-            insertElement(std::array<unsigned, 3>{nCorner, n1, nFz});
-            insertElement(std::array<unsigned, 3>{nCorner, nFz, n2});
-            insertElement(std::array<unsigned, 3>{nCorner, n2, nFx});
-            insertElement(std::array<unsigned, 3>{nCorner, nFx, n4});
-            insertElement(std::array<unsigned, 3>{nCorner, n4, nFy});
-          } else {
-            insertElement(std::array<unsigned, 3>{nCorner, n1, nFy});
-            insertElement(std::array<unsigned, 3>{nCorner, nFz, n1});
-            insertElement(std::array<unsigned, 3>{nCorner, n2, nFz});
-            insertElement(std::array<unsigned, 3>{nCorner, nFx, n2});
-            insertElement(std::array<unsigned, 3>{nCorner, n4, nFx});
-            insertElement(std::array<unsigned, 3>{nCorner, nFy, n4});
-          }
-          return true;
-        }
-      }
-      int parity =
-          (transform & 1) + ((transform >> 1) & 1) + ((transform >> 2) & 1);
-      bool flip = (parity % 2 != 0) ^ inverted;
-      if (!flip) {
-        insertElement(std::array<unsigned, 3>{n1, nCorner, n4});
-        insertElement(std::array<unsigned, 3>{n4, nCorner, n2});
-        insertElement(std::array<unsigned, 3>{n2, nCorner, n1});
-      } else {
-        insertElement(std::array<unsigned, 3>{n1, n4, nCorner});
-        insertElement(std::array<unsigned, 3>{n4, n2, nCorner});
-        insertElement(std::array<unsigned, 3>{n2, n1, nCorner});
-      }
-      return true;
-    }
-    return false;
-  }
-
-  static inline bool
-  triangleMisformed(const std::array<unsigned, D> &nod_numbers) noexcept {
-    if constexpr (D == 3) {
-      return nod_numbers[0] == nod_numbers[1] ||
-             nod_numbers[0] == nod_numbers[2] ||
-             nod_numbers[1] == nod_numbers[2];
-    } else {
-      return nod_numbers[0] == nod_numbers[1];
-    }
-  }
-
-  static inline Vec3D<NumericType>
-  calculateNormal(const Vec3D<NumericType> &nodeA,
-                  const Vec3D<NumericType> &nodeB,
-                  const Vec3D<NumericType> &nodeC) noexcept {
-    return CrossProduct(nodeB - nodeA, nodeC - nodeA);
   }
 };
 
