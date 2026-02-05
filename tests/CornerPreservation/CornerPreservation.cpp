@@ -70,7 +70,7 @@ template <int D> void runTest() {
       }
       expectedCorners.push_back(corner);
     }
-    LSTEST_ASSERT_MESH_CORNERS(mesh, expectedCorners, D);
+    LSTEST_ASSERT_MESH_CORNERS(mesh, expectedCorners, D, gridDelta);
   }
 
   // 6. Create Sphere Geometry
@@ -235,7 +235,8 @@ template <int D> void runTest() {
       corner[D - 1] = ((i >> (D - 1)) & 1) ? 0.025 : -1.0;
       expectedCornersCavity.push_back(corner);
     }
-    LSTEST_ASSERT_MESH_CORNERS(meshBoxCavity, expectedCornersCavity, D);
+    LSTEST_ASSERT_MESH_CORNERS(meshBoxCavity, expectedCornersCavity, D,
+                               gridDelta);
 
     viennals::ToMesh<T, D>(substrate, meshBoxCavity).apply();
     filenameBoxCavity = "CavityBoxFinal_" + std::to_string(D) + "D.vtu";

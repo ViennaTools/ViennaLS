@@ -112,22 +112,24 @@ public:
          !cellIt.isFinished(); cellIt.next()) {
 
       // Clear node caches for dimensions that have moved out of scope
-      for (int u = 0; u < D; u++) {
-        while (!nodes[u].empty() &&
-               nodes[u].begin()->first <
-                   viennahrle::Index<D>(cellIt.getIndices()))
-          nodes[u].erase(nodes[u].begin());
-
-        while (!faceNodes[u].empty() &&
-               faceNodes[u].begin()->first <
-                   viennahrle::Index<D>(cellIt.getIndices()))
-          faceNodes[u].erase(faceNodes[u].begin());
-
-        if (u == 0) {
-          while (!cornerNodes.empty() &&
-                 cornerNodes.begin()->first <
+      if (!sharpCorners) {
+        for (int u = 0; u < D; u++) {
+          while (!nodes[u].empty() &&
+                 nodes[u].begin()->first <
                      viennahrle::Index<D>(cellIt.getIndices()))
-            cornerNodes.erase(cornerNodes.begin());
+            nodes[u].erase(nodes[u].begin());
+
+          while (!faceNodes[u].empty() &&
+                 faceNodes[u].begin()->first <
+                     viennahrle::Index<D>(cellIt.getIndices()))
+            faceNodes[u].erase(faceNodes[u].begin());
+
+          if (u == 0) {
+            while (!cornerNodes.empty() &&
+                   cornerNodes.begin()->first <
+                       viennahrle::Index<D>(cellIt.getIndices()))
+              cornerNodes.erase(cornerNodes.begin());
+          }
         }
       }
 
@@ -163,6 +165,14 @@ public:
           } else if (val > epsilon) {
             countPos++;
             posMask |= (1 << i);
+          } else {
+            if (val >= 0) {
+              countPos++;
+              posMask |= (1 << i);
+            } else {
+              countNeg++;
+              negMask |= (1 << i);
+            }
           }
         }
 
@@ -408,6 +418,7 @@ private:
       auto corner = cellIt.getCorner(cornerID ^ transform);
       if (corner.isDefined()) {
         auto normal = (*normalVectorData)[corner.getPointId()];
+        normal[2] = 0;
         if ((transform & 1) != 0)
           normal[0] = -normal[0];
         if ((transform & 2) != 0)
@@ -454,7 +465,7 @@ private:
       }
     };
 
-    Vec3D<T> pX, pY;
+    Vec3D<T> pX{}, pY{};
     calculateNodePos(0, pX); // Edge along x-axis from corner 0
     calculateNodePos(3, pY); // Edge along y-axis from corner 0
 
@@ -462,7 +473,7 @@ private:
     double d2 = DotProduct(norm2, pY);
     double det = norm1[0] * norm2[1] - norm1[1] * norm2[0];
 
-    if (std::abs(det) > 1e-6) {
+    if (std::abs(det) > 1e-6 && std::isfinite(det)) {
       cornerPos[0] = (d1 * norm2[1] - d2 * norm1[1]) / det;
       cornerPos[1] = (d2 * norm1[0] - d1 * norm2[0]) / det;
     } else {
@@ -525,8 +536,9 @@ private:
           }
           valueIt.goToIndices(checkIdx);
           T nVal = valueIt.getValue();
-          if (((pVal > epsilon) && (nVal > epsilon)) ||
-              ((pVal < -epsilon) && (nVal < -epsilon))) {
+          bool pSign = (pVal >= 0);
+          bool nSign = (nVal >= 0);
+          if (pSign == nSign) {
             neighborIsCorner = false;
             break;
           }
@@ -539,7 +551,7 @@ private:
       }
 
       if (!isSharedCorner) {
-        Vec3D<T> cornerPos;
+        Vec3D<T> cornerPos{};
         if (generateCanonicalSharpCorner2D(cellIt, cornerIdx, cornerPos)) {
 
           // inverse transform cornerPos from canonical local to this cell's

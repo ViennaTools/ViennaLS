@@ -151,7 +151,9 @@ int main() {
       auto mesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
       ls::ToMesh<NumericType, D>(trench, mesh).apply();
       ls::VTKWriter<NumericType>(mesh, "box.vtu").apply();
-      ls::ToSurfaceMesh<NumericType, D>(trench, mesh).apply();
+      auto surfaceMeshBox = ls::ToSurfaceMesh<NumericType, D>(trench, mesh);
+      surfaceMeshBox.setSharpCorners(true);
+      surfaceMeshBox.apply();
       ls::VTKWriter<NumericType>(mesh, "box.vtp").apply();
     }
 
@@ -164,7 +166,10 @@ int main() {
       auto mesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
       ls::ToMesh<NumericType, D>(substrate, mesh).apply();
       ls::VTKWriter<NumericType>(mesh, "trench.vtu").apply();
-      ls::ToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
+      auto surfaceMeshTrench =
+          ls::ToSurfaceMesh<NumericType, D>(substrate, mesh);
+      surfaceMeshTrench.setSharpCorners(true);
+      surfaceMeshTrench.apply();
       ls::VTKWriter<NumericType>(mesh, "trench.vtp").apply();
     }
   }

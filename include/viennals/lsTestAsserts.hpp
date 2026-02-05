@@ -22,11 +22,11 @@
     }                                                                          \
   }
 
-#define LSTEST_ASSERT_MESH_CORNERS(mesh, expected, D)                          \
+#define LSTEST_ASSERT_MESH_CORNERS(mesh, expected, D, gridDelta)               \
   {                                                                            \
     try {                                                                      \
       auto &nodes = mesh->getNodes();                                          \
-      double tolerance = 1e-3;                                                 \
+      double tolerance = 0.01 * (gridDelta);                                   \
       for (const auto &ex : expected) {                                        \
         bool found = false;                                                    \
         for (const auto &n : nodes) {                                          \

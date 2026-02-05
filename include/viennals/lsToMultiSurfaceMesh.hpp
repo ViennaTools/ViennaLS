@@ -74,12 +74,12 @@ class ToMultiSurfaceMesh {
   double currentGridDelta;
 
 public:
-  ToMultiSurfaceMesh(double eps = 1e-12, double minNodeDistFactor = 0.05)
+  ToMultiSurfaceMesh(double eps = 1e-12, double minNodeDistFactor = 0.02)
       : epsilon(eps), minNodeDistanceFactor(minNodeDistFactor) {}
 
   ToMultiSurfaceMesh(SmartPointer<lsDomainType> passedLevelSet,
                      SmartPointer<viennals::Mesh<T>> passedMesh,
-                     double eps = 1e-12, double minNodeDistFactor = 0.05)
+                     double eps = 1e-12, double minNodeDistFactor = 0.02)
       : mesh(passedMesh), epsilon(eps),
         minNodeDistanceFactor(minNodeDistFactor) {
     levelSets.push_back(passedLevelSet);
@@ -88,12 +88,12 @@ public:
   ToMultiSurfaceMesh(
       std::vector<SmartPointer<lsDomainType>> const &passedLevelSets,
       SmartPointer<viennals::Mesh<T>> passedMesh, double eps = 1e-12,
-      double minNodeDistFactor = 0.05)
+      double minNodeDistFactor = 0.02)
       : levelSets(passedLevelSets), mesh(passedMesh), epsilon(eps),
         minNodeDistanceFactor(minNodeDistFactor) {}
 
   ToMultiSurfaceMesh(SmartPointer<viennals::Mesh<T>> passedMesh,
-                     double eps = 1e-12, double minNodeDistFactor = 0.05)
+                     double eps = 1e-12, double minNodeDistFactor = 0.02)
       : mesh(passedMesh), epsilon(eps),
         minNodeDistanceFactor(minNodeDistFactor) {}
 
@@ -233,6 +233,14 @@ public:
             } else if (val > epsilon) {
               countPos++;
               posMask |= (1 << i);
+            } else {
+              if (val >= 0) {
+                countPos++;
+                posMask |= (1 << i);
+              } else {
+                countNeg++;
+                negMask |= (1 << i);
+              }
             }
           }
 
@@ -523,6 +531,7 @@ private:
       auto corner = cellIt.getCorner(cornerID ^ transform);
       if (corner.isDefined()) {
         auto normal = (*normalVectorData)[corner.getPointId()];
+        normal[2] = 0;
         if ((transform & 1) != 0)
           normal[0] = -normal[0];
         if ((transform & 2) != 0)
@@ -567,7 +576,7 @@ private:
       }
     };
 
-    Vec3D<T> pX, pY;
+    Vec3D<T> pX{}, pY{};
     calculateNodePos(0, pX);
     calculateNodePos(3, pY);
 
@@ -641,7 +650,7 @@ private:
       }
 
       if (!isSharedCorner) {
-        Vec3D<T> cornerPos;
+        Vec3D<T> cornerPos{};
         if (generateCanonicalSharpCorner2D(cellIt, cornerIdx, cornerPos)) {
           if ((cornerIdx & 1) != 0)
             cornerPos[0] = T(1.0) - cornerPos[0];

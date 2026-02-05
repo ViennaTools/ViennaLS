@@ -793,21 +793,21 @@ template <int D> void bindApi(py::module &module) {
       .def(py::init(
                &SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<double,
                                                                      double>),
-           py::arg("eps") = 1e-12, py::arg("minNodeDistFactor") = 0.05)
+           py::arg("eps") = 1e-12, py::arg("minNodeDistFactor") = 0.02)
       .def(py::init(&SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<
                     SmartPointer<Domain<T, D>> &, SmartPointer<Mesh<T>> &,
                     double, double>),
            py::arg("domain"), py::arg("mesh"), py::arg("eps") = 1e-12,
-           py::arg("minNodeDistFactor") = 0.05)
+           py::arg("minNodeDistFactor") = 0.02)
       .def(py::init(&SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<
                     std::vector<SmartPointer<Domain<T, D>>> &,
                     SmartPointer<Mesh<T>> &, double, double>),
            py::arg("domains"), py::arg("mesh"), py::arg("eps") = 1e-12,
-           py::arg("minNodeDistFactor") = 0.05)
+           py::arg("minNodeDistFactor") = 0.02)
       .def(py::init(&SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<
                     SmartPointer<Mesh<T>> &, double, double>),
            py::arg("mesh"), py::arg("eps") = 1e-12,
-           py::arg("minNodeDistFactor") = 0.05)
+           py::arg("minNodeDistFactor") = 0.02)
       // methods
       .def("insertNextLevelSet", &ToMultiSurfaceMesh<T, D>::insertNextLevelSet,
            "Insert next level set to output in the mesh.")
@@ -817,6 +817,8 @@ template <int D> void bindApi(py::module &module) {
            "Set the mesh to generate.")
       .def("setMaterialMap", &ToMultiSurfaceMesh<T, D>::setMaterialMap,
            "Set the material map to use for the multi surface mesh.")
+      .def("setSharpCorners", &ToMultiSurfaceMesh<T, D>::setSharpCorners,
+           "Set whether to preserve sharp corners. Defaults to false.")
       .def("apply", &ToMultiSurfaceMesh<T, D>::apply,
            "Convert the levelset to a surface mesh.");
 
