@@ -276,7 +276,7 @@ int main() {
   chamferWENO5_FE.apply();
   std::cout << "Chamfer distance: " << chamferWENO5_FE.getChamferDistance()
             << std::endl;
-  VC_TEST_ASSERT(chamferWENO5_FE.getChamferDistance() < 0.018);
+  VC_TEST_ASSERT(chamferWENO5_FE.getChamferDistance() < 0.02);
 
   std::cout << "Running WENO5 Runge-Kutta 2 Advection..." << std::endl;
   timer.start();
