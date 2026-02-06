@@ -300,6 +300,8 @@ public:
       }
     }
 
+    this->scaleMesh();
+
     mesh->cellData.insertNextScalarData(currentMaterials, "MaterialIds");
     mesh->cellData.insertNextVectorData(currentNormals, "Normals");
     mesh->triangles.shrink_to_fit();

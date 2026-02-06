@@ -330,6 +330,8 @@ public:
       }
     }
 
+    scaleMesh();
+
     // now copy old data into new level set
     if (updatePointData && !newDataSourceIds[0].empty()) {
       mesh->getPointData().translateFromMultiData(
@@ -338,6 +340,18 @@ public:
   }
 
 protected:
+  void scaleMesh() {
+    // Scale the mesh to global coordinates
+    for (auto &node : mesh->nodes) {
+      for (int i = 0; i < D; ++i)
+        node[i] *= currentGridDelta;
+    }
+    for (int i = 0; i < D; ++i) {
+      mesh->minimumExtent[i] *= currentGridDelta;
+      mesh->maximumExtent[i] *= currentGridDelta;
+    }
+  }
+
   // Helper to get or create a node on an edge using linear interpolation
   unsigned getNode(viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
                    int edge, std::map<hrleIndex, unsigned> *nodes,
@@ -378,7 +392,6 @@ protected:
         cc[z] = std::max(cc[z], cellIt.getIndices(z) + epsilon);
         cc[z] = std::min(cc[z], (cellIt.getIndices(z) + 1) - epsilon);
       }
-      cc[z] = currentGridDelta * cc[z];
     }
     if (updatePointData && newDataSourceIds)
       newDataSourceIds->push_back(currentPointId);
@@ -597,8 +610,7 @@ protected:
 
           // convert to global coordinates
           for (int i = 0; i < D; ++i) {
-            cornerPos[i] =
-                (cornerPos[i] + cellIt.getIndices(i)) * currentGridDelta;
+            cornerPos[i] = (cornerPos[i] + cellIt.getIndices(i));
           }
 
           // Determine edges for this corner
@@ -735,7 +747,7 @@ protected:
         unsigned nodeId = faceNodes[axis][faceIdx];
         Vec3D<T> pos = mesh->nodes[nodeId];
         for (int d = 0; d < 3; ++d)
-          pos[d] = pos[d] / currentGridDelta - cellIt.getIndices(d);
+          pos[d] = pos[d] - cellIt.getIndices(d);
         return pos;
       }
 
@@ -804,7 +816,7 @@ protected:
 
       Vec3D<T> globalP = P;
       for (int d = 0; d < 3; ++d)
-        globalP[d] = (globalP[d] + cellIt.getIndices(d)) * currentGridDelta;
+        globalP[d] = (globalP[d] + cellIt.getIndices(d));
       unsigned nodeId = insertNode(globalP);
       faceNodes[axis][faceIdx] = nodeId;
       if (updatePointData && newDataSourceIds)
@@ -839,7 +851,7 @@ protected:
     unsigned nS = insertNode([&]() {
       Vec3D<T> gS = S;
       for (int i = 0; i < 3; ++i)
-        gS[i] = (gS[i] + cellIt.getIndices(i)) * currentGridDelta;
+        gS[i] = (gS[i] + cellIt.getIndices(i));
       return gS;
     }());
     if (updatePointData && newDataSourceIds)
@@ -860,7 +872,7 @@ protected:
       nS_Face = insertNode([&]() {
         Vec3D<T> gS = S_Face;
         for (int i = 0; i < 3; ++i)
-          gS[i] = (gS[i] + cellIt.getIndices(i)) * currentGridDelta;
+          gS[i] = (gS[i] + cellIt.getIndices(i));
         return gS;
       }());
       faceNodes[axisZ][faceIdxZ] = nS_Face;
@@ -1067,7 +1079,6 @@ protected:
         faceNodeIds[k] = it->second;
         Vec3D<T> relPos = mesh->nodes[faceNodeIds[k]];
         for (int d = 0; d < 3; ++d) {
-          relPos[d] /= currentGridDelta;
           relPos[d] -= static_cast<T>(cellIt.getIndices(d));
         }
         P[k] = toCanonical(relPos);
@@ -1148,7 +1159,7 @@ protected:
 
         Vec3D<T> globalP = fromCanonical(P[k]);
         for (int d = 0; d < 3; ++d)
-          globalP[d] = (globalP[d] + cellIt.getIndices(d)) * currentGridDelta;
+          globalP[d] = (globalP[d] + cellIt.getIndices(d));
 
         faceNodeIds[k] = insertNode(globalP);
         faceNodes[axis][faceIdx] = faceNodeIds[k];
@@ -1384,7 +1395,7 @@ protected:
     // Transform corner position back from canonical to global coordinates
     Vec3D<T> globalS = fromCanonical(S);
     for (int d = 0; d < 3; ++d) {
-      cornerPos[d] = (globalS[d] + cellIt.getIndices(d)) * currentGridDelta;
+      cornerPos[d] = (globalS[d] + cellIt.getIndices(d));
     }
 
     return true;
@@ -1588,8 +1599,7 @@ protected:
             }
             Vec3D<T> globalPos = fromCanonical(pos);
             for (int d = 0; d < 3; ++d)
-              globalPos[d] =
-                  (globalPos[d] + cellIt.getIndices(d)) * currentGridDelta;
+              globalPos[d] = (globalPos[d] + cellIt.getIndices(d));
             unsigned nodeId = insertNode(globalPos);
             faceNodes[axis][faceIdx] = nodeId;
             if (updatePointData)
@@ -1715,7 +1725,7 @@ protected:
 
   unsigned insertNode(Vec3D<T> pos) {
     auto quantize = [&](const Vec3D<T> &p) -> I3 {
-      const T inv = T(1) / (currentGridDelta * minNodeDistanceFactor);
+      const T inv = T(1) / minNodeDistanceFactor;
       return {(int)std::llround(p[0] * inv), (int)std::llround(p[1] * inv),
               (int)std::llround(p[2] * inv)};
     };
