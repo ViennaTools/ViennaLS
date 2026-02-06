@@ -71,7 +71,7 @@ double runSimulation(AdvectKernelType &kernel,
               << totalTime << "s" << std::flush;
 
     auto mesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
-    ls::ToSurfaceMesh<NumericType, D>(newLayer, mesh).apply();
+    ls::ToSurfaceMesh<NumericType, D>(newLayer, mesh, 0.02).apply();
     ls::VTKWriter<NumericType> writer(
         mesh, "trench_" + name + "_" + std::to_string(stepCounter) + ".vtp");
     writer.addMetaData("time", passedTime);
@@ -124,7 +124,7 @@ int main() {
   {
     std::cout << "Extracting..." << std::endl;
     auto mesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
-    ls::ToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
+    ls::ToSurfaceMesh<NumericType, D>(substrate, mesh, 0.02).apply();
     ls::VTKWriter<NumericType>(mesh, "plane.vtp").apply();
   }
 
@@ -151,7 +151,8 @@ int main() {
       auto mesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
       ls::ToMesh<NumericType, D>(trench, mesh).apply();
       ls::VTKWriter<NumericType>(mesh, "box.vtu").apply();
-      auto surfaceMeshBox = ls::ToSurfaceMesh<NumericType, D>(trench, mesh);
+      auto surfaceMeshBox =
+          ls::ToSurfaceMesh<NumericType, D>(trench, mesh, 0.02);
       surfaceMeshBox.setSharpCorners(true);
       surfaceMeshBox.apply();
       ls::VTKWriter<NumericType>(mesh, "box.vtp").apply();
@@ -167,7 +168,7 @@ int main() {
       ls::ToMesh<NumericType, D>(substrate, mesh).apply();
       ls::VTKWriter<NumericType>(mesh, "trench.vtu").apply();
       auto surfaceMeshTrench =
-          ls::ToSurfaceMesh<NumericType, D>(substrate, mesh);
+          ls::ToSurfaceMesh<NumericType, D>(substrate, mesh, 0.02);
       surfaceMeshTrench.setSharpCorners(true);
       surfaceMeshTrench.apply();
       ls::VTKWriter<NumericType>(mesh, "trench.vtp").apply();
@@ -251,7 +252,7 @@ int main() {
     writer.setExtractHullMesh(true);
     writer.apply();
 
-    ls::ToMultiSurfaceMesh<NumericType, D> multiMeshKernel;
+    ls::ToMultiSurfaceMesh<NumericType, D> multiMeshKernel(0.02);
     multiMeshKernel.insertNextLevelSet(substrateFE);
     multiMeshKernel.insertNextLevelSet(newLayerFE);
     auto multiMesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
@@ -271,7 +272,7 @@ int main() {
     writer.setExtractHullMesh(true);
     writer.apply();
 
-    ls::ToMultiSurfaceMesh<NumericType, D> multiMeshKernel;
+    ls::ToMultiSurfaceMesh<NumericType, D> multiMeshKernel(0.02);
     multiMeshKernel.insertNextLevelSet(substrateRK2);
     multiMeshKernel.insertNextLevelSet(newLayerRK2);
     auto multiMesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
@@ -291,7 +292,7 @@ int main() {
     writer.setExtractHullMesh(true);
     writer.apply();
 
-    ls::ToMultiSurfaceMesh<NumericType, D> multiMeshKernel;
+    ls::ToMultiSurfaceMesh<NumericType, D> multiMeshKernel(0.02);
     multiMeshKernel.insertNextLevelSet(substrateRK);
     multiMeshKernel.insertNextLevelSet(newLayerRK);
     auto multiMesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();

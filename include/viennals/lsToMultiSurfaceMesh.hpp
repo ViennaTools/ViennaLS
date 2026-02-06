@@ -19,7 +19,6 @@ class ToMultiSurfaceMesh : public ToSurfaceMesh<NumericType, D> {
   using ToSurfaceMesh<NumericType, D>::currentLevelSet;
   using ToSurfaceMesh<NumericType, D>::currentGridDelta;
   using ToSurfaceMesh<NumericType, D>::currentMaterialId;
-  using ToSurfaceMesh<NumericType, D>::minNodeDistanceFactor;
   using ToSurfaceMesh<NumericType, D>::epsilon;
   using ToSurfaceMesh<NumericType, D>::nodeIdByBin;
   using ToSurfaceMesh<NumericType, D>::uniqueElements;
@@ -31,27 +30,27 @@ class ToMultiSurfaceMesh : public ToSurfaceMesh<NumericType, D> {
   SmartPointer<MaterialMap> materialMap = nullptr;
 
 public:
-  ToMultiSurfaceMesh(double eps = 1e-12, double minNodeDistFactor = 0.02)
-      : ToSurfaceMesh<NumericType, D>(eps, minNodeDistFactor) {}
+  ToMultiSurfaceMesh(double minNodeDistFactor = 0.05, double eps = 1e-12)
+      : ToSurfaceMesh<NumericType, D>(minNodeDistFactor, eps) {}
 
   ToMultiSurfaceMesh(SmartPointer<lsDomainType> passedLevelSet,
                      SmartPointer<viennals::Mesh<NumericType>> passedMesh,
-                     double eps = 1e-12, double minNodeDistFactor = 0.02)
-      : ToSurfaceMesh<NumericType, D>(passedLevelSet, passedMesh, eps,
-                                      minNodeDistFactor) {}
+                     double minNodeDistFactor = 0.05, double eps = 1e-12)
+      : ToSurfaceMesh<NumericType, D>(passedLevelSet, passedMesh,
+                                      minNodeDistFactor, eps) {}
 
   ToMultiSurfaceMesh(
       std::vector<SmartPointer<lsDomainType>> const &passedLevelSets,
-      SmartPointer<viennals::Mesh<NumericType>> passedMesh, double eps = 1e-12,
-      double minNodeDistFactor = 0.02)
-      : ToSurfaceMesh<NumericType, D>(eps, minNodeDistFactor) {
+      SmartPointer<viennals::Mesh<NumericType>> passedMesh,
+      double minNodeDistFactor = 0.05, double eps = 1e-12)
+      : ToSurfaceMesh<NumericType, D>(minNodeDistFactor, eps) {
     levelSets = passedLevelSets;
     mesh = passedMesh;
   }
 
   ToMultiSurfaceMesh(SmartPointer<viennals::Mesh<NumericType>> passedMesh,
-                     double eps = 1e-12, double minNodeDistFactor = 0.02)
-      : ToSurfaceMesh<NumericType, D>(eps, minNodeDistFactor) {
+                     double minNodeDistFactor = 0.05, double eps = 1e-12)
+      : ToSurfaceMesh<NumericType, D>(minNodeDistFactor, eps) {
     mesh = passedMesh;
   }
 

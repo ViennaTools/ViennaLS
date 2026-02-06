@@ -771,9 +771,15 @@ template <int D> void bindApi(py::module &module) {
   py::class_<ToSurfaceMesh<T, D>, SmartPointer<ToSurfaceMesh<T, D>>>(
       module, "ToSurfaceMesh")
       // constructors
-      .def(py::init(&SmartPointer<ToSurfaceMesh<T, D>>::template New<>))
+      .def(
+          py::init(
+              &SmartPointer<ToSurfaceMesh<T, D>>::template New<double, double>),
+          py::arg("minNodeDistFactor") = 0.05, py::arg("eps") = 1e-12)
       .def(py::init(&SmartPointer<ToSurfaceMesh<T, D>>::template New<
-                    SmartPointer<Domain<T, D>> &, SmartPointer<Mesh<T>> &>))
+                    SmartPointer<Domain<T, D>> &, SmartPointer<Mesh<T>> &,
+                    double, double>),
+           py::arg("domain"), py::arg("mesh"),
+           py::arg("minNodeDistFactor") = 0.05, py::arg("eps") = 1e-12)
       // methods
       .def("setLevelSet", &ToSurfaceMesh<T, D>::setLevelSet,
            "Set levelset to mesh.")
@@ -793,21 +799,21 @@ template <int D> void bindApi(py::module &module) {
       .def(py::init(
                &SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<double,
                                                                      double>),
-           py::arg("eps") = 1e-12, py::arg("minNodeDistFactor") = 0.02)
+           py::arg("minNodeDistFactor") = 0.05, py::arg("eps") = 1e-12)
       .def(py::init(&SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<
                     SmartPointer<Domain<T, D>> &, SmartPointer<Mesh<T>> &,
                     double, double>),
-           py::arg("domain"), py::arg("mesh"), py::arg("eps") = 1e-12,
-           py::arg("minNodeDistFactor") = 0.02)
+           py::arg("domain"), py::arg("mesh"),
+           py::arg("minNodeDistFactor") = 0.05, py::arg("eps") = 1e-12)
       .def(py::init(&SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<
                     std::vector<SmartPointer<Domain<T, D>>> &,
                     SmartPointer<Mesh<T>> &, double, double>),
-           py::arg("domains"), py::arg("mesh"), py::arg("eps") = 1e-12,
-           py::arg("minNodeDistFactor") = 0.02)
+           py::arg("domains"), py::arg("mesh"),
+           py::arg("minNodeDistFactor") = 0.05, py::arg("eps") = 1e-12)
       .def(py::init(&SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<
                     SmartPointer<Mesh<T>> &, double, double>),
-           py::arg("mesh"), py::arg("eps") = 1e-12,
-           py::arg("minNodeDistFactor") = 0.02)
+           py::arg("mesh"), py::arg("minNodeDistFactor") = 0.05,
+           py::arg("eps") = 1e-12)
       // methods
       .def("insertNextLevelSet", &ToMultiSurfaceMesh<T, D>::insertNextLevelSet,
            "Insert next level set to output in the mesh.")

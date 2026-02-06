@@ -75,14 +75,14 @@ protected:
                                                  0, 1, 2, 2, 2, 2};
 
 public:
-  explicit ToSurfaceMesh(double eps = 1e-12, double mnd = 0.02)
-      : epsilon(eps), minNodeDistanceFactor(mnd) {}
+  explicit ToSurfaceMesh(double mnd = 0.05, double eps = 1e-12)
+      : minNodeDistanceFactor(mnd), epsilon(eps) {}
 
   ToSurfaceMesh(const SmartPointer<lsDomainType> passedLevelSet,
-                SmartPointer<Mesh<T>> passedMesh, double eps = 1e-12,
-                double mnd = 0.02)
-      : levelSets({passedLevelSet}), mesh(passedMesh), epsilon(eps),
-        minNodeDistanceFactor(mnd) {}
+                SmartPointer<Mesh<T>> passedMesh, double mnd = 0.05,
+                double eps = 1e-12)
+      : levelSets({passedLevelSet}), mesh(passedMesh),
+        minNodeDistanceFactor(mnd), epsilon(eps) {}
 
   void setLevelSet(SmartPointer<lsDomainType> passedlsDomain) {
     levelSets = {passedlsDomain};
@@ -1739,6 +1739,9 @@ protected:
     }
 
     if (nodeIdx >= 0) {
+      for (int i = 0; i < 3; ++i) {
+        mesh->nodes[nodeIdx][i] = (mesh->nodes[nodeIdx][i] + pos[i]) * T(0.5);
+      }
       return nodeIdx;
     } else {
       unsigned newNodeId = mesh->insertNextNode(pos);
