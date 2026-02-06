@@ -56,91 +56,70 @@ public:
   /// x1 ... x5 stencil points from left to right
   /// plus == true => right-sided
   static T weno3(const T *x, T delta, bool plus, T eps = 1e-6) {
-    T dx[4];
-    for (unsigned i = 0; i < 4; ++i) {
-      dx[i] = x[i + 1] - x[i];
-    }
-
-    T result = 0;
+    T d[3];
     if (plus) {
-      T rp = (eps + FiniteDifferences::square(dx[3] - dx[2])) /
-             (eps + FiniteDifferences::square(dx[2] - dx[1]));
-      T wp = 1.0 / (1 + 2.0 * FiniteDifferences::square(rp));
-      result = dx[1] + dx[2] - wp * (dx[3] - 2.0 * dx[2] + dx[1]);
-    } else {
-      T rp = (eps + FiniteDifferences::square(dx[1] - dx[0])) /
-             (eps + FiniteDifferences::square(dx[2] - dx[1]));
-      T wp = 1.0 / (1 + 2.0 * FiniteDifferences::square(rp));
-      result = dx[1] + dx[2] - wp * (dx[0] - 2.0 * dx[1] + dx[2]);
-    }
+      d[0] = x[2] - x[1];
+      d[1] = x[3] - x[2];
+      d[2] = x[4] - x[3];
 
-    return result / (2.0 * delta);
+      T N = eps + FiniteDifferences::square(d[2] - d[1]);
+      T D = eps + FiniteDifferences::square(d[1] - d[0]);
+      T D2 = D * D;
+      T wp = D2 / (D2 + 2 * N * N);
+
+      return (d[0] + d[1] - wp * (d[2] - 2 * d[1] + d[0])) / (2 * delta);
+    } else {
+      d[0] = x[1] - x[0];
+      d[1] = x[2] - x[1];
+      d[2] = x[3] - x[2];
+
+      T N = eps + FiniteDifferences::square(d[1] - d[0]);
+      T D = eps + FiniteDifferences::square(d[2] - d[1]);
+      T D2 = D * D;
+      T wp = D2 / (D2 + 2 * N * N);
+
+      return (d[1] + d[2] - wp * (d[0] - 2 * d[1] + d[2])) / (2 * delta);
+    }
   }
 
   // Weighted essentially non-oscillatory differentiation scheme 5th order
   // x1 ... x7 stencil points from left to right
   // plus == true => right-sided
   static T weno5(const T *x, T dx, bool plus, T eps = 1e-6) {
-
-    if (plus == false) {
-      T v1 = (x[1] - x[0]) / dx; // i-3
-      T v2 = (x[2] - x[1]) / dx; // i-2
-      T v3 = (x[3] - x[2]) / dx; // i-1
-      T v4 = (x[4] - x[3]) / dx; // i
-      T v5 = (x[5] - x[4]) / dx; // i+1
-
-      T p1 = v1 / 3.0 - 7 * v2 / 6.0 + 11 * v3 / 6.0;
-      T p2 = -v2 / 6.0 + 5 * v3 / 6.0 + v4 / 3.0;
-      T p3 = v3 / 3.0 + 5 * v4 / 6.0 - v5 / 6.0;
-
-      T s1 = 13 / 12.0 * FiniteDifferences::square(v1 - 2 * v2 + v3) +
-             1 / 4.0 * FiniteDifferences::square(v1 - 4 * v2 + 3 * v3);
-      T s2 = 13 / 12.0 * FiniteDifferences::square(v2 - 2 * v3 + v4) +
-             1 / 4.0 * FiniteDifferences::square(v2 - v4);
-      T s3 = 13 / 12.0 * FiniteDifferences::square(v3 - 2 * v4 + v5) +
-             1 / 4.0 * FiniteDifferences::square(3 * v3 - 4 * v4 + v5);
-
-      T al1 = 0.1 / (eps + s1);
-      T al2 = 0.6 / (eps + s2);
-      T al3 = 0.3 / (eps + s3);
-
-      T alsum = al1 + al2 + al3;
-
-      T w1 = al1 / alsum;
-      T w2 = al2 / alsum;
-      T w3 = al3 / alsum;
-
-      return w1 * p1 + w2 * p2 + w3 * p3;
+    // Optimized implementation avoiding multiple divisions by dx
+    T d[5];
+    if (!plus) {
+      for (int i = 0; i < 5; ++i)
+        d[i] = x[i + 1] - x[i];
     } else {
-      T v1 = (x[6] - x[5]) / dx;
-      T v2 = (x[5] - x[4]) / dx;
-      T v3 = (x[4] - x[3]) / dx;
-      T v4 = (x[3] - x[2]) / dx;
-      T v5 = (x[2] - x[1]) / dx;
-
-      T p1 = v1 / 3.0 - 7 * v2 / 6.0 + 11 * v3 / 6.0;
-      T p2 = -v2 / 6.0 + 5 * v3 / 6.0 + v4 / 3.0;
-      T p3 = v3 / 3.0 + 5 * v4 / 6.0 - v5 / 6.0;
-
-      T s1 = 13 / 12.0 * FiniteDifferences::square(v1 - 2 * v2 + v3) +
-             1 / 4.0 * FiniteDifferences::square(v1 - 4 * v2 + 3 * v3);
-      T s2 = 13 / 12.0 * FiniteDifferences::square(v2 - 2 * v3 + v4) +
-             1 / 4.0 * FiniteDifferences::square(v2 - v4);
-      T s3 = 13 / 12.0 * FiniteDifferences::square(v3 - 2 * v4 + v5) +
-             1 / 4.0 * FiniteDifferences::square(3 * v3 - 4 * v4 + v5);
-
-      T al1 = 0.1 / (eps + s1);
-      T al2 = 0.6 / (eps + s2);
-      T al3 = 0.3 / (eps + s3);
-
-      T alsum = al1 + al2 + al3;
-
-      T w1 = al1 / alsum;
-      T w2 = al2 / alsum;
-      T w3 = al3 / alsum;
-
-      return w1 * p1 + w2 * p2 + w3 * p3;
+      for (int i = 0; i < 5; ++i)
+        d[i] = x[6 - i] - x[5 - i];
     }
+
+    // Smoothness indicators (scaled by dx^2)
+    T s1 = T(13.0 / 12.0) * FiniteDifferences::square(d[0] - 2 * d[1] + d[2]) +
+           T(1.0 / 4.0) * FiniteDifferences::square(d[0] - 4 * d[1] + 3 * d[2]);
+    T s2 = T(13.0 / 12.0) * FiniteDifferences::square(d[1] - 2 * d[2] + d[3]) +
+           T(1.0 / 4.0) * FiniteDifferences::square(d[1] - d[3]);
+    T s3 = T(13.0 / 12.0) * FiniteDifferences::square(d[2] - 2 * d[3] + d[4]) +
+           T(1.0 / 4.0) * FiniteDifferences::square(3 * d[2] - 4 * d[3] + d[4]);
+
+    // Scale epsilon by dx^2 to match scaled smoothness indicators
+    T eps_scaled = eps * dx * dx;
+
+    T al1 = T(0.1) / (eps_scaled + s1);
+    T al2 = T(0.6) / (eps_scaled + s2);
+    T al3 = T(0.3) / (eps_scaled + s3);
+
+    T alsum = al1 + al2 + al3;
+
+    // Polynomials (scaled by dx)
+    T p1 = T(1.0 / 6.0) * (2 * d[0] - 7 * d[1] + 11 * d[2]);
+    T p2 = T(1.0 / 6.0) * (-d[1] + 5 * d[2] + 2 * d[3]);
+    T p3 = T(1.0 / 6.0) * (2 * d[2] + 5 * d[3] - d[4]);
+
+    // Final result divides by dx once
+    return (al1 * p1 + al2 * p2 + al3 * p3) / (alsum * dx);
   }
 
   // Finite difference in the negative direction using the scheme specified

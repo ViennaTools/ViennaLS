@@ -67,6 +67,7 @@ These are imported directly from the **root** `viennals` module.
 - `BooleanOperationEnum`
 - `CurvatureEnum`
 - `FeatureDetectionEnum`
+- `NormalCalculationMethodEnum`
 - `BoundaryConditionEnum`
 - `FileFormatEnum`
 - `VoidTopSurfaceEnum`

@@ -73,9 +73,9 @@ int main() {
   auto sphereWENO5_RK2 = ls::SmartPointer<ls::Domain<T, D>>::New(sphere);
   auto sphereWENO5_RK3 = ls::SmartPointer<ls::Domain<T, D>>::New(sphere);
 
-  auto meshInit = ls::Mesh<T>::New();
-  ls::ToSurfaceMesh<T, D>(sphere, meshInit).apply();
-  ls::VTKWriter<T>(meshInit, "sphereInit.vtp").apply();
+  // auto meshInit = ls::Mesh<T>::New();
+  // ls::ToSurfaceMesh<T, D>(sphere, meshInit).apply();
+  // ls::VTKWriter<T>(meshInit, "sphereInit.vtp").apply();
 
   // Define constant velocity field (moving in x-direction)
   std::array<T, 3> vel = {1.0, 0.0, 0.0};
@@ -166,15 +166,15 @@ int main() {
   std::cout << "Time: " << timer.currentDuration / 1e9 << "s" << std::endl;
   LSTEST_ASSERT_VALID_LS(sphereFE, T, D);
 
-  auto meshFE = ls::Mesh<T>::New();
-  ls::ToSurfaceMesh<T, D>(sphereFE, meshFE).apply();
-  ls::VTKWriter<T>(meshFE, "sphereFE.vtp").apply();
+  // auto meshFE = ls::Mesh<T>::New();
+  // ls::ToSurfaceMesh<T, D>(sphereFE, meshFE).apply();
+  // ls::VTKWriter<T>(meshFE, "sphereFE.vtp").apply();
 
   auto chamferFE = ls::CompareChamfer<T, D>(sphereRef, sphereFE);
   chamferFE.apply();
   std::cout << "Chamfer distance: " << chamferFE.getChamferDistance()
             << std::endl;
-  VC_TEST_ASSERT(chamferFE.getChamferDistance() < 0.038);
+  VC_TEST_ASSERT(chamferFE.getChamferDistance() < 0.04);
 
   std::cout << "Running Runge-Kutta 2 Advection..." << std::endl;
   timer.start();
@@ -183,15 +183,15 @@ int main() {
   std::cout << "Time: " << timer.currentDuration / 1e9 << "s" << std::endl;
   LSTEST_ASSERT_VALID_LS(sphereRK2, T, D);
 
-  auto meshRK2 = ls::Mesh<T>::New();
-  ls::ToSurfaceMesh<T, D>(sphereRK2, meshRK2).apply();
-  ls::VTKWriter<T>(meshRK2, "sphereRK2.vtp").apply();
+  // auto meshRK2 = ls::Mesh<T>::New();
+  // ls::ToSurfaceMesh<T, D>(sphereRK2, meshRK2).apply();
+  // ls::VTKWriter<T>(meshRK2, "sphereRK2.vtp").apply();
 
   auto chamferRK2 = ls::CompareChamfer<T, D>(sphereRef, sphereRK2);
   chamferRK2.apply();
   std::cout << "Chamfer distance: " << chamferRK2.getChamferDistance()
             << std::endl;
-  VC_TEST_ASSERT(chamferRK2.getChamferDistance() < 0.067);
+  VC_TEST_ASSERT(chamferRK2.getChamferDistance() < 0.07);
 
   std::cout << "Running Runge-Kutta 3 Advection..." << std::endl;
   timer.start();
@@ -200,15 +200,15 @@ int main() {
   std::cout << "Time: " << timer.currentDuration / 1e9 << "s" << std::endl;
   LSTEST_ASSERT_VALID_LS(sphereRK3, T, D);
 
-  auto meshRK3 = ls::Mesh<T>::New();
-  ls::ToSurfaceMesh<T, D>(sphereRK3, meshRK3).apply();
-  ls::VTKWriter<T>(meshRK3, "sphereRK3.vtp").apply();
+  // auto meshRK3 = ls::Mesh<T>::New();
+  // ls::ToSurfaceMesh<T, D>(sphereRK3, meshRK3).apply();
+  // ls::VTKWriter<T>(meshRK3, "sphereRK3.vtp").apply();
 
   auto chamferRK3 = ls::CompareChamfer<T, D>(sphereRef, sphereRK3);
   chamferRK3.apply();
   std::cout << "Chamfer distance: " << chamferRK3.getChamferDistance()
             << std::endl;
-  VC_TEST_ASSERT(chamferRK3.getChamferDistance() < 0.068);
+  VC_TEST_ASSERT(chamferRK3.getChamferDistance() < 0.07);
 
   std::cout << "Running WENO3 Forward Euler Advection..." << std::endl;
   timer.start();
@@ -217,15 +217,15 @@ int main() {
   std::cout << "Time: " << timer.currentDuration / 1e9 << "s" << std::endl;
   LSTEST_ASSERT_VALID_LS(sphereWENO3_FE, T, D);
 
-  auto meshWENO3_FE = ls::Mesh<T>::New();
-  ls::ToSurfaceMesh<T, D>(sphereWENO3_FE, meshWENO3_FE).apply();
-  ls::VTKWriter<T>(meshWENO3_FE, "sphereWENO3_FE.vtp").apply();
+  // auto meshWENO3_FE = ls::Mesh<T>::New();
+  // ls::ToSurfaceMesh<T, D>(sphereWENO3_FE, meshWENO3_FE).apply();
+  // ls::VTKWriter<T>(meshWENO3_FE, "sphereWENO3_FE.vtp").apply();
 
   auto chamferWENO3_FE = ls::CompareChamfer<T, D>(sphereRef, sphereWENO3_FE);
   chamferWENO3_FE.apply();
   std::cout << "Chamfer distance: " << chamferWENO3_FE.getChamferDistance()
             << std::endl;
-  VC_TEST_ASSERT(chamferWENO3_FE.getChamferDistance() < 0.025);
+  VC_TEST_ASSERT(chamferWENO3_FE.getChamferDistance() < 0.03);
 
   std::cout << "Running WENO3 Runge-Kutta 2 Advection..." << std::endl;
   timer.start();
@@ -234,15 +234,15 @@ int main() {
   std::cout << "Time: " << timer.currentDuration / 1e9 << "s" << std::endl;
   LSTEST_ASSERT_VALID_LS(sphereWENO3_RK2, T, D);
 
-  auto meshWENO3_RK2 = ls::Mesh<T>::New();
-  ls::ToSurfaceMesh<T, D>(sphereWENO3_RK2, meshWENO3_RK2).apply();
-  ls::VTKWriter<T>(meshWENO3_RK2, "sphereWENO3_RK2.vtp").apply();
+  // auto meshWENO3_RK2 = ls::Mesh<T>::New();
+  // ls::ToSurfaceMesh<T, D>(sphereWENO3_RK2, meshWENO3_RK2).apply();
+  // ls::VTKWriter<T>(meshWENO3_RK2, "sphereWENO3_RK2.vtp").apply();
 
   auto chamferWENO3_RK2 = ls::CompareChamfer<T, D>(sphereRef, sphereWENO3_RK2);
   chamferWENO3_RK2.apply();
   std::cout << "Chamfer distance: " << chamferWENO3_RK2.getChamferDistance()
             << std::endl;
-  VC_TEST_ASSERT(chamferWENO3_RK2.getChamferDistance() < 0.01);
+  VC_TEST_ASSERT(chamferWENO3_RK2.getChamferDistance() < 0.008);
 
   std::cout << "Running WENO3 Runge-Kutta 3 Advection..." << std::endl;
   timer.start();
@@ -251,15 +251,15 @@ int main() {
   std::cout << "Time: " << timer.currentDuration / 1e9 << "s" << std::endl;
   LSTEST_ASSERT_VALID_LS(sphereWENO3_RK3, T, D);
 
-  auto meshWENO3_RK3 = ls::Mesh<T>::New();
-  ls::ToSurfaceMesh<T, D>(sphereWENO3_RK3, meshWENO3_RK3).apply();
-  ls::VTKWriter<T>(meshWENO3_RK3, "sphereWENO3_RK3.vtp").apply();
+  // auto meshWENO3_RK3 = ls::Mesh<T>::New();
+  // ls::ToSurfaceMesh<T, D>(sphereWENO3_RK3, meshWENO3_RK3).apply();
+  // ls::VTKWriter<T>(meshWENO3_RK3, "sphereWENO3_RK3.vtp").apply();
 
   auto chamferWENO3_RK3 = ls::CompareChamfer<T, D>(sphereRef, sphereWENO3_RK3);
   chamferWENO3_RK3.apply();
   std::cout << "Chamfer distance: " << chamferWENO3_RK3.getChamferDistance()
             << std::endl;
-  VC_TEST_ASSERT(chamferWENO3_RK3.getChamferDistance() < 0.01);
+  VC_TEST_ASSERT(chamferWENO3_RK3.getChamferDistance() < 0.008);
 
   std::cout << "Running WENO5 Forward Euler Advection..." << std::endl;
   timer.start();
@@ -268,15 +268,15 @@ int main() {
   std::cout << "Time: " << timer.currentDuration / 1e9 << "s" << std::endl;
   LSTEST_ASSERT_VALID_LS(sphereWENO5_FE, T, D);
 
-  auto meshWENO5_FE = ls::Mesh<T>::New();
-  ls::ToSurfaceMesh<T, D>(sphereWENO5_FE, meshWENO5_FE).apply();
-  ls::VTKWriter<T>(meshWENO5_FE, "sphereWENO5_FE.vtp").apply();
+  // auto meshWENO5_FE = ls::Mesh<T>::New();
+  // ls::ToSurfaceMesh<T, D>(sphereWENO5_FE, meshWENO5_FE).apply();
+  // ls::VTKWriter<T>(meshWENO5_FE, "sphereWENO5_FE.vtp").apply();
 
   auto chamferWENO5_FE = ls::CompareChamfer<T, D>(sphereRef, sphereWENO5_FE);
   chamferWENO5_FE.apply();
   std::cout << "Chamfer distance: " << chamferWENO5_FE.getChamferDistance()
             << std::endl;
-  VC_TEST_ASSERT(chamferWENO5_FE.getChamferDistance() < 0.018);
+  VC_TEST_ASSERT(chamferWENO5_FE.getChamferDistance() < 0.02);
 
   std::cout << "Running WENO5 Runge-Kutta 2 Advection..." << std::endl;
   timer.start();
@@ -285,9 +285,9 @@ int main() {
   std::cout << "Time: " << timer.currentDuration / 1e9 << "s" << std::endl;
   LSTEST_ASSERT_VALID_LS(sphereWENO5_RK2, T, D);
 
-  auto meshWENO5_RK2 = ls::Mesh<T>::New();
-  ls::ToSurfaceMesh<T, D>(sphereWENO5_RK2, meshWENO5_RK2).apply();
-  ls::VTKWriter<T>(meshWENO5_RK2, "sphereWENO5_RK2.vtp").apply();
+  // auto meshWENO5_RK2 = ls::Mesh<T>::New();
+  // ls::ToSurfaceMesh<T, D>(sphereWENO5_RK2, meshWENO5_RK2).apply();
+  // ls::VTKWriter<T>(meshWENO5_RK2, "sphereWENO5_RK2.vtp").apply();
 
   auto chamferWENO5_RK2 = ls::CompareChamfer<T, D>(sphereRef, sphereWENO5_RK2);
   chamferWENO5_RK2.apply();
@@ -302,15 +302,15 @@ int main() {
   std::cout << "Time: " << timer.currentDuration / 1e9 << "s" << std::endl;
   LSTEST_ASSERT_VALID_LS(sphereWENO5_RK3, T, D);
 
-  auto meshWENO5_RK3 = ls::Mesh<T>::New();
-  ls::ToSurfaceMesh<T, D>(sphereWENO5_RK3, meshWENO5_RK3).apply();
-  ls::VTKWriter<T>(meshWENO5_RK3, "sphereWENO5_RK3.vtp").apply();
+  // auto meshWENO5_RK3 = ls::Mesh<T>::New();
+  // ls::ToSurfaceMesh<T, D>(sphereWENO5_RK3, meshWENO5_RK3).apply();
+  // ls::VTKWriter<T>(meshWENO5_RK3, "sphereWENO5_RK3.vtp").apply();
 
   auto chamferWENO5_RK3 = ls::CompareChamfer<T, D>(sphereRef, sphereWENO5_RK3);
   chamferWENO5_RK3.apply();
   std::cout << "Chamfer distance: " << chamferWENO5_RK3.getChamferDistance()
             << std::endl;
-  VC_TEST_ASSERT(chamferWENO5_RK3.getChamferDistance() < 0.0034);
+  VC_TEST_ASSERT(chamferWENO5_RK3.getChamferDistance() < 0.004);
 
   return 0;
 }

@@ -324,6 +324,10 @@ template <int D> void bindApi(py::module &module) {
       // methods
       .def("setLevelSet", &CalculateNormalVectors<T, D>::setLevelSet,
            "Set levelset for which to calculate normal vectors.")
+      .def("setMaxValue", &CalculateNormalVectors<T, D>::setMaxValue,
+           "Set the maximum value for which normals should be calculated.")
+      .def("setMethod", &CalculateNormalVectors<T, D>::setMethod,
+           "Set the method to use for normal calculation.")
       .def("apply", &CalculateNormalVectors<T, D>::apply,
            "Perform normal vector calculation.");
 
@@ -767,14 +771,24 @@ template <int D> void bindApi(py::module &module) {
   py::class_<ToSurfaceMesh<T, D>, SmartPointer<ToSurfaceMesh<T, D>>>(
       module, "ToSurfaceMesh")
       // constructors
-      .def(py::init(&SmartPointer<ToSurfaceMesh<T, D>>::template New<>))
+      .def(
+          py::init(
+              &SmartPointer<ToSurfaceMesh<T, D>>::template New<double, double>),
+          py::arg("minNodeDistFactor") = 0.05, py::arg("eps") = 1e-12)
       .def(py::init(&SmartPointer<ToSurfaceMesh<T, D>>::template New<
-                    SmartPointer<Domain<T, D>> &, SmartPointer<Mesh<T>> &>))
+                    SmartPointer<Domain<T, D>> &, SmartPointer<Mesh<T>> &,
+                    double, double>),
+           py::arg("domain"), py::arg("mesh"),
+           py::arg("minNodeDistFactor") = 0.05, py::arg("eps") = 1e-12)
       // methods
       .def("setLevelSet", &ToSurfaceMesh<T, D>::setLevelSet,
            "Set levelset to mesh.")
       .def("setMesh", &ToSurfaceMesh<T, D>::setMesh,
            "Set the mesh to generate.")
+      .def("setUpdatePointData", &ToSurfaceMesh<T, D>::setUpdatePointData,
+           "Set whether to update point data. Defaults to true.")
+      .def("setSharpCorners", &ToSurfaceMesh<T, D>::setSharpCorners,
+           "Set whether to preserve sharp corners. Defaults to false.")
       .def("apply", &ToSurfaceMesh<T, D>::apply,
            "Convert the levelset to a surface mesh.");
 
@@ -785,21 +799,21 @@ template <int D> void bindApi(py::module &module) {
       .def(py::init(
                &SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<double,
                                                                      double>),
-           py::arg("eps") = 1e-12, py::arg("minNodeDistFactor") = 0.05)
+           py::arg("minNodeDistFactor") = 0.05, py::arg("eps") = 1e-12)
       .def(py::init(&SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<
                     SmartPointer<Domain<T, D>> &, SmartPointer<Mesh<T>> &,
                     double, double>),
-           py::arg("domain"), py::arg("mesh"), py::arg("eps") = 1e-12,
-           py::arg("minNodeDistFactor") = 0.05)
+           py::arg("domain"), py::arg("mesh"),
+           py::arg("minNodeDistFactor") = 0.05, py::arg("eps") = 1e-12)
       .def(py::init(&SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<
                     std::vector<SmartPointer<Domain<T, D>>> &,
                     SmartPointer<Mesh<T>> &, double, double>),
-           py::arg("domains"), py::arg("mesh"), py::arg("eps") = 1e-12,
-           py::arg("minNodeDistFactor") = 0.05)
+           py::arg("domains"), py::arg("mesh"),
+           py::arg("minNodeDistFactor") = 0.05, py::arg("eps") = 1e-12)
       .def(py::init(&SmartPointer<ToMultiSurfaceMesh<T, D>>::template New<
                     SmartPointer<Mesh<T>> &, double, double>),
-           py::arg("mesh"), py::arg("eps") = 1e-12,
-           py::arg("minNodeDistFactor") = 0.05)
+           py::arg("mesh"), py::arg("minNodeDistFactor") = 0.05,
+           py::arg("eps") = 1e-12)
       // methods
       .def("insertNextLevelSet", &ToMultiSurfaceMesh<T, D>::insertNextLevelSet,
            "Insert next level set to output in the mesh.")
@@ -809,6 +823,8 @@ template <int D> void bindApi(py::module &module) {
            "Set the mesh to generate.")
       .def("setMaterialMap", &ToMultiSurfaceMesh<T, D>::setMaterialMap,
            "Set the material map to use for the multi surface mesh.")
+      .def("setSharpCorners", &ToMultiSurfaceMesh<T, D>::setSharpCorners,
+           "Set whether to preserve sharp corners. Defaults to false.")
       .def("apply", &ToMultiSurfaceMesh<T, D>::apply,
            "Convert the levelset to a surface mesh.");
 

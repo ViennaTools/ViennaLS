@@ -796,6 +796,106 @@ class WrappingTest(unittest.TestCase):
             
         print("  > Done test_additional_options")
 
+    def test_corner_preservation(self):
+        print("\n[TEST] test_corner_preservation")
+        gridDelta = 0.0485
+        tolerance = 0.03 * gridDelta
+
+        for module, dim in [(d2, 2)]:
+        # for module, dim in [(d2, 2), (d3, 3)]:
+            print(f"  > Testing {dim}D")
+
+            # --- Box Test ---
+            print("    >> Box Test")
+            bounds = [-3.0, 3.0] * dim
+            boundaryCons = [vls.BoundaryConditionEnum.INFINITE_BOUNDARY] * dim
+            dom = module.Domain(bounds, boundaryCons, gridDelta)
+
+            min_corner = [-1.0] * dim
+            max_corner = [1.0] * dim
+            box = module.Box(min_corner, max_corner)
+            module.MakeGeometry(dom, box).apply()
+
+            mesh = vls.Mesh()
+            tsm = module.ToSurfaceMesh(dom, mesh)
+            tsm.setSharpCorners(True)
+            tsm.apply()
+
+            nodes = mesh.getNodes()
+            # Generate expected corners
+            expected_corners = []
+            num_corners = 1 << dim
+            for i in range(num_corners):
+                corner = []
+                for j in range(dim):
+                    val = 1.0 if ((i >> j) & 1) else -1.0
+                    corner.append(val)
+                expected_corners.append(corner)
+
+            # Verify
+            for ex in expected_corners:
+                found = False
+                for n in nodes:
+                    dist_sq = sum([(n[k] - ex[k]) ** 2 for k in range(dim)])
+                    if dist_sq < tolerance:
+                        found = True
+                        break
+                if not found:
+                    self.fail(f"Box Corner {ex} not found in {dim}D mesh")
+
+            # --- Box Cavity Test ---
+            print("    >> Box Cavity Test")
+            # Boundary conditions: Reflective for D-1, Infinite for last
+            bc_cavity = [vls.BoundaryConditionEnum.REFLECTIVE_BOUNDARY] * (dim - 1)
+            bc_cavity.append(vls.BoundaryConditionEnum.INFINITE_BOUNDARY)
+
+            substrate = module.Domain(bounds, bc_cavity, gridDelta)
+
+            origin = [0.0] * dim
+            origin[dim - 1] = 0.025
+            normal = [0.0] * dim
+            normal[dim - 1] = 1.0
+            plane = module.Plane(origin, normal)
+            module.MakeGeometry(substrate, plane).apply()
+
+            box_domain = module.Domain(bounds, bc_cavity, gridDelta)
+            module.MakeGeometry(box_domain, box).apply()  # Reuse box geometry (-1 to 1)
+
+            module.BooleanOperation(
+                substrate, box_domain, vls.BooleanOperationEnum.RELATIVE_COMPLEMENT
+            ).apply()
+
+            mesh_cavity = vls.Mesh()
+            tsm_cavity = module.ToSurfaceMesh(substrate, mesh_cavity)
+            tsm_cavity.setSharpCorners(True)
+            tsm_cavity.apply()
+
+            nodes_cavity = mesh_cavity.getNodes()
+
+            # Expected corners for cavity
+            expected_corners_cavity = []
+            for i in range(num_corners):
+                corner = []
+                for j in range(dim - 1):
+                    val = 1.0 if ((i >> j) & 1) else -1.0
+                    corner.append(val)
+                # Last dimension
+                val_last = 0.025 if ((i >> (dim - 1)) & 1) else -1.0
+                corner.append(val_last)
+                expected_corners_cavity.append(corner)
+
+            for ex in expected_corners_cavity:
+                found = False
+                for n in nodes_cavity:
+                    dist_sq = sum([(n[k] - ex[k]) ** 2 for k in range(dim)])
+                    if dist_sq < tolerance:
+                        found = True
+                        break
+                if not found:
+                    self.fail(f"Cavity Corner {ex} not found in {dim}D mesh")
+
+        print("  > Done test_corner_preservation")
+
 def run_test_method(method_name):
     """Run a single test method in a separate process."""
     suite = unittest.TestSuite()

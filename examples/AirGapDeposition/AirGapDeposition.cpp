@@ -71,11 +71,15 @@ double runSimulation(AdvectKernelType &kernel,
               << totalTime << "s" << std::flush;
 
     auto mesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
-    ls::ToSurfaceMesh<NumericType, D>(newLayer, mesh).apply();
+    ls::ToSurfaceMesh<NumericType, D>(newLayer, mesh, 0.02).apply();
     ls::VTKWriter<NumericType> writer(
         mesh, "trench_" + name + "_" + std::to_string(stepCounter) + ".vtp");
     writer.addMetaData("time", passedTime);
     writer.apply();
+    ls::ToMesh<NumericType, D>(newLayer, mesh).apply();
+    ls::VTKWriter<NumericType>(mesh, "trench_" + name + "_" +
+                                         std::to_string(stepCounter) + ".vtu")
+        .apply();
 
     ++stepCounter;
   }
@@ -86,7 +90,7 @@ double runSimulation(AdvectKernelType &kernel,
 int main() {
 
   constexpr int D = 2;
-  omp_set_num_threads(16);
+  omp_set_num_threads(8);
 
   NumericType extent = 30;
   NumericType gridDelta = 0.5;
@@ -120,7 +124,7 @@ int main() {
   {
     std::cout << "Extracting..." << std::endl;
     auto mesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
-    ls::ToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
+    ls::ToSurfaceMesh<NumericType, D>(substrate, mesh, 0.02).apply();
     ls::VTKWriter<NumericType>(mesh, "plane.vtp").apply();
   }
 
@@ -146,6 +150,11 @@ int main() {
       std::cout << "Extracting..." << std::endl;
       auto mesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
       ls::ToMesh<NumericType, D>(trench, mesh).apply();
+      ls::VTKWriter<NumericType>(mesh, "box.vtu").apply();
+      auto surfaceMeshBox =
+          ls::ToSurfaceMesh<NumericType, D>(trench, mesh, 0.02);
+      surfaceMeshBox.setSharpCorners(true);
+      surfaceMeshBox.apply();
       ls::VTKWriter<NumericType>(mesh, "box.vtp").apply();
     }
 
@@ -154,6 +163,16 @@ int main() {
     ls::BooleanOperation<NumericType, D>(
         substrate, trench, ls::BooleanOperationEnum::RELATIVE_COMPLEMENT)
         .apply();
+    {
+      auto mesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
+      ls::ToMesh<NumericType, D>(substrate, mesh).apply();
+      ls::VTKWriter<NumericType>(mesh, "trench.vtu").apply();
+      auto surfaceMeshTrench =
+          ls::ToSurfaceMesh<NumericType, D>(substrate, mesh, 0.02);
+      surfaceMeshTrench.setSharpCorners(true);
+      surfaceMeshTrench.apply();
+      ls::VTKWriter<NumericType>(mesh, "trench.vtp").apply();
+    }
   }
 
   // Now grow new material
@@ -233,11 +252,12 @@ int main() {
     writer.setExtractHullMesh(true);
     writer.apply();
 
-    ls::ToMultiSurfaceMesh<NumericType, D> multiMeshKernel;
+    ls::ToMultiSurfaceMesh<NumericType, D> multiMeshKernel(0.02);
     multiMeshKernel.insertNextLevelSet(substrateFE);
     multiMeshKernel.insertNextLevelSet(newLayerFE);
     auto multiMesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
     multiMeshKernel.setMesh(multiMesh);
+    multiMeshKernel.setSharpCorners(true);
     multiMeshKernel.apply();
     ls::VTKWriter<NumericType>(multiMesh, "multimesh_FE.vtp").apply();
   }
@@ -252,11 +272,12 @@ int main() {
     writer.setExtractHullMesh(true);
     writer.apply();
 
-    ls::ToMultiSurfaceMesh<NumericType, D> multiMeshKernel;
+    ls::ToMultiSurfaceMesh<NumericType, D> multiMeshKernel(0.02);
     multiMeshKernel.insertNextLevelSet(substrateRK2);
     multiMeshKernel.insertNextLevelSet(newLayerRK2);
     auto multiMesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
     multiMeshKernel.setMesh(multiMesh);
+    multiMeshKernel.setSharpCorners(true);
     multiMeshKernel.apply();
     ls::VTKWriter<NumericType>(multiMesh, "multimesh_RK2.vtp").apply();
   }
@@ -271,11 +292,12 @@ int main() {
     writer.setExtractHullMesh(true);
     writer.apply();
 
-    ls::ToMultiSurfaceMesh<NumericType, D> multiMeshKernel;
+    ls::ToMultiSurfaceMesh<NumericType, D> multiMeshKernel(0.02);
     multiMeshKernel.insertNextLevelSet(substrateRK);
     multiMeshKernel.insertNextLevelSet(newLayerRK);
     auto multiMesh = ls::SmartPointer<ls::Mesh<NumericType>>::New();
     multiMeshKernel.setMesh(multiMesh);
+    multiMeshKernel.setSharpCorners(true);
     multiMeshKernel.apply();
     ls::VTKWriter<NumericType>(multiMesh, "multimesh_RK3.vtp").apply();
   }
