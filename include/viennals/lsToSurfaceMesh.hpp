@@ -35,7 +35,7 @@ protected:
   const T epsilon;
   const double minNodeDistanceFactor;
   bool updatePointData = true;
-  bool sharpCorners = false;
+  bool generateSharpCorners = false;
 
   struct I3 {
     int x, y, z;
@@ -93,7 +93,7 @@ public:
 
   void setUpdatePointData(bool update) { updatePointData = update; }
 
-  void setSharpCorners(bool check) { sharpCorners = check; }
+  void setSharpCorners(bool check) { generateSharpCorners = check; }
 
   virtual void apply() {
     currentLevelSet = levelSets[0];
@@ -133,6 +133,7 @@ public:
     nodeContainerType nodes[D];
     nodeContainerType faceNodes[D];
     nodeContainerType cornerNodes;
+    const bool sharpCorners = generateSharpCorners;
     typename nodeContainerType::iterator nodeIt;
 
     // save how data should be transferred to new level set
@@ -267,10 +268,6 @@ public:
               const int *Triangles =
                   lsInternal::MarchingCubes::polygonize3d(signs);
 
-              auto getNode = [&](int edge) -> unsigned {
-                return this->getNode(cellIt, edge, nodes, &newDataSourceIds[0]);
-              };
-
               for (; Triangles[0] != -1; Triangles += 3) {
                 std::vector<unsigned> face_edge_nodes;
                 for (int i = 0; i < 3; ++i) {
@@ -280,12 +277,13 @@ public:
                   bool onFace =
                       (((c0 >> axis) & 1) == d) && (((c1 >> axis) & 1) == d);
                   if (onFace) {
-                    face_edge_nodes.push_back(getNode(edge));
+                    face_edge_nodes.push_back(
+                        getNode(cellIt, edge, nodes, &newDataSourceIds[0]));
                   }
                 }
                 if (face_edge_nodes.size() == 2) {
-                  insertElement(std::array<unsigned, 3>{
-                      face_edge_nodes[0], face_edge_nodes[1], faceNodeId});
+                  insertElement(
+                      {face_edge_nodes[0], face_edge_nodes[1], faceNodeId});
                 }
               }
             }
@@ -300,7 +298,7 @@ public:
                    : lsInternal::MarchingCubes::polygonize3d(signs);
 
       for (; Triangles[0] != -1; Triangles += D) {
-        std::array<unsigned, D> nod_numbers;
+        std::array<unsigned, D> nodeNumbers;
 
         // for each node
         for (int n = 0; n < D; n++) {
@@ -318,15 +316,13 @@ public:
 
           nodeIt = nodes[dir].find(d);
           if (nodeIt != nodes[dir].end()) {
-            nod_numbers[n] = nodeIt->second;
+            nodeNumbers[n] = nodeIt->second;
           } else { // if node does not exist yet
-            nod_numbers[n] =
-                this->getNode(cellIt, edge, nodes, &newDataSourceIds[0]);
+            nodeNumbers[n] = getNode(cellIt, edge, nodes, &newDataSourceIds[0]);
           }
         }
 
-        if (!triangleMisformed(nod_numbers))
-          insertElement(nod_numbers); // insert new surface element
+        insertElement(nodeNumbers); // insert new surface element
       }
     }
 
@@ -629,8 +625,8 @@ protected:
             edgeY = 1;
           }
 
-          unsigned nX = this->getNode(cellIt, edgeX, nodes, newDataSourceIds);
-          unsigned nY = this->getNode(cellIt, edgeY, nodes, newDataSourceIds);
+          unsigned nX = getNode(cellIt, edgeX, nodes, newDataSourceIds);
+          unsigned nY = getNode(cellIt, edgeY, nodes, newDataSourceIds);
           unsigned nCorner = insertNode(cornerPos);
 
           if (updatePointData && newDataSourceIds) {
@@ -639,8 +635,8 @@ protected:
                 newDataSourceIds->back()); // TODO: improve point data source
           }
 
-          insertElement(std::array<unsigned, 2>{nX, nCorner});
-          insertElement(std::array<unsigned, 2>{nCorner, nY});
+          insertElement({nX, nCorner});
+          insertElement({nCorner, nY});
           return true;
         }
       }
@@ -714,19 +710,6 @@ protected:
       return Vec3D<T>{};
     };
 
-    auto getValue = [&](int idx) {
-      T val = cellIt.getCorner(idx).getValue();
-      return inverted ? -val : val;
-    };
-
-    auto getInterp = [&](int p_a, int p_b) {
-      const T v_a = getValue(p_a);
-      const T v_b = getValue(p_b);
-      if (std::abs(v_a - v_b) < epsilon)
-        return T(0.5);
-      return v_a / (v_a - v_b);
-    };
-
     // Determine axes
     int axisA = 0;
     while ((C ^ A) != (1 << axisA))
@@ -763,12 +746,12 @@ protected:
       int axis1 = 0;
       while ((corner ^ n1) != (1 << axis1))
         axis1++;
-      T t1 = getInterp(corner, n1);
+      T t1 = getInterp(corner, n1, cellIt, inverted);
 
       int axis2 = 0;
       while ((corner ^ n2) != (1 << axis2))
         axis2++;
-      T t2 = getInterp(corner, n2);
+      T t2 = getInterp(corner, n2, cellIt, inverted);
 
       Vec3D<T> P1;
       P1[0] = ((corner >> 0) & 1);
@@ -794,12 +777,7 @@ protected:
       P[u] = (c1 * N2[v] - c2 * N1[v]) / det;
       P[v] = (c2 * N1[u] - c1 * N2[u]) / det;
 
-      auto distSq = [](const Vec3D<T> &a, const Vec3D<T> &b) {
-        return (a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]) +
-               (a[2] - b[2]) * (a[2] - b[2]);
-      };
-
-      if (distSq(P, P1) > 9.0 || distSq(P, P2) > 9.0)
+      if (Norm2(P - P1) > 9.0 || Norm2(P - P2) > 9.0)
         return std::nullopt;
 
       return P;
@@ -836,11 +814,11 @@ protected:
     auto P_A_opt = calculateFace(axisA, A, D_corner, A_z);
     auto P_B_opt = calculateFace(axisB, B, D_corner, B_z);
 
-    if (!P_A_opt || !P_B_opt)
+    if (!P_A_opt.has_value() || !P_B_opt.has_value())
       return false;
 
-    Vec3D<T> P_A = *P_A_opt;
-    Vec3D<T> P_B = *P_B_opt;
+    auto const &P_A = P_A_opt.value();
+    auto const &P_B = P_B_opt.value();
 
     // Construct S
     Vec3D<T> S;
@@ -926,23 +904,23 @@ protected:
     }
 
     if (!flip) {
-      insertElement(std::array<unsigned, 3>{nS, nNA, nI_AD});
-      insertElement(std::array<unsigned, 3>{nS, nI_AD, nS_Face});
-      insertElement(std::array<unsigned, 3>{nS, nS_Face, nI_BD});
-      insertElement(std::array<unsigned, 3>{nS, nI_BD, nNB});
-      insertElement(std::array<unsigned, 3>{nS, nNB, nI_BZ});
-      insertElement(std::array<unsigned, 3>{nS, nI_BZ, nI_CZ});
-      insertElement(std::array<unsigned, 3>{nS, nI_CZ, nI_AZ});
-      insertElement(std::array<unsigned, 3>{nS, nI_AZ, nNA});
+      insertElement({nS, nNA, nI_AD});
+      insertElement({nS, nI_AD, nS_Face});
+      insertElement({nS, nS_Face, nI_BD});
+      insertElement({nS, nI_BD, nNB});
+      insertElement({nS, nNB, nI_BZ});
+      insertElement({nS, nI_BZ, nI_CZ});
+      insertElement({nS, nI_CZ, nI_AZ});
+      insertElement({nS, nI_AZ, nNA});
     } else {
-      insertElement(std::array<unsigned, 3>{nS, nI_AD, nNA});
-      insertElement(std::array<unsigned, 3>{nS, nS_Face, nI_AD});
-      insertElement(std::array<unsigned, 3>{nS, nI_BD, nS_Face});
-      insertElement(std::array<unsigned, 3>{nS, nNB, nI_BD});
-      insertElement(std::array<unsigned, 3>{nS, nI_BZ, nNB});
-      insertElement(std::array<unsigned, 3>{nS, nI_CZ, nI_BZ});
-      insertElement(std::array<unsigned, 3>{nS, nI_AZ, nI_CZ});
-      insertElement(std::array<unsigned, 3>{nS, nNA, nI_AZ});
+      insertElement({nS, nI_AD, nNA});
+      insertElement({nS, nS_Face, nI_AD});
+      insertElement({nS, nI_BD, nS_Face});
+      insertElement({nS, nNB, nI_BD});
+      insertElement({nS, nI_BZ, nNB});
+      insertElement({nS, nI_CZ, nI_BZ});
+      insertElement({nS, nI_AZ, nI_CZ});
+      insertElement({nS, nNA, nI_AZ});
     }
 
     return true;
@@ -1000,12 +978,6 @@ protected:
       if (transform & 4)
         res[2] = T(1.0) - res[2];
       return res;
-    };
-
-    // Helper to get value/normal with inversion handling
-    auto getValue = [&](int idx) {
-      T val = cellIt.getCorner(idx).getValue();
-      return inverted ? -val : val;
     };
 
     auto getNormal = [&](int idx) {
@@ -1093,8 +1065,12 @@ protected:
         int c_y = c0 | 2; // Neighbor in Y (canonical)
         int c_z = c0 | 4; // Neighbor in Z (canonical)
 
-        Vec3D<T> n_y = toCanonical(getNormal(mapIdx(c_y)));
-        Vec3D<T> n_z = toCanonical(getNormal(mapIdx(c_z)));
+        c0 = mapIdx(c0);
+        c_y = mapIdx(c_y);
+        c_z = mapIdx(c_z);
+
+        Vec3D<T> n_y = toCanonical(getNormal(c_y));
+        Vec3D<T> n_z = toCanonical(getNormal(c_z));
 
         if (std::abs(DotProduct(n_y, n_z)) >= 0.8) {
           return false;
@@ -1104,15 +1080,8 @@ protected:
         // Line 1: passes through intersection on edge c0-c_y. Normal n_y
         // (projected). Line 2: passes through intersection on edge c0-c_z.
         // Normal n_z (projected).
-
-        auto getInterp = [&](int p_a, int p_b) {
-          T v_a = getValue(mapIdx(p_a));
-          T v_b = getValue(mapIdx(p_b));
-          return v_a / (v_a - v_b);
-        };
-
-        T t_y = getInterp(c0, c_y); // Fraction along Y axis
-        T t_z = getInterp(c0, c_z); // Fraction along Z axis
+        T t_y = getInterp(c0, c_y, cellIt, inverted); // Fraction along Y axis
+        T t_z = getInterp(c0, c_z, cellIt, inverted); // Fraction along Z axis
 
         // In canonical local frame relative to c0:
         // Point on Y-edge: (0, t_y, 0)
@@ -1136,13 +1105,8 @@ protected:
 
         // Check if the point is too far away from the intersection points
         // 2 grid deltas = 2.0 in canonical coordinates
-        auto distSq = [](const Vec3D<T> &a, const Vec3D<T> &b) {
-          return (a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]) +
-                 (a[2] - b[2]) * (a[2] - b[2]);
-        };
-
-        if (distSq(P[k], Vec3D<T>{(T)k, t_y, 0}) > 9.0 ||
-            distSq(P[k], Vec3D<T>{(T)k, 0, t_z}) > 9.0) {
+        if (Norm2(P[k] - Vec3D<T>{(T)k, t_y, 0}) > 9.0 ||
+            Norm2(P[k] - Vec3D<T>{(T)k, 0, t_z}) > 9.0) {
           return false;
         }
       }
@@ -1207,13 +1171,13 @@ protected:
     // Generate Quads (split into triangles)
     // Quad 1 (Y-interface): E02, P0, P1, E13. Normal +Y.
     // Winding for +Y normal: E02 -> P0 -> P1 -> E13.
-    insertElement(std::array<unsigned, 3>{n02, faceNodeIds[0], faceNodeIds[1]});
-    insertElement(std::array<unsigned, 3>{n02, faceNodeIds[1], n13});
+    insertElement({n02, faceNodeIds[0], faceNodeIds[1]});
+    insertElement({n02, faceNodeIds[1], n13});
 
     // Quad 2 (Z-interface): E04, E15, P1, P0. Normal +Z.
     // Winding for +Z normal: E04 -> E15 -> P1 -> P0.
-    insertElement(std::array<unsigned, 3>{n04, n15, faceNodeIds[1]});
-    insertElement(std::array<unsigned, 3>{n04, faceNodeIds[1], faceNodeIds[0]});
+    insertElement({n04, n15, faceNodeIds[1]});
+    insertElement({n04, faceNodeIds[1], faceNodeIds[0]});
 
     return true;
   }
@@ -1303,11 +1267,6 @@ protected:
       return v;
     };
 
-    auto getValue = [&](int idx) {
-      T val = cellIt.getCorner(idx).getValue();
-      return inverted ? -val : val;
-    };
-
     auto getNormal = [&](int idx) {
       auto corner = cellIt.getCorner(idx);
       if (corner.isDefined()) {
@@ -1319,14 +1278,6 @@ protected:
         return n;
       }
       return Vec3D<T>{};
-    };
-
-    auto getInterp = [&](int p_a, int p_b) {
-      const T v_a = getValue(p_a);
-      const T v_b = getValue(p_b);
-      if (std::abs(v_a - v_b) < epsilon)
-        return T(0.5);
-      return v_a / (v_a - v_b);
     };
 
     Vec3D<T> norm1, norm2, norm3;
@@ -1341,9 +1292,9 @@ protected:
     norm2 = toCanonical(getNormal(g2));
     norm3 = toCanonical(getNormal(g4));
 
-    const T t1 = getInterp(transform, g1);
-    const T t2 = getInterp(transform, g2);
-    const T t4 = getInterp(transform, g4);
+    const T t1 = getInterp(transform, g1, cellIt, inverted);
+    const T t2 = getInterp(transform, g2, cellIt, inverted);
+    const T t4 = getInterp(transform, g4, cellIt, inverted);
 
     P1 = {t1, 0, 0};
     P2 = {0, t2, 0};
@@ -1383,12 +1334,7 @@ protected:
       S[i] = (d1 * c23[i] + d2 * c31[i] + d3 * c12[i]) * invDet;
     }
 
-    auto distSq = [](const Vec3D<T> &a, const Vec3D<T> &b) {
-      return (a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]) +
-             (a[2] - b[2]) * (a[2] - b[2]);
-    };
-
-    if (distSq(S, P1) > 9.0 || distSq(S, P2) > 9.0 || distSq(S, P4) > 9.0) {
+    if (Norm2(S - P1) > 9.0 || Norm2(S - P2) > 9.0 || Norm2(S - P4) > 9.0) {
       return false;
     }
 
@@ -1465,20 +1411,6 @@ protected:
         return this->getNode(cellIt, edgeIdx, nodes, newDataSourceIds);
       };
 
-      auto getEdgeNode2 = [&](int v1, int v2) {
-        int edgeIdx = -1;
-        for (int e = 0; e < 12; ++e) {
-          if ((corner0[e] == static_cast<unsigned>(v1) &&
-               corner1[e] == static_cast<unsigned>(v2)) ||
-              (corner0[e] == static_cast<unsigned>(v2) &&
-               corner1[e] == static_cast<unsigned>(v1))) {
-            edgeIdx = e;
-            break;
-          }
-        }
-        return this->getNode(cellIt, edgeIdx, nodes, newDataSourceIds);
-      };
-
       unsigned n1 = getEdgeNode(transform ^ 1);
       unsigned n2 = getEdgeNode(transform ^ 2);
       unsigned n4 = getEdgeNode(transform ^ 4);
@@ -1518,19 +1450,6 @@ protected:
           return Vec3D<T>{};
         };
 
-        auto getValue = [&](int idx) {
-          T val = cellIt.getCorner(idx).getValue();
-          return inverted ? -val : val;
-        };
-
-        auto getInterp = [&](int p_a, int p_b) {
-          const T v_a = getValue(p_a);
-          const T v_b = getValue(p_b);
-          if (std::abs(v_a - v_b) < epsilon)
-            return T(0.5);
-          return v_a / (v_a - v_b);
-        };
-
         Vec3D<T> norm1, norm2, norm3;
         double d1, d2, d3;
 
@@ -1556,9 +1475,9 @@ protected:
         norm2 = toCanonical(getNormal(transform ^ 2));
         norm3 = toCanonical(getNormal(transform ^ 4));
 
-        d1 = norm1[0] * getInterp(transform, transform ^ 1);
-        d2 = norm2[1] * getInterp(transform, transform ^ 2);
-        d3 = norm3[2] * getInterp(transform, transform ^ 4);
+        d1 = norm1[0] * getInterp(transform, transform ^ 1, cellIt, inverted);
+        d2 = norm2[1] * getInterp(transform, transform ^ 2, cellIt, inverted);
+        d3 = norm3[2] * getInterp(transform, transform ^ 4, cellIt, inverted);
 
         auto solve2x2 = [&](double a1, double b1, double c1, double a2,
                             double b2, double c2, T &res1, T &res2) {
@@ -1622,19 +1541,19 @@ protected:
           bool flip = (parity % 2 != 0) ^ inverted;
 
           if (!flip) {
-            insertElement(std::array<unsigned, 3>{nCorner, nFy, n1});
-            insertElement(std::array<unsigned, 3>{nCorner, n1, nFz});
-            insertElement(std::array<unsigned, 3>{nCorner, nFz, n2});
-            insertElement(std::array<unsigned, 3>{nCorner, n2, nFx});
-            insertElement(std::array<unsigned, 3>{nCorner, nFx, n4});
-            insertElement(std::array<unsigned, 3>{nCorner, n4, nFy});
+            insertElement({nCorner, nFy, n1});
+            insertElement({nCorner, n1, nFz});
+            insertElement({nCorner, nFz, n2});
+            insertElement({nCorner, n2, nFx});
+            insertElement({nCorner, nFx, n4});
+            insertElement({nCorner, n4, nFy});
           } else {
-            insertElement(std::array<unsigned, 3>{nCorner, n1, nFy});
-            insertElement(std::array<unsigned, 3>{nCorner, nFz, n1});
-            insertElement(std::array<unsigned, 3>{nCorner, n2, nFz});
-            insertElement(std::array<unsigned, 3>{nCorner, nFx, n2});
-            insertElement(std::array<unsigned, 3>{nCorner, n4, nFx});
-            insertElement(std::array<unsigned, 3>{nCorner, nFy, n4});
+            insertElement({nCorner, n1, nFy});
+            insertElement({nCorner, nFz, n1});
+            insertElement({nCorner, n2, nFz});
+            insertElement({nCorner, nFx, n2});
+            insertElement({nCorner, n4, nFx});
+            insertElement({nCorner, nFy, n4});
           }
           return true;
         }
@@ -1653,13 +1572,13 @@ protected:
       bool flip = (parity % 2 != 0) ^ inverted;
 
       if (!flip) {
-        insertElement(std::array<unsigned, 3>{n1, nCorner, n4});
-        insertElement(std::array<unsigned, 3>{n4, nCorner, n2});
-        insertElement(std::array<unsigned, 3>{n2, nCorner, n1});
+        insertElement({n1, nCorner, n4});
+        insertElement({n4, nCorner, n2});
+        insertElement({n2, nCorner, n1});
       } else {
-        insertElement(std::array<unsigned, 3>{n1, n4, nCorner});
-        insertElement(std::array<unsigned, 3>{n4, n2, nCorner});
-        insertElement(std::array<unsigned, 3>{n2, n1, nCorner});
+        insertElement({n1, n4, nCorner});
+        insertElement({n4, n2, nCorner});
+        insertElement({n2, n1, nCorner});
       }
 
       return true;
@@ -1685,8 +1604,22 @@ protected:
     return CrossProduct(nodeB - nodeA, nodeC - nodeA);
   }
 
-  void insertElement(const std::array<unsigned, D> &nod_numbers) {
-    if (triangleMisformed(nod_numbers))
+  T getInterp(int p_a, int p_b,
+              const viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
+              bool inverted) const {
+    auto getValue = [&](int idx) {
+      T val = cellIt.getCorner(idx).getValue();
+      return inverted ? -val : val;
+    };
+    const T v_a = getValue(p_a);
+    const T v_b = getValue(p_b);
+    if (std::abs(v_a - v_b) < epsilon)
+      return T(0.5);
+    return v_a / (v_a - v_b);
+  }
+
+  void insertElement(const std::array<unsigned, D> &nodeNumbers) {
+    if (triangleMisformed(nodeNumbers))
       return;
 
     auto elementI3 = [&](const std::array<unsigned, D> &element) -> I3 {
@@ -1696,23 +1629,23 @@ protected:
         return {(int)element[0], (int)element[1], (int)element[2]};
     };
 
-    if (uniqueElements.insert(elementI3(nod_numbers)).second) {
+    if (uniqueElements.insert(elementI3(nodeNumbers)).second) {
       Vec3D<T> normal;
       if constexpr (D == 2) {
         normal = Vec3D<T>{
-            -(mesh->nodes[nod_numbers[1]][1] - mesh->nodes[nod_numbers[0]][1]),
-            mesh->nodes[nod_numbers[1]][0] - mesh->nodes[nod_numbers[0]][0],
+            -(mesh->nodes[nodeNumbers[1]][1] - mesh->nodes[nodeNumbers[0]][1]),
+            mesh->nodes[nodeNumbers[1]][0] - mesh->nodes[nodeNumbers[0]][0],
             T(0)};
       } else {
-        normal = calculateNormal(mesh->nodes[nod_numbers[0]],
-                                 mesh->nodes[nod_numbers[1]],
-                                 mesh->nodes[nod_numbers[2]]);
+        normal = calculateNormal(mesh->nodes[nodeNumbers[0]],
+                                 mesh->nodes[nodeNumbers[1]],
+                                 mesh->nodes[nodeNumbers[2]]);
       }
 
       double n2 =
           normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2];
       if (n2 > epsilon) {
-        mesh->insertNextElement(nod_numbers);
+        mesh->insertNextElement(nodeNumbers);
         T invn = static_cast<T>(1.) / std::sqrt(static_cast<T>(n2));
         for (int d = 0; d < D; d++) {
           normal[d] *= invn;
@@ -1723,7 +1656,7 @@ protected:
     }
   }
 
-  unsigned insertNode(Vec3D<T> pos) {
+  unsigned insertNode(Vec3D<T> const &pos) {
     auto quantize = [&](const Vec3D<T> &p) -> I3 {
       const T inv = T(1) / minNodeDistanceFactor;
       return {(int)std::llround(p[0] * inv), (int)std::llround(p[1] * inv),

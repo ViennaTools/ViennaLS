@@ -25,7 +25,7 @@ class ToMultiSurfaceMesh : public ToSurfaceMesh<NumericType, D> {
   using ToSurfaceMesh<NumericType, D>::currentNormals;
   using ToSurfaceMesh<NumericType, D>::currentMaterials;
   using ToSurfaceMesh<NumericType, D>::normalVectorData;
-  using ToSurfaceMesh<NumericType, D>::sharpCorners;
+  using ToSurfaceMesh<NumericType, D>::generateSharpCorners;
 
   SmartPointer<MaterialMap> materialMap = nullptr;
 
@@ -64,7 +64,7 @@ public:
     materialMap = passedMaterialMap;
   }
 
-  void apply() {
+  void apply() override {
     if (levelSets.empty()) {
       Logger::getInstance()
           .addError("No level set was passed to ToMultiSurfaceMesh.")
@@ -99,6 +99,7 @@ public:
     typename nodeContainerType::iterator nodeIt;
 
     const bool useMaterialMap = materialMap != nullptr;
+    const bool sharpCorners = generateSharpCorners;
 
     auto elementI3 = [&](const std::array<unsigned, D> &element) ->
         typename ToSurfaceMesh<NumericType, D>::I3 {
@@ -233,10 +234,6 @@ public:
                 const int *Triangles =
                     lsInternal::MarchingCubes::polygonize3d(signs);
 
-                auto getNode = [&](int edge) -> unsigned {
-                  return this->getNode(cellIt, edge, nodes, nullptr);
-                };
-
                 for (; Triangles[0] != -1; Triangles += 3) {
                   std::vector<unsigned> face_edge_nodes;
                   for (int i = 0; i < 3; ++i) {
@@ -246,7 +243,8 @@ public:
                     bool onFace =
                         (((c0 >> axis) & 1) == d) && (((c1 >> axis) & 1) == d);
                     if (onFace) {
-                      face_edge_nodes.push_back(getNode(edge));
+                      face_edge_nodes.push_back(
+                          this->getNode(cellIt, edge, nodes, nullptr));
                     }
                   }
                   if (face_edge_nodes.size() == 2) {
@@ -268,7 +266,7 @@ public:
         }
 
         for (; Triangles[0] != -1; Triangles += D) {
-          std::array<unsigned, D> nod_numbers;
+          std::array<unsigned, D> nodeNumbers;
 
           // for each node
           for (int n = 0; n < D; n++) {
@@ -287,14 +285,14 @@ public:
 
             nodeIt = nodes[dir].find(d);
             if (nodeIt != nodes[dir].end()) {
-              nod_numbers[n] = nodeIt->second;
+              nodeNumbers[n] = nodeIt->second;
             } else {
               // if node does not exist yet
-              nod_numbers[n] = this->getNode(cellIt, edge, nodes, nullptr);
+              nodeNumbers[n] = this->getNode(cellIt, edge, nodes, nullptr);
             }
           }
 
-          this->insertElement(nod_numbers);
+          this->insertElement(nodeNumbers);
         }
       }
     }
