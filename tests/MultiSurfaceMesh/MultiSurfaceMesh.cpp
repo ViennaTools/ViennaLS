@@ -2,6 +2,7 @@
 #include <lsBooleanOperation.hpp>
 #include <lsDomain.hpp>
 #include <lsMakeGeometry.hpp>
+#include <lsToMesh.hpp>
 #include <lsToMultiSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
@@ -45,7 +46,7 @@ int main() {
 
   {
     auto box = Domain<double, 2>::New(extent, bc, gridDelta);
-    double minPoint[2] = {-2.5, origin[1] - 1e-6};
+    double minPoint[2] = {-2.5, origin[1] - 0.5 * gridDelta};
     double maxPoint[2] = {2.5, origin[1] + 5.0};
     MakeGeometry<double, 2>(box, Box<double, 2>::New(minPoint, maxPoint))
         .apply();
@@ -68,10 +69,21 @@ int main() {
   ToMultiSurfaceMesh<double, 2> mesher(layers, mesh);
   mesher.apply();
 
+  std::cout << "Writing regular marching cubes mesh..." << std::endl;
   VTKWriter<double>(mesh, "multi_surface_mesh_no_sharp.vtp").apply();
 
   mesher.setSharpCorners(true);
   mesher.apply();
 
+  std::cout << "Writing sharp corner marching cubes mesh..." << std::endl;
   VTKWriter<double>(mesh, "multi_surface_mesh_sharp.vtp").apply();
+
+  std::cout << "Writing level set meshes..." << std::endl;
+  int i = 0;
+  for (const auto &layer : layers) {
+    auto lsmesh = Mesh<double>::New();
+    ToMesh<double, 2>(layer, lsmesh).apply();
+    VTKWriter<double>(lsmesh, "layer_" + std::to_string(i) + ".vtp").apply();
+    ++i;
+  }
 }

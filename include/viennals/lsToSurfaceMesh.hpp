@@ -67,6 +67,9 @@ protected:
   SmartPointer<lsDomainType> currentLevelSet = nullptr;
   typename PointData<T>::VectorDataType *normalVectorData = nullptr;
 
+  // Store sharp corner nodes created during this cell iteration
+  std::vector<std::pair<unsigned, Vec3D<T>>> matSharpCornerNodes;
+
   static constexpr unsigned int corner0[12] = {0, 1, 2, 0, 4, 5,
                                                6, 4, 0, 1, 3, 2};
   static constexpr unsigned int corner1[12] = {1, 3, 3, 2, 5, 7,
@@ -628,6 +631,9 @@ protected:
           unsigned nX = getNode(cellIt, edgeX, nodes, newDataSourceIds);
           unsigned nY = getNode(cellIt, edgeY, nodes, newDataSourceIds);
           unsigned nCorner = insertNode(cornerPos);
+
+          // Store this sharp corner node for potential use by derived classes
+          matSharpCornerNodes.push_back({nCorner, cornerPos});
 
           if (updatePointData && newDataSourceIds) {
             assert(!newDataSourceIds->empty());
@@ -1390,6 +1396,10 @@ protected:
       } else {
         nCorner = insertNode(cornerPos);
         cornerNodes[cornerIdx] = nCorner;
+
+        // Store this sharp corner node for potential use by derived classes
+        matSharpCornerNodes.push_back({nCorner, cornerPos});
+
         if (updatePointData && newDataSourceIds)
           newDataSourceIds->push_back(cellIt.getCorner(transform).getPointId());
       }
