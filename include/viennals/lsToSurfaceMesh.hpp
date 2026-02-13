@@ -352,6 +352,37 @@ protected:
   }
 
   // Helper to get or create a node on an edge using linear interpolation
+  // Compute the interpolated position of a node on an edge without inserting it
+  Vec3D<T> computeNodePosition(
+      viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt, int edge) {
+    unsigned p0 = corner0[edge];
+    unsigned p1 = corner1[edge];
+    auto dir = direction[edge];
+
+    Vec3D<T> cc{};
+    for (int z = 0; z < D; z++) {
+      if (z != dir) {
+        cc[z] = static_cast<double>(cellIt.getIndices(z) +
+                                    viennahrle::BitMaskToIndex<D>(p0)[z]);
+      } else {
+        T d0 = cellIt.getCorner(p0).getValue();
+        T d1 = cellIt.getCorner(p1).getValue();
+        if (d0 == -d1) {
+          cc[z] = static_cast<T>(cellIt.getIndices(z)) + T(0.5);
+        } else {
+          if (std::abs(d0) <= std::abs(d1)) {
+            cc[z] = static_cast<T>(cellIt.getIndices(z)) + (d0 / (d0 - d1));
+          } else {
+            cc[z] = static_cast<T>(cellIt.getIndices(z) + 1) - (d1 / (d1 - d0));
+          }
+        }
+        cc[z] = std::max(cc[z], cellIt.getIndices(z) + epsilon);
+        cc[z] = std::min(cc[z], (cellIt.getIndices(z) + 1) - epsilon);
+      }
+    }
+    return cc;
+  }
+
   unsigned getNode(viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
                    int edge, std::map<hrleIndex, unsigned> *nodes,
                    std::vector<unsigned> *newDataSourceIds) {
@@ -367,30 +398,15 @@ protected:
     }
 
     // Create node
-    Vec3D<T> cc{};
+    Vec3D<T> cc = computeNodePosition(cellIt, edge);
+
     std::size_t currentPointId = 0;
-    for (int z = 0; z < D; z++) {
-      if (z != dir) {
-        cc[z] = static_cast<double>(cellIt.getIndices(z) +
-                                    viennahrle::BitMaskToIndex<D>(p0)[z]);
-      } else {
-        T d0 = cellIt.getCorner(p0).getValue();
-        T d1 = cellIt.getCorner(p1).getValue();
-        if (d0 == -d1) {
-          currentPointId = cellIt.getCorner(p0).getPointId();
-          cc[z] = static_cast<T>(cellIt.getIndices(z)) + T(0.5);
-        } else {
-          if (std::abs(d0) <= std::abs(d1)) {
-            currentPointId = cellIt.getCorner(p0).getPointId();
-            cc[z] = static_cast<T>(cellIt.getIndices(z)) + (d0 / (d0 - d1));
-          } else {
-            currentPointId = cellIt.getCorner(p1).getPointId();
-            cc[z] = static_cast<T>(cellIt.getIndices(z) + 1) - (d1 / (d1 - d0));
-          }
-        }
-        cc[z] = std::max(cc[z], cellIt.getIndices(z) + epsilon);
-        cc[z] = std::min(cc[z], (cellIt.getIndices(z) + 1) - epsilon);
-      }
+    T d0 = cellIt.getCorner(p0).getValue();
+    T d1 = cellIt.getCorner(p1).getValue();
+    if (std::abs(d0) <= std::abs(d1)) {
+      currentPointId = cellIt.getCorner(p0).getPointId();
+    } else {
+      currentPointId = cellIt.getCorner(p1).getPointId();
     }
     if (updatePointData && newDataSourceIds)
       newDataSourceIds->push_back(currentPointId);

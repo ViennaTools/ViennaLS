@@ -12,7 +12,6 @@ class ToMultiSurfaceMesh : public ToSurfaceMesh<NumericType, D> {
   using lsDomainType = viennals::Domain<NumericType, D>;
   using hrleDomainType = typename lsDomainType::DomainType;
   using hrleIndex = viennahrle::Index<D>;
-  using ConstSparseIterator = viennahrle::ConstSparseIterator<hrleDomainType>;
 
   using ToSurfaceMesh<NumericType, D>::mesh;
   using ToSurfaceMesh<NumericType, D>::levelSets;
@@ -33,9 +32,171 @@ class ToMultiSurfaceMesh : public ToSurfaceMesh<NumericType, D> {
   // Structure to track sharp corner nodes from each material
   struct SharpCornerNode {
     unsigned nodeId;
-    unsigned materialId;
     Vec3D<NumericType> position;
   };
+
+  // Find the closest sharp corner node from materials below l.
+  // Returns the node ID or -1 if none found within threshold.
+  int findNearestLowerCorner(
+      unsigned l, const Vec3D<NumericType> &pos,
+      const std::unordered_map<unsigned, std::vector<SharpCornerNode>>
+          &sharpCornerNodes) {
+    int snapId = -1;
+    NumericType minDist2 = 0.1;
+    for (unsigned m = 0; m < l; ++m) {
+      auto it = sharpCornerNodes.find(m);
+      if (it == sharpCornerNodes.end())
+        continue;
+      for (const auto &scn : it->second) {
+        NumericType dist2 = 0;
+        for (int i = 0; i < D; ++i) {
+          NumericType d = scn.position[i] - pos[i];
+          dist2 += d * d;
+        }
+        if (dist2 < minDist2) {
+          minDist2 = dist2;
+          snapId = scn.nodeId;
+        }
+      }
+    }
+    return snapId;
+  }
+
+  // In 2D, check if cornerPos lies on any edge of a previous material's mesh.
+  // If so, split that edge to include cornerNodeId.
+  void splitPreviousMaterialEdge(unsigned l, unsigned cornerNodeId,
+                                 const Vec3D<NumericType> &cornerPos,
+                                 size_t meshSizeBefore) {
+    if constexpr (D != 2)
+      return;
+    if (l == 0)
+      return;
+
+    for (size_t lineIdx = 0; lineIdx < mesh->lines.size(); ++lineIdx) {
+      unsigned mat = currentMaterials[lineIdx];
+      if (mat >= l)
+        continue;
+
+      auto &line = mesh->lines[lineIdx];
+      unsigned node0 = line[0];
+      unsigned node1 = line[1];
+
+      Vec3D<NumericType> pos0 = mesh->nodes[node0];
+      Vec3D<NumericType> pos1 = mesh->nodes[node1];
+      Vec3D<NumericType> lineVec = pos1 - pos0;
+
+      NumericType lineLen2 = 0;
+      NumericType dot = 0;
+      for (int i = 0; i < D; ++i) {
+        lineLen2 += lineVec[i] * lineVec[i];
+        dot += (cornerPos[i] - pos0[i]) * lineVec[i];
+      }
+
+      if (lineLen2 < epsilon)
+        continue;
+
+      NumericType t = dot / lineLen2;
+      if (t <= 0 || t >= 1)
+        continue;
+
+      // Distance from corner to closest point on line
+      NumericType dist2 = 0;
+      for (int i = 0; i < D; ++i) {
+        NumericType d = cornerPos[i] - (pos0[i] + t * lineVec[i]);
+        dist2 += d * d;
+      }
+      if (dist2 >= 0.01)
+        continue;
+
+      // Corner is on this edge - find which recent lines already cover
+      // the split segments
+      auto reassignSegment = [&](int idx, unsigned a, unsigned b) {
+        currentMaterials[idx] = mat;
+        mesh->lines[idx] = {a, b};
+        currentNormals[idx] = currentNormals[lineIdx];
+      };
+
+      int seg1Idx = -1;
+      int seg2Idx = -1;
+      for (size_t k = meshSizeBefore; k < mesh->lines.size(); ++k) {
+        const auto &rl = mesh->lines[k];
+        if ((rl[0] == node0 && rl[1] == cornerNodeId) ||
+            (rl[0] == cornerNodeId && rl[1] == node0))
+          seg1Idx = k;
+        if ((rl[0] == cornerNodeId && rl[1] == node1) ||
+            (rl[0] == node1 && rl[1] == cornerNodeId))
+          seg2Idx = k;
+      }
+
+      if (seg1Idx != -1 && seg2Idx != -1) {
+        reassignSegment(seg1Idx, node0, cornerNodeId);
+        reassignSegment(seg2Idx, cornerNodeId, node1);
+        mesh->lines.erase(mesh->lines.begin() + lineIdx);
+        currentMaterials.erase(currentMaterials.begin() + lineIdx);
+        currentNormals.erase(currentNormals.begin() + lineIdx);
+      } else if (seg1Idx != -1) {
+        reassignSegment(seg1Idx, node0, cornerNodeId);
+        line[0] = cornerNodeId;
+        line[1] = node1;
+      } else if (seg2Idx != -1) {
+        reassignSegment(seg2Idx, cornerNodeId, node1);
+        line[1] = cornerNodeId;
+      } else {
+        line[1] = cornerNodeId;
+        mesh->lines.push_back({cornerNodeId, node1});
+        currentMaterials.push_back(mat);
+        currentNormals.push_back(currentNormals[lineIdx]);
+      }
+
+      break; // Corner can only be on one edge
+    }
+  }
+
+  // Handle snapping/splitting of sharp corners between materials.
+  void
+  snapSharpCorners(unsigned l, size_t meshSizeBefore,
+                   std::unordered_map<unsigned, std::vector<SharpCornerNode>>
+                       &sharpCornerNodes) {
+    for (const auto &cornerPair : matSharpCornerNodes) {
+      unsigned cornerNodeId = cornerPair.first;
+      Vec3D<NumericType> cornerPos = cornerPair.second;
+
+      int snapToNodeId =
+          (l > 0) ? findNearestLowerCorner(l, cornerPos, sharpCornerNodes) : -1;
+
+      if (snapToNodeId >= 0) {
+        // Snap: replace cornerNodeId with snapToNodeId in recent elements
+        if constexpr (D == 2) {
+          using I3 = typename ToSurfaceMesh<NumericType, D>::I3;
+          for (size_t i = mesh->lines.size(); i-- > meshSizeBefore;) {
+            for (int j = 0; j < 2; ++j) {
+              if (mesh->lines[i][j] == cornerNodeId)
+                mesh->lines[i][j] = snapToNodeId;
+            }
+
+            unsigned n0 = mesh->lines[i][0];
+            unsigned n1 = mesh->lines[i][1];
+            bool isDuplicate = uniqueElements.count({(int)n0, (int)n1, 0}) ||
+                               uniqueElements.count({(int)n1, (int)n0, 0});
+
+            if (n0 == n1 || isDuplicate) {
+              mesh->lines.erase(mesh->lines.begin() + i);
+              currentMaterials.erase(currentMaterials.begin() + i);
+              currentNormals.erase(currentNormals.begin() + i);
+            } else {
+              uniqueElements.insert({(int)n0, (int)n1, 0});
+            }
+          }
+        }
+        sharpCornerNodes[l].push_back(
+            {static_cast<unsigned>(snapToNodeId), cornerPos});
+      } else {
+        // No snap - keep new corner and split any overlapping edge
+        sharpCornerNodes[l].push_back({cornerNodeId, cornerPos});
+        splitPreviousMaterialEdge(l, cornerNodeId, cornerPos, meshSizeBefore);
+      }
+    }
+  }
 
 public:
   ToMultiSurfaceMesh(double minNodeDistFactor = 0.05, double eps = 1e-12)
@@ -93,7 +254,7 @@ public:
       mesh->maximumExtent[i] = std::numeric_limits<NumericType>::lowest();
     }
 
-    typedef std::map<viennahrle::Index<D>, unsigned> nodeContainerType;
+    using nodeContainerType = std::map<viennahrle::Index<D>, unsigned>;
 
     nodeContainerType nodes[D];
     nodeContainerType faceNodes[D];
@@ -104,26 +265,16 @@ public:
     currentNormals.clear();
     currentMaterials.clear();
 
-    typename nodeContainerType::iterator nodeIt;
-
     const bool useMaterialMap = materialMap != nullptr;
     const bool sharpCorners = generateSharpCorners;
-
-    auto elementI3 = [&](const std::array<unsigned, D> &element) ->
-        typename ToSurfaceMesh<NumericType, D>::I3 {
-          if constexpr (D == 2)
-            return {(int)element[0], (int)element[1], 0};
-          else
-            return {(int)element[0], (int)element[1], (int)element[2]};
-        };
 
     // an iterator for each level set
     std::vector<viennahrle::ConstSparseCellIterator<hrleDomainType>> cellIts;
     for (const auto &ls : levelSets)
       cellIts.emplace_back(ls->getDomain());
 
-    // Explicit storage for sharp corner nodes from each material
-    std::vector<SharpCornerNode> sharpCornerNodes;
+    // Explicit storage for sharp corner nodes, keyed by material index
+    std::unordered_map<unsigned, std::vector<SharpCornerNode>> sharpCornerNodes;
 
     for (unsigned l = 0; l < levelSets.size(); l++) {
       currentLevelSet = levelSets[l];
@@ -156,16 +307,18 @@ public:
                      viennahrle::Index<D>(cellIt.getIndices()))
             nodes[u].erase(nodes[u].begin());
 
-          while (!faceNodes[u].empty() &&
-                 faceNodes[u].begin()->first <
-                     viennahrle::Index<D>(cellIt.getIndices()))
-            faceNodes[u].erase(faceNodes[u].begin());
-
-          if (u == 0) {
-            while (!cornerNodes.empty() &&
-                   cornerNodes.begin()->first <
+          if constexpr (D == 3) {
+            while (!faceNodes[u].empty() &&
+                   faceNodes[u].begin()->first <
                        viennahrle::Index<D>(cellIt.getIndices()))
-              cornerNodes.erase(cornerNodes.begin());
+              faceNodes[u].erase(faceNodes[u].begin());
+
+            if (u == 0) {
+              while (!cornerNodes.empty() &&
+                     cornerNodes.begin()->first <
+                         viennahrle::Index<D>(cellIt.getIndices()))
+                cornerNodes.erase(cornerNodes.begin());
+            }
           }
         }
 
@@ -185,19 +338,16 @@ public:
         // material below
         bool atMaterialBoundary = false;
         unsigned touchingMaterial = 0; // Which material we're touching
-        // static unsigned boundaryCount = 0;
         if (sharpCorners && l > 0) {
-          // Only check the material immediately below (l-1)
-          int m = l - 1;
+          touchingMaterial = l - 1;
           viennahrle::ConstSparseIterator<hrleDomainType> prevIt(
-              levelSets[m]->getDomain());
+              levelSets[touchingMaterial]->getDomain());
           for (int i = 0; i < (1 << D); ++i) {
             hrleIndex cornerIdx =
                 cellIt.getIndices() + viennahrle::BitMaskToIndex<D>(i);
             prevIt.goToIndices(cornerIdx);
             if (prevIt.getValue() <= 0) { // Inside previous material
               atMaterialBoundary = true;
-              touchingMaterial = m;
               break;
             }
           }
@@ -256,198 +406,9 @@ public:
           }
 
           // If sharp corners were generated, check if they should snap to
-          // existing corners
+          // existing corners or split edges of previous materials
           if (perfectCornerFound && !matSharpCornerNodes.empty()) {
-
-            // Iterate over all generated sharp corners and check for snapping
-            for (const auto &cornerPair : matSharpCornerNodes) {
-              unsigned cornerNodeId = cornerPair.first;
-              Vec3D<NumericType> cornerPos = cornerPair.second;
-              int snapToNodeId = -1;
-
-              if (l > 0) {
-                NumericType minDist2 = 0.1;
-                for (const auto &scn : sharpCornerNodes) {
-                  if (scn.materialId < l) {
-                    NumericType dist2 = 0;
-                    for (int i = 0; i < D; ++i) {
-                      NumericType d = scn.position[i] - cornerPos[i];
-                      dist2 += d * d;
-                    }
-                    if (dist2 < minDist2) {
-                      minDist2 = dist2;
-                      snapToNodeId = scn.nodeId;
-                    }
-                  }
-                }
-              }
-
-              if (snapToNodeId >= 0) {
-                // Snap to existing sharp corner
-                if constexpr (D == 2) {
-                  for (size_t i = mesh->lines.size(); i-- > meshSizeBefore;) {
-                    for (int j = 0; j < 2; ++j) {
-                      if (mesh->lines[i][j] == cornerNodeId)
-                        mesh->lines[i][j] = snapToNodeId;
-                    }
-
-                    // Check for duplicates or degenerate lines
-                    unsigned n0 = mesh->lines[i][0];
-                    unsigned n1 = mesh->lines[i][1];
-
-                    bool isDuplicate = false;
-                    using I3 = typename ToSurfaceMesh<NumericType, D>::I3;
-                    if (uniqueElements.find({(int)n0, (int)n1, 0}) !=
-                        uniqueElements.end())
-                      isDuplicate = true;
-                    if (uniqueElements.find({(int)n1, (int)n0, 0}) !=
-                        uniqueElements.end())
-                      isDuplicate = true;
-
-                    if (n0 == n1 || isDuplicate) {
-                      mesh->lines.erase(mesh->lines.begin() + i);
-                      currentMaterials.erase(currentMaterials.begin() + i);
-                      currentNormals.erase(currentNormals.begin() + i);
-                    } else {
-                      // Add to uniqueElements to prevent future duplicates
-                      uniqueElements.insert({(int)n0, (int)n1, 0});
-                    }
-                  }
-                }
-
-                // Add to sharpCornerNodes for current material
-                SharpCornerNode scn;
-                scn.nodeId = snapToNodeId;
-                scn.materialId = l;
-                scn.position = cornerPos;
-                sharpCornerNodes.push_back(scn);
-
-              } else {
-                // No snap - keep new corner
-                SharpCornerNode scn;
-                scn.nodeId = cornerNodeId;
-                scn.materialId = l;
-                scn.position = cornerPos;
-                sharpCornerNodes.push_back(scn);
-
-                // Check if this corner lies on an edge of a previous material's
-                // mesh If so, split that edge to include this corner node
-                if constexpr (D == 2) {
-                  if (l > 0) {
-                    // Find which material owns each line segment
-                    for (size_t lineIdx = 0; lineIdx < mesh->lines.size();
-                         ++lineIdx) {
-                      unsigned mat = currentMaterials[lineIdx];
-
-                      // Only check lines from previous materials
-                      if (mat >= l)
-                        continue;
-
-                      auto &line = mesh->lines[lineIdx];
-                      unsigned node0 = line[0];
-                      unsigned node1 = line[1];
-
-                      // Get positions of the line endpoints
-                      Vec3D<NumericType> pos0 = mesh->nodes[node0];
-                      Vec3D<NumericType> pos1 = mesh->nodes[node1];
-
-                      // Check if corner lies on this line segment
-                      // Calculate distance from corner to line
-                      Vec3D<NumericType> lineVec = pos1 - pos0;
-                      Vec3D<NumericType> cornerVec = cornerPos - pos0;
-
-                      NumericType lineLen2 = 0;
-                      NumericType dot = 0;
-                      for (int i = 0; i < D; ++i) {
-                        lineLen2 += lineVec[i] * lineVec[i];
-                        dot += cornerVec[i] * lineVec[i];
-                      }
-
-                      if (lineLen2 < epsilon)
-                        continue; // Degenerate line
-
-                      NumericType t = dot / lineLen2;
-
-                      // Check if corner projects onto the line segment (0 < t <
-                      // 1)
-                      if (t <= 0 || t >= 1)
-                        continue;
-
-                      // Calculate closest point on line
-                      Vec3D<NumericType> closestPt;
-                      for (int i = 0; i < D; ++i) {
-                        closestPt[i] = pos0[i] + t * lineVec[i];
-                      }
-
-                      // Check distance from corner to line
-                      NumericType dist2 = 0;
-                      for (int i = 0; i < D; ++i) {
-                        NumericType d = cornerPos[i] - closestPt[i];
-                        dist2 += d * d;
-                      }
-
-                      // If corner is very close to the line, split it
-                      if (dist2 < 0.01) { // Same threshold as corner snapping
-                        // Check for duplicates in Material 3's recent lines
-                        int seg1Idx = -1;
-                        int seg2Idx = -1;
-                        for (size_t k = meshSizeBefore; k < mesh->lines.size();
-                             ++k) {
-                          const auto &l3 = mesh->lines[k];
-                          if ((l3[0] == node0 && l3[1] == cornerNodeId) ||
-                              (l3[0] == cornerNodeId && l3[1] == node0)) {
-                            seg1Idx = k;
-                          }
-                          if ((l3[0] == cornerNodeId && l3[1] == node1) ||
-                              (l3[0] == node1 && l3[1] == cornerNodeId)) {
-                            seg2Idx = k;
-                          }
-                        }
-
-                        if (seg1Idx != -1 && seg2Idx != -1) {
-                          currentMaterials[seg1Idx] = mat;
-                          mesh->lines[seg1Idx] = {node0, cornerNodeId};
-                          currentNormals[seg1Idx] = currentNormals[lineIdx];
-
-                          currentMaterials[seg2Idx] = mat;
-                          mesh->lines[seg2Idx] = {cornerNodeId, node1};
-                          currentNormals[seg2Idx] = currentNormals[lineIdx];
-
-                          line[1] = line[0]; // Degenerate original line
-                        } else if (seg1Idx != -1) {
-                          currentMaterials[seg1Idx] = mat;
-                          mesh->lines[seg1Idx] = {node0, cornerNodeId};
-                          currentNormals[seg1Idx] = currentNormals[lineIdx];
-                          line[0] = cornerNodeId;
-                          line[1] = node1;
-                        } else if (seg2Idx != -1) {
-                          currentMaterials[seg2Idx] = mat;
-                          mesh->lines[seg2Idx] = {cornerNodeId, node1};
-                          currentNormals[seg2Idx] = currentNormals[lineIdx];
-                          line[1] = cornerNodeId;
-                        } else {
-                          // Replace this line with two lines that include the
-                          // corner
-                          line[1] =
-                              cornerNodeId; // First segment: node0 -> corner
-
-                          // Add second segment: corner -> node1
-                          std::array<unsigned, 2> newLine = {cornerNodeId,
-                                                             node1};
-                          mesh->lines.push_back(newLine);
-                          currentMaterials.push_back(
-                              mat); // Same material as original
-                          currentNormals.push_back(
-                              currentNormals[lineIdx]); // Same normal
-                        }
-
-                        break; // Corner can only be on one edge
-                      }
-                    }
-                  }
-                }
-              }
-            }
+            snapSharpCorners(l, meshSizeBefore, sharpCornerNodes);
           }
         }
 
@@ -507,7 +468,6 @@ public:
             const int edge = Triangles[n];
 
             unsigned p0 = this->corner0[edge];
-            unsigned p1 = this->corner1[edge];
 
             // determine direction of edge
             unsigned dir = this->direction[edge];
@@ -517,7 +477,7 @@ public:
             auto p0B = viennahrle::BitMaskToIndex<D>(p0);
             d += p0B;
 
-            nodeIt = nodes[dir].find(d);
+            auto nodeIt = nodes[dir].find(d);
             if (nodeIt != nodes[dir].end()) {
               nodeNumbers[n] = nodeIt->second;
 
@@ -526,99 +486,60 @@ public:
               if (sharpCorners && l > 0 && atMaterialBoundary) {
                 unsigned cachedNodeId = nodeIt->second;
                 // Check if this is a corner from the material below
-                bool foundCorner = false;
-                for (const auto &scn : sharpCornerNodes) {
-                  if (scn.nodeId == cachedNodeId &&
-                      scn.materialId == touchingMaterial) {
-                    // This is a corner from the lower material - inherit it
-                    SharpCornerNode inheritedCorner;
-                    inheritedCorner.nodeId = cachedNodeId;
-                    inheritedCorner.materialId = l;
-                    inheritedCorner.position = scn.position;
-                    sharpCornerNodes.push_back(inheritedCorner);
-                    foundCorner = true;
-                    break;
+                auto it = sharpCornerNodes.find(touchingMaterial);
+                if (it != sharpCornerNodes.end()) {
+                  for (const auto &scn : it->second) {
+                    if (scn.nodeId == cachedNodeId) {
+                      // Only inherit if not already inherited
+                      auto &lCorners = sharpCornerNodes[l];
+                      bool alreadyInherited = false;
+                      for (const auto &existing : lCorners) {
+                        if (existing.nodeId == cachedNodeId) {
+                          alreadyInherited = true;
+                          break;
+                        }
+                      }
+                      if (!alreadyInherited)
+                        lCorners.push_back({cachedNodeId, scn.position});
+                      break;
+                    }
                   }
                 }
               }
             } else {
-              // if node does not exist yet
-              // For materials after the first with sharp corners, check for
-              // nearby sharp corner nodes from previous materials at material
-              // boundaries
-              if (sharpCorners && l > 0 && atMaterialBoundary &&
-                  !sharpCornerNodes.empty()) {
-                // Calculate where this node would be
-                unsigned p0 = this->corner0[edge];
-                unsigned p1 = this->corner1[edge];
-                Vec3D<NumericType> nodePos{};
-                for (int z = 0; z < D; z++) {
-                  if (z != dir) {
-                    nodePos[z] = static_cast<NumericType>(
-                        cellIt.getIndices(z) +
-                        viennahrle::BitMaskToIndex<D>(p0)[z]);
-                  } else {
-                    NumericType d0 = cellIt.getCorner(p0).getValue();
-                    NumericType d1 = cellIt.getCorner(p1).getValue();
-                    if (d0 == -d1) {
-                      nodePos[z] =
-                          static_cast<NumericType>(cellIt.getIndices(z)) + 0.5;
-                    } else {
-                      nodePos[z] = static_cast<NumericType>(
-                          cellIt.getIndices(z) + (d0 / (d0 - d1)));
+              // Node does not exist yet - try snapping to a sharp corner
+              // from the touching material at material boundaries
+              int snapNodeId = -1;
+              Vec3D<NumericType> snapPos{};
+              if (sharpCorners && l > 0 && atMaterialBoundary) {
+                auto tmIt = sharpCornerNodes.find(touchingMaterial);
+                if (tmIt != sharpCornerNodes.end() && !tmIt->second.empty()) {
+                  Vec3D<NumericType> nodePos =
+                      this->computeNodePosition(cellIt, edge);
+
+                  NumericType minDist2 = 0.1; // Threshold: 0.5 grid spacings
+                  for (const auto &scn : tmIt->second) {
+                    NumericType dist2 = 0;
+                    for (int i = 0; i < D; ++i) {
+                      NumericType dd = scn.position[i] - nodePos[i];
+                      dist2 += dd * dd;
+                    }
+                    if (dist2 < minDist2) {
+                      minDist2 = dist2;
+                      snapNodeId = scn.nodeId;
+                      snapPos = scn.position;
                     }
                   }
                 }
+              }
 
-                // Search for nearby sharp corner from the specific material
-                // we're touching
-                int snapNodeId = -1;
-                NumericType minDist2 = 0.1; // Threshold: 0.5 grid spacings
-                for (const auto &scn : sharpCornerNodes) {
-                  // Only snap to corners from the material we're directly
-                  // touching
-                  if (scn.materialId != touchingMaterial)
-                    continue;
-
-                  // Check distance in all dimensions
-                  NumericType dist2 = 0;
-                  for (int i = 0; i < D; ++i) {
-                    NumericType d = scn.position[i] - nodePos[i];
-                    dist2 += d * d;
-                  }
-
-                  if (dist2 < minDist2) {
-                    minDist2 = dist2;
-                    snapNodeId = scn.nodeId;
-                  }
-                }
-
-                if (snapNodeId >= 0) {
-                  // Snap to existing sharp corner
-                  nodeNumbers[n] = snapNodeId;
-                  nodes[dir][d] = snapNodeId; // Cache it
-
-                  // Find the corner we're snapping to and add it to current
-                  // material's corners This allows upper materials to find it
-                  // when searching for this material's corners
-                  for (const auto &scn : sharpCornerNodes) {
-                    if (scn.nodeId == snapNodeId) {
-                      SharpCornerNode inheritedCorner;
-                      inheritedCorner.nodeId = snapNodeId;
-                      inheritedCorner.materialId =
-                          l; // Current material inherits this corner
-                      inheritedCorner.position = scn.position;
-                      sharpCornerNodes.push_back(inheritedCorner);
-                      break;
-                    }
-                  }
-
-                } else {
-                  // Create new node normally
-                  nodeNumbers[n] = this->getNode(cellIt, edge, nodes, nullptr);
-                }
+              if (snapNodeId >= 0) {
+                nodeNumbers[n] = snapNodeId;
+                nodes[dir][d] = snapNodeId; // Cache it
+                // Inherit this corner so upper materials can find it
+                sharpCornerNodes[l].push_back(
+                    {static_cast<unsigned>(snapNodeId), snapPos});
               } else {
-                // First material or no sharp corners - create normally
                 nodeNumbers[n] = this->getNode(cellIt, edge, nodes, nullptr);
               }
             }
@@ -641,26 +562,6 @@ public:
     }
 
     this->scaleMesh();
-
-    // // DEBUG: Check specific nodes
-    // std::vector<unsigned> debugNodes = {179, 210};
-    // for (unsigned nId : debugNodes) {
-    //   if (nId < mesh->nodes.size()) {
-    //     std::cout << "DEBUG: Node " << nId << " at " << mesh->nodes[nId]
-    //               << " is connected to elements:" << std::endl;
-    //     if constexpr (D == 2) {
-    //       for (size_t i = 0; i < mesh->lines.size(); ++i) {
-    //         if (mesh->lines[i][0] == nId || mesh->lines[i][1] == nId) {
-    //           std::cout << "  Line " << i << " [" << mesh->lines[i][0] << ",
-    //           "
-    //                     << mesh->lines[i][1]
-    //                     << "] Material: " << currentMaterials[i] <<
-    //                     std::endl;
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
 
     mesh->cellData.insertNextScalarData(currentMaterials, "MaterialIds");
     mesh->cellData.insertNextVectorData(currentNormals, "Normals");
