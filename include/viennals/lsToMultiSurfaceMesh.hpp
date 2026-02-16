@@ -37,7 +37,7 @@ class ToMultiSurfaceMesh : public ToSurfaceMesh<NumericType, D> {
 
   // Find the closest sharp corner node from materials below l.
   // Returns the node ID or -1 if none found within threshold.
-  int findNearestLowerCorner(
+  static int findNearestLowerCorner(
       unsigned l, const Vec3D<NumericType> &pos,
       const std::unordered_map<unsigned, std::vector<SharpCornerNode>>
           &sharpCornerNodes) {
@@ -81,9 +81,9 @@ class ToMultiSurfaceMesh : public ToSurfaceMesh<NumericType, D> {
       unsigned node0 = line[0];
       unsigned node1 = line[1];
 
-      Vec3D<NumericType> pos0 = mesh->nodes[node0];
-      Vec3D<NumericType> pos1 = mesh->nodes[node1];
-      Vec3D<NumericType> lineVec = pos1 - pos0;
+      auto const &pos0 = mesh->nodes[node0];
+      auto const &pos1 = mesh->nodes[node1];
+      auto lineVec = pos1 - pos0;
 
       NumericType lineLen2 = 0;
       NumericType dot = 0;
@@ -268,6 +268,13 @@ public:
     const bool useMaterialMap = materialMap != nullptr;
     const bool sharpCorners = generateSharpCorners;
 
+    if (sharpCorners && D == 3) {
+      Logger::getInstance()
+          .addWarning("Sharp corner generation in 3D is experimental and may "
+                      "produce suboptimal meshes. Use with caution.")
+          .print();
+    }
+
     // an iterator for each level set
     std::vector<viennahrle::ConstSparseCellIterator<hrleDomainType>> cellIts;
     for (const auto &ls : levelSets)
@@ -407,7 +414,7 @@ public:
 
           // If sharp corners were generated, check if they should snap to
           // existing corners or split edges of previous materials
-          if (perfectCornerFound && !matSharpCornerNodes.empty()) {
+          if (D == 2 && perfectCornerFound && !matSharpCornerNodes.empty()) {
             snapSharpCorners(l, meshSizeBefore, sharpCornerNodes);
           }
         }
