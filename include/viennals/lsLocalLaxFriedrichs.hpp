@@ -86,7 +86,7 @@ public:
     T grad = 0.;
     T dissipation = 0.;
 
-    Vec3D<T> normalVector = {};
+    Vec3D<T> normalVector{};
     T normalModulus = 0;
 
     for (int i = 0; i < D; i++) { // iterate over dimensions
@@ -183,7 +183,7 @@ public:
     }
 
     // calculate alphas
-    T alpha[D] = {};
+    T alpha[D]{};
     {
       // alpha calculation is always on order 1 stencil
       const viennahrle::IndexType minIndex = -1;
@@ -192,11 +192,11 @@ public:
 
       viennahrle::Index<D> neighborIndex(minIndex);
       for (unsigned i = 0; i < numNeighbors; ++i) {
-        Vec3D<T> coords;
+        Vec3D<T> coords{};
         for (unsigned dir = 0; dir < D; ++dir) {
           coords[dir] = coordinate[dir] + neighborIndex[dir] * gridDelta;
         }
-        Vec3D<T> normal = {};
+        Vec3D<T> normal{};
         double normalModulus = 0.;
         auto center = neighborIterator.getNeighbor(neighborIndex).getValue();
         for (unsigned dir = 0; dir < D; ++dir) {

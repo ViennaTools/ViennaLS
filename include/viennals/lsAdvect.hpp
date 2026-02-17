@@ -24,7 +24,7 @@
 #include <lsLocalLaxFriedrichsAnalytical.hpp>
 #include <lsLocalLocalLaxFriedrichs.hpp>
 #include <lsStencilLocalLaxFriedrichsScalar.hpp>
-#include <lsWENO5.hpp>
+#include <lsWENO.hpp>
 
 // Include implementation of time integration schemes
 #include <lsAdvectIntegrationSchemes.hpp>
@@ -147,21 +147,18 @@ template <class T, int D> class Advect {
             // move neighborIterator to current position
             neighborIterator.goToIndicesSequential(indices);
 
-            Vec3D<T> coords;
+            Vec3D<T> coords{};
             for (unsigned i = 0; i < D; ++i) {
               coords[i] = indices[i] * gridDelta;
             }
 
-            Vec3D<T> normal = {};
+            Vec3D<T> normal{};
             T normalModulus = 0.;
             for (unsigned i = 0; i < D; ++i) {
               const T phiPos = neighborIterator.getNeighbor(i).getValue();
               const T phiNeg = neighborIterator.getNeighbor(i + D).getValue();
 
-              T diffPos = (phiPos - value) / deltaPos;
-              T diffNeg = (phiNeg - value) / deltaNeg;
-
-              normal[i] = (diffNeg + diffPos) * 0.5;
+              normal[i] = phiPos - phiNeg;
               normalModulus += normal[i] * normal[i];
             }
             normalModulus = std::sqrt(normalModulus);
@@ -659,10 +656,15 @@ template <class T, int D> class Advect {
       auto is = lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>(
           levelSets.back(), velocities, dissipationAlpha);
       currentTimeStep = integrateTime(is, maxTimeStep);
+    } else if (spatialScheme == SpatialSchemeEnum::WENO_3RD_ORDER) {
+      // Instantiate WENO with order 3
+      auto is = lsInternal::WENO<T, D, 3>(levelSets.back(), velocities,
+                                          dissipationAlpha);
+      currentTimeStep = integrateTime(is, maxTimeStep);
     } else if (spatialScheme == SpatialSchemeEnum::WENO_5TH_ORDER) {
-      // Instantiate WENO5 with order 3 (neighbors +/- 3)
-      auto is = lsInternal::WENO5<T, D, 3>(levelSets.back(), velocities,
-                                           dissipationAlpha);
+      // Instantiate WENO with order 5
+      auto is = lsInternal::WENO<T, D, 5>(levelSets.back(), velocities,
+                                          dissipationAlpha);
       currentTimeStep = integrateTime(is, maxTimeStep);
     } else {
       VIENNACORE_LOG_ERROR("Advect: Discretization scheme not found.");
@@ -993,9 +995,10 @@ public:
                SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
       lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>::prepareLS(
           levelSets.back());
+    } else if (spatialScheme == SpatialSchemeEnum::WENO_3RD_ORDER) {
+      lsInternal::WENO<T, D, 3>::prepareLS(levelSets.back());
     } else if (spatialScheme == SpatialSchemeEnum::WENO_5TH_ORDER) {
-      // WENO5 requires a stencil radius of 3 (template parameter 3)
-      lsInternal::WENO5<T, D, 3>::prepareLS(levelSets.back());
+      lsInternal::WENO<T, D, 5>::prepareLS(levelSets.back());
     } else {
       VIENNACORE_LOG_ERROR("Advect: Discretization scheme not found.");
     }

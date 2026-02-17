@@ -2,6 +2,7 @@
 #include <numeric>
 
 #include <lsAdvect.hpp>
+#include <lsCompareCriticalDimensions.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
@@ -45,7 +46,7 @@ public:
 int main() {
 
   constexpr int D = 3;
-  omp_set_num_threads(1);
+  omp_set_num_threads(8);
 
   double gridDelta = 0.6999999;
 
@@ -58,6 +59,7 @@ int main() {
       ls::SpatialSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER,
       ls::SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER,
       ls::SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER,
+      ls::SpatialSchemeEnum::WENO_3RD_ORDER,
       ls::SpatialSchemeEnum::WENO_5TH_ORDER};
 
   for (auto scheme : spatialSchemes) {
@@ -97,19 +99,47 @@ int main() {
     advectionKernel.setSaveAdvectionVelocities(true);
 
     double time = 0.;
-    for (unsigned i = 0; time < 1.0 && i < 1e2; ++i) {
+    for (unsigned i = 0; time < 1.0 && i < 50; ++i) {
       advectionKernel.apply();
       time += advectionKernel.getAdvectedTime();
 
-      std::string fileName = std::to_string(i) + ".vtp";
-      auto mesh = ls::Mesh<>::New();
-      ls::ToMesh<double, D>(sphere1, mesh).apply();
-      ls::VTKWriter<double>(mesh, "points_" + fileName).apply();
-      ls::ToSurfaceMesh<double, D>(sphere1, mesh).apply();
-      ls::VTKWriter(mesh, "surface_" + fileName).apply();
+      // std::string fileName = std::to_string(i) + ".vtp";
+      // auto mesh = ls::Mesh<>::New();
+      // ls::ToMesh<double, D>(sphere1, mesh).apply();
+      // ls::VTKWriter<double>(mesh, "points_" + fileName).apply();
+      // ls::ToSurfaceMesh<double, D>(sphere1, mesh).apply();
+      // ls::VTKWriter(mesh, "surface_" + fileName).apply();
     }
 
     LSTEST_ASSERT_VALID_LS(sphere1, double, D)
+
+    // Check critical dimensions against initial state
+    auto sphereRef = ls::Domain<double, D>::New(gridDelta);
+    ls::MakeGeometry<double, D>(sphereRef,
+                                ls::Sphere<double, D>::New(origin, radius))
+        .apply();
+
+    ls::CompareCriticalDimensions<double, D> compare(sphereRef, sphere1);
+    std::array<double, D> minB, maxB;
+    minB.fill(std::numeric_limits<double>::lowest());
+    maxB.fill(std::numeric_limits<double>::max());
+
+    // Measure Max X (Growth velocity ~3.3)
+    compare.addRange(0, minB, maxB, true);
+    // Measure Min X (Growth velocity ~1.5)
+    compare.addRange(0, minB, maxB, false);
+    // Measure Max Y (Growth velocity ~1.0)
+    compare.addRange(1, minB, maxB, true);
+
+    compare.apply();
+
+    double posRef, posSample, diffx, diffy, diffz;
+
+    compare.getCriticalDimensionResult(0, posRef, posSample, diffx);
+    compare.getCriticalDimensionResult(1, posRef, posSample, diffy);
+    compare.getCriticalDimensionResult(2, posRef, posSample, diffz);
+    // VC_TEST_ASSERT(diffx > 3.45 && diffx < 3.55 && diffy > 1.45 &&
+    //                diffy < 1.65 && diffz > 0.85 && diffz < 1.10);
   }
 
   // std::cout << sphere1->getNumberOfPoints() << std::endl;

@@ -339,7 +339,8 @@ private:
         continue;
 
       // Create points for target and sample positions
-      Vec3D<T> coordTarget = {0.0, 0.0, 0.0}, coordSample = {0.0, 0.0, 0.0};
+      Vec3D<T> coordTarget{};
+      Vec3D<T> coordSample{};
 
       for (int i = 0; i < D; ++i) {
         if (i == result.measureDimension) {

@@ -376,7 +376,8 @@ class SpatialSchemeEnum(enum.IntEnum):
     LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER: typing.ClassVar[SpatialSchemeEnum]  # value = <SpatialSchemeEnum.LOCAL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER: 5>
     LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER: typing.ClassVar[SpatialSchemeEnum]  # value = <SpatialSchemeEnum.LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER: 6>
     STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER: typing.ClassVar[SpatialSchemeEnum]  # value = <SpatialSchemeEnum.STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER: 9>
-    WENO_5TH_ORDER: typing.ClassVar[SpatialSchemeEnum]  # value = <SpatialSchemeEnum.WENO_5TH_ORDER: 10>
+    WENO_3RD_ORDER: typing.ClassVar[SpatialSchemeEnum]  # value = <SpatialSchemeEnum.WENO_3RD_ORDER: 10>
+    WENO_5TH_ORDER: typing.ClassVar[SpatialSchemeEnum]  # value = <SpatialSchemeEnum.WENO_5TH_ORDER: 11>
     @classmethod
     def __new__(cls, value):
         ...
@@ -538,6 +539,6 @@ class VoidTopSurfaceEnum(enum.IntEnum):
         """
 def setNumThreads(arg0: typing.SupportsInt) -> None:
     ...
-__version__: str = '5.4.0'
-version: str = '5.4.0'
+__version__: str = '5.5.0'
+version: str = '5.5.0'
 IntegrationSchemeEnum = SpatialSchemeEnum

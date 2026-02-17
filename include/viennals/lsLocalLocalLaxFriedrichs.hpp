@@ -64,7 +64,7 @@ public:
     T grad = 0.;
     T dissipation = 0.;
 
-    Vec3D<T> normalVector = {};
+    Vec3D<T> normalVector{};
     T normalModulus = 0;
 
     for (int i = 0; i < D; i++) { // iterate over dimensions

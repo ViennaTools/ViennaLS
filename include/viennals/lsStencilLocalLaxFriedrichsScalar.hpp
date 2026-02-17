@@ -46,7 +46,7 @@ class StencilLocalLaxFriedrichsScalar {
 
   // Final dissipation coefficients that are used by the time integrator. If
   // D==2 last entries are 0.
-  Vec3D<T> finalAlphas;
+  Vec3D<T> finalAlphas{};
   static constexpr unsigned numStencilPoints = hrleUtil::pow(2 * order + 1, D);
   static double maxDissipation; // default: std::numeric_limits<double>::max();
 
@@ -124,7 +124,7 @@ class StencilLocalLaxFriedrichsScalar {
   }
 
   Vec3D<T> calculateNormal(const viennahrle::Index<D> &offset) {
-    Vec3D<T> normal = {0.0, 0.0, 0.0};
+    Vec3D<T> normal{};
     constexpr int startIndex = -1;
     T modulus = 0.;
 
@@ -204,11 +204,7 @@ public:
                                   SmartPointer<viennals::VelocityField<T>> vel,
                                   double a = 1.0)
       : levelSet(passedlsDomain), velocities(vel),
-        neighborIterator(levelSet->getDomain()), alphaFactor(a) {
-    for (int i = 0; i < 3; ++i) {
-      finalAlphas[i] = 0;
-    }
-  }
+        neighborIterator(levelSet->getDomain()), alphaFactor(a) {}
 
   static void setMaxDissipation(double maxDiss) { maxDissipation = maxDiss; }
 
@@ -232,7 +228,7 @@ public:
     auto &grid = levelSet->getGrid();
     double gridDelta = grid.getGridDelta();
 
-    Vec3D<T> coordinate{0., 0., 0.};
+    Vec3D<T> coordinate{};
     for (unsigned i = 0; i < D; ++i) {
       coordinate[i] = indices[i] * gridDelta;
     }
@@ -243,7 +239,7 @@ public:
     // if there is a vector velocity, we need to project it onto a scalar
     // velocity first using its normal vector
     // /*if (vectorVelocity != Vec3D<T>({}))*/ {
-    Vec3D<T> normalVector;
+    Vec3D<T> normalVector{};
     T denominator = 0; // normal modulus
     for (unsigned i = 0; i < D; i++) {
       viennahrle::Index<D> neighborIndex(0);

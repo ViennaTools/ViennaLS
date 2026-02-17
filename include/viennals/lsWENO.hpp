@@ -14,34 +14,38 @@ namespace lsInternal {
 
 using namespace viennacore;
 
-/// Fifth-order Weighted Essentially Non-Oscillatory (WENO5) scheme.
+/// Weighted Essentially Non-Oscillatory (WENO) scheme.
 /// This kernel acts as the grid-interface for the mathematical logic
 /// defined in lsFiniteDifferences.hpp.
-template <class T, int D, int order = 3> class WENO5 {
+template <class T, int D, int order> class WENO {
+  static_assert(order == 3 || order == 5, "WENO order must be 3 or 5.");
+
   SmartPointer<viennals::Domain<T, D>> levelSet;
   SmartPointer<viennals::VelocityField<T>> velocities;
 
-  // Iterator depth: WENO5 needs 3 neighbors on each side.
-  viennahrle::SparseStarIterator<viennahrle::Domain<T, D>, order>
+  static constexpr int stencilRadius = (order + 1) / 2;
+
+  // Iterator depth: WENO needs stencilRadius neighbors on each side.
+  viennahrle::SparseStarIterator<viennahrle::Domain<T, D>, stencilRadius>
       neighborIterator;
 
   const bool calculateNormalVectors = true;
 
-  // Use the existing math engine with WENO5 scheme
-  using MathScheme = FiniteDifferences<T, DifferentiationSchemeEnum::WENO5>;
+  // Use the existing math engine with WENO scheme
+  using MathScheme =
+      FiniteDifferences<T, (order == 3) ? DifferentiationSchemeEnum::WENO3
+                                        : DifferentiationSchemeEnum::WENO5>;
 
   static T pow2(const T &value) { return value * value; }
 
 public:
   static void prepareLS(SmartPointer<viennals::Domain<T, D>> passedlsDomain) {
-    // WENO5 uses a 7-point stencil (radius 3).
-    // Ensure we expand enough layers to access neighbors at +/- 3.
-    static_assert(order >= 3, "WENO5 requires an iterator order of at least 3");
-    viennals::Expand<T, D>(passedlsDomain, 2 * order + 1).apply();
+    // Ensure we expand enough layers to access neighbors.
+    viennals::Expand<T, D>(passedlsDomain, 2 * stencilRadius + 1).apply();
   }
 
-  WENO5(SmartPointer<viennals::Domain<T, D>> passedlsDomain,
-        SmartPointer<viennals::VelocityField<T>> vel, bool calcNormal = true)
+  WENO(SmartPointer<viennals::Domain<T, D>> passedlsDomain,
+       SmartPointer<viennals::VelocityField<T>> vel, bool calcNormal = true)
       : levelSet(passedlsDomain), velocities(vel),
         neighborIterator(levelSet->getDomain()),
         calculateNormalVectors(calcNormal) {}
@@ -66,29 +70,23 @@ public:
     T wenoGradMinus[D]; // Approximates derivative from left (phi_x^-)
     T wenoGradPlus[D];  // Approximates derivative from right (phi_x^+)
 
-    // Array to hold the stencil values: [x-3, x-2, x-1, Center, x+1, x+2, x+3]
-    T stencil[7];
+    // Array to hold the stencil values
+    T stencil[2 * stencilRadius + 1];
 
     for (int i = 0; i < D; i++) {
       // 1. GATHER STENCIL
       // We map the SparseStarIterator (which uses encoded directions)
       // to the flat array expected by FiniteDifferences.
 
-      // Center (Index 3 in the size-7 array)
-      stencil[3] = neighborIterator.getCenter().getValue();
+      // Center
+      stencil[stencilRadius] = neighborIterator.getCenter().getValue();
 
-      // Neighbors +/- 1
-      stencil[4] = neighborIterator.getNeighbor(i).getValue();     // +1
-      stencil[2] = neighborIterator.getNeighbor(i + D).getValue(); // -1
-
-      // Neighbors +/- 2
-      // Note: SparseStarIterator encodes higher distances sequentially
-      stencil[5] = neighborIterator.getNeighbor(D * 2 + i).getValue();     // +2
-      stencil[1] = neighborIterator.getNeighbor(D * 2 + D + i).getValue(); // -2
-
-      // Neighbors +/- 3
-      stencil[6] = neighborIterator.getNeighbor(D * 4 + i).getValue();     // +3
-      stencil[0] = neighborIterator.getNeighbor(D * 4 + D + i).getValue(); // -3
+      for (int k = 1; k <= stencilRadius; ++k) {
+        stencil[stencilRadius + k] =
+            neighborIterator.getNeighbor((k - 1) * 2 * D + i).getValue();
+        stencil[stencilRadius - k] =
+            neighborIterator.getNeighbor((k - 1) * 2 * D + D + i).getValue();
+      }
 
       // 2. COMPUTE DERIVATIVES
       // Delegate the math to your existing library and store results
@@ -111,7 +109,7 @@ public:
     T vel_grad = 0.;
 
     // --- Standard Normal Vector Calculation (for velocity lookup) ---
-    Vec3D<T> normalVector = {};
+    Vec3D<T> normalVector{};
     if (calculateNormalVectors) {
       T denominator = 0;
       for (int i = 0; i < D; i++) {
@@ -119,7 +117,7 @@ public:
         // and robust for velocity direction lookup.
         T pos = neighborIterator.getNeighbor(i).getValue();
         T neg = neighborIterator.getNeighbor(i + D).getValue();
-        normalVector[i] = (pos - neg) * 0.5;
+        normalVector[i] = pos - neg;
         denominator += normalVector[i] * normalVector[i];
       }
       if (denominator > 0) {
@@ -163,14 +161,16 @@ public:
   }
 
   void reduceTimeStepHamiltonJacobi(double &MaxTimeStep,
-                                    double gridDelta) const {
-    // --- STABILITY IMPROVEMENT ---
-    // High-order schemes like WENO5 combined with simple time integration (like
-    // the likely Forward Euler used in Advect) can be less stable at CFL=0.5.
-    // We enforce a safety factor here to ensure robustness.
-    constexpr double wenoSafetyFactor = 0.5;
-    MaxTimeStep *= wenoSafetyFactor;
-  }
+                                    double gridDelta) const {}
+  //   // --- STABILITY IMPROVEMENT ---
+  //   // High-order schemes like WENO5 combined with simple time integration
+  //   (like
+  //   // the likely Forward Euler used in Advect) can be less stable at
+  //   CFL=0.5.
+  //   // We enforce a safety factor here to ensure robustness.
+  //   constexpr double wenoSafetyFactor = 0.5;
+  //   MaxTimeStep *= wenoSafetyFactor;
+  // }
 };
 
 } // namespace lsInternal

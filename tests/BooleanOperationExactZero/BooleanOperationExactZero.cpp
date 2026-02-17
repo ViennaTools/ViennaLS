@@ -76,8 +76,8 @@ int main() {
   // now make substrate ( plane ) at the same height as the bottom of the mask
   auto substrate = LSType::New(mask->getGrid());
   {
-    double origin[D] = {};
-    double normal[D] = {};
+    double origin[D]{};
+    double normal[D]{};
     origin[D - 1] = 1.;
     normal[D - 1] = 1.;
     ls::MakeGeometry(

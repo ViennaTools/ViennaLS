@@ -200,8 +200,7 @@ int main() {
     // Analytical velocity fields and dissipation coefficients
     // can only be used with this spatial discretization scheme
     advectionKernel.setSpatialScheme(
-        // ls::SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER);
-        ls::SpatialSchemeEnum::WENO_5TH_ORDER);
+        ls::SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER);
   } else {
     // for numerical velocities, just use the default
     // spatial discretization scheme, which is not accurate for certain
@@ -211,8 +210,8 @@ int main() {
     // For coordinate independent velocity functions
     // this numerical scheme is superior though.
     // However, it is slower.
-    // advectionKernel.setSpatialScheme(
-    //     ls::SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER);
+    advectionKernel.setSpatialScheme(
+        ls::SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER);
   }
 
   // advect the level set until 50s have passed

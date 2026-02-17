@@ -121,7 +121,7 @@ public:
 
     // Calculate normal vector for velocity calculation
     // use std::array since it will be exposed to interface
-    Vec3D<T> normalVector = {};
+    Vec3D<T> normalVector{};
     if (calculateNormalVectors) {
       T denominator = 0;
       for (int i = 0; i < D; i++) {

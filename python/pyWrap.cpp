@@ -103,6 +103,7 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
              SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER)
       .value("STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER",
              SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER)
+      .value("WENO_3RD_ORDER", SpatialSchemeEnum::WENO_3RD_ORDER)
       .value("WENO_5TH_ORDER", SpatialSchemeEnum::WENO_5TH_ORDER)
       .finalize();
 
@@ -135,6 +136,14 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
                                         "enum.IntEnum")
       .value("CURVATURE", FeatureDetectionEnum::CURVATURE)
       .value("NORMALS_ANGLE", FeatureDetectionEnum::NORMALS_ANGLE)
+      .finalize();
+
+  py::native_enum<NormalCalculationMethodEnum>(
+      module, "NormalCalculationMethodEnum", "enum.IntEnum")
+      .value("CENTRAL_DIFFERENCES",
+             NormalCalculationMethodEnum::CENTRAL_DIFFERENCES)
+      .value("ONE_SIDED_MIN_MOD",
+             NormalCalculationMethodEnum::ONE_SIDED_MIN_MOD)
       .finalize();
 
   py::native_enum<BoundaryConditionEnum>(module, "BoundaryConditionEnum",
