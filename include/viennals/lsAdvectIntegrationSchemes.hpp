@@ -69,7 +69,8 @@ template <class T, int D> struct AdvectTimeIntegration {
     }
     kernel.initialLevelSets.back()->deepCopy(kernel.levelSets.back());
 
-    // Save initial lower level sets only if Stage 1 will modify them (via callback)
+    // Save initial lower level sets only if Stage 1 will modify them (via
+    // callback)
     if (kernel.velocityUpdateCallback) {
       for (size_t i = 0; i < kernel.levelSets.size() - 1; ++i) {
         kernel.initialLevelSets[i]->deepCopy(kernel.levelSets[i]);

@@ -212,7 +212,8 @@ template <class T, int D> class Advect {
 
     bool movedDown = false;
 
-    viennals::BooleanOperation<T, D> op(levelSets.back(), initialLevelSets.back(),
+    viennals::BooleanOperation<T, D> op(levelSets.back(),
+                                        initialLevelSets.back(),
                                         viennals::BooleanOperationEnum::CUSTOM);
     op.setBooleanOperationComparator(
         [wTarget, wSource, &movedDown](const T &a, const T &b) {
