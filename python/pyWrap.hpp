@@ -1085,9 +1085,9 @@ template <int D> void bindApi(py::module &module) {
             bool valid =
                 self.getCriticalDimensionResult(index, posRef, posCmp, diff);
             if (valid) {
-              return py::make_tuple(true, posRef, posCmp, diff);
+              return std::make_tuple(true, posRef, posCmp, diff);
             } else {
-              return py::make_tuple(false, 0.0, 0.0, 0.0);
+              return std::make_tuple(false, 0.0, 0.0, 0.0);
             }
           },
           py::arg("index"),
