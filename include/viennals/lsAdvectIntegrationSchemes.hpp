@@ -61,12 +61,20 @@ template <class T, int D> struct AdvectTimeIntegration {
   static double evolveRungeKutta2(AdvectType &kernel, double maxTimeStep) {
     // TVD Runge-Kutta 2nd Order (Heun's Method)
 
-    // 1. Save u^n
-    if (kernel.originalLevelSet == nullptr) {
-      kernel.originalLevelSet =
-          viennals::Domain<T, D>::New(kernel.levelSets.back()->getGrid());
+    // Save initial level sets
+    if (kernel.initialLevelSets.size() != kernel.levelSets.size()) {
+      kernel.initialLevelSets.resize(kernel.levelSets.size());
+      for (auto &ls : kernel.initialLevelSets)
+        ls = viennals::Domain<T, D>::New(kernel.levelSets[0]->getGrid());
     }
-    kernel.originalLevelSet->deepCopy(kernel.levelSets.back());
+    kernel.initialLevelSets.back()->deepCopy(kernel.levelSets.back());
+
+    // Save initial lower level sets only if Stage 1 will modify them (via callback)
+    if (kernel.velocityUpdateCallback) {
+      for (size_t i = 0; i < kernel.levelSets.size() - 1; ++i) {
+        kernel.initialLevelSets[i]->deepCopy(kernel.levelSets[i]);
+      }
+    }
 
     // Stage 1: u^(1) = u^n + dt * L(u^n)
     // Update lower layers only if we have a callback
@@ -85,18 +93,29 @@ template <class T, int D> struct AdvectTimeIntegration {
     double dt2 = evolveForwardEuler(kernel, dt1, false);
 
     // Combine: u^(n+1) = 0.5 * u^n + 0.5 * u*
-    kernel.combineLevelSets(0.5, 0.5);
+    bool etched = kernel.combineLevelSets(0.5, 0.5);
+
+    // Restore lower level sets if etched.
+    if (etched && kernel.velocityUpdateCallback) {
+      for (size_t i = 0; i < kernel.levelSets.size() - 1; ++i) {
+        kernel.levelSets[i]->deepCopy(kernel.initialLevelSets[i]);
+      }
+    }
+    kernel.adjustLowerLayers();
 
     return 0.5 * dt1 + 0.5 * dt2;
   }
 
   static double evolveRungeKutta3(AdvectType &kernel, double maxTimeStep) {
-    // 1. Save u^n (Deep copy to preserve topology)
-    if (kernel.originalLevelSet == nullptr) {
-      kernel.originalLevelSet =
-          viennals::Domain<T, D>::New(kernel.levelSets.back()->getGrid());
+    // Save initial level sets
+    if (kernel.initialLevelSets.size() != kernel.levelSets.size()) {
+      kernel.initialLevelSets.resize(kernel.levelSets.size());
+      for (auto &ls : kernel.initialLevelSets)
+        ls = viennals::Domain<T, D>::New(kernel.levelSets[0]->getGrid());
     }
-    kernel.originalLevelSet->deepCopy(kernel.levelSets.back());
+    for (size_t i = 0; i < kernel.levelSets.size(); ++i) {
+      kernel.initialLevelSets[i]->deepCopy(kernel.levelSets[i]);
+    }
 
     // Stage 1: u^(1) = u^n + dt * L(u^n)
     // This calculates dt based on u^n and advances to u^1.
@@ -112,8 +131,18 @@ template <class T, int D> struct AdvectTimeIntegration {
     // Stage 2: u^(2) = 3/4 u^n + 1/4 (u^(1) + dt * L(u^(1)))
     // u* = u^(1) + dt * L(u^(1))
     double dt2 = evolveForwardEuler(kernel, dt1, false);
+
     // Combine to get u^(2) = 0.75 * u^n + 0.25 * u*.
-    kernel.combineLevelSets(0.75, 0.25);
+    bool etched1 = kernel.combineLevelSets(0.75, 0.25);
+
+    // Restore lower level sets if etched
+    if (etched1 && kernel.velocityUpdateCallback) {
+      for (size_t i = 0; i < kernel.levelSets.size() - 1; ++i) {
+        kernel.levelSets[i]->deepCopy(kernel.initialLevelSets[i]);
+      }
+    }
+
+    kernel.adjustLowerLayers();
 
     if (kernel.velocityUpdateCallback) {
       kernel.velocityUpdateCallback(kernel.levelSets.back());
@@ -124,7 +153,15 @@ template <class T, int D> struct AdvectTimeIntegration {
     double dt3 = evolveForwardEuler(kernel, dt1, false);
 
     // Combine to get u^(n+1) = 1/3 * u^n + 2/3 * u**.
-    kernel.combineLevelSets(1.0 / 3.0, 2.0 / 3.0);
+    bool etched2 = kernel.combineLevelSets(1.0 / 3.0, 2.0 / 3.0);
+
+    // Restore lower level sets if etched.
+    if (etched2) {
+      for (size_t i = 0; i < kernel.levelSets.size() - 1; ++i) {
+        kernel.levelSets[i]->deepCopy(kernel.initialLevelSets[i]);
+      }
+    }
+    kernel.adjustLowerLayers();
 
     return (dt1 + dt2 + 4.0 * dt3) / 6.0;
   }

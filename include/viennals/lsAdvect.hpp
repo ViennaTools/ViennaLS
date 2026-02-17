@@ -78,7 +78,7 @@ template <class T, int D> class Advect {
   bool adaptiveTimeStepping = false;
   unsigned adaptiveTimeStepSubdivisions = 20;
   static constexpr double wrappingLayerEpsilon = 1e-4;
-  SmartPointer<Domain<T, D>> originalLevelSet = nullptr;
+  std::vector<SmartPointer<Domain<T, D>>> initialLevelSets;
   std::function<bool(SmartPointer<Domain<T, D>>)> velocityUpdateCallback =
       nullptr;
 
@@ -196,7 +196,7 @@ template <class T, int D> class Advect {
 
   // Helper function for linear combination:
   // target = wTarget * target + wSource * source
-  void combineLevelSets(T wTarget, T wSource) {
+  bool combineLevelSets(T wTarget, T wSource) {
     // Calculate required expansion width based on CFL and RK steps
     int steps = 1;
     if (temporalScheme == TemporalSchemeEnum::RUNGE_KUTTA_2ND_ORDER) {
@@ -208,15 +208,20 @@ template <class T, int D> class Advect {
     // Expand both level sets to ensure sufficient overlap
     int expansionWidth = std::ceil(2.0 * steps * timeStepRatio + 1);
     viennals::Expand<T, D>(levelSets.back(), expansionWidth).apply();
-    viennals::Expand<T, D>(originalLevelSet, expansionWidth).apply();
+    viennals::Expand<T, D>(initialLevelSets.back(), expansionWidth).apply();
 
-    viennals::BooleanOperation<T, D> op(levelSets.back(), originalLevelSet,
+    bool movedDown = false;
+
+    viennals::BooleanOperation<T, D> op(levelSets.back(), initialLevelSets.back(),
                                         viennals::BooleanOperationEnum::CUSTOM);
     op.setBooleanOperationComparator(
-        [wTarget, wSource](const T &a, const T &b) {
+        [wTarget, wSource, &movedDown](const T &a, const T &b) {
           if (a != Domain<T, D>::POS_VALUE && a != Domain<T, D>::NEG_VALUE &&
               b != Domain<T, D>::POS_VALUE && b != Domain<T, D>::NEG_VALUE) {
-            return std::make_pair(wSource * a + wTarget * b, true);
+            T res = wSource * a + wTarget * b;
+            if (res > b)
+              movedDown = true;
+            return std::make_pair(res, true);
           }
           if (a == Domain<T, D>::POS_VALUE || a == Domain<T, D>::NEG_VALUE)
             return std::make_pair(a, false);
@@ -225,7 +230,8 @@ template <class T, int D> class Advect {
     op.apply();
 
     rebuildLS();
-    adjustLowerLayers();
+
+    return movedDown;
   }
 
   void rebuildLS() {
