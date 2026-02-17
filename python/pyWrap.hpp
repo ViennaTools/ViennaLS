@@ -1080,15 +1080,13 @@ template <int D> void bindApi(py::module &module) {
            "Get the number of critical dimensions compared.")
       .def(
           "getCriticalDimensionResult",
-          [](CompareCriticalDimensions<T, D> &self, size_t index) {
-            T posRef, posCmp, diff;
+          [](CompareCriticalDimensions<T, D> &self, size_t index) -> py::tuple {
+            T posRef{}, posCmp{}, diff{};
             bool valid =
                 self.getCriticalDimensionResult(index, posRef, posCmp, diff);
-            if (valid) {
-              return std::make_tuple(true, posRef, posCmp, diff);
-            } else {
-              return std::make_tuple(false, 0.0, 0.0, 0.0);
-            }
+            if (valid)
+              return py::make_tuple(true, posRef, posCmp, diff);
+            return py::make_tuple(false, T(0), T(0), T(0));
           },
           py::arg("index"),
           "Get a specific critical dimension result. Returns (valid, "
