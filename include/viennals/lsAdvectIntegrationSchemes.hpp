@@ -42,7 +42,8 @@ namespace lsInternal {
 template <class T, int D> struct AdvectTimeIntegration {
   using AdvectType = viennals::Advect<T, D>;
 
-  static double evolveForwardEuler(AdvectType &kernel, double maxTimeStep) {
+  static double evolveForwardEuler(AdvectType &kernel, double maxTimeStep,
+                                   bool updateLowerLayers = true) {
     if (kernel.currentTimeStep < 0. || kernel.storedRates.empty())
       kernel.computeRates(maxTimeStep);
 
@@ -50,102 +51,81 @@ template <class T, int D> struct AdvectTimeIntegration {
 
     kernel.rebuildLS();
 
-    kernel.adjustLowerLayers();
+    if (updateLowerLayers)
+      kernel.adjustLowerLayers();
 
     return kernel.currentTimeStep;
   }
 
   static double evolveRungeKutta2(AdvectType &kernel, double maxTimeStep) {
     // TVD Runge-Kutta 2nd Order (Heun's Method)
-    // 1. Determine time step
-    kernel.computeRates(maxTimeStep);
-    const double dt = kernel.getCurrentTimeStep();
 
-    // 2. Save u^n
+    // 1. Save u^n
     if (kernel.originalLevelSet == nullptr) {
       kernel.originalLevelSet =
           viennals::Domain<T, D>::New(kernel.levelSets.back()->getGrid());
     }
     kernel.originalLevelSet->deepCopy(kernel.levelSets.back());
 
-    if (dt <= 0)
-      return 0.;
-
     // Stage 1: u^(1) = u^n + dt * L(u^n)
-    kernel.updateLevelSet(dt);
+    // Update lower layers only if we have a callback
+    double dt1 = evolveForwardEuler(kernel, maxTimeStep,
+                                    kernel.velocityUpdateCallback != nullptr);
+
+    if (dt1 <= 0.)
+      return 0.;
 
     if (kernel.velocityUpdateCallback)
       kernel.velocityUpdateCallback(kernel.levelSets.back());
 
     // Stage 2: u^(n+1) = 1/2 u^n + 1/2 (u^(1) + dt * L(u^(1)))
     // Current level set is u^(1). Compute L(u^(1)).
-    kernel.computeRates(dt);
     // Update to u* = u^(1) + dt * L(u^(1))
-    kernel.updateLevelSet(dt);
+    double dt2 = evolveForwardEuler(kernel, dt1, false);
+
     // Combine: u^(n+1) = 0.5 * u^n + 0.5 * u*
     kernel.combineLevelSets(0.5, 0.5);
 
-    // If we are in single step mode, the level set will be rebuilt immediately
-    // after this, invalidating the velocity field. Thus, we skip the update.
-    if (kernel.velocityUpdateCallback && !kernel.performOnlySingleStep)
-      kernel.velocityUpdateCallback(kernel.levelSets.back());
-
-    // Finalize
-    kernel.rebuildLS();
-
-    kernel.adjustLowerLayers();
-
-    return dt;
+    return 0.5 * dt1 + 0.5 * dt2;
   }
 
   static double evolveRungeKutta3(AdvectType &kernel, double maxTimeStep) {
-    // 1. Determine the single time step 'dt' for all stages.
-    kernel.computeRates(maxTimeStep);
-    const double dt = kernel.getCurrentTimeStep();
-
-    // 2. Save u^n (Deep copy to preserve topology)
+    // 1. Save u^n (Deep copy to preserve topology)
     if (kernel.originalLevelSet == nullptr) {
       kernel.originalLevelSet =
           viennals::Domain<T, D>::New(kernel.levelSets.back()->getGrid());
     }
     kernel.originalLevelSet->deepCopy(kernel.levelSets.back());
 
-    // If dt is 0 or negative, no advection is possible or needed.
-    if (dt <= 0)
-      return 0.;
-
     // Stage 1: u^(1) = u^n + dt * L(u^n)
-    kernel.updateLevelSet(dt);
+    // This calculates dt based on u^n and advances to u^1.
+    double dt1 = evolveForwardEuler(kernel, maxTimeStep,
+                                    kernel.velocityUpdateCallback != nullptr);
+
+    if (dt1 <= 0.)
+      return 0.;
 
     if (kernel.velocityUpdateCallback)
       kernel.velocityUpdateCallback(kernel.levelSets.back());
 
     // Stage 2: u^(2) = 3/4 u^n + 1/4 (u^(1) + dt * L(u^(1)))
-    kernel.computeRates(dt);
-    kernel.updateLevelSet(dt);
+    // u* = u^(1) + dt * L(u^(1))
+    double dt2 = evolveForwardEuler(kernel, dt1, false);
     // Combine to get u^(2) = 0.75 * u^n + 0.25 * u*.
     kernel.combineLevelSets(0.75, 0.25);
 
-    if (kernel.velocityUpdateCallback)
+    if (kernel.velocityUpdateCallback) {
       kernel.velocityUpdateCallback(kernel.levelSets.back());
+    }
 
     // Stage 3: u^(n+1) = 1/3 u^n + 2/3 (u^(2) + dt * L(u^(2)))
-    kernel.computeRates(dt);
-    kernel.updateLevelSet(dt);
+    // u** = u^(2) + dt * L(u^(2))
+    double dt3 = evolveForwardEuler(kernel, dt1, false);
+
     // Combine to get u^(n+1) = 1/3 * u^n + 2/3 * u**.
     kernel.combineLevelSets(1.0 / 3.0, 2.0 / 3.0);
 
-    // If we are in single step mode, the level set will be rebuilt immediately
-    // after this, invalidating the velocity field. Thus, we skip the update.
-    if (kernel.velocityUpdateCallback && !kernel.performOnlySingleStep)
-      kernel.velocityUpdateCallback(kernel.levelSets.back());
-
-    // Finalize: Re-segment and renormalize the final result.
-    kernel.rebuildLS();
-
-    kernel.adjustLowerLayers();
-
-    return dt;
+    return (dt1 + dt2 + 4.0 * dt3) / 6.0;
   }
 };
 
