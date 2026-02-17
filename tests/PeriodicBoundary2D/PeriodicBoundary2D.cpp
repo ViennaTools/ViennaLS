@@ -109,7 +109,11 @@ int main() {
         ls::SmartPointer<ls::Box<double, D>>::New(lowerCorner, upperCorner))
         .apply();
     auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
-    ls::ToSurfaceMesh<double, D>(pillar, mesh).apply();
+    {
+      ls::ToSurfaceMesh<double, D> toSurfaceMesh(pillar, mesh);
+      toSurfaceMesh.setSharpCorners(true);
+      toSurfaceMesh.apply();
+    }
     ls::VTKWriter<double>(mesh, ls::FileFormatEnum::VTP, "pillar.vtp").apply();
     ls::BooleanOperation<double, D> boolOp(substrate, pillar,
                                            ls::BooleanOperationEnum::UNION);
@@ -135,7 +139,11 @@ int main() {
       std::cout << "\rAdvection step " + std::to_string(i) + " / "
                 << numberOfSteps << std::flush;
       auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
-      ls::ToSurfaceMesh<double, D>(substrate, mesh).apply();
+      {
+        ls::ToSurfaceMesh<double, D> toSurfaceMesh(substrate, mesh);
+        toSurfaceMesh.setSharpCorners(true);
+        toSurfaceMesh.apply();
+      }
       ls::VTKWriter<double>(mesh, ls::FileFormatEnum::VTP,
                             "pillar-" + std::to_string(i) + ".vtp")
           .apply();

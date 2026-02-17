@@ -117,7 +117,7 @@ public:
         // and robust for velocity direction lookup.
         T pos = neighborIterator.getNeighbor(i).getValue();
         T neg = neighborIterator.getNeighbor(i + D).getValue();
-        normalVector[i] = (pos - neg) * 0.5;
+        normalVector[i] = pos - neg;
         denominator += normalVector[i] * normalVector[i];
       }
       if (denominator > 0) {

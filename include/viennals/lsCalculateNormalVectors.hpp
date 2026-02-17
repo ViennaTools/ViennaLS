@@ -17,6 +17,11 @@ namespace viennals {
 
 using namespace viennacore;
 
+enum class NormalCalculationMethodEnum {
+  CENTRAL_DIFFERENCES,
+  ONE_SIDED_MIN_MOD
+};
+
 /// This algorithm is used to compute the normal vectors for all points
 /// with level set values <= maxValue (default 0.5). The result is saved in
 /// the lsPointData of the lsDomain and can be retrieved with
@@ -35,6 +40,8 @@ using namespace viennacore;
 template <class T, int D> class CalculateNormalVectors {
   SmartPointer<Domain<T, D>> levelSet = nullptr;
   T maxValue = 0.5;
+  NormalCalculationMethodEnum method =
+      NormalCalculationMethodEnum::CENTRAL_DIFFERENCES;
 
   // Constants for calculation
   static constexpr T DEFAULT_MAX_VALUE = 0.5;
@@ -47,8 +54,11 @@ public:
   CalculateNormalVectors() = default;
 
   CalculateNormalVectors(SmartPointer<Domain<T, D>> passedLevelSet,
-                         T passedMaxValue = DEFAULT_MAX_VALUE)
-      : levelSet(passedLevelSet), maxValue(passedMaxValue) {}
+                         T passedMaxValue = DEFAULT_MAX_VALUE,
+                         NormalCalculationMethodEnum passedMethod =
+                             NormalCalculationMethodEnum::CENTRAL_DIFFERENCES)
+      : levelSet(passedLevelSet), maxValue(passedMaxValue),
+        method(passedMethod) {}
 
   void setLevelSet(SmartPointer<Domain<T, D>> passedLevelSet) {
     levelSet = passedLevelSet;
@@ -64,6 +74,10 @@ public:
     } else {
       maxValue = passedMaxValue;
     }
+  }
+
+  void setMethod(NormalCalculationMethodEnum passedMethod) {
+    method = passedMethod;
   }
 
   SmartPointer<Domain<T, D>> getLevelSet() const { return levelSet; }
@@ -85,6 +99,18 @@ public:
       return;
     }
 
+    switch (method) {
+    case NormalCalculationMethodEnum::CENTRAL_DIFFERENCES:
+      calculateCentralDifferences();
+      break;
+    case NormalCalculationMethodEnum::ONE_SIDED_MIN_MOD:
+      calculateOneSidedMinMod();
+      break;
+    }
+  }
+
+private:
+  void calculateCentralDifferences() {
     if (levelSet->getLevelSetWidth() < (maxValue * 4) + 1) {
       VIENNACORE_LOG_WARNING("CalculateNormalVectors: Level set width must be "
                              "greater than " +
@@ -143,8 +169,12 @@ public:
 
         T denominator = 0;
         for (int i = 0; i < D; i++) {
-          T pos = neighborIt.getNeighbor(i).getValue() - center.getValue();
-          T neg = center.getValue() - neighborIt.getNeighbor(i + D).getValue();
+          viennahrle::Index<D> posIdx(0);
+          posIdx[i] = 1;
+          viennahrle::Index<D> negIdx(0);
+          negIdx[i] = -1;
+          T pos = neighborIt.getNeighbor(posIdx).getValue() - center.getValue();
+          T neg = center.getValue() - neighborIt.getNeighbor(negIdx).getValue();
           n[i] = (pos + neg) * FINITE_DIFF_FACTOR;
           denominator += n[i] * n[i];
         }
@@ -165,7 +195,105 @@ public:
         normalVectors.push_back(n);
       }
     }
+    insertIntoPointData(normalVectorsVector);
+  }
 
+  void calculateOneSidedMinMod() {
+    // This method does not require expansion, since it is robust to missing
+    // neighbors.
+    auto &domain = levelSet->getDomain();
+    auto &grid = levelSet->getGrid();
+
+    // Directly write to a single vector indexed by point ID.
+    // This is thread-safe since each thread works on a distinct range of
+    // points.
+    std::vector<Vec3D<T>> normalVectors(levelSet->getNumberOfPoints());
+
+#pragma omp parallel num_threads(levelSet->getNumberOfSegments())
+    {
+      int p = 0;
+#ifdef _OPENMP
+      p = omp_get_thread_num();
+#endif
+
+      viennahrle::Index<D> startVector =
+          (p == 0) ? grid.getMinGridPoint()
+                   : levelSet->getDomain().getSegmentation()[p - 1];
+      viennahrle::Index<D> endVector =
+          (p != static_cast<int>(levelSet->getNumberOfSegments() - 1))
+              ? levelSet->getDomain().getSegmentation()[p]
+              : grid.incrementIndices(grid.getMaxGridPoint());
+
+      viennahrle::SparseStarIterator<typename Domain<T, D>::DomainType, 1>
+          neighborIt(domain, startVector);
+
+      for (; neighborIt.getIndices() < endVector; neighborIt.next()) {
+        if (neighborIt.getCenter().isDefined()) {
+          Vec3D<T> grad{};
+          for (int i = 0; i < D; ++i) {
+            viennahrle::Index<D> posIdx(0);
+            posIdx[i] = 1;
+            viennahrle::Index<D> negIdx(0);
+            negIdx[i] = -1;
+            bool negDefined = neighborIt.getNeighbor(negIdx).isDefined();
+            bool posDefined = neighborIt.getNeighbor(posIdx).isDefined();
+
+            if (negDefined && posDefined) {
+              T valNeg = neighborIt.getNeighbor(negIdx).getValue();
+              T valCenter = neighborIt.getCenter().getValue();
+              T valPos = neighborIt.getNeighbor(posIdx).getValue();
+
+              const bool centerSign = valCenter >= 0;
+              const bool negSign = valNeg > 0;
+              const bool posSign = valPos > 0;
+
+              const T d_neg = valCenter - valNeg;
+              const T d_pos = valPos - valCenter;
+
+              if (centerSign != negSign && centerSign != posSign) {
+                // Center is an extremum, use minmod to be safe
+                grad[i] = 0.;
+                // (std::abs(d_pos) < std::abs(d_neg)) ? d_pos : d_neg;
+              } else if (centerSign != negSign) {
+                // Interface is on the negative side, use backward difference
+                grad[i] = d_neg;
+              } else if (centerSign != posSign) {
+                // Interface is on the positive side, use forward difference
+                grad[i] = d_pos;
+              } else {
+                // No sign change, use minmod to handle sharp features smoothly
+                grad[i] = (std::abs(d_pos) < std::abs(d_neg)) ? d_pos : d_neg;
+              }
+            } else if (negDefined) {
+              grad[i] = (neighborIt.getCenter().getValue() -
+                         neighborIt.getNeighbor(negIdx).getValue());
+            } else if (posDefined) {
+              grad[i] = (neighborIt.getNeighbor(posIdx).getValue() -
+                         neighborIt.getCenter().getValue());
+            } else {
+              grad[i] = 0;
+            }
+          }
+          Normalize(grad);
+          normalVectors[neighborIt.getCenter().getPointId()] = grad;
+        }
+      }
+    }
+
+    // insert into pointData of levelSet
+    auto &pointData = levelSet->getPointData();
+    auto vectorDataPointer = pointData.getVectorData(normalVectorsLabel, true);
+    // if it does not exist, insert new normals vector
+    if (vectorDataPointer == nullptr) {
+      pointData.insertNextVectorData(normalVectors, normalVectorsLabel);
+    } else {
+      // if it does exist, just swap the old with the new values
+      *vectorDataPointer = std::move(normalVectors);
+    }
+  }
+
+  void
+  insertIntoPointData(std::vector<std::vector<Vec3D<T>>> &normalVectorsVector) {
     // copy all normals
     unsigned numberOfNormals = 0;
     for (unsigned i = 0; i < levelSet->getNumberOfSegments(); ++i) {
