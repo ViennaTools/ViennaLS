@@ -564,14 +564,16 @@ template <class T, int D> class Advect {
             } else {
               // Sub-case 3b: Interface Interaction
               auto adaptiveFactor = 1.0 / adaptiveTimeStepSubdivisions;
-              if (useAdaptiveTimeStepping && difference > 0.2 * cfl) {
+              // Use adaptiveFactor as threshold.
+              if (useAdaptiveTimeStepping && difference > adaptiveFactor * cfl) {
                 // Adaptive Sub-stepping:
                 // Approaching boundary: Force small steps to gather
                 // flux statistics and prevent numerical overshoot ("Soft
                 // Landing").
                 maxStepTime -= adaptiveFactor * cfl / velocity;
                 tempRates.push_back(std::make_pair(
-                    gradNDissipation, std::numeric_limits<T>::min()));
+                    gradNDissipation, std::numeric_limits<T>::max()));
+                break;
               } else {
                 // Terminal Step:
                 // Within tolerance: Snap to boundary, consume budget, and
