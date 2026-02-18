@@ -565,7 +565,8 @@ template <class T, int D> class Advect {
               // Sub-case 3b: Interface Interaction
               auto adaptiveFactor = 1.0 / adaptiveTimeStepSubdivisions;
               // Use adaptiveFactor as threshold.
-              if (useAdaptiveTimeStepping && difference > adaptiveFactor * cfl) {
+              if (useAdaptiveTimeStepping &&
+                  difference > adaptiveFactor * cfl) {
                 // Adaptive Sub-stepping:
                 // Approaching boundary: Force small steps to gather
                 // flux statistics and prevent numerical overshoot ("Soft
