@@ -50,7 +50,7 @@ int main() {
   omp_set_num_threads(1);
 
   constexpr int D = 2;
-  double gridDelta = 0.39;
+  double gridDelta = 0.59;
 
   double extent = 10;
   double bounds[2 * D] = {-extent, extent, -extent, extent};
@@ -150,7 +150,7 @@ int main() {
 
   double etchTime = 10.5;
 
-  for (int i = 0; i < 5; ++i) {
+  for (int i = 0; i < 3; ++i) {
     auto m = ls::Domain<double, D>::New(mask);
     auto s = ls::Domain<double, D>::New(substrate);
     auto p = ls::Domain<double, D>::New(polymer);
@@ -182,7 +182,7 @@ int main() {
         .apply();
   }
 
-  for (int i = 0; i < 5; ++i) {
+  for (int i = 0; i < 3; ++i) {
     auto m = ls::Domain<double, D>::New(mask);
     auto s = ls::Domain<double, D>::New(substrate);
     auto p = ls::Domain<double, D>::New(polymer);
@@ -215,7 +215,7 @@ int main() {
     }
   }
 
-  {
+  if constexpr (false) {
     auto m = ls::Domain<double, D>::New(mask);
     auto s = ls::Domain<double, D>::New(substrate);
     auto p = ls::Domain<double, D>::New(polymer);
@@ -248,5 +248,6 @@ int main() {
       i++;
     }
   }
+
   return 0;
 }

@@ -452,6 +452,7 @@ template <class T, int D> class Advect {
     }
     const bool ignoreVoidPoints = ignoreVoids;
     const bool useAdaptiveTimeStepping = adaptiveTimeStepping;
+    const auto adaptiveFactor = 1.0 / adaptiveTimeStepSubdivisions;
 
     if (!storedRates.empty()) {
       VIENNACORE_LOG_WARNING("Advect: Overwriting previously stored rates.");
@@ -475,8 +476,9 @@ template <class T, int D> class Advect {
               : grid.incrementIndices(grid.getMaxGridPoint());
 
       double tempMaxTimeStep = maxTimeStep;
-      auto &tempRates = storedRates[p];
-      tempRates.reserve(
+      // store the rates and value of underneath LS for this segment
+      auto &rates = storedRates[p];
+      rates.reserve(
           topDomain.getNumberOfPoints() /
               static_cast<double>((levelSets.back())->getNumberOfSegments()) +
           10);
@@ -529,15 +531,14 @@ template <class T, int D> class Advect {
             // Case 1: Growth / Deposition (Velocity > 0)
             // Limit the time step based on the standard CFL condition.
             maxStepTime += cfl / velocity;
-            tempRates.push_back(std::make_pair(gradNDissipation,
-                                               -std::numeric_limits<T>::max()));
+            rates.emplace_back(gradNDissipation,
+                               -std::numeric_limits<T>::max());
             break;
           } else if (velocity == 0.) {
             // Case 2: Static (Velocity == 0)
             // No time step limit imposed by this point.
             maxStepTime = std::numeric_limits<T>::max();
-            tempRates.push_back(std::make_pair(gradNDissipation,
-                                               std::numeric_limits<T>::max()));
+            rates.emplace_back(gradNDissipation, std::numeric_limits<T>::max());
             break;
           } else {
             // Case 3: Etching (Velocity < 0)
@@ -557,13 +558,11 @@ template <class T, int D> class Advect {
               // Sub-case 3a: Standard Advection
               // Far from interface: Use full CFL time step.
               maxStepTime -= cfl / velocity;
-              tempRates.push_back(std::make_pair(
-                  gradNDissipation, std::numeric_limits<T>::max()));
+              rates.emplace_back(gradNDissipation,
+                                 std::numeric_limits<T>::max());
               break;
-
             } else {
               // Sub-case 3b: Interface Interaction
-              auto adaptiveFactor = 1.0 / adaptiveTimeStepSubdivisions;
               // Use adaptiveFactor as threshold.
               if (useAdaptiveTimeStepping &&
                   difference > adaptiveFactor * cfl) {
@@ -572,18 +571,17 @@ template <class T, int D> class Advect {
                 // flux statistics and prevent numerical overshoot ("Soft
                 // Landing").
                 maxStepTime -= adaptiveFactor * cfl / velocity;
-                tempRates.push_back(std::make_pair(
-                    gradNDissipation, std::numeric_limits<T>::max()));
+                rates.emplace_back(gradNDissipation,
+                                   std::numeric_limits<T>::max());
                 break;
               } else {
                 // Terminal Step:
                 // Within tolerance: Snap to boundary, consume budget, and
                 // switch material.
-                tempRates.push_back(
-                    std::make_pair(gradNDissipation, valueBelow));
                 cfl -= difference;
                 value = valueBelow;
                 maxStepTime -= difference / velocity;
+                rates.emplace_back(gradNDissipation, valueBelow);
               }
             }
           }
@@ -737,7 +735,8 @@ template <class T, int D> class Advect {
         // set the LS value to the one below
         auto const [gradient, dissipation] = itRS->first;
         T velocity = gradient - dissipation;
-        // check if dissipation is too high
+        // check if dissipation is too high and would cause a change in
+        // direction of the velocity
         if (checkDiss && (gradient < 0 && velocity > 0) ||
             (gradient > 0 && velocity < 0)) {
           velocity = 0;
