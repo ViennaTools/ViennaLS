@@ -5,11 +5,11 @@ from __future__ import annotations
 import collections.abc
 import enum
 import typing
-from viennals import d2
 import viennals.d2
+from viennals import d2
 from viennals import d3
 import viennals.d3
-__all__: list[str] = ['BooleanOperationEnum', 'BoundaryConditionEnum', 'CurvatureEnum', 'Extrude', 'FeatureDetectionEnum', 'FileFormatEnum', 'IntegrationSchemeEnum', 'LogLevel', 'Logger', 'MaterialMap', 'Mesh', 'PointData', 'Slice', 'SpatialSchemeEnum', 'TemporalSchemeEnum', 'TransformEnum', 'TransformMesh', 'VTKReader', 'VTKRenderWindow', 'VTKWriter', 'VelocityField', 'VoidTopSurfaceEnum', 'd2', 'd3', 'setNumThreads', 'version']
+__all__: list[str] = ['BooleanOperationEnum', 'BoundaryConditionEnum', 'CurvatureEnum', 'Extrude', 'FeatureDetectionEnum', 'FileFormatEnum', 'IntegrationSchemeEnum', 'LogLevel', 'Logger', 'MaterialMap', 'Mesh', 'NormalCalculationMethodEnum', 'PointData', 'Slice', 'SpatialSchemeEnum', 'TemporalSchemeEnum', 'TransformEnum', 'TransformMesh', 'VTKReader', 'VTKRenderWindow', 'VTKWriter', 'VelocityField', 'VoidTopSurfaceEnum', 'd2', 'd3', 'setNumThreads', 'version']
 class BooleanOperationEnum(enum.IntEnum):
     INTERSECT: typing.ClassVar[BooleanOperationEnum]  # value = <BooleanOperationEnum.INTERSECT: 0>
     INVERT: typing.ClassVar[BooleanOperationEnum]  # value = <BooleanOperationEnum.INVERT: 3>
@@ -51,7 +51,7 @@ class Extrude:
     def __init__(self) -> None:
         ...
     @typing.overload
-    def __init__(self, arg0: viennals.d2.Domain, arg1: viennals.d3.Domain, arg2: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(2)"], arg3: typing.SupportsInt, arg4: typing.Annotated[collections.abc.Sequence[BoundaryConditionEnum], "FixedSize(3)"]) -> None:
+    def __init__(self, arg0: viennals.d2.Domain, arg1: viennals.d3.Domain, arg2: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(2)"], arg3: typing.SupportsInt | typing.SupportsIndex, arg4: typing.Annotated[collections.abc.Sequence[BoundaryConditionEnum], "FixedSize(3)"]) -> None:
         ...
     def apply(self) -> None:
         """
@@ -67,11 +67,11 @@ class Extrude:
         """
         Set the boundary conditions in the 3D extruded domain.
         """
-    def setExtent(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(2)"]) -> None:
+    def setExtent(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(2)"]) -> None:
         """
         Set the extent in the extruded dimension
         """
-    def setExtrusionAxis(self, arg0: typing.SupportsInt) -> None:
+    def setExtrusionAxis(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
         """
         Set the axis in which to extrude (0=x, 1=y, 2=z).
         """
@@ -135,7 +135,7 @@ class LogLevel:
         ...
     def __index__(self) -> int:
         ...
-    def __init__(self, value: typing.SupportsInt) -> None:
+    def __init__(self, value: typing.SupportsInt | typing.SupportsIndex) -> None:
         ...
     def __int__(self) -> int:
         ...
@@ -143,7 +143,7 @@ class LogLevel:
         ...
     def __repr__(self) -> str:
         ...
-    def __setstate__(self, state: typing.SupportsInt) -> None:
+    def __setstate__(self, state: typing.SupportsInt | typing.SupportsIndex) -> None:
         ...
     def __str__(self) -> str:
         ...
@@ -179,10 +179,10 @@ class Logger:
     def addInfo(self, arg0: str) -> Logger:
         ...
     @typing.overload
-    def addTiming(self, arg0: str, arg1: typing.SupportsFloat) -> Logger:
+    def addTiming(self, arg0: str, arg1: typing.SupportsFloat | typing.SupportsIndex) -> Logger:
         ...
     @typing.overload
-    def addTiming(self, arg0: str, arg1: typing.SupportsFloat, arg2: typing.SupportsFloat) -> Logger:
+    def addTiming(self, arg0: str, arg1: typing.SupportsFloat | typing.SupportsIndex, arg2: typing.SupportsFloat | typing.SupportsIndex) -> Logger:
         ...
     def addWarning(self, arg0: str) -> Logger:
         ...
@@ -193,7 +193,7 @@ class MaterialMap:
         ...
     def clear(self) -> None:
         ...
-    def getMaterialId(self, arg0: typing.SupportsInt) -> int:
+    def getMaterialId(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> int:
         ...
     def getMaterialMap(self) -> list[int]:
         """
@@ -209,17 +209,17 @@ class MaterialMap:
         """
     def getNumberOfMaterials(self) -> int:
         ...
-    def hasMaterial(self, arg0: typing.SupportsInt) -> bool:
+    def hasMaterial(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> bool:
         ...
-    def insertNextMaterial(self, arg0: typing.SupportsInt) -> None:
+    def insertNextMaterial(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
         """
         Insert a new material into the map.
         """
-    def isValidIndex(self, arg0: typing.SupportsInt) -> bool:
+    def isValidIndex(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> bool:
         ...
-    def reserve(self, arg0: typing.SupportsInt) -> None:
+    def reserve(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
         ...
-    def setMaterialId(self, arg0: typing.SupportsInt, arg1: typing.SupportsInt) -> None:
+    def setMaterialId(self, arg0: typing.SupportsInt | typing.SupportsIndex, arg1: typing.SupportsInt | typing.SupportsIndex) -> None:
         ...
 class Mesh:
     def __init__(self) -> None:
@@ -264,27 +264,27 @@ class Mesh:
         """
         Get a list of verticies of the mesh.
         """
-    def insertNextHexa(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsInt], "FixedSize(8)"]) -> int:
+    def insertNextHexa(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex], "FixedSize(8)"]) -> int:
         """
         Insert a hexahedron in the mesh.
         """
-    def insertNextLine(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsInt], "FixedSize(2)"]) -> int:
+    def insertNextLine(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex], "FixedSize(2)"]) -> int:
         """
         Insert a line in the mesh.
         """
-    def insertNextNode(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"]) -> int:
+    def insertNextNode(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"]) -> int:
         """
         Insert a node in the mesh.
         """
-    def insertNextTetra(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsInt], "FixedSize(4)"]) -> int:
+    def insertNextTetra(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex], "FixedSize(4)"]) -> int:
         """
         Insert a tetrahedron in the mesh.
         """
-    def insertNextTriangle(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsInt], "FixedSize(3)"]) -> int:
+    def insertNextTriangle(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex], "FixedSize(3)"]) -> int:
         """
         Insert a triangle in the mesh.
         """
-    def insertNextVertex(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsInt], "FixedSize(1)"]) -> int:
+    def insertNextVertex(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex], "FixedSize(1)"]) -> int:
         """
         Insert a vertex in the mesh.
         """
@@ -296,42 +296,52 @@ class Mesh:
         """
         Remove nodes which occur twice in the mesh, and replace their IDs in the mesh elements.
         """
+class NormalCalculationMethodEnum(enum.IntEnum):
+    CENTRAL_DIFFERENCES: typing.ClassVar[NormalCalculationMethodEnum]  # value = <NormalCalculationMethodEnum.CENTRAL_DIFFERENCES: 0>
+    ONE_SIDED_MIN_MOD: typing.ClassVar[NormalCalculationMethodEnum]  # value = <NormalCalculationMethodEnum.ONE_SIDED_MIN_MOD: 1>
+    @classmethod
+    def __new__(cls, value):
+        ...
+    def __format__(self, format_spec):
+        """
+        Convert to a string according to format_spec.
+        """
 class PointData:
     def __init__(self) -> None:
         ...
     @typing.overload
-    def getScalarData(self, arg0: typing.SupportsInt) -> list[float]:
+    def getScalarData(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> list[float]:
         ...
     @typing.overload
     def getScalarData(self, arg0: str, arg1: bool) -> list[float]:
         ...
-    def getScalarDataLabel(self, arg0: typing.SupportsInt) -> str:
+    def getScalarDataLabel(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> str:
         ...
     def getScalarDataSize(self) -> int:
         ...
     @typing.overload
-    def getVectorData(self, arg0: typing.SupportsInt) -> list[typing.Annotated[list[float], "FixedSize(3)"]]:
+    def getVectorData(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> list[typing.Annotated[list[float], "FixedSize(3)"]]:
         ...
     @typing.overload
     def getVectorData(self, arg0: str, arg1: bool) -> list[typing.Annotated[list[float], "FixedSize(3)"]]:
         ...
-    def getVectorDataLabel(self, arg0: typing.SupportsInt) -> str:
+    def getVectorDataLabel(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> str:
         ...
     def getVectorDataSize(self) -> int:
         ...
-    def insertNextScalarData(self, scalars: collections.abc.Sequence[typing.SupportsFloat], label: str = 'Scalars') -> None:
+    def insertNextScalarData(self, scalars: collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], label: str = 'Scalars') -> None:
         ...
-    def insertNextVectorData(self, vectors: collections.abc.Sequence[typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"]], label: str = 'Vectors') -> None:
+    def insertNextVectorData(self, vectors: collections.abc.Sequence[typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"]], label: str = 'Vectors') -> None:
         ...
 class Slice:
     @typing.overload
     def __init__(self) -> None:
         ...
     @typing.overload
-    def __init__(self, arg0: viennals.d3.Domain, arg1: viennals.d2.Domain, arg2: typing.SupportsInt, arg3: typing.SupportsFloat) -> None:
+    def __init__(self, arg0: viennals.d3.Domain, arg1: viennals.d2.Domain, arg2: typing.SupportsInt | typing.SupportsIndex, arg3: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @typing.overload
-    def __init__(self, arg0: viennals.d3.Domain, arg1: typing.SupportsInt, arg2: typing.SupportsFloat) -> None:
+    def __init__(self, arg0: viennals.d3.Domain, arg1: typing.SupportsInt | typing.SupportsIndex, arg2: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     def apply(self) -> None:
         """
@@ -345,7 +355,7 @@ class Slice:
         """
         Set whether to reflect all x-coordinates in the resulting slice.
         """
-    def setSliceDimension(self, arg0: typing.SupportsInt) -> None:
+    def setSliceDimension(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
         """
         Set the dimension along which to slice (0=x, 1=y, 2=z).
         """
@@ -353,7 +363,7 @@ class Slice:
         """
         Set the 2D level set where the extracted slice will be stored.
         """
-    def setSlicePosition(self, arg0: typing.SupportsFloat) -> None:
+    def setSlicePosition(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         """
         Set the position along the slice dimension where to extract the slice.
         """
@@ -408,7 +418,7 @@ class TransformEnum(enum.IntEnum):
         Convert to a string according to format_spec.
         """
 class TransformMesh:
-    def __init__(self, mesh: Mesh, transform: TransformEnum = ..., transformVector: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"] = [0.0, 0.0, 0.0], angle: typing.SupportsFloat = 0.0) -> None:
+    def __init__(self, mesh: Mesh, transform: TransformEnum = ..., transformVector: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"] = [0.0, 0.0, 0.0], angle: typing.SupportsFloat | typing.SupportsIndex = 0.0) -> None:
         ...
     def apply(self) -> None:
         """
@@ -476,17 +486,17 @@ class VTKWriter:
     def __init__(self, arg0: Mesh, arg1: FileFormatEnum, arg2: str) -> None:
         ...
     @typing.overload
-    def addMetaData(self, arg0: str, arg1: typing.SupportsFloat) -> None:
+    def addMetaData(self, arg0: str, arg1: typing.SupportsFloat | typing.SupportsIndex) -> None:
         """
         Add a single metadata entry to the file.
         """
     @typing.overload
-    def addMetaData(self, arg0: str, arg1: collections.abc.Sequence[typing.SupportsFloat]) -> None:
+    def addMetaData(self, arg0: str, arg1: collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex]) -> None:
         """
         Add a single metadata entry to the file.
         """
     @typing.overload
-    def addMetaData(self, arg0: collections.abc.Mapping[str, collections.abc.Sequence[typing.SupportsFloat]]) -> None:
+    def addMetaData(self, arg0: collections.abc.Mapping[str, collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex]]) -> None:
         """
         Add metadata to the file.
         """
@@ -506,22 +516,22 @@ class VTKWriter:
         """
         Set the mesh to output.
         """
-    def setMetaData(self, arg0: collections.abc.Mapping[str, collections.abc.Sequence[typing.SupportsFloat]]) -> None:
+    def setMetaData(self, arg0: collections.abc.Mapping[str, collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex]]) -> None:
         """
         Set the metadata to be written to the file.
         """
 class VelocityField:
     def __init__(self) -> None:
         ...
-    def getDissipationAlpha(self, arg0: typing.SupportsInt, arg1: typing.SupportsInt, arg2: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"]) -> float:
+    def getDissipationAlpha(self, arg0: typing.SupportsInt | typing.SupportsIndex, arg1: typing.SupportsInt | typing.SupportsIndex, arg2: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"]) -> float:
         """
         Return the analytical dissipation alpha value if the lsLocalLaxFriedrichsAnalytical scheme is used for advection.
         """
-    def getScalarVelocity(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], arg1: typing.SupportsInt, arg2: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], arg3: typing.SupportsInt) -> float:
+    def getScalarVelocity(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"], arg1: typing.SupportsInt | typing.SupportsIndex, arg2: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"], arg3: typing.SupportsInt | typing.SupportsIndex) -> float:
         """
         Return the scalar velocity for a point of material at coordinate with normal vector normal.
         """
-    def getVectorVelocity(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], arg1: typing.SupportsInt, arg2: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], arg3: typing.SupportsInt) -> typing.Annotated[list[float], "FixedSize(3)"]:
+    def getVectorVelocity(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"], arg1: typing.SupportsInt | typing.SupportsIndex, arg2: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"], arg3: typing.SupportsInt | typing.SupportsIndex) -> typing.Annotated[list[float], "FixedSize(3)"]:
         """
         Return the vector velocity for a point of material at coordinate with normal vector normal.
         """
@@ -537,8 +547,8 @@ class VoidTopSurfaceEnum(enum.IntEnum):
         """
         Convert to a string according to format_spec.
         """
-def setNumThreads(arg0: typing.SupportsInt) -> None:
+def setNumThreads(arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
     ...
-__version__: str = '5.5.0'
-version: str = '5.5.0'
+__version__: str = '5.5.1'
+version: str = '5.5.1'
 IntegrationSchemeEnum = SpatialSchemeEnum
