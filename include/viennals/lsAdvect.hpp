@@ -78,7 +78,7 @@ template <class T, int D> class Advect {
   bool adaptiveTimeStepping = false;
   unsigned adaptiveTimeStepSubdivisions = 20;
   static constexpr double wrappingLayerEpsilon = 1e-4;
-  SmartPointer<Domain<T, D>> originalLevelSet = nullptr;
+  std::vector<SmartPointer<Domain<T, D>>> initialLevelSets;
   std::function<bool(SmartPointer<Domain<T, D>>)> velocityUpdateCallback =
       nullptr;
 
@@ -196,41 +196,43 @@ template <class T, int D> class Advect {
 
   // Helper function for linear combination:
   // target = wTarget * target + wSource * source
-  void combineLevelSets(double wTarget, double wSource) {
-
-    auto &domainDest = levelSets.back()->getDomain();
-    auto &grid = levelSets.back()->getGrid();
-
-#pragma omp parallel num_threads(domainDest.getNumberOfSegments())
-    {
-      int p = 0;
-#ifdef _OPENMP
-      p = omp_get_thread_num();
-#endif
-      auto &segDest = domainDest.getDomainSegment(p);
-
-      viennahrle::Index<D> start = (p == 0)
-                                       ? grid.getMinGridPoint()
-                                       : domainDest.getSegmentation()[p - 1];
-      viennahrle::Index<D> end =
-          (p != static_cast<int>(domainDest.getNumberOfSegments()) - 1)
-              ? domainDest.getSegmentation()[p]
-              : grid.incrementIndices(grid.getMaxGridPoint());
-
-      ConstSparseIterator itDest(domainDest, start);
-      ConstSparseIterator itTarget(originalLevelSet->getDomain(), start);
-
-      unsigned definedValueIndex = 0;
-      for (; itDest.getStartIndices() < end; ++itDest) {
-        if (itDest.isDefined()) {
-          itTarget.goToIndicesSequential(itDest.getStartIndices());
-          T valSource = itDest.getValue();
-          T valTarget = itTarget.getValue();
-          segDest.definedValues[definedValueIndex++] =
-              wTarget * valTarget + wSource * valSource;
-        }
-      }
+  bool combineLevelSets(T wTarget, T wSource) {
+    // Calculate required expansion width based on CFL and RK steps
+    int steps = 1;
+    if (temporalScheme == TemporalSchemeEnum::RUNGE_KUTTA_2ND_ORDER) {
+      steps = 2;
+    } else if (temporalScheme == TemporalSchemeEnum::RUNGE_KUTTA_3RD_ORDER) {
+      steps = 3;
     }
+
+    // Expand both level sets to ensure sufficient overlap
+    int expansionWidth = std::ceil(2.0 * steps * timeStepRatio + 1);
+    viennals::Expand<T, D>(levelSets.back(), expansionWidth).apply();
+    viennals::Expand<T, D>(initialLevelSets.back(), expansionWidth).apply();
+
+    bool movedDown = false;
+
+    viennals::BooleanOperation<T, D> op(levelSets.back(),
+                                        initialLevelSets.back(),
+                                        viennals::BooleanOperationEnum::CUSTOM);
+    op.setBooleanOperationComparator(
+        [wTarget, wSource, &movedDown](const T &a, const T &b) {
+          if (a != Domain<T, D>::POS_VALUE && a != Domain<T, D>::NEG_VALUE &&
+              b != Domain<T, D>::POS_VALUE && b != Domain<T, D>::NEG_VALUE) {
+            T res = wSource * a + wTarget * b;
+            if (res > b)
+              movedDown = true;
+            return std::make_pair(res, true);
+          }
+          if (a == Domain<T, D>::POS_VALUE || a == Domain<T, D>::NEG_VALUE)
+            return std::make_pair(a, false);
+          return std::make_pair(b, false);
+        });
+    op.apply();
+
+    rebuildLS();
+
+    return movedDown;
   }
 
   void rebuildLS() {
@@ -450,6 +452,7 @@ template <class T, int D> class Advect {
     }
     const bool ignoreVoidPoints = ignoreVoids;
     const bool useAdaptiveTimeStepping = adaptiveTimeStepping;
+    const auto adaptiveFactor = 1.0 / adaptiveTimeStepSubdivisions;
 
     if (!storedRates.empty()) {
       VIENNACORE_LOG_WARNING("Advect: Overwriting previously stored rates.");
@@ -473,8 +476,9 @@ template <class T, int D> class Advect {
               : grid.incrementIndices(grid.getMaxGridPoint());
 
       double tempMaxTimeStep = maxTimeStep;
-      auto &tempRates = storedRates[p];
-      tempRates.reserve(
+      // store the rates and value of underneath LS for this segment
+      auto &rates = storedRates[p];
+      rates.reserve(
           topDomain.getNumberOfPoints() /
               static_cast<double>((levelSets.back())->getNumberOfSegments()) +
           10);
@@ -527,15 +531,14 @@ template <class T, int D> class Advect {
             // Case 1: Growth / Deposition (Velocity > 0)
             // Limit the time step based on the standard CFL condition.
             maxStepTime += cfl / velocity;
-            tempRates.push_back(std::make_pair(gradNDissipation,
-                                               -std::numeric_limits<T>::max()));
+            rates.emplace_back(gradNDissipation,
+                               -std::numeric_limits<T>::max());
             break;
           } else if (velocity == 0.) {
             // Case 2: Static (Velocity == 0)
             // No time step limit imposed by this point.
             maxStepTime = std::numeric_limits<T>::max();
-            tempRates.push_back(std::make_pair(gradNDissipation,
-                                               std::numeric_limits<T>::max()));
+            rates.emplace_back(gradNDissipation, std::numeric_limits<T>::max());
             break;
           } else {
             // Case 3: Etching (Velocity < 0)
@@ -555,30 +558,30 @@ template <class T, int D> class Advect {
               // Sub-case 3a: Standard Advection
               // Far from interface: Use full CFL time step.
               maxStepTime -= cfl / velocity;
-              tempRates.push_back(std::make_pair(
-                  gradNDissipation, std::numeric_limits<T>::max()));
+              rates.emplace_back(gradNDissipation,
+                                 std::numeric_limits<T>::max());
               break;
-
             } else {
               // Sub-case 3b: Interface Interaction
-              auto adaptiveFactor = 1.0 / adaptiveTimeStepSubdivisions;
-              if (useAdaptiveTimeStepping && difference > 0.2 * cfl) {
+              // Use adaptiveFactor as threshold.
+              if (useAdaptiveTimeStepping &&
+                  difference > adaptiveFactor * cfl) {
                 // Adaptive Sub-stepping:
                 // Approaching boundary: Force small steps to gather
                 // flux statistics and prevent numerical overshoot ("Soft
                 // Landing").
                 maxStepTime -= adaptiveFactor * cfl / velocity;
-                tempRates.push_back(std::make_pair(
-                    gradNDissipation, std::numeric_limits<T>::min()));
+                rates.emplace_back(gradNDissipation,
+                                   std::numeric_limits<T>::max());
+                break;
               } else {
                 // Terminal Step:
                 // Within tolerance: Snap to boundary, consume budget, and
                 // switch material.
-                tempRates.push_back(
-                    std::make_pair(gradNDissipation, valueBelow));
                 cfl -= difference;
                 value = valueBelow;
                 maxStepTime -= difference / velocity;
+                rates.emplace_back(gradNDissipation, valueBelow);
               }
             }
           }
@@ -732,7 +735,8 @@ template <class T, int D> class Advect {
         // set the LS value to the one below
         auto const [gradient, dissipation] = itRS->first;
         T velocity = gradient - dissipation;
-        // check if dissipation is too high
+        // check if dissipation is too high and would cause a change in
+        // direction of the velocity
         if (checkDiss && (gradient < 0 && velocity > 0) ||
             (gradient > 0 && velocity < 0)) {
           velocity = 0;
