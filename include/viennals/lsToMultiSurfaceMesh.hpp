@@ -259,15 +259,14 @@ class ToMultiSurfaceMesh : public ToSurfaceMesh<NumericType, D> {
           continue;
 
         // Check if the polymer edge crosses BOTH corner edges
-        Vec3D<NumericType> ep1_0 = mesh->nodes[mesh->lines[edge1Idx][0]];
-        Vec3D<NumericType> ep1_1 = mesh->nodes[mesh->lines[edge1Idx][1]];
-        Vec3D<NumericType> ep2_0 = mesh->nodes[mesh->lines[edge2Idx][0]];
-        Vec3D<NumericType> ep2_1 = mesh->nodes[mesh->lines[edge2Idx][1]];
-
         Vec3D<NumericType> int1{}, int2{};
         NumericType t1 = 0, t2 = 0;
-        bool cross1 = getSegmentIntersection(pp0, pp1, ep1_0, ep1_1, int1, t1);
-        bool cross2 = getSegmentIntersection(pp0, pp1, ep2_0, ep2_1, int2, t2);
+        bool cross1 = getSegmentIntersection(pp0, pp1,
+            mesh->nodes[mesh->lines[edge1Idx][0]],
+            mesh->nodes[mesh->lines[edge1Idx][1]], int1, t1);
+        bool cross2 = getSegmentIntersection(pp0, pp1,
+            mesh->nodes[mesh->lines[edge2Idx][0]],
+            mesh->nodes[mesh->lines[edge2Idx][1]], int2, t2);
 
         if (!cross1 || !cross2)
           continue;
@@ -476,18 +475,30 @@ class ToMultiSurfaceMesh : public ToSurfaceMesh<NumericType, D> {
         sharpCornerNodes[l].push_back({cornerNodeId, cornerPos});
         splitPreviousMaterialEdge(l, cornerNodeId, cornerPos, meshSizeBefore);
         // For thin-layer case: the endpoints (nX, nY) of the polymer's sharp
-        // corner edges may lie on previous material surface edges. Split those
-        // edges so the mesh is properly connected.
+        // corner edges may lie on previous material surface edges.
+        // Collect all endpoints first, then apply all splits before crossing
+        // checks. Interleaving the two would risk index-shifting: erases inside
+        // splitPreviousMaterialEdge's duplicate-removal loop can invalidate
+        // pIdx before handleCellCornerCrossings is called.
         size_t sizeNow = mesh->lines.size();
+        std::vector<std::pair<unsigned, Vec3D<NumericType>>> endpointsToSplit;
         for (size_t pIdx = meshSizeBefore; pIdx < sizeNow; ++pIdx) {
           if (static_cast<unsigned>(currentMaterials[pIdx]) != l)
             continue;
           unsigned n0 = mesh->lines[pIdx][0];
           unsigned n1 = mesh->lines[pIdx][1];
           if (n0 != cornerNodeId)
-            splitPreviousMaterialEdge(l, n0, mesh->nodes[n0], meshSizeBefore);
+            endpointsToSplit.push_back({n0, mesh->nodes[n0]});
           if (n1 != cornerNodeId)
-            splitPreviousMaterialEdge(l, n1, mesh->nodes[n1], meshSizeBefore);
+            endpointsToSplit.push_back({n1, mesh->nodes[n1]});
+        }
+        for (auto &[nodeId, pos] : endpointsToSplit)
+          splitPreviousMaterialEdge(l, nodeId, pos, meshSizeBefore);
+        // Run crossing checks after all lower-material splits are complete.
+        sizeNow = mesh->lines.size();
+        for (size_t pIdx = meshSizeBefore; pIdx < sizeNow; ++pIdx) {
+          if (static_cast<unsigned>(currentMaterials[pIdx]) != l)
+            continue;
           handleCellCornerCrossings(pIdx, sharpCornerNodes, l, cellIndices);
         }
       }
@@ -878,9 +889,15 @@ public:
           if (!isDuplicate) {
             this->insertElement(nodeNumbers);
             if (sharpCorners && l > 0) {
+              size_t mcIdx = mesh->lines.size() - 1;
               splitCurrentMaterialEdge(l, sharpCornerNodes);
-              handleCellCornerCrossings(mesh->lines.size() - 1, sharpCornerNodes,
-                                        l, cellIt.getIndices());
+              // Only call if the edge still exists at mcIdx; splitCurrentMaterialEdge
+              // may have erased it (keep-neither case) or appended a new edge (keep-both),
+              // but mcIdx always refers to the original inserted edge.
+              if (mesh->lines.size() > mcIdx &&
+                  static_cast<unsigned>(currentMaterials[mcIdx]) == l)
+                handleCellCornerCrossings(mcIdx, sharpCornerNodes,
+                                          l, cellIt.getIndices());
             }
           }
         }
