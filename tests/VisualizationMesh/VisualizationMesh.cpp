@@ -14,7 +14,7 @@ namespace ls = viennals;
 int main() {
   omp_set_num_threads(4);
 
-  constexpr int D = 3;
+  constexpr int D = 2;
   typedef float NumericType;
 
   double gridDelta = 1.0;

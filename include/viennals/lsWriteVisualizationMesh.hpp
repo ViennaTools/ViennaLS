@@ -3,11 +3,17 @@
 #ifdef VIENNALS_USE_VTK // this class needs vtk support
 
 #include <vtkAppendFilter.h>
+#include <iostream>
 #include <vtkAppendPolyData.h>
 #include <vtkCellData.h>
+#include <vtkContourTriangulator.h>
 #include <vtkDataSetTriangleFilter.h>
+#include <vtkDelaunay2D.h>
+#include <vtkDelaunay3D.h>
 #include <vtkFloatArray.h>
 #include <vtkGeometryFilter.h>
+#include <vtkDataSetSurfaceFilter.h>
+#include <vtkClipDataSet.h>
 #include <vtkIncrementalOctreePointLocator.h>
 #include <vtkIntArray.h>
 #include <vtkPointData.h>
@@ -15,6 +21,8 @@
 #include <vtkRectilinearGrid.h>
 #include <vtkSmartPointer.h>
 #include <vtkTableBasedClipDataSet.h>
+#include <vtkStripper.h>
+#include <vtkThreshold.h>
 #include <vtkTriangleFilter.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkXMLPolyDataWriter.h>
@@ -24,6 +32,7 @@
 
 #include <lsDomain.hpp>
 #include <lsMaterialMap.hpp>
+#include <lsToMultiSurfaceMesh.hpp>
 #include <lsPreCompileMacros.hpp>
 #include <unordered_map>
 #include <utility>
@@ -53,6 +62,7 @@ template <class T, int D> class WriteVisualizationMesh {
   bool extractHullMesh = false;
   bool bottomRemoved = false;
   bool writeToFile = true;
+  bool generateSharpCorners = true;
   double LSEpsilon = 1e-2;
   std::unordered_map<std::string, std::vector<double>> metaData;
 
@@ -435,6 +445,519 @@ template <class T, int D> class WriteVisualizationMesh {
     }
   }
 
+  // // Helper for trilinear/bilinear interpolation
+  // T getInterpolatedValue(viennahrle::ConstDenseIterator<hrleDomainType> &it,
+  //                        const double *point, double gridDelta) {
+  //   int base[D];
+  //   double f[D];
+  //   for (int i = 0; i < D; ++i) {
+  //     double pos = point[i] / gridDelta;
+  //     base[i] = static_cast<int>(std::floor(pos));
+  //     f[i] = pos - base[i];
+  //   }
+
+  //   if constexpr (D == 2) {
+  //     auto getVal = [&](int dx, int dy) {
+  //       viennahrle::Index<D> idx(base[0] + dx, base[1] + dy);
+  //       it.goToIndices(idx);
+  //       return it.getValue();
+  //     };
+  //     return (1 - f[0]) * (1 - f[1]) * getVal(0, 0) +
+  //            f[0] * (1 - f[1]) * getVal(1, 0) +
+  //            (1 - f[0]) * f[1] * getVal(0, 1) + f[0] * f[1] * getVal(1, 1);
+  //   } else {
+  //     // Simple nearest neighbor for 3D fallback if needed, 
+  //     // but for 2D visualization this function is primarily used.
+  //     // Full trilinear can be added if 3D clipping is required.
+  //     viennahrle::Index<D> idx;
+  //     for(int i=0; i<D; ++i) idx[i] = std::round(point[i]/gridDelta);
+  //     it.goToIndices(idx);
+  //     return it.getValue();
+  //   }
+  // }
+
+  void generateSharpMesh() {
+    auto &grid = levelSets[0]->getGrid();
+    double gridDelta = grid.getGridDelta();
+
+    // Calculate bounds for the domain (handling infinite boundaries)
+    int totalMinimum[D];
+    int totalMaximum[D];
+    for (int i = 0; i < D; ++i) {
+      totalMinimum[i] = std::numeric_limits<int>::max();
+      totalMaximum[i] = std::numeric_limits<int>::lowest();
+    }
+
+    for (auto &ls : levelSets) {
+      if (ls->getNumberOfPoints() == 0) continue;
+      auto &dom = ls->getDomain();
+      auto &grd = ls->getGrid();
+      for (int i = 0; i < D; ++i) {
+        int minP = (grd.isNegBoundaryInfinite(i))
+                       ? dom.getMinRunBreak(i) - 1
+                       : grd.getMinBounds(i);
+        int maxP = (grd.isPosBoundaryInfinite(i))
+                       ? dom.getMaxRunBreak(i) + 1
+                       : grd.getMaxBounds(i);
+        if (minP < totalMinimum[i])
+          totalMinimum[i] = minP;
+        if (maxP > totalMaximum[i])
+          totalMaximum[i] = maxP;
+      }
+    }
+
+    // 1. Generate Surface Mesh
+    auto multiMesh = SmartPointer<Mesh<T>>::New();
+    ToMultiSurfaceMesh<T, D> converter;
+    for (auto &ls : levelSets) {
+      converter.insertNextLevelSet(ls);
+    }
+    if (materialMap)
+      converter.setMaterialMap(materialMap);
+    converter.setMesh(multiMesh);
+    converter.setSharpCorners(generateSharpCorners);
+    converter.apply();
+
+    // Manually add boundary caps for all domain boundaries
+    // This ensures the hull mesh is closed and provides constraints for the
+    // volume mesh
+    if constexpr (D == 2) {
+      auto capBoundary = [&](int boundaryAxis, double fixedValue,
+                             double rangeMin, double rangeMax) {
+        int varyingAxis = 1 - boundaryAxis;
+        std::vector<std::pair<double, unsigned>> boundaryNodes;
+        double tolerance = 1e-6 * gridDelta;
+
+        // 1. Find existing nodes on this boundary
+        for (unsigned i = 0; i < multiMesh->nodes.size(); ++i) {
+          if (std::abs(multiMesh->nodes[i][boundaryAxis] - fixedValue) <
+              tolerance) {
+            if (multiMesh->nodes[i][varyingAxis] >= rangeMin - tolerance &&
+                multiMesh->nodes[i][varyingAxis] <= rangeMax + tolerance) {
+              boundaryNodes.push_back({multiMesh->nodes[i][varyingAxis], i});
+            }
+          }
+        }
+
+        // 2. Add corners if not present
+        auto addCorner = [&](double val) {
+          bool found = false;
+          for (const auto &bn : boundaryNodes) {
+            if (std::abs(bn.first - val) < tolerance) {
+              found = true;
+              break;
+            }
+          }
+          if (!found) {
+            Vec3D<T> pos;
+            pos[boundaryAxis] = fixedValue;
+            pos[varyingAxis] = val;
+            pos[2] = 0;
+            unsigned id = multiMesh->insertNextNode(pos);
+            boundaryNodes.push_back({val, id});
+          }
+        };
+        addCorner(rangeMin);
+        addCorner(rangeMax);
+
+        // 3. Sort
+        std::sort(boundaryNodes.begin(), boundaryNodes.end());
+
+        // 4. Connect
+        auto matIds = multiMesh->cellData.getScalarData("MaterialIds");
+        for (size_t i = 0; i < boundaryNodes.size() - 1; ++i) {
+          // Check midpoint material
+          double mid =
+              (boundaryNodes[i].first + boundaryNodes[i + 1].first) * 0.5;
+
+          // Check material at centroid
+          int matId = -1;
+          int boundaryCandidate = -1;
+          viennahrle::Index<D> queryIdx;
+          queryIdx[boundaryAxis] = std::round(fixedValue / gridDelta);
+          queryIdx[varyingAxis] = std::round(mid / gridDelta);
+
+          for (unsigned l = 0; l < levelSets.size(); ++l) {
+            viennahrle::ConstDenseIterator<hrleDomainType> it(
+                levelSets[l]->getDomain());
+            it.goToIndices(queryIdx);
+            double val = it.getValue();
+            if (val < -1e-6 * gridDelta) {
+              matId = (materialMap) ? materialMap->getMaterialId(l) : (int)l;
+              break;
+            }
+            if (val <= 1e-6 * gridDelta && boundaryCandidate == -1) {
+              boundaryCandidate =
+                  (materialMap) ? materialMap->getMaterialId(l) : (int)l;
+            }
+          }
+          if (matId == -1)
+            matId = boundaryCandidate;
+
+          if (matId != -1) {
+            multiMesh->insertNextLine(
+                {static_cast<unsigned>(boundaryNodes[i].second),
+                 static_cast<unsigned>(boundaryNodes[i + 1].second)});
+            if (matIds)
+              matIds->push_back(matId);
+          }
+        }
+      };
+
+      double minX = totalMinimum[0] * gridDelta;
+      double maxX = totalMaximum[0] * gridDelta;
+      double minY = totalMinimum[1] * gridDelta;
+      double maxY = totalMaximum[1] * gridDelta;
+
+      capBoundary(0, minX, minY, maxY);
+      capBoundary(0, maxX, minY, maxY);
+      capBoundary(1, minY, minX, maxX);
+      capBoundary(1, maxY, minX, maxX);
+
+    } else {
+      for (int d = 0; d < D; ++d) {
+        for (int side = 0; side < 2; ++side) { // 0: min, 1: max
+          int boundaryCoord = (side == 0) ? totalMinimum[d] : totalMaximum[d];
+
+          // Dimensions to iterate over (the face perpendicular to d)
+          int u = (d + 1) % D;
+          int v = (d + 2) % D;
+          // Ensure u < v for consistent ordering if D=3
+          if (D == 3 && u > v)
+            std::swap(u, v);
+
+          int uMin = totalMinimum[u];
+          int uMax = totalMaximum[u];
+          int vMin = (D == 3) ? totalMinimum[v] : 0;
+          int vMax = (D == 3) ? totalMaximum[v] : 0;
+
+          for (int i = uMin; i < uMax; ++i) {
+            for (int j = vMin; j < ((D == 3) ? vMax : 1); ++j) {
+              // Calculate centroid of the boundary element to check material
+              double gridCentroid[D];
+              gridCentroid[d] = static_cast<double>(boundaryCoord);
+              gridCentroid[u] = static_cast<double>(i) + 0.5;
+              if (D == 3)
+                gridCentroid[v] = static_cast<double>(j) + 0.5;
+
+              // Check material at centroid
+              int matId = -1;
+              int boundaryCandidate = -1;
+              viennahrle::Index<D> queryIdx;
+              for (int k = 0; k < D; ++k)
+                queryIdx[k] = std::round(gridCentroid[k]);
+
+              for (unsigned l = 0; l < levelSets.size(); ++l) {
+                viennahrle::ConstDenseIterator<hrleDomainType> it(
+                    levelSets[l]->getDomain());
+                it.goToIndices(queryIdx);
+                double val = it.getValue();
+                if (val < -1e-6 * gridDelta) {
+                  matId =
+                      (materialMap) ? materialMap->getMaterialId(l) : (int)l;
+                  break;
+                }
+                if (val <= 1e-6 * gridDelta && boundaryCandidate == -1) {
+                  boundaryCandidate =
+                      (materialMap) ? materialMap->getMaterialId(l) : (int)l;
+                }
+              }
+              if (matId == -1)
+                matId = boundaryCandidate;
+
+              if (matId != -1) {
+                unsigned startNodeId = multiMesh->nodes.size();
+                auto matIds = multiMesh->cellData.getScalarData("MaterialIds");
+
+                // 3D
+                // Add 4 nodes for the quad (split into 2 triangles)
+                Vec3D<T> p[4];
+                for (int k = 0; k < 4; ++k)
+                  p[k][d] = boundaryCoord * gridDelta;
+
+                p[0][u] = i * gridDelta;
+                p[0][v] = j * gridDelta;
+                p[1][u] = (i + 1) * gridDelta;
+                p[1][v] = j * gridDelta;
+                p[2][u] = i * gridDelta;
+                p[2][v] = (j + 1) * gridDelta;
+                p[3][u] = (i + 1) * gridDelta;
+                p[3][v] = (j + 1) * gridDelta;
+
+                for (int k = 0; k < 4; ++k)
+                  multiMesh->insertNextNode(p[k]);
+
+                multiMesh->insertNextTriangle(
+                    {startNodeId, startNodeId + 1, startNodeId + 2});
+                multiMesh->insertNextTriangle(
+                    {startNodeId + 2, startNodeId + 1, startNodeId + 3});
+
+                if (matIds) {
+                  matIds->push_back(matId);
+                  matIds->push_back(matId);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 2. Convert to VTK PolyData (Hull)
+    hullVTK = vtkSmartPointer<vtkPolyData>::New();
+    vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+    for (const auto &node : multiMesh->nodes) {
+      points->InsertNextPoint(node[0], node[1], node[2]);
+    }
+    hullVTK->SetPoints(points);
+
+    vtkSmartPointer<vtkCellArray> polys = vtkSmartPointer<vtkCellArray>::New();
+    if constexpr (D == 3) {
+      for (const auto &tri : multiMesh->triangles) {
+        polys->InsertNextCell(3);
+        polys->InsertCellPoint(tri[0]);
+        polys->InsertCellPoint(tri[1]);
+        polys->InsertCellPoint(tri[2]);
+      }
+      hullVTK->SetPolys(polys);
+    } else {
+      for (const auto &line : multiMesh->lines) {
+        polys->InsertNextCell(2);
+        polys->InsertCellPoint(line[0]);
+        polys->InsertCellPoint(line[1]);
+      }
+      hullVTK->SetLines(polys);
+    }
+
+    // Add Material IDs to Hull
+    auto matIds = multiMesh->cellData.getScalarData("MaterialIds");
+    if (matIds) {
+      vtkSmartPointer<vtkIntArray> materials =
+          vtkSmartPointer<vtkIntArray>::New();
+      materials->SetName("Material");
+      for (auto val : *matIds) {
+        materials->InsertNextValue(static_cast<int>(val));
+      }
+      hullVTK->GetCellData()->SetScalars(materials);
+    }
+
+    // Add metadata to hull
+    addMetaDataToVTK(hullVTK);
+
+    if (extractHullMesh && writeToFile) {
+      auto writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+      writer->SetFileName((fileName + "_hull.vtp").c_str());
+      writer->SetInputData(hullVTK);
+      writer->Write();
+    }
+
+    // 3. Generate Volume Mesh
+    if (extractVolumeMesh) {
+      if constexpr (D == 2) {
+        vtkSmartPointer<vtkAppendFilter> appendFilter =
+            vtkSmartPointer<vtkAppendFilter>::New();
+
+        // Get list of unique material IDs from hullVTK
+        vtkDataArray *matIdsArray =
+            hullVTK->GetCellData()->GetArray("Material");
+        std::set<int> uniqueMatIds;
+        if (matIdsArray) {
+          for (vtkIdType i = 0; i < matIdsArray->GetNumberOfTuples(); ++i) {
+            uniqueMatIds.insert(static_cast<int>(matIdsArray->GetTuple1(i)));
+          }
+        }
+
+        for (int matId : uniqueMatIds) {
+          // Extract lines for this material
+          vtkSmartPointer<vtkThreshold> threshold =
+              vtkSmartPointer<vtkThreshold>::New();
+          threshold->SetInputData(hullVTK);
+          threshold->SetInputArrayToProcess(
+              0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_CELLS, "Material");
+          threshold->SetLowerThreshold(matId);
+          threshold->SetUpperThreshold(matId);
+          threshold->Update();
+
+          // Convert to PolyData for Stripper
+          vtkSmartPointer<vtkGeometryFilter> geom =
+              vtkSmartPointer<vtkGeometryFilter>::New();
+          geom->SetInputData(threshold->GetOutput());
+          geom->Update();
+
+          // Create loops
+          vtkSmartPointer<vtkStripper> stripper =
+              vtkSmartPointer<vtkStripper>::New();
+          stripper->SetInputData(geom->GetOutput());
+          stripper->JoinContiguousSegmentsOn();
+          stripper->Update();
+
+          // Triangulate
+          vtkSmartPointer<vtkContourTriangulator> triangulator =
+              vtkSmartPointer<vtkContourTriangulator>::New();
+          triangulator->SetInputData(stripper->GetOutput());
+          triangulator->Update();
+
+          vtkSmartPointer<vtkPolyData> triPoly = triangulator->GetOutput();
+
+          // Set Material ID
+          vtkSmartPointer<vtkIntArray> matIdArray =
+              vtkSmartPointer<vtkIntArray>::New();
+          matIdArray->SetName("Material");
+          matIdArray->SetNumberOfComponents(1);
+          matIdArray->SetNumberOfTuples(triPoly->GetNumberOfCells());
+          for (vtkIdType i = 0; i < triPoly->GetNumberOfCells(); ++i)
+            matIdArray->SetValue(i, matId);
+
+          triPoly->GetCellData()->AddArray(matIdArray);
+
+          appendFilter->AddInputData(triPoly);
+        }
+        appendFilter->Update();
+        volumeVTK = appendFilter->GetOutput();
+      } else {
+      vtkSmartPointer<vtkPoints> internalPoints =
+          vtkSmartPointer<vtkPoints>::New();
+
+      for (auto &ls : levelSets) {
+        viennahrle::ConstSparseIterator<hrleDomainType> it(ls->getDomain());
+        for (; !it.isFinished(); it.next()) {
+          if (it.getValue() < 0) {
+            auto startIndices = it.getStartIndices();
+            for (int k = 0; k < (it.getEndIndices()[0] - startIndices[0]); ++k) {
+              auto currentIndices = startIndices;
+              currentIndices[0] += k;
+
+              bool onBoundary = false;
+              for (int d = 0; d < D; ++d) {
+                if (currentIndices[d] == grid.getMinGridPoint(d) ||
+                    currentIndices[d] == grid.getMaxGridPoint(d)) {
+                  onBoundary = true;
+                  break;
+                }
+              }
+              if (it.getValue() < (onBoundary ? -1e-4 * gridDelta : -gridDelta)) {
+                Vec3D<T> coord{};
+                for (int i = 0; i < D; ++i)
+                  coord[i] = currentIndices[i] * gridDelta;
+                internalPoints->InsertNextPoint(coord[0], coord[1], coord[2]);
+              }
+            }
+          }
+        }
+      }
+
+      vtkSmartPointer<vtkUnstructuredGrid> ugrid;
+
+      vtkSmartPointer<vtkPoints> allPoints = vtkSmartPointer<vtkPoints>::New();
+      // Add surface points
+      for (int i = 0; i < points->GetNumberOfPoints(); ++i) {
+        allPoints->InsertNextPoint(points->GetPoint(i));
+      }
+      // Add internal points
+      for (int i = 0; i < internalPoints->GetNumberOfPoints(); ++i) {
+        allPoints->InsertNextPoint(internalPoints->GetPoint(i));
+      }
+
+      vtkSmartPointer<vtkPolyData> polyPoints =
+          vtkSmartPointer<vtkPolyData>::New();
+      polyPoints->SetPoints(allPoints);
+
+        // Add 8 corners of the domain to the points
+        double minX = totalMinimum[0] * gridDelta;
+        double maxX = totalMaximum[0] * gridDelta;
+        double minY = totalMinimum[1] * gridDelta;
+        double maxY = totalMaximum[1] * gridDelta;
+        double minZ = totalMinimum[2] * gridDelta;
+        double maxZ = totalMaximum[2] * gridDelta;
+
+        allPoints->InsertNextPoint(minX, minY, minZ);
+        allPoints->InsertNextPoint(maxX, minY, minZ);
+        allPoints->InsertNextPoint(minX, maxY, minZ);
+        allPoints->InsertNextPoint(maxX, maxY, minZ);
+        allPoints->InsertNextPoint(minX, minY, maxZ);
+        allPoints->InsertNextPoint(maxX, minY, maxZ);
+        allPoints->InsertNextPoint(minX, maxY, maxZ);
+        allPoints->InsertNextPoint(maxX, maxY, maxZ);
+
+        vtkSmartPointer<vtkDelaunay3D> delaunay =
+            vtkSmartPointer<vtkDelaunay3D>::New();
+        delaunay->SetInputData(polyPoints);
+        delaunay->SetTolerance(0.001 * gridDelta);
+        delaunay->Update();
+        ugrid = delaunay->GetOutput();
+
+      // Filter Cells
+      vtkSmartPointer<vtkUnstructuredGrid> finalVol =
+          vtkSmartPointer<vtkUnstructuredGrid>::New();
+      finalVol->SetPoints(ugrid->GetPoints());
+      finalVol->Allocate(ugrid->GetNumberOfCells());
+
+      vtkSmartPointer<vtkIntArray> volMats =
+          vtkSmartPointer<vtkIntArray>::New();
+      volMats->SetName("Material");
+
+      const bool useMaterialMap = materialMap != nullptr;
+
+      std::vector<viennahrle::ConstDenseIterator<hrleDomainType>> iterators;
+      for (const auto &ls : levelSets) {
+        iterators.emplace_back(ls->getDomain());
+      }
+
+      std::set<int> presentMaterials;
+      for (vtkIdType i = 0; i < ugrid->GetNumberOfCells(); ++i) {
+        vtkCell *cell = ugrid->GetCell(i);
+        vtkPoints *pts = cell->GetPoints();
+        int numPts = pts->GetNumberOfPoints();
+
+        // Determine Material
+        int matId = -1;
+        for (unsigned l = 0; l < levelSets.size(); ++l) {
+          int insideCount = 0;
+          auto &grid = levelSets[l]->getGrid();
+
+          for (int j = 0; j < numPts; ++j) {
+            double p[3];
+            pts->GetPoint(j, p);
+            viennahrle::Index<D> idx = grid.globalCoordinates2GlobalIndices(p);
+            if (grid.isOutsideOfDomain(idx)) {
+              idx = grid.globalIndices2LocalIndices(idx);
+            }
+            iterators[l].goToIndices(idx);
+            // Use a small tolerance to include points slightly outside due to sharp corner reconstruction
+            if (iterators[l].getValue() <= 1e-6 * gridDelta) {
+              insideCount++;
+            }
+          }
+
+          if (insideCount > numPts / 2) {
+            matId = useMaterialMap ? materialMap->getMaterialId(l) : l;
+            break;
+          }
+        }
+
+        if (matId != -1) {
+          finalVol->InsertNextCell(cell->GetCellType(), cell->GetPointIds());
+          volMats->InsertNextValue(matId);
+          presentMaterials.insert(matId);
+        }
+      }
+
+      finalVol->GetCellData()->SetScalars(volMats);
+      volumeVTK = finalVol;
+      }
+
+      // Add metadata
+      addMetaDataToVTK(volumeVTK);
+
+      if (extractVolumeMesh && writeToFile) {
+        auto writer = vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
+        writer->SetFileName((fileName + "_volume.vtu").c_str());
+        writer->SetInputData(volumeVTK);
+        writer->Write();
+      }
+    }
+  }
+
 public:
   WriteVisualizationMesh() = default;
 
@@ -469,6 +992,10 @@ public:
     writeToFile = passedWriteToFile;
   }
 
+  void setSharpCorners(bool passedSharpCorners) {
+    generateSharpCorners = passedSharpCorners;
+  }
+
   void setMaterialMap(SmartPointer<MaterialMap> passedMaterialMap) {
     materialMap = passedMaterialMap;
   }
@@ -500,6 +1027,11 @@ public:
   auto getHullMesh() const { return hullVTK; }
 
   void apply() {
+    if (generateSharpCorners) {
+      generateSharpMesh();
+      return;
+    }
+
     // check if level sets have enough layers
     for (unsigned i = 0; i < levelSets.size(); ++i) {
       if (levelSets[i]->getLevelSetWidth() < 2) {

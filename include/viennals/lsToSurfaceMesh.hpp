@@ -876,8 +876,8 @@ protected:
         return gS;
       }());
       faceNodes[axisZ][faceIdxZ] = nS_Face;
-      if (updatePointData)
-        newDataSourceIds[0].push_back(cellIt.getCorner(C).getPointId());
+      if (updatePointData && newDataSourceIds)
+        newDataSourceIds->push_back(cellIt.getCorner(C).getPointId());
 
       stitchToNeighbor(cellIt, axisZ, (C >> axisZ) & 1, nS_Face, nodes,
                        valueIt);
@@ -1547,7 +1547,7 @@ protected:
               globalPos[d] = (globalPos[d] + cellIt.getIndices(d));
             unsigned nodeId = insertNode(globalPos);
             faceNodes[axis][faceIdx] = nodeId;
-            if (updatePointData)
+            if (updatePointData && newDataSourceIds)
               newDataSourceIds->push_back(
                   cellIt.getCorner(transform).getPointId());
             stitchToNeighbor(cellIt, axis, (transform >> axis) & 1, nodeId,

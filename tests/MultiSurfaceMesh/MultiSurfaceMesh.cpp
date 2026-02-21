@@ -5,6 +5,9 @@
 #include <lsToMesh.hpp>
 #include <lsToMultiSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
+#ifdef VIENNALS_USE_VTK
+#include <lsWriteVisualizationMesh.hpp>
+#endif
 
 using namespace viennals;
 
@@ -79,11 +82,27 @@ int main() {
   VTKWriter<double>(mesh, "multi_surface_mesh_sharp.vtp").apply();
 
   std::cout << "Writing level set meshes..." << std::endl;
+
+
+#ifdef VIENNALS_USE_VTK
+  auto visMesh =
+      SmartPointer<WriteVisualizationMesh<double, 2>>::New();
+#endif
+
   int i = 0;
   for (const auto &layer : layers) {
     auto lsmesh = Mesh<double>::New();
     ToMesh<double, 2>(layer, lsmesh).apply();
     VTKWriter<double>(lsmesh, "layer_" + std::to_string(i) + ".vtp").apply();
     ++i;
-  }
+#ifdef VIENNALS_USE_VTK
+    visMesh->insertNextLevelSet(layer);
+#endif 
+ }
+
+#ifdef VIENNALS_USE_VTK
+  visMesh->setExtractHullMesh(true);
+  visMesh->setFileName("visualization");
+  visMesh->apply();
+#endif
 }

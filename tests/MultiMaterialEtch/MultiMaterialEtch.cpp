@@ -7,8 +7,10 @@
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
 #include <lsToMesh.hpp>
+#include <lsToMultiSurfaceMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
+#include <lsWriteVisualizationMesh.hpp>
 
 /**
   Example showing how to grow/shrink different neighbouring materials
@@ -26,7 +28,7 @@ public:
                            int /*material*/,
                            const std::array<double, 3> & /*normalVector*/,
                            unsigned long /*pointId*/) {
-    return 0.1;
+    return 1.;
   }
 };
 
@@ -36,24 +38,20 @@ public:
                            int material,
                            const std::array<double, 3> & /*normalVector*/,
                            unsigned long /*pointId*/) {
-    return (material == 1) ? -0.3 : 0;
+    if (material == 0)
+      return 0.;
+    else if (material == 1)
+      return -10.;
+    else
+      return -0.1;
   }
-
-  // std::array<double, 3>
-  // getVectorVelocity(const std::array<double, 3> & /*coordinate*/,
-  //                   int /*material*/,
-  //                   const std::array<double, 3> & /*normalVector*/,  unsigned
-  //                   long /*pointId*/) {
-  //   return std::array<double, 3>({});
-  // }
 };
 
 int main() {
   omp_set_num_threads(1);
 
   constexpr int D = 2;
-  typedef double NumericType;
-  double gridDelta = 1.1;
+  double gridDelta = 0.59;
 
   double extent = 10;
   double bounds[2 * D] = {-extent, extent, -extent, extent};
@@ -62,13 +60,11 @@ int main() {
     bounds[5] = extent;
   }
 
-  typename ls::Domain<NumericType, D>::BoundaryType boundaryCons[D];
+  typename ls::Domain<double, D>::BoundaryType boundaryCons[D];
   for (unsigned i = 0; i < D - 1; ++i) {
-    boundaryCons[i] =
-        ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+    boundaryCons[i] = ls::Domain<double, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   }
-  boundaryCons[D - 1] =
-      ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
+  boundaryCons[D - 1] = ls::Domain<double, D>::BoundaryType::INFINITE_BOUNDARY;
 
   auto substrate = ls::SmartPointer<ls::Domain<double, D>>::New(
       bounds, boundaryCons, gridDelta);
@@ -95,110 +91,183 @@ int main() {
       .apply();
 
   {
-    std::cout << "Extracting..." << std::endl;
-    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
-    ls::ToSurfaceMesh<double, D>(mask, mesh).apply();
-    ls::VTKWriter<double>(mesh, "maskPlane.vtk").apply();
-  }
+    // create box used for mask
+    std::cout << "Creating box..." << std::endl;
+    auto trench = ls::Domain<double, D>::New(bounds, boundaryCons, gridDelta);
+    double minCorner[3] = {-extent / 2., (D == 3) ? (-extent / 4.) : -15, -15.};
+    double maxCorner[3] = {extent / 2., (D == 3) ? (extent / 4.) : 5.0, 5.0};
+    ls::MakeGeometry<double, D>(trench,
+                                ls::Box<double, D>::New(minCorner, maxCorner))
+        .apply();
 
-  // {
-  //   // create box used for mask
-  //   std::cout << "Creating box..." << std::endl;
-  //   ls::Domain<double, D> trench(bounds, boundaryCons, gridDelta);
-  //   double minCorner[3] = {-extent / 4., (D==3)?(-extent / 4.):-15, -15.};
-  //   double maxCorner[3] = {extent / 4., (D==3)?(extent / 4.):5.0, 5.0};
-  //   ls::MakeGeometry<double, D>(trench, ls::Box<double, D>(minCorner,
-  //   maxCorner))
-  //       .apply();
+    // Create trench geometry
+    std::cout << "Booling trench..." << std::endl;
+    ls::BooleanOperation<double, D>(
+        mask, trench, ls::BooleanOperationEnum::RELATIVE_COMPLEMENT)
+        .apply();
 
-  //   {
-  //     std::cout << "Extracting..." << std::endl;
-  //     Mesh<> mesh;
-  //     ls::ToMesh<double, D>(trench, mesh).apply();
-  //     ls::VTKWriter<double>(mesh, "box.vtk").apply();
-  //   }
-
-  //   // Create trench geometry
-  //   std::cout << "Booling trench..." << std::endl;
-  //   ls::BooleanOperation<double, D>(mask, trench,
-  //                                 ls::BooleanOperationEnum::RELATIVE_COMPLEMENT)
-  //       .apply();
-
-  //   {
-  //     std::cout << "Extracting..." << std::endl;
-  //     Mesh<> mesh;
-  //     ls::ToMesh<double, D>(mask, mesh).apply();
-  //     ls::VTKWriter<double>(mesh, "mask.vtk").apply();
-  //   }
-  // }
-
-  {
-    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
-
-    ls::ToMesh<NumericType, D>(substrate, mesh).apply();
-    ls::VTKWriter<double>(mesh, "points.vtk").apply();
-    ls::ToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-    ls::VTKWriter<double>(mesh, "surface.vtk").apply();
+    {
+      std::cout << "Extracting..." << std::endl;
+      auto mesh = ls::Mesh<>::New();
+      ls::ToSurfaceMesh<double, D>(mask, mesh).apply();
+      ls::VTKWriter<double>(mesh, "mask.vtp").apply();
+    }
   }
 
   auto depoVel = ls::SmartPointer<depositionVel>::New();
   auto etchVel = ls::SmartPointer<etchingVel>::New();
 
-  std::cout << "Advecting" << std::endl;
+  maskOrigin[D] += gridDelta;
+  ls::MakeGeometry<double, D>(
+      substrate,
+      ls::SmartPointer<ls::Plane<double, D>>::New(maskOrigin, planeNormal))
+      .apply();
+
+  ls::BooleanOperation<double, D>(substrate, mask,
+                                  ls::BooleanOperationEnum::UNION)
+      .apply();
+
+  auto polymer = ls::Domain<double, D>::New(substrate);
+
+  std::cout << "Depositing..." << std::endl;
   ls::Advect<double, D> deposition;
   deposition.setVelocityField(depoVel);
   deposition.insertNextLevelSet(mask);
   deposition.insertNextLevelSet(substrate);
-  deposition.setAdvectionTime(1);
+  deposition.insertNextLevelSet(polymer);
+  deposition.setAdvectionTime(0.3);
+  deposition.apply();
 
-  ls::Advect<double, D> etching;
-  etching.setVelocityField(etchVel);
-  etching.insertNextLevelSet(mask);
-  etching.insertNextLevelSet(substrate);
-  etching.setAdvectionTime(1);
+  auto visualizeMesh =
+      ls::SmartPointer<ls::WriteVisualizationMesh<double, D>>::New();
+  visualizeMesh->insertNextLevelSet(mask);
+  visualizeMesh->insertNextLevelSet(substrate);
+  visualizeMesh->insertNextLevelSet(polymer);
+  visualizeMesh->setSharpCorners(true);
+  visualizeMesh->setExtractHullMesh(true);
+  visualizeMesh->setFileName("visualizationMesh");
+
+  visualizeMesh->apply();
 
   {
-    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
-    ls::ToSurfaceMesh<NumericType, D>(mask, mesh).apply();
-    ls::VTKWriter<double>(mesh, "mask0.vtk").apply();
-    ls::ToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-    ls::VTKWriter<double>(mesh, "surface0.vtk").apply();
+    auto mesh = ls::Mesh<>::New();
+    ls::ToMultiSurfaceMesh<double, D> mesher;
+    mesher.insertNextLevelSet(mask);
+    mesher.insertNextLevelSet(substrate);
+    mesher.insertNextLevelSet(polymer);
+    mesher.setMesh(mesh);
+    mesher.setSharpCorners(true);
+    mesher.apply();
+    ls::VTKWriter<double>(mesh, "multiSurfaceMesh").apply();
+
+    ls::ToMesh<double, D>(mask, mesh).apply();
+    ls::VTKWriter<double>(mesh, "mask.vtp").apply();
+    ls::ToMesh<double, D>(substrate, mesh).apply();
+    ls::VTKWriter<double>(mesh, "substrate.vtp").apply();
+    ls::ToMesh<double, D>(polymer, mesh).apply();
+    ls::VTKWriter<double>(mesh, "polymer.vtp").apply();
   }
 
-  for (unsigned i = 1; i < 10; ++i) {
-    ls::Advect<double, D> deposition;
-    deposition.setVelocityField(depoVel);
-    deposition.insertNextLevelSet(mask);
-    deposition.insertNextLevelSet(substrate);
-    deposition.setAdvectionTime(1);
+  double etchTime = 10.5;
+
+  for (int i = 0; i < 3; ++i) {
+    auto m = ls::Domain<double, D>::New(mask);
+    auto s = ls::Domain<double, D>::New(substrate);
+    auto p = ls::Domain<double, D>::New(polymer);
 
     ls::Advect<double, D> etching;
     etching.setVelocityField(etchVel);
-    etching.insertNextLevelSet(mask);
-    etching.insertNextLevelSet(substrate);
-    etching.setAdvectionTime(1);
+    etching.insertNextLevelSet(m);
+    etching.insertNextLevelSet(s);
+    etching.insertNextLevelSet(p);
+    etching.setAdvectionTime(etchTime);
+    etching.setTimeStepRatio(0.4999 / double(i + 1));
+    etching.setAdaptiveTimeStepping(true, 20);
 
-    deposition.apply();
-
-    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
-    ls::ToSurfaceMesh<NumericType, D>(mask, mesh).apply();
-    ls::VTKWriter<double>(mesh, "mask" + std::to_string(2 * i) + ".vtk")
-        .apply();
-    ls::ToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-    ls::VTKWriter<double>(mesh, "surface" + std::to_string(2 * i) + ".vtk")
-        .apply();
-    std::cout << "DepoSteps: " << deposition.getNumberOfTimeSteps()
-              << std::endl;
-
+    std::cout << "Etching..." << std::endl;
     etching.apply();
 
-    ls::ToSurfaceMesh<NumericType, D>(substrate, mesh).apply();
-    ls::VTKWriter<double>(mesh, "surface" + std::to_string(2 * i + 1) + ".vtk")
+    std::cout << "Time: " << etching.getAdvectedTime()
+              << ", Number of steps: " << etching.getNumberOfTimeSteps()
+              << std::endl;
+
+    auto mesh = ls::Mesh<>::New();
+    ls::ToMultiSurfaceMesh<double, D> mesher;
+    mesher.insertNextLevelSet(m);
+    mesher.insertNextLevelSet(s);
+    mesher.insertNextLevelSet(p);
+    mesher.setSharpCorners(true);
+    mesher.setMesh(mesh);
+    mesher.apply();
+    ls::VTKWriter<double>(mesh, "etching_ada_" + std::to_string(i) + ".vtp")
         .apply();
-    ls::ToSurfaceMesh<NumericType, D>(mask, mesh).apply();
-    ls::VTKWriter<double>(mesh, "mask" + std::to_string(2 * i + 1) + ".vtk")
-        .apply();
-    std::cout << "EtchSteps: " << etching.getNumberOfTimeSteps() << std::endl;
+  }
+
+  for (int i = 0; i < 3; ++i) {
+    auto m = ls::Domain<double, D>::New(mask);
+    auto s = ls::Domain<double, D>::New(substrate);
+    auto p = ls::Domain<double, D>::New(polymer);
+
+    ls::Advect<double, D> etching;
+    etching.setVelocityField(etchVel);
+    etching.insertNextLevelSet(m);
+    etching.insertNextLevelSet(s);
+    etching.insertNextLevelSet(p);
+    etching.setAdvectionTime(etchTime);
+    etching.setTimeStepRatio(0.4999 / double(i + 1));
+
+    std::cout << "Etching..." << std::endl;
+    etching.apply();
+
+    std::cout << "Time: " << etching.getAdvectedTime()
+              << ", Number of steps: " << etching.getNumberOfTimeSteps()
+              << std::endl;
+
+    {
+      auto mesh = ls::Mesh<>::New();
+      ls::ToMultiSurfaceMesh<double, D> mesher;
+      mesher.insertNextLevelSet(m);
+      mesher.insertNextLevelSet(s);
+      mesher.insertNextLevelSet(p);
+      mesher.setMesh(mesh);
+      mesher.apply();
+      ls::VTKWriter<double>(mesh, "etching_noada_" + std::to_string(i) + ".vtp")
+          .apply();
+    }
+  }
+
+  if constexpr (false) {
+    auto m = ls::Domain<double, D>::New(mask);
+    auto s = ls::Domain<double, D>::New(substrate);
+    auto p = ls::Domain<double, D>::New(polymer);
+
+    ls::Advect<double, D> etching;
+    etching.setVelocityField(etchVel);
+    etching.insertNextLevelSet(m);
+    etching.insertNextLevelSet(s);
+    etching.insertNextLevelSet(p);
+    etching.setAdvectionTime(etchTime);
+    etching.setTimeStepRatio(0.25);
+    // etching.setAdaptiveTimeStepping(true, 20);
+    etching.setSingleStep(true);
+
+    std::cout << "Etching..." << std::endl;
+    double time = 0;
+    int i = 0;
+    while (time < etchTime) {
+      etching.apply();
+      time += etching.getAdvectedTime();
+      auto mesh = ls::Mesh<>::New();
+      ls::ToMultiSurfaceMesh<double, D> mesher;
+      mesher.insertNextLevelSet(m);
+      mesher.insertNextLevelSet(s);
+      mesher.insertNextLevelSet(p);
+      mesher.setMesh(mesh);
+      mesher.apply();
+      ls::VTKWriter<double>(mesh, "t_etching_" + std::to_string(i) + ".vtp")
+          .apply();
+      i++;
+    }
   }
 
   return 0;
