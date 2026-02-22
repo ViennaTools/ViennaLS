@@ -6,6 +6,7 @@
 #include <lsToMultiSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 #ifdef VIENNALS_USE_VTK
+#include <lsWriteHullMesh.hpp>
 #include <lsWriteVisualizationMesh.hpp>
 #endif
 
@@ -87,6 +88,7 @@ int main() {
 #ifdef VIENNALS_USE_VTK
   auto visMesh =
       SmartPointer<WriteVisualizationMesh<double, 2>>::New();
+  auto hullMesh = SmartPointer<WriteHullMesh<double, 2>>::New();
 #endif
 
   int i = 0;
@@ -97,12 +99,17 @@ int main() {
     ++i;
 #ifdef VIENNALS_USE_VTK
     visMesh->insertNextLevelSet(layer);
-#endif 
+    hullMesh->insertNextLevelSet(layer);
+#endif
  }
 
 #ifdef VIENNALS_USE_VTK
   visMesh->setExtractHullMesh(true);
   visMesh->setFileName("visualization");
   visMesh->apply();
+
+  hullMesh->setFileName("hullMesh");
+  hullMesh->setSharpCorners(false);
+  hullMesh->apply();
 #endif
 }

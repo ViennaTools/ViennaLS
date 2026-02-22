@@ -7,6 +7,7 @@
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
+#include <lsWriteHullMesh.hpp>
 #include <lsWriteVisualizationMesh.hpp>
 
 namespace ls = viennals;
@@ -76,6 +77,16 @@ int main() {
   visualizeMesh->setFileName("myFile");
 
   visualizeMesh->apply();
+
+  {
+    auto hullMesh =
+        ls::SmartPointer<ls::WriteHullMesh<NumericType, D>>::New();
+    hullMesh->insertNextLevelSet(secondSphere);
+    hullMesh->insertNextLevelSet(substrate);
+    hullMesh->setSharpCorners(false);
+    hullMesh->setFileName("myHullMesh");
+    hullMesh->apply();
+  }
 
   //   ls::BooleanOperation<NumericType, D>(substrate, secondSphere,
   //                                      ls::BooleanOperationEnum::UNION)

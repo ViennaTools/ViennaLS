@@ -31,6 +31,7 @@
 #include <lsToMultiSurfaceMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsToVoxelMesh.hpp>
+#include <lsWriteHullMesh.hpp>
 #include <lsWriteVisualizationMesh.hpp>
 #include <lsWriter.hpp>
 
@@ -73,6 +74,7 @@ PRECOMPILE_SPECIALIZE(ToSurfaceMesh)
 PRECOMPILE_SPECIALIZE(ToVoxelMesh)
 PRECOMPILE_SPECIALIZE(Writer)
 #ifdef VIENNALS_USE_VTK
+PRECOMPILE_SPECIALIZE(WriteHullMesh)
 PRECOMPILE_SPECIALIZE(WriteVisualizationMesh)
 #endif
 

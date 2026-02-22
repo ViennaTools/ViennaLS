@@ -10,6 +10,7 @@
 #include <lsToMultiSurfaceMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
+#include <lsWriteHullMesh.hpp>
 #include <lsWriteVisualizationMesh.hpp>
 
 /**
@@ -148,6 +149,27 @@ int main() {
   visualizeMesh->setFileName("visualizationMesh");
 
   visualizeMesh->apply();
+
+  {
+    auto hullMesh =
+        ls::SmartPointer<ls::WriteHullMesh<double, D>>::New();
+    hullMesh->insertNextLevelSet(polymer);
+    hullMesh->setSharpCorners(true);
+    hullMesh->setFileName("polymer");
+    hullMesh->apply();
+    hullMesh =
+        ls::SmartPointer<ls::WriteHullMesh<double, D>>::New();
+    hullMesh->insertNextLevelSet(mask);
+    hullMesh->setSharpCorners(true);
+    hullMesh->setFileName("mask");
+    hullMesh->apply();
+    hullMesh =
+        ls::SmartPointer<ls::WriteHullMesh<double, D>>::New();
+    hullMesh->insertNextLevelSet(substrate);
+    hullMesh->setSharpCorners(true);
+    hullMesh->setFileName("substrate");
+    hullMesh->apply();
+  }
 
   {
     auto mesh = ls::Mesh<>::New();
