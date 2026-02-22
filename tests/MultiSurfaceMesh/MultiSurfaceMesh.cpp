@@ -109,7 +109,7 @@ int main() {
   visMesh->apply();
 
   hullMesh->setFileName("hullMesh");
-  hullMesh->setSharpCorners(false);
+  hullMesh->setSharpCorners(true);
   hullMesh->apply();
 #endif
 }

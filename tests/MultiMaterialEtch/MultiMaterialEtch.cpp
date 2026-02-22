@@ -136,19 +136,8 @@ int main() {
   deposition.insertNextLevelSet(mask);
   deposition.insertNextLevelSet(substrate);
   deposition.insertNextLevelSet(polymer);
-  deposition.setAdvectionTime(0.3);
+  deposition.setAdvectionTime(1.0);
   deposition.apply();
-
-  auto visualizeMesh =
-      ls::SmartPointer<ls::WriteVisualizationMesh<double, D>>::New();
-  visualizeMesh->insertNextLevelSet(mask);
-  visualizeMesh->insertNextLevelSet(substrate);
-  visualizeMesh->insertNextLevelSet(polymer);
-  visualizeMesh->setSharpCorners(true);
-  visualizeMesh->setExtractHullMesh(true);
-  visualizeMesh->setFileName("visualizationMesh");
-
-  visualizeMesh->apply();
 
   {
     auto hullMesh =
@@ -159,15 +148,19 @@ int main() {
     hullMesh->apply();
     hullMesh =
         ls::SmartPointer<ls::WriteHullMesh<double, D>>::New();
+    hullMesh->insertNextLevelSet(substrate);
+    hullMesh->setSharpCorners(true);
+    hullMesh->setFileName("substrate");
+    hullMesh->apply();
+    hullMesh =
+        ls::SmartPointer<ls::WriteHullMesh<double, D>>::New();
     hullMesh->insertNextLevelSet(mask);
     hullMesh->setSharpCorners(true);
     hullMesh->setFileName("mask");
     hullMesh->apply();
-    hullMesh =
-        ls::SmartPointer<ls::WriteHullMesh<double, D>>::New();
     hullMesh->insertNextLevelSet(substrate);
-    hullMesh->setSharpCorners(true);
-    hullMesh->setFileName("substrate");
+    hullMesh->insertNextLevelSet(polymer);
+    hullMesh->setFileName("hullMesh");
     hullMesh->apply();
   }
 

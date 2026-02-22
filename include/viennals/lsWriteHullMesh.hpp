@@ -124,6 +124,31 @@ template <class T, int D> class WriteHullMesh {
           for (const auto &bn : boundaryNodes)
             if (std::abs(bn.first - val) < tolerance)
               return;
+          
+          if (levelSets.back()->getNumberOfPoints() == 0)
+            return;
+
+          viennahrle::Index<D> idx;
+          idx[boundaryAxis] = std::round(fixedValue / gridDelta);
+          idx[varyingAxis] = std::round(val / gridDelta);
+
+          auto &grid = levelSets.back()->getGrid();
+          if (grid.isOutsideOfDomain(idx))
+            idx = grid.globalIndices2LocalIndices(idx);
+          
+          // Clamp to grid bounds to ensure iterator safety
+          auto minGrid = grid.getMinGridPoint();
+          auto maxGrid = grid.getMaxGridPoint();
+          for (int i = 0; i < D; ++i) {
+            if (idx[i] < minGrid[i]) idx[i] = minGrid[i];
+            if (idx[i] > maxGrid[i]) idx[i] = maxGrid[i];
+          }
+
+          viennahrle::ConstDenseIterator<hrleDomainType> it(levelSets.back()->getDomain());
+          it.goToIndices(idx);
+          if (it.getValue() > 0.)
+            return;
+
           Vec3D<T> pos;
           pos[boundaryAxis] = fixedValue;
           pos[varyingAxis] = val;
@@ -135,6 +160,9 @@ template <class T, int D> class WriteHullMesh {
         addCorner(rangeMax);
 
         std::sort(boundaryNodes.begin(), boundaryNodes.end());
+
+        if (boundaryNodes.size() < 2)
+          return;
 
         auto matIds = multiMesh->cellData.getScalarData("MaterialIds");
         for (size_t i = 0; i < boundaryNodes.size() - 1; ++i) {
