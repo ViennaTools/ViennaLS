@@ -329,32 +329,35 @@ class ToMultiSurfaceMesh : public ToSurfaceMesh<NumericType, D> {
     }
   }
 
-  // In 2D, check if the newly added edge (at the back of mesh->lines)
-  // passes close to any sharp corner of a previous material.
-  // If so, split the edge.
-  void splitCurrentMaterialEdge(
-      unsigned l, const std::unordered_map<unsigned, std::vector<SharpCornerNode>>
-                      &sharpCornerNodes) {
+  // In 2D, for a just-inserted regular MC edge at lineIdx, iterates lower-material
+  // sharp corner nodes once and performs two checks per node:
+  //   1. Point-on-edge: if a corner lies on the edge, split it to close the
+  //      shared boundary between adjacent materials.
+  //   2. Double-crossing (cell-local): if the edge crosses both arms of the
+  //      corner's L-shape, discard the middle segment that lies fictitiously
+  //      inside the lower material (see handleCellCornerCrossings for the same
+  //      logic applied to polymer sharp-corner edges).
+  // Returns after the first hit of either kind.
+  void handleEdgeCornerInteractions(
+      size_t lineIdx,
+      const std::unordered_map<unsigned, std::vector<SharpCornerNode>>
+          &sharpCornerNodes,
+      unsigned l, const hrleIndex &cellIndices) {
     if constexpr (D != 2)
       return;
-    if (l == 0)
-      return;
-    if (mesh->lines.empty())
+    if (l == 0 || lineIdx >= mesh->lines.size())
       return;
 
-    size_t lineIdx = mesh->lines.size() - 1;
-    auto &line = mesh->lines[lineIdx];
-    unsigned node0 = line[0];
-    unsigned node1 = line[1];
-
-    auto const &pos0 = mesh->nodes[node0];
-    auto const &pos1 = mesh->nodes[node1];
+    unsigned node0 = mesh->lines[lineIdx][0];
+    unsigned node1 = mesh->lines[lineIdx][1];
+    // Copy positions — insertNode may reallocate mesh->nodes
+    Vec3D<NumericType> pos0 = mesh->nodes[node0];
+    Vec3D<NumericType> pos1 = mesh->nodes[node1];
     auto lineVec = pos1 - pos0;
 
     NumericType lineLen2 = NumericType(0);
     for (int i = 0; i < D; ++i)
       lineLen2 += lineVec[i] * lineVec[i];
-
     if (lineLen2 < epsilon)
       return;
 
@@ -364,60 +367,133 @@ class ToMultiSurfaceMesh : public ToSurfaceMesh<NumericType, D> {
         continue;
 
       for (const auto &scn : it->second) {
-        unsigned cornerNodeId = scn.nodeId;
-        const auto &cornerPos = scn.position;
 
-        if (cornerNodeId == node0 || cornerNodeId == node1)
-          continue;
-
-        NumericType dot = NumericType(0);
-        for (int i = 0; i < D; ++i)
-          dot += (cornerPos[i] - pos0[i]) * lineVec[i];
-
-        NumericType t = dot / lineLen2;
-        if (t <= NumericType(0) || t >= NumericType(1))
-          continue;
-
-        NumericType dist2 = NumericType(0);
-        for (int i = 0; i < D; ++i) {
-          NumericType d = cornerPos[i] - (pos0[i] + t * lineVec[i]);
-          dist2 += d * d;
-        }
-
-        if (dist2 < NumericType(this->minNodeDistanceFactor)) {
-          bool keep0 = true;
-          bool keep1 = true;
-
-          // Check reverse edges (shared boundaries)
-          if (uniqueElements.count({(int)cornerNodeId, (int)node0, 0})) keep0 = false;
-          if (uniqueElements.count({(int)node1, (int)cornerNodeId, 0})) keep1 = false;
-
-          // Check direct duplicates
-          if (uniqueElements.count({(int)node0, (int)cornerNodeId, 0})) keep0 = false;
-          if (uniqueElements.count({(int)cornerNodeId, (int)node1, 0})) keep1 = false;
-
-          uniqueElements.erase({(int)node0, (int)node1, 0});
-
-          if (keep0 && keep1) {
-            line[1] = cornerNodeId;
-            mesh->lines.push_back({cornerNodeId, node1});
-            currentMaterials.push_back(currentMaterials[lineIdx]);
-            currentNormals.push_back(currentNormals[lineIdx]);
-            uniqueElements.insert({(int)node0, (int)cornerNodeId, 0});
-            uniqueElements.insert({(int)cornerNodeId, (int)node1, 0});
-          } else if (keep0) {
-            line[1] = cornerNodeId;
-            uniqueElements.insert({(int)node0, (int)cornerNodeId, 0});
-          } else if (keep1) {
-            line[0] = cornerNodeId;
-            uniqueElements.insert({(int)cornerNodeId, (int)node1, 0});
-          } else {
-            mesh->lines.erase(mesh->lines.begin() + lineIdx);
-            currentMaterials.erase(currentMaterials.begin() + lineIdx);
-            currentNormals.erase(currentNormals.begin() + lineIdx);
+        // --- Check 1: point-on-edge (shared boundary) ---
+        if (scn.nodeId != node0 && scn.nodeId != node1) {
+          NumericType dot = NumericType(0);
+          for (int i = 0; i < D; ++i)
+            dot += (scn.position[i] - pos0[i]) * lineVec[i];
+          NumericType t = dot / lineLen2;
+          if (t > NumericType(0) && t < NumericType(1)) {
+            NumericType dist2 = NumericType(0);
+            for (int i = 0; i < D; ++i) {
+              NumericType d = scn.position[i] - (pos0[i] + t * lineVec[i]);
+              dist2 += d * d;
+            }
+            if (dist2 < NumericType(this->minNodeDistanceFactor)) {
+              unsigned cId = scn.nodeId;
+              bool keep0 = !uniqueElements.count({(int)cId,   (int)node0, 0}) &&
+                           !uniqueElements.count({(int)node0, (int)cId,   0});
+              bool keep1 = !uniqueElements.count({(int)node1, (int)cId,   0}) &&
+                           !uniqueElements.count({(int)cId,   (int)node1, 0});
+              uniqueElements.erase({(int)node0, (int)node1, 0});
+              auto &line = mesh->lines[lineIdx];
+              if (keep0 && keep1) {
+                line[1] = cId;
+                mesh->lines.push_back({cId, node1});
+                currentMaterials.push_back(currentMaterials[lineIdx]);
+                currentNormals.push_back(currentNormals[lineIdx]);
+                uniqueElements.insert({(int)node0, (int)cId,   0});
+                uniqueElements.insert({(int)cId,   (int)node1, 0});
+              } else if (keep0) {
+                line[1] = cId;
+                uniqueElements.insert({(int)node0, (int)cId, 0});
+              } else if (keep1) {
+                line[0] = cId;
+                uniqueElements.insert({(int)cId, (int)node1, 0});
+              } else {
+                mesh->lines.erase(mesh->lines.begin() + lineIdx);
+                currentMaterials.erase(currentMaterials.begin() + lineIdx);
+                currentNormals.erase(currentNormals.begin() + lineIdx);
+              }
+              return;
+            }
           }
-          return;
         }
+
+        // --- Check 2: double-crossing (cell-local) ---
+        bool inCell = true;
+        for (int i = 0; i < D; ++i) {
+          if (scn.position[i] < NumericType(cellIndices[i]) - epsilon ||
+              scn.position[i] > NumericType(cellIndices[i] + 1) + epsilon) {
+            inCell = false;
+            break;
+          }
+        }
+        if (!inCell)
+          continue;
+
+        size_t edge1Idx = SIZE_MAX, edge2Idx = SIZE_MAX;
+        for (size_t eIdx = 0; eIdx < lineIdx; ++eIdx) {
+          if (static_cast<unsigned>(currentMaterials[eIdx]) != m)
+            continue;
+          if (mesh->lines[eIdx][0] != scn.nodeId &&
+              mesh->lines[eIdx][1] != scn.nodeId)
+            continue;
+          if (edge1Idx == SIZE_MAX)
+            edge1Idx = eIdx;
+          else if (edge2Idx == SIZE_MAX) {
+            edge2Idx = eIdx;
+            break;
+          }
+        }
+        if (edge1Idx == SIZE_MAX || edge2Idx == SIZE_MAX)
+          continue;
+
+        Vec3D<NumericType> int1{}, int2{};
+        NumericType t1 = 0, t2 = 0;
+        bool cross1 = getSegmentIntersection(pos0, pos1,
+            mesh->nodes[mesh->lines[edge1Idx][0]],
+            mesh->nodes[mesh->lines[edge1Idx][1]], int1, t1);
+        bool cross2 = getSegmentIntersection(pos0, pos1,
+            mesh->nodes[mesh->lines[edge2Idx][0]],
+            mesh->nodes[mesh->lines[edge2Idx][1]], int2, t2);
+        if (!cross1 || !cross2)
+          continue;
+
+        if (t1 > t2) {
+          std::swap(t1, t2);
+          std::swap(int1, int2);
+          std::swap(edge1Idx, edge2Idx);
+        }
+
+        unsigned intNode1 = this->insertNode(int1);
+        unsigned intNode2 = this->insertNode(int2);
+
+        NumericType matM1 = currentMaterials[edge1Idx];
+        Vec3D<NumericType> normalM1 = currentNormals[edge1Idx];
+        NumericType matM2 = currentMaterials[edge2Idx];
+        Vec3D<NumericType> normalM2 = currentNormals[edge2Idx];
+        NumericType matL = currentMaterials[lineIdx];
+        Vec3D<NumericType> normalL = currentNormals[lineIdx];
+        unsigned e1n0 = mesh->lines[edge1Idx][0], e1n1 = mesh->lines[edge1Idx][1];
+        unsigned e2n0 = mesh->lines[edge2Idx][0], e2n1 = mesh->lines[edge2Idx][1];
+
+        uniqueElements.erase({(int)e1n0, (int)e1n1, 0});
+        mesh->lines[edge1Idx][1] = intNode1;
+        uniqueElements.insert({(int)e1n0, (int)intNode1, 0});
+        mesh->lines.push_back({intNode1, e1n1});
+        currentMaterials.push_back(matM1);
+        currentNormals.push_back(normalM1);
+        uniqueElements.insert({(int)intNode1, (int)e1n1, 0});
+
+        uniqueElements.erase({(int)e2n0, (int)e2n1, 0});
+        mesh->lines[edge2Idx][1] = intNode2;
+        uniqueElements.insert({(int)e2n0, (int)intNode2, 0});
+        mesh->lines.push_back({intNode2, e2n1});
+        currentMaterials.push_back(matM2);
+        currentNormals.push_back(normalM2);
+        uniqueElements.insert({(int)intNode2, (int)e2n1, 0});
+
+        uniqueElements.erase({(int)node0, (int)node1, 0});
+        mesh->lines[lineIdx][1] = intNode1;
+        uniqueElements.insert({(int)node0, (int)intNode1, 0});
+        mesh->lines.push_back({intNode2, node1});
+        currentMaterials.push_back(matL);
+        currentNormals.push_back(normalL);
+        uniqueElements.insert({(int)intNode2, (int)node1, 0});
+
+        return;
       }
     }
   }
@@ -888,17 +964,10 @@ public:
 
           if (!isDuplicate) {
             this->insertElement(nodeNumbers);
-            if (sharpCorners && l > 0) {
-              size_t mcIdx = mesh->lines.size() - 1;
-              splitCurrentMaterialEdge(l, sharpCornerNodes);
-              // Only call if the edge still exists at mcIdx; splitCurrentMaterialEdge
-              // may have erased it (keep-neither case) or appended a new edge (keep-both),
-              // but mcIdx always refers to the original inserted edge.
-              if (mesh->lines.size() > mcIdx &&
-                  static_cast<unsigned>(currentMaterials[mcIdx]) == l)
-                handleCellCornerCrossings(mcIdx, sharpCornerNodes,
-                                          l, cellIt.getIndices());
-            }
+            if (sharpCorners && l > 0)
+              handleEdgeCornerInteractions(mesh->lines.size() - 1,
+                                             sharpCornerNodes, l,
+                                             cellIt.getIndices());
           }
         }
       }
