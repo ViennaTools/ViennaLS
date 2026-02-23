@@ -48,6 +48,7 @@
 #include <lsVTKWriter.hpp>
 #include <lsVelocityField.hpp>
 #include <lsVersion.hpp>
+#include <lsWriteHullMesh.hpp>
 #include <lsWriteVisualizationMesh.hpp>
 #include <lsWriter.hpp>
 
@@ -958,6 +959,46 @@ template <int D> void bindApi(py::module &module) {
            "Make and write mesh.");
 #endif
 
+  // WriteHullMesh
+#ifdef VIENNALS_USE_VTK
+  py::class_<WriteHullMesh<T, D>, SmartPointer<WriteHullMesh<T, D>>>(
+      module, "WriteHullMesh")
+      // constructors
+      .def(py::init(&SmartPointer<WriteHullMesh<T, D>>::template New<>))
+      .def(py::init(&SmartPointer<WriteHullMesh<T, D>>::template New<
+                    SmartPointer<Domain<T, D>> &>))
+      // methods
+      .def("insertNextLevelSet", &WriteHullMesh<T, D>::insertNextLevelSet,
+           "Insert next level set to convert. Bigger level sets wrapping "
+           "smaller ones, should be inserted last.")
+      .def("clearLevelSets", &WriteHullMesh<T, D>::clearLevelSets,
+           "Clear all inserted level sets.")
+      .def("setFileName", &WriteHullMesh<T, D>::setFileName,
+           "Set the base file name. \"_hull.vtp\" will be appended on write.")
+      .def("setWriteToFile", &WriteHullMesh<T, D>::setWriteToFile,
+           "Set whether to write to file. Defaults to true.")
+      .def("setSharpCorners", &WriteHullMesh<T, D>::setSharpCorners,
+           "Set whether to generate sharp corners. Defaults to false.")
+      .def("setMaterialMap", &WriteHullMesh<T, D>::setMaterialMap,
+           "Set the material map to use for the hull mesh.")
+      .def("setMetaData", &WriteHullMesh<T, D>::setMetaData,
+           "Set the metadata to be written to the file.")
+      .def("addMetaData",
+           py::overload_cast<const std::string &, double>(
+               &WriteHullMesh<T, D>::addMetaData),
+           "Add a single metadata entry to the file.")
+      .def("addMetaData",
+           py::overload_cast<const std::string &, const std::vector<double> &>(
+               &WriteHullMesh<T, D>::addMetaData),
+           "Add a single metadata entry to the file.")
+      .def("addMetaData",
+           py::overload_cast<
+               const std::unordered_map<std::string, std::vector<double>> &>(
+               &WriteHullMesh<T, D>::addMetaData),
+           "Add metadata to the file.")
+      .def("apply", &WriteHullMesh<T, D>::apply, "Generate hull mesh.");
+#endif
+
   // CompareVolume
   py::class_<CompareVolume<T, D>, SmartPointer<CompareVolume<T, D>>>(
       module, "CompareVolume")
@@ -1080,15 +1121,13 @@ template <int D> void bindApi(py::module &module) {
            "Get the number of critical dimensions compared.")
       .def(
           "getCriticalDimensionResult",
-          [](CompareCriticalDimensions<T, D> &self, size_t index) {
-            T posRef, posCmp, diff;
+          [](CompareCriticalDimensions<T, D> &self, size_t index) -> py::tuple {
+            T posRef{}, posCmp{}, diff{};
             bool valid =
                 self.getCriticalDimensionResult(index, posRef, posCmp, diff);
-            if (valid) {
-              return std::make_tuple(true, posRef, posCmp, diff);
-            } else {
-              return std::make_tuple(false, 0.0, 0.0, 0.0);
-            }
+            if (valid)
+              return py::make_tuple(true, posRef, posCmp, diff);
+            return py::make_tuple(false, T(0), T(0), T(0));
           },
           py::arg("index"),
           "Get a specific critical dimension result. Returns (valid, "

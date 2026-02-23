@@ -52,11 +52,11 @@ class Advect:
         """
         Prepare the level-set.
         """
-    def setAdaptiveTimeStepping(self, enabled: bool = True, subdivisions: typing.SupportsInt = 20) -> None:
+    def setAdaptiveTimeStepping(self, enabled: bool = True, subdivisions: typing.SupportsInt | typing.SupportsIndex = 20) -> None:
         """
         Enable/disable adaptive time stepping and set the number of subdivisions.
         """
-    def setAdvectionTime(self, arg0: typing.SupportsFloat) -> None:
+    def setAdvectionTime(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         """
         Set the time until when the level set should be advected.
         """
@@ -68,7 +68,7 @@ class Advect:
         """
         Enable/disable dissipation checking.
         """
-    def setDissipationAlpha(self, arg0: typing.SupportsFloat) -> None:
+    def setDissipationAlpha(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         """
         Set the dissipation value to use for Lax Friedrichs spatial discretization.
         """
@@ -96,7 +96,7 @@ class Advect:
         """
         Set the time integration scheme to use during advection.
         """
-    def setTimeStepRatio(self, arg0: typing.SupportsFloat) -> None:
+    def setTimeStepRatio(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         """
         Set the maximum time step size relative to grid size. Advection is only stable for <0.5.
         """
@@ -151,20 +151,20 @@ class BooleanOperation:
         Set second levelset for boolean operation.
         """
 class Box:
-    def __init__(self, minPoint: collections.abc.Sequence[typing.SupportsFloat], maxPoint: collections.abc.Sequence[typing.SupportsFloat]) -> None:
+    def __init__(self, minPoint: collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], maxPoint: collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex]) -> None:
         ...
 class BoxDistribution(GeometricAdvectDistribution):
-    def __init__(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"]) -> None:
+    def __init__(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"]) -> None:
         ...
     def getBounds(self) -> typing.Annotated[list[float], "FixedSize(6)"]:
         """
         Get the cartesian bounds of the distribution.
         """
-    def getSignedDistance(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], arg1: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], arg2: typing.SupportsInt) -> float:
+    def getSignedDistance(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"], arg1: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"], arg2: typing.SupportsInt | typing.SupportsIndex) -> float:
         """
         Get the signed distance of the passed point to the surface of the distribution.
         """
-    def isInside(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], arg1: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], arg2: typing.SupportsFloat) -> bool:
+    def isInside(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"], arg1: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"], arg2: typing.SupportsFloat | typing.SupportsIndex) -> bool:
         """
         Check whether passed point is inside the distribution.
         """
@@ -190,7 +190,7 @@ class CalculateCurvatures:
         """
         Set levelset for which to calculate the curvatures.
         """
-    def setMaxValue(self, arg0: typing.SupportsFloat) -> None:
+    def setMaxValue(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         """
         Curvatures will be calculated for all LS values < maxValue.
         """
@@ -209,8 +209,16 @@ class CalculateNormalVectors:
         """
         Set levelset for which to calculate normal vectors.
         """
+    def setMaxValue(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        """
+        Set the maximum value for which normals should be calculated.
+        """
+    def setMethod(self, arg0: viennals._core.NormalCalculationMethodEnum) -> None:
+        """
+        Set the method to use for normal calculation.
+        """
 class CalculateVisibilities:
-    def __init__(self, arg0: Domain, arg1: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], arg2: str) -> None:
+    def __init__(self, arg0: Domain, arg1: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"], arg2: str) -> None:
         ...
     def apply(self) -> None:
         ...
@@ -291,15 +299,15 @@ class CompareCriticalDimensions:
     @typing.overload
     def __init__(self, arg0: Domain, arg1: Domain) -> None:
         ...
-    def addRange(self, measureDimension: typing.SupportsInt, minBounds: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], maxBounds: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], findMaximum: bool = True) -> None:
+    def addRange(self, measureDimension: typing.SupportsInt | typing.SupportsIndex, minBounds: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"], maxBounds: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"], findMaximum: bool = True) -> None:
         """
         Add a generic range specification.
         """
-    def addXRange(self, minX: typing.SupportsFloat, maxX: typing.SupportsFloat, findMaximum: bool = True) -> None:
+    def addXRange(self, minX: typing.SupportsFloat | typing.SupportsIndex, maxX: typing.SupportsFloat | typing.SupportsIndex, findMaximum: bool = True) -> None:
         """
         Add an X range to find maximum or minimum Y position.
         """
-    def addYRange(self, minY: typing.SupportsFloat, maxY: typing.SupportsFloat, findMaximum: bool = True) -> None:
+    def addYRange(self, minY: typing.SupportsFloat | typing.SupportsIndex, maxY: typing.SupportsFloat | typing.SupportsIndex, findMaximum: bool = True) -> None:
         """
         Add a Y range to find maximum or minimum X position.
         """
@@ -315,7 +323,7 @@ class CompareCriticalDimensions:
         """
         Get all valid differences as a list.
         """
-    def getCriticalDimensionResult(self, index: typing.SupportsInt) -> tuple:
+    def getCriticalDimensionResult(self, index: typing.SupportsInt | typing.SupportsIndex) -> tuple:
         """
         Get a specific critical dimension result. Returns (valid, positionTarget, positionSample, difference).
         """
@@ -402,15 +410,15 @@ class CompareNarrowBand:
         """
         Set whether to output squared differences (true) or absolute differences (false)
         """
-    def setXRange(self, arg0: typing.SupportsFloat, arg1: typing.SupportsFloat) -> None:
+    def setXRange(self, arg0: typing.SupportsFloat | typing.SupportsIndex, arg1: typing.SupportsFloat | typing.SupportsIndex) -> None:
         """
         Set the x-coordinate range to restrict the comparison area
         """
-    def setYRange(self, arg0: typing.SupportsFloat, arg1: typing.SupportsFloat) -> None:
+    def setYRange(self, arg0: typing.SupportsFloat | typing.SupportsIndex, arg1: typing.SupportsFloat | typing.SupportsIndex) -> None:
         """
         Set the y-coordinate range to restrict the comparison area
         """
-    def setZRange(self, arg0: typing.SupportsFloat, arg1: typing.SupportsFloat) -> None:
+    def setZRange(self, arg0: typing.SupportsFloat | typing.SupportsIndex, arg1: typing.SupportsFloat | typing.SupportsIndex) -> None:
         """
         Set the z-coordinate range to restrict the comparison area
         """
@@ -457,7 +465,7 @@ class CompareSparseField:
         """
         Return the sum of squared differences calculated by apply().
         """
-    def setExpandedLevelSetWidth(self, arg0: typing.SupportsInt) -> None:
+    def setExpandedLevelSetWidth(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
         """
         Set the expansion width for the expanded level set
         """
@@ -477,15 +485,15 @@ class CompareSparseField:
         """
         Set the output mesh where difference values will be stored
         """
-    def setXRange(self, arg0: typing.SupportsFloat, arg1: typing.SupportsFloat) -> None:
+    def setXRange(self, arg0: typing.SupportsFloat | typing.SupportsIndex, arg1: typing.SupportsFloat | typing.SupportsIndex) -> None:
         """
         Set the x-coordinate range to restrict the comparison area
         """
-    def setYRange(self, arg0: typing.SupportsFloat, arg1: typing.SupportsFloat) -> None:
+    def setYRange(self, arg0: typing.SupportsFloat | typing.SupportsIndex, arg1: typing.SupportsFloat | typing.SupportsIndex) -> None:
         """
         Set the y-coordinate range to restrict the comparison area
         """
-    def setZRange(self, arg0: typing.SupportsFloat, arg1: typing.SupportsFloat) -> None:
+    def setZRange(self, arg0: typing.SupportsFloat | typing.SupportsIndex, arg1: typing.SupportsFloat | typing.SupportsIndex) -> None:
         """
         Set the z-coordinate range to restrict the comparison area
         """
@@ -524,7 +532,7 @@ class CompareVolume:
         """
         Returns the computed volume mismatch.
         """
-    def setDefaultIncrement(self, arg0: typing.SupportsInt) -> None:
+    def setDefaultIncrement(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
         """
         Set default increment value
         """
@@ -540,15 +548,15 @@ class CompareVolume:
         """
         Set the output mesh where difference areas will be stored
         """
-    def setXRangeAndIncrement(self, arg0: typing.SupportsInt, arg1: typing.SupportsInt, arg2: typing.SupportsInt) -> None:
+    def setXRangeAndIncrement(self, arg0: typing.SupportsInt | typing.SupportsIndex, arg1: typing.SupportsInt | typing.SupportsIndex, arg2: typing.SupportsInt | typing.SupportsIndex) -> None:
         """
         Sets the x-range and custom increment value
         """
-    def setYRangeAndIncrement(self, arg0: typing.SupportsInt, arg1: typing.SupportsInt, arg2: typing.SupportsInt) -> None:
+    def setYRangeAndIncrement(self, arg0: typing.SupportsInt | typing.SupportsIndex, arg1: typing.SupportsInt | typing.SupportsIndex, arg2: typing.SupportsInt | typing.SupportsIndex) -> None:
         """
         Sets the y-range and custom increment value
         """
-    def setZRangeAndIncrement(self, arg0: typing.SupportsInt, arg1: typing.SupportsInt, arg2: typing.SupportsInt) -> None:
+    def setZRangeAndIncrement(self, arg0: typing.SupportsInt | typing.SupportsIndex, arg1: typing.SupportsInt | typing.SupportsIndex, arg2: typing.SupportsInt | typing.SupportsIndex) -> None:
         """
         Sets the z-range and custom increment value
         """
@@ -572,22 +580,22 @@ class ConvexHull:
         Set point cloud used to generate mesh.
         """
 class CustomSphereDistribution(GeometricAdvectDistribution):
-    def __init__(self, arg0: collections.abc.Sequence[typing.SupportsFloat]) -> None:
+    def __init__(self, arg0: collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex]) -> None:
         ...
     def getBounds(self) -> typing.Annotated[list[float], "FixedSize(6)"]:
         """
         Get the cartesian bounds of the distribution.
         """
-    def getSignedDistance(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], arg1: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], arg2: typing.SupportsInt) -> float:
+    def getSignedDistance(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"], arg1: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"], arg2: typing.SupportsInt | typing.SupportsIndex) -> float:
         """
         Get the signed distance of the passed point to the surface of the distribution.
         """
-    def isInside(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], arg1: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], arg2: typing.SupportsFloat) -> bool:
+    def isInside(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"], arg1: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"], arg2: typing.SupportsFloat | typing.SupportsIndex) -> bool:
         """
         Check whether passed point is inside the distribution.
         """
 class Cylinder:
-    def __init__(self, origin: collections.abc.Sequence[typing.SupportsFloat], axisDirection: collections.abc.Sequence[typing.SupportsFloat], height: typing.SupportsFloat, radius: typing.SupportsFloat, topRadius: typing.SupportsFloat = 0.0) -> None:
+    def __init__(self, origin: collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], axisDirection: collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], height: typing.SupportsFloat | typing.SupportsIndex, radius: typing.SupportsFloat | typing.SupportsIndex, topRadius: typing.SupportsFloat | typing.SupportsIndex = 0.0) -> None:
         ...
 class DetectFeatures:
     @typing.overload
@@ -597,10 +605,10 @@ class DetectFeatures:
     def __init__(self, arg0: Domain) -> None:
         ...
     @typing.overload
-    def __init__(self, arg0: Domain, arg1: typing.SupportsFloat) -> None:
+    def __init__(self, arg0: Domain, arg1: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @typing.overload
-    def __init__(self, arg0: Domain, arg1: typing.SupportsFloat, arg2: viennals._core.FeatureDetectionEnum) -> None:
+    def __init__(self, arg0: Domain, arg1: typing.SupportsFloat | typing.SupportsIndex, arg2: viennals._core.FeatureDetectionEnum) -> None:
         ...
     def apply(self) -> None:
         """
@@ -610,7 +618,7 @@ class DetectFeatures:
         """
         Set which method to use to detect features. Defaults to Curvature.
         """
-    def setDetectionThreshold(self, arg0: typing.SupportsFloat) -> None:
+    def setDetectionThreshold(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         """
         Set the curvature value above which a point is considered a feature.
         """
@@ -619,13 +627,13 @@ class Domain:
     def __init__(self) -> None:
         ...
     @typing.overload
-    def __init__(self, gridDelta: typing.SupportsFloat = 1.0) -> None:
+    def __init__(self, gridDelta: typing.SupportsFloat | typing.SupportsIndex = 1.0) -> None:
         ...
     @typing.overload
-    def __init__(self, bounds: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(6)"], boundaryConditions: typing.Annotated[collections.abc.Sequence[viennals._core.BoundaryConditionEnum], "FixedSize(3)"], gridDelta: typing.SupportsFloat = 1.0) -> None:
+    def __init__(self, bounds: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(6)"], boundaryConditions: typing.Annotated[collections.abc.Sequence[viennals._core.BoundaryConditionEnum], "FixedSize(3)"], gridDelta: typing.SupportsFloat | typing.SupportsIndex = 1.0) -> None:
         ...
     @typing.overload
-    def __init__(self, bounds: collections.abc.Sequence[typing.SupportsFloat], boundaryConditions: collections.abc.Sequence[typing.SupportsInt], gridDelta: typing.SupportsFloat = 1.0) -> None:
+    def __init__(self, bounds: collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], boundaryConditions: collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex], gridDelta: typing.SupportsFloat | typing.SupportsIndex = 1.0) -> None:
         ...
     @typing.overload
     def __init__(self, arg0: Domain) -> None:
@@ -655,7 +663,7 @@ class Domain:
         """
     def print(self, stream: ... = ...) -> None:
         ...
-    def setLevelSetWidth(self, arg0: typing.SupportsInt) -> None:
+    def setLevelSetWidth(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
         """
         Set the number of layers of level set points which should be stored around the explicit surface.
         """
@@ -667,7 +675,7 @@ class Expand:
     def __init__(self, arg0: Domain) -> None:
         ...
     @typing.overload
-    def __init__(self, arg0: Domain, arg1: typing.SupportsInt) -> None:
+    def __init__(self, arg0: Domain, arg1: typing.SupportsInt | typing.SupportsIndex) -> None:
         ...
     def apply(self) -> None:
         """
@@ -677,7 +685,7 @@ class Expand:
         """
         Set levelset to expand.
         """
-    def setWidth(self, arg0: typing.SupportsInt) -> None:
+    def setWidth(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
         """
         Set the width to expand to.
         """
@@ -786,11 +794,11 @@ class GeometricAdvectDistribution:
         """
         Get the cartesian bounds of the distribution.
         """
-    def getSignedDistance(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], arg1: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], arg2: typing.SupportsInt) -> float:
+    def getSignedDistance(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"], arg1: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"], arg2: typing.SupportsInt | typing.SupportsIndex) -> float:
         """
         Get the signed distance of the passed point to the surface of the distribution.
         """
-    def isInside(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], arg1: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], arg2: typing.SupportsFloat) -> bool:
+    def isInside(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"], arg1: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"], arg2: typing.SupportsFloat | typing.SupportsIndex) -> bool:
         """
         Check whether passed point is inside the distribution.
         """
@@ -888,12 +896,12 @@ class MarkVoidPoints:
         Set the logic by which to choose the surface which is non-void. All other connected surfaces will then be marked as void points.
         """
 class Plane:
-    def __init__(self, origin: collections.abc.Sequence[typing.SupportsFloat], normal: collections.abc.Sequence[typing.SupportsFloat]) -> None:
+    def __init__(self, origin: collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], normal: collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex]) -> None:
         ...
 class PointCloud:
-    def __init__(self, arg0: collections.abc.Sequence[typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"]]) -> None:
+    def __init__(self, arg0: collections.abc.Sequence[typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"]]) -> None:
         ...
-    def insertNextPoint(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"]) -> None:
+    def insertNextPoint(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"]) -> None:
         ...
 class Prune:
     @typing.overload
@@ -940,10 +948,10 @@ class Reduce:
     def __init__(self, arg0: Domain) -> None:
         ...
     @typing.overload
-    def __init__(self, arg0: Domain, arg1: typing.SupportsInt) -> None:
+    def __init__(self, arg0: Domain, arg1: typing.SupportsInt | typing.SupportsIndex) -> None:
         ...
     @typing.overload
-    def __init__(self, arg0: Domain, arg1: typing.SupportsInt, arg2: bool) -> None:
+    def __init__(self, arg0: Domain, arg1: typing.SupportsInt | typing.SupportsIndex, arg2: bool) -> None:
         ...
     def apply(self) -> None:
         """
@@ -957,7 +965,7 @@ class Reduce:
         """
         Set whether the levelset should be segmented anew (balanced across cores) after reduction.
         """
-    def setWidth(self, arg0: typing.SupportsInt) -> None:
+    def setWidth(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
         """
         Set the width to reduce to.
         """
@@ -981,26 +989,26 @@ class RemoveStrayPoints:
         Set the logic by which to choose the surface which should be kept. All other LS values will be marked as stray points and removed.
         """
 class Sphere:
-    def __init__(self, origin: collections.abc.Sequence[typing.SupportsFloat], radius: typing.SupportsFloat) -> None:
+    def __init__(self, origin: collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], radius: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
 class SphereDistribution(GeometricAdvectDistribution):
-    def __init__(self, arg0: typing.SupportsFloat) -> None:
+    def __init__(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     def getBounds(self) -> typing.Annotated[list[float], "FixedSize(6)"]:
         """
         Get the cartesian bounds of the distribution.
         """
-    def getSignedDistance(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], arg1: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], arg2: typing.SupportsInt) -> float:
+    def getSignedDistance(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"], arg1: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"], arg2: typing.SupportsInt | typing.SupportsIndex) -> float:
         """
         Get the signed distance of the passed point to the surface of the distribution.
         """
-    def isInside(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], arg1: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat], "FixedSize(3)"], arg2: typing.SupportsFloat) -> bool:
+    def isInside(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"], arg1: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"], arg2: typing.SupportsFloat | typing.SupportsIndex) -> bool:
         """
         Check whether passed point is inside the distribution.
         """
 class StencilLocalLaxFriedrichsScalar:
     @staticmethod
-    def setMaxDissipation(maxDissipation: typing.SupportsFloat) -> None:
+    def setMaxDissipation(maxDissipation: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
 class ToDiskMesh:
     @typing.overload
@@ -1029,7 +1037,7 @@ class ToDiskMesh:
         """
         Set the material map to use for the disk mesh.
         """
-    def setMaxValue(self, arg0: typing.SupportsFloat) -> None:
+    def setMaxValue(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         """
         Set the maximum level set value to include in the disk mesh.
         """
@@ -1072,16 +1080,16 @@ class ToMesh:
         """
 class ToMultiSurfaceMesh:
     @typing.overload
-    def __init__(self, eps: typing.SupportsFloat = 1e-12, minNodeDistFactor: typing.SupportsFloat = 0.05) -> None:
+    def __init__(self, minNodeDistFactor: typing.SupportsFloat | typing.SupportsIndex = 0.05, eps: typing.SupportsFloat | typing.SupportsIndex = 1e-12) -> None:
         ...
     @typing.overload
-    def __init__(self, domain: Domain, mesh: viennals._core.Mesh, eps: typing.SupportsFloat = 1e-12, minNodeDistFactor: typing.SupportsFloat = 0.05) -> None:
+    def __init__(self, domain: Domain, mesh: viennals._core.Mesh, minNodeDistFactor: typing.SupportsFloat | typing.SupportsIndex = 0.05, eps: typing.SupportsFloat | typing.SupportsIndex = 1e-12) -> None:
         ...
     @typing.overload
-    def __init__(self, domains: collections.abc.Sequence[Domain], mesh: viennals._core.Mesh, eps: typing.SupportsFloat = 1e-12, minNodeDistFactor: typing.SupportsFloat = 0.05) -> None:
+    def __init__(self, domains: collections.abc.Sequence[Domain], mesh: viennals._core.Mesh, minNodeDistFactor: typing.SupportsFloat | typing.SupportsIndex = 0.05, eps: typing.SupportsFloat | typing.SupportsIndex = 1e-12) -> None:
         ...
     @typing.overload
-    def __init__(self, mesh: viennals._core.Mesh, eps: typing.SupportsFloat = 1e-12, minNodeDistFactor: typing.SupportsFloat = 0.05) -> None:
+    def __init__(self, mesh: viennals._core.Mesh, minNodeDistFactor: typing.SupportsFloat | typing.SupportsIndex = 0.05, eps: typing.SupportsFloat | typing.SupportsIndex = 1e-12) -> None:
         ...
     def apply(self) -> None:
         """
@@ -1103,12 +1111,16 @@ class ToMultiSurfaceMesh:
         """
         Set the mesh to generate.
         """
+    def setSharpCorners(self, arg0: bool) -> None:
+        """
+        Set whether to preserve sharp corners. Defaults to false.
+        """
 class ToSurfaceMesh:
     @typing.overload
-    def __init__(self) -> None:
+    def __init__(self, minNodeDistFactor: typing.SupportsFloat | typing.SupportsIndex = 0.05, eps: typing.SupportsFloat | typing.SupportsIndex = 1e-12) -> None:
         ...
     @typing.overload
-    def __init__(self, arg0: Domain, arg1: viennals._core.Mesh) -> None:
+    def __init__(self, domain: Domain, mesh: viennals._core.Mesh, minNodeDistFactor: typing.SupportsFloat | typing.SupportsIndex = 0.05, eps: typing.SupportsFloat | typing.SupportsIndex = 1e-12) -> None:
         ...
     def apply(self) -> None:
         """
@@ -1121,6 +1133,14 @@ class ToSurfaceMesh:
     def setMesh(self, arg0: viennals._core.Mesh) -> None:
         """
         Set the mesh to generate.
+        """
+    def setSharpCorners(self, arg0: bool) -> None:
+        """
+        Set whether to preserve sharp corners. Defaults to false.
+        """
+    def setUpdatePointData(self, arg0: bool) -> None:
+        """
+        Set whether to update point data. Defaults to true.
         """
 class ToVoxelMesh:
     @typing.overload
@@ -1159,17 +1179,17 @@ class WriteVisualizationMesh:
     def __init__(self, arg0: Domain) -> None:
         ...
     @typing.overload
-    def addMetaData(self, arg0: str, arg1: typing.SupportsFloat) -> None:
+    def addMetaData(self, arg0: str, arg1: typing.SupportsFloat | typing.SupportsIndex) -> None:
         """
         Add a single metadata entry to the file.
         """
     @typing.overload
-    def addMetaData(self, arg0: str, arg1: collections.abc.Sequence[typing.SupportsFloat]) -> None:
+    def addMetaData(self, arg0: str, arg1: collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex]) -> None:
         """
         Add a single metadata entry to the file.
         """
     @typing.overload
-    def addMetaData(self, arg0: collections.abc.Mapping[str, collections.abc.Sequence[typing.SupportsFloat]]) -> None:
+    def addMetaData(self, arg0: collections.abc.Mapping[str, collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex]]) -> None:
         """
         Add metadata to the file.
         """
@@ -1193,7 +1213,7 @@ class WriteVisualizationMesh:
         """
         Set Name of File to write.
         """
-    def setMetaData(self, arg0: collections.abc.Mapping[str, collections.abc.Sequence[typing.SupportsFloat]]) -> None:
+    def setMetaData(self, arg0: collections.abc.Mapping[str, collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex]]) -> None:
         """
         Set the metadata to be written to the file.
         """

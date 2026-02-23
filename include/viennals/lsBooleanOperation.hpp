@@ -11,6 +11,8 @@
 #include <vcSmartPointer.hpp>
 #include <vcVectorType.hpp>
 
+#include <functional>
+
 namespace viennals {
 
 using namespace viennacore;
@@ -42,7 +44,8 @@ enum struct BooleanOperationEnum : unsigned {
 ///  ComparatorType.
 template <class T, int D> class BooleanOperation {
 public:
-  using ComparatorType = std::pair<T, bool> (*)(const T &, const T &);
+  using ComparatorType =
+      std::function<std::pair<T, bool>(const T &, const T &)>;
 
 private:
   typedef typename Domain<T, D>::DomainType hrleDomainType;
