@@ -79,8 +79,7 @@ int main() {
   visualizeMesh->apply();
 
   {
-    auto hullMesh =
-        ls::SmartPointer<ls::WriteHullMesh<NumericType, D>>::New();
+    auto hullMesh = ls::SmartPointer<ls::WriteHullMesh<NumericType, D>>::New();
     hullMesh->insertNextLevelSet(secondSphere);
     hullMesh->insertNextLevelSet(substrate);
     hullMesh->setSharpCorners(false);

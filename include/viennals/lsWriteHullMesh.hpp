@@ -81,9 +81,9 @@ template <class T, int D> class WriteHullMesh {
       auto &grd = ls->getGrid();
       for (int i = 0; i < D; ++i) {
         int minP = (grd.isNegBoundaryInfinite(i)) ? dom.getMinRunBreak(i) - 1
-                                                   : grd.getMinBounds(i);
+                                                  : grd.getMinBounds(i);
         int maxP = (grd.isPosBoundaryInfinite(i)) ? dom.getMaxRunBreak(i) + 1
-                                                   : grd.getMaxBounds(i);
+                                                  : grd.getMaxBounds(i);
         if (minP < totalMinimum[i])
           totalMinimum[i] = minP;
         if (maxP > totalMaximum[i])
@@ -124,7 +124,7 @@ template <class T, int D> class WriteHullMesh {
           for (const auto &bn : boundaryNodes)
             if (std::abs(bn.first - val) < tolerance)
               return;
-          
+
           if (levelSets.back()->getNumberOfPoints() == 0)
             return;
 
@@ -135,16 +135,19 @@ template <class T, int D> class WriteHullMesh {
           auto &grid = levelSets.back()->getGrid();
           if (grid.isOutsideOfDomain(idx))
             idx = grid.globalIndices2LocalIndices(idx);
-          
+
           // Clamp to grid bounds to ensure iterator safety
           auto minGrid = grid.getMinGridPoint();
           auto maxGrid = grid.getMaxGridPoint();
           for (int i = 0; i < D; ++i) {
-            if (idx[i] < minGrid[i]) idx[i] = minGrid[i];
-            if (idx[i] > maxGrid[i]) idx[i] = maxGrid[i];
+            if (idx[i] < minGrid[i])
+              idx[i] = minGrid[i];
+            if (idx[i] > maxGrid[i])
+              idx[i] = maxGrid[i];
           }
 
-          viennahrle::ConstDenseIterator<hrleDomainType> it(levelSets.back()->getDomain());
+          viennahrle::ConstDenseIterator<hrleDomainType> it(
+              levelSets.back()->getDomain());
           it.goToIndices(idx);
           if (it.getValue() > 0.)
             return;

@@ -140,20 +140,17 @@ int main() {
   deposition.apply();
 
   {
-    auto hullMesh =
-        ls::SmartPointer<ls::WriteHullMesh<double, D>>::New();
+    auto hullMesh = ls::SmartPointer<ls::WriteHullMesh<double, D>>::New();
     hullMesh->insertNextLevelSet(polymer);
     hullMesh->setSharpCorners(true);
     hullMesh->setFileName("polymer");
     hullMesh->apply();
-    hullMesh =
-        ls::SmartPointer<ls::WriteHullMesh<double, D>>::New();
+    hullMesh = ls::SmartPointer<ls::WriteHullMesh<double, D>>::New();
     hullMesh->insertNextLevelSet(substrate);
     hullMesh->setSharpCorners(true);
     hullMesh->setFileName("substrate");
     hullMesh->apply();
-    hullMesh =
-        ls::SmartPointer<ls::WriteHullMesh<double, D>>::New();
+    hullMesh = ls::SmartPointer<ls::WriteHullMesh<double, D>>::New();
     hullMesh->insertNextLevelSet(mask);
     hullMesh->setSharpCorners(true);
     hullMesh->setFileName("mask");

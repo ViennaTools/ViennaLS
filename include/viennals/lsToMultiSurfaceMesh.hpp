@@ -2,7 +2,6 @@
 
 #include <lsMaterialMap.hpp>
 #include <lsToSurfaceMesh.hpp>
-#include <iostream>
 
 namespace viennals {
 
@@ -70,8 +69,8 @@ class ToMultiSurfaceMesh : public ToSurfaceMesh<NumericType, D> {
       // Only apply the layer-thickness check when the active corner is inside
       // BOTH materials (LS_m < 0 and LS_l < 0). If LS_m > 0, the active corner
       // lies outside material m (e.g. inside a trench cavity), meaning the two
-      // surfaces meet at a genuine junction — not a thin-layer overlap — and the
-      // snap should be allowed regardless of delta.
+      // surfaces meet at a genuine junction — not a thin-layer overlap — and
+      // the snap should be allowed regardless of delta.
       if (lsMAtActive < NumericType(0) &&
           lsMAtActive - lsLAtActive > layerThreshold)
         continue; // thin conformal layer present — do not snap
@@ -136,7 +135,8 @@ class ToMultiSurfaceMesh : public ToSurfaceMesh<NumericType, D> {
       if (dist2 >= NumericType(this->minNodeDistanceFactor))
         continue;
 
-      // Split the edge unconditionally to ensure the bottom material remains closed
+      // Split the edge unconditionally to ensure the bottom material remains
+      // closed
       uniqueElements.erase({(int)node0, (int)node1, 0});
       uniqueElements.insert({(int)node0, (int)cornerNodeId, 0});
       uniqueElements.insert({(int)cornerNodeId, (int)node1, 0});
@@ -148,15 +148,17 @@ class ToMultiSurfaceMesh : public ToSurfaceMesh<NumericType, D> {
       currentNormals.push_back(normal);
 
       // Remove any duplicate segments from the current material (l)
-      for (size_t k = meshSizeBefore; k < mesh->lines.size(); ) {
+      for (size_t k = meshSizeBefore; k < mesh->lines.size();) {
         if (currentMaterials[k] != static_cast<NumericType>(l)) {
           ++k;
           continue;
         }
 
         const auto &rl = mesh->lines[k];
-        bool isSeg1 = (rl[0] == node0 && rl[1] == cornerNodeId) || (rl[0] == cornerNodeId && rl[1] == node0);
-        bool isSeg2 = (rl[0] == cornerNodeId && rl[1] == node1) || (rl[0] == node1 && rl[1] == cornerNodeId);
+        bool isSeg1 = (rl[0] == node0 && rl[1] == cornerNodeId) ||
+                      (rl[0] == cornerNodeId && rl[1] == node0);
+        bool isSeg2 = (rl[0] == cornerNodeId && rl[1] == node1) ||
+                      (rl[0] == node1 && rl[1] == cornerNodeId);
 
         if (isSeg1 || isSeg2) {
           mesh->lines.erase(mesh->lines.begin() + k);
@@ -261,11 +263,11 @@ class ToMultiSurfaceMesh : public ToSurfaceMesh<NumericType, D> {
         // Check if the polymer edge crosses BOTH corner edges
         Vec3D<NumericType> int1{}, int2{};
         NumericType t1 = 0, t2 = 0;
-        bool cross1 = getSegmentIntersection(pp0, pp1,
-            mesh->nodes[mesh->lines[edge1Idx][0]],
+        bool cross1 = getSegmentIntersection(
+            pp0, pp1, mesh->nodes[mesh->lines[edge1Idx][0]],
             mesh->nodes[mesh->lines[edge1Idx][1]], int1, t1);
-        bool cross2 = getSegmentIntersection(pp0, pp1,
-            mesh->nodes[mesh->lines[edge2Idx][0]],
+        bool cross2 = getSegmentIntersection(
+            pp0, pp1, mesh->nodes[mesh->lines[edge2Idx][0]],
             mesh->nodes[mesh->lines[edge2Idx][1]], int2, t2);
 
         if (!cross1 || !cross2)
@@ -329,8 +331,8 @@ class ToMultiSurfaceMesh : public ToSurfaceMesh<NumericType, D> {
     }
   }
 
-  // In 2D, for a just-inserted regular MC edge at lineIdx, iterates lower-material
-  // sharp corner nodes once and performs two checks per node:
+  // In 2D, for a just-inserted regular MC edge at lineIdx, iterates
+  // lower-material sharp corner nodes once and performs two checks per node:
   //   1. Point-on-edge: if a corner lies on the edge, split it to close the
   //      shared boundary between adjacent materials.
   //   2. Double-crossing (cell-local): if the edge crosses both arms of the
@@ -382,10 +384,10 @@ class ToMultiSurfaceMesh : public ToSurfaceMesh<NumericType, D> {
             }
             if (dist2 < NumericType(this->minNodeDistanceFactor)) {
               unsigned cId = scn.nodeId;
-              bool keep0 = !uniqueElements.count({(int)cId,   (int)node0, 0}) &&
-                           !uniqueElements.count({(int)node0, (int)cId,   0});
-              bool keep1 = !uniqueElements.count({(int)node1, (int)cId,   0}) &&
-                           !uniqueElements.count({(int)cId,   (int)node1, 0});
+              bool keep0 = !uniqueElements.count({(int)cId, (int)node0, 0}) &&
+                           !uniqueElements.count({(int)node0, (int)cId, 0});
+              bool keep1 = !uniqueElements.count({(int)node1, (int)cId, 0}) &&
+                           !uniqueElements.count({(int)cId, (int)node1, 0});
               uniqueElements.erase({(int)node0, (int)node1, 0});
               auto &line = mesh->lines[lineIdx];
               if (keep0 && keep1) {
@@ -393,8 +395,8 @@ class ToMultiSurfaceMesh : public ToSurfaceMesh<NumericType, D> {
                 mesh->lines.push_back({cId, node1});
                 currentMaterials.push_back(currentMaterials[lineIdx]);
                 currentNormals.push_back(currentNormals[lineIdx]);
-                uniqueElements.insert({(int)node0, (int)cId,   0});
-                uniqueElements.insert({(int)cId,   (int)node1, 0});
+                uniqueElements.insert({(int)node0, (int)cId, 0});
+                uniqueElements.insert({(int)cId, (int)node1, 0});
               } else if (keep0) {
                 line[1] = cId;
                 uniqueElements.insert({(int)node0, (int)cId, 0});
@@ -442,11 +444,11 @@ class ToMultiSurfaceMesh : public ToSurfaceMesh<NumericType, D> {
 
         Vec3D<NumericType> int1{}, int2{};
         NumericType t1 = 0, t2 = 0;
-        bool cross1 = getSegmentIntersection(pos0, pos1,
-            mesh->nodes[mesh->lines[edge1Idx][0]],
+        bool cross1 = getSegmentIntersection(
+            pos0, pos1, mesh->nodes[mesh->lines[edge1Idx][0]],
             mesh->nodes[mesh->lines[edge1Idx][1]], int1, t1);
-        bool cross2 = getSegmentIntersection(pos0, pos1,
-            mesh->nodes[mesh->lines[edge2Idx][0]],
+        bool cross2 = getSegmentIntersection(
+            pos0, pos1, mesh->nodes[mesh->lines[edge2Idx][0]],
             mesh->nodes[mesh->lines[edge2Idx][1]], int2, t2);
         if (!cross1 || !cross2)
           continue;
@@ -466,8 +468,10 @@ class ToMultiSurfaceMesh : public ToSurfaceMesh<NumericType, D> {
         Vec3D<NumericType> normalM2 = currentNormals[edge2Idx];
         NumericType matL = currentMaterials[lineIdx];
         Vec3D<NumericType> normalL = currentNormals[lineIdx];
-        unsigned e1n0 = mesh->lines[edge1Idx][0], e1n1 = mesh->lines[edge1Idx][1];
-        unsigned e2n0 = mesh->lines[edge2Idx][0], e2n1 = mesh->lines[edge2Idx][1];
+        unsigned e1n0 = mesh->lines[edge1Idx][0],
+                 e1n1 = mesh->lines[edge1Idx][1];
+        unsigned e2n0 = mesh->lines[edge2Idx][0],
+                 e2n1 = mesh->lines[edge2Idx][1];
 
         uniqueElements.erase({(int)e1n0, (int)e1n1, 0});
         mesh->lines[edge1Idx][1] = intNode1;
@@ -515,7 +519,7 @@ class ToMultiSurfaceMesh : public ToSurfaceMesh<NumericType, D> {
 
       int snapToNodeId =
           (l > 0) ? findNearestLowerCorner(l, cornerPos, sharpCornerNodes,
-                                            activeGridIdx, lsLAtActive)
+                                           activeGridIdx, lsLAtActive)
                   : -1;
 
       if (snapToNodeId >= 0) {
@@ -736,7 +740,8 @@ public:
             hrleIndex cornerIdx =
                 cellIt.getIndices() + viennahrle::BitMaskToIndex<D>(i);
             prevIt.goToIndices(cornerIdx);
-            if (prevIt.getValue() <= NumericType(0)) { // Inside previous material
+            if (prevIt.getValue() <=
+                NumericType(0)) { // Inside previous material
               atMaterialBoundary = true;
               break;
             }
@@ -804,10 +809,16 @@ public:
             int activeBit = -1;
             if (countNeg == 1) {
               for (int i = 0; i < (1 << D); ++i)
-                if ((negMask >> i) & 1) { activeBit = i; break; }
+                if ((negMask >> i) & 1) {
+                  activeBit = i;
+                  break;
+                }
             } else if (countPos == 1) {
               for (int i = 0; i < (1 << D); ++i)
-                if ((posMask >> i) & 1) { activeBit = i; break; }
+                if ((posMask >> i) & 1) {
+                  activeBit = i;
+                  break;
+                }
             }
             hrleIndex activeGridIdx = cellIt.getIndices();
             NumericType lsLAtActive = NumericType(0);
@@ -815,8 +826,8 @@ public:
               activeGridIdx += viennahrle::BitMaskToIndex<D>(activeBit);
               lsLAtActive = cellIt.getCorner(activeBit).getValue();
             }
-            snapSharpCorners(l, meshSizeBefore, sharpCornerNodes,
-                             activeGridIdx, lsLAtActive, cellIt.getIndices());
+            snapSharpCorners(l, meshSizeBefore, sharpCornerNodes, activeGridIdx,
+                             lsLAtActive, cellIt.getIndices());
           }
         }
 
@@ -925,7 +936,8 @@ public:
                   Vec3D<NumericType> nodePos =
                       this->computeNodePosition(cellIt, edge);
 
-                  NumericType minDist2 = NumericType(this->minNodeDistanceFactor);
+                  NumericType minDist2 =
+                      NumericType(this->minNodeDistanceFactor);
                   for (const auto &scn : tmIt->second) {
                     NumericType dist2 = NumericType(0);
                     for (int i = 0; i < D; ++i) {
@@ -966,8 +978,8 @@ public:
             this->insertElement(nodeNumbers);
             if (sharpCorners && l > 0)
               handleEdgeCornerInteractions(mesh->lines.size() - 1,
-                                             sharpCornerNodes, l,
-                                             cellIt.getIndices());
+                                           sharpCornerNodes, l,
+                                           cellIt.getIndices());
           }
         }
       }

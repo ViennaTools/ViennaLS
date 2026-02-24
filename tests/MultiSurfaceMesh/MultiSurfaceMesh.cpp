@@ -84,10 +84,8 @@ int main() {
 
   std::cout << "Writing level set meshes..." << std::endl;
 
-
 #ifdef VIENNALS_USE_VTK
-  auto visMesh =
-      SmartPointer<WriteVisualizationMesh<double, 2>>::New();
+  auto visMesh = SmartPointer<WriteVisualizationMesh<double, 2>>::New();
   auto hullMesh = SmartPointer<WriteHullMesh<double, 2>>::New();
 #endif
 
@@ -101,7 +99,7 @@ int main() {
     visMesh->insertNextLevelSet(layer);
     hullMesh->insertNextLevelSet(layer);
 #endif
- }
+  }
 
 #ifdef VIENNALS_USE_VTK
   visMesh->setExtractHullMesh(true);
