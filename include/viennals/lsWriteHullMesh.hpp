@@ -12,6 +12,8 @@
 #include <vtkXMLPolyDataWriter.h>
 
 #include <hrleDenseIterator.hpp>
+#include <map>
+#include <tuple>
 
 #include <lsDomain.hpp>
 #include <lsMaterialMap.hpp>
@@ -216,10 +218,87 @@ template <class T, int D> class WriteHullMesh {
       capBoundary(1, maxY, minX, maxX);
 
     } else {
+      // 3D implementation: Marching Squares on boundary faces
+
+      // Map to find existing nodes on grid edges/corners
+      // EdgeKey: (dir, i, j, k) where dir is edge direction (0=x, 1=y, 2=z)
+      using EdgeKey = std::tuple<int, int, int, int>;
+      std::map<EdgeKey, unsigned> edgeToNode;
+      std::map<std::tuple<int, int, int>, unsigned> existingGridNodes;
+      double invGridDelta = 1.0 / gridDelta;
+
+      for (unsigned i = 0; i < multiMesh->nodes.size(); ++i) {
+        const auto &pos = multiMesh->nodes[i];
+        int intCoords[3];
+        bool isInt[3];
+        int intCount = 0;
+        for (int d = 0; d < 3; ++d) {
+          double val = pos[d] * invGridDelta;
+          intCoords[d] = std::round(val);
+          isInt[d] = std::abs(val - intCoords[d]) < 1e-4;
+          if (isInt[d])
+            intCount++;
+        }
+
+        if (intCount == 3) {
+          existingGridNodes[{intCoords[0], intCoords[1], intCoords[2]}] = i;
+        } else if (intCount == 2) {
+          int dir = -1;
+          for (int d = 0; d < 3; ++d)
+            if (!isInt[d])
+              dir = d;
+          int start[3];
+          for (int d = 0; d < 3; ++d) {
+            if (d == dir)
+              start[d] = std::floor(pos[d] * invGridDelta);
+            else
+              start[d] = intCoords[d];
+          }
+          edgeToNode[{dir, start[0], start[1], start[2]}] = i;
+        }
+      }
+
+      std::map<std::tuple<int, int, int>, unsigned> gridNodeMap;
+      auto getGridNode = [&](int i, int j, int k) {
+        std::tuple<int, int, int> key = {i, j, k};
+        auto it = gridNodeMap.find(key);
+        if (it != gridNodeMap.end())
+          return it->second;
+        auto it2 = existingGridNodes.find(key);
+        if (it2 != existingGridNodes.end())
+          return it2->second;
+
+        Vec3D<T> pos;
+        pos[0] = i * gridDelta;
+        pos[1] = j * gridDelta;
+        pos[2] = k * gridDelta;
+        unsigned id = multiMesh->insertNextNode(pos);
+        gridNodeMap[key] = id;
+        return id;
+      };
+
+      // Marching Squares Cases (Triangles)
+      // 0-3: Corners (BL, BR, TR, TL), 4-7: Edges (B, R, T, L)
+      const std::vector<std::vector<int>> msTris = {{},
+                                                    {0, 4, 7},
+                                                    {1, 5, 4},
+                                                    {0, 1, 5, 0, 5, 7},
+                                                    {2, 6, 5},
+                                                    {0, 4, 7, 2, 6, 5},
+                                                    {1, 2, 6, 1, 6, 4},
+                                                    {0, 1, 2, 0, 2, 6, 0, 6, 7},
+                                                    {3, 7, 6},
+                                                    {0, 4, 6, 0, 6, 3},
+                                                    {1, 5, 4, 3, 7, 6},
+                                                    {0, 1, 5, 0, 5, 6, 0, 6, 3},
+                                                    {3, 2, 5, 3, 5, 7},
+                                                    {0, 4, 5, 0, 5, 2, 0, 2, 3},
+                                                    {1, 2, 3, 1, 3, 7, 1, 7, 4},
+                                                    {0, 1, 2, 0, 2, 3}};
+
       for (int d = 0; d < D; ++d) {
         for (int side = 0; side < 2; ++side) {
           int boundaryCoord = (side == 0) ? totalMinimum[d] : totalMaximum[d];
-
           int u = (d + 1) % D;
           int v = (d + 2) % D;
           if (D == 3 && u > v)
@@ -230,67 +309,107 @@ template <class T, int D> class WriteHullMesh {
           int vMin = (D == 3) ? totalMinimum[v] : 0;
           int vMax = (D == 3) ? totalMaximum[v] : 0;
 
+          bool flip = (side == 0);
+
           for (int i = uMin; i < uMax; ++i) {
             for (int j = vMin; j < ((D == 3) ? vMax : 1); ++j) {
-              double gridCentroid[D];
-              gridCentroid[d] = static_cast<double>(boundaryCoord);
-              gridCentroid[u] = static_cast<double>(i) + 0.5;
-              if (D == 3)
-                gridCentroid[v] = static_cast<double>(j) + 0.5;
+              int cI[4] = {i, i + 1, i + 1, i};
+              int cJ[4] = {j, j, j + 1, j + 1};
 
+              int mask = 0;
               int matId = -1;
-              int boundaryCandidate = -1;
-              viennahrle::Index<D> queryIdx;
-              for (int k = 0; k < D; ++k)
-                queryIdx[k] = std::round(gridCentroid[k]);
 
-              for (unsigned l = 0; l < levelSets.size(); ++l) {
-                viennahrle::ConstDenseIterator<hrleDomainType> it(
-                    levelSets[l]->getDomain());
-                it.goToIndices(queryIdx);
-                double val = it.getValue();
-                if (val < -1e-6 * gridDelta) {
-                  matId =
-                      (materialMap) ? materialMap->getMaterialId(l) : (int)l;
-                  break;
-                }
-                if (val <= 1e-6 * gridDelta && boundaryCandidate == -1) {
-                  boundaryCandidate =
-                      (materialMap) ? materialMap->getMaterialId(l) : (int)l;
+              for (int k = 0; k < 4; ++k) {
+                viennahrle::Index<D> idx;
+                idx[d] = boundaryCoord;
+                idx[u] = cI[k];
+                idx[v] = cJ[k];
+
+                for (unsigned l = 0; l < levelSets.size(); ++l) {
+                  viennahrle::ConstDenseIterator<hrleDomainType> it(
+                      levelSets[l]->getDomain());
+                  it.goToIndices(idx);
+                  if (it.getValue() <= 0) {
+                    mask |= (1 << k);
+                    if (matId == -1)
+                      matId = (materialMap) ? materialMap->getMaterialId(l)
+                                            : (int)l;
+                    break;
+                  }
                 }
               }
+
+              if (mask == 0)
+                continue;
               if (matId == -1)
-                matId = boundaryCandidate;
+                matId = 0;
 
-              if (matId != -1) {
-                unsigned startNodeId = multiMesh->nodes.size();
-                auto matIds = multiMesh->cellData.getScalarData("MaterialIds");
+              auto &tris = msTris[mask];
+              for (size_t t = 0; t < tris.size(); t += 3) {
+                unsigned nodes[3];
+                for (int k = 0; k < 3; ++k) {
+                  int pt = tris[t + k];
+                  if (pt < 4) {
+                    int coords[3];
+                    coords[d] = boundaryCoord;
+                    coords[u] = cI[pt];
+                    coords[v] = cJ[pt];
+                    nodes[k] = getGridNode(coords[0], coords[1], coords[2]);
+                  } else {
+                    int edgeDir, ei;
+                    ei = boundaryCoord;
+                    int s[3];
+                    s[d] = ei;
 
-                Vec3D<T> p[4];
-                for (int k = 0; k < 4; ++k)
-                  p[k][d] = boundaryCoord * gridDelta;
+                    if (pt == 4) { // Bottom
+                      edgeDir = u;
+                      s[u] = i;
+                      s[v] = j;
+                    } else if (pt == 5) { // Right
+                      edgeDir = v;
+                      s[u] = i + 1;
+                      s[v] = j;
+                    } else if (pt == 6) { // Top
+                      edgeDir = u;
+                      s[u] = i;
+                      s[v] = j + 1;
+                    } else { // Left
+                      edgeDir = v;
+                      s[u] = i;
+                      s[v] = j;
+                    }
+                    nodes[k] = edgeToNode[{edgeDir, s[0], s[1], s[2]}];
 
-                p[0][u] = i * gridDelta;
-                p[0][v] = j * gridDelta;
-                p[1][u] = (i + 1) * gridDelta;
-                p[1][v] = j * gridDelta;
-                p[2][u] = i * gridDelta;
-                p[2][v] = (j + 1) * gridDelta;
-                p[3][u] = (i + 1) * gridDelta;
-                p[3][v] = (j + 1) * gridDelta;
-
-                for (int k = 0; k < 4; ++k)
-                  multiMesh->insertNextNode(p[k]);
-
-                multiMesh->insertNextTriangle(
-                    {startNodeId, startNodeId + 1, startNodeId + 2});
-                multiMesh->insertNextTriangle(
-                    {startNodeId + 2, startNodeId + 1, startNodeId + 3});
-
-                if (matIds) {
-                  matIds->push_back(matId);
-                  matIds->push_back(matId);
+                    if (nodes[k] == 0 &&
+                        edgeToNode.find({0, 0, 0, 0}) == edgeToNode.end()) {
+                      // Fallback: create midpoint if node missing
+                      Vec3D<T> pos;
+                      pos[d] = ei * gridDelta;
+                      if (pt == 4) {
+                        pos[u] = (i + 0.5) * gridDelta;
+                        pos[v] = j * gridDelta;
+                      } else if (pt == 5) {
+                        pos[u] = (i + 1) * gridDelta;
+                        pos[v] = (j + 0.5) * gridDelta;
+                      } else if (pt == 6) {
+                        pos[u] = (i + 0.5) * gridDelta;
+                        pos[v] = (j + 1) * gridDelta;
+                      } else {
+                        pos[u] = i * gridDelta;
+                        pos[v] = (j + 0.5) * gridDelta;
+                      }
+                      nodes[k] = multiMesh->insertNextNode(pos);
+                    }
+                  }
                 }
+
+                if (flip)
+                  std::swap(nodes[1], nodes[2]);
+
+                multiMesh->insertNextTriangle({nodes[0], nodes[1], nodes[2]});
+                auto matIds = multiMesh->cellData.getScalarData("MaterialIds");
+                if (matIds)
+                  matIds->push_back(matId);
               }
             }
           }

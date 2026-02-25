@@ -3,7 +3,9 @@
 #include <lsBooleanOperation.hpp>
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
+#include <lsMesh.hpp>
 #include <lsToMesh.hpp>
+#include <lsToMultiSurfaceMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
@@ -15,7 +17,7 @@ namespace ls = viennals;
 int main() {
   omp_set_num_threads(4);
 
-  constexpr int D = 2;
+  constexpr int D = 3;
   typedef float NumericType;
 
   double gridDelta = 1.0;
@@ -77,6 +79,17 @@ int main() {
   visualizeMesh->setFileName("myFile");
 
   visualizeMesh->apply();
+
+  {
+    auto mesh = ls::Mesh<NumericType>::New();
+    ls::ToMultiSurfaceMesh<NumericType, D> mesher;
+    mesher.insertNextLevelSet(secondSphere);
+    mesher.insertNextLevelSet(substrate);
+    mesher.setMesh(mesh);
+    mesher.setSharpCorners(false);
+    mesher.apply();
+    ls::VTKWriter<NumericType>(mesh, "multiSurfaceMesh").apply();
+  }
 
   {
     auto hullMesh = ls::SmartPointer<ls::WriteHullMesh<NumericType, D>>::New();
