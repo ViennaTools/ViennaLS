@@ -5,7 +5,7 @@ from __future__ import annotations
 import collections.abc
 import typing
 import viennals._core
-__all__: list[str] = ['Advect', 'BooleanOperation', 'Box', 'BoxDistribution', 'CalculateCurvatures', 'CalculateNormalVectors', 'CalculateVisibilities', 'Check', 'CompareChamfer', 'CompareCriticalDimensions', 'CompareNarrowBand', 'CompareSparseField', 'CompareVolume', 'ConvexHull', 'CustomSphereDistribution', 'Cylinder', 'DetectFeatures', 'Domain', 'Expand', 'FinalizeStencilLocalLaxFriedrichs', 'FromMesh', 'FromSurfaceMesh', 'FromVolumeMesh', 'GeometricAdvect', 'GeometricAdvectDistribution', 'MakeGeometry', 'MarkVoidPoints', 'Plane', 'PointCloud', 'PrepareStencilLocalLaxFriedrichs', 'Prune', 'Reader', 'Reduce', 'RemoveStrayPoints', 'Sphere', 'SphereDistribution', 'StencilLocalLaxFriedrichsScalar', 'ToDiskMesh', 'ToMesh', 'ToMultiSurfaceMesh', 'ToSurfaceMesh', 'ToVoxelMesh', 'WriteVisualizationMesh', 'Writer', 'hrleGrid']
+__all__: list[str] = ['Advect', 'BooleanOperation', 'Box', 'BoxDistribution', 'CalculateCurvatures', 'CalculateNormalVectors', 'CalculateVisibilities', 'Check', 'CompareChamfer', 'CompareCriticalDimensions', 'CompareNarrowBand', 'CompareSparseField', 'CompareVolume', 'ConvexHull', 'CustomSphereDistribution', 'Cylinder', 'DetectFeatures', 'Domain', 'Expand', 'FinalizeStencilLocalLaxFriedrichs', 'FromMesh', 'FromSurfaceMesh', 'FromVolumeMesh', 'GeometricAdvect', 'GeometricAdvectDistribution', 'MakeGeometry', 'MarkVoidPoints', 'Plane', 'PointCloud', 'PrepareStencilLocalLaxFriedrichs', 'Prune', 'Reader', 'Reduce', 'RemoveStrayPoints', 'Sphere', 'SphereDistribution', 'StencilLocalLaxFriedrichsScalar', 'ToDiskMesh', 'ToHullMesh', 'ToMesh', 'ToMultiSurfaceMesh', 'ToSurfaceMesh', 'ToVoxelMesh', 'WriteVisualizationMesh', 'Writer', 'hrleGrid']
 class Advect:
     @typing.overload
     def __init__(self) -> None:
@@ -1044,6 +1044,47 @@ class ToDiskMesh:
     def setMesh(self, arg0: viennals._core.Mesh) -> None:
         """
         Set the mesh to generate.
+        """
+class ToHullMesh:
+    @typing.overload
+    def __init__(self) -> None:
+        ...
+    @typing.overload
+    def __init__(self, arg0: viennals._core.Mesh) -> None:
+        ...
+    @typing.overload
+    def __init__(self, arg0: viennals._core.Mesh, arg1: collections.abc.Sequence[Domain]) -> None:
+        ...
+    @typing.overload
+    def __init__(self, arg0: viennals._core.Mesh, arg1: Domain) -> None:
+        ...
+    def apply(self) -> None:
+        """
+        Generate hull mesh.
+        """
+    def clearLevelSets(self) -> None:
+        """
+        Clear all inserted level sets.
+        """
+    def insertNextLevelSet(self, arg0: Domain) -> None:
+        """
+        Insert next level set to convert. Bigger level sets wrapping smaller ones, should be inserted last.
+        """
+    def setBottomExtension(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        """
+        Set the bottom extension value for 2D hull meshes.
+        """
+    def setMaterialMap(self, arg0: viennals._core.MaterialMap) -> None:
+        """
+        Set the material map to use for the hull mesh.
+        """
+    def setMesh(self, arg0: viennals._core.Mesh) -> None:
+        """
+        Set the mesh to generate.
+        """
+    def setSharpCorners(self, arg0: bool) -> None:
+        """
+        Set whether to generate sharp corners. Defaults to false.
         """
 class ToMesh:
     @typing.overload

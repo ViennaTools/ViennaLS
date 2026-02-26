@@ -38,6 +38,7 @@
 #include <lsRemoveStrayPoints.hpp>
 #include <lsSlice.hpp>
 #include <lsToDiskMesh.hpp>
+#include <lsToHullMesh.hpp>
 #include <lsToMesh.hpp>
 #include <lsToMultiSurfaceMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
@@ -48,7 +49,6 @@
 #include <lsVTKWriter.hpp>
 #include <lsVelocityField.hpp>
 #include <lsVersion.hpp>
-#include <lsWriteHullMesh.hpp>
 #include <lsWriteVisualizationMesh.hpp>
 #include <lsWriter.hpp>
 
@@ -959,45 +959,32 @@ template <int D> void bindApi(py::module &module) {
            "Make and write mesh.");
 #endif
 
-  // WriteHullMesh
-#ifdef VIENNALS_USE_VTK
-  py::class_<WriteHullMesh<T, D>, SmartPointer<WriteHullMesh<T, D>>>(
-      module, "WriteHullMesh")
+  // ToHullMesh
+  py::class_<ToHullMesh<T, D>, SmartPointer<ToHullMesh<T, D>>>(module,
+                                                               "ToHullMesh")
       // constructors
-      .def(py::init(&SmartPointer<WriteHullMesh<T, D>>::template New<>))
-      .def(py::init(&SmartPointer<WriteHullMesh<T, D>>::template New<
-                    SmartPointer<Domain<T, D>> &>))
+      .def(py::init(&SmartPointer<ToHullMesh<T, D>>::template New<>))
+      .def(py::init(&SmartPointer<ToHullMesh<T, D>>::template New<
+                    SmartPointer<Mesh<T>> &>))
+      .def(py::init(&SmartPointer<ToHullMesh<T, D>>::template New<
+                    SmartPointer<Mesh<T>> &,
+                    std::vector<SmartPointer<Domain<T, D>>> &>))
+      .def(py::init(&SmartPointer<ToHullMesh<T, D>>::template New<
+                    SmartPointer<Mesh<T>> &, SmartPointer<Domain<T, D>> &>))
       // methods
-      .def("insertNextLevelSet", &WriteHullMesh<T, D>::insertNextLevelSet,
+      .def("setMesh", &ToHullMesh<T, D>::setMesh, "Set the mesh to generate.")
+      .def("insertNextLevelSet", &ToHullMesh<T, D>::insertNextLevelSet,
            "Insert next level set to convert. Bigger level sets wrapping "
            "smaller ones, should be inserted last.")
-      .def("clearLevelSets", &WriteHullMesh<T, D>::clearLevelSets,
+      .def("clearLevelSets", &ToHullMesh<T, D>::clearLevelSets,
            "Clear all inserted level sets.")
-      .def("setFileName", &WriteHullMesh<T, D>::setFileName,
-           "Set the base file name. \"_hull.vtp\" will be appended on write.")
-      .def("setWriteToFile", &WriteHullMesh<T, D>::setWriteToFile,
-           "Set whether to write to file. Defaults to true.")
-      .def("setSharpCorners", &WriteHullMesh<T, D>::setSharpCorners,
+      .def("setSharpCorners", &ToHullMesh<T, D>::setSharpCorners,
            "Set whether to generate sharp corners. Defaults to false.")
-      .def("setMaterialMap", &WriteHullMesh<T, D>::setMaterialMap,
+      .def("setMaterialMap", &ToHullMesh<T, D>::setMaterialMap,
            "Set the material map to use for the hull mesh.")
-      .def("setMetaData", &WriteHullMesh<T, D>::setMetaData,
-           "Set the metadata to be written to the file.")
-      .def("addMetaData",
-           py::overload_cast<const std::string &, double>(
-               &WriteHullMesh<T, D>::addMetaData),
-           "Add a single metadata entry to the file.")
-      .def("addMetaData",
-           py::overload_cast<const std::string &, const std::vector<double> &>(
-               &WriteHullMesh<T, D>::addMetaData),
-           "Add a single metadata entry to the file.")
-      .def("addMetaData",
-           py::overload_cast<
-               const std::unordered_map<std::string, std::vector<double>> &>(
-               &WriteHullMesh<T, D>::addMetaData),
-           "Add metadata to the file.")
-      .def("apply", &WriteHullMesh<T, D>::apply, "Generate hull mesh.");
-#endif
+      .def("setBottomExtension", &ToHullMesh<T, D>::setBottomExtension,
+           "Set the bottom extension value for 2D hull meshes.")
+      .def("apply", &ToHullMesh<T, D>::apply, "Generate hull mesh.");
 
   // CompareVolume
   py::class_<CompareVolume<T, D>, SmartPointer<CompareVolume<T, D>>>(
