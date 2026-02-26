@@ -3,10 +3,12 @@
 #include <lsBooleanOperation.hpp>
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
+#include <lsMesh.hpp>
+#include <lsToHullMesh.hpp>
 #include <lsToMesh.hpp>
+#include <lsToMultiSurfaceMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
-
 #include <lsWriteVisualizationMesh.hpp>
 
 namespace ls = viennals;
@@ -76,6 +78,27 @@ int main() {
   visualizeMesh->setFileName("myFile");
 
   visualizeMesh->apply();
+
+  {
+    auto mesh = ls::Mesh<NumericType>::New();
+    ls::ToMultiSurfaceMesh<NumericType, D> mesher;
+    mesher.insertNextLevelSet(secondSphere);
+    mesher.insertNextLevelSet(substrate);
+    mesher.setMesh(mesh);
+    mesher.setSharpCorners(false);
+    mesher.apply();
+    ls::VTKWriter<NumericType>(mesh, "multiSurfaceMesh").apply();
+  }
+
+  {
+    auto mesh = ls::Mesh<NumericType>::New();
+    auto hullMesh = ls::SmartPointer<ls::ToHullMesh<NumericType, D>>::New(mesh);
+    hullMesh->insertNextLevelSet(secondSphere);
+    hullMesh->insertNextLevelSet(substrate);
+    hullMesh->setSharpCorners(false);
+    hullMesh->apply();
+    ls::VTKWriter<NumericType>(mesh, "hull_sphere.vtp").apply();
+  }
 
   //   ls::BooleanOperation<NumericType, D>(substrate, secondSphere,
   //                                      ls::BooleanOperationEnum::UNION)

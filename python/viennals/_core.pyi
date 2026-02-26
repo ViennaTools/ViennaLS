@@ -7,8 +7,8 @@ import enum
 import typing
 import viennals.d2
 from viennals import d2
-from viennals import d3
 import viennals.d3
+from viennals import d3
 __all__: list[str] = ['BooleanOperationEnum', 'BoundaryConditionEnum', 'CurvatureEnum', 'Extrude', 'FeatureDetectionEnum', 'FileFormatEnum', 'IntegrationSchemeEnum', 'LogLevel', 'Logger', 'MaterialMap', 'Mesh', 'NormalCalculationMethodEnum', 'PointData', 'Slice', 'SpatialSchemeEnum', 'TemporalSchemeEnum', 'TransformEnum', 'TransformMesh', 'VTKReader', 'VTKRenderWindow', 'VTKWriter', 'VelocityField', 'VoidTopSurfaceEnum', 'd2', 'd3', 'setNumThreads', 'version']
 class BooleanOperationEnum(enum.IntEnum):
     INTERSECT: typing.ClassVar[BooleanOperationEnum]  # value = <BooleanOperationEnum.INTERSECT: 0>

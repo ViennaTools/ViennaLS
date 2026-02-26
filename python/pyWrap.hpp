@@ -38,6 +38,7 @@
 #include <lsRemoveStrayPoints.hpp>
 #include <lsSlice.hpp>
 #include <lsToDiskMesh.hpp>
+#include <lsToHullMesh.hpp>
 #include <lsToMesh.hpp>
 #include <lsToMultiSurfaceMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
@@ -957,6 +958,33 @@ template <int D> void bindApi(py::module &module) {
       .def("apply", &WriteVisualizationMesh<T, D>::apply,
            "Make and write mesh.");
 #endif
+
+  // ToHullMesh
+  py::class_<ToHullMesh<T, D>, SmartPointer<ToHullMesh<T, D>>>(module,
+                                                               "ToHullMesh")
+      // constructors
+      .def(py::init(&SmartPointer<ToHullMesh<T, D>>::template New<>))
+      .def(py::init(&SmartPointer<ToHullMesh<T, D>>::template New<
+                    SmartPointer<Mesh<T>> &>))
+      .def(py::init(&SmartPointer<ToHullMesh<T, D>>::template New<
+                    SmartPointer<Mesh<T>> &,
+                    std::vector<SmartPointer<Domain<T, D>>> &>))
+      .def(py::init(&SmartPointer<ToHullMesh<T, D>>::template New<
+                    SmartPointer<Mesh<T>> &, SmartPointer<Domain<T, D>> &>))
+      // methods
+      .def("setMesh", &ToHullMesh<T, D>::setMesh, "Set the mesh to generate.")
+      .def("insertNextLevelSet", &ToHullMesh<T, D>::insertNextLevelSet,
+           "Insert next level set to convert. Bigger level sets wrapping "
+           "smaller ones, should be inserted last.")
+      .def("clearLevelSets", &ToHullMesh<T, D>::clearLevelSets,
+           "Clear all inserted level sets.")
+      .def("setSharpCorners", &ToHullMesh<T, D>::setSharpCorners,
+           "Set whether to generate sharp corners. Defaults to false.")
+      .def("setMaterialMap", &ToHullMesh<T, D>::setMaterialMap,
+           "Set the material map to use for the hull mesh.")
+      .def("setBottomExtension", &ToHullMesh<T, D>::setBottomExtension,
+           "Set the bottom extension value for 2D hull meshes.")
+      .def("apply", &ToHullMesh<T, D>::apply, "Generate hull mesh.");
 
   // CompareVolume
   py::class_<CompareVolume<T, D>, SmartPointer<CompareVolume<T, D>>>(

@@ -6,10 +6,12 @@
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
+#include <lsToHullMesh.hpp>
 #include <lsToMesh.hpp>
 #include <lsToMultiSurfaceMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
+#include <lsWriteVisualizationMesh.hpp>
 
 /**
   Example showing how to grow/shrink different neighbouring materials
@@ -134,8 +136,31 @@ int main() {
   deposition.insertNextLevelSet(mask);
   deposition.insertNextLevelSet(substrate);
   deposition.insertNextLevelSet(polymer);
-  deposition.setAdvectionTime(1);
+  deposition.setAdvectionTime(1.0);
   deposition.apply();
+
+  {
+    auto mesh = ls::Mesh<>::New();
+    auto hullMesh = ls::SmartPointer<ls::ToHullMesh<double, D>>::New(mesh);
+    hullMesh->insertNextLevelSet(polymer);
+    hullMesh->setSharpCorners(true);
+    hullMesh->apply();
+    ls::VTKWriter<double>(mesh, "polymer.vtp").apply();
+    hullMesh = ls::SmartPointer<ls::ToHullMesh<double, D>>::New(mesh);
+    hullMesh->insertNextLevelSet(substrate);
+    hullMesh->setSharpCorners(true);
+    hullMesh->apply();
+    ls::VTKWriter<double>(mesh, "substrate.vtp").apply();
+    hullMesh = ls::SmartPointer<ls::ToHullMesh<double, D>>::New(mesh);
+    hullMesh->insertNextLevelSet(mask);
+    hullMesh->setSharpCorners(true);
+    hullMesh->apply();
+    ls::VTKWriter<double>(mesh, "mask.vtp").apply();
+    hullMesh->insertNextLevelSet(substrate);
+    hullMesh->insertNextLevelSet(polymer);
+    hullMesh->apply();
+    ls::VTKWriter<double>(mesh, "hull_mesh.vtp").apply();
+  }
 
   {
     auto mesh = ls::Mesh<>::New();
@@ -144,8 +169,16 @@ int main() {
     mesher.insertNextLevelSet(substrate);
     mesher.insertNextLevelSet(polymer);
     mesher.setMesh(mesh);
+    mesher.setSharpCorners(true);
     mesher.apply();
-    ls::VTKWriter<double>(mesh, "deposition.vtp").apply();
+    ls::VTKWriter<double>(mesh, "multiSurfaceMesh").apply();
+
+    ls::ToMesh<double, D>(mask, mesh).apply();
+    ls::VTKWriter<double>(mesh, "mask.vtp").apply();
+    ls::ToMesh<double, D>(substrate, mesh).apply();
+    ls::VTKWriter<double>(mesh, "substrate.vtp").apply();
+    ls::ToMesh<double, D>(polymer, mesh).apply();
+    ls::VTKWriter<double>(mesh, "polymer.vtp").apply();
   }
 
   double etchTime = 10.5;
@@ -176,6 +209,7 @@ int main() {
     mesher.insertNextLevelSet(m);
     mesher.insertNextLevelSet(s);
     mesher.insertNextLevelSet(p);
+    mesher.setSharpCorners(true);
     mesher.setMesh(mesh);
     mesher.apply();
     ls::VTKWriter<double>(mesh, "etching_ada_" + std::to_string(i) + ".vtp")

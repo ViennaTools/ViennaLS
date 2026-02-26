@@ -10,6 +10,7 @@
 #include <lsCalculateNormalVectors.hpp>
 #include <lsCheck.hpp>
 #include <lsCompareChamfer.hpp>
+#include <lsCompareCriticalDimensions.hpp>
 #include <lsCompareNarrowBand.hpp>
 #include <lsCompareSparseField.hpp>
 #include <lsCompareVolume.hpp>
@@ -27,6 +28,7 @@
 #include <lsReduce.hpp>
 #include <lsSlice.hpp>
 #include <lsToDiskMesh.hpp>
+#include <lsToHullMesh.hpp>
 #include <lsToMesh.hpp>
 #include <lsToMultiSurfaceMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
@@ -51,6 +53,7 @@ PRECOMPILE_SPECIALIZE(CompareChamfer)
 PRECOMPILE_SPECIALIZE(CompareVolume)
 PRECOMPILE_SPECIALIZE(CompareNarrowBand)
 PRECOMPILE_SPECIALIZE(CompareSparseField)
+PRECOMPILE_SPECIALIZE(CompareCriticalDimensions)
 PRECOMPILE_SPECIALIZE(Domain)
 PRECOMPILE_SPECIALIZE(Expand)
 PRECOMPILE_SPECIALIZE(GeometricAdvect)
@@ -67,6 +70,7 @@ PRECOMPILE_SPECIALIZE(Prune)
 PRECOMPILE_SPECIALIZE(Reader)
 PRECOMPILE_SPECIALIZE(Reduce)
 PRECOMPILE_SPECIALIZE(ToDiskMesh)
+PRECOMPILE_SPECIALIZE(ToHullMesh)
 PRECOMPILE_SPECIALIZE(ToMesh)
 PRECOMPILE_SPECIALIZE(ToMultiSurfaceMesh)
 PRECOMPILE_SPECIALIZE(ToSurfaceMesh)
