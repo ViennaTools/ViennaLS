@@ -26,6 +26,7 @@ template <class T, int D> class ToHullMesh {
   SmartPointer<Mesh<T>> multiMesh = nullptr;
   SmartPointer<MaterialMap> materialMap = nullptr;
   bool generateSharpCorners = false;
+  T bottomExtension = 0.0;
 
   /// Generate hull mesh using ToMultiSurfaceMesh and boundary caps.
   /// generateSharpCorners is forwarded to the converter. Works for both
@@ -187,7 +188,7 @@ template <class T, int D> class ToHullMesh {
 
       double minX = totalMinimum[0] * gridDelta;
       double maxX = totalMaximum[0] * gridDelta;
-      double minY = totalMinimum[1] * gridDelta;
+      double minY = totalMinimum[1] * gridDelta - bottomExtension;
       double maxY = totalMaximum[1] * gridDelta;
 
       capBoundary(0, minX, minY, maxY);
@@ -428,6 +429,22 @@ public:
 
   void setMaterialMap(SmartPointer<MaterialMap> passedMaterialMap) {
     materialMap = passedMaterialMap;
+  }
+
+  void setBottomExtension(T extension) {
+    if (D == 3) {
+      VIENNACORE_LOG_WARNING(
+          "ToHullMesh: Bottom extension is only applicable for 2D meshes. "
+          "Ignoring value.");
+      return;
+    }
+    if (extension < 0) {
+      VIENNACORE_LOG_WARNING("ToHullMesh: Negative bottom extension is not "
+                             "allowed. Setting to 0.");
+      bottomExtension = 0;
+    } else {
+      bottomExtension = extension;
+    }
   }
 
   void apply() { generateHull(); }

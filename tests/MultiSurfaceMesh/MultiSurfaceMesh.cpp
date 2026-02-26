@@ -83,6 +83,7 @@ int main() {
   auto hMesh = Mesh<double>::New();
   ToHullMesh<double, 2> hullMesher(hMesh, layers);
   hullMesher.setSharpCorners(true);
+  hullMesher.setBottomExtension(5.0);
   hullMesher.apply();
 
   VTKWriter<double>(hMesh, "hull_mesh_sharp.vtp").apply();
