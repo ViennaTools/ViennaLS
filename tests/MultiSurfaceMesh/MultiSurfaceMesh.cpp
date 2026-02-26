@@ -2,13 +2,11 @@
 #include <lsBooleanOperation.hpp>
 #include <lsDomain.hpp>
 #include <lsMakeGeometry.hpp>
+#include <lsToHullMesh.hpp>
 #include <lsToMesh.hpp>
 #include <lsToMultiSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
-#ifdef VIENNALS_USE_VTK
-#include <lsWriteHullMesh.hpp>
 #include <lsWriteVisualizationMesh.hpp>
-#endif
 
 using namespace viennals;
 
@@ -82,12 +80,16 @@ int main() {
   std::cout << "Writing sharp corner marching cubes mesh..." << std::endl;
   VTKWriter<double>(mesh, "multi_surface_mesh_sharp.vtp").apply();
 
-  std::cout << "Writing level set meshes..." << std::endl;
+  auto hMesh = Mesh<double>::New();
+  ToHullMesh<double, 2> hullMesher(hMesh, layers);
+  hullMesher.setSharpCorners(true);
+  hullMesher.apply();
+
+  VTKWriter<double>(hMesh, "hull_mesh_sharp.vtp").apply();
 
 #ifdef VIENNALS_USE_VTK
+  std::cout << "Writing level set meshes..." << std::endl;
   auto visMesh = SmartPointer<WriteVisualizationMesh<double, 2>>::New();
-  auto hullMesh = SmartPointer<WriteHullMesh<double, 2>>::New();
-#endif
 
   int i = 0;
   for (const auto &layer : layers) {
@@ -95,19 +97,11 @@ int main() {
     ToMesh<double, 2>(layer, lsmesh).apply();
     VTKWriter<double>(lsmesh, "layer_" + std::to_string(i) + ".vtp").apply();
     ++i;
-#ifdef VIENNALS_USE_VTK
     visMesh->insertNextLevelSet(layer);
-    hullMesh->insertNextLevelSet(layer);
-#endif
   }
 
-#ifdef VIENNALS_USE_VTK
   visMesh->setExtractHullMesh(true);
   visMesh->setFileName("visualization");
   visMesh->apply();
-
-  hullMesh->setFileName("hullMesh");
-  hullMesh->setSharpCorners(true);
-  hullMesh->apply();
 #endif
 }

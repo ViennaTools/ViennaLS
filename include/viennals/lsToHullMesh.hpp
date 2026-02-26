@@ -1,16 +1,5 @@
 #pragma once
 
-#ifdef VIENNALS_USE_VTK // this class needs vtk support
-
-#include <vtkCellArray.h>
-#include <vtkCellData.h>
-#include <vtkFloatArray.h>
-#include <vtkIntArray.h>
-#include <vtkPoints.h>
-#include <vtkPolyData.h>
-#include <vtkSmartPointer.h>
-#include <vtkXMLPolyDataWriter.h>
-
 #include <hrleDenseIterator.hpp>
 #include <map>
 #include <tuple>
@@ -29,43 +18,30 @@ using namespace viennacore;
 /// Extracts a hull (surface outline) mesh from a stack of level sets using
 /// ToMultiSurfaceMesh with closed boundary caps. Material IDs are assigned per
 /// cell. setSharpCorners(true/false) controls whether sharp corner generation
-/// is enabled during surface extraction. The result is written to
-/// fileName + "_hull.vtp".
-template <class T, int D> class WriteHullMesh {
+/// is enabled during surface extraction.
+template <class T, int D> class ToHullMesh {
   typedef typename Domain<T, D>::DomainType hrleDomainType;
   using LevelSetsType = std::vector<SmartPointer<Domain<T, D>>>;
   LevelSetsType levelSets;
+  SmartPointer<Mesh<T>> multiMesh = nullptr;
   SmartPointer<MaterialMap> materialMap = nullptr;
-  std::string fileName;
-  bool writeToFile = true;
   bool generateSharpCorners = false;
-  std::unordered_map<std::string, std::vector<double>> metaData;
-
-  vtkSmartPointer<vtkPolyData> hullVTK;
-
-  void addMetaDataToVTK(vtkDataSet *data) const {
-    if (metaData.empty())
-      return;
-
-    vtkSmartPointer<vtkFieldData> fieldData = data->GetFieldData();
-    for (const auto &meta : metaData) {
-      if (meta.second.empty())
-        continue;
-
-      vtkSmartPointer<vtkFloatArray> metaDataArray =
-          vtkSmartPointer<vtkFloatArray>::New();
-      metaDataArray->SetName(meta.first.c_str());
-      metaDataArray->SetNumberOfValues(meta.second.size());
-      for (size_t i = 0; i < meta.second.size(); ++i)
-        metaDataArray->SetValue(i, meta.second[i]);
-      fieldData->AddArray(metaDataArray);
-    }
-  }
 
   /// Generate hull mesh using ToMultiSurfaceMesh and boundary caps.
   /// generateSharpCorners is forwarded to the converter. Works for both
   /// 2D (line segments) and 3D (triangles).
-  void generateSharpHull() {
+  void generateHull() {
+    if (levelSets.empty()) {
+      VIENNACORE_LOG_WARNING(
+          "ToHullMesh: No level sets provided! Hull mesh will be empty.");
+      return;
+    }
+
+    if (multiMesh == nullptr) {
+      VIENNACORE_LOG_WARNING("ToHullMesh: No mesh provided!");
+      return;
+    }
+
     auto &grid = levelSets[0]->getGrid();
     double gridDelta = grid.getGridDelta();
 
@@ -94,7 +70,6 @@ template <class T, int D> class WriteHullMesh {
     }
 
     // Generate multi-surface mesh with sharp corners
-    auto multiMesh = SmartPointer<Mesh<T>>::New();
     ToMultiSurfaceMesh<T, D> converter;
     for (auto &ls : levelSets)
       converter.insertNextLevelSet(ls);
@@ -103,6 +78,9 @@ template <class T, int D> class WriteHullMesh {
     converter.setMesh(multiMesh);
     converter.setSharpCorners(generateSharpCorners);
     converter.apply();
+
+    // remove normals from cell data
+    multiMesh->cellData.eraseVectorData(0);
 
     // Add closed boundary caps
     if constexpr (D == 2) {
@@ -416,58 +394,26 @@ template <class T, int D> class WriteHullMesh {
         }
       }
     }
-
-    // Convert multiMesh to vtkPolyData
-    hullVTK = vtkSmartPointer<vtkPolyData>::New();
-    vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
-    for (const auto &node : multiMesh->nodes)
-      points->InsertNextPoint(node[0], node[1], node[2]);
-    hullVTK->SetPoints(points);
-
-    vtkSmartPointer<vtkCellArray> cells = vtkSmartPointer<vtkCellArray>::New();
-    if constexpr (D == 3) {
-      for (const auto &tri : multiMesh->triangles) {
-        cells->InsertNextCell(3);
-        cells->InsertCellPoint(tri[0]);
-        cells->InsertCellPoint(tri[1]);
-        cells->InsertCellPoint(tri[2]);
-      }
-      hullVTK->SetPolys(cells);
-    } else {
-      for (const auto &line : multiMesh->lines) {
-        cells->InsertNextCell(2);
-        cells->InsertCellPoint(line[0]);
-        cells->InsertCellPoint(line[1]);
-      }
-      hullVTK->SetLines(cells);
-    }
-
-    auto matIds = multiMesh->cellData.getScalarData("MaterialIds");
-    if (matIds) {
-      vtkSmartPointer<vtkIntArray> materials =
-          vtkSmartPointer<vtkIntArray>::New();
-      materials->SetName("Material");
-      for (auto val : *matIds)
-        materials->InsertNextValue(static_cast<int>(val));
-      hullVTK->GetCellData()->SetScalars(materials);
-    }
-
-    addMetaDataToVTK(hullVTK);
-
-    if (writeToFile) {
-      auto writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
-      writer->SetFileName((fileName + "_hull.vtp").c_str());
-      writer->SetInputData(hullVTK);
-      writer->Write();
-    }
   }
 
 public:
-  WriteHullMesh() = default;
+  ToHullMesh() = default;
 
-  WriteHullMesh(SmartPointer<Domain<T, D>> levelSet) {
+  ToHullMesh(SmartPointer<Mesh<T>> passedMesh) { multiMesh = passedMesh; }
+
+  ToHullMesh(SmartPointer<Mesh<T>> passedMesh,
+             SmartPointer<Domain<T, D>> levelSet) {
+    multiMesh = passedMesh;
     levelSets.push_back(levelSet);
   }
+
+  ToHullMesh(SmartPointer<Mesh<T>> passedMesh,
+             std::vector<SmartPointer<Domain<T, D>>> const &levelSetsVector) {
+    multiMesh = passedMesh;
+    levelSets = levelSetsVector;
+  }
+
+  void setMesh(SmartPointer<Mesh<T>> passedMesh) { multiMesh = passedMesh; }
 
   /// Level sets wrapping other level sets have to be inserted last.
   void insertNextLevelSet(SmartPointer<Domain<T, D>> levelSet) {
@@ -475,15 +421,6 @@ public:
   }
 
   void clearLevelSets() { levelSets.clear(); }
-
-  /// Set the base file name. "_hull.vtp" will be appended on write.
-  void setFileName(std::string passedFileName) {
-    fileName = std::move(passedFileName);
-  }
-
-  void setWriteToFile(bool passedWriteToFile) {
-    writeToFile = passedWriteToFile;
-  }
 
   void setSharpCorners(bool passedSharpCorners) {
     generateSharpCorners = passedSharpCorners;
@@ -493,33 +430,10 @@ public:
     materialMap = passedMaterialMap;
   }
 
-  void setMetaData(const std::unordered_map<std::string, std::vector<double>>
-                       &passedMetaData) {
-    metaData = passedMetaData;
-  }
-
-  void addMetaData(const std::string &key, double value) {
-    metaData[key] = std::vector<double>{value};
-  }
-
-  void addMetaData(const std::string &key, const std::vector<double> &values) {
-    metaData[key] = values;
-  }
-
-  void addMetaData(
-      const std::unordered_map<std::string, std::vector<double>> &newMetaData) {
-    for (const auto &pair : newMetaData)
-      metaData[pair.first] = pair.second;
-  }
-
-  auto getHullMesh() const { return hullVTK; }
-
-  void apply() { generateSharpHull(); }
+  void apply() { generateHull(); }
 };
 
 // add all template specialisations for this class
-PRECOMPILE_PRECISION_DIMENSION(WriteHullMesh)
+PRECOMPILE_PRECISION_DIMENSION(ToHullMesh)
 
 } // namespace viennals
-
-#endif // VIENNALS_USE_VTK

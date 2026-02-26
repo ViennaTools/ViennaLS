@@ -27,11 +27,11 @@
 #include <lsReduce.hpp>
 #include <lsSlice.hpp>
 #include <lsToDiskMesh.hpp>
+#include <lsToHullMesh.hpp>
 #include <lsToMesh.hpp>
 #include <lsToMultiSurfaceMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsToVoxelMesh.hpp>
-#include <lsWriteHullMesh.hpp>
 #include <lsWriteVisualizationMesh.hpp>
 #include <lsWriter.hpp>
 
@@ -68,13 +68,13 @@ PRECOMPILE_SPECIALIZE(Prune)
 PRECOMPILE_SPECIALIZE(Reader)
 PRECOMPILE_SPECIALIZE(Reduce)
 PRECOMPILE_SPECIALIZE(ToDiskMesh)
+PRECOMPILE_SPECIALIZE(ToHullMesh)
 PRECOMPILE_SPECIALIZE(ToMesh)
 PRECOMPILE_SPECIALIZE(ToMultiSurfaceMesh)
 PRECOMPILE_SPECIALIZE(ToSurfaceMesh)
 PRECOMPILE_SPECIALIZE(ToVoxelMesh)
 PRECOMPILE_SPECIALIZE(Writer)
 #ifdef VIENNALS_USE_VTK
-PRECOMPILE_SPECIALIZE(WriteHullMesh)
 PRECOMPILE_SPECIALIZE(WriteVisualizationMesh)
 #endif
 
