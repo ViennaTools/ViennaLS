@@ -417,8 +417,9 @@ protected:
   }
 
   // Helper to stitch a sharp feature node on a face to the standard mesh in a
-  // neighboring cell
-  void
+  // neighboring cell (3D only)
+  template <int Dim = D>
+  std::enable_if_t<Dim == 3, void>
   stitchToNeighbor(viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
                    int axis, bool isHighFace, unsigned faceNodeId,
                    std::map<hrleIndex, unsigned> *nodes,
@@ -475,7 +476,8 @@ protected:
   }
 
   // Solves for a sharp corner position in 2D by intersecting normals
-  bool generateCanonicalSharpCorner2D(
+  template <int Dim = D>
+  std::enable_if_t<Dim == 2, bool> generateCanonicalSharpCorner2D(
       viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
       int transform, Vec3D<T> &cornerPos) const {
     assert(normalVectorData &&
@@ -549,7 +551,8 @@ protected:
 
   // Wrapper for 2D sharp corner generation handling different
   // rotations/reflections
-  bool generateSharpCorner2D(
+  template <int Dim = D>
+  std::enable_if_t<Dim == 2, bool> generateSharpCorner2D(
       viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt, int countNeg,
       int countPos, int negMask, int posMask,
       std::map<hrleIndex, unsigned> *nodes,
@@ -667,7 +670,8 @@ protected:
   }
 
   // Generates geometry for an "L-shaped" configuration (3 active corners) in 3D
-  bool
+  template <int Dim = D>
+  std::enable_if_t<Dim == 3, bool>
   generateSharpL3D(viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
                    int countNeg, int countPos, int negMask, int posMask,
                    std::map<hrleIndex, unsigned> *nodes,
@@ -950,7 +954,8 @@ protected:
 
   // Generates geometry for a sharp edge (2 active corners) in 3D (canonical
   // orientation)
-  bool generateCanonicalSharpEdge3D(
+  template <int Dim = D>
+  std::enable_if_t<Dim == 3, bool> generateCanonicalSharpEdge3D(
       viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
       int transform, int axis, bool inverted,
       std::map<hrleIndex, unsigned> *nodes,
@@ -1206,7 +1211,8 @@ protected:
 
   // Wrapper for 3D sharp edge generation handling different
   // rotations/reflections
-  bool generateSharpEdge3D(
+  template <int Dim = D>
+  std::enable_if_t<Dim == 3, bool> generateSharpEdge3D(
       viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt, int countNeg,
       int countPos, int negMask, int posMask,
       std::map<hrleIndex, unsigned> *nodes,
@@ -1371,7 +1377,8 @@ protected:
 
   // Wrapper for 3D sharp corner generation handling different
   // rotations/reflections
-  bool generateSharpCorner3D(
+  template <int Dim = D>
+  std::enable_if_t<Dim == 3, bool> generateSharpCorner3D(
       viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt, int countNeg,
       int countPos, int negMask, int posMask,
       std::map<hrleIndex, unsigned> *nodes,
