@@ -4,12 +4,11 @@
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsMesh.hpp>
+#include <lsToHullMesh.hpp>
 #include <lsToMesh.hpp>
 #include <lsToMultiSurfaceMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
-
-#include <lsWriteHullMesh.hpp>
 #include <lsWriteVisualizationMesh.hpp>
 
 namespace ls = viennals;
@@ -92,12 +91,13 @@ int main() {
   }
 
   {
-    auto hullMesh = ls::SmartPointer<ls::WriteHullMesh<NumericType, D>>::New();
+    auto mesh = ls::Mesh<NumericType>::New();
+    auto hullMesh = ls::SmartPointer<ls::ToHullMesh<NumericType, D>>::New(mesh);
     hullMesh->insertNextLevelSet(secondSphere);
     hullMesh->insertNextLevelSet(substrate);
     hullMesh->setSharpCorners(false);
-    hullMesh->setFileName("myHullMesh");
     hullMesh->apply();
+    ls::VTKWriter<NumericType>(mesh, "hull_sphere.vtp").apply();
   }
 
   //   ls::BooleanOperation<NumericType, D>(substrate, secondSphere,

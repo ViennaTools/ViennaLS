@@ -10,6 +10,7 @@
 #include <lsCalculateNormalVectors.hpp>
 #include <lsCheck.hpp>
 #include <lsCompareChamfer.hpp>
+#include <lsCompareCriticalDimensions.hpp>
 #include <lsCompareNarrowBand.hpp>
 #include <lsCompareSparseField.hpp>
 #include <lsCompareVolume.hpp>
@@ -52,6 +53,7 @@ PRECOMPILE_SPECIALIZE(CompareChamfer)
 PRECOMPILE_SPECIALIZE(CompareVolume)
 PRECOMPILE_SPECIALIZE(CompareNarrowBand)
 PRECOMPILE_SPECIALIZE(CompareSparseField)
+PRECOMPILE_SPECIALIZE(CompareCriticalDimensions)
 PRECOMPILE_SPECIALIZE(Domain)
 PRECOMPILE_SPECIALIZE(Expand)
 PRECOMPILE_SPECIALIZE(GeometricAdvect)

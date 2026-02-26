@@ -6,11 +6,11 @@
 #include <lsExpand.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsPrune.hpp>
+#include <lsToHullMesh.hpp>
 #include <lsToMesh.hpp>
 #include <lsToMultiSurfaceMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
-#include <lsWriteHullMesh.hpp>
 #include <lsWriteVisualizationMesh.hpp>
 
 /**
@@ -140,25 +140,26 @@ int main() {
   deposition.apply();
 
   {
-    auto hullMesh = ls::SmartPointer<ls::WriteHullMesh<double, D>>::New();
+    auto mesh = ls::Mesh<>::New();
+    auto hullMesh = ls::SmartPointer<ls::ToHullMesh<double, D>>::New(mesh);
     hullMesh->insertNextLevelSet(polymer);
     hullMesh->setSharpCorners(true);
-    hullMesh->setFileName("polymer");
     hullMesh->apply();
-    hullMesh = ls::SmartPointer<ls::WriteHullMesh<double, D>>::New();
+    ls::VTKWriter<double>(mesh, "polymer.vtp").apply();
+    hullMesh = ls::SmartPointer<ls::ToHullMesh<double, D>>::New(mesh);
     hullMesh->insertNextLevelSet(substrate);
     hullMesh->setSharpCorners(true);
-    hullMesh->setFileName("substrate");
     hullMesh->apply();
-    hullMesh = ls::SmartPointer<ls::WriteHullMesh<double, D>>::New();
+    ls::VTKWriter<double>(mesh, "substrate.vtp").apply();
+    hullMesh = ls::SmartPointer<ls::ToHullMesh<double, D>>::New(mesh);
     hullMesh->insertNextLevelSet(mask);
     hullMesh->setSharpCorners(true);
-    hullMesh->setFileName("mask");
     hullMesh->apply();
+    ls::VTKWriter<double>(mesh, "mask.vtp").apply();
     hullMesh->insertNextLevelSet(substrate);
     hullMesh->insertNextLevelSet(polymer);
-    hullMesh->setFileName("hullMesh");
     hullMesh->apply();
+    ls::VTKWriter<double>(mesh, "hull_mesh.vtp").apply();
   }
 
   {
