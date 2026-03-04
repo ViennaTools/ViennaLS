@@ -1,20 +1,21 @@
 # Third-Party Licenses
 
-ViennaLS is licensed under the MIT License.  
+ViennaLS is licensed under the GPL-3.0 License.  
+
 This file lists third-party libraries used by ViennaLS and their respective licenses.
 
 ---
 
 ### ViennaCore
 
-**License:** MIT
+**License:** GPL-3.0
 **URL:** [https://github.com/ViennaTools/viennacore](https://github.com/ViennaTools/viennacore)
 
 ---
 
 #### ViennaHRLE
 
-**License:** MIT
+**License:** GPL-3.0
 **URL:** [https://github.com/ViennaTools/viennahrle](https://github.com/ViennaTools/viennahrle)
 
 ---
