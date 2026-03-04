@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaLS
   LANGUAGES CXX
-  VERSION 5.5.1)
+  VERSION 5.6.0)
 
 # --------------------------------------------------------------------------------------------------------
 # Library options
@@ -112,7 +112,7 @@ include(cmake/vtk.cmake)
 
 CPMAddPackage(
   NAME ViennaCore
-  VERSION 1.9.5
+  VERSION 2.0.0
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaCore"
   OPTIONS "VIENNACORE_FORMAT_EXCLUDE build/"
   EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
@@ -125,7 +125,7 @@ CPMAddPackage(
 
 CPMFindPackage(
   NAME ViennaHRLE
-  VERSION 0.8.1
+  VERSION 1.0.0
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaHRLE"
   EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 

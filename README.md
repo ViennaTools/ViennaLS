@@ -154,7 +154,7 @@ We recommend using [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) to consum
 
 * Installation with CPM
   ```cmake
-  CPMAddPackage("gh:viennatools/viennals@5.5.1")
+  CPMAddPackage("gh:viennatools/viennals@5.6.0")
   ```
 
 * With a local installation
@@ -206,7 +206,7 @@ http://www.iue.tuwien.ac.at/
 
 ## License
 
-ViennaLS is licensed under the [MIT License](./LICENSE).
+Versions < 5.6.0 were released under MIT License. Starting with version 5.6.0, the project is licensed under GPL-3.0 License. For more details, please refer to the [LICENSE](./LICENSE) file in the base directory of the repository.
 
-Some third-party libraries used by ViennaLS are under their own permissive licenses (MIT, BSD).  
+Some third-party libraries used by ViennaLS are under their own permissive licenses.  
 See [`THIRD_PARTY_LICENSES.md`](./THIRD_PARTY_LICENSES.md) for details.
