@@ -5,8 +5,8 @@ from __future__ import annotations
 import collections.abc
 import enum
 import typing
-import viennals.d2
 from viennals import d2
+import viennals.d2
 import viennals.d3
 from viennals import d3
 __all__: list[str] = ['BooleanOperationEnum', 'BoundaryConditionEnum', 'CurvatureEnum', 'Extrude', 'FeatureDetectionEnum', 'FileFormatEnum', 'IntegrationSchemeEnum', 'LogLevel', 'Logger', 'MaterialMap', 'Mesh', 'NormalCalculationMethodEnum', 'PointData', 'Slice', 'SpatialSchemeEnum', 'TemporalSchemeEnum', 'TransformEnum', 'TransformMesh', 'VTKReader', 'VTKRenderWindow', 'VTKWriter', 'VelocityField', 'VoidTopSurfaceEnum', 'd2', 'd3', 'setNumThreads', 'version']
@@ -549,6 +549,6 @@ class VoidTopSurfaceEnum(enum.IntEnum):
         """
 def setNumThreads(arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
     ...
-__version__: str = '5.5.1'
-version: str = '5.5.1'
+__version__: str = '5.6.0'
+version: str = '5.6.0'
 IntegrationSchemeEnum = SpatialSchemeEnum
