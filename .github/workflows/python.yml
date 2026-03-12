@@ -85,7 +85,6 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            container: ghcr.io/viennatools/vienna-builder:cuda-suite-python-nocuda
             skip: "cp36-* cp37-* cp38-* cp39-* pp37-* pp38-* pp39-*"
 
           - os: windows-latest
@@ -95,7 +94,6 @@ jobs:
             skip: "cp36-* cp37-* cp38-* cp39-* cp310-* pp37-* pp38-* pp39-*"
 
     runs-on: ${{ matrix.os }}
-    container: ${{ matrix.container }}
 
     name: "🐍 Package Bindings on ${{ matrix.os }}"
 
@@ -129,12 +127,19 @@ jobs:
           sed -i 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_PACKAGE_PYTHON=ON","-DVIENNALS_IS_CI=ON"/g' pyproject.toml
           cat pyproject.toml
 
-      - name: 🏗️ Build Wheels
+      - name: 🏗️ Build Wheels (Linux)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: python -m cibuildwheel --output-dir wheelhouse
+        env:
+          CIBW_SKIP: ${{ matrix.skip }}
+          CIBW_MANYLINUX_X86_64_IMAGE: ghcr.io/viennatools/vienna-builder:cuda-suite-python-nocuda
+
+      - name: 🏗️ Build Wheels (Other)
+        if: ${{ matrix.os != 'ubuntu-latest' }}
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
           CIBW_SKIP: ${{ matrix.skip }}
           CIBW_ARCHS_WINDOWS: auto64
-          CIBW_CONTAINER_ENGINE: none
 
       - name: 📦 Upload Artifact
         uses: actions/upload-artifact@v4
