@@ -85,7 +85,7 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            skip: "cp36-* cp37-* cp38-* cp39-* pp37-* pp38-* pp39-*"
+            skip: "cp36-* cp37-* cp38-* cp39-* pp37-* pp38-* pp39-* *-manylinux_i686"
 
           - os: windows-latest
             skip: "cp36-* cp37-* cp38-* cp39-* pp37-* pp38-* pp39-*"
