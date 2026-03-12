@@ -46,8 +46,8 @@ from viennals.d2 import CompareChamfer
 from viennals.d2 import CompareCriticalDimensions
 from viennals.d2 import CompareNarrowBand
 from viennals.d2 import CompareSparseField
-from viennals.d2 import CompareVolume
 from viennals.d2 import CompareVolume as CompareArea
+from viennals.d2 import CompareVolume
 from viennals.d2 import ConvexHull
 from viennals.d2 import CustomSphereDistribution
 from viennals.d2 import Cylinder
@@ -112,6 +112,6 @@ def setDimension(d: int):
         
     """
 PROXY_DIM: int = 2
-__version__: str = '5.6.0'
-version: str = '5.6.0'
+__version__: str = '5.7.0'
+version: str = '5.7.0'
 _C = _core
