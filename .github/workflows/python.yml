@@ -129,6 +129,7 @@ jobs:
         env:
           CIBW_SKIP: ${{ matrix.skip }}
           CIBW_ARCHS_WINDOWS: auto64
+          CIBW_CONTAINER_ENGINE: none
 
       - name: 📦 Upload Artifact
         uses: actions/upload-artifact@v4
