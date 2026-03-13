@@ -107,7 +107,7 @@ jobs:
           os: ${{ matrix.os }}
 
       - name: 🛞 CIBuildWheel
-        run: pip install cibuildwheel==2.21.3 --break-system-packages
+        run: pip install cibuildwheel==3.4.0 --break-system-packages
 
       - name: 🛠️ Package Config (Windows)
         if: ${{ matrix.os == 'windows-latest' }}
