@@ -132,7 +132,7 @@ jobs:
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
           CIBW_SKIP: ${{ matrix.skip }}
-          CIBW_MANYLINUX_X86_64_IMAGE: ghcr.io/viennatools/vienna-builder:cuda-suite-python-nocuda
+          CIBW_MANYLINUX_X86_64_IMAGE: ghcr.io/viennatools/vienna-builder:cuda-python-nocuda
 
       - name: 🏗️ Build Wheels (Other)
         if: ${{ matrix.os != 'ubuntu-latest' }}
