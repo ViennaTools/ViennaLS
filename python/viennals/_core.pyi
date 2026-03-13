@@ -7,8 +7,8 @@ import enum
 import typing
 from viennals import d2
 import viennals.d2
-import viennals.d3
 from viennals import d3
+import viennals.d3
 __all__: list[str] = ['BooleanOperationEnum', 'BoundaryConditionEnum', 'CurvatureEnum', 'Extrude', 'FeatureDetectionEnum', 'FileFormatEnum', 'IntegrationSchemeEnum', 'LogLevel', 'Logger', 'MaterialMap', 'Mesh', 'NormalCalculationMethodEnum', 'PointData', 'Slice', 'SpatialSchemeEnum', 'TemporalSchemeEnum', 'TransformEnum', 'TransformMesh', 'VTKReader', 'VTKRenderWindow', 'VTKWriter', 'VelocityField', 'VoidTopSurfaceEnum', 'd2', 'd3', 'setNumThreads', 'version']
 class BooleanOperationEnum(enum.IntEnum):
     INTERSECT: typing.ClassVar[BooleanOperationEnum]  # value = <BooleanOperationEnum.INTERSECT: 0>
@@ -549,6 +549,6 @@ class VoidTopSurfaceEnum(enum.IntEnum):
         """
 def setNumThreads(arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
     ...
-__version__: str = '5.6.0'
-version: str = '5.6.0'
+__version__: str = '5.7.0'
+version: str = '5.7.0'
 IntegrationSchemeEnum = SpatialSchemeEnum

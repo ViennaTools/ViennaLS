@@ -22,7 +22,7 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            container: ghcr.io/viennatools/vienna-builder:suite-python
+            container: ghcr.io/viennatools/vienna-builder:cuda-suite-python-nocuda
           - os: windows-latest
           - os: macos-latest
 
@@ -40,13 +40,18 @@ jobs:
         with:
           os: ${{ matrix.os }}
 
+      - name: 📋 Install MacOS Dependencies
+        if: ${{ matrix.os == 'macos-latest' }}
+        run: |
+          brew install vtk
+
       - name: 🦥 Cache Dependencies
         uses: actions/cache@v4
         with:
           key: python-${{ matrix.os }}
-          path: build
+          path: build/_deps/
 
-      - name: 🛠️ Disable IPO (Alpine)
+      - name: 🛠️ Disable IPO
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
           sed -i 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DUSE_IPO=off"/g' pyproject.toml
@@ -64,7 +69,7 @@ jobs:
         if: ${{ matrix.os != 'windows-latest' }}
         run: |
           python -m venv venv
-          CMAKE_ARGS=-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF ./venv/bin/pip install . # Alpine does not like LTO
+          CMAKE_ARGS=-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF ./venv/bin/pip install . 
           ./venv/bin/python -c "import viennals; print(viennals.__doc__)"
 
       - name: 📦 Upload Artifact
@@ -80,8 +85,7 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            container: ghcr.io/viennatools/vienna-builder:python
-            skip: "cp36-* cp37-* cp38-* cp39-* pp37-* pp38-* pp39-*"
+            skip: "cp36-* cp37-* cp38-* cp39-* pp37-* pp38-* pp39-* *-manylinux_i686 *-musllinux_*"
 
           - os: windows-latest
             skip: "cp36-* cp37-* cp38-* cp39-* pp37-* pp38-* pp39-*"
@@ -90,7 +94,6 @@ jobs:
             skip: "cp36-* cp37-* cp38-* cp39-* cp310-* pp37-* pp38-* pp39-*"
 
     runs-on: ${{ matrix.os }}
-    container: ${{ matrix.container }}
 
     name: "🐍 Package Bindings on ${{ matrix.os }}"
 
@@ -104,27 +107,35 @@ jobs:
           os: ${{ matrix.os }}
 
       - name: 🛞 CIBuildWheel
-        run: pip install cibuildwheel==2.21.3 --break-system-packages
+        run: pip install cibuildwheel==3.4.0 --break-system-packages
 
-      - name: 🛠️ Build VTK (Windows)
+      - name: 🛠️ Package Config (Windows)
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
           sed -i 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_PACKAGE_PYTHON=ON","-DVIENNALS_IS_CI=ON"/g' pyproject.toml
           type pyproject.toml
 
-      - name: 🛠️ Build VTK (MacOs)
+      - name: 🛠️ Package Config (MacOs)
         if: ${{ matrix.os == 'macos-latest' }}
         run: |
           sed -i .bak 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_PACKAGE_PYTHON=ON","-DVIENNALS_IS_CI=ON"/g' pyproject.toml
           cat pyproject.toml
 
-      - name: 🛠️ Use VTK-Python Libs
+      - name: 🛠️ Package Config (Linux)
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
           sed -i 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_PACKAGE_PYTHON=ON","-DVIENNALS_IS_CI=ON"/g' pyproject.toml
           cat pyproject.toml
 
-      - name: 🏗️ Build Wheels
+      - name: 🏗️ Build Wheels (Linux)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: python -m cibuildwheel --output-dir wheelhouse
+        env:
+          CIBW_SKIP: ${{ matrix.skip }}
+          CIBW_MANYLINUX_X86_64_IMAGE: ghcr.io/viennatools/vienna-builder:cuda-python-nocuda
+
+      - name: 🏗️ Build Wheels (Other)
+        if: ${{ matrix.os != 'ubuntu-latest' }}
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
           CIBW_SKIP: ${{ matrix.skip }}
@@ -157,4 +168,4 @@ jobs:
       - name: 🚀 Publish Wheels
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          skip_existing: true
+          skip-existing: true

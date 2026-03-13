@@ -43,11 +43,16 @@ jobs:
         with:
           os: ${{ matrix.os }}
 
+      - name: 📋 Install MacOS Dependencies
+        if: ${{ matrix.os == 'macos-latest' }}
+        run: |
+          brew install vtk
+
       - name: 🦥 Cache Dependencies
         uses: actions/cache@v4
         with:
           key: test-${{ matrix.os }}-${{ matrix.config }}
-          path: build
+          path: build/_deps/
 
       - name: 🏗️ Compile
         run: cmake -DVIENNALS_BUILD_TESTS=ON -B build && cmake --build build --config ${{ matrix.config }}
