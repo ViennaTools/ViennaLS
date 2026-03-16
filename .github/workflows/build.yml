@@ -32,6 +32,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
 
+    env:
+      CPM_SOURCE_CACHE: ${{ github.workspace }}/.cpmcache
+
     name: "🧪 Test on ${{ matrix.os }} (⚙️: ${{ matrix.config }}, 💿: ${{ matrix.container || matrix.os }})"
 
     steps:
@@ -48,14 +51,14 @@ jobs:
         run: |
           brew install vtk
 
-      - name: 🦥 Cache Dependencies
+      - name: 🦥 Cache CPM source cache
         uses: actions/cache@v4
         with:
           key: test-${{ matrix.os }}-${{ matrix.config }}
-          path: build/_deps/
+          path: ${{ env.CPM_SOURCE_CACHE }}
 
       - name: 🏗️ Compile
-        run: cmake -DVIENNALS_BUILD_TESTS=ON -B build && cmake --build build --config ${{ matrix.config }}
+        run: cmake -DVIENNALS_BUILD_TESTS=ON -DCPM_SOURCE_CACHE="${{ env.CPM_SOURCE_CACHE }}" -B build && cmake --build build --config ${{ matrix.config }}
 
       - name: 🧪 Test
         run: ctest --output-on-failure -E "Benchmark|Performance" -C ${{ matrix.config }} --test-dir build
