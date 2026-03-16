@@ -46,16 +46,23 @@ jobs:
           brew install vtk
 
       - name: 🦥 Cache Dependencies
+        if: ${{ matrix.os == 'windows-latest' }}
         uses: actions/cache@v4
         with:
-          key: python-${{ matrix.os }}
-          path: build/_deps/
+          key: python-${{ matrix.os }}-sccache
+          path: ~/.cache/sccache
 
       - name: 🛠️ Disable IPO
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
           sed -i 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DUSE_IPO=off"/g' pyproject.toml
           cat pyproject.toml
+
+      - name: Enable sccache (Windows)
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: |
+          echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> "$GITHUB_ENV"
+          echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> "$GITHUB_ENV"
 
       - name: 🐍 Build and check Python Module (Windows)
         if: ${{ matrix.os == 'windows-latest' }}

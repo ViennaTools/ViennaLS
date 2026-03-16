@@ -50,3 +50,8 @@ runs:
       if: ${{ inputs.os == 'macos-latest' }}
       run: |
         echo "MACOSX_DEPLOYMENT_TARGET=15.0" >> $GITHUB_ENV
+
+    - name: Install sccache (Windows)
+      if: ${{ inputs.os == 'windows-latest' }}
+      shell: bash
+      run: choco install sccache -y
