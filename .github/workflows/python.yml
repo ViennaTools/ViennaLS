@@ -29,6 +29,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
 
+    env:
+      SCCACHE_DIR: ${{ github.workspace }}/.sccache
+
     name: "🐍 Test Bindings on ${{ matrix.os }}"
 
     steps:
@@ -50,7 +53,7 @@ jobs:
         uses: actions/cache@v4
         with:
           key: python-${{ matrix.os }}-sccache
-          path: ~/.cache/sccache
+          path: ${{ env.SCCACHE_DIR }}
 
       - name: 🛠️ Disable IPO
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -71,6 +74,7 @@ jobs:
           ./venv/Scripts/activate.bat
           pip install .
           python -c "import viennals; print(viennals.__doc__)"
+          sccache --show-stats
 
       - name: 🐍 Build and check Python Module (Other)
         if: ${{ matrix.os != 'windows-latest' }}
