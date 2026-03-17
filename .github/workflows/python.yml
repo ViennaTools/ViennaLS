@@ -30,7 +30,7 @@ jobs:
     container: ${{ matrix.container }}
 
     env:
-      SCCACHE_DIR: ${{ github.workspace }}/.sccache
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/.vcpkg-bincache
 
     name: "🐍 Test Bindings on ${{ matrix.os }}"
 
@@ -45,15 +45,14 @@ jobs:
 
       - name: 📋 Install MacOS Dependencies
         if: ${{ matrix.os == 'macos-latest' }}
-        run: |
-          brew install vtk
+        run: brew install vtk
 
-      - name: 🦥 Cache Dependencies
+      - name: 🦥 Cache VTK vcpkg build
         if: ${{ matrix.os == 'windows-latest' }}
         uses: actions/cache@v4
         with:
-          key: python-${{ matrix.os }}-sccache
-          path: ${{ env.SCCACHE_DIR }}
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: vcpkg-${{ matrix.os }}-Release
 
       - name: 🛠️ Disable IPO
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -61,20 +60,15 @@ jobs:
           sed -i 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DUSE_IPO=off"/g' pyproject.toml
           cat pyproject.toml
 
-      - name: Enable sccache (Windows)
-        if: ${{ matrix.os == 'windows-latest' }}
-        run: |
-          echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> "$GITHUB_ENV"
-          echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> "$GITHUB_ENV"
-
       - name: 🐍 Build and check Python Module (Windows)
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
+          ./vcpkg/vcpkg install vtk
+          $env:CMAKE_ARGS = "-DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake"
           python -m venv venv
           ./venv/Scripts/activate.bat
           pip install .
           python -c "import viennals; print(viennals.__doc__)"
-          sccache --show-stats
 
       - name: 🐍 Build and check Python Module (Other)
         if: ${{ matrix.os != 'windows-latest' }}
