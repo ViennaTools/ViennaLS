@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaLS
   LANGUAGES CXX
-  VERSION 5.7.0)
+  VERSION 5.7.1)
 
 # --------------------------------------------------------------------------------------------------------
 # Library options
@@ -76,7 +76,6 @@ endif()
 # --------------------------------------------------------------------------------------------------------
 
 add_library(${PROJECT_NAME} INTERFACE)
-add_library(ViennaTools::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
 set_target_properties(
@@ -112,7 +111,8 @@ include(cmake/vtk.cmake)
 
 CPMAddPackage(
   NAME ViennaCore
-  VERSION 2.0.0
+  VERSION 2.1.0
+  GIT_TAG main
   GIT_REPOSITORY "https://github.com/ViennaTools/ViennaCore"
   OPTIONS "VIENNACORE_FORMAT_EXCLUDE build/"
   EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})

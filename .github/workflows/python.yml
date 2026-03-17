@@ -47,12 +47,23 @@ jobs:
         if: ${{ matrix.os == 'macos-latest' }}
         run: brew install vtk
 
+      - name: Create vcpkg binary cache dir
+        if: ${{ matrix.os == 'windows-latest' }}
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "${{ env.VCPKG_DEFAULT_BINARY_CACHE }}"
+
       - name: 🦥 Cache VTK vcpkg build
         if: ${{ matrix.os == 'windows-latest' }}
         uses: actions/cache@v4
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
           key: vcpkg-${{ matrix.os }}-Release
+
+      - name: 🛠️ Build VTK (Windows)
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: |
+          ./vcpkg/vcpkg install vtk
 
       - name: 🛠️ Disable IPO
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -63,7 +74,6 @@ jobs:
       - name: 🐍 Build and check Python Module (Windows)
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
-          ./vcpkg/vcpkg install vtk
           $env:CMAKE_ARGS = "-DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake"
           python -m venv venv
           ./venv/Scripts/activate.bat
