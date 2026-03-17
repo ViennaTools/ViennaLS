@@ -19,6 +19,7 @@
 
 // Spatial discretization schemes
 #include <lsEngquistOsher.hpp>
+#include <lsIntegrationScheme.hpp>
 #include <lsLaxFriedrichs.hpp>
 #include <lsLocalLaxFriedrichs.hpp>
 #include <lsLocalLaxFriedrichsAnalytical.hpp>
@@ -77,6 +78,7 @@ template <class T, int D> class Advect {
   double integrationCutoff = 0.5;
   bool adaptiveTimeStepping = false;
   unsigned adaptiveTimeStepSubdivisions = 20;
+  bool verify = false;
   static constexpr double wrappingLayerEpsilon = 1e-4;
   std::vector<SmartPointer<Domain<T, D>>> initialLevelSets;
   std::function<bool(SmartPointer<Domain<T, D>>)> velocityUpdateCallback =
@@ -811,9 +813,78 @@ template <class T, int D> class Advect {
     }
   }
 
+  void checkLevelSets() {
+
+    auto topDomain = levelSets.back()->getDomain();
+    auto &grid = levelSets.back()->getGrid();
+    bool anyNaN = false;
+
+#pragma omp parallel num_threads(topDomain.getNumberOfSegments())              \
+    reduction(|| : anyNaN)
+    {
+      int p = 0;
+#ifdef _OPENMP
+      p = omp_get_thread_num();
+#endif
+      viennahrle::Index<D> startVector =
+          (p == 0) ? grid.getMinGridPoint()
+                   : topDomain.getSegmentation()[p - 1];
+
+      viennahrle::Index<D> endVector =
+          (p != static_cast<int>(topDomain.getNumberOfSegments() - 1))
+              ? topDomain.getSegmentation()[p]
+              : grid.incrementIndices(grid.getMaxGridPoint());
+
+      // an iterator for each level set
+      std::vector<ConstSparseIterator> iterators;
+      for (auto const &ls : levelSets) {
+        iterators.emplace_back(ls->getDomain());
+      }
+
+      viennahrle::SparseStarIterator<viennahrle::Domain<T, D>, 1>
+          neighborIterator(topDomain);
+
+      for (ConstSparseIterator it(topDomain, startVector);
+           it.getStartIndices() < endVector; ++it) {
+
+        neighborIterator.goToIndicesSequential(it.getStartIndices());
+
+        T denominator = 0;
+        VectorType<T, D> normalVector{};
+        for (int i = 0; i < D; i++) {
+          T pos = neighborIterator.getNeighbor(i).getValue() -
+                  neighborIterator.getCenter().getValue();
+          T neg = neighborIterator.getCenter().getValue() -
+                  neighborIterator.getNeighbor(i + D).getValue();
+          normalVector[i] = (pos + neg) * 0.5; // = 0;
+          denominator += normalVector[i] * normalVector[i];
+        }
+        denominator = 1. / std::sqrt(denominator);
+        if (std::isnan(denominator)) {
+          VIENNACORE_LOG_WARNING("Advect: NaN detected in normal vector "
+                                 "calculation. Dumping level set for debug.");
+          anyNaN = true;
+        }
+      }
+    } // end of parallel section
+
+    if (anyNaN) {
+      auto mesh = SmartPointer<Mesh<T>>::New();
+      ToMesh<T, D>(levelSets.back(), mesh).apply();
+      VTKWriter<T>(mesh, "Advect_NaNDetected.vtk").apply();
+      throw std::runtime_error(
+          "NaN detected in normal vector calculation. Level set dumped as "
+          "Advect_NaNDetected.vtk for debug.");
+    }
+  }
+
   /// internal function used as a wrapper to call specialized integrateTime
   /// with the chosen spatial discretization scheme
   double advect(double maxTimeStep) {
+    // check level set
+    if (verify)
+      checkLevelSets();
+
     switch (temporalScheme) {
     case TemporalSchemeEnum::RUNGE_KUTTA_2ND_ORDER:
       return lsInternal::AdvectTimeIntegration<T, D>::evolveRungeKutta2(
@@ -921,7 +992,8 @@ public:
   /// Return the last applied time step.
   double getCurrentTimeStep() const { return currentTimeStep; }
 
-  /// Get how many advection steps were performed during the last apply() call.
+  /// Get how many advection steps were performed during the last apply()
+  /// call.
   unsigned getNumberOfTimeSteps() const { return numberOfTimeSteps; }
 
   /// Get the value of the CFL number.
