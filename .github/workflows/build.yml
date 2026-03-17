@@ -33,8 +33,7 @@ jobs:
     container: ${{ matrix.container }}
 
     env:
-      CPM_SOURCE_CACHE: ${{ github.workspace }}/.cache
-      SCCACHE_DIR: ${{ github.workspace }}/.cache
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/.vcpkg-bincache
 
     name: "🧪 Test on ${{ matrix.os }} (⚙️: ${{ matrix.config }}, 💿: ${{ matrix.container || matrix.os }})"
 
@@ -49,25 +48,27 @@ jobs:
 
       - name: 📋 Install MacOS Dependencies
         if: ${{ matrix.os == 'macos-latest' }}
-        run: |
-          brew install vtk
+        run: brew install vtk
 
-      - name: 🦥 Cache VTK build
+      - name: 🦥 Cache VTK vcpkg build
         if: ${{ matrix.os == 'windows-latest' }}
         uses: actions/cache@v4
         with:
-          key: test-${{ matrix.os }}-${{ matrix.config }}
-          path: ${{ github.workspace }}/.cache
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: vcpkg-${{ matrix.os }}-${{ matrix.config }}
 
       - name: 🏗️ Compile (Windows)
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
-          cmake -DVIENNALS_BUILD_TESTS=ON -DCPM_SOURCE_CACHE="${{ env.CPM_SOURCE_CACHE }}" -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_C_COMPILER_LAUNCHER=sccache -B build && cmake --build build --config ${{ matrix.config }}
+          ./vcpkg/vcpkg install vtk
+          cmake -DVIENNALS_BUILD_TESTS=ON -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake -B build
+          cmake --build build --config ${{ matrix.config }}
 
       - name: 🏗️ Compile (other)
         if: ${{ matrix.os != 'windows-latest' }}
         run: |
-          cmake -DVIENNALS_BUILD_TESTS=ON -B build && cmake --build build --config ${{ matrix.config }}
+          cmake -DVIENNALS_BUILD_TESTS=ON -B build
+          cmake --build build --config ${{ matrix.config }}
 
       - name: 🧪 Test
         run: ctest --output-on-failure -E "Benchmark|Performance" -C ${{ matrix.config }} --test-dir build
