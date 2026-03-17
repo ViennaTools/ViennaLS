@@ -25,3 +25,4 @@ _generate/
 .eggs/
 test.ipynb
 testall.sh
+*_old*
