@@ -27,6 +27,7 @@ template <class T, int D> class ToHullMesh {
   SmartPointer<MaterialMap> materialMap = nullptr;
   bool generateSharpCorners = false;
   T bottomExtension = 0.0;
+  double minNodeDistanceFactor = 0.05;
 
   /// Generate hull mesh using ToMultiSurfaceMesh and boundary caps.
   /// generateSharpCorners is forwarded to the converter. Works for both
@@ -71,7 +72,7 @@ template <class T, int D> class ToHullMesh {
     }
 
     // Generate multi-surface mesh with sharp corners
-    ToMultiSurfaceMesh<T, D> converter;
+    ToMultiSurfaceMesh<T, D> converter(minNodeDistanceFactor, 1e-12);
     for (auto &ls : levelSets)
       converter.insertNextLevelSet(ls);
     if (materialMap)
@@ -89,7 +90,7 @@ template <class T, int D> class ToHullMesh {
                              double rangeMin, double rangeMax) {
         int varyingAxis = 1 - boundaryAxis;
         std::vector<std::pair<double, unsigned>> boundaryNodes;
-        double tolerance = 1e-6 * gridDelta;
+        const double tolerance = 1e-6 * gridDelta;
 
         for (unsigned i = 0; i < multiMesh->nodes.size(); ++i) {
           if (std::abs(multiMesh->nodes[i][boundaryAxis] - fixedValue) <
@@ -204,7 +205,7 @@ template <class T, int D> class ToHullMesh {
       using EdgeKey = std::tuple<int, int, int, int>;
       std::map<EdgeKey, unsigned> edgeToNode;
       std::map<std::tuple<int, int, int>, unsigned> existingGridNodes;
-      double invGridDelta = 1.0 / gridDelta;
+      const double invGridDelta = 1.0 / gridDelta;
 
       for (unsigned i = 0; i < multiMesh->nodes.size(); ++i) {
         const auto &pos = multiMesh->nodes[i];
@@ -258,22 +259,23 @@ template <class T, int D> class ToHullMesh {
 
       // Marching Squares Cases (Triangles)
       // 0-3: Corners (BL, BR, TR, TL), 4-7: Edges (B, R, T, L)
-      const std::vector<std::vector<int>> msTris = {{},
-                                                    {0, 4, 7},
-                                                    {1, 5, 4},
-                                                    {0, 1, 5, 0, 5, 7},
-                                                    {2, 6, 5},
-                                                    {0, 4, 7, 2, 6, 5},
-                                                    {1, 2, 6, 1, 6, 4},
-                                                    {0, 1, 2, 0, 2, 6, 0, 6, 7},
-                                                    {3, 7, 6},
-                                                    {0, 4, 6, 0, 6, 3},
-                                                    {1, 5, 4, 3, 7, 6},
-                                                    {0, 1, 5, 0, 5, 6, 0, 6, 3},
-                                                    {3, 2, 5, 3, 5, 7},
-                                                    {0, 4, 5, 0, 5, 2, 0, 2, 3},
-                                                    {1, 2, 3, 1, 3, 7, 1, 7, 4},
-                                                    {0, 1, 2, 0, 2, 3}};
+      constexpr std::array<std::vector<int>, 16> msTris = {
+          {},
+          {0, 4, 7},
+          {1, 5, 4},
+          {0, 1, 5, 0, 5, 7},
+          {2, 6, 5},
+          {0, 4, 7, 2, 6, 5},
+          {1, 2, 6, 1, 6, 4},
+          {0, 1, 2, 0, 2, 6, 0, 6, 7},
+          {3, 7, 6},
+          {0, 4, 6, 0, 6, 3},
+          {1, 5, 4, 3, 7, 6},
+          {0, 1, 5, 0, 5, 6, 0, 6, 3},
+          {3, 2, 5, 3, 5, 7},
+          {0, 4, 5, 0, 5, 2, 0, 2, 3},
+          {1, 2, 3, 1, 3, 7, 1, 7, 4},
+          {0, 1, 2, 0, 2, 3}};
 
       for (int d = 0; d < D; ++d) {
         for (int side = 0; side < 2; ++side) {
@@ -445,6 +447,15 @@ public:
     } else {
       bottomExtension = extension;
     }
+  }
+
+  void setMinNodeDistanceFactor(double factor) {
+    if (factor <= 0) {
+      VIENNACORE_LOG_WARNING("ToHullMesh: minNodeDistanceFactor must be "
+                             "positive. Ignoring value.");
+      return;
+    }
+    minNodeDistanceFactor = factor;
   }
 
   void apply() { generateHull(); }
