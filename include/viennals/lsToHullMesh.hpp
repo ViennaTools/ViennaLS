@@ -259,7 +259,7 @@ template <class T, int D> class ToHullMesh {
 
       // Marching Squares Cases (Triangles)
       // 0-3: Corners (BL, BR, TR, TL), 4-7: Edges (B, R, T, L)
-      constexpr std::array<std::vector<int>, 16> msTris = {
+      constexpr std::vector<std::vector<int>> msTris = {
           {},
           {0, 4, 7},
           {1, 5, 4},
