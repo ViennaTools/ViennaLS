@@ -77,7 +77,7 @@ add_dependencies(${PROJECT_NAME} ${MOD})
 
 set(VIENNALS_LIB_FOLDER ${CMAKE_BINARY_DIR}/${PKG}.libs)
 
-if(VIENNAPS_PACKAGE_PYTHON OR MSVC)
+if(VIENNALS_PACKAGE_PYTHON OR MSVC)
   # Copy the required libraries to the lib folder, this is required for packaging and on Windows
   viennacore_setup_vtk_env(${MOD} ${VIENNALS_LIB_FOLDER})
 endif()
