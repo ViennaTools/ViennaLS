@@ -27,6 +27,7 @@ template <class T, int D> class ToHullMesh {
   SmartPointer<MaterialMap> materialMap = nullptr;
   bool generateSharpCorners = false;
   T bottomExtension = 0.0;
+  double minNodeDistanceFactor = 0.05;
 
   /// Generate hull mesh using ToMultiSurfaceMesh and boundary caps.
   /// generateSharpCorners is forwarded to the converter. Works for both
@@ -71,7 +72,7 @@ template <class T, int D> class ToHullMesh {
     }
 
     // Generate multi-surface mesh with sharp corners
-    ToMultiSurfaceMesh<T, D> converter;
+    ToMultiSurfaceMesh<T, D> converter(minNodeDistanceFactor, 1e-12);
     for (auto &ls : levelSets)
       converter.insertNextLevelSet(ls);
     if (materialMap)
@@ -89,7 +90,7 @@ template <class T, int D> class ToHullMesh {
                              double rangeMin, double rangeMax) {
         int varyingAxis = 1 - boundaryAxis;
         std::vector<std::pair<double, unsigned>> boundaryNodes;
-        double tolerance = 1e-6 * gridDelta;
+        const double tolerance = 1e-6 * gridDelta;
 
         for (unsigned i = 0; i < multiMesh->nodes.size(); ++i) {
           if (std::abs(multiMesh->nodes[i][boundaryAxis] - fixedValue) <
@@ -204,7 +205,7 @@ template <class T, int D> class ToHullMesh {
       using EdgeKey = std::tuple<int, int, int, int>;
       std::map<EdgeKey, unsigned> edgeToNode;
       std::map<std::tuple<int, int, int>, unsigned> existingGridNodes;
-      double invGridDelta = 1.0 / gridDelta;
+      const double invGridDelta = 1.0 / gridDelta;
 
       for (unsigned i = 0; i < multiMesh->nodes.size(); ++i) {
         const auto &pos = multiMesh->nodes[i];
@@ -445,6 +446,15 @@ public:
     } else {
       bottomExtension = extension;
     }
+  }
+
+  void setMinNodeDistanceFactor(double factor) {
+    if (factor <= 0) {
+      VIENNACORE_LOG_WARNING("ToHullMesh: minNodeDistanceFactor must be "
+                             "positive. Ignoring value.");
+      return;
+    }
+    minNodeDistanceFactor = factor;
   }
 
   void apply() { generateHull(); }

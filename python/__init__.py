@@ -18,8 +18,11 @@ def _windows_dll_path():
     ]
 
     for path in additional_paths:
-        os.add_dll_directory(path)
-        os.environ["PATH"] = path + os.pathsep + os.environ["PATH"]
+        if os.path.isdir(path):
+            os.add_dll_directory(path)
+            os.environ["PATH"] = path + os.pathsep + os.environ["PATH"]
+        else:
+            print(f"Warning: DLL path {path} does not exist.")
 
 
 import sys as _sys
@@ -51,6 +54,7 @@ def setDimension(d: int):
     else:
         raise ValueError("Dimension must be 2 or 3.")
 
+
 def getDimension() -> int:
     """Get the current dimension of the simulation.
 
@@ -60,6 +64,7 @@ def getDimension() -> int:
         The currently set dimension (2 or 3).
     """
     return PROXY_DIM
+
 
 def __getattr__(name):
     # 1) common/top-level from _core

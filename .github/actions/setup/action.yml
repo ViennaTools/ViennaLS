@@ -51,9 +51,3 @@ runs:
       run: |
         echo "MACOSX_DEPLOYMENT_TARGET=15.0" >> $GITHUB_ENV
 
-    - name: Setup vcpkg (Windows)
-      shell: bash
-      if: ${{ inputs.os == 'windows-latest' }}
-      run: |
-        git clone https://github.com/microsoft/vcpkg.git
-        ./vcpkg/bootstrap-vcpkg.bat

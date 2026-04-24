@@ -30,6 +30,7 @@ jobs:
     container: ${{ matrix.container }}
 
     env:
+      VCPKG_COMMIT: c3867e714dd3a51c272826eea77267876517ed99
       VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/.vcpkg-bincache
 
     name: "🐍 Test Bindings on ${{ matrix.os }}"
@@ -43,27 +44,36 @@ jobs:
         with:
           os: ${{ matrix.os }}
 
+      - name: 🖥️ Setup vcpkg (Windows)
+        shell: pwsh
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: |
+          Remove-Item Env:VCPKG_ROOT -ErrorAction SilentlyContinue
+
+          git clone https://github.com/microsoft/vcpkg.git
+          git -C vcpkg checkout $env:VCPKG_COMMIT
+          & .\vcpkg\bootstrap-vcpkg.bat
+
+          "VCPKG_ROOT=$($env:GITHUB_WORKSPACE)\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+          New-Item -ItemType Directory -Force -Path "${{ env.VCPKG_DEFAULT_BINARY_CACHE }}"
+
       - name: 📋 Install MacOS Dependencies
         if: ${{ matrix.os == 'macos-latest' }}
         run: brew install vtk
 
-      - name: Create vcpkg binary cache dir
-        if: ${{ matrix.os == 'windows-latest' }}
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path "${{ env.VCPKG_DEFAULT_BINARY_CACHE }}"
-
-      - name: 🦥 Cache VTK vcpkg build
+      - name: 🦥 Cache vcpkg binary
         if: ${{ matrix.os == 'windows-latest' }}
         uses: actions/cache@v4
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: vcpkg-${{ matrix.os }}-Release
+          key: vcpkg-${{ matrix.os }}-Release-${{ env.VCPKG_COMMIT }}
 
       - name: 🛠️ Build VTK (Windows)
         if: ${{ matrix.os == 'windows-latest' }}
+        shell: pwsh
         run: |
-          ./vcpkg/vcpkg install vtk
+          ./vcpkg/vcpkg install --triplet x64-windows
 
       - name: 🛠️ Disable IPO
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -79,7 +89,9 @@ jobs:
           $toolchain = "${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake".Replace('\', '/')
 
           .\venv\Scripts\python -m pip install --upgrade pip
-          .\venv\Scripts\python -m pip install . --config-settings=cmake.args="-DCMAKE_TOOLCHAIN_FILE=$toolchain"
+          .\venv\Scripts\python -m pip install . `
+            --config-settings=cmake.define.CMAKE_TOOLCHAIN_FILE="$toolchain" `
+            --config-settings=cmake.define.VCPKG_TARGET_TRIPLET="x64-windows"
           .\venv\Scripts\python -c "import viennals; print(viennals.__doc__)"
 
       - name: 🐍 Build and check Python Module (Other)
