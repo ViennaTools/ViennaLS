@@ -21,6 +21,8 @@ def _windows_dll_path():
         if os.path.isdir(path):
             os.add_dll_directory(path)
             os.environ["PATH"] = path + os.pathsep + os.environ["PATH"]
+        else:
+            print(f"Warning: DLL path {path} does not exist.")
 
 
 import sys as _sys
