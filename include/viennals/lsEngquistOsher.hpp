@@ -25,7 +25,7 @@ template <class T, int D, int order> class EngquistOsher {
   static T pow2(const T &value) { return value * value; }
 
 public:
-  static void prepareLS(SmartPointer<viennals::Domain<T, D>> passedlsDomain) {
+  static void prepareLS(SmartPointer<viennals::Domain<T, D>> &passedlsDomain) {
     assert(order == 1 || order == 2);
     viennals::Expand<T, D>(passedlsDomain, 2 * order + 1).apply();
   }
@@ -34,9 +34,7 @@ public:
                 SmartPointer<viennals::VelocityField<T>> vel,
                 bool calcNormal = true)
       : levelSet(passedlsDomain), velocities(vel),
-        neighborIterator(
-            viennahrle::SparseStarIterator<viennahrle::Domain<T, D>, order>(
-                levelSet->getDomain())),
+        neighborIterator(levelSet->getDomain()),
         calculateNormalVectors(calcNormal) {}
 
   std::pair<T, T> operator()(const viennahrle::Index<D> &indices,

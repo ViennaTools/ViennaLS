@@ -492,7 +492,7 @@ template <class T, int D> class Advect {
       DiscretizationSchemeType scheme(spatialScheme);
 
       for (ConstSparseIterator it(topDomain, startVector);
-           it.getStartIndices() < endVector; ++it) {
+           it.getStartIndices() < endVector; it.next()) {
 
         if (!it.isDefined() || std::abs(it.getValue()) > integrationCutoff)
           continue;
