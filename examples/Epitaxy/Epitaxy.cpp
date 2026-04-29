@@ -2,6 +2,7 @@
 #include <lsBooleanOperation.hpp>
 #include <lsDomain.hpp>
 #include <lsMakeGeometry.hpp>
+#include <lsToMesh.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
@@ -29,9 +30,9 @@ public:
     double vel = std::max(std::abs(normal[0]), std::abs(normal[2]));
     constexpr double factor = (R100 - R111) / (high - low);
     vel = (vel - low) * factor + R111;
-    if (std::abs(normal[0]) < std::abs(normal[2])) {
-      vel *= 2.;
-    }
+    // if (std::abs(normal[0]) < std::abs(normal[2])) {
+    //   vel *= 2.;
+    // }
 
     return vel *
            ((material < int(velocities.size())) ? velocities[material] : 0);
@@ -45,9 +46,16 @@ void writeSurface(SmartPointer<Domain<T, D>> domain,
   VTKWriter<T>(mesh, filename).apply();
 }
 
+void writeLevelSet(SmartPointer<Domain<T, D>> domain,
+                   const std::string &filename) {
+  auto mesh = Mesh<T>::New();
+  ToMesh<T, D>(domain, mesh).apply();
+  VTKWriter<T>(mesh, filename).apply();
+}
+
 int main(int argc, char *argv[]) {
 
-  omp_set_num_threads(8);
+  omp_set_num_threads(1);
   // Create hole geometry
   double bounds[2 * D] = {-1.0, 1.0, -1.0, 1.0, -1.0, 1.0};
   BoundaryConditionEnum boundaryConditions[2 * D] = {
@@ -86,10 +94,20 @@ int main(int argc, char *argv[]) {
   advectionKernel.setSpatialScheme(
       SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER);
   advectionKernel.setAdvectionTime(.5);
+  advectionKernel.setSingleStep(true);
+  advectionKernel.setSaveAdvectionVelocities(true);
 
   Timer timer;
   timer.start();
-  advectionKernel.apply();
+
+  double time = 0;
+  int i = 0;
+  while (time < 0.5) {
+    advectionKernel.apply();
+    time += advectionKernel.getAdvectedTime();
+    writeLevelSet(levelSets.back(), "levelSet_" + std::to_string(i) + ".vtp");
+    i++;
+  }
   timer.finish();
 
   std::cout << "Epitaxy took " << timer.currentDuration / 1e9 << "s\n";
