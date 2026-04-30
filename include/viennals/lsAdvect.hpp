@@ -87,7 +87,7 @@ template <class T, int D> class Advect {
   std::vector<std::vector<std::pair<std::pair<T, T>, T>>> storedRates;
   double currentTimeStep = -1.;
 
-  VectorType<T, 3> findGlobalAlphas() const {
+  VectorType<T, D> findGlobalAlphas() const {
 
     auto &topDomain = levelSets.back()->getDomain();
     auto &grid = levelSets.back()->getGrid();
@@ -96,11 +96,11 @@ template <class T, int D> class Advect {
     const T deltaPos = gridDelta;
     const T deltaNeg = -gridDelta;
 
-    VectorType<T, 3> finalAlphas = {0., 0., 0.};
+    VectorType<T, D> finalAlphas{};
 
 #pragma omp parallel num_threads((levelSets.back())->getNumberOfSegments())
     {
-      VectorType<T, 3> localAlphas = {0., 0., 0.};
+      VectorType<T, D> localAlphas{};
       int p = 0;
 #ifdef _OPENMP
       p = omp_get_thread_num();
@@ -161,9 +161,9 @@ template <class T, int D> class Advect {
               normal[i] = phiPos - phiNeg;
               normalModulus += normal[i] * normal[i];
             }
-            normalModulus = std::sqrt(normalModulus);
+            normalModulus = 1. / std::sqrt(normalModulus);
             for (unsigned i = 0; i < D; ++i)
-              normal[i] /= normalModulus;
+              normal[i] *= normalModulus;
 
             T scaVel = velocities->getScalarVelocity(
                 coords, lowerLevelSetId, normal,
@@ -296,7 +296,8 @@ template <class T, int D> class Advect {
       if (updateData)
         newDataSourceIds[p].reserve(2.5 * domainSegment.getNumberOfPoints());
 
-      for (viennahrle::SparseStarIterator<typename Domain<T, D>::DomainType, 1>
+      for (viennahrle::ConstSparseStarIterator<
+               typename Domain<T, D>::DomainType, 1>
                it(domain, startVector);
            it.getIndices() < endVector; ++it) {
 
@@ -492,7 +493,7 @@ template <class T, int D> class Advect {
       DiscretizationSchemeType scheme(spatialScheme);
 
       for (ConstSparseIterator it(topDomain, startVector);
-           it.getStartIndices() < endVector; ++it) {
+           it.getStartIndices() < endVector; it.next()) {
 
         if (!it.isDefined() || std::abs(it.getValue()) > integrationCutoff)
           continue;

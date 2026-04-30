@@ -21,9 +21,11 @@ template <class T, int D, int order> class LocalLaxFriedrichs {
   SmartPointer<viennals::Domain<T, D>> levelSet;
   SmartPointer<viennals::VelocityField<T>> velocities;
   // neighbor iterator always needs order 2 for alpha calculation
-  viennahrle::SparseBoxIterator<viennahrle::Domain<T, D>, 2> neighborIterator;
+  viennahrle::ConstSparseBoxIterator<viennahrle::Domain<T, D>, 2>
+      neighborIterator;
   const double alphaFactor;
-  VectorType<T, 3> finalAlphas;
+  const double gridDelta;
+  VectorType<T, D> finalAlphas{}; // initialized with 0
 
   static T pow2(const T &value) { return value * value; }
 
@@ -36,13 +38,13 @@ template <class T, int D, int order> class LocalLaxFriedrichs {
   static void incrementIndices(viennahrle::Index<D> &index,
                                viennahrle::IndexType minIndex,
                                viennahrle::IndexType maxIndex) {
-    unsigned dir = 0;
-    for (; dir < D - 1; ++dir) {
-      if (index[dir] < maxIndex)
+    int dim = 0;
+    for (; dim < D - 1; ++dim) {
+      if (index[dim] < maxIndex)
         break;
-      index[dir] = minIndex;
+      index[dim] = minIndex;
     }
-    ++index[dir];
+    ++index[dim];
   }
 
 public:
@@ -57,19 +59,13 @@ public:
                      SmartPointer<viennals::VelocityField<T>> vel,
                      double a = 1.0)
       : levelSet(passedlsDomain), velocities(vel),
-        neighborIterator(levelSet->getDomain()), alphaFactor(a) {
-    for (int i = 0; i < 3; ++i) {
-      finalAlphas[i] = 0;
-    }
-  }
+        neighborIterator(levelSet->getDomain()), alphaFactor(a),
+        gridDelta(levelSet->getGrid().getGridDelta()) {}
 
   std::pair<T, T> operator()(const viennahrle::Index<D> &indices,
                              int material) {
 
-    auto &grid = levelSet->getGrid();
-    double gridDelta = grid.getGridDelta();
-
-    VectorType<T, 3> coordinate{0., 0., 0.};
+    Vec3D<T> coordinate{0., 0., 0.};
     for (unsigned i = 0; i < D; ++i) {
       coordinate[i] = indices[i] * gridDelta;
     }
@@ -77,16 +73,13 @@ public:
     // move neighborIterator to current position
     neighborIterator.goToIndicesSequential(indices);
 
-    // convert coordinate to std array for interface
-    Vec3D<T> coordArray{coordinate[0], coordinate[1], coordinate[2]};
-
     T gradPos[D];
     T gradNeg[D];
 
     T grad = 0.;
     T dissipation = 0.;
 
-    Vec3D<T> normalVector{};
+    Vec3D<T> normalVector;
     T normalModulus = 0;
 
     for (int i = 0; i < D; i++) { // iterate over dimensions
@@ -105,7 +98,8 @@ public:
       T diffPos = (phiPos - phi0) / deltaPos;
       T diffNeg = (phiNeg - phi0) / deltaNeg;
 
-      if (order == 2) { // if second order spatial discretization scheme is used
+      if constexpr (order == 2) { // if second order spatial discretization
+                                  // scheme is used
         posUnit[i] = 2;
         negUnit[i] = -2;
 
@@ -161,11 +155,11 @@ public:
     }
 
     // Get velocities
-    double scalarVelocity = velocities->getScalarVelocity(
-        coordArray, material, normalVector,
+    T scalarVelocity = velocities->getScalarVelocity(
+        coordinate, material, normalVector,
         neighborIterator.getCenter().getPointId());
     Vec3D<T> vectorVelocity = velocities->getVectorVelocity(
-        coordArray, material, normalVector,
+        coordinate, material, normalVector,
         neighborIterator.getCenter().getPointId());
 
     // calculate hamiltonian
@@ -182,13 +176,18 @@ public:
       }
     }
 
+    if (totalGrad == T(0)) {
+      return {0, 0};
+    }
+
     // calculate alphas
     T alpha[D]{};
     {
       // alpha calculation is always on order 1 stencil
-      const viennahrle::IndexType minIndex = -1;
-      const viennahrle::IndexType maxIndex = 1;
-      const unsigned numNeighbors = std::pow((maxIndex - minIndex) + 1, D);
+      constexpr viennahrle::IndexType minIndex = -1;
+      constexpr viennahrle::IndexType maxIndex = 1;
+      constexpr unsigned numNeighbors =
+          static_cast<unsigned>(hrleUtil::pow((maxIndex - minIndex) + 1, D));
 
       viennahrle::Index<D> neighborIndex(minIndex);
       for (unsigned i = 0; i < numNeighbors; ++i) {
@@ -196,8 +195,8 @@ public:
         for (unsigned dir = 0; dir < D; ++dir) {
           coords[dir] = coordinate[dir] + neighborIndex[dir] * gridDelta;
         }
-        Vec3D<T> normal{};
-        double normalModulus = 0.;
+        Vec3D<T> normal;
+        T normalModulus = 0.;
         auto center = neighborIterator.getNeighbor(neighborIndex).getValue();
         for (unsigned dir = 0; dir < D; ++dir) {
           viennahrle::Index<D> unity(0);
@@ -238,7 +237,7 @@ public:
       dissipation += alphaFactor * alpha[i] * (gradNeg[i] - gradPos[i]) * 0.5;
     }
 
-    return {totalGrad, ((totalGrad != 0.) ? dissipation : 0)};
+    return {totalGrad, dissipation};
   }
 
   void reduceTimeStepHamiltonJacobi(double &MaxTimeStep, double gridDelta) {

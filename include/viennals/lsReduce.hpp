@@ -66,7 +66,7 @@ public:
     const T valueLimit = width * 0.5;
 
     auto &grid = levelSet->getGrid();
-    auto newlsDomain = SmartPointer<Domain<T, D>>::New(levelSet->getGrid());
+    auto newlsDomain = Domain<T, D>::New(levelSet->getGrid());
     typename Domain<T, D>::DomainType &newDomain = newlsDomain->getDomain();
     typename Domain<T, D>::DomainType &domain = levelSet->getDomain();
 
@@ -100,8 +100,8 @@ public:
               ? newDomain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
-      for (viennahrle::SparseIterator<typename Domain<T, D>::DomainType> it(
-               domain, startVector);
+      for (viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>
+               it(domain, startVector);
            it.getStartIndices() < endVector; ++it) {
         T currentValue = it.getValue();
         if (it.isDefined() && std::abs(currentValue) <= valueLimit) {

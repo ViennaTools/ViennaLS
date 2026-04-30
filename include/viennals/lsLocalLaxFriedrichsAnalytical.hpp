@@ -21,12 +21,13 @@ template <class T, int D, int order> class LocalLaxFriedrichsAnalytical {
   SmartPointer<viennals::Domain<T, D>> levelSet;
   SmartPointer<viennals::VelocityField<T>> velocities;
   // neighbor iterator always needs order 2 for alpha calculation
-  viennahrle::SparseBoxIterator<viennahrle::Domain<T, D>, 2> neighborIterator;
+  viennahrle::ConstSparseBoxIterator<viennahrle::Domain<T, D>, 2>
+      neighborIterator;
   VectorType<T, 3> finalAlphas;
 
   static T pow2(const T &value) { return value * value; }
 
-  T calculateNormalComponent(T neg, T center, T pos, T delta) {
+  static T calculateNormalComponent(T neg, T center, T pos, T delta) {
     auto diffPos = (pos - center) / delta;
     auto diffNeg = (center - neg) / delta;
     return (diffPos + diffNeg) * 0.5;
@@ -76,9 +77,6 @@ public:
     // move neighborIterator to current position
     neighborIterator.goToIndicesSequential(indices);
 
-    // convert coordinate to std array for interface
-    Vec3D<T> coordArray{coordinate[0], coordinate[1], coordinate[2]};
-
     T gradPos[D];
     T gradNeg[D];
 
@@ -104,7 +102,8 @@ public:
       T diffPos = (phiPos - phi0) / deltaPos;
       T diffNeg = (phiNeg - phi0) / deltaNeg;
 
-      if (order == 2) { // if second order spatial discretization scheme is used
+      if constexpr (order == 2) { // if second order spatial discretization
+                                  // scheme is used
         posUnit[i] = 2;
         negUnit[i] = -2;
 
@@ -160,11 +159,11 @@ public:
     }
 
     // Get velocities
-    double scalarVelocity = velocities->getScalarVelocity(
-        coordArray, material, normalVector,
+    T scalarVelocity = velocities->getScalarVelocity(
+        coordinate, material, normalVector,
         neighborIterator.getCenter().getPointId());
     Vec3D<T> vectorVelocity = velocities->getVectorVelocity(
-        coordArray, material, normalVector,
+        coordinate, material, normalVector,
         neighborIterator.getCenter().getPointId());
 
     // calculate hamiltonian
@@ -179,6 +178,10 @@ public:
       } else {
         totalGrad += vectorVelocity[w] * gradNeg[w];
       }
+    }
+
+    if (totalGrad == T(0)) {
+      return {0, 0};
     }
 
     // calculate alphas
@@ -221,7 +224,7 @@ public:
       dissipation += alpha[i] * (gradNeg[i] - gradPos[i]) * 0.5;
     }
 
-    return {totalGrad, ((totalGrad != 0.) ? dissipation : 0)};
+    return {totalGrad, dissipation};
   }
 
   void reduceTimeStepHamiltonJacobi(double &MaxTimeStep, double gridDelta) {

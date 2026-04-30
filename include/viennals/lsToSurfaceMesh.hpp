@@ -28,6 +28,8 @@ protected:
   using hrleDomainType = typename lsDomainType::DomainType;
   using hrleIndex = viennahrle::Index<D>;
   using ConstSparseIterator = viennahrle::ConstSparseIterator<hrleDomainType>;
+  using ConstSparseCellIterator =
+      viennahrle::ConstSparseCellIterator<hrleDomainType>;
 
   std::vector<SmartPointer<lsDomainType>> levelSets;
   SmartPointer<Mesh<T>> mesh = nullptr;
@@ -62,7 +64,6 @@ protected:
   std::unordered_set<I3, I3Hash> uniqueElements;
   std::vector<Vec3D<T>> currentNormals;
   std::vector<T> currentMaterials;
-  double currentGridDelta;
   T currentMaterialId = 0;
   SmartPointer<lsDomainType> currentLevelSet = nullptr;
   typename PointData<T>::VectorDataType *normalVectorData = nullptr;
@@ -100,7 +101,6 @@ public:
 
   virtual void apply() {
     currentLevelSet = levelSets[0];
-    currentGridDelta = currentLevelSet->getGrid().getGridDelta();
     if (currentLevelSet == nullptr) {
       Logger::getInstance()
           .addError("No level set was passed to ToSurfaceMesh.")
@@ -159,8 +159,7 @@ public:
     }
 
     // iterate over all cells with active points
-    for (viennahrle::ConstSparseCellIterator<hrleDomainType> cellIt(
-             currentLevelSet->getDomain());
+    for (ConstSparseCellIterator cellIt(currentLevelSet->getDomain());
          !cellIt.isFinished(); cellIt.next()) {
 
       // Clear node caches for dimensions that have moved out of scope
@@ -256,37 +255,39 @@ public:
         continue;
 
       if constexpr (D == 3) {
-        // Stitch to perfect corners/edges
-        // Check if neighbors have generated nodes on shared faces that we need
-        // to connect to
-        for (int axis = 0; axis < 3; ++axis) {
-          for (int d = 0; d < 2; ++d) {
-            hrleIndex faceKey(cellIt.getIndices());
-            if (d == 1)
-              faceKey[axis]++;
+        if (sharpCorners) {
+          // Stitch to perfect corners/edges
+          // Check if neighbors have generated nodes on shared faces that we
+          // need to connect to
+          for (int axis = 0; axis < 3; ++axis) {
+            for (int d = 0; d < 2; ++d) {
+              hrleIndex faceKey(cellIt.getIndices());
+              if (d == 1)
+                faceKey[axis]++;
 
-            auto it = faceNodes[axis].find(faceKey);
-            if (it != faceNodes[axis].end()) {
-              const unsigned faceNodeId = it->second;
-              const int *Triangles =
-                  lsInternal::MarchingCubes::polygonize3d(signs);
+              auto it = faceNodes[axis].find(faceKey);
+              if (it != faceNodes[axis].end()) {
+                const unsigned faceNodeId = it->second;
+                const int *Triangles =
+                    lsInternal::MarchingCubes::polygonize3d(signs);
 
-              for (; Triangles[0] != -1; Triangles += 3) {
-                std::vector<unsigned> face_edge_nodes;
-                for (int i = 0; i < 3; ++i) {
-                  int edge = Triangles[i];
-                  int c0 = corner0[edge];
-                  int c1 = corner1[edge];
-                  bool onFace =
-                      (((c0 >> axis) & 1) == d) && (((c1 >> axis) & 1) == d);
-                  if (onFace) {
-                    face_edge_nodes.push_back(
-                        getNode(cellIt, edge, nodes, &newDataSourceIds[0]));
+                for (; Triangles[0] != -1; Triangles += 3) {
+                  std::vector<unsigned> face_edge_nodes;
+                  for (int i = 0; i < 3; ++i) {
+                    int edge = Triangles[i];
+                    int c0 = corner0[edge];
+                    int c1 = corner1[edge];
+                    bool onFace =
+                        (((c0 >> axis) & 1) == d) && (((c1 >> axis) & 1) == d);
+                    if (onFace) {
+                      face_edge_nodes.push_back(
+                          getNode(cellIt, edge, nodes, &newDataSourceIds[0]));
+                    }
                   }
-                }
-                if (face_edge_nodes.size() == 2) {
-                  insertElement(
-                      {face_edge_nodes[0], face_edge_nodes[1], faceNodeId});
+                  if (face_edge_nodes.size() == 2) {
+                    insertElement(
+                        {face_edge_nodes[0], face_edge_nodes[1], faceNodeId});
+                  }
                 }
               }
             }
@@ -305,31 +306,16 @@ public:
 
         // for each node
         for (int n = 0; n < D; n++) {
-          const int edge = Triangles[n];
-
-          unsigned p0 = corner0[edge];
-          unsigned p1 = corner1[edge];
-
-          // determine direction of edge
-          auto dir = direction[edge];
-
-          // look for existing surface node
-          hrleIndex d(cellIt.getIndices());
-          d += viennahrle::BitMaskToIndex<D>(p0);
-
-          nodeIt = nodes[dir].find(d);
-          if (nodeIt != nodes[dir].end()) {
-            nodeNumbers[n] = nodeIt->second;
-          } else { // if node does not exist yet
-            nodeNumbers[n] = getNode(cellIt, edge, nodes, &newDataSourceIds[0]);
-          }
+          // get existing node or create new one if it does not exist yet
+          nodeNumbers[n] =
+              getNode(cellIt, Triangles[n], nodes, &newDataSourceIds[0]);
         }
 
         insertElement(nodeNumbers); // insert new surface element
       }
     }
 
-    scaleMesh();
+    scaleMesh(currentLevelSet->getGrid().getGridDelta());
 
     // now copy old data into new level set
     if (updatePointData && !newDataSourceIds[0].empty()) {
@@ -339,79 +325,87 @@ public:
   }
 
 protected:
-  void scaleMesh() {
+  void scaleMesh(const T gridDelta) {
     // Scale the mesh to global coordinates
     for (auto &node : mesh->nodes) {
-      for (int i = 0; i < D; ++i)
-        node[i] *= currentGridDelta;
+      node = node * gridDelta;
     }
-    for (int i = 0; i < D; ++i) {
-      mesh->minimumExtent[i] *= currentGridDelta;
-      mesh->maximumExtent[i] *= currentGridDelta;
-    }
+    mesh->minimumExtent = mesh->minimumExtent * gridDelta;
+    mesh->maximumExtent = mesh->maximumExtent * gridDelta;
   }
 
-  // Helper to get or create a node on an edge using linear interpolation
-  // Compute the interpolated position of a node on an edge without inserting it
-  Vec3D<T> computeNodePosition(
-      viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt, int edge) {
-    unsigned p0 = corner0[edge];
-    unsigned p1 = corner1[edge];
-    auto dir = direction[edge];
-
+  template <class OffsetType>
+  Vec3D<T> interpWithOffset(const unsigned p0, const T d0, const T d1,
+                            const unsigned dir,
+                            const OffsetType &offset) const {
     Vec3D<T> cc{};
     for (int z = 0; z < D; z++) {
       if (z != dir) {
-        cc[z] = static_cast<double>(cellIt.getIndices(z) +
-                                    viennahrle::BitMaskToIndex<D>(p0)[z]);
+        cc[z] =
+            static_cast<T>(offset[z] + viennahrle::BitMaskToIndex<D>(p0)[z]);
       } else {
-        T d0 = cellIt.getCorner(p0).getValue();
-        T d1 = cellIt.getCorner(p1).getValue();
         if (d0 == -d1) {
-          cc[z] = static_cast<T>(cellIt.getIndices(z)) + T(0.5);
+          cc[z] = static_cast<T>(offset[z]) + T(0.5);
         } else {
           if (std::abs(d0) <= std::abs(d1)) {
-            cc[z] = static_cast<T>(cellIt.getIndices(z)) + (d0 / (d0 - d1));
+            cc[z] = static_cast<T>(offset[z]) + (d0 / (d0 - d1));
           } else {
-            cc[z] = static_cast<T>(cellIt.getIndices(z) + 1) - (d1 / (d1 - d0));
+            cc[z] = static_cast<T>(offset[z] + 1) - (d1 / (d1 - d0));
           }
         }
-        cc[z] = std::max(cc[z], cellIt.getIndices(z) + epsilon);
-        cc[z] = std::min(cc[z], (cellIt.getIndices(z) + 1) - epsilon);
+        cc[z] = std::max(cc[z], offset[z] + epsilon);
+        cc[z] = std::min(cc[z], (offset[z] + 1) - epsilon);
       }
     }
     return cc;
   }
 
-  unsigned getNode(viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
-                   int edge, std::map<hrleIndex, unsigned> *nodes,
+  // Helper to get or create a node on an edge using linear interpolation
+  // Compute the interpolated position of a node on an edge without
+  // inserting it
+  std::tuple<Vec3D<T>, std::size_t>
+  computeNodePosition(const ConstSparseCellIterator &cellIt, int edge) const {
+    const unsigned p0 = corner0[edge];
+    const unsigned p1 = corner1[edge];
+    const auto dir = direction[edge];
+    const T d0 = cellIt.getCorner(p0).getValue();
+    const T d1 = cellIt.getCorner(p1).getValue();
+
+    std::size_t pointId = 0;
+    if (std::abs(d0) <= std::abs(d1)) {
+      pointId = cellIt.getCorner(p0).getPointId();
+    } else {
+      pointId = cellIt.getCorner(p1).getPointId();
+    }
+
+    Vec3D<T> cc = interpWithOffset(p0, d0, d1, dir, cellIt.getIndices());
+
+    return {cc, pointId};
+  }
+
+  unsigned getNode(const ConstSparseCellIterator &cellIt, int edge,
+                   std::map<hrleIndex, unsigned> *nodes,
                    std::vector<unsigned> *newDataSourceIds) {
 
-    unsigned p0 = corner0[edge];
-    unsigned p1 = corner1[edge];
+    const unsigned p0 = corner0[edge];
+    // determine direction of edge
     auto dir = direction[edge];
+
+    // look for existing surface node
     hrleIndex d(cellIt.getIndices());
     d += viennahrle::BitMaskToIndex<D>(p0);
 
     if (nodes[dir].find(d) != nodes[dir].end()) {
+      // Node already exists
       return nodes[dir][d];
     }
 
-    // Create node
-    Vec3D<T> cc = computeNodePosition(cellIt, edge);
-
-    std::size_t currentPointId = 0;
-    T d0 = cellIt.getCorner(p0).getValue();
-    T d1 = cellIt.getCorner(p1).getValue();
-    if (std::abs(d0) <= std::abs(d1)) {
-      currentPointId = cellIt.getCorner(p0).getPointId();
-    } else {
-      currentPointId = cellIt.getCorner(p1).getPointId();
-    }
+    // Create new node
+    auto [nodePos, lsPointId] = computeNodePosition(cellIt, edge);
     if (updatePointData && newDataSourceIds)
-      newDataSourceIds->push_back(currentPointId);
+      newDataSourceIds->push_back(lsPointId);
 
-    unsigned nodeId = insertNode(cc);
+    unsigned nodeId = insertNode(nodePos);
     nodes[dir][d] = nodeId;
     return nodeId;
   }
@@ -420,8 +414,8 @@ protected:
   // neighboring cell (3D only)
   template <int Dim = D>
   std::enable_if_t<Dim == 3, void>
-  stitchToNeighbor(viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
-                   int axis, bool isHighFace, unsigned faceNodeId,
+  stitchToNeighbor(const ConstSparseCellIterator &cellIt, int axis,
+                   bool isHighFace, unsigned faceNodeId,
                    std::map<hrleIndex, unsigned> *nodes,
                    ConstSparseIterator &valueIt) {
     // Backward stitching: Check if neighbor on this face is "past" and needs
@@ -477,9 +471,9 @@ protected:
 
   // Solves for a sharp corner position in 2D by intersecting normals
   template <int Dim = D>
-  std::enable_if_t<Dim == 2, bool> generateCanonicalSharpCorner2D(
-      viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
-      int transform, Vec3D<T> &cornerPos) const {
+  std::enable_if_t<Dim == 2, bool>
+  generateCanonicalSharpCorner2D(ConstSparseCellIterator &cellIt, int transform,
+                                 Vec3D<T> &cornerPos) const {
     assert(normalVectorData &&
            "Normal vector data must be computed for sharp corner generation.");
 
@@ -504,35 +498,18 @@ protected:
       return false;
     }
 
-    auto calculateNodePos = [&](int edge, Vec3D<T> &pos) {
-      unsigned p0 = corner0[edge];
-      unsigned p1 = corner1[edge];
-      auto dir = direction[edge];
-
-      for (int z = 0; z < D; z++) {
-        if (z != dir) {
-          pos[z] = static_cast<T>(viennahrle::BitMaskToIndex<D>(p0)[z]);
-        } else {
-          const T d0 = cellIt.getCorner(p0 ^ transform).getValue();
-          const T d1 = cellIt.getCorner(p1 ^ transform).getValue();
-          if (d0 == -d1) {
-            pos[z] = T(0.5);
-          } else {
-            if (std::abs(d0) <= std::abs(d1)) {
-              pos[z] = (d0 / (d0 - d1));
-            } else {
-              pos[z] = T(1.0) - (d1 / (d1 - d0));
-            }
-          }
-          pos[z] = std::max(pos[z], epsilon);
-          pos[z] = std::min(pos[z], T(1.0) - epsilon);
-        }
-      }
+    auto calculateNodePos = [&](int edge) {
+      const unsigned p0 = corner0[edge];
+      const unsigned p1 = corner1[edge];
+      const auto dir = direction[edge];
+      const T d0 = cellIt.getCorner(p0 ^ transform).getValue();
+      const T d1 = cellIt.getCorner(p1 ^ transform).getValue();
+      Vec3D<T> pos = interpWithOffset(p0, d0, d1, dir, Vec3D<T>{0, 0, 0});
+      return pos;
     };
 
-    Vec3D<T> pX{}, pY{};
-    calculateNodePos(0, pX); // Edge along x-axis from corner 0
-    calculateNodePos(3, pY); // Edge along y-axis from corner 0
+    auto pX = calculateNodePos(0); // Edge along x-axis from corner 0
+    auto pY = calculateNodePos(3); // Edge along y-axis from corner 0
 
     double d1 = DotProduct(norm1, pX);
     double d2 = DotProduct(norm2, pY);
@@ -553,9 +530,8 @@ protected:
   // rotations/reflections
   template <int Dim = D>
   std::enable_if_t<Dim == 2, bool> generateSharpCorner2D(
-      viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt, int countNeg,
-      int countPos, int negMask, int posMask,
-      std::map<hrleIndex, unsigned> *nodes,
+      ConstSparseCellIterator &cellIt, int countNeg, int countPos, int negMask,
+      int posMask, std::map<hrleIndex, unsigned> *nodes,
       std::vector<unsigned> *newDataSourceIds, ConstSparseIterator &valueIt) {
 
     int cornerIdx = -1;
@@ -669,15 +645,27 @@ protected:
     return false;
   }
 
+  Vec3D<T> getNormal(int idx, const ConstSparseCellIterator &cellIt,
+                     bool inverted) const {
+    assert(normalVectorData);
+    auto corner = cellIt.getCorner(idx);
+    if (corner.isDefined()) {
+      Vec3D<T> n = (*normalVectorData)[corner.getPointId()];
+      if (inverted)
+        for (int i = 0; i < 3; ++i)
+          n[i] = -n[i];
+      return n;
+    }
+    return Vec3D<T>{};
+  }
+
   // Generates geometry for an "L-shaped" configuration (3 active corners) in 3D
   template <int Dim = D>
-  std::enable_if_t<Dim == 3, bool>
-  generateSharpL3D(viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
-                   int countNeg, int countPos, int negMask, int posMask,
-                   std::map<hrleIndex, unsigned> *nodes,
-                   std::map<hrleIndex, unsigned> *faceNodes,
-                   std::vector<unsigned> *newDataSourceIds,
-                   ConstSparseIterator &valueIt) {
+  std::enable_if_t<Dim == 3, bool> generateSharpL3D(
+      ConstSparseCellIterator &cellIt, int countNeg, int countPos, int negMask,
+      int posMask, std::map<hrleIndex, unsigned> *nodes,
+      std::map<hrleIndex, unsigned> *faceNodes,
+      std::vector<unsigned> *newDataSourceIds, ConstSparseIterator &valueIt) {
 
     bool inverted = false;
     int mask = 0;
@@ -724,18 +712,6 @@ protected:
     assert(normalVectorData &&
            "Normal vector data must be computed for sharp feature generation.");
 
-    auto getNormal = [&](int idx) {
-      auto corner = cellIt.getCorner(idx);
-      if (corner.isDefined()) {
-        Vec3D<T> n = (*normalVectorData)[corner.getPointId()];
-        if (inverted)
-          for (int i = 0; i < 3; ++i)
-            n[i] = -n[i];
-        return n;
-      }
-      return Vec3D<T>{};
-    };
-
     // Determine axes
     int axisA = 0;
     while ((C ^ A) != (1 << axisA))
@@ -760,8 +736,8 @@ protected:
         return pos;
       }
 
-      Vec3D<T> N1 = getNormal(n1);
-      Vec3D<T> N2 = getNormal(n2);
+      Vec3D<T> N1 = getNormal(n1, cellIt, inverted);
+      Vec3D<T> N2 = getNormal(n2, cellIt, inverted);
 
       if (std::abs(DotProduct(N1, N2)) >= 0.8)
         return std::nullopt;
@@ -956,8 +932,7 @@ protected:
   // orientation)
   template <int Dim = D>
   std::enable_if_t<Dim == 3, bool> generateCanonicalSharpEdge3D(
-      viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
-      int transform, int axis, bool inverted,
+      ConstSparseCellIterator &cellIt, int transform, int axis, bool inverted,
       std::map<hrleIndex, unsigned> *nodes,
       std::map<hrleIndex, unsigned> *faceNodes,
       std::vector<unsigned> *newDataSourceIds, ConstSparseIterator &valueIt) {
@@ -1005,19 +980,6 @@ protected:
       if (transform & 4)
         res[2] = T(1.0) - res[2];
       return res;
-    };
-
-    auto getNormal = [&](int idx) {
-      auto corner = cellIt.getCorner(idx);
-      if (corner.isDefined()) {
-        Vec3D<T> n = (*normalVectorData)[corner.getPointId()];
-        if (inverted) {
-          for (int i = 0; i < 3; ++i)
-            n[i] = -n[i];
-        }
-        return n;
-      }
-      return Vec3D<T>{};
     };
 
     // Calculate face nodes P0 (at x=0) and P1 (at x=1) in canonical frame
@@ -1096,8 +1058,8 @@ protected:
         c_y = mapIdx(c_y);
         c_z = mapIdx(c_z);
 
-        Vec3D<T> n_y = toCanonical(getNormal(c_y));
-        Vec3D<T> n_z = toCanonical(getNormal(c_z));
+        Vec3D<T> n_y = toCanonical(getNormal(c_y, cellIt, inverted));
+        Vec3D<T> n_z = toCanonical(getNormal(c_z, cellIt, inverted));
 
         if (std::abs(DotProduct(n_y, n_z)) >= 0.8) {
           return false;
@@ -1213,9 +1175,8 @@ protected:
   // rotations/reflections
   template <int Dim = D>
   std::enable_if_t<Dim == 3, bool> generateSharpEdge3D(
-      viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt, int countNeg,
-      int countPos, int negMask, int posMask,
-      std::map<hrleIndex, unsigned> *nodes,
+      ConstSparseCellIterator &cellIt, int countNeg, int countPos, int negMask,
+      int posMask, std::map<hrleIndex, unsigned> *nodes,
       std::map<hrleIndex, unsigned> *faceNodes,
       std::vector<unsigned> *newDataSourceIds, ConstSparseIterator &valueIt) {
 
@@ -1260,16 +1221,13 @@ protected:
 
   // Generates geometry for a sharp corner (1 active corner) in 3D (canonical
   // orientation)
-  bool generateCanonicalSharpCorner3D(
-      viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
-      int transform, bool inverted, std::map<hrleIndex, unsigned> *nodes,
-      std::map<hrleIndex, unsigned> *faceNodes,
-      std::vector<unsigned> *newDataSourceIds, ConstSparseIterator &valueIt,
-      Vec3D<T> &cornerPos) {
-
-    const auto *normalVectorData =
-        currentLevelSet->getPointData().getVectorData(
-            viennals::CalculateNormalVectors<T, D>::normalVectorsLabel);
+  bool generateCanonicalSharpCorner3D(ConstSparseCellIterator &cellIt,
+                                      int transform, bool inverted,
+                                      std::map<hrleIndex, unsigned> *nodes,
+                                      std::map<hrleIndex, unsigned> *faceNodes,
+                                      std::vector<unsigned> *newDataSourceIds,
+                                      ConstSparseIterator &valueIt,
+                                      Vec3D<T> &cornerPos) {
     assert(normalVectorData &&
            "Normal vector data must be available for sharp corner generation");
 
@@ -1295,19 +1253,6 @@ protected:
       return v;
     };
 
-    auto getNormal = [&](int idx) {
-      auto corner = cellIt.getCorner(idx);
-      if (corner.isDefined()) {
-        Vec3D<T> n = (*normalVectorData)[corner.getPointId()];
-        if (inverted) {
-          for (int i = 0; i < 3; ++i)
-            n[i] = -n[i];
-        }
-        return n;
-      }
-      return Vec3D<T>{};
-    };
-
     Vec3D<T> norm1, norm2, norm3;
     double d1, d2, d3;
     Vec3D<T> P1, P2, P4;
@@ -1316,9 +1261,9 @@ protected:
     const int g2 = transform ^ 2;
     const int g4 = transform ^ 4;
 
-    norm1 = toCanonical(getNormal(g1));
-    norm2 = toCanonical(getNormal(g2));
-    norm3 = toCanonical(getNormal(g4));
+    norm1 = toCanonical(getNormal(g1, cellIt, inverted));
+    norm2 = toCanonical(getNormal(g2, cellIt, inverted));
+    norm3 = toCanonical(getNormal(g4, cellIt, inverted));
 
     const T t1 = getInterp(transform, g1, cellIt, inverted);
     const T t2 = getInterp(transform, g2, cellIt, inverted);
@@ -1379,12 +1324,13 @@ protected:
   // rotations/reflections
   template <int Dim = D>
   std::enable_if_t<Dim == 3, bool> generateSharpCorner3D(
-      viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt, int countNeg,
-      int countPos, int negMask, int posMask,
-      std::map<hrleIndex, unsigned> *nodes,
+      ConstSparseCellIterator &cellIt, int countNeg, int countPos, int negMask,
+      int posMask, std::map<hrleIndex, unsigned> *nodes,
       std::map<hrleIndex, unsigned> &cornerNodes,
       std::map<hrleIndex, unsigned> *faceNodes,
       std::vector<unsigned> *newDataSourceIds, ConstSparseIterator &valueIt) {
+    assert(normalVectorData &&
+           "Normal vector data must be available for sharp corner generation");
 
     bool inverted = false;
     int transform = -1;
@@ -1449,7 +1395,7 @@ protected:
       unsigned n4 = getEdgeNode(transform ^ 4);
 
       // Try to generate cube corner topology
-      if (normalVectorData) {
+      {
         // Re-calculate canonical normals and plane constants
         auto toCanonical = [&](Vec3D<T> v) {
           if (transform & 1)
@@ -1469,18 +1415,6 @@ protected:
           if (transform & 4)
             v[2] = T(1.0) - v[2];
           return v;
-        };
-
-        auto getNormal = [&](int idx) {
-          auto corner = cellIt.getCorner(idx);
-          if (corner.isDefined()) {
-            Vec3D<T> n = (*normalVectorData)[corner.getPointId()];
-            if (inverted)
-              for (int i = 0; i < 3; ++i)
-                n[i] = -n[i];
-            return n;
-          }
-          return Vec3D<T>{};
         };
 
         Vec3D<T> norm1, norm2, norm3;
@@ -1504,16 +1438,16 @@ protected:
         }
 
         // Standard 1-vs-7 case
-        norm1 = toCanonical(getNormal(transform ^ 1));
-        norm2 = toCanonical(getNormal(transform ^ 2));
-        norm3 = toCanonical(getNormal(transform ^ 4));
+        norm1 = toCanonical(getNormal(transform ^ 1, cellIt, inverted));
+        norm2 = toCanonical(getNormal(transform ^ 2, cellIt, inverted));
+        norm3 = toCanonical(getNormal(transform ^ 4, cellIt, inverted));
 
         d1 = norm1[0] * getInterp(transform, transform ^ 1, cellIt, inverted);
         d2 = norm2[1] * getInterp(transform, transform ^ 2, cellIt, inverted);
         d3 = norm3[2] * getInterp(transform, transform ^ 4, cellIt, inverted);
 
-        auto solve2x2 = [&](double a1, double b1, double c1, double a2,
-                            double b2, double c2, T &res1, T &res2) {
+        auto solve2x2 = [](double a1, double b1, double c1, double a2,
+                           double b2, double c2, T &res1, T &res2) {
           double det = a1 * b2 - a2 * b1;
           if (std::abs(det) < 1e-6)
             return false;
@@ -1535,7 +1469,7 @@ protected:
         valid &= solve2x2(norm1[0], norm1[1], d1 - norm1[2] * Fz[2], norm2[0],
                           norm2[1], d2 - norm2[2] * Fz[2], Fz[0], Fz[1]);
 
-        auto checkBounds = [&](Vec3D<T> p) {
+        auto checkBounds = [](Vec3D<T> p) {
           return p[0] >= -1e-4 && p[0] <= 1.0 + 1e-4 && p[1] >= -1e-4 &&
                  p[1] <= 1.0 + 1e-4 && p[2] >= -1e-4 && p[2] <= 1.0 + 1e-4;
         };
@@ -1631,14 +1565,26 @@ protected:
     }
   }
 
+  Vec3D<T> calculateNormal(const std::array<unsigned, D> &nodeNumbers) const {
+    if constexpr (D == 2) {
+      return Vec3D<T>{
+          -(mesh->nodes[nodeNumbers[1]][1] - mesh->nodes[nodeNumbers[0]][1]),
+          mesh->nodes[nodeNumbers[1]][0] - mesh->nodes[nodeNumbers[0]][0],
+          T(0)};
+    } else {
+      return calculateNormal(mesh->nodes[nodeNumbers[0]],
+                             mesh->nodes[nodeNumbers[1]],
+                             mesh->nodes[nodeNumbers[2]]);
+    }
+  }
+
   static inline Vec3D<T> calculateNormal(const Vec3D<T> &nodeA,
                                          const Vec3D<T> &nodeB,
                                          const Vec3D<T> &nodeC) noexcept {
     return CrossProduct(nodeB - nodeA, nodeC - nodeA);
   }
 
-  T getInterp(int p_a, int p_b,
-              const viennahrle::ConstSparseCellIterator<hrleDomainType> &cellIt,
+  T getInterp(int p_a, int p_b, const ConstSparseCellIterator &cellIt,
               bool inverted) const {
     auto getValue = [&](int idx) {
       T val = cellIt.getCorner(idx).getValue();
@@ -1651,11 +1597,11 @@ protected:
     return v_a / (v_a - v_b);
   }
 
-  void insertElement(const std::array<unsigned, D> &nodeNumbers) {
+  bool insertElement(const std::array<unsigned, D> &nodeNumbers) {
     if (triangleMisformed(nodeNumbers))
-      return;
+      return false;
 
-    auto elementI3 = [&](const std::array<unsigned, D> &element) -> I3 {
+    auto elementI3 = [](const std::array<unsigned, D> &element) -> I3 {
       if constexpr (D == 2)
         return {(int)element[0], (int)element[1], 0};
       else
@@ -1663,65 +1609,49 @@ protected:
     };
 
     if (uniqueElements.insert(elementI3(nodeNumbers)).second) {
-      Vec3D<T> normal;
-      if constexpr (D == 2) {
-        normal = Vec3D<T>{
-            -(mesh->nodes[nodeNumbers[1]][1] - mesh->nodes[nodeNumbers[0]][1]),
-            mesh->nodes[nodeNumbers[1]][0] - mesh->nodes[nodeNumbers[0]][0],
-            T(0)};
-      } else {
-        normal = calculateNormal(mesh->nodes[nodeNumbers[0]],
-                                 mesh->nodes[nodeNumbers[1]],
-                                 mesh->nodes[nodeNumbers[2]]);
-      }
+      auto normal = calculateNormal(nodeNumbers);
 
-      double n2 =
-          normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2];
+      T n2 = DotProduct(normal, normal);
       if (n2 > epsilon) {
         mesh->insertNextElement(nodeNumbers);
-        T invn = static_cast<T>(1.) / std::sqrt(static_cast<T>(n2));
+        T invn = T(1) / std::sqrt(n2);
         for (int d = 0; d < D; d++) {
           normal[d] *= invn;
         }
         currentNormals.push_back(normal);
-        currentMaterials.push_back(static_cast<T>(currentMaterialId));
+        currentMaterials.push_back(currentMaterialId);
+
+        return true;
       }
     }
+
+    return false;
   }
 
   unsigned insertNode(Vec3D<T> const &pos) {
-    auto quantize = [&](const Vec3D<T> &p) -> I3 {
+    auto quantize = [this](const Vec3D<T> &p) -> I3 {
       const T inv = T(1) / minNodeDistanceFactor;
       return {(int)std::llround(p[0] * inv), (int)std::llround(p[1] * inv),
               (int)std::llround(p[2] * inv)};
     };
 
-    int nodeIdx = -1;
     if (minNodeDistanceFactor > 0) {
-      auto q = quantize(pos);
-      auto it = nodeIdByBin.find(q);
-      if (it != nodeIdByBin.end())
-        nodeIdx = it->second;
+      if (auto it = nodeIdByBin.find(quantize(pos)); it != nodeIdByBin.end()) {
+        // Node already exists nearby. Average position to improve accuracy.
+        auto nodeIdx = it->second;
+        mesh->nodes[nodeIdx] = (mesh->nodes[nodeIdx] + pos) * T(0.5);
+        return nodeIdx;
+      }
     }
 
-    if (nodeIdx >= 0) {
-      for (int i = 0; i < 3; ++i) {
-        mesh->nodes[nodeIdx][i] = (mesh->nodes[nodeIdx][i] + pos[i]) * T(0.5);
-      }
-      return nodeIdx;
-    } else {
-      unsigned newNodeId = mesh->insertNextNode(pos);
-      if (minNodeDistanceFactor > 0) {
-        nodeIdByBin.emplace(quantize(pos), newNodeId);
-      }
-      for (int a = 0; a < D; a++) {
-        if (pos[a] < mesh->minimumExtent[a])
-          mesh->minimumExtent[a] = pos[a];
-        if (pos[a] > mesh->maximumExtent[a])
-          mesh->maximumExtent[a] = pos[a];
-      }
-      return newNodeId;
+    // insert new node
+    unsigned newNodeId = mesh->insertNextNode(pos);
+    if (minNodeDistanceFactor > 0) {
+      nodeIdByBin.emplace(quantize(pos), newNodeId);
     }
+    mesh->minimumExtent = Min(mesh->minimumExtent, pos);
+    mesh->maximumExtent = Max(mesh->maximumExtent, pos);
+    return newNodeId;
   }
 };
 

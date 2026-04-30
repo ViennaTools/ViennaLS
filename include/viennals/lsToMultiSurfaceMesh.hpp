@@ -16,7 +16,6 @@ class ToMultiSurfaceMesh : public ToSurfaceMesh<NumericType, D> {
   using ToSurfaceMesh<NumericType, D>::mesh;
   using ToSurfaceMesh<NumericType, D>::levelSets;
   using ToSurfaceMesh<NumericType, D>::currentLevelSet;
-  using ToSurfaceMesh<NumericType, D>::currentGridDelta;
   using ToSurfaceMesh<NumericType, D>::currentMaterialId;
   using ToSurfaceMesh<NumericType, D>::epsilon;
   using ToSurfaceMesh<NumericType, D>::nodeIdByBin;
@@ -635,7 +634,6 @@ public:
     }
 
     mesh->clear();
-    currentGridDelta = levelSets.front()->getGrid().getGridDelta();
     for (unsigned i = 0; i < D; ++i) {
       mesh->minimumExtent[i] = std::numeric_limits<NumericType>::max();
       mesh->maximumExtent[i] = std::numeric_limits<NumericType>::lowest();
@@ -672,11 +670,8 @@ public:
 
     for (unsigned l = 0; l < levelSets.size(); l++) {
       currentLevelSet = levelSets[l];
-      if (useMaterialMap) {
-        currentMaterialId = materialMap->getMaterialId(l);
-      } else {
-        currentMaterialId = static_cast<unsigned>(l);
-      }
+      currentMaterialId = useMaterialMap ? materialMap->getMaterialId(l)
+                                         : static_cast<NumericType>(l);
 
       normalVectorData = nullptr;
       if (sharpCorners) {
@@ -933,7 +928,7 @@ public:
               if (sharpCorners && l > 0 && atMaterialBoundary) {
                 auto tmIt = sharpCornerNodes.find(touchingMaterial);
                 if (tmIt != sharpCornerNodes.end() && !tmIt->second.empty()) {
-                  Vec3D<NumericType> nodePos =
+                  auto [nodePos, pointId] =
                       this->computeNodePosition(cellIt, edge);
 
                   NumericType minDist2 =
@@ -966,26 +961,19 @@ public:
           }
 
           // Check for duplicates before inserting (standard Marching Cubes)
-          bool isDuplicate = false;
-          if constexpr (D == 2) {
-            using I3 = typename ToSurfaceMesh<NumericType, D>::I3;
-            if (uniqueElements.find({(int)nodeNumbers[1], (int)nodeNumbers[0],
-                                     0}) != uniqueElements.end())
-              isDuplicate = true;
-          }
-
-          if (!isDuplicate) {
-            this->insertElement(nodeNumbers);
-            if (sharpCorners && l > 0)
+          if (this->insertElement(nodeNumbers)) {
+            // element was inserted
+            if (sharpCorners && l > 0) {
               handleEdgeCornerInteractions(mesh->lines.size() - 1,
                                            sharpCornerNodes, l,
                                            cellIt.getIndices());
+            }
           }
         }
       }
     }
 
-    this->scaleMesh();
+    this->scaleMesh(levelSets.front()->getGrid().getGridDelta());
 
     mesh->cellData.insertNextScalarData(currentMaterials, "MaterialIds");
     mesh->cellData.insertNextVectorData(currentNormals, "Normals");

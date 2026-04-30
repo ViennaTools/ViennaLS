@@ -321,10 +321,10 @@ public:
                                                           startVector);
 
       // Mask iterator for checking whether inside mask or not
-      SmartPointer<viennahrle::ConstSparseIterator<DomainType>> maskIt =
+      std::unique_ptr<viennahrle::ConstSparseIterator<DomainType>> maskIt =
           nullptr;
       if (maskLevelSet != nullptr) {
-        maskIt = SmartPointer<viennahrle::ConstSparseIterator<DomainType>>::New(
+        maskIt = std::make_unique<viennahrle::ConstSparseIterator<DomainType>>(
             maskLevelSet->getDomain(), startVector);
       }
 
