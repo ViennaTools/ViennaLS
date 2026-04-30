@@ -35,18 +35,17 @@ class StencilLocalLaxFriedrichsScalar {
 
   LevelSetType levelSet;
   SmartPointer<viennals::VelocityField<T>> velocities;
-  viennahrle::SparseBoxIterator<viennahrle::Domain<T, D>,
-                                static_cast<int>(finiteDifferenceScheme) + 1 +
-                                    order>
+  viennahrle::ConstSparseBoxIterator<viennahrle::Domain<T, D>,
+                                     static_cast<int>(finiteDifferenceScheme) +
+                                         1 + order>
       neighborIterator;
   const double gridDelta;
   const double alphaFactor;
   const double baseNormalEpsilon =
       std::cbrt(std::numeric_limits<double>::epsilon());
 
-  // Final dissipation coefficients that are used by the time integrator. If
-  // D==2 last entries are 0.
-  Vec3D<T> finalAlphas{};
+  // Final dissipation coefficients that are used by the time integrator.
+  VectorType<T, D> finalAlphas{};
   static constexpr unsigned numStencilPoints = hrleUtil::pow(2 * order + 1, D);
   static double maxDissipation; // default: std::numeric_limits<double>::max();
 
@@ -140,7 +139,7 @@ class StencilLocalLaxFriedrichsScalar {
   }
 #endif
 
-  Vec3D<T> calculateNormal(const viennahrle::Index<D> &offset) {
+  Vec3D<T> calculateNormal(const viennahrle::Index<D> &offset) const {
     Vec3D<T> normal{};
     constexpr int startIndex = -1;
     T modulus = 0.;
@@ -163,7 +162,7 @@ class StencilLocalLaxFriedrichsScalar {
     return normal;
   }
 
-  VectorType<T, D> calculateGradient(const viennahrle::Index<D> &offset) {
+  VectorType<T, D> calculateGradient(const viennahrle::Index<D> &offset) const {
     VectorType<T, D> gradient;
 
     constexpr unsigned numValues =
@@ -186,7 +185,7 @@ class StencilLocalLaxFriedrichsScalar {
     return gradient;
   }
 
-  VectorType<T, D> calculateGradientDiff() {
+  VectorType<T, D> calculateGradientDiff() const {
     VectorType<T, D> gradient;
 
     constexpr unsigned numValues =
@@ -359,7 +358,7 @@ public:
         toifl *= -gradient[k] / denom;
 
         // Osher (constant V) term
-        T osher = localScalarVelocity * normal[k];
+        T osher = localScalarVelocity * localNormal[k];
         // Total derivative is sum of terms given above
         alpha[k] = std::fabs(monti + toifl + osher);
       }
@@ -376,7 +375,7 @@ public:
         maxAlpha = std::max(maxAlpha, alphas[i][d]);
       }
 
-      finalAlphas[d] = std::min(maxAlpha, maxDissipation);
+      finalAlphas[d] = std::min(maxAlpha, static_cast<T>(maxDissipation));
       dissipation += finalAlphas[d] * gradientDiff[d];
     }
 

@@ -18,10 +18,11 @@ using namespace viennacore;
 template <class T, int D, int order> class LocalLocalLaxFriedrichs {
   SmartPointer<viennals::Domain<T, D>> levelSet;
   SmartPointer<viennals::VelocityField<T>> velocities;
-  viennahrle::SparseStarIterator<viennahrle::Domain<T, D>, order>
+  viennahrle::ConstSparseStarIterator<viennahrle::Domain<T, D>, order>
       neighborIterator;
   const double alphaFactor;
-  VectorType<T, 3> finalAlphas;
+  const double gridDelta;
+  VectorType<T, D> finalAlphas{};
 
   static T pow2(const T &value) { return value * value; }
 
@@ -35,19 +36,13 @@ public:
                           SmartPointer<viennals::VelocityField<T>> vel,
                           double a = 1.0)
       : levelSet(passedlsDomain), velocities(vel),
-        neighborIterator(levelSet->getDomain()), alphaFactor(a) {
-    for (int i = 0; i < 3; ++i) {
-      finalAlphas[i] = 0;
-    }
-  }
+        neighborIterator(levelSet->getDomain()), alphaFactor(a),
+        gridDelta(levelSet->getGrid().getGridDelta()) {}
 
   std::pair<T, T> operator()(const viennahrle::Index<D> &indices,
                              int material) {
 
-    auto &grid = levelSet->getGrid();
-    double gridDelta = grid.getGridDelta();
-
-    VectorType<T, 3> coordinate{0., 0., 0.};
+    Vec3D<T> coordinate{0., 0., 0.};
     for (unsigned i = 0; i < D; ++i) {
       coordinate[i] = indices[i] * gridDelta;
     }
@@ -55,16 +50,13 @@ public:
     // move neighborIterator to current position
     neighborIterator.goToIndicesSequential(indices);
 
-    // convert coordinate to std array for interface
-    Vec3D<T> coordArray{coordinate[0], coordinate[1], coordinate[2]};
-
     T gradPos[D];
     T gradNeg[D];
 
     T grad = 0.;
     T dissipation = 0.;
 
-    Vec3D<T> normalVector{};
+    Vec3D<T> normalVector;
     T normalModulus = 0;
 
     for (int i = 0; i < D; i++) { // iterate over dimensions
@@ -79,7 +71,8 @@ public:
       T diffPos = (phiPos - phi0) / deltaPos;
       T diffNeg = (phiNeg - phi0) / deltaNeg;
 
-      if (order == 2) { // if second order spatial discretization scheme is used
+      if constexpr (order == 2) { // if second order spatial discretization
+                                  // scheme is used
         const T deltaPosPos = 2 * gridDelta;
         const T deltaNegNeg = -2 * gridDelta;
 
@@ -134,11 +127,11 @@ public:
     }
 
     // Get velocities
-    double scalarVelocity = velocities->getScalarVelocity(
-        coordArray, material, normalVector,
+    T scalarVelocity = velocities->getScalarVelocity(
+        coordinate, material, normalVector,
         neighborIterator.getCenter().getPointId());
     Vec3D<T> vectorVelocity = velocities->getVectorVelocity(
-        coordArray, material, normalVector,
+        coordinate, material, normalVector,
         neighborIterator.getCenter().getPointId());
 
     // calculate hamiltonian
@@ -155,6 +148,10 @@ public:
       }
     }
 
+    if (totalGrad == T(0)) {
+      return {0, 0};
+    }
+
     // calculate local dissipation alphas for each direction
     // and add to dissipation term
     for (unsigned i = 0; i < D; ++i) {
@@ -164,7 +161,7 @@ public:
       dissipation += alphaFactor * alpha * (gradNeg[i] - gradPos[i]) * 0.5;
     }
 
-    return {totalGrad, ((totalGrad != 0.) ? dissipation : 0)};
+    return {totalGrad, dissipation};
   }
 
   void reduceTimeStepHamiltonJacobi(double &MaxTimeStep, double gridDelta) {

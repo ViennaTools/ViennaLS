@@ -99,8 +99,8 @@ public:
                 ? newDomain.getSegmentation()[p]
                 : grid.incrementIndices(grid.getMaxGridPoint());
 
-        for (viennahrle::SparseStarIterator<typename Domain<T, D>::DomainType,
-                                            1>
+        for (viennahrle::ConstSparseStarIterator<
+                 typename Domain<T, D>::DomainType, 1>
                  neighborIt(domain, startVector);
              neighborIt.getIndices() < endVector; neighborIt.next()) {
 

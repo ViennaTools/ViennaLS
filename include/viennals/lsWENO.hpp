@@ -26,7 +26,7 @@ template <class T, int D, int order> class WENO {
   static constexpr int stencilRadius = (order + 1) / 2;
 
   // Iterator depth: WENO needs stencilRadius neighbors on each side.
-  viennahrle::SparseStarIterator<viennahrle::Domain<T, D>, stencilRadius>
+  viennahrle::ConstSparseStarIterator<viennahrle::Domain<T, D>, stencilRadius>
       neighborIterator;
 
   const bool calculateNormalVectors = true;

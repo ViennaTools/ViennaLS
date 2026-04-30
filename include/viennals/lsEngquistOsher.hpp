@@ -18,9 +18,10 @@ using namespace viennacore;
 template <class T, int D, int order> class EngquistOsher {
   SmartPointer<viennals::Domain<T, D>> levelSet;
   SmartPointer<viennals::VelocityField<T>> velocities;
-  viennahrle::SparseStarIterator<viennahrle::Domain<T, D>, order>
+  viennahrle::ConstSparseStarIterator<viennahrle::Domain<T, D>, order>
       neighborIterator;
-  const bool calculateNormalVectors = true;
+  const bool calculateNormalVectors;
+  const double gridDelta;
 
   static T pow2(const T &value) { return value * value; }
 
@@ -35,12 +36,11 @@ public:
                 bool calcNormal = true)
       : levelSet(passedlsDomain), velocities(vel),
         neighborIterator(levelSet->getDomain()),
-        calculateNormalVectors(calcNormal) {}
+        calculateNormalVectors(calcNormal),
+        gridDelta(levelSet->getGrid().getGridDelta()) {}
 
   std::pair<T, T> operator()(const viennahrle::Index<D> &indices,
                              int material) {
-    auto &grid = levelSet->getGrid();
-    double gridDelta = grid.getGridDelta();
 
     VectorType<T, 3> coordinate{0., 0., 0.};
     for (unsigned i = 0; i < D; ++i) {
@@ -67,7 +67,8 @@ public:
       T diffPos = (phiPos - phi0) / deltaPos;
       T diffNeg = (phiNeg - phi0) / deltaNeg;
 
-      if (order == 2) { // if second order spatial discretization scheme is used
+      if constexpr (order == 2) { // if second order spatial discretization
+                                  // scheme is used
         const T deltaPosPos = 2 * gridDelta;
         const T deltaNegNeg = -2 * gridDelta;
 
@@ -136,7 +137,7 @@ public:
       }
     }
 
-    double scalarVelocity = velocities->getScalarVelocity(
+    T scalarVelocity = velocities->getScalarVelocity(
         coordinate, material, normalVector,
         neighborIterator.getCenter().getPointId());
     Vec3D<T> vectorVelocity = velocities->getVectorVelocity(
