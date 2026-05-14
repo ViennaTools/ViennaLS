@@ -39,6 +39,10 @@ template <class T> class VTKWriter {
   MetaDataType metaData;
 
 #ifdef VIENNALS_USE_VTK
+  // Cached VTK objects for memory access
+  vtkSmartPointer<vtkPolyData> cachedPolyData = nullptr;
+  vtkSmartPointer<vtkUnstructuredGrid> cachedUnstructuredGrid = nullptr;
+
   template <class In, class Out>
   void addDataFromMesh(const In &inData, Out outData) const {
     // now add pointData
@@ -133,6 +137,14 @@ public:
     }
   }
 
+#ifdef VIENNALS_USE_VTK
+  vtkPolyData *getPolyData() const { return cachedPolyData; }
+
+  vtkUnstructuredGrid *getUnstructuredGrid() const {
+    return cachedUnstructuredGrid;
+  }
+#endif // VIENNALS_USE_VTK
+
   void apply() {
     // check mesh
     if (mesh == nullptr) {
@@ -141,49 +153,58 @@ public:
           .print();
       return;
     }
-    // check filename
-    if (fileName.empty()) {
-      VIENNACORE_LOG_ERROR("No file name specified for VTKWriter.");
-      return;
-    }
     if (mesh->nodes.empty()) {
       VIENNACORE_LOG_WARNING("Writing empty mesh.");
       return;
     }
 
     if (fileFormat == FileFormatEnum::VTK_AUTO) {
-      auto dotPos = fileName.rfind('.');
-      if (dotPos == std::string::npos) {
-        fileFormat = FileFormatEnum::VTP;
-      } else {
-        auto ending = fileName.substr(dotPos);
-        if (ending == ".vtk") {
-          fileFormat = FileFormatEnum::VTK_LEGACY;
-        } else if (ending == ".vtp") {
+      if (!fileName.empty()) {
+        auto dotPos = fileName.rfind('.');
+        if (dotPos == std::string::npos) {
           fileFormat = FileFormatEnum::VTP;
-        } else if (ending == ".vtu") {
-          fileFormat = FileFormatEnum::VTU;
         } else {
-          Logger::getInstance()
-              .addError("No valid file format found based on the file ending "
-                        "passed to VTKWriter.")
-              .print();
-          return;
+          auto ending = fileName.substr(dotPos);
+          if (ending == ".vtk") {
+            fileFormat = FileFormatEnum::VTK_LEGACY;
+          } else if (ending == ".vtp") {
+            fileFormat = FileFormatEnum::VTP;
+          } else if (ending == ".vtu") {
+            fileFormat = FileFormatEnum::VTU;
+          } else {
+            Logger::getInstance()
+                .addError("No valid file format found based on the file ending "
+                          "passed to VTKWriter.")
+                .print();
+            return;
+          }
         }
+      } else {
+        // No filename: default to VTP memory-only mode
+        fileFormat = FileFormatEnum::VTP;
       }
     }
 
-    // check file format
+    // Build VTK object in memory, then write to file if filename is set
     switch (fileFormat) {
     case FileFormatEnum::VTK_LEGACY:
+      if (fileName.empty()) {
+        VIENNACORE_LOG_ERROR("VTK_LEGACY format requires a filename. Cannot "
+                             "use memory-only mode.");
+        return;
+      }
       writeVTKLegacy(fileName);
       break;
 #ifdef VIENNALS_USE_VTK
     case FileFormatEnum::VTP:
-      writeVTP(fileName);
+      buildVTP();
+      if (!fileName.empty())
+        writeVTP(fileName);
       break;
     case FileFormatEnum::VTU:
-      writeVTU(fileName);
+      buildVTU();
+      if (!fileName.empty())
+        writeVTU(fileName);
       break;
 #else
     case FileFormatEnum::VTP:
@@ -201,27 +222,14 @@ public:
 
 private:
 #ifdef VIENNALS_USE_VTK
-  void writeVTP(std::string filename) const {
-    if (mesh == nullptr) {
-      Logger::getInstance()
-          .addError("No mesh was passed to VTKWriter.")
-          .print();
-      return;
-    }
+  void buildVTP() {
+    cachedPolyData = vtkSmartPointer<vtkPolyData>::New();
 
-    if (filename.find(".vtp") != filename.size() - 4)
-      filename += ".vtp";
-    vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
-
-    // Points
     vtkSmartPointer<vtkPoints> polyPoints = vtkSmartPointer<vtkPoints>::New();
-    for (auto it = mesh->getNodes().begin(); it != mesh->getNodes().end();
-         ++it) {
+    for (auto it = mesh->getNodes().begin(); it != mesh->getNodes().end(); ++it)
       polyPoints->InsertNextPoint((*it)[0], (*it)[1], (*it)[2]);
-    }
-    polyData->SetPoints(polyPoints);
+    cachedPolyData->SetPoints(polyPoints);
 
-    // Vertices
     if (mesh->vertices.size() > 0) {
       vtkSmartPointer<vtkCellArray> polyCells =
           vtkSmartPointer<vtkCellArray>::New();
@@ -229,60 +237,53 @@ private:
         polyCells->InsertNextCell(1);
         polyCells->InsertCellPoint((*it)[0]);
       }
-      polyData->SetVerts(polyCells);
+      cachedPolyData->SetVerts(polyCells);
     }
 
-    // Lines
     if (mesh->lines.size() > 0) {
       vtkSmartPointer<vtkCellArray> polyCells =
           vtkSmartPointer<vtkCellArray>::New();
       for (auto it = mesh->lines.begin(); it != mesh->lines.end(); ++it) {
         polyCells->InsertNextCell(2);
-        for (unsigned i = 0; i < 2; ++i) {
+        for (unsigned i = 0; i < 2; ++i)
           polyCells->InsertCellPoint((*it)[i]);
-        }
       }
-      polyData->SetLines(polyCells);
+      cachedPolyData->SetLines(polyCells);
     }
 
-    // Triangles
     if (mesh->triangles.size() > 0) {
       vtkSmartPointer<vtkCellArray> polyCells =
           vtkSmartPointer<vtkCellArray>::New();
       for (auto it = mesh->triangles.begin(); it != mesh->triangles.end();
            ++it) {
         polyCells->InsertNextCell(3);
-        for (unsigned i = 0; i < 3; ++i) {
+        for (unsigned i = 0; i < 3; ++i)
           polyCells->InsertCellPoint((*it)[i]);
-        }
       }
-      polyData->SetPolys(polyCells);
+      cachedPolyData->SetPolys(polyCells);
     }
 
-    addDataFromMesh(mesh->pointData, polyData->GetPointData());
-    addDataFromMesh(mesh->cellData, polyData->GetCellData());
-    addMetaDataToVTK(polyData);
+    addDataFromMesh(mesh->pointData, cachedPolyData->GetPointData());
+    addDataFromMesh(mesh->cellData, cachedPolyData->GetCellData());
+    addMetaDataToVTK(cachedPolyData);
+  }
 
+  void writeVTP(std::string filename) const {
+    if (cachedPolyData == nullptr)
+      return;
+    if (filename.find(".vtp") != filename.size() - 4)
+      filename += ".vtp";
     vtkSmartPointer<vtkXMLPolyDataWriter> pwriter =
         vtkSmartPointer<vtkXMLPolyDataWriter>::New();
     pwriter->SetFileName(filename.c_str());
-    pwriter->SetInputData(polyData);
+    pwriter->SetInputData(cachedPolyData);
     pwriter->Write();
   }
 
-  void writeVTU(std::string filename) const {
-    if (mesh == nullptr) {
-      Logger::getInstance()
-          .addError("No mesh was passed to VTKWriter.")
-          .print();
-      return;
-    }
+  void buildVTU() {
+    cachedUnstructuredGrid = vtkSmartPointer<vtkUnstructuredGrid>::New();
 
-    if (filename.find(".vtu") != filename.size() - 4)
-      filename += ".vtu";
-
-    vtkSmartPointer<vtkUnstructuredGrid> uGrid =
-        vtkSmartPointer<vtkUnstructuredGrid>::New();
+    vtkSmartPointer<vtkUnstructuredGrid> uGrid = cachedUnstructuredGrid;
 
     // Points
     vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
@@ -386,11 +387,17 @@ private:
     //   }
     //   uGrid->GetCellData()->AddArray(vectorData);
     // }
+  }
 
+  void writeVTU(std::string filename) const {
+    if (cachedUnstructuredGrid == nullptr)
+      return;
+    if (filename.find(".vtu") != filename.size() - 4)
+      filename += ".vtu";
     vtkSmartPointer<vtkXMLUnstructuredGridWriter> owriter =
         vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
     owriter->SetFileName(filename.c_str());
-    owriter->SetInputData(uGrid);
+    owriter->SetInputData(cachedUnstructuredGrid);
     owriter->Write();
   }
 
