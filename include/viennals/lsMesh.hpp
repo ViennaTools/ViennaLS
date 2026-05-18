@@ -6,8 +6,7 @@
 #include <iostream>
 #include <vector>
 
-#include <lsPointData.hpp>
-
+#include <vcPointData.hpp>
 #include <vcSmartPointer.hpp>
 #include <vcVectorType.hpp>
 

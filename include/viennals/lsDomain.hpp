@@ -8,9 +8,8 @@
 #include <hrleDomain.hpp>
 #include <hrleFillDomainWithSignedDistance.hpp>
 
-#include <lsPointData.hpp>
-
 #include <vcLogger.hpp>
+#include <vcPointData.hpp>
 #include <vcSmartPointer.hpp>
 #include <vcVectorType.hpp>
 

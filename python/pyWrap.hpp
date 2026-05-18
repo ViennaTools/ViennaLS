@@ -31,7 +31,6 @@
 #include <lsMarkVoidPoints.hpp>
 #include <lsMaterialMap.hpp>
 #include <lsMesh.hpp>
-#include <lsPointData.hpp>
 #include <lsPrune.hpp>
 #include <lsReader.hpp>
 #include <lsReduce.hpp>
