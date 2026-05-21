@@ -235,8 +235,8 @@ public:
     }
 
     mesh->cellData.insertNextScalarData(values, "LSValues");
-    mesh->cellData.insertNextVectorData(normals, "Normals");
-    mesh->cellData.insertNextScalarData(materialIds, "MaterialIds");
+    mesh->cellData.insertNextVectorData(normals, Mesh<T>::normalsLabel);
+    mesh->cellData.insertNextScalarData(materialIds, Mesh<T>::materialIdsLabel);
     mesh->minimumExtent = minimumExtent;
     mesh->maximumExtent = maximumExtent;
   }
