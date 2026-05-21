@@ -5,7 +5,7 @@ from __future__ import annotations
 import collections.abc
 import typing
 import viennals._core
-__all__: list[str] = ['Advect', 'BooleanOperation', 'Box', 'BoxDistribution', 'CalculateCurvatures', 'CalculateNormalVectors', 'CalculateVisibilities', 'Check', 'CompareChamfer', 'CompareCriticalDimensions', 'CompareNarrowBand', 'CompareSparseField', 'CompareVolume', 'ConvexHull', 'CustomSphereDistribution', 'Cylinder', 'DetectFeatures', 'Domain', 'Expand', 'FinalizeStencilLocalLaxFriedrichs', 'FromMesh', 'FromSurfaceMesh', 'FromVolumeMesh', 'GeometricAdvect', 'GeometricAdvectDistribution', 'MakeGeometry', 'MarkVoidPoints', 'Plane', 'PointCloud', 'PrepareStencilLocalLaxFriedrichs', 'Prune', 'Reader', 'Reduce', 'RemoveStrayPoints', 'Sphere', 'SphereDistribution', 'StencilLocalLaxFriedrichsScalar', 'ToDiskMesh', 'ToHullMesh', 'ToMesh', 'ToMultiSurfaceMesh', 'ToSurfaceMesh', 'ToVoxelMesh', 'WriteVisualizationMesh', 'Writer', 'hrleGrid']
+__all__: list[str] = ['Advect', 'BooleanOperation', 'Box', 'BoxDistribution', 'CalculateCurvatures', 'CalculateNormalVectors', 'CalculateVisibilities', 'Check', 'CompareChamfer', 'CompareCriticalDimensions', 'CompareNarrowBand', 'CompareSparseField', 'CompareVolume', 'ConvexHull', 'CustomSphereDistribution', 'Cylinder', 'DetectFeatures', 'Domain', 'Expand', 'FinalizeStencilLocalLaxFriedrichs', 'FromMesh', 'FromSurfaceMesh', 'FromVolumeMesh', 'GeometricAdvect', 'GeometricAdvectDistribution', 'MakeGeometry', 'MarkVoidPoints', 'OxidationConstrainedAmbientVelocityField', 'OxidationCoupledModel', 'OxidationCouplingParameters', 'OxidationDeformationParameters', 'OxidationDeformationVelocityField', 'OxidationDiffusionVelocityField', 'OxidationMaskBendingVelocityField', 'OxidationMaskParameters', 'OxidationParameters', 'Plane', 'PointCloud', 'PrepareStencilLocalLaxFriedrichs', 'Prune', 'Reader', 'Reduce', 'RemoveStrayPoints', 'Sphere', 'SphereDistribution', 'StencilLocalLaxFriedrichsScalar', 'ToDiskMesh', 'ToHullMesh', 'ToMesh', 'ToMultiSurfaceMesh', 'ToSurfaceMesh', 'ToVoxelMesh', 'WriteVisualizationMesh', 'Writer', 'hrleGrid']
 class Advect:
     @typing.overload
     def __init__(self) -> None:
@@ -118,6 +118,195 @@ class Advect:
         """
         Set a callback function that is called after the level set has been updated during intermediate time integration steps (e.g. RK2, RK3).
         """
+class OxidationParameters:
+    def __init__(self) -> None:
+        ...
+    diffusionCoefficient: float
+    reactionRate: float
+    transferCoefficient: float
+    equilibriumConcentration: float
+    oxidantMoleculeDensity: float
+    expansionCoefficient: float
+    velocitySign: float
+    stressCouplingCoefficient: float
+    referencePressure: float
+    minStressRateFactor: float
+    maxStressRateFactor: float
+    maskTransferCoefficient: float
+    maskConcentration: float
+    maxIterations: int
+    tolerance: float
+    relaxation: float
+    maxGridPoints: int
+    material: int
+class OxidationDiffusionVelocityField(viennals._core.VelocityField):
+    def __init__(self, reactionInterface: Domain, ambientInterface: Domain, parameters: OxidationParameters = ...) -> None:
+        ...
+    def apply(self) -> None:
+        ...
+    def clearSolveBounds(self) -> None:
+        ...
+    def clearSolveBounds(self) -> None:
+        ...
+    def clearPressureField(self) -> None:
+        ...
+    def clearMaskInterface(self) -> None:
+        ...
+    def getConcentration(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"]) -> float:
+        ...
+    def getEffectiveReactionRate(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"]) -> float:
+        ...
+    def getIterations(self) -> int:
+        ...
+    def getNumberOfSolutionNodes(self) -> int:
+        ...
+    def getNumberOfContactNodes(self) -> int:
+        ...
+    def getParameters(self) -> OxidationParameters:
+        ...
+    def getResidual(self) -> float:
+        ...
+    def setAmbientInterface(self, arg0: Domain) -> None:
+        ...
+    def setMaskInterface(self, maskInterface: Domain, maskSign: typing.SupportsInt | typing.SupportsIndex = ...) -> None:
+        ...
+    def setOxideSigns(self, arg0: typing.SupportsInt | typing.SupportsIndex, arg1: typing.SupportsInt | typing.SupportsIndex) -> None:
+        ...
+    def setParameters(self, arg0: OxidationParameters) -> None:
+        ...
+    def setPressure(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"], arg1: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        ...
+    def setReactionInterface(self, arg0: Domain) -> None:
+        ...
+    def setSolveBounds(self, minIndex: typing.Annotated[collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex], "FixedSize(3)"], maxIndex: typing.Annotated[collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex], "FixedSize(3)"]) -> None:
+        ...
+class OxidationDeformationParameters:
+    def __init__(self) -> None:
+        ...
+    viscosity: float
+    bulkModulus: float
+    ambientPressure: float
+    pressureRelaxation: float
+    pressureTolerance: float
+    pressureGradientScale: float
+    freeSurfaceTractionScale: float
+    substrateNormalStiffness: float
+    minMechanicsBoundaryDistance: float
+    maskNormalStiffness: float
+    maskVelocityScale: float
+    maskPressure: float
+    shearModulus: float
+    stressRelaxationTime: float
+    stressTimeStep: float
+    freeSurfaceVelocityScale: float
+    vectorVelocityScale: float
+    maxIterations: int
+    mechanicsIterations: int
+    pressureIterations: int
+    stokesIterations: int
+    mechanicsTolerance: float
+    stokesTolerance: float
+    tolerance: float
+    relaxation: float
+    maxGridPoints: int
+    material: int
+class OxidationDeformationVelocityField(viennals._core.VelocityField):
+    def __init__(self, reactionInterface: Domain, ambientInterface: Domain, diffusionField: OxidationDiffusionVelocityField, oxidationParameters: OxidationParameters, deformationParameters: OxidationDeformationParameters = ...) -> None:
+        ...
+    def apply(self) -> None:
+        ...
+    def clearSolveBounds(self) -> None:
+        ...
+    def clearMaskInterface(self) -> None:
+        ...
+    def getIterations(self) -> int:
+        ...
+    def getNumberOfSolutionNodes(self) -> int:
+        ...
+    def getPressure(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"]) -> float:
+        ...
+    def getResidual(self) -> float:
+        ...
+    def getStrainTrace(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"]) -> float:
+        ...
+    def getStrainRateTensor(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"]) -> typing.Annotated[list[float], "FixedSize(9)"]:
+        ...
+    def getStressTensor(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"]) -> typing.Annotated[list[float], "FixedSize(9)"]:
+        ...
+    def getVonMisesStress(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"]) -> float:
+        ...
+    def getVelocity(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"]) -> typing.Annotated[list[float], "FixedSize(3)"]:
+        ...
+    def setSolveBounds(self, minIndex: typing.Annotated[collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex], "FixedSize(3)"], maxIndex: typing.Annotated[collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex], "FixedSize(3)"]) -> None:
+        ...
+    def setMaskInterface(self, maskInterface: Domain, maskSign: typing.SupportsInt | typing.SupportsIndex = ...) -> None:
+        ...
+class OxidationMaskParameters:
+    def __init__(self) -> None:
+        ...
+    youngModulus: float
+    poissonRatio: float
+    thickness: float
+    referenceThickness: float
+    velocityScale: float
+    pressureVelocityScale: float
+    referencePressure: float
+    maxVelocity: float
+    relaxation: float
+    tolerance: float
+    minBoundaryDistance: float
+    maxIterations: int
+    maxGridPoints: int
+    material: int
+class OxidationMaskBendingVelocityField(viennals._core.VelocityField):
+    def __init__(self, deformationField: OxidationDeformationVelocityField, maskInterface: Domain, maskParameters: OxidationMaskParameters = ..., maskSign: typing.SupportsInt | typing.SupportsIndex = ...) -> None:
+        ...
+    def apply(self) -> None:
+        ...
+    def getParameters(self) -> OxidationMaskParameters:
+        ...
+    def getIterations(self) -> int:
+        ...
+    def getNumberOfSolutionNodes(self) -> int:
+        ...
+    def getResidual(self) -> float:
+        ...
+    def setMaskInterface(self, maskInterface: Domain, maskSign: typing.SupportsInt | typing.SupportsIndex = ...) -> None:
+        ...
+    def setParameters(self, arg0: OxidationMaskParameters) -> None:
+        ...
+    def setSolveBounds(self, minIndex: typing.Annotated[collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex], "FixedSize(3)"], maxIndex: typing.Annotated[collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex], "FixedSize(3)"]) -> None:
+        ...
+class OxidationConstrainedAmbientVelocityField(viennals._core.VelocityField):
+    def __init__(self, deformationField: OxidationDeformationVelocityField, maskVelocityField: OxidationMaskBendingVelocityField, maskInterface: Domain, maskSign: typing.SupportsInt | typing.SupportsIndex = ..., contactTolerance: typing.SupportsFloat | typing.SupportsIndex = ...) -> None:
+        ...
+    def setContactTolerance(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        ...
+class OxidationCouplingParameters:
+    def __init__(self) -> None:
+        ...
+    maxIterations: int
+    tolerance: float
+    relaxation: float
+class OxidationCoupledModel:
+    def __init__(self, diffusionField: OxidationDiffusionVelocityField, deformationField: OxidationDeformationVelocityField, couplingParameters: OxidationCouplingParameters = ...) -> None:
+        ...
+    def apply(self) -> None:
+        ...
+    def clearSolveBounds(self) -> None:
+        ...
+    def getIterations(self) -> int:
+        ...
+    def getResidual(self) -> float:
+        ...
+    def setDeformationField(self, arg0: OxidationDeformationVelocityField) -> None:
+        ...
+    def setDiffusionField(self, arg0: OxidationDiffusionVelocityField) -> None:
+        ...
+    def setParameters(self, arg0: OxidationCouplingParameters) -> None:
+        ...
+    def setSolveBounds(self, minIndex: typing.Annotated[collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex], "FixedSize(3)"], maxIndex: typing.Annotated[collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex], "FixedSize(3)"]) -> None:
+        ...
 class BooleanOperation:
     @typing.overload
     def __init__(self) -> None:

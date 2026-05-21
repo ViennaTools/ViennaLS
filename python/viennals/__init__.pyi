@@ -62,6 +62,15 @@ from viennals.d2 import GeometricAdvect
 from viennals.d2 import GeometricAdvectDistribution
 from viennals.d2 import MakeGeometry
 from viennals.d2 import MarkVoidPoints
+from viennals.d2 import OxidationConstrainedAmbientVelocityField
+from viennals.d2 import OxidationCoupledModel
+from viennals.d2 import OxidationCouplingParameters
+from viennals.d2 import OxidationDeformationParameters
+from viennals.d2 import OxidationDeformationVelocityField
+from viennals.d2 import OxidationDiffusionVelocityField
+from viennals.d2 import OxidationMaskBendingVelocityField
+from viennals.d2 import OxidationMaskParameters
+from viennals.d2 import OxidationParameters
 from viennals.d2 import Plane
 from viennals.d2 import PointCloud
 from viennals.d2 import PrepareStencilLocalLaxFriedrichs
@@ -84,7 +93,7 @@ from viennals.d2 import hrleGrid
 from . import _core
 from . import d2
 from . import d3
-__all__: list[str] = ['Advect', 'BooleanOperation', 'BooleanOperationEnum', 'BoundaryConditionEnum', 'Box', 'BoxDistribution', 'CalculateCurvatures', 'CalculateNormalVectors', 'CalculateVisibilities', 'Check', 'CompareArea', 'CompareChamfer', 'CompareCriticalDimensions', 'CompareNarrowBand', 'CompareSparseField', 'CompareVolume', 'ConvexHull', 'CurvatureEnum', 'CustomSphereDistribution', 'Cylinder', 'DetectFeatures', 'Domain', 'Expand', 'Extrude', 'FeatureDetectionEnum', 'FileFormatEnum', 'FinalizeStencilLocalLaxFriedrichs', 'FromMesh', 'FromSurfaceMesh', 'FromVolumeMesh', 'GeometricAdvect', 'GeometricAdvectDistribution', 'IntegrationSchemeEnum', 'LogLevel', 'Logger', 'MakeGeometry', 'MarkVoidPoints', 'MaterialMap', 'Mesh', 'NormalCalculationMethodEnum', 'PROXY_DIM', 'Plane', 'PointCloud', 'PointData', 'PrepareStencilLocalLaxFriedrichs', 'Prune', 'Reader', 'Reduce', 'RemoveStrayPoints', 'Slice', 'SpatialSchemeEnum', 'Sphere', 'SphereDistribution', 'StencilLocalLaxFriedrichsScalar', 'TemporalSchemeEnum', 'ToDiskMesh', 'ToHullMesh', 'ToMesh', 'ToMultiSurfaceMesh', 'ToSurfaceMesh', 'ToVoxelMesh', 'TransformEnum', 'TransformMesh', 'VTKReader', 'VTKRenderWindow', 'VTKWriter', 'VelocityField', 'VoidTopSurfaceEnum', 'WriteVisualizationMesh', 'Writer', 'd2', 'd3', 'getDimension', 'hrleGrid', 'setDimension', 'setNumThreads', 'version']
+__all__: list[str] = ['Advect', 'BooleanOperation', 'BooleanOperationEnum', 'BoundaryConditionEnum', 'Box', 'BoxDistribution', 'CalculateCurvatures', 'CalculateNormalVectors', 'CalculateVisibilities', 'Check', 'CompareArea', 'CompareChamfer', 'CompareCriticalDimensions', 'CompareNarrowBand', 'CompareSparseField', 'CompareVolume', 'ConvexHull', 'CurvatureEnum', 'CustomSphereDistribution', 'Cylinder', 'DetectFeatures', 'Domain', 'Expand', 'Extrude', 'FeatureDetectionEnum', 'FileFormatEnum', 'FinalizeStencilLocalLaxFriedrichs', 'FromMesh', 'FromSurfaceMesh', 'FromVolumeMesh', 'GeometricAdvect', 'GeometricAdvectDistribution', 'IntegrationSchemeEnum', 'LogLevel', 'Logger', 'MakeGeometry', 'MarkVoidPoints', 'MaterialMap', 'Mesh', 'NormalCalculationMethodEnum', 'OxidationConstrainedAmbientVelocityField', 'OxidationCoupledModel', 'OxidationCouplingParameters', 'OxidationDeformationParameters', 'OxidationDeformationVelocityField', 'OxidationDiffusionVelocityField', 'OxidationMaskBendingVelocityField', 'OxidationMaskParameters', 'OxidationParameters', 'PROXY_DIM', 'Plane', 'PointCloud', 'PointData', 'PrepareStencilLocalLaxFriedrichs', 'Prune', 'Reader', 'Reduce', 'RemoveStrayPoints', 'Slice', 'SpatialSchemeEnum', 'Sphere', 'SphereDistribution', 'StencilLocalLaxFriedrichsScalar', 'TemporalSchemeEnum', 'ToDiskMesh', 'ToHullMesh', 'ToMesh', 'ToMultiSurfaceMesh', 'ToSurfaceMesh', 'ToVoxelMesh', 'TransformEnum', 'TransformMesh', 'VTKReader', 'VTKRenderWindow', 'VTKWriter', 'VelocityField', 'VoidTopSurfaceEnum', 'WriteVisualizationMesh', 'Writer', 'd2', 'd3', 'getDimension', 'hrleGrid', 'setDimension', 'setNumThreads', 'version']
 def __dir__():
     ...
 def __getattr__(name):
