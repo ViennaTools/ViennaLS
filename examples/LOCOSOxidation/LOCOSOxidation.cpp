@@ -2,13 +2,13 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <omp.h>
 #include <string>
 
-#include <lsAdvect.hpp>
 #include <lsDomain.hpp>
 #include <lsGeometricAdvect.hpp>
+#include <lsLOCOSOxidation.hpp>
 #include <lsMakeGeometry.hpp>
-#include <lsOxidationModel.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
@@ -28,7 +28,8 @@ void writeSurface(LevelSet levelSet, const std::string &fileName) {
 LevelSet makePlane(const double *bounds,
                    ls::Domain<NumericType, D>::BoundaryType *boundaryCons,
                    NumericType gridDelta, NumericType y) {
-  auto levelSet = ls::Domain<NumericType, D>::New(bounds, boundaryCons, gridDelta);
+  auto levelSet =
+      ls::Domain<NumericType, D>::New(bounds, boundaryCons, gridDelta);
   const ls::VectorType<NumericType, D> origin{0., y};
   const ls::VectorType<NumericType, D> normal{0., 1.};
   ls::MakeGeometry<NumericType, D>(
@@ -77,20 +78,22 @@ void writeDiagnostics(
 int main() {
   omp_set_num_threads(4);
 
-  constexpr NumericType gridDelta = 0.05;       // um
-  constexpr NumericType xExtent = 4.;           // um
-  constexpr NumericType yMin = -1.;             // um
-  constexpr NumericType yMax = 2.;              // um
-  constexpr NumericType padOxideThickness = 0.15;
-  constexpr NumericType maskThickness = 0.2;     // um
-  constexpr NumericType maskEdge = 0.;          // open window is x > 0
-  constexpr NumericType advectionTime = 0.35;   // hr
+  constexpr NumericType gridDelta = 0.05;          // um
+  constexpr NumericType xExtent = 4.;              // um
+  constexpr NumericType yMin = -1.;                // um
+  constexpr NumericType yMax = 2.;                 // um
+  constexpr NumericType padOxideThickness = 0.15;  // um
+  constexpr NumericType maskThickness = 0.2;       // um
+  constexpr NumericType maskEdge = 0.;             // open window is x > 0
+  constexpr NumericType advectionTime = 0.35;      // hr
   constexpr NumericType maskContactEpsilon = 1.e-6; // um
 
   double bounds[2 * D] = {-xExtent, xExtent, yMin, yMax};
   ls::Domain<NumericType, D>::BoundaryType boundaryCons[D];
-  boundaryCons[0] = ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
-  boundaryCons[1] = ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
+  boundaryCons[0] =
+      ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+  boundaryCons[1] =
+      ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
   auto siInterface = makePlane(bounds, boundaryCons, gridDelta, 0.);
   auto ambientInterface = ls::Domain<NumericType, D>::New(siInterface);
@@ -112,95 +115,125 @@ int main() {
   writeSurface(ambientInterface, "locos_ambient_initial.vtk");
   writeSurface(maskInterface, "locos_mask.vtk");
 
-  ls::OxidationParameters<NumericType> params;
-  params.diffusionCoefficient = 0.157;
-  params.reactionRate = 0.74;
-  params.transferCoefficient = 100.;
-  params.equilibriumConcentration = 1.;
-  params.oxidantMoleculeDensity = 1.;
-  params.expansionCoefficient = 2.27;
-  params.velocitySign = -1.;
-  params.stressCouplingCoefficient = 1.e-15;
-  params.minStressRateFactor = 0.25;
-  params.maxStressRateFactor = 4.;
-  params.maskTransferCoefficient = 0.; // nitride-like oxidant blocking
-  params.maskConcentration = 0.;
-  params.maxIterations = 10000;
-  params.tolerance = 1.e-7;
+  // --- Oxidation parameters ---
 
-  auto oxidationVelocity =
-      ls::OxidationDiffusionVelocityField<NumericType, D>::New(
-          siInterface, ambientInterface, params);
-  oxidationVelocity->setMaskInterface(maskInterface, -1);
-  viennahrle::Index<D> minIndex{-80, -20};
-  viennahrle::Index<D> maxIndex{80, 40};
-  oxidationVelocity->setSolveBounds(minIndex, maxIndex);
+  ls::OxidationParameters<NumericType> oxParams;
+  oxParams.diffusionCoefficient = 0.157;
+  oxParams.reactionRate = 0.74;
+  oxParams.transferCoefficient = 100.;
+  oxParams.equilibriumConcentration = 1.;
+  oxParams.oxidantMoleculeDensity = 1.;
+  oxParams.expansionCoefficient = 2.27;
+  oxParams.velocitySign = -1.;
+  oxParams.stressCouplingCoefficient = 1.e-15;
+  oxParams.minStressRateFactor = 0.25;
+  oxParams.maxStressRateFactor = 4.;
+  oxParams.maskTransferCoefficient = 0.; // nitride-like oxidant blocking
+  oxParams.maskConcentration = 0.;
+  oxParams.maxIterations = 10000;
+  oxParams.tolerance = 1.e-7;
 
-  ls::OxidationDeformationParameters<NumericType> deformationParams;
-  deformationParams.viscosity = 1.e7;
-  deformationParams.bulkModulus = 7.5e8;
-  deformationParams.shearModulus = 3.e10;
-  deformationParams.stressTimeStep = advectionTime;
-  deformationParams.freeSurfaceTractionScale = 1.;
-  deformationParams.substrateNormalStiffness = 1.e9;
-  deformationParams.maskVelocityScale = 0.15;
-  deformationParams.maskNormalStiffness = 2.e9;
-  deformationParams.pressureGradientScale = 1.e-3;
-  deformationParams.mechanicsIterations = 2;
-  deformationParams.mechanicsTolerance = 1.e-7;
-  deformationParams.pressureIterations = 500;
-  deformationParams.stokesIterations = 100;
-  deformationParams.pressureTolerance = 1.e-6;
-  deformationParams.stokesTolerance = 1.e-7;
-  deformationParams.freeSurfaceVelocityScale = 1.;
-  deformationParams.vectorVelocityScale = 0.;
-  deformationParams.maxIterations = 10000;
-  deformationParams.tolerance = 1.e-7;
-
-  auto deformationVelocity =
-      ls::OxidationDeformationVelocityField<NumericType, D>::New(
-          siInterface, ambientInterface, oxidationVelocity, params,
-          deformationParams);
-  deformationVelocity->setMaskInterface(maskInterface, -1);
-  deformationVelocity->setSolveBounds(minIndex, maxIndex);
+  ls::OxidationDeformationParameters<NumericType> defParams;
+  defParams.viscosity = 1.e7;
+  defParams.bulkModulus = 7.5e8;
+  defParams.shearModulus = 3.e10;
+  defParams.stressTimeStep = advectionTime;
+  defParams.freeSurfaceTractionScale = 1.;
+  defParams.substrateNormalStiffness = 1.e9;
+  defParams.maskVelocityScale = 0.15;
+  defParams.maskNormalStiffness = 2.e9;
+  defParams.pressureGradientScale = 1.e-3;
+  defParams.mechanicsIterations = 2;
+  defParams.mechanicsTolerance = 1.e-7;
+  defParams.pressureIterations = 500;
+  defParams.stokesIterations = 100;
+  defParams.pressureTolerance = 1.e-6;
+  defParams.stokesTolerance = 1.e-7;
+  defParams.freeSurfaceVelocityScale = 1.;
+  defParams.vectorVelocityScale = 0.;
+  defParams.maxIterations = 10000;
+  defParams.tolerance = 1.e-7;
 
   ls::OxidationCouplingParameters<NumericType> couplingParams;
   couplingParams.maxIterations = 8;
   couplingParams.tolerance = 1.e-6;
   couplingParams.relaxation = 1.;
-  auto coupledOxidation =
-      ls::OxidationCoupledModel<NumericType, D>::New(
-          oxidationVelocity, deformationVelocity, couplingParams);
-  coupledOxidation->setSolveBounds(minIndex, maxIndex);
-  coupledOxidation->apply();
+
+  ls::OxidationMaskParameters<NumericType> maskParams;
+  maskParams.youngModulus = 2.5e11;       // Pa, LPCVD Si3N4-like
+  maskParams.poissonRatio = 0.27;
+  maskParams.thickness = maskThickness;
+  // referenceThickness sets the compliance threshold: masks thicker than this
+  // value get reduced compliance (elasticCompliance < 1). Setting it equal to
+  // maskThickness gives full compliance (elasticCompliance = 1) for this mask.
+  maskParams.referenceThickness = maskThickness;
+  maskParams.velocityScale = 0.35;
+  // pressureVelocityScale is only active in the no-mask fallback path;
+  // with a mask interface set it has no effect on the contact velocity.
+  maskParams.pressureVelocityScale = 0.;
+  maskParams.maxVelocity = 0.25;          // um/hr
+  maskParams.relaxation = 0.9;
+  maskParams.tolerance = 5.e-6;
+
+  // --- LOCOS step ---
+
+  // Solve bounds for diffusion / deformation. The box must contain all oxide
+  // nodes; extending it slightly beyond the oxide/ambient interface is safe.
+  viennahrle::Index<D> diffMinIndex{-80, -20};
+  viennahrle::Index<D> diffMaxIndex{80, 40};
+
+  // Bending bounds bracket the mask geometry with a one-cell margin.
+  // Lower row (yMin) is one step below the mask bottom so oxide nodes just
+  // outside the nitride are included as contact nodes.
+  // Upper row (yMax) is one step above the mask top to capture air nodes.
+  const auto toIndex = [&](NumericType x) {
+    return static_cast<viennahrle::IndexType>(std::llround(x / gridDelta));
+  };
+  viennahrle::Index<D> maskMinIndex{toIndex(-xExtent),
+                                    toIndex(padOxideThickness) - 1};
+  viennahrle::Index<D> maskMaxIndex{toIndex(maskEdge),
+                                    toIndex(padOxideThickness + maskThickness) + 1};
+
+  auto locos =
+      ls::LOCOSOxidation<NumericType, D>::New(siInterface, ambientInterface,
+                                              maskInterface);
+  locos->setOxidationParameters(oxParams);
+  locos->setDeformationParameters(defParams);
+  locos->setCouplingParameters(couplingParams);
+  locos->setMaskParameters(maskParams);
+  locos->setSolveBounds(diffMinIndex, diffMaxIndex);
+  locos->setMaskBendingBounds(maskMinIndex, maskMaxIndex);
+  locos->setSpatialScheme(ls::SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
+  locos->setTemporalScheme(ls::TemporalSchemeEnum::RUNGE_KUTTA_2ND_ORDER);
+  locos->apply(advectionTime);
+
+  // --- Diagnostics ---
+
+  const auto diffusion = locos->getDiffusionField();
+  const auto deformation = locos->getDeformationField();
+  const auto maskBending = locos->getMaskBendingField();
 
   const ls::Vec3D<NumericType> openReactionPoint{1.5, gridDelta, 0.};
   const ls::Vec3D<NumericType> maskedReactionPoint{-1.5, gridDelta, 0.};
   const NumericType openConcentration =
-      oxidationVelocity->getConcentration(openReactionPoint);
+      diffusion->getConcentration(openReactionPoint);
   const NumericType maskedConcentration =
-      oxidationVelocity->getConcentration(maskedReactionPoint);
+      diffusion->getConcentration(maskedReactionPoint);
   const NumericType openSiliconSpeed =
-      std::abs(oxidationVelocity->getScalarVelocity(openReactionPoint, 0,
-                                                    {0., 1., 0.}, 0));
+      std::abs(diffusion->getScalarVelocity(openReactionPoint, 0,
+                                            {0., 1., 0.}, 0));
   const NumericType maskedSiliconSpeed =
-      std::abs(oxidationVelocity->getScalarVelocity(maskedReactionPoint, 0,
-                                                    {0., 1., 0.}, 0));
+      std::abs(diffusion->getScalarVelocity(maskedReactionPoint, 0,
+                                            {0., 1., 0.}, 0));
 
-  std::cout << "Coupled oxidation iterations: "
-            << coupledOxidation->getIterations()
-            << ", residual: " << coupledOxidation->getResidual() << '\n';
-  std::cout << "Diffusion nodes: "
-            << oxidationVelocity->getNumberOfSolutionNodes()
-            << ", iterations: " << oxidationVelocity->getIterations()
-            << ", residual: " << oxidationVelocity->getResidual() << '\n';
-  std::cout << "Deformation nodes: "
-            << deformationVelocity->getNumberOfSolutionNodes()
-            << ", iterations: " << deformationVelocity->getIterations()
-            << ", residual: " << deformationVelocity->getResidual() << '\n';
+  std::cout << "Diffusion nodes: " << diffusion->getNumberOfSolutionNodes()
+            << ", iterations: " << diffusion->getIterations()
+            << ", residual: " << diffusion->getResidual() << '\n';
+  std::cout << "Deformation nodes: " << deformation->getNumberOfSolutionNodes()
+            << ", iterations: " << deformation->getIterations()
+            << ", residual: " << deformation->getResidual() << '\n';
   std::cout << "Average oxide expansion speed: "
-            << deformationVelocity->getAverageBoundaryExpansionVelocity()
-            << " um/hr\n";
+            << deformation->getAverageBoundaryExpansionVelocity() << " um/hr\n";
   std::cout << "Open-window concentration: " << openConcentration
             << ", masked concentration: " << maskedConcentration << '\n';
   std::cout << "Open-window Si speed: " << openSiliconSpeed
@@ -218,93 +251,34 @@ int main() {
     return 1;
   }
 
-  writeDiagnostics(oxidationVelocity, deformationVelocity, minIndex, maxIndex,
+  writeDiagnostics(diffusion, deformation, diffMinIndex, diffMaxIndex,
                    gridDelta, "locos_oxidation_diagnostics.csv");
 
-  ls::OxidationMaskParameters<NumericType> maskBendingParams;
-  maskBendingParams.youngModulus = 2.5e11;       // Pa, LPCVD Si3N4-like
-  maskBendingParams.poissonRatio = 0.27;
-  maskBendingParams.thickness = maskThickness;
-  maskBendingParams.referenceThickness = 0.25;   // um
-  maskBendingParams.velocityScale = 0.35;
-  maskBendingParams.pressureVelocityScale = 2.e-7; // um / (hr Pa)
-  maskBendingParams.maxVelocity = 0.25;          // um/hr
-  maskBendingParams.relaxation = 0.9;
-  maskBendingParams.tolerance = 5.e-6;
-  auto maskBendingVelocity =
-      ls::OxidationMaskBendingVelocityField<NumericType, D>::New(
-          deformationVelocity, maskInterface, maskBendingParams, 1);
-  viennahrle::Index<D> maskMinIndex{-80, 3};
-  viennahrle::Index<D> maskMaxIndex{0, 8};
-  maskBendingVelocity->setSolveBounds(maskMinIndex, maskMaxIndex);
-  maskBendingVelocity->apply();
-  const ls::Vec3D<NumericType> maskBottomSample{-1.5, padOxideThickness, 0.};
-  const ls::Vec3D<NumericType> maskContactNodeSample{-1.5, 0.2, 0.};
+  const ls::Vec3D<NumericType> maskBottomSample{
+      -1.5, padOxideThickness - gridDelta, 0.};
+  const ls::Vec3D<NumericType> maskContactNodeSample{
+      -gridDelta, padOxideThickness - gridDelta, 0.};
   const ls::Vec3D<NumericType> maskTopSample{
       -1.5, padOxideThickness + maskThickness, 0.};
-  const auto maskBottomVelocity = maskBendingVelocity->getVectorVelocity(
-      maskBottomSample, 0, {0., -1., 0.}, 0);
-  const auto maskTopVelocity = maskBendingVelocity->getVectorVelocity(
-      maskTopSample, 0, {0., 1., 0.}, 0);
-  const auto maskContactNodeVelocity = maskBendingVelocity->getVectorVelocity(
+  const auto maskBottomVelocity =
+      maskBending->getVectorVelocity(maskBottomSample, 0, {0., -1., 0.}, 0);
+  const auto maskTopVelocity =
+      maskBending->getVectorVelocity(maskTopSample, 0, {0., 1., 0.}, 0);
+  const auto maskContactNodeVelocity = maskBending->getVectorVelocity(
       maskContactNodeSample, 0, {0., -1., 0.}, 0);
   const NumericType maskBottomPressure =
-      deformationVelocity->getPressure(maskBottomSample);
+      deformation->getPressure(maskBottomSample);
   std::cout << "Mask elasticity nodes: "
-            << maskBendingVelocity->getNumberOfSolutionNodes()
-            << ", contact nodes: "
-            << maskBendingVelocity->getNumberOfContactNodes()
-            << ", iterations: " << maskBendingVelocity->getIterations()
-            << ", residual: " << maskBendingVelocity->getResidual() << '\n';
+            << maskBending->getNumberOfSolutionNodes()
+            << ", contact nodes: " << maskBending->getNumberOfContactNodes()
+            << ", iterations: " << maskBending->getIterations()
+            << ", residual: " << maskBending->getResidual() << '\n';
   std::cout << "Mask bottom velocity: (" << maskBottomVelocity[0] << ", "
             << maskBottomVelocity[1] << ") um/hr, top velocity: ("
             << maskTopVelocity[0] << ", " << maskTopVelocity[1]
             << ") um/hr, oxide pressure: " << maskBottomPressure << " Pa\n";
   std::cout << "Mask contact-node velocity: (" << maskContactNodeVelocity[0]
             << ", " << maskContactNodeVelocity[1] << ") um/hr\n";
-
-  auto constrainedAmbientVelocity =
-      ls::OxidationConstrainedAmbientVelocityField<NumericType, D>::New(
-          deformationVelocity, maskBendingVelocity, maskInterface, -1, 1.);
-  const auto maskedAmbientVelocity =
-      constrainedAmbientVelocity->getVectorVelocity(maskBottomSample, 0,
-                                                    {0., 1., 0.}, 0);
-  const NumericType maskedAmbientScalar =
-      constrainedAmbientVelocity->getScalarVelocity(maskBottomSample, 0,
-                                                    {0., 1., 0.}, 0);
-  std::cout << "Masked oxide/mask velocity: (" << maskedAmbientVelocity[0]
-            << ", " << maskedAmbientVelocity[1]
-            << ") um/hr, scalar growth: " << maskedAmbientScalar << " um/hr\n";
-
-  ls::Advect<NumericType, D> ambientAdvection;
-  ambientAdvection.insertNextLevelSet(ambientInterface);
-  ambientAdvection.setVelocityField(constrainedAmbientVelocity);
-  ambientAdvection.setSpatialScheme(
-      ls::SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
-  ambientAdvection.setTemporalScheme(
-      ls::TemporalSchemeEnum::RUNGE_KUTTA_2ND_ORDER);
-  ambientAdvection.setAdvectionTime(advectionTime);
-  ambientAdvection.apply();
-
-  ls::Advect<NumericType, D> reactionAdvection;
-  reactionAdvection.insertNextLevelSet(siInterface);
-  reactionAdvection.setVelocityField(oxidationVelocity);
-  reactionAdvection.setSpatialScheme(
-      ls::SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
-  reactionAdvection.setTemporalScheme(
-      ls::TemporalSchemeEnum::RUNGE_KUTTA_2ND_ORDER);
-  reactionAdvection.setAdvectionTime(advectionTime);
-  reactionAdvection.apply();
-
-  ls::Advect<NumericType, D> maskAdvection;
-  maskAdvection.insertNextLevelSet(maskInterface);
-  maskAdvection.setVelocityField(maskBendingVelocity);
-  maskAdvection.setSpatialScheme(
-      ls::SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
-  maskAdvection.setTemporalScheme(
-      ls::TemporalSchemeEnum::RUNGE_KUTTA_2ND_ORDER);
-  maskAdvection.setAdvectionTime(advectionTime);
-  maskAdvection.apply();
 
   writeSurface(siInterface, "locos_si_after.vtk");
   writeSurface(ambientInterface, "locos_ambient_after.vtk");

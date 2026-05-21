@@ -1,6 +1,7 @@
-#include <iostream>
 #include <array>
 #include <fstream>
+#include <iostream>
+#include <omp.h>
 #include <string>
 
 #include <lsAdvect.hpp>
