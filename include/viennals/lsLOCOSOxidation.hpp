@@ -203,6 +203,7 @@ public:
     // (phi_mask > 0); contact nodes at the oxide/nitride interface drive it.
     maskBendingField = OxidationMaskBendingVelocityField<T, D>::New(
         deformationField, maskInterface, maskParams, 1);
+    maskBendingField->setAmbientInterface(ambientInterface, -1);
     maskBendingField->setSolveBounds(maskBendingMinIndex, maskBendingMaxIndex);
     maskBendingField->apply();
 

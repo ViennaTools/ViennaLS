@@ -34,14 +34,17 @@ class OxidationMaskBendingVelocityField final : public VelocityField<T> {
   struct Node {
     IndexType index;
     Vec3D<T> velocity{0., 0., 0.};
+    Vec3D<T> outwardNormal{0., 0., -1.}; // unit normal from mask toward oxide
     bool contact = false;
   };
 
   SmartPointer<OxidationDeformationVelocityField<T, D>> deformationField =
       nullptr;
   SmartPointer<Domain<T, D>> maskInterface = nullptr;
+  SmartPointer<Domain<T, D>> ambientInterface = nullptr;
   OxidationMaskParameters<T> parameters;
   int maskSign = 1;
+  int ambientSign = -1;
 
   std::vector<Node> nodes;
   std::unordered_map<std::size_t, std::size_t> nodeLookup;
@@ -96,6 +99,17 @@ public:
                         int passedMaskSign = 1) {
     maskInterface = passedMaskInterface;
     maskSign = (passedMaskSign < 0) ? -1 : 1;
+    solved = false;
+  }
+
+  /// Provide the SiO₂/ambient interface so that contact faces can be detected
+  /// on any mask face that borders the oxide, not only the bottom face.
+  /// ambientSign follows the same convention as OxidationDeformationVelocityField:
+  /// ambientSign * φ_ambient >= 0 selects nodes inside the oxide band.
+  void setAmbientInterface(SmartPointer<Domain<T, D>> passedAmbientInterface,
+                           int passedAmbientSign = -1) {
+    ambientInterface = passedAmbientInterface;
+    ambientSign = (passedAmbientSign < 0) ? -1 : 1;
     solved = false;
   }
 
@@ -219,15 +233,18 @@ private:
     }
 
     contactNodes = 0;
-    viennahrle::IndexType bottomIndex = std::numeric_limits<viennahrle::IndexType>::max();
-    for (const auto &node : nodes)
-      bottomIndex = std::min(bottomIndex, node.index[D - 1]);
-
     for (auto &node : nodes) {
-      node.contact = touchesContactBoundary(maskIt, node.index) ||
-                     node.index[D - 1] <= bottomIndex + 1;
-      if (node.contact)
+      node.contact = touchesContactBoundary(maskIt, node.index);
+      if (node.contact) {
         ++contactNodes;
+        // maskNormal is the gradient of phi_mask, pointing from the mask
+        // interior (phi < 0) toward the oxide exterior (phi > 0). This is
+        // the direction from the mask material toward the oxide, which is
+        // where we sample the deformation velocity in contactVelocity.
+        const auto normal = maskNormal(node.index, maskIt);
+        for (unsigned i = 0; i < D; ++i)
+          node.outwardNormal[i] = normal[i];
+      }
     }
   }
 
@@ -242,7 +259,7 @@ private:
     std::vector<Vec3D<T>> next = previous;
     for (std::size_t i = 0; i < nodes.size(); ++i) {
       if (nodes[i].contact)
-        previous[i] = contactVelocity(nodes[i].index);
+        previous[i] = contactVelocity(nodes[i]);
     }
     next = previous;
 
@@ -256,7 +273,7 @@ private:
       residual = 0.;
       for (std::size_t nodeId = 0; nodeId < nodes.size(); ++nodeId) {
         if (nodes[nodeId].contact) {
-          next[nodeId] = contactVelocity(nodes[nodeId].index);
+          next[nodeId] = contactVelocity(nodes[nodeId]);
         } else {
           Vec3D<T> laplaceAverage{0., 0., 0.};
           unsigned count = 0;
@@ -310,7 +327,7 @@ private:
       return velocity[found->second];
 
     if (isContactBoundary(nodes[nodeId].index, direction, offset, maskIt))
-      return contactVelocity(nodes[nodeId].index);
+      return contactVelocity(nodes[nodeId]);
 
     return velocity[nodeId];
   }
@@ -357,8 +374,13 @@ private:
       for (int offset : {-1, 1}) {
         IndexType neighbor = index;
         neighbor[direction] += offset;
-        if (!inBounds(neighbor))
+        if (!inBounds(neighbor)) {
+          // Solve region is clipped to the mask/oxide interface: an
+          // out-of-bounds neighbor is by definition outside the mask.
+          if (isContactBoundary(index, direction, offset, maskIt))
+            return true;
           continue;
+        }
         if (nodeLookup.find(linearIndex(neighbor)) != nodeLookup.end())
           continue;
         if (!crosses(valueAt(maskIt, index), valueAt(maskIt, neighbor)))
@@ -373,14 +395,26 @@ private:
   bool isContactBoundary(const IndexType &index, unsigned direction,
                          int offset, ConstSparseIterator &maskIt) const {
     const auto normal = maskNormal(index, maskIt);
-    return direction == D - 1 && static_cast<T>(offset) * normal[direction] < T(0);
+    if (static_cast<T>(offset) * normal[direction] >= T(0))
+      return false; // face does not exit the mask bending domain
+    if (ambientInterface == nullptr)
+      return direction == D - 1; // no ambient LS: fall back to bottom-face only
+    // Check that the current node (oxide-side, inside the bending domain) is
+    // below the ambient surface, not in the gas above the mask.
+    return isInsideOxide(index);
   }
 
-  Vec3D<T> contactVelocity(const IndexType &index) const {
+  bool isInsideOxide(const IndexType &index) const {
+    ConstSparseIterator ambientIt(ambientInterface->getDomain());
+    ambientIt.goToIndices(index);
+    return ambientSign * ambientIt.getValue() >= T(0);
+  }
+
+  Vec3D<T> contactVelocity(const Node &node) const {
     Vec3D<T> oxideSampleCoordinate{0., 0., 0.};
     for (unsigned i = 0; i < D; ++i)
-      oxideSampleCoordinate[i] = index[i] * gridDelta;
-    oxideSampleCoordinate[D - 1] -= gridDelta;
+      oxideSampleCoordinate[i] =
+          node.index[i] * gridDelta + node.outwardNormal[i] * gridDelta;
 
     return clampMagnitude(
         scaled(deformationField->getVelocity(oxideSampleCoordinate),
