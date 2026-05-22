@@ -2,7 +2,6 @@
 #include <lsBooleanOperation.hpp>
 #include <lsDomain.hpp>
 #include <lsMakeGeometry.hpp>
-#include <lsPointData.hpp>
 #include <lsReader.hpp>
 #include <lsTestAsserts.hpp>
 #include <lsWriter.hpp>

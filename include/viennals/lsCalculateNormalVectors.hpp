@@ -24,7 +24,7 @@ enum class NormalCalculationMethodEnum {
 
 /// This algorithm is used to compute the normal vectors for all points
 /// with level set values <= maxValue (default 0.5). The result is saved in
-/// the lsPointData of the lsDomain and can be retrieved with
+/// the PointData of the lsDomain and can be retrieved with
 /// lsDomain.getPointData().getVectorData("Normals").
 ///
 /// The algorithm uses central differences to compute gradients and normalizes

@@ -149,7 +149,7 @@ template <class T, int D> class ToHullMesh {
         if (boundaryNodes.size() < 2)
           return;
 
-        auto matIds = multiMesh->cellData.getScalarData("MaterialIds");
+        auto matIds = multiMesh->getMaterialIds();
         for (size_t i = 0; i < boundaryNodes.size() - 1; ++i) {
           double mid =
               (boundaryNodes[i].first + boundaryNodes[i + 1].first) * 0.5;
@@ -387,7 +387,7 @@ template <class T, int D> class ToHullMesh {
                   std::swap(nodes[1], nodes[2]);
 
                 multiMesh->insertNextTriangle({nodes[0], nodes[1], nodes[2]});
-                auto matIds = multiMesh->cellData.getScalarData("MaterialIds");
+                auto matIds = multiMesh->getMaterialIds();
                 if (matIds)
                   matIds->push_back(matId);
               }
