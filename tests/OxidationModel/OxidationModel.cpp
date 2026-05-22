@@ -87,9 +87,14 @@ int main() {
   VC_TEST_ASSERT(std::isfinite(deformation->getResidual()))
   VC_TEST_ASSERT(deformation->getResidual() < 1.)
 
-  const double siliconSpeed = std::abs(velocity);
+  // The (gamma-1)/gamma expansion ratio must be checked at the same y location
+  // as the deformation boundary velocity: the reaction interface node at y=0.
+  // Querying at y=1 vs y=0 uses different concentrations and breaks the ratio.
+  ls::Vec3D<double> reactionBoundary{0., 0., 0.};
+  const double siliconSpeed =
+      std::abs(oxidation->getScalarVelocity(reactionBoundary, 0, {0., 1., 0.}, 0));
   const double ambientSpeed =
-      std::abs(deformation->getVectorVelocity(nearAmbient, 0, {0., 1., 0.}, 0)[1]);
+      std::abs(deformation->getVectorVelocity(reactionBoundary, 0, {0., 1., 0.}, 0)[1]);
   const double oxidePressure = deformation->getPressure(nearReaction);
   const auto stressTensor = deformation->getStressTensor(nearReaction);
   const double vonMisesStress = deformation->getVonMisesStress(nearReaction);

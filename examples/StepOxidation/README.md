@@ -320,15 +320,14 @@ v_Si = velocitySign · k_eff · C / (N · γ)
 ```
 
 `OxidationDeformationVelocityField` returns:
-- `getScalarVelocity = freeSurfaceVelocityScale · v_local` (local projection)
-- `getVectorVelocity = vectorVelocityScale · V(x)` (deformation vector field)
+- `getScalarVelocity = 0` (unused; the scalar channel is reserved for mask-contact points)
+- `getVectorVelocity = V(x)` (full solved Stokes vector field)
 
-In this example `vectorVelocityScale = 1` and `freeSurfaceVelocityScale = 0`,
-so the ambient interface is advected by the full Stokes vector field. This
-captures lateral flow and shear effects that the scalar local-projection
-kinematic split misses — in particular, the surface at step corners experiences
-a net horizontal displacement component from the Stokes flow that would be
-zero under the kinematic split.
+The ambient interface is therefore advected by the full Stokes vector field.
+This captures lateral flow and shear effects that a scalar local-projection
+kinematic split would miss — in particular, the surface at step corners
+experiences a net horizontal displacement component from the Stokes flow that
+would be zero under a purely normal-speed advection.
 
 ## Geometry
 
@@ -369,8 +368,6 @@ Bounds:   {-100, -40} to {100, 80} grid indices
 | `freeSurfaceTractionScale` | 1 | Traction-free pressure at ambient |
 | `substrateNormalStiffness` | 1×10⁹ Pa/μm | Elastic Si substrate |
 | `pressureGradientScale` | 0.001 | Scales pressure gradient in Stokes RHS |
-| `freeSurfaceVelocityScale` | 0 | Kinematic local-projection disabled |
-| `vectorVelocityScale` | 1 | Ambient advected by full Stokes vector field |
 | `mechanicsIterations` | 2 | Pressure/velocity outer iterations |
 | `pressureIterations` | 500 | Inner pressure Jacobi iterations |
 | `stokesIterations` | 100 | Inner Stokes Jacobi iterations |

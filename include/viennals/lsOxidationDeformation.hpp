@@ -1021,12 +1021,6 @@ private:
     Vec3D<T> normal{0., 0., 0.};
     T norm = 0.;
 
-    // Clamp HRLE far-field sentinels (±DBL_MAX) to ±1 before differencing to
-    // prevent DBL_MAX² overflow that silently returns the zero vector.
-    auto clampPhi = [](T v) -> T {
-      return v > T(1) ? T(1) : (v < T(-1) ? T(-1) : v);
-    };
-
     for (unsigned i = 0; i < D; ++i) {
       IndexType pos = index;
       IndexType neg = index;
@@ -1036,8 +1030,8 @@ private:
         pos = index;
       if (!inBounds(neg))
         neg = index;
-      normal[i] = clampPhi(valueAt(levelSetIt, pos)) -
-                  clampPhi(valueAt(levelSetIt, neg));
+      normal[i] = detail::clampLevelSetPhi(valueAt(levelSetIt, pos)) -
+                  detail::clampLevelSetPhi(valueAt(levelSetIt, neg));
       norm += normal[i] * normal[i];
     }
 

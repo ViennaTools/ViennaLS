@@ -307,8 +307,6 @@ isosurface.
 | `maskVelocityScale` | 0.15 | Partial constraint at mask contact |
 | `maskNormalStiffness` | 2×10⁹ Pa/μm | Elastic resistance at mask base |
 | `pressureGradientScale` | 0.001 | Scales pressure gradient in Stokes RHS |
-| `freeSurfaceVelocityScale` | 0 | Kinematic local-projection disabled |
-| `vectorVelocityScale` | 1 | Ambient advected by full Stokes vector field |
 | `mechanicsIterations` | 2 | Pressure/velocity outer iterations |
 | `pressureIterations` | 500 | Inner pressure Jacobi iterations |
 | `stokesIterations` | 100 | Inner Stokes Jacobi iterations |
