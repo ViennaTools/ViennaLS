@@ -3,9 +3,10 @@
 """
 from __future__ import annotations
 import collections.abc
+import enum
 import typing
 import viennals._core
-__all__: list[str] = ['Advect', 'BooleanOperation', 'Box', 'BoxDistribution', 'CalculateCurvatures', 'CalculateNormalVectors', 'CalculateVisibilities', 'Check', 'CompareArea', 'CompareChamfer', 'CompareCriticalDimensions', 'CompareNarrowBand', 'CompareSparseField', 'CompareVolume', 'ConvexHull', 'CustomSphereDistribution', 'Cylinder', 'DetectFeatures', 'Domain', 'Expand', 'FinalizeStencilLocalLaxFriedrichs', 'FromMesh', 'FromSurfaceMesh', 'FromVolumeMesh', 'GeometricAdvect', 'GeometricAdvectDistribution', 'LOCOSOxidation', 'MakeGeometry', 'MarkVoidPoints', 'OxidationConstrainedAmbientVelocityField', 'OxidationCoupledModel', 'OxidationCouplingParameters', 'OxidationDeformationParameters', 'OxidationDeformationVelocityField', 'OxidationDiffusionVelocityField', 'OxidationMaskBendingVelocityField', 'OxidationMaskParameters', 'OxidationParameters', 'Plane', 'PointCloud', 'PrepareStencilLocalLaxFriedrichs', 'Prune', 'Reader', 'Reduce', 'RemoveStrayPoints', 'Sphere', 'SphereDistribution', 'StencilLocalLaxFriedrichsScalar', 'ToDiskMesh', 'ToHullMesh', 'ToMesh', 'ToMultiSurfaceMesh', 'ToSurfaceMesh', 'ToVoxelMesh', 'WriteVisualizationMesh', 'Writer', 'hrleGrid']
+__all__: list[str] = ['Advect', 'BooleanOperation', 'Box', 'BoxDistribution', 'CalculateCurvatures', 'CalculateNormalVectors', 'CalculateVisibilities', 'Check', 'CompareArea', 'CompareChamfer', 'CompareCriticalDimensions', 'CompareNarrowBand', 'CompareSparseField', 'CompareVolume', 'ConvexHull', 'CustomSphereDistribution', 'Cylinder', 'DetectFeatures', 'Domain', 'Expand', 'FinalizeStencilLocalLaxFriedrichs', 'FromMesh', 'FromSurfaceMesh', 'FromVolumeMesh', 'GeometricAdvect', 'GeometricAdvectDistribution', 'LOCOSOxidation', 'MakeGeometry', 'MarkVoidPoints', 'OxidationConstrainedAmbientVelocityField', 'OxidationCoupledModel', 'OxidationCouplingParameters', 'OxidationDeformationParameters', 'OxidationDeformationVelocityField', 'OxidationDiffusionVelocityField', 'OxidationMaskAnchorMode', 'OxidationMaskBendingVelocityField', 'OxidationMaskParameters', 'OxidationParameters', 'Plane', 'PointCloud', 'PrepareStencilLocalLaxFriedrichs', 'Prune', 'Reader', 'Reduce', 'RemoveStrayPoints', 'Sphere', 'SphereDistribution', 'StencilLocalLaxFriedrichsScalar', 'ToDiskMesh', 'ToHullMesh', 'ToMesh', 'ToMultiSurfaceMesh', 'ToSurfaceMesh', 'ToVoxelMesh', 'WriteVisualizationMesh', 'Writer', 'hrleGrid']
 class Advect:
     @typing.overload
     def __init__(self) -> None:
@@ -190,12 +191,10 @@ class OxidationDeformationParameters:
     ambientPressure: float
     pressureRelaxation: float
     pressureTolerance: float
-    pressureGradientScale: float
     freeSurfaceTractionScale: float
     substrateNormalStiffness: float
     minMechanicsBoundaryDistance: float
     maskNormalStiffness: float
-    maskVelocityScale: float
     maskPressure: float
     shearModulus: float
     stressRelaxationTime: float
@@ -251,17 +250,21 @@ class OxidationDeformationVelocityField(viennals._core.VelocityField):
         ...
     def setOxideSigns(self, arg0: typing.SupportsInt | typing.SupportsIndex, arg1: typing.SupportsInt | typing.SupportsIndex) -> None:
         ...
+class OxidationMaskAnchorMode(enum.IntEnum):
+    NONE: typing.ClassVar[OxidationMaskAnchorMode]
+    MIN_BOUNDARY: typing.ClassVar[OxidationMaskAnchorMode]
+    MAX_BOUNDARY: typing.ClassVar[OxidationMaskAnchorMode]
+    BOTH_BOUNDARIES: typing.ClassVar[OxidationMaskAnchorMode]
 class OxidationMaskParameters:
     def __init__(self) -> None:
         ...
-    youngModulus: float
+    maskViscosity: float
     poissonRatio: float
-    thickness: float
-    referenceThickness: float
-    velocityScale: float
-    pressureVelocityScale: float
-    referencePressure: float
     maxVelocity: float
+    unilateralContact: bool
+    contactGapTolerance: float
+    anchorMode: OxidationMaskAnchorMode
+    anchorDirection: int
     relaxation: float
     tolerance: float
     minBoundaryDistance: float
@@ -280,6 +283,8 @@ class OxidationMaskBendingVelocityField(viennals._core.VelocityField):
     def getNumberOfSolutionNodes(self) -> int:
         ...
     def getResidual(self) -> float:
+        ...
+    def getLastApplyVelocityChange(self) -> float:
         ...
     def setAmbientInterface(self, ambientInterface: Domain, ambientSign: typing.SupportsInt | typing.SupportsIndex = ...) -> None:
         ...
@@ -342,6 +347,10 @@ class LOCOSOxidation:
         ...
     def setTemporalScheme(self, arg0: viennals._core.TemporalSchemeEnum) -> None:
         ...
+    def setMaskCouplingIterations(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
+        ...
+    def setMaskCouplingTolerance(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        ...
     def setSolveBounds(self, minIndex: typing.Annotated[collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex], "FixedSize(2)"], maxIndex: typing.Annotated[collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex], "FixedSize(2)"]) -> None:
         ...
     def setMaskBendingBounds(self, minIndex: typing.Annotated[collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex], "FixedSize(2)"], maxIndex: typing.Annotated[collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex], "FixedSize(2)"]) -> None:
@@ -353,6 +362,10 @@ class LOCOSOxidation:
     def getDeformationField(self) -> OxidationDeformationVelocityField:
         ...
     def getMaskBendingField(self) -> OxidationMaskBendingVelocityField:
+        ...
+    def getMaskCouplingIterations(self) -> int:
+        ...
+    def getMaskCouplingResidual(self) -> float:
         ...
 class BooleanOperation:
     @typing.overload

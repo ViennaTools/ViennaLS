@@ -103,6 +103,9 @@ int main() {
       ls::SmartPointer<ls::SphereDistribution<viennahrle::CoordType, D>>::New(
           padOxideThickness);
   ls::GeometricAdvect<NumericType, D>(ambientInterface, initialOxide).apply();
+  auto siInitialForConservation = ls::Domain<NumericType, D>::New(siInterface);
+  auto ambientInitialForConservation =
+      ls::Domain<NumericType, D>::New(ambientInterface);
 
   // The mask bottom is numerically offset by a tiny contact epsilon from the
   // pad-oxide/ambient interface. This is far below the grid resolution, so the
@@ -136,15 +139,13 @@ int main() {
   oxParams.tolerance = 1.e-7;
 
   ls::OxidationDeformationParameters<NumericType> defParams;
-  defParams.viscosity = 1.e7;
+  defParams.viscosity = 1.e10;
   defParams.bulkModulus = 7.5e8;
   defParams.shearModulus = 3.e10;
   defParams.stressTimeStep = advectionTime;
   defParams.freeSurfaceTractionScale = 1.;
   defParams.substrateNormalStiffness = 1.e9;
-  defParams.maskVelocityScale = 0.15;
   defParams.maskNormalStiffness = 2.e9;
-  defParams.pressureGradientScale = 1.e-3;
   defParams.mechanicsIterations = 2;
   defParams.mechanicsTolerance = 1.e-7;
   defParams.pressureIterations = 500;
@@ -159,17 +160,10 @@ int main() {
   couplingParams.relaxation = 1.;
 
   ls::OxidationMaskParameters<NumericType> maskParams;
-  maskParams.youngModulus = 2.5e11;       // Pa, LPCVD Si3N4-like
+  // Effective viscous creep rate of Si3N4 at ~1000 C (Pa*hr).
+  // Larger value -> stiffer mask -> less bending per unit oxide pressure.
+  maskParams.maskViscosity = 5.e11;
   maskParams.poissonRatio = 0.27;
-  maskParams.thickness = maskThickness;
-  // referenceThickness sets the compliance threshold: masks thicker than this
-  // value get reduced compliance (elasticCompliance < 1). Setting it equal to
-  // maskThickness gives full compliance (elasticCompliance = 1) for this mask.
-  maskParams.referenceThickness = maskThickness;
-  maskParams.velocityScale = 0.35;
-  // pressureVelocityScale is only active in the no-mask fallback path;
-  // with a mask interface set it has no effect on the contact velocity.
-  maskParams.pressureVelocityScale = 0.;
   maskParams.maxVelocity = 0.25;          // um/hr
   maskParams.relaxation = 0.9;
   maskParams.tolerance = 5.e-6;
@@ -255,6 +249,12 @@ int main() {
 
   const ls::Vec3D<NumericType> maskBottomSample{
       -1.5, padOxideThickness - gridDelta, 0.};
+  const ls::Vec3D<NumericType> maskAnchorSample{
+      -xExtent, padOxideThickness + maskThickness * 0.5, 0.};
+  const ls::Vec3D<NumericType> maskMidSample{
+      -1.5, padOxideThickness + maskThickness * 0.5, 0.};
+  const ls::Vec3D<NumericType> maskEdgeSample{
+      -gridDelta, padOxideThickness + maskThickness * 0.5, 0.};
   const ls::Vec3D<NumericType> maskContactNodeSample{
       -gridDelta, padOxideThickness - gridDelta, 0.};
   const ls::Vec3D<NumericType> maskTopSample{
@@ -265,6 +265,12 @@ int main() {
       maskBending->getVectorVelocity(maskTopSample, 0, {0., 1., 0.}, 0);
   const auto maskContactNodeVelocity = maskBending->getVectorVelocity(
       maskContactNodeSample, 0, {0., -1., 0.}, 0);
+  const auto maskAnchorVelocity =
+      maskBending->getVectorVelocity(maskAnchorSample, 0, {0., 1., 0.}, 0);
+  const auto maskMidVelocity =
+      maskBending->getVectorVelocity(maskMidSample, 0, {0., 1., 0.}, 0);
+  const auto maskEdgeVelocity =
+      maskBending->getVectorVelocity(maskEdgeSample, 0, {0., 1., 0.}, 0);
   const NumericType maskBottomPressure =
       deformation->getPressure(maskBottomSample);
   std::cout << "Mask elasticity nodes: "
@@ -272,12 +278,32 @@ int main() {
             << ", contact nodes: " << maskBending->getNumberOfContactNodes()
             << ", iterations: " << maskBending->getIterations()
             << ", residual: " << maskBending->getResidual() << '\n';
+  std::cout << "Oxide/mask interface solve iterations: "
+            << locos->getMaskCouplingIterations()
+            << ", residual: " << locos->getMaskCouplingResidual() << '\n';
   std::cout << "Mask bottom velocity: (" << maskBottomVelocity[0] << ", "
             << maskBottomVelocity[1] << ") um/hr, top velocity: ("
             << maskTopVelocity[0] << ", " << maskTopVelocity[1]
             << ") um/hr, oxide pressure: " << maskBottomPressure << " Pa\n";
   std::cout << "Mask contact-node velocity: (" << maskContactNodeVelocity[0]
             << ", " << maskContactNodeVelocity[1] << ") um/hr\n";
+  std::cout << "Mask lateral bending samples: anchor (" << maskAnchorVelocity[0]
+            << ", " << maskAnchorVelocity[1] << "), mid (" << maskMidVelocity[0]
+            << ", " << maskMidVelocity[1] << "), edge (" << maskEdgeVelocity[0]
+            << ", " << maskEdgeVelocity[1] << ") um/hr\n";
+
+  const auto conservation = ls::computeLOCOSOpenWindowConservation<NumericType>(
+      siInitialForConservation, siInterface, ambientInitialForConservation,
+      ambientInterface, 0.5, 3.5, toIndex(yMin), toIndex(yMax),
+      oxParams.expansionCoefficient);
+  std::cout << "Open-window conservation samples: " << conservation.samples
+            << ", Si consumed area: " << conservation.siliconRecession
+            << " um^2, ambient lift area: " << conservation.ambientLift
+            << " um^2, expected ambient lift: "
+            << conservation.expectedAmbientLift
+            << " um^2, lift/Si ratio: " << conservation.ambientLiftRatio
+            << " (expected " << (oxParams.expansionCoefficient - 1.)
+            << "), relative error: " << conservation.relativeError << '\n';
 
   writeSurface(siInterface, "locos_si_after.vtp");
   writeSurface(ambientInterface, "locos_ambient_after.vtp");

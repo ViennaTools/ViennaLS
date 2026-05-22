@@ -129,8 +129,9 @@ local reaction-interface normal. This Dirichlet condition is then harmonically
 extended through the oxide band by iteratively averaging each interior node
 over its Cartesian neighbors until convergence (`harmonicIterations`,
 `tolerance`). The resulting field serves as the predictor velocity. At mask
-crossings (if a mask is present), a scaled no-slip condition
-`maskVelocityScale · v_interior` is applied (typically `maskVelocityScale = 0`).
+crossings (if a mask is present), the current mask velocity is used when a mask
+mechanics field is attached; otherwise the fallback is a stationary no-slip
+mask boundary.
 
 #### Stage 2 — Pressure Solve
 
@@ -168,7 +169,7 @@ The pressure Poisson equation is solved by point-Jacobi iteration
 The quasi-static Stokes momentum equation is
 
 ```
-η · ∇²v = pressureGradientScale · (∇p - ∇ · s_dev)
+η · ∇²v = ∇p - ∇ · s_dev
 ```
 
 where `η = viscosity`. The right-hand side forcing `∇p - ∇ · s_dev` is
@@ -180,7 +181,8 @@ computed with central-difference stencils at each node. Boundary values:
   v_ghost = 2 · v_surface_analytical - v_node
   ```
   giving a second-order one-sided estimate of the traction gradient.
-- **Mask contact:** No-slip or scaled: `maskVelocityScale · v_interior`.
+- **Mask contact:** Attached mask velocity, or stationary no-slip if no mask
+  mechanics field is attached.
 
 The Stokes velocity equation is solved by point-Jacobi iteration
 (`stokesIterations`, `stokesTolerance`).
@@ -362,12 +364,11 @@ Bounds:   {-100, -40} to {100, 80} grid indices
 | `reactionRateRatio111` | 1 | (111)/(100) rate ratio (1 = isotropic) |
 | `crystalAxis` | {0,1,0} | (100) wafer normal direction |
 | `advectionTime` | 0.1 hr | |
-| `viscosity` | 1×10⁷ Pa·hr | Oxide viscosity |
+| `viscosity` | 1×10¹⁰ Pa·hr | Effective oxide viscosity |
 | `bulkModulus` | 7.5×10⁸ Pa | Pressure ← divergence coupling |
 | `shearModulus` | 3×10¹⁰ Pa | Maxwell deviatoric relaxation |
 | `freeSurfaceTractionScale` | 1 | Traction-free pressure at ambient |
 | `substrateNormalStiffness` | 1×10⁹ Pa/μm | Elastic Si substrate |
-| `pressureGradientScale` | 0.001 | Scales pressure gradient in Stokes RHS |
 | `mechanicsIterations` | 2 | Pressure/velocity outer iterations |
 | `pressureIterations` | 500 | Inner pressure Jacobi iterations |
 | `stokesIterations` | 100 | Inner Stokes Jacobi iterations |

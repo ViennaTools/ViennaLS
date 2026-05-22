@@ -12,12 +12,10 @@ template <class T> struct OxidationDeformationParameters {
   T ambientPressure = 0.;
   T pressureRelaxation = 1.;
   T pressureTolerance = 1e-8;
-  T pressureGradientScale = 1e-3;
   T freeSurfaceTractionScale = 1.;
   T substrateNormalStiffness = 0.;
   T minMechanicsBoundaryDistance = 0.05;
   T maskNormalStiffness = 0.;
-  T maskVelocityScale = 0.;
   T maskPressure = 0.;
   T shearModulus = 0.;
   T stressRelaxationTime = 0.;
@@ -99,6 +97,7 @@ private:
   SmartPointer<Domain<T, D>> ambientInterface = nullptr;
   SmartPointer<Domain<T, D>> maskInterface = nullptr;
   SmartPointer<OxidationDiffusionVelocityField<T, D>> diffusionField = nullptr;
+  SmartPointer<VelocityField<T>> maskVelocityField = nullptr;
   OxidationDeformationParameters<T> deformationParameters;
   OxidationParameters<T> oxidationParameters;
   int reactionSign = 1;
@@ -157,6 +156,16 @@ public:
 
   void clearMaskInterface() {
     maskInterface = nullptr;
+    solved = false;
+  }
+
+  void setMaskVelocityField(SmartPointer<VelocityField<T>> passedVelocityField) {
+    maskVelocityField = passedVelocityField;
+    solved = false;
+  }
+
+  void clearMaskVelocityField() {
+    maskVelocityField = nullptr;
     solved = false;
   }
 
@@ -411,7 +420,8 @@ private:
             if (boundary == Boundary::REACTION) {
               detail::vecAddTo(sum, reactionBoundaryVelocity(node.index));
             } else if (boundary == Boundary::MASK) {
-              detail::vecAddTo(sum, maskVelocityBoundary(previous[nodeId]));
+              detail::vecAddTo(sum,
+                               maskVelocityBoundary(node.index, previous[nodeId]));
             } else {
               detail::vecAddTo(sum, previous[nodeId]);
             }
@@ -577,8 +587,7 @@ private:
         for (unsigned component = 0; component < D; ++component) {
           updated[component] =
               (sum[component] -
-               deformationParameters.pressureGradientScale * forcing[component] /
-                   deformationParameters.viscosity) /
+               forcing[component] / deformationParameters.viscosity) /
               centerCoefficient;
         }
 
@@ -676,7 +685,8 @@ private:
                                           velocity[nodeId]),
               intersection.distance};
     if (intersection.boundary == Boundary::MASK)
-      return {maskVelocityBoundary(velocity[nodeId]), intersection.distance};
+      return {maskVelocityBoundary(node.index, velocity[nodeId]),
+              intersection.distance};
 
     return {velocity[nodeId], gridDelta};
   }
@@ -738,7 +748,8 @@ private:
                                           intersection.distance, node.velocity),
               intersection.distance};
     if (intersection.boundary == Boundary::MASK)
-      return {maskVelocityBoundary(node.velocity), intersection.distance};
+      return {maskVelocityBoundary(node.index, node.velocity),
+              intersection.distance};
 
     return {node.velocity, gridDelta};
   }
@@ -864,8 +875,17 @@ private:
                deformationParameters.stressTimeStep * normalVelocity;
   }
 
-  Vec3D<T> maskVelocityBoundary(const Vec3D<T> &interiorVelocity) const {
-    return detail::vecScaled(interiorVelocity, deformationParameters.maskVelocityScale);
+  Vec3D<T> maskVelocityBoundary(const IndexType &index,
+                                const Vec3D<T> &interiorVelocity) const {
+    if (maskVelocityField != nullptr) {
+      Vec3D<T> coordinate{0., 0., 0.};
+      for (unsigned i = 0; i < D; ++i)
+        coordinate[i] = index[i] * gridDelta;
+      return maskVelocityField->getVectorVelocity(coordinate,
+                                                  deformationParameters.material,
+                                                  {0., 0., 0.}, 0);
+    }
+    return {0., 0., 0.};
   }
 
   void computeAvgExpansionSpeed() {

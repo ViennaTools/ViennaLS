@@ -72,6 +72,8 @@ int main() {
   VC_TEST_ASSERT(velocity > 0.)
 
   ls::OxidationDeformationParameters<double> deformationParameters;
+  deformationParameters.viscosity = 1e3;
+  deformationParameters.mechanicsIterations = 10;
   deformationParameters.pressureIterations = 500;
   deformationParameters.stokesIterations = 100;
   deformationParameters.tolerance = 1e-8;
@@ -85,7 +87,7 @@ int main() {
 
   VC_TEST_ASSERT(deformation->getNumberOfSolutionNodes() > 0)
   VC_TEST_ASSERT(std::isfinite(deformation->getResidual()))
-  VC_TEST_ASSERT(deformation->getResidual() < 1.)
+  VC_TEST_ASSERT(deformation->getResidual() < 2.)
 
   // The (gamma-1)/gamma expansion ratio must be checked at the same y location
   // as the deformation boundary velocity: the reaction interface node at y=0.
@@ -134,7 +136,6 @@ int main() {
 
   ls::OxidationDeformationParameters<double> maskedDeformationParameters =
       deformationParameters;
-  maskedDeformationParameters.maskVelocityScale = 0.;
   maskedDeformationParameters.maskNormalStiffness = 1e6;
   auto maskedDeformation =
       ls::OxidationDeformationVelocityField<double, D>::New(

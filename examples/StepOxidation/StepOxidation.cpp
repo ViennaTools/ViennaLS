@@ -149,13 +149,12 @@ int main() {
   viennahrle::Index<D> maxIndex{100, 80};
   oxidationVelocity->setSolveBounds(minIndex, maxIndex);
   ls::OxidationDeformationParameters<NumericType> deformationParams;
-  deformationParams.viscosity = 1.0e7;    // Pa hr, diagnostic scale
+  deformationParams.viscosity = 1.0e10;   // Pa hr, effective oxide viscosity
   deformationParams.bulkModulus = 7.5e8;  // Pa, pressure reference from paper
   deformationParams.shearModulus = 3.0e10;
   deformationParams.stressTimeStep = advectionTime;
   deformationParams.freeSurfaceTractionScale = 1.0;
   deformationParams.substrateNormalStiffness = 1.0e9; // Pa/um elastic support
-  deformationParams.pressureGradientScale = 1e-3;
   deformationParams.mechanicsIterations = 2;
   deformationParams.mechanicsTolerance = 1e-7;
   deformationParams.pressureIterations = 500;
