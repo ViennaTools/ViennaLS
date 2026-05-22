@@ -198,9 +198,7 @@ class OxidationDeformationParameters:
     shearModulus: float
     stressRelaxationTime: float
     stressTimeStep: float
-    freeSurfaceVelocityScale: float
-    vectorVelocityScale: float
-    maxIterations: int
+    harmonicIterations: int
     mechanicsIterations: int
     pressureIterations: int
     stokesIterations: int
@@ -222,6 +220,8 @@ class OxidationDeformationVelocityField(viennals._core.VelocityField):
     def getIterations(self) -> int:
         ...
     def getNumberOfSolutionNodes(self) -> int:
+        ...
+    def avgExpansionSpeed(self) -> float:
         ...
     def getPressure(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"]) -> float:
         ...

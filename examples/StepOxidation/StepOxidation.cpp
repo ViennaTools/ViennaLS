@@ -63,9 +63,8 @@ LevelSet makeStepLevelSet(const double *bounds,
 void writeSurface(LevelSet levelSet, const std::string &fileName) {
   auto mesh = ls::Mesh<NumericType>::New();
   auto surfaceMesh = ls::ToSurfaceMesh<NumericType, D>(levelSet, mesh);
-  surfaceMesh.setSharpCorners(true);
+  surfaceMesh.setSharpCorners(false);
   surfaceMesh.apply();
-//   ls::ToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
   ls::VTKWriter<NumericType>(mesh, fileName).apply();
 }
 
@@ -119,8 +118,8 @@ int main() {
           oxideThickness);
   ls::GeometricAdvect<NumericType, D>(ambientInterface, initialOxide).apply();
 
-  writeSurface(siInterface, "step_oxidation_si_initial.vtk");
-  writeSurface(ambientInterface, "step_oxidation_ambient_initial.vtk");
+  writeSurface(siInterface, "step_oxidation_si_initial.vtp");
+  writeSurface(ambientInterface, "step_oxidation_ambient_initial.vtp");
 
   ls::OxidationParameters<NumericType> params;
   // Wet oxidation of <100> Si at 1000 C, represented in Deal-Grove form.
@@ -163,13 +162,6 @@ int main() {
   deformationParams.stokesIterations = 100;
   deformationParams.pressureTolerance = 1e-6;
   deformationParams.stokesTolerance = 1e-7;
-  // Advect the free oxide surface by the full Stokes vector field. The
-  // freeSurfaceVelocityScale kinematic-split path is disabled here; both
-  // approaches are physically consistent but the Stokes path captures lateral
-  // flow and shear that the scalar kinematic split misses.
-  deformationParams.freeSurfaceVelocityScale = 0.0;
-  deformationParams.vectorVelocityScale = 1.0;
-  deformationParams.maxIterations = 10000;
   deformationParams.tolerance = 1e-7;
 
   auto deformationVelocity =
@@ -204,8 +196,7 @@ int main() {
             << ", iterations: " << deformationVelocity->getIterations()
             << ", residual: " << deformationVelocity->getResidual()
             << std::endl;
-  const auto ambientFlatSpeed =
-      deformationVelocity->getAverageBoundaryExpansionVelocity();
+  const auto ambientFlatSpeed = deformationVelocity->avgExpansionSpeed();
   const auto siliconFlatSpeed =
       ambientFlatSpeed / (params.expansionCoefficient - 1.);
   std::cout << "Flat split benchmark: silicon fraction "
@@ -256,13 +247,13 @@ int main() {
   reactionAdvection.setAdvectionTime(advectionTime);
   reactionAdvection.apply();
 
-  writeSurface(siInterface, "step_oxidation_si_after.vtk");
-  writeSurface(ambientInterface, "step_oxidation_ambient_after.vtk");
+  writeSurface(siInterface, "step_oxidation_si_after.vtp");
+  writeSurface(ambientInterface, "step_oxidation_ambient_after.vtp");
 
-  std::cout << "Wrote step_oxidation_si_initial.vtk, "
-               "step_oxidation_ambient_initial.vtk, "
-               "step_oxidation_si_after.vtk, "
-               "step_oxidation_ambient_after.vtk, and "
+  std::cout << "Wrote step_oxidation_si_initial.vtp, "
+               "step_oxidation_ambient_initial.vtp, "
+               "step_oxidation_si_after.vtp, "
+               "step_oxidation_ambient_after.vtp, and "
                "step_oxidation_deformation.csv"
             << std::endl;
   std::cout << "The ambient interface is moved by the oxide deformation field; "

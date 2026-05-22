@@ -1,5 +1,6 @@
 #pragma once
 
+#include <lsOxidationSolverBase.hpp>
 #include <lsOxidationDeformation.hpp>
 
 namespace viennals {
@@ -26,10 +27,28 @@ template <class T> struct OxidationMaskParameters {
 /// level set, oxide-contact motion is applied as a boundary displacement rate,
 /// and the resulting vector field is used to move the entire mask body.
 template <class T, int D>
-class OxidationMaskBendingVelocityField final : public VelocityField<T> {
+class OxidationMaskBendingVelocityField final
+    : public VelocityField<T>,
+      public OxidationSolverBase<T, D> {
   using IndexType = viennahrle::Index<D>;
   using ConstSparseIterator =
       viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>;
+
+private:
+  // bring base members into scope
+  using OxidationSolverBase<T, D>::nodeLookup;
+  using OxidationSolverBase<T, D>::minIndex;
+  using OxidationSolverBase<T, D>::maxIndex;
+  using OxidationSolverBase<T, D>::extents;
+  using OxidationSolverBase<T, D>::strides;
+  using OxidationSolverBase<T, D>::gridDelta;
+  using OxidationSolverBase<T, D>::crosses;
+  using OxidationSolverBase<T, D>::valueAt;
+  using OxidationSolverBase<T, D>::inBounds;
+  using OxidationSolverBase<T, D>::linearIndex;
+  using OxidationSolverBase<T, D>::increment;
+  using OxidationSolverBase<T, D>::findNearbyNode;
+  using OxidationSolverBase<T, D>::initializeGridFromMask;
 
   struct Node {
     IndexType index;
@@ -46,22 +65,18 @@ class OxidationMaskBendingVelocityField final : public VelocityField<T> {
   int maskSign = 1;
   int ambientSign = -1;
 
-  std::vector<Node> nodes;
-  std::unordered_map<std::size_t, std::size_t> nodeLookup;
-  IndexType minIndex{};
-  IndexType maxIndex{};
-  IndexType requestedMinIndex{};
-  IndexType requestedMaxIndex{};
-  std::array<std::size_t, D> extents{};
-  std::array<std::size_t, D> strides{};
-  T gridDelta = 1.;
   bool solved = false;
   bool useRequestedBounds = false;
   T residual = std::numeric_limits<T>::max();
   unsigned iterations = 0;
+  std::array<T, D> maxVelocity_{};
   std::size_t contactNodes = 0;
 
 public:
+  std::vector<Node> nodes;
+  IndexType requestedMinIndex{};
+  IndexType requestedMaxIndex{};
+
   OxidationMaskBendingVelocityField() = default;
 
   OxidationMaskBendingVelocityField(
@@ -146,6 +161,13 @@ public:
     initialiseGrid();
     buildNodes();
     solveElasticVelocity();
+
+    maxVelocity_.fill(T(0));
+    for (const auto &node : nodes) {
+      for (unsigned d = 0; d < D; ++d)
+        maxVelocity_[d] = std::max(maxVelocity_[d], std::abs(node.velocity[d]));
+    }
+
     solved = true;
   }
 
@@ -163,16 +185,16 @@ public:
 
     if (maskInterface == nullptr || nodes.empty()) {
       Vec3D<T> velocity =
-          scaled(deformationField->getVelocity(coordinate),
-                 elasticCompliance() * parameters.velocityScale);
+          detail::vecScaled(deformationField->getVelocity(coordinate),
+                            elasticCompliance() * parameters.velocityScale);
       const T pressure =
           std::abs(deformationField->getPressure(coordinate) -
                    parameters.referencePressure);
       if (parameters.pressureVelocityScale != T(0) && pressure > T(0))
-        velocity = add(velocity,
-                       scaled(normalVector, elasticCompliance() *
-                                                parameters.pressureVelocityScale *
-                                                pressure));
+        velocity = detail::vecAdd(velocity,
+                                  detail::vecScaled(normalVector, elasticCompliance() *
+                                                                    parameters.pressureVelocityScale *
+                                                                    pressure));
       return clampMagnitude(velocity);
     }
 
@@ -182,37 +204,26 @@ public:
     return clampMagnitude(getVelocity(index));
   }
 
-  T getDissipationAlpha(int /*direction*/, int /*material*/,
-                        const Vec3D<T> & /*centralDifferences*/) final {
-    return parameters.maxVelocity == std::numeric_limits<T>::max()
-               ? T(0)
-               : parameters.maxVelocity;
+  T getDissipationAlpha(int direction, int material,
+                        const Vec3D<T> &centralDifferences) final {
+    T alpha = maxVelocity_[direction];
+    if (nodes.empty() && deformationField != nullptr) {
+      alpha = std::max(alpha, deformationField->getDissipationAlpha(
+                                  direction, material, centralDifferences) *
+                                  elasticCompliance() *
+                                  parameters.velocityScale);
+    }
+    if (parameters.maxVelocity != std::numeric_limits<T>::max()) {
+      alpha = std::min(alpha, parameters.maxVelocity);
+    }
+    return alpha;
   }
 
 private:
   void initialiseGrid() {
-    auto &grid = maskInterface->getGrid();
-    gridDelta = grid.getGridDelta();
-
-    minIndex = grid.getMinGridPoint();
-    maxIndex = grid.getMaxGridPoint();
-    std::size_t numGridPoints = 1;
-    for (unsigned i = 0; i < D; ++i) {
-      if (useRequestedBounds) {
-        minIndex[i] = std::max(minIndex[i], requestedMinIndex[i]);
-        maxIndex[i] = std::min(maxIndex[i], requestedMaxIndex[i]);
-      }
-      extents[i] = static_cast<std::size_t>(maxIndex[i] - minIndex[i] + 1);
-      numGridPoints *= extents[i];
-      strides[i] = (i == 0) ? 1 : strides[i - 1] * extents[i - 1];
-    }
-
-    if (numGridPoints > parameters.maxGridPoints) {
-      Logger::getInstance()
-          .addError("OxidationMaskBendingVelocityField: Cartesian solve region "
-                    "exceeds maxGridPoints.")
-          .print();
-    }
+    initializeGridFromMask(maskInterface, useRequestedBounds, requestedMinIndex,
+                           requestedMaxIndex, parameters.maxGridPoints,
+                           "OxidationMaskBendingVelocityField");
   }
 
   void buildNodes() {
@@ -279,27 +290,27 @@ private:
           unsigned count = 0;
           for (unsigned direction = 0; direction < D; ++direction) {
             for (int offset : {-1, 1}) {
-              addTo(laplaceAverage, neighborVelocity(maskIt, previous, nodeId,
-                                                     direction, offset));
+              detail::vecAddTo(laplaceAverage, neighborVelocity(maskIt, previous, nodeId,
+                                                                direction, offset));
               ++count;
             }
           }
 
           Vec3D<T> updated =
               (count == 0) ? previous[nodeId]
-                           : scaled(laplaceAverage, T(1) / count);
+                           : detail::vecScaled(laplaceAverage, T(1) / count);
           const Vec3D<T> gradDivCorrection =
-              scaled(divergenceGradient(maskIt, previous, nodes[nodeId].index),
-                     gradDivWeight * gridDelta * gridDelta /
-                         (T(2) * static_cast<T>(D)));
-          updated = add(updated, gradDivCorrection);
+              detail::vecScaled(divergenceGradient(maskIt, previous, nodes[nodeId].index),
+                                gradDivWeight * gridDelta * gridDelta /
+                                    (T(2) * static_cast<T>(D)));
+          updated = detail::vecAdd(updated, gradDivCorrection);
 
           next[nodeId] =
-              add(scaled(updated, parameters.relaxation),
-                  scaled(previous[nodeId], T(1) - parameters.relaxation));
+              detail::vecAdd(detail::vecScaled(updated, parameters.relaxation),
+                             detail::vecScaled(previous[nodeId], T(1) - parameters.relaxation));
         }
 
-        const Vec3D<T> delta = subtract(next[nodeId], previous[nodeId]);
+        const Vec3D<T> delta = detail::vecSubtract(next[nodeId], previous[nodeId]);
         for (unsigned component = 0; component < D; ++component)
           residual = std::max(residual, std::abs(delta[component]));
       }
@@ -417,8 +428,8 @@ private:
           node.index[i] * gridDelta + node.outwardNormal[i] * gridDelta;
 
     return clampMagnitude(
-        scaled(deformationField->getVelocity(oxideSampleCoordinate),
-               elasticCompliance() * parameters.velocityScale));
+        detail::vecScaled(deformationField->getVelocity(oxideSampleCoordinate),
+                          elasticCompliance() * parameters.velocityScale));
   }
 
   Vec3D<T> maskNormal(const IndexType &index, ConstSparseIterator &maskIt) const {
@@ -492,91 +503,13 @@ private:
     return nodes[nearby].velocity;
   }
 
-  std::size_t findNearbyNode(const IndexType &index) const {
-    T bestDistance2 = std::numeric_limits<T>::max();
-    std::size_t bestNode = std::numeric_limits<std::size_t>::max();
-
-    IndexType offset{};
-    offset.fill(-1);
-    while (true) {
-      IndexType candidate = index;
-      T distance2 = 0.;
-      for (unsigned i = 0; i < D; ++i) {
-        candidate[i] += offset[i];
-        distance2 += static_cast<T>(offset[i] * offset[i]);
-      }
-
-      if (distance2 > 0 && inBounds(candidate)) {
-        const auto found = nodeLookup.find(linearIndex(candidate));
-        if (found != nodeLookup.end() && distance2 < bestDistance2) {
-          bestDistance2 = distance2;
-          bestNode = found->second;
-        }
-      }
-
-      unsigned dim = 0;
-      for (; dim < D; ++dim) {
-        if (offset[dim] < 1) {
-          ++offset[dim];
-          break;
-        }
-        offset[dim] = -1;
-      }
-      if (dim == D)
-        break;
-    }
-
-    return bestNode;
-  }
-
   bool isInsideMask(ConstSparseIterator &maskIt, const IndexType &index) const {
     return maskSign * valueAt(maskIt, index) >= 0.;
   }
 
-  bool crosses(T a, T b) const {
-    return (a <= 0. && b >= 0.) || (a >= 0. && b <= 0.);
-  }
-
   T crossingDistance(T insidePhi, T outsidePhi) const {
-    const T denom = std::abs(insidePhi) + std::abs(outsidePhi);
-    if (denom <= std::numeric_limits<T>::epsilon())
-      return gridDelta;
-    return std::max(parameters.minBoundaryDistance * gridDelta,
-                    gridDelta * std::abs(insidePhi) / denom);
-  }
-
-  T valueAt(ConstSparseIterator &it, const IndexType &index) const {
-    it.goToIndices(index);
-    return it.getValue();
-  }
-
-  bool inBounds(const IndexType &index) const {
-    for (unsigned i = 0; i < D; ++i) {
-      if (index[i] < minIndex[i] || index[i] > maxIndex[i])
-        return false;
-    }
-    return true;
-  }
-
-  std::size_t linearIndex(const IndexType &index) const {
-    if (!inBounds(index))
-      return std::numeric_limits<std::size_t>::max();
-
-    std::size_t result = 0;
-    for (unsigned i = 0; i < D; ++i)
-      result += static_cast<std::size_t>(index[i] - minIndex[i]) * strides[i];
-    return result;
-  }
-
-  bool increment(IndexType &index) const {
-    for (unsigned i = 0; i < D; ++i) {
-      if (index[i] < maxIndex[i]) {
-        ++index[i];
-        return true;
-      }
-      index[i] = minIndex[i];
-    }
-    return false;
+    return detail::levelSetCrossingDistance(
+        insidePhi, outsidePhi, parameters.minBoundaryDistance, gridDelta);
   }
 
   Vec3D<T> clampMagnitude(const Vec3D<T> &velocity) const {
@@ -590,13 +523,8 @@ private:
     if (magnitude <= parameters.maxVelocity || magnitude == T(0))
       return velocity;
 
-    return scaled(velocity, parameters.maxVelocity / magnitude);
+    return detail::vecScaled(velocity, parameters.maxVelocity / magnitude);
   }
-
-  static Vec3D<T> scaled(const Vec3D<T> &v, T f) { return detail::vecScaled(v, f); }
-  static Vec3D<T> add(const Vec3D<T> &a, const Vec3D<T> &b) { return detail::vecAdd(a, b); }
-  static Vec3D<T> subtract(const Vec3D<T> &a, const Vec3D<T> &b) { return detail::vecSubtract(a, b); }
-  static void addTo(Vec3D<T> &t, const Vec3D<T> &s) { detail::vecAddTo(t, s); }
 };
 
 /// Velocity field for the oxide outer interface when part of that interface is

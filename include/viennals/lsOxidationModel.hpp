@@ -2,6 +2,8 @@
 
 #include <lsOxidationMask.hpp>
 
+#include <unordered_map>
+
 namespace viennals {
 
 template <class T> struct OxidationCouplingParameters {
@@ -110,7 +112,7 @@ private:
     T maxPressure = 0.;
     deformationField->forEachSolutionNode(
         [&](const IndexType &index, T newPressure) {
-      const auto key = pressureKey(index);
+      const auto key = detail::gridIndexHash<D>(index);
       const auto previousIt = previousPressures.find(key);
       const T oldPressure =
           (previousIt == previousPressures.end()) ? T(0) : previousIt->second;
@@ -126,15 +128,6 @@ private:
     if (maxPressure <= std::numeric_limits<T>::epsilon())
       return maxChange;
     return maxChange / maxPressure;
-  }
-
-  std::size_t pressureKey(const IndexType &index) const {
-    std::size_t seed = 0;
-    for (unsigned i = 0; i < D; ++i) {
-      const auto value = std::hash<long long>{}(static_cast<long long>(index[i]));
-      seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    }
-    return seed;
   }
 };
 

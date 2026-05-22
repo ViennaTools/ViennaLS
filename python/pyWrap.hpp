@@ -388,12 +388,8 @@ template <int D> void bindApi(py::module &module) {
                      &OxidationDeformationParameters<T>::stressRelaxationTime)
       .def_readwrite("stressTimeStep",
                      &OxidationDeformationParameters<T>::stressTimeStep)
-      .def_readwrite("freeSurfaceVelocityScale",
-                     &OxidationDeformationParameters<T>::freeSurfaceVelocityScale)
-      .def_readwrite("vectorVelocityScale",
-                     &OxidationDeformationParameters<T>::vectorVelocityScale)
-      .def_readwrite("maxIterations",
-                     &OxidationDeformationParameters<T>::maxIterations)
+      .def_readwrite("harmonicIterations",
+                     &OxidationDeformationParameters<T>::harmonicIterations)
       .def_readwrite("mechanicsIterations",
                      &OxidationDeformationParameters<T>::mechanicsIterations)
       .def_readwrite("pressureIterations",
@@ -474,7 +470,9 @@ template <int D> void bindApi(py::module &module) {
 	      .def("getResidual",
 	           &OxidationDeformationVelocityField<T, D>::getResidual)
 	      .def("getNumberOfSolutionNodes",
-	           &OxidationDeformationVelocityField<T, D>::getNumberOfSolutionNodes);
+	           &OxidationDeformationVelocityField<T, D>::getNumberOfSolutionNodes)
+	      .def("avgExpansionSpeed",
+	           &OxidationDeformationVelocityField<T, D>::avgExpansionSpeed);
 
 	  py::class_<OxidationMaskParameters<T>>(
 	      module, "OxidationMaskParameters", py::module_local())

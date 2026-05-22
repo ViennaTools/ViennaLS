@@ -22,9 +22,8 @@ using LevelSet = ls::SmartPointer<ls::Domain<NumericType, D>>;
 void writeSurface(LevelSet levelSet, const std::string &fileName) {
   auto mesh = ls::Mesh<NumericType>::New();
   auto surfaceMesh = ls::ToSurfaceMesh<NumericType, D>(levelSet, mesh);
-  surfaceMesh.setSharpCorners(true);
+  surfaceMesh.setSharpCorners(false);
   surfaceMesh.apply();
-//   ls::ToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
   ls::VTKWriter<NumericType>(mesh, fileName).apply();
 }
 
@@ -114,9 +113,9 @@ int main() {
                padOxideThickness - maskContactEpsilon,
                padOxideThickness + maskThickness);
 
-  writeSurface(siInterface, "locos_si_initial.vtk");
-  writeSurface(ambientInterface, "locos_ambient_initial.vtk");
-  writeSurface(maskInterface, "locos_mask.vtk");
+  writeSurface(siInterface, "locos_si_initial.vtp");
+  writeSurface(ambientInterface, "locos_ambient_initial.vtp");
+  writeSurface(maskInterface, "locos_mask.vtp");
 
   // --- Oxidation parameters ---
 
@@ -152,10 +151,6 @@ int main() {
   defParams.stokesIterations = 100;
   defParams.pressureTolerance = 1.e-6;
   defParams.stokesTolerance = 1.e-7;
-  // Advect the free oxide surface by the full Stokes vector field.
-  defParams.freeSurfaceVelocityScale = 0.;
-  defParams.vectorVelocityScale = 1.;
-  defParams.maxIterations = 10000;
   defParams.tolerance = 1.e-7;
 
   ls::OxidationCouplingParameters<NumericType> couplingParams;
@@ -237,7 +232,7 @@ int main() {
             << ", iterations: " << deformation->getIterations()
             << ", residual: " << deformation->getResidual() << '\n';
   std::cout << "Average oxide expansion speed: "
-            << deformation->getAverageBoundaryExpansionVelocity() << " um/hr\n";
+            << deformation->avgExpansionSpeed() << " um/hr\n";
   std::cout << "Open-window concentration: " << openConcentration
             << ", masked concentration: " << maskedConcentration << '\n';
   std::cout << "Open-window Si speed: " << openSiliconSpeed
@@ -284,13 +279,13 @@ int main() {
   std::cout << "Mask contact-node velocity: (" << maskContactNodeVelocity[0]
             << ", " << maskContactNodeVelocity[1] << ") um/hr\n";
 
-  writeSurface(siInterface, "locos_si_after.vtk");
-  writeSurface(ambientInterface, "locos_ambient_after.vtk");
-  writeSurface(maskInterface, "locos_mask_after.vtk");
+  writeSurface(siInterface, "locos_si_after.vtp");
+  writeSurface(ambientInterface, "locos_ambient_after.vtp");
+  writeSurface(maskInterface, "locos_mask_after.vtp");
 
-  std::cout << "Wrote locos_si_initial.vtk, locos_ambient_initial.vtk, "
-               "locos_mask.vtk, locos_si_after.vtk, locos_ambient_after.vtk, "
-               "locos_mask_after.vtk, and locos_oxidation_diagnostics.csv\n";
+  std::cout << "Wrote locos_si_initial.vtp, locos_ambient_initial.vtp, "
+               "locos_mask.vtp, locos_si_after.vtp, locos_ambient_after.vtp, "
+               "locos_mask_after.vtp, and locos_oxidation_diagnostics.csv\n";
 
   return 0;
 }

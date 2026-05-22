@@ -1,5 +1,6 @@
 #pragma once
 
+#include <lsOxidationSolverBase.hpp>
 #include <lsOxidationDiffusion.hpp>
 
 namespace viennals {
@@ -21,9 +22,6 @@ template <class T> struct OxidationDeformationParameters {
   T shearModulus = 0.;
   T stressRelaxationTime = 0.;
   T stressTimeStep = 1.;
-  T freeSurfaceVelocityScale = 0.;
-  T vectorVelocityScale = 1.;
-  unsigned maxIterations = 10000;
   unsigned harmonicIterations = 500;
   unsigned mechanicsIterations = 5;
   unsigned pressureIterations = 10000;
@@ -53,10 +51,27 @@ template <class T> struct OxidationDeformationParameters {
 /// stress terms, with approximate traction/free-surface and elastic-substrate
 /// boundary conditions.
 template <class T, int D>
-class OxidationDeformationVelocityField final : public VelocityField<T> {
+class OxidationDeformationVelocityField final : public VelocityField<T>,
+                                                public OxidationSolverBase<T, D> {
   using IndexType = viennahrle::Index<D>;
   using ConstSparseIterator =
       viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>;
+
+private:
+  // bring base members into scope
+  using OxidationSolverBase<T, D>::nodeLookup;
+  using OxidationSolverBase<T, D>::minIndex;
+  using OxidationSolverBase<T, D>::maxIndex;
+  using OxidationSolverBase<T, D>::extents;
+  using OxidationSolverBase<T, D>::strides;
+  using OxidationSolverBase<T, D>::gridDelta;
+  using OxidationSolverBase<T, D>::crosses;
+  using OxidationSolverBase<T, D>::valueAt;
+  using OxidationSolverBase<T, D>::inBounds;
+  using OxidationSolverBase<T, D>::linearIndex;
+  using OxidationSolverBase<T, D>::increment;
+  using OxidationSolverBase<T, D>::findNearbyNode;
+  using OxidationSolverBase<T, D>::initializeGridFromInterfaces;
 
   enum class Boundary { NONE, REACTION, AMBIENT, MASK };
 
@@ -90,24 +105,20 @@ class OxidationDeformationVelocityField final : public VelocityField<T> {
   int ambientSign = -1;
   int maskSign = 1;
 
-  std::vector<Node> nodes;
-  std::unordered_map<std::size_t, std::size_t> nodeLookup;
-  IndexType minIndex{};
-  IndexType maxIndex{};
-  std::array<std::size_t, D> extents{};
-  std::array<std::size_t, D> strides{};
   IndexType requestedMinIndex{};
   IndexType requestedMaxIndex{};
-  T gridDelta = 1.;
   unsigned iterations = 0;
   T residual = std::numeric_limits<T>::max();
-  T averageBoundaryExpansionVelocity = 0.;
-  bool averageBoundaryExpansionVelocityComputed = false;
+  T avgExpansionSpeed_ = 0.;
+  bool avgExpansionSpeedComputed = false;
   bool solved = false;
+  std::array<T, D> maxVelocity_{};
   bool useRequestedBounds = false;
   std::unordered_map<std::size_t, std::array<T, 9>> deviatoricStressHistory;
 
 public:
+  std::vector<Node> nodes;
+
   OxidationDeformationVelocityField() = default;
 
   OxidationDeformationVelocityField(
@@ -199,7 +210,14 @@ public:
     buildNodes();
     solveVelocity();
     solveMechanics();
-    averageBoundaryExpansionVelocityComputed = false;
+    avgExpansionSpeedComputed = false;
+
+    maxVelocity_.fill(T(0));
+    for (const auto &node : nodes) {
+      for (unsigned d = 0; d < D; ++d)
+        maxVelocity_[d] = std::max(maxVelocity_[d], std::abs(node.velocity[d]));
+    }
+
     solved = true;
   }
 
@@ -213,21 +231,13 @@ public:
         material != deformationParameters.material)
       return {0., 0., 0.};
 
-    return scaled(getVelocity(coordinate), deformationParameters.vectorVelocityScale);
+    return getVelocity(coordinate);
   }
 
   T getScalarVelocity(const Vec3D<T> &coordinate, int material,
                       const Vec3D<T> &normalVector,
                       unsigned long /*pointId*/) final {
-    if (!solved)
-      apply();
-
-    if (deformationParameters.material >= 0 &&
-        material != deformationParameters.material)
-      return 0.;
-
-    return deformationParameters.freeSurfaceVelocityScale *
-           localFreeSurfaceExpansionSpeed(coordinate, normalVector);
+    return 0.;
   }
 
   T getDissipationAlpha(int direction, int material,
@@ -235,126 +245,90 @@ public:
     if (deformationParameters.material >= 0 &&
         material != deformationParameters.material)
       return 0.;
-
-    T alpha = 0.;
-    for (const auto &node : nodes)
-      alpha = std::max(alpha, std::abs(node.velocity[direction]));
-    return alpha;
+    return maxVelocity_[direction];
   }
 
-  Vec3D<T> getVelocity(const Vec3D<T> &coordinate) const {
+private:
+  template <class ValueType, class NodeAccessor>
+  ValueType getField(const IndexType &index, ValueType fallback,
+                     NodeAccessor accessor) const {
+    const auto found = nodeLookup.find(linearIndex(index));
+    if (found != nodeLookup.end())
+      return accessor(nodes[found->second]);
+
+    const auto nearby = findNearbyNode(index);
+    if (nearby == std::numeric_limits<std::size_t>::max())
+      return fallback;
+    return accessor(nodes[nearby]);
+  }
+
+  template <class ValueType, class NodeAccessor>
+  ValueType getField(const Vec3D<T> &coordinate, ValueType fallback,
+                     NodeAccessor accessor) const {
     IndexType index;
     for (unsigned i = 0; i < D; ++i)
       index[i] = std::llround(coordinate[i] / gridDelta);
-    return getVelocity(index);
+    return getField(index, fallback, accessor);
+  }
+
+public:
+  Vec3D<T> getVelocity(const Vec3D<T> &coordinate) const {
+    return getField(coordinate, Vec3D<T>{0., 0., 0.}, [](const Node &n) { return n.velocity; });
   }
 
   Vec3D<T> getVelocity(const IndexType &index) const {
-    auto it = nodeLookup.find(linearIndex(index));
-    if (it == nodeLookup.end())
-      return getNearbyVelocity(index);
-    return nodes[it->second].velocity;
+    return getField(index, Vec3D<T>{0., 0., 0.}, [](const Node &n) { return n.velocity; });
   }
 
   T getPressure(const Vec3D<T> &coordinate) const {
-    IndexType index;
-    for (unsigned i = 0; i < D; ++i)
-      index[i] = std::llround(coordinate[i] / gridDelta);
-    return getPressure(index);
+    return getField(coordinate, T(0), [](const Node &n) { return n.pressure; });
   }
 
   T getPressure(const IndexType &index) const {
-    auto it = nodeLookup.find(linearIndex(index));
-    if (it == nodeLookup.end()) {
-      const auto nearby = findNearbyNode(index);
-      if (nearby == std::numeric_limits<std::size_t>::max())
-        return 0.;
-      return nodes[nearby].pressure;
-    }
-    return nodes[it->second].pressure;
+    return getField(index, T(0), [](const Node &n) { return n.pressure; });
   }
 
   T getStrainTrace(const Vec3D<T> &coordinate) const {
-    IndexType index;
-    for (unsigned i = 0; i < D; ++i)
-      index[i] = std::llround(coordinate[i] / gridDelta);
-    return getStrainTrace(index);
+    return getField(coordinate, T(0), [](const Node &n) { return n.strainTrace; });
   }
 
   T getStrainTrace(const IndexType &index) const {
-    auto it = nodeLookup.find(linearIndex(index));
-    if (it == nodeLookup.end()) {
-      const auto nearby = findNearbyNode(index);
-      if (nearby == std::numeric_limits<std::size_t>::max())
-        return 0.;
-      return nodes[nearby].strainTrace;
-    }
-    return nodes[it->second].strainTrace;
+    return getField(index, T(0), [](const Node &n) { return n.strainTrace; });
   }
 
   std::array<T, 9> getStrainRateTensor(const Vec3D<T> &coordinate) const {
-    IndexType index;
-    for (unsigned i = 0; i < D; ++i)
-      index[i] = std::llround(coordinate[i] / gridDelta);
-    return getStrainRateTensor(index);
+    return getField(coordinate, std::array<T, 9>{}, [](const Node &n) { return n.strainRateTensor; });
   }
 
   std::array<T, 9> getStrainRateTensor(const IndexType &index) const {
-    auto it = nodeLookup.find(linearIndex(index));
-    if (it == nodeLookup.end()) {
-      const auto nearby = findNearbyNode(index);
-      if (nearby == std::numeric_limits<std::size_t>::max())
-        return {};
-      return nodes[nearby].strainRateTensor;
-    }
-    return nodes[it->second].strainRateTensor;
+    return getField(index, std::array<T, 9>{}, [](const Node &n) { return n.strainRateTensor; });
   }
 
   std::array<T, 9> getStressTensor(const Vec3D<T> &coordinate) const {
-    IndexType index;
-    for (unsigned i = 0; i < D; ++i)
-      index[i] = std::llround(coordinate[i] / gridDelta);
-    return getStressTensor(index);
+    return getField(coordinate, std::array<T, 9>{}, [](const Node &n) { return n.stressTensor; });
   }
 
   std::array<T, 9> getStressTensor(const IndexType &index) const {
-    auto it = nodeLookup.find(linearIndex(index));
-    if (it == nodeLookup.end()) {
-      const auto nearby = findNearbyNode(index);
-      if (nearby == std::numeric_limits<std::size_t>::max())
-        return {};
-      return nodes[nearby].stressTensor;
-    }
-    return nodes[it->second].stressTensor;
+    return getField(index, std::array<T, 9>{}, [](const Node &n) { return n.stressTensor; });
   }
 
   T getVonMisesStress(const Vec3D<T> &coordinate) const {
-    IndexType index;
-    for (unsigned i = 0; i < D; ++i)
-      index[i] = std::llround(coordinate[i] / gridDelta);
-    return getVonMisesStress(index);
+    return getField(coordinate, T(0), [](const Node &n) { return n.vonMisesStress; });
   }
 
   T getVonMisesStress(const IndexType &index) const {
-    auto it = nodeLookup.find(linearIndex(index));
-    if (it == nodeLookup.end()) {
-      const auto nearby = findNearbyNode(index);
-      if (nearby == std::numeric_limits<std::size_t>::max())
-        return 0.;
-      return nodes[nearby].vonMisesStress;
-    }
-    return nodes[it->second].vonMisesStress;
+    return getField(index, T(0), [](const Node &n) { return n.vonMisesStress; });
   }
 
   unsigned getIterations() const { return iterations; }
   T getResidual() const { return residual; }
   std::size_t getNumberOfSolutionNodes() const { return nodes.size(); }
-  T getAverageBoundaryExpansionVelocity() {
-    if (!averageBoundaryExpansionVelocityComputed) {
-      computeAverageBoundaryExpansionVelocity();
-      averageBoundaryExpansionVelocityComputed = true;
+  T avgExpansionSpeed() {
+    if (!avgExpansionSpeedComputed) {
+      computeAvgExpansionSpeed();
+      avgExpansionSpeedComputed = true;
     }
-    return averageBoundaryExpansionVelocity;
+    return avgExpansionSpeed_;
   }
   template <class Callback> void forEachSolutionNode(Callback callback) const {
     for (const auto &node : nodes)
@@ -363,49 +337,11 @@ public:
 
 private:
   void initialiseGrid() {
-    auto &reactionGrid = reactionInterface->getGrid();
-    auto &ambientGrid = ambientInterface->getGrid();
-    gridDelta = reactionGrid.getGridDelta();
-
-    if (std::abs(gridDelta - ambientGrid.getGridDelta()) >
-            std::numeric_limits<T>::epsilon() ||
-        (maskInterface != nullptr &&
-         std::abs(gridDelta - maskInterface->getGrid().getGridDelta()) >
-             std::numeric_limits<T>::epsilon())) {
-      Logger::getInstance()
-          .addError("OxidationDeformationVelocityField: Interface grid deltas "
-                    "must match.")
-          .print();
-      return;
-    }
-
-    minIndex = reactionGrid.getMinGridPoint();
-    maxIndex = reactionGrid.getMaxGridPoint();
-    std::size_t numGridPoints = 1;
-    for (unsigned i = 0; i < D; ++i) {
-      minIndex[i] = std::max(minIndex[i], ambientGrid.getMinGridPoint(i));
-      maxIndex[i] = std::min(maxIndex[i], ambientGrid.getMaxGridPoint(i));
-      if (maskInterface != nullptr) {
-        minIndex[i] =
-            std::max(minIndex[i], maskInterface->getGrid().getMinGridPoint(i));
-        maxIndex[i] =
-            std::min(maxIndex[i], maskInterface->getGrid().getMaxGridPoint(i));
-      }
-      if (useRequestedBounds) {
-        minIndex[i] = std::max(minIndex[i], requestedMinIndex[i]);
-        maxIndex[i] = std::min(maxIndex[i], requestedMaxIndex[i]);
-      }
-      extents[i] = static_cast<std::size_t>(maxIndex[i] - minIndex[i] + 1);
-      numGridPoints *= extents[i];
-      strides[i] = (i == 0) ? 1 : strides[i - 1] * extents[i - 1];
-    }
-
-    if (numGridPoints > deformationParameters.maxGridPoints) {
-      Logger::getInstance()
-          .addError("OxidationDeformationVelocityField: Cartesian solve "
-                    "region exceeds maxGridPoints.")
-          .print();
-    }
+    initializeGridFromInterfaces(reactionInterface, ambientInterface,
+                                 maskInterface, useRequestedBounds,
+                                 requestedMinIndex, requestedMaxIndex,
+                                 deformationParameters.maxGridPoints,
+                                 "OxidationDeformationVelocityField");
   }
 
   void buildNodes() {
@@ -457,14 +393,14 @@ private:
             IndexType neighbor = node.index;
             neighbor[direction] += offset;
             if (!inBounds(neighbor)) {
-              addTo(sum, previous[nodeId]);
+              detail::vecAddTo(sum, previous[nodeId]);
               ++count;
               continue;
             }
 
             const auto foundNeighbor = nodeLookup.find(linearIndex(neighbor));
             if (foundNeighbor != nodeLookup.end()) {
-              addTo(sum, previous[foundNeighbor->second]);
+              detail::vecAddTo(sum, previous[foundNeighbor->second]);
               ++count;
               continue;
             }
@@ -473,23 +409,23 @@ private:
                 classifyBoundary(reactionIt, ambientIt, maskIt, node.index,
                                  neighbor);
             if (boundary == Boundary::REACTION) {
-              addTo(sum, reactionBoundaryVelocity(node.index));
+              detail::vecAddTo(sum, reactionBoundaryVelocity(node.index));
             } else if (boundary == Boundary::MASK) {
-              addTo(sum, maskVelocityBoundary(previous[nodeId]));
+              detail::vecAddTo(sum, maskVelocityBoundary(previous[nodeId]));
             } else {
-              addTo(sum, previous[nodeId]);
+              detail::vecAddTo(sum, previous[nodeId]);
             }
             ++count;
           }
         }
 
         const Vec3D<T> updated =
-            (count == 0) ? previous[nodeId] : scaled(sum, T(1) / count);
+            (count == 0) ? previous[nodeId] : detail::vecScaled(sum, T(1) / count);
         next[nodeId] =
-            add(scaled(updated, deformationParameters.relaxation),
-                scaled(previous[nodeId],
-                       T(1) - deformationParameters.relaxation));
-        Vec3D<T> delta = subtract(next[nodeId], previous[nodeId]);
+            detail::vecAdd(detail::vecScaled(updated, deformationParameters.relaxation),
+                           detail::vecScaled(previous[nodeId],
+                                             T(1) - deformationParameters.relaxation));
+        Vec3D<T> delta = detail::vecSubtract(next[nodeId], previous[nodeId]);
         for (unsigned i = 0; i < D; ++i)
           residual = std::max(residual, std::abs(delta[i]));
       }
@@ -628,8 +564,8 @@ private:
               T(2) / (plus.distance * (plus.distance + minus.distance));
           const T minusCoefficient =
               T(2) / (minus.distance * (plus.distance + minus.distance));
-          addTo(sum, scaled(plus.value, plusCoefficient));
-          addTo(sum, scaled(minus.value, minusCoefficient));
+          detail::vecAddTo(sum, detail::vecScaled(plus.value, plusCoefficient));
+          detail::vecAddTo(sum, detail::vecScaled(minus.value, minusCoefficient));
           centerCoefficient += plusCoefficient + minusCoefficient;
         }
 
@@ -647,11 +583,11 @@ private:
         }
 
         next[nodeId] =
-            add(scaled(updated, deformationParameters.relaxation),
-                scaled(previous[nodeId],
-                       T(1) - deformationParameters.relaxation));
+            detail::vecAdd(detail::vecScaled(updated, deformationParameters.relaxation),
+                           detail::vecScaled(previous[nodeId],
+                                             T(1) - deformationParameters.relaxation));
 
-        const Vec3D<T> delta = subtract(next[nodeId], previous[nodeId]);
+        const Vec3D<T> delta = detail::vecSubtract(next[nodeId], previous[nodeId]);
         for (unsigned component = 0; component < D; ++component)
           velocityResidual =
               std::max(velocityResidual, std::abs(delta[component]));
@@ -929,11 +865,11 @@ private:
   }
 
   Vec3D<T> maskVelocityBoundary(const Vec3D<T> &interiorVelocity) const {
-    return scaled(interiorVelocity, deformationParameters.maskVelocityScale);
+    return detail::vecScaled(interiorVelocity, deformationParameters.maskVelocityScale);
   }
 
-  void computeAverageBoundaryExpansionVelocity() {
-    averageBoundaryExpansionVelocity = 0.;
+  void computeAvgExpansionSpeed() {
+    avgExpansionSpeed_ = 0.;
     if (nodes.empty())
       return;
 
@@ -968,7 +904,7 @@ private:
         Vec3D<T> coordinate{0., 0., 0.};
         for (unsigned i = 0; i < D; ++i)
           coordinate[i] = node.index[i] * gridDelta;
-        averageBoundaryExpansionVelocity +=
+        avgExpansionSpeed_ +=
             (oxidationParameters.expansionCoefficient - T(1)) *
             std::abs(diffusionField->getScalarVelocity(coordinate, 0,
                                                        {0., 0., 0.}, 0));
@@ -977,7 +913,7 @@ private:
     }
 
     if (count > 0)
-      averageBoundaryExpansionVelocity /= static_cast<T>(count);
+      avgExpansionSpeed_ /= static_cast<T>(count);
   }
 
   Vec3D<T> reactionBoundaryVelocity(const IndexType &index) const {
@@ -986,7 +922,7 @@ private:
       coordinate[i] = index[i] * gridDelta;
 
     const T expansionVelocity = localExpansionSpeed(coordinate);
-    return scaled(reactionNormal(index), reactionSign * expansionVelocity);
+    return detail::vecScaled(reactionNormal(index), reactionSign * expansionVelocity);
   }
 
   T divergenceAt(const IndexType &index) const {
@@ -1059,93 +995,6 @@ private:
     return (oxidationParameters.expansionCoefficient - T(1)) *
            std::abs(diffusionField->getScalarVelocity(coordinate, 0,
                                                       {0., 0., 0.}, 0));
-  }
-
-  T localFreeSurfaceExpansionSpeed(const Vec3D<T> &coordinate,
-                                   const Vec3D<T> &normalVector) const {
-    ConstSparseIterator reactionIt(reactionInterface->getDomain());
-    const auto reactionCoordinate =
-        projectToReactionInterface(reactionIt, coordinate, normalVector);
-
-    Vec3D<T> sampleCoordinate = reactionCoordinate;
-    Vec3D<T> oxideDirection = subtract(coordinate, reactionCoordinate);
-    T directionNorm = 0.;
-    for (unsigned i = 0; i < D; ++i)
-      directionNorm += oxideDirection[i] * oxideDirection[i];
-    directionNorm = std::sqrt(directionNorm);
-    if (directionNorm > std::numeric_limits<T>::epsilon()) {
-      for (unsigned i = 0; i < D; ++i)
-        sampleCoordinate[i] += oxideDirection[i] / directionNorm * gridDelta;
-    }
-
-    return (oxidationParameters.expansionCoefficient - T(1)) *
-           std::abs(diffusionField->getScalarVelocity(sampleCoordinate, 0,
-                                                      {0., 0., 0.}, 0));
-  }
-
-  Vec3D<T> projectToReactionInterface(ConstSparseIterator &reactionIt,
-                                      const Vec3D<T> &coordinate,
-                                      const Vec3D<T> &normalVector) const {
-    Vec3D<T> normal = normalVector;
-    T normalNorm = 0.;
-    for (unsigned i = 0; i < D; ++i)
-      normalNorm += normal[i] * normal[i];
-    normalNorm = std::sqrt(normalNorm);
-    if (normalNorm <= std::numeric_limits<T>::epsilon())
-      return coordinate;
-    for (unsigned i = 0; i < D; ++i)
-      normal[i] /= normalNorm;
-
-    const T originPhi = valueAtCoordinate(reactionIt, coordinate);
-    T bestDistance = std::numeric_limits<T>::max();
-    Vec3D<T> bestCoordinate = coordinate;
-
-    for (T sign : {T(-1), T(1)}) {
-      Vec3D<T> previousCoordinate = coordinate;
-      T previousPhi = originPhi;
-
-      for (unsigned step = 1; step <= 200; ++step) {
-        Vec3D<T> currentCoordinate = coordinate;
-        for (unsigned i = 0; i < D; ++i)
-          currentCoordinate[i] += sign * normal[i] * gridDelta *
-                                  static_cast<T>(step);
-
-        const T currentPhi = valueAtCoordinate(reactionIt, currentCoordinate);
-        if (crosses(previousPhi, currentPhi)) {
-          const T denominator = std::abs(previousPhi) + std::abs(currentPhi);
-          const T fraction =
-              (denominator <= std::numeric_limits<T>::epsilon())
-                  ? T(0)
-                  : std::abs(previousPhi) / denominator;
-          Vec3D<T> crossingCoordinate = previousCoordinate;
-          for (unsigned i = 0; i < D; ++i) {
-            crossingCoordinate[i] +=
-                (currentCoordinate[i] - previousCoordinate[i]) * fraction;
-          }
-
-          const T distance = gridDelta * static_cast<T>(step - 1) +
-                             gridDelta * fraction;
-          if (distance < bestDistance) {
-            bestDistance = distance;
-            bestCoordinate = crossingCoordinate;
-          }
-          break;
-        }
-
-        previousCoordinate = currentCoordinate;
-        previousPhi = currentPhi;
-      }
-    }
-
-    return bestCoordinate;
-  }
-
-  T valueAtCoordinate(ConstSparseIterator &reactionIt,
-                      const Vec3D<T> &coordinate) const {
-    IndexType index;
-    for (unsigned i = 0; i < D; ++i)
-      index[i] = std::llround(coordinate[i] / gridDelta);
-    return valueAt(reactionIt, index);
   }
 
   Vec3D<T> reactionNormal(const IndexType &index) const {
@@ -1237,7 +1086,7 @@ private:
         node.stressTensor[tensorIndex(i, i)] -= node.pressure;
 
       node.vonMisesStress = vonMisesFromDeviatoric(deviatoricStress);
-      nextHistory[nodeKey(node.index)] = deviatoricStress;
+      nextHistory[detail::gridIndexHash<D>(node.index)] = deviatoricStress;
     }
 
     deviatoricStressHistory.swap(nextHistory);
@@ -1300,7 +1149,8 @@ private:
   }
 
   std::array<T, 9> previousDeviatoricStress(const IndexType &index) const {
-    const auto found = deviatoricStressHistory.find(nodeKey(index));
+    const auto found =
+        deviatoricStressHistory.find(detail::gridIndexHash<D>(index));
     if (found == deviatoricStressHistory.end())
       return {};
     return found->second;
@@ -1432,111 +1282,19 @@ private:
     return valueAt(maskIt, index);
   }
 
-  bool crosses(T a, T b) const {
-    return (a <= 0. && b >= 0.) || (a >= 0. && b <= 0.);
-  }
-
   T crossingDistance(T insidePhi, T outsidePhi) const {
-    const T denom = std::abs(insidePhi) + std::abs(outsidePhi);
-    if (denom <= std::numeric_limits<T>::epsilon())
-      return gridDelta;
-    return std::max(deformationParameters.minMechanicsBoundaryDistance * gridDelta,
-                    gridDelta * std::abs(insidePhi) / denom);
+    return detail::levelSetCrossingDistance(
+        insidePhi, outsidePhi,
+        deformationParameters.minMechanicsBoundaryDistance, gridDelta);
   }
 
-  T valueAt(ConstSparseIterator &it, const IndexType &index) const {
-    it.goToIndices(index);
-    return it.getValue();
-  }
+  // Vec3D<T> getNearbyVelocity(const IndexType &index) const {
+  //   const auto nearby = findNearbyNode(index);
+  //   if (nearby == std::numeric_limits<std::size_t>::max())
+  //     return {0., 0., 0.};
+  //   return nodes[nearby].velocity;
+  // }
 
-  bool inBounds(const IndexType &index) const {
-    for (unsigned i = 0; i < D; ++i) {
-      if (index[i] < minIndex[i] || index[i] > maxIndex[i])
-        return false;
-    }
-    return true;
-  }
-
-  std::size_t linearIndex(const IndexType &index) const {
-    if (!inBounds(index))
-      return std::numeric_limits<std::size_t>::max();
-
-    std::size_t result = 0;
-    for (unsigned i = 0; i < D; ++i)
-      result += static_cast<std::size_t>(index[i] - minIndex[i]) * strides[i];
-    return result;
-  }
-
-  bool increment(IndexType &index) const {
-    for (unsigned i = 0; i < D; ++i) {
-      if (index[i] < maxIndex[i]) {
-        ++index[i];
-        return true;
-      }
-      index[i] = minIndex[i];
-    }
-    return false;
-  }
-
-  Vec3D<T> getNearbyVelocity(const IndexType &index) const {
-    const auto nearby = findNearbyNode(index);
-    if (nearby == std::numeric_limits<std::size_t>::max())
-      return {0., 0., 0.};
-    return nodes[nearby].velocity;
-  }
-
-  std::size_t findNearbyNode(const IndexType &index) const {
-    // Search with expanding radius so that RK2 Stage 2 can find oxide nodes
-    // even after the surface has advanced several grid cells beyond the band.
-    for (int radius = 1; radius <= 4; ++radius) {
-      T bestDistance2 = std::numeric_limits<T>::max();
-      std::size_t bestNode = std::numeric_limits<std::size_t>::max();
-
-      IndexType offset{};
-      offset.fill(-radius);
-      while (true) {
-        IndexType candidate = index;
-        T distance2 = 0.;
-        for (unsigned i = 0; i < D; ++i) {
-          candidate[i] += offset[i];
-          distance2 += static_cast<T>(offset[i] * offset[i]);
-        }
-
-        if (distance2 > 0 && inBounds(candidate)) {
-          const auto found = nodeLookup.find(linearIndex(candidate));
-          if (found != nodeLookup.end() && distance2 < bestDistance2) {
-            bestDistance2 = distance2;
-            bestNode = found->second;
-          }
-        }
-
-        unsigned dim = 0;
-        for (; dim < D; ++dim) {
-          if (offset[dim] < radius) {
-            ++offset[dim];
-            break;
-          }
-          offset[dim] = -radius;
-        }
-        if (dim == D)
-          break;
-      }
-
-      if (bestNode != std::numeric_limits<std::size_t>::max())
-        return bestNode;
-    }
-
-    return std::numeric_limits<std::size_t>::max();
-  }
-
-  std::size_t nodeKey(const IndexType &index) const {
-    return detail::gridIndexHash<D>(index);
-  }
-
-  static void addTo(Vec3D<T> &t, const Vec3D<T> &s) { detail::vecAddTo(t, s); }
-  static Vec3D<T> scaled(const Vec3D<T> &v, T f) { return detail::vecScaled(v, f); }
-  static Vec3D<T> add(const Vec3D<T> &a, const Vec3D<T> &b) { return detail::vecAdd(a, b); }
-  static Vec3D<T> subtract(const Vec3D<T> &a, const Vec3D<T> &b) { return detail::vecSubtract(a, b); }
 
   static T firstDerivative(T minusValue, T centerValue, T plusValue,
                            T minusDistance, T plusDistance) {

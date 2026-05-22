@@ -72,8 +72,6 @@ int main() {
   VC_TEST_ASSERT(velocity > 0.)
 
   ls::OxidationDeformationParameters<double> deformationParameters;
-  deformationParameters.freeSurfaceVelocityScale = 1.;
-  deformationParameters.maxIterations = 20000;
   deformationParameters.pressureIterations = 500;
   deformationParameters.stokesIterations = 100;
   deformationParameters.tolerance = 1e-8;
@@ -91,7 +89,7 @@ int main() {
 
   const double siliconSpeed = std::abs(velocity);
   const double ambientSpeed =
-      std::abs(deformation->getScalarVelocity(nearAmbient, 0, {0., 1., 0.}, 0));
+      std::abs(deformation->getVectorVelocity(nearAmbient, 0, {0., 1., 0.}, 0)[1]);
   const double oxidePressure = deformation->getPressure(nearReaction);
   const auto stressTensor = deformation->getStressTensor(nearReaction);
   const double vonMisesStress = deformation->getVonMisesStress(nearReaction);
