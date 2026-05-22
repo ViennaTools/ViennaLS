@@ -62,7 +62,10 @@ LevelSet makeStepLevelSet(const double *bounds,
 
 void writeSurface(LevelSet levelSet, const std::string &fileName) {
   auto mesh = ls::Mesh<NumericType>::New();
-  ls::ToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
+  auto surfaceMesh = ls::ToSurfaceMesh<NumericType, D>(levelSet, mesh);
+  surfaceMesh.setSharpCorners(true);
+  surfaceMesh.apply();
+//   ls::ToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
   ls::VTKWriter<NumericType>(mesh, fileName).apply();
 }
 
@@ -160,11 +163,12 @@ int main() {
   deformationParams.stokesIterations = 100;
   deformationParams.pressureTolerance = 1e-6;
   deformationParams.stokesTolerance = 1e-7;
-  deformationParams.freeSurfaceVelocityScale = 1.0;
-  // Advect the free oxide surface by the kinematic Deal-Grove split only.
-  // The harmonic vector field is still available for pressure/strain
-  // diagnostics, but adding it here would double-count the free-surface motion.
-  deformationParams.vectorVelocityScale = 0.0;
+  // Advect the free oxide surface by the full Stokes vector field. The
+  // freeSurfaceVelocityScale kinematic-split path is disabled here; both
+  // approaches are physically consistent but the Stokes path captures lateral
+  // flow and shear that the scalar kinematic split misses.
+  deformationParams.freeSurfaceVelocityScale = 0.0;
+  deformationParams.vectorVelocityScale = 1.0;
   deformationParams.maxIterations = 10000;
   deformationParams.tolerance = 1e-7;
 

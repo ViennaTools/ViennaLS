@@ -1172,6 +1172,12 @@ private:
     Vec3D<T> normal{0., 0., 0.};
     T norm = 0.;
 
+    // Clamp HRLE far-field sentinels (±DBL_MAX) to ±1 before differencing to
+    // prevent DBL_MAX² overflow that silently returns the zero vector.
+    auto clampPhi = [](T v) -> T {
+      return v > T(1) ? T(1) : (v < T(-1) ? T(-1) : v);
+    };
+
     for (unsigned i = 0; i < D; ++i) {
       IndexType pos = index;
       IndexType neg = index;
@@ -1181,7 +1187,8 @@ private:
         pos = index;
       if (!inBounds(neg))
         neg = index;
-      normal[i] = valueAt(levelSetIt, pos) - valueAt(levelSetIt, neg);
+      normal[i] = clampPhi(valueAt(levelSetIt, pos)) -
+                  clampPhi(valueAt(levelSetIt, neg));
       norm += normal[i] * normal[i];
     }
 
@@ -1479,40 +1486,47 @@ private:
   }
 
   std::size_t findNearbyNode(const IndexType &index) const {
-    T bestDistance2 = std::numeric_limits<T>::max();
-    std::size_t bestNode = std::numeric_limits<std::size_t>::max();
+    // Search with expanding radius so that RK2 Stage 2 can find oxide nodes
+    // even after the surface has advanced several grid cells beyond the band.
+    for (int radius = 1; radius <= 4; ++radius) {
+      T bestDistance2 = std::numeric_limits<T>::max();
+      std::size_t bestNode = std::numeric_limits<std::size_t>::max();
 
-    IndexType offset{};
-    offset.fill(-1);
-    while (true) {
-      IndexType candidate = index;
-      T distance2 = 0.;
-      for (unsigned i = 0; i < D; ++i) {
-        candidate[i] += offset[i];
-        distance2 += static_cast<T>(offset[i] * offset[i]);
-      }
-
-      if (distance2 > 0 && inBounds(candidate)) {
-        const auto found = nodeLookup.find(linearIndex(candidate));
-        if (found != nodeLookup.end() && distance2 < bestDistance2) {
-          bestDistance2 = distance2;
-          bestNode = found->second;
+      IndexType offset{};
+      offset.fill(-radius);
+      while (true) {
+        IndexType candidate = index;
+        T distance2 = 0.;
+        for (unsigned i = 0; i < D; ++i) {
+          candidate[i] += offset[i];
+          distance2 += static_cast<T>(offset[i] * offset[i]);
         }
-      }
 
-      unsigned dim = 0;
-      for (; dim < D; ++dim) {
-        if (offset[dim] < 1) {
-          ++offset[dim];
+        if (distance2 > 0 && inBounds(candidate)) {
+          const auto found = nodeLookup.find(linearIndex(candidate));
+          if (found != nodeLookup.end() && distance2 < bestDistance2) {
+            bestDistance2 = distance2;
+            bestNode = found->second;
+          }
+        }
+
+        unsigned dim = 0;
+        for (; dim < D; ++dim) {
+          if (offset[dim] < radius) {
+            ++offset[dim];
+            break;
+          }
+          offset[dim] = -radius;
+        }
+        if (dim == D)
           break;
-        }
-        offset[dim] = -1;
       }
-      if (dim == D)
-        break;
+
+      if (bestNode != std::numeric_limits<std::size_t>::max())
+        return bestNode;
     }
 
-    return bestNode;
+    return std::numeric_limits<std::size_t>::max();
   }
 
   std::size_t nodeKey(const IndexType &index) const {

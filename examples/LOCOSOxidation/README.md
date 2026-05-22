@@ -287,7 +287,10 @@ isosurface.
 | `oxidantMoleculeDensity` | 1 | Normalized |
 | `expansionCoefficient` | 2.27 | SiO₂/Si volume ratio |
 | `velocitySign` | −1 | Si consumed |
-| `stressCouplingCoefficient` | 1×10⁻¹⁵ Pa⁻¹ | Weak Arrhenius pressure correction |
+| `stressCouplingCoefficient` | 1×10⁻¹⁵ Pa⁻¹ | Weak Arrhenius pressure correction on k |
+| `diffusionStressCouplingCoefficient` | 0 | Stress-dependent D (0 = off) |
+| `reactionRateRatio111` | 1 | (111)/(100) rate ratio (1 = isotropic) |
+| `crystalAxis` | {0,1,0} | (100) wafer normal direction |
 | `maskTransferCoefficient` | 0 | Nitride is a perfect oxidant block |
 | `maskConcentration` | 0 | Zero oxidant inside nitride |
 
@@ -304,8 +307,8 @@ isosurface.
 | `maskVelocityScale` | 0.15 | Partial constraint at mask contact |
 | `maskNormalStiffness` | 2×10⁹ Pa/μm | Elastic resistance at mask base |
 | `pressureGradientScale` | 0.001 | Scales pressure gradient in Stokes RHS |
-| `freeSurfaceVelocityScale` | 1 | Ambient moves by local projection in open region |
-| `vectorVelocityScale` | 0 | Deformation vector not used for advection |
+| `freeSurfaceVelocityScale` | 0 | Kinematic local-projection disabled |
+| `vectorVelocityScale` | 1 | Ambient advected by full Stokes vector field |
 | `mechanicsIterations` | 2 | Pressure/velocity outer iterations |
 | `pressureIterations` | 500 | Inner pressure Jacobi iterations |
 | `stokesIterations` | 100 | Inner Stokes Jacobi iterations |

@@ -73,10 +73,24 @@ template <class T> struct OxidationParameters {
   T oxidantMoleculeDensity = 1.;
   T expansionCoefficient = 1.;
   T velocitySign = 1.;
+
+  // Stress coupling for reaction rate k_eff = k * clamp(exp(-alpha*(p-p_ref)), ...)
   T stressCouplingCoefficient = 0.;
   T referencePressure = 0.;
   T minStressRateFactor = 0.01;
   T maxStressRateFactor = 100.;
+
+  // Stress coupling for diffusion coefficient D_eff = D * clamp(exp(-beta*(p-p_ref)), ...)
+  T diffusionStressCouplingCoefficient = 0.;
+  T minDiffusionStressFactor = 0.01;
+  T maxDiffusionStressFactor = 100.;
+
+  // Crystal orientation factor on reaction rate.
+  // k(n) = k * [1 + (reactionRateRatio111 - 1) * (1 - (n . crystalAxis)^2)]
+  // reactionRateRatio111 = 1 disables the correction (isotropic).
+  T reactionRateRatio111 = 1.;
+  Vec3D<T> crystalAxis = {0., 1., 0.};
+
   T maskTransferCoefficient = 0.;
   T maskConcentration = 0.;
   T minBoundaryDistance = 1e-6;
@@ -112,6 +126,7 @@ class OxidationDiffusionVelocityField final : public VelocityField<T> {
   struct Node {
     IndexType index;
     T concentration = 0.;
+    Vec3D<T> siNormal = {0., 0., 0.}; // unit outward normal of Si surface (into oxide)
   };
 
   struct StencilSide {
@@ -362,7 +377,10 @@ private:
           !isInsideMask(maskIt, index)) {
         const std::size_t id = nodes.size();
         nodeLookup.emplace(linearIndex(index), id);
-        nodes.push_back({index, parameters.equilibriumConcentration});
+        Node newNode{index, parameters.equilibriumConcentration};
+        if (parameters.reactionRateRatio111 != T(1))
+          newNode.siNormal = computeSiNormal(index, reactionIt);
+        nodes.push_back(newNode);
       }
 
       if (!increment(index))
@@ -390,13 +408,14 @@ private:
         T rightHandSide = 0.;
         T diagonal = 0.;
 
+        const T D_eff = getEffectiveDiffusionCoefficient(node.index);
         for (unsigned direction = 0; direction < D; ++direction) {
           const auto negativeSide = makeStencilSide(
-              reactionIt, ambientIt, maskIt, previous, node.index, direction, -1);
+              reactionIt, ambientIt, maskIt, previous, node.index, direction, -1, D_eff);
           const auto positiveSide = makeStencilSide(
-              reactionIt, ambientIt, maskIt, previous, node.index, direction, 1);
+              reactionIt, ambientIt, maskIt, previous, node.index, direction, 1, D_eff);
           addAxisContribution(rightHandSide, diagonal, negativeSide,
-                              positiveSide);
+                              positiveSide, D_eff);
         }
 
         const T updated =
@@ -422,7 +441,7 @@ private:
                               ConstSparseIterator &maskIt,
                               const std::vector<T> &previous,
                               const IndexType &nodeIndex, unsigned direction,
-                              int offset) const {
+                              int offset, T diffusion) const {
     IndexType neighbor = nodeIndex;
     neighbor[direction] += offset;
 
@@ -436,40 +455,41 @@ private:
     const auto boundary =
         classifyBoundary(reactionIt, ambientIt, maskIt, nodeIndex, neighbor);
     if (boundary.first == Boundary::REACTION)
-      return reactionBoundarySide(nodeIndex, boundary.second);
+      return reactionBoundarySide(nodeIndex, boundary.second, diffusion);
     if (boundary.first == Boundary::AMBIENT)
-      return ambientBoundarySide(boundary.second);
+      return ambientBoundarySide(boundary.second, diffusion);
     if (boundary.first == Boundary::MASK)
-      return maskBoundarySide(boundary.second);
+      return maskBoundarySide(boundary.second, diffusion);
     return zeroFluxSide();
   }
 
   void addAxisContribution(T &rightHandSide, T &diagonal,
                            const StencilSide &negativeSide,
-                           const StencilSide &positiveSide) const {
+                           const StencilSide &positiveSide, T diffusion) const {
     const T distanceSum = negativeSide.distance + positiveSide.distance;
     if (distanceSum <= std::numeric_limits<T>::epsilon())
       return;
 
-    addSideContribution(rightHandSide, diagonal, negativeSide, distanceSum);
-    addSideContribution(rightHandSide, diagonal, positiveSide, distanceSum);
+    addSideContribution(rightHandSide, diagonal, negativeSide, distanceSum, diffusion);
+    addSideContribution(rightHandSide, diagonal, positiveSide, distanceSum, diffusion);
   }
 
   void addSideContribution(T &rightHandSide, T &diagonal,
-                           const StencilSide &side, T distanceSum) const {
+                           const StencilSide &side, T distanceSum,
+                           T diffusion) const {
     if (side.distance <= std::numeric_limits<T>::epsilon())
       return;
 
-    const T coefficient =
-        T(2) * parameters.diffusionCoefficient / (side.distance * distanceSum);
+    const T coefficient = T(2) * diffusion / (side.distance * distanceSum);
     rightHandSide += coefficient * side.constant;
     diagonal += coefficient * (T(1) - side.nodeCoefficient);
   }
 
   StencilSide zeroFluxSide() const { return {gridDelta, 1., 0.}; }
 
-  StencilSide reactionBoundarySide(const IndexType &nodeIndex, T distance) const {
-    const T conductance = parameters.diffusionCoefficient / distance;
+  StencilSide reactionBoundarySide(const IndexType &nodeIndex, T distance,
+                                   T diffusion) const {
+    const T conductance = diffusion / distance;
     const T reactionRate = getEffectiveReactionRate(nodeIndex);
     const T denominator = conductance + reactionRate;
     if (denominator <= std::numeric_limits<T>::epsilon())
@@ -478,8 +498,8 @@ private:
     return {distance, conductance / denominator, 0.};
   }
 
-  StencilSide ambientBoundarySide(T distance) const {
-    const T conductance = parameters.diffusionCoefficient / distance;
+  StencilSide ambientBoundarySide(T distance, T diffusion) const {
+    const T conductance = diffusion / distance;
     const T denominator = conductance + parameters.transferCoefficient;
     if (denominator <= std::numeric_limits<T>::epsilon())
       return zeroFluxSide();
@@ -489,11 +509,11 @@ private:
                 parameters.equilibriumConcentration / denominator};
   }
 
-  StencilSide maskBoundarySide(T distance) const {
+  StencilSide maskBoundarySide(T distance, T diffusion) const {
     if (parameters.maskTransferCoefficient <= std::numeric_limits<T>::epsilon())
       return zeroFluxSide();
 
-    const T conductance = parameters.diffusionCoefficient / distance;
+    const T conductance = diffusion / distance;
     const T denominator = conductance + parameters.maskTransferCoefficient;
     if (denominator <= std::numeric_limits<T>::epsilon())
       return zeroFluxSide();
@@ -504,21 +524,80 @@ private:
   }
 
   T getEffectiveReactionRate(const IndexType &index) const {
-    if (parameters.stressCouplingCoefficient == T(0))
-      return parameters.reactionRate;
+    T rate = parameters.reactionRate;
+
+    if (parameters.stressCouplingCoefficient != T(0)) {
+      T pressure = parameters.referencePressure;
+      const auto foundPressure = pressureLookup.find(pressureKey(index));
+      if (foundPressure != pressureLookup.end())
+        pressure = foundPressure->second;
+      const T exponent = -parameters.stressCouplingCoefficient *
+                         (pressure - parameters.referencePressure);
+      rate *= std::min(parameters.maxStressRateFactor,
+                       std::max(parameters.minStressRateFactor,
+                                std::exp(exponent)));
+    }
+
+    if (parameters.reactionRateRatio111 != T(1)) {
+      const auto nodeIt = nodeLookup.find(linearIndex(index));
+      if (nodeIt != nodeLookup.end()) {
+        const auto &normal = nodes[nodeIt->second].siNormal;
+        T dot = T(0);
+        for (unsigned d = 0; d < D; ++d)
+          dot += normal[d] * parameters.crystalAxis[d];
+        rate *= T(1) + (parameters.reactionRateRatio111 - T(1)) * (T(1) - dot * dot);
+      }
+    }
+
+    return rate;
+  }
+
+  T getEffectiveDiffusionCoefficient(const IndexType &index) const {
+    if (parameters.diffusionStressCouplingCoefficient == T(0))
+      return parameters.diffusionCoefficient;
 
     T pressure = parameters.referencePressure;
-    const auto foundPressure = pressureLookup.find(pressureKey(index));
-    if (foundPressure != pressureLookup.end())
-      pressure = foundPressure->second;
+    const auto found = pressureLookup.find(pressureKey(index));
+    if (found != pressureLookup.end())
+      pressure = found->second;
 
-    const T exponent = -parameters.stressCouplingCoefficient *
+    const T exponent = -parameters.diffusionStressCouplingCoefficient *
                        (pressure - parameters.referencePressure);
-    const T unclampedFactor = std::exp(exponent);
-    const T factor = std::min(parameters.maxStressRateFactor,
-                              std::max(parameters.minStressRateFactor,
-                                       unclampedFactor));
-    return parameters.reactionRate * factor;
+    const T factor = std::min(parameters.maxDiffusionStressFactor,
+                              std::max(parameters.minDiffusionStressFactor,
+                                       std::exp(exponent)));
+    return parameters.diffusionCoefficient * factor;
+  }
+
+  Vec3D<T> computeSiNormal(const IndexType &index,
+                           ConstSparseIterator &reactionIt) const {
+    Vec3D<T> gradient{0., 0., 0.};
+    // Clamp HRLE far-field sentinels (±DBL_MAX) to ±1 before differencing to
+    // prevent DBL_MAX² overflow that silently returns the zero vector.
+    auto clampPhi = [](T v) -> T {
+      return v > T(1) ? T(1) : (v < T(-1) ? T(-1) : v);
+    };
+    for (unsigned d = 0; d < D; ++d) {
+      IndexType plus = index, minus = index;
+      plus[d] += 1;
+      minus[d] -= 1;
+      gradient[d] =
+          (clampPhi(valueAt(reactionIt, plus)) -
+           clampPhi(valueAt(reactionIt, minus))) /
+          (T(2) * gridDelta);
+    }
+    T len = T(0);
+    for (unsigned d = 0; d < D; ++d)
+      len += gradient[d] * gradient[d];
+    len = std::sqrt(len);
+    if (len > std::numeric_limits<T>::epsilon()) {
+      for (unsigned d = 0; d < D; ++d)
+        gradient[d] /= len;
+    } else {
+      gradient = Vec3D<T>{0., 0., 0.};
+      gradient[D - 1] = T(1);
+    }
+    return gradient;
   }
 
   std::size_t pressureKey(const IndexType &index) const {

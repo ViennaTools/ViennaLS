@@ -87,6 +87,36 @@ where:
 Pressure `p` at each grid node is supplied by the deformation solver and fed
 back between iterations by `OxidationCoupledModel`.
 
+### Stress-Coupled Diffusion Coefficient
+
+The same Arrhenius mechanism applies to the diffusivity (Massoud and Plummer, 1987):
+
+```
+D_eff = D · clamp(exp(-β · (p - p_ref)), f_min_D, f_max_D)
+```
+
+where `β = diffusionStressCouplingCoefficient`. When `β = 0` (default) the
+diffusivity is constant. A non-zero `β` models the effect of compressive oxide
+stress reducing the free volume available for oxidant diffusion.
+
+### Crystal-Orientation Reaction Rate
+
+Silicon oxidizes at different rates on (100), (110), and (111) faces because the
+surface atom density and bond configuration differ (Irene, 1978). The orientation
+factor is expressed in terms of the Si surface normal `n̂` and the wafer
+crystallographic axis `ê₁₀₀`:
+
+```
+k(n̂) = k_eff · [1 + (r₁₁₁ − 1) · (1 − (n̂ · ê₁₀₀)²)]
+```
+
+where `r₁₁₁ = reactionRateRatio111` is the (111)/(100) rate ratio (≈ 1.7 for
+dry oxidation at 1000 °C). The unit Si normal `n̂` is computed from the
+gradient of φ_Si at each oxide-side boundary node. With `r₁₁₁ = 1` (default)
+the factor is identically 1 for all faces (isotropic). The parameter
+`crystalAxis` sets `ê₁₀₀`; the default `{0, 1, 0}` corresponds to a (100)
+wafer with the surface normal along the simulation y-axis.
+
 ### Oxide Deformation
 
 The growing oxide is treated as a viscous material in the quasi-static limit.
@@ -293,11 +323,12 @@ v_Si = velocitySign · k_eff · C / (N · γ)
 - `getScalarVelocity = freeSurfaceVelocityScale · v_local` (local projection)
 - `getVectorVelocity = vectorVelocityScale · V(x)` (deformation vector field)
 
-In this example `vectorVelocityScale = 0` and `freeSurfaceVelocityScale = 1`,
-so the ambient interface is moved only by the scalar local-projection speed,
-not the vector field. Setting `vectorVelocityScale = 1` and
-`freeSurfaceVelocityScale = 0` would instead advect the ambient interface by
-the solved Stokes vector field directly.
+In this example `vectorVelocityScale = 1` and `freeSurfaceVelocityScale = 0`,
+so the ambient interface is advected by the full Stokes vector field. This
+captures lateral flow and shear effects that the scalar local-projection
+kinematic split misses — in particular, the surface at step corners experiences
+a net horizontal displacement component from the Stokes flow that would be
+zero under the kinematic split.
 
 ## Geometry
 
@@ -325,9 +356,12 @@ Bounds:   {-100, -40} to {100, 80} grid indices
 | `oxidantMoleculeDensity` | 1 | Normalized |
 | `expansionCoefficient` | 2.27 | SiO₂/Si volume ratio |
 | `velocitySign` | −1 | Si consumed |
-| `stressCouplingCoefficient` | 1×10⁻¹⁵ Pa⁻¹ | Weak Arrhenius pressure correction |
-| `minStressRateFactor` | 0.25 | Floor on rate modulation |
-| `maxStressRateFactor` | 4 | Cap on rate modulation |
+| `stressCouplingCoefficient` | 1×10⁻¹⁵ Pa⁻¹ | Weak Arrhenius pressure correction on k |
+| `minStressRateFactor` | 0.25 | Floor on k rate modulation |
+| `maxStressRateFactor` | 4 | Cap on k rate modulation |
+| `diffusionStressCouplingCoefficient` | 0 | Stress-dependent D (0 = off) |
+| `reactionRateRatio111` | 1 | (111)/(100) rate ratio (1 = isotropic) |
+| `crystalAxis` | {0,1,0} | (100) wafer normal direction |
 | `advectionTime` | 0.1 hr | |
 | `viscosity` | 1×10⁷ Pa·hr | Oxide viscosity |
 | `bulkModulus` | 7.5×10⁸ Pa | Pressure ← divergence coupling |
@@ -335,8 +369,8 @@ Bounds:   {-100, -40} to {100, 80} grid indices
 | `freeSurfaceTractionScale` | 1 | Traction-free pressure at ambient |
 | `substrateNormalStiffness` | 1×10⁹ Pa/μm | Elastic Si substrate |
 | `pressureGradientScale` | 0.001 | Scales pressure gradient in Stokes RHS |
-| `freeSurfaceVelocityScale` | 1 | Ambient moves by local projection |
-| `vectorVelocityScale` | 0 | Deformation vector not used for advection |
+| `freeSurfaceVelocityScale` | 0 | Kinematic local-projection disabled |
+| `vectorVelocityScale` | 1 | Ambient advected by full Stokes vector field |
 | `mechanicsIterations` | 2 | Pressure/velocity outer iterations |
 | `pressureIterations` | 500 | Inner pressure Jacobi iterations |
 | `stokesIterations` | 100 | Inner Stokes Jacobi iterations |

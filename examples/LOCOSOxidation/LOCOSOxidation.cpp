@@ -21,7 +21,10 @@ using LevelSet = ls::SmartPointer<ls::Domain<NumericType, D>>;
 
 void writeSurface(LevelSet levelSet, const std::string &fileName) {
   auto mesh = ls::Mesh<NumericType>::New();
-  ls::ToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
+  auto surfaceMesh = ls::ToSurfaceMesh<NumericType, D>(levelSet, mesh);
+  surfaceMesh.setSharpCorners(true);
+  surfaceMesh.apply();
+//   ls::ToSurfaceMesh<NumericType, D>(levelSet, mesh).apply();
   ls::VTKWriter<NumericType>(mesh, fileName).apply();
 }
 
@@ -149,8 +152,9 @@ int main() {
   defParams.stokesIterations = 100;
   defParams.pressureTolerance = 1.e-6;
   defParams.stokesTolerance = 1.e-7;
-  defParams.freeSurfaceVelocityScale = 1.;
-  defParams.vectorVelocityScale = 0.;
+  // Advect the free oxide surface by the full Stokes vector field.
+  defParams.freeSurfaceVelocityScale = 0.;
+  defParams.vectorVelocityScale = 1.;
   defParams.maxIterations = 10000;
   defParams.tolerance = 1.e-7;
 
