@@ -9,6 +9,7 @@
 #include <lsGeometricAdvect.hpp>
 #include <lsLOCOSOxidation.hpp>
 #include <lsMakeGeometry.hpp>
+#include <lsOxidationMaterials.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
@@ -122,47 +123,25 @@ int main() {
 
   // --- Oxidation parameters ---
 
-  ls::OxidationParameters<NumericType> oxParams;
-  oxParams.diffusionCoefficient = 0.157;
-  oxParams.reactionRate = 0.74;
-  oxParams.transferCoefficient = 100.;
-  oxParams.equilibriumConcentration = 1.;
-  oxParams.oxidantMoleculeDensity = 1.;
-  oxParams.expansionCoefficient = 2.27;
+  auto oxParams =
+      ls::OxidationProcessPresets<NumericType>::wet1000CDealGrove100();
   oxParams.velocitySign = -1.;
-  oxParams.temperature = 1273.15;
-  oxParams.reactionActivationVolume = 1.76e-35; // m^3
   oxParams.maskTransferCoefficient = 0.; // nitride-like oxidant blocking
   oxParams.maskConcentration = 0.;
   oxParams.maxIterations = 10000;
   oxParams.tolerance = 1.e-7;
 
-  ls::OxidationDeformationParameters<NumericType> defParams;
-  defParams.viscosity = 1.e10;
-  defParams.bulkModulus = 7.5e8;
-  defParams.shearModulus = 3.e10;
-  defParams.stressTimeStep = advectionTime;
-  defParams.mechanicsIterations = 2;
-  defParams.mechanicsTolerance = 1.e-7;
-  defParams.pressureIterations = 500;
-  defParams.stokesIterations = 100;
-  defParams.pressureTolerance = 1.e-6;
-  defParams.stokesTolerance = 1.e-7;
-  defParams.tolerance = 1.e-7;
+  auto defParams =
+      ls::OxidationProcessPresets<NumericType>::oxideMechanics1000C(
+          advectionTime);
 
   ls::OxidationCouplingParameters<NumericType> couplingParams;
   couplingParams.maxIterations = 8;
   couplingParams.tolerance = 1.e-6;
   couplingParams.relaxation = 1.;
 
-  ls::OxidationMaskParameters<NumericType> maskParams;
-  maskParams.temperature = oxParams.temperature;
-  maskParams.referenceTemperature = oxParams.temperature;
-  maskParams.referenceViscosity = 5.e11;
-  maskParams.creepActivationEnergy = 0.;
-  maskParams.poissonRatio = 0.27;
-  maskParams.relaxation = 0.9;
-  maskParams.tolerance = 5.e-6;
+  auto maskParams =
+      ls::OxidationProcessPresets<NumericType>::siliconNitrideMask1000C();
 
   // --- LOCOS step ---
 

@@ -1,12 +1,28 @@
 #include <lsDomain.hpp>
 #include <lsGeometries.hpp>
 #include <lsMakeGeometry.hpp>
+#include <lsOxidationMaterials.hpp>
 #include <lsOxidationModel.hpp>
 #include <lsTestAsserts.hpp>
 
 #include <cmath>
 
 namespace ls = viennals;
+
+template <int D>
+ls::SmartPointer<ls::OxidationDiffusionVelocityField<double, D>>
+makeOxidationSolve(
+    const ls::SmartPointer<ls::Domain<double, D>> &reactionInterface,
+    const ls::SmartPointer<ls::Domain<double, D>> &ambientInterface,
+    ls::OxidationParameters<double> parameters,
+    const viennahrle::Index<D> &minIndex,
+    const viennahrle::Index<D> &maxIndex) {
+  auto oxidation = ls::OxidationDiffusionVelocityField<double, D>::New(
+      reactionInterface, ambientInterface, parameters);
+  oxidation->setSolveBounds(minIndex, maxIndex);
+  oxidation->apply();
+  return oxidation;
+}
 
 int main() {
   constexpr int D = 2;
@@ -45,6 +61,19 @@ int main() {
   parameters.expansionCoefficient = 2.27;
   parameters.maxIterations = 20000;
   parameters.tolerance = 1e-10;
+
+  const auto wetPreset =
+      ls::OxidationProcessPresets<double>::wet1000CDealGrove100();
+  VC_TEST_ASSERT(std::abs(wetPreset.diffusionCoefficient - 0.157) < 1e-12)
+  VC_TEST_ASSERT(std::abs(wetPreset.reactionRate - 0.74) < 1e-12)
+  VC_TEST_ASSERT(wetPreset.reactionActivationVolume > 0.)
+  const auto oxidePreset =
+      ls::OxidationProcessPresets<double>::oxideMechanics1000C(0.25);
+  VC_TEST_ASSERT(oxidePreset.viscosity > 0.)
+  VC_TEST_ASSERT(std::abs(oxidePreset.stressTimeStep - 0.25) < 1e-12)
+  const auto maskPreset =
+      ls::OxidationProcessPresets<double>::siliconNitrideMask1000C();
+  VC_TEST_ASSERT(maskPreset.referenceViscosity > 0.)
 
   auto oxidation = ls::OxidationDiffusionVelocityField<double, D>::New(
       reactionInterface, ambientInterface, parameters);
@@ -159,6 +188,33 @@ int main() {
   const double compressedRate =
       stressOxidation->getEffectiveReactionRate(nearReaction);
   VC_TEST_ASSERT(compressedRate < unstressedRate)
+
+  auto looseParameters = parameters;
+  looseParameters.tolerance = 1e-7;
+  auto looseOxidation = makeOxidationSolve<D>(
+      reactionInterface, ambientInterface, looseParameters, minIndex, maxIndex);
+  auto tightParameters = parameters;
+  tightParameters.tolerance = 1e-11;
+  auto tightOxidation = makeOxidationSolve<D>(
+      reactionInterface, ambientInterface, tightParameters, minIndex, maxIndex);
+  const double looseVelocity =
+      looseOxidation->getScalarVelocity(nearReaction, 0, {0., 1., 0.}, 0);
+  const double tightVelocity =
+      tightOxidation->getScalarVelocity(nearReaction, 0, {0., 1., 0.}, 0);
+  VC_TEST_ASSERT(std::abs(looseVelocity - tightVelocity) /
+                     std::max(std::abs(tightVelocity), 1e-12) <
+                 1e-3)
+
+  auto regularizedParameters = parameters;
+  regularizedParameters.minBoundaryDistance = 1e-3;
+  auto regularizedOxidation = makeOxidationSolve<D>(
+      reactionInterface, ambientInterface, regularizedParameters, minIndex,
+      maxIndex);
+  const double regularizedVelocity = regularizedOxidation->getScalarVelocity(
+      nearReaction, 0, {0., 1., 0.}, 0);
+  VC_TEST_ASSERT(std::abs(regularizedVelocity - velocity) /
+                     std::max(std::abs(velocity), 1e-12) <
+                 1e-3)
 
   ls::OxidationCouplingParameters<double> couplingParameters;
   couplingParameters.maxIterations = 2;

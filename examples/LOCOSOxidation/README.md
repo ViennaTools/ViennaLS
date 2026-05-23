@@ -1,8 +1,8 @@
 # LOCOSOxidation
 
 Demonstrates full LOCOS (Local Oxidation of Silicon) simulation with a
-Si₃N₄ nitride mask. Three level sets represent the Si/SiO₂ reaction
-interface, the SiO₂/ambient free surface, and the nitride mask. The mask
+Si<sub>3</sub>N<sub>4</sub> nitride mask. Three level sets represent the Si/SiO<sub>2</sub> reaction
+interface, the SiO<sub>2</sub>/ambient free surface, and the nitride mask. The mask
 blocks oxidant access on the left half of the structure, leaving the right
 half as an open oxidation window. The growing oxide bends the mask at its
 edge, producing the characteristic bird's beak geometry.
@@ -17,9 +17,8 @@ Three level sets are created on the same Cartesian grid:
 
 | Level Set | Description |
 |---|---|
-| `siInterface` | Si/SiO₂ reaction interface. Flat plane at y = 0. |
-| `ambientInterface` | SiO₂/ambient free surface. Created by geometric offset (spherical distribution) of `siInterface` by `padOxideThickness = 0.15 μm`. Represents the initial pad oxide surface. |
-| `maskInterface` | Si₃N₄ nitride mask. Box from x = −4 to x = 0 (left half), y = 0.15 μm (pad oxide top) to y = 0.35 μm. The mask bottom is placed at `padOxideThickness − maskContactEpsilon` with `maskContactEpsilon = 1×10⁻⁶ μm` so the mask sits flat on the pad oxide while Cartesian stencils unambiguously resolve the mask boundary. |
+| `siInterface` | Si/SiO<sub>2</sub> reaction interface. Flat plane at y = 0. |
+| `ambientInterface` | SiO<sub>2</sub>/ambient free surface. Created by geometric offset (spherical distribution) of `siInterface` by `padOxideThickness = 0.15 μm`. Represents the initial pad oxide surface. |
 
 The simulation domain is:
 ```
@@ -39,8 +38,8 @@ elasticity.
 
 ### Oxidant Diffusion — Deal-Grove
 
-Oxidant (O₂ or H₂O) diffuses through the growing SiO₂ film and reacts at the
-Si/SiO₂ interface. Under the steady-state assumption, the oxidant concentration
+Oxidant (O<sub>2</sub> or H<sub>2</sub>O) diffuses through the growing SiO<sub>2</sub> film and reacts at the
+Si/SiO<sub>2</sub> interface. Under the steady-state assumption, the oxidant concentration
 `C` inside the oxide satisfies:
 
 ```
@@ -49,7 +48,7 @@ Si/SiO₂ interface. Under the steady-state assumption, the oxidant concentratio
 
 where `D` is `diffusionCoefficient`.
 
-**Reaction boundary condition** at the Si/SiO₂ interface:
+**Reaction boundary condition** at the Si/SiO<sub>2</sub> interface:
 
 ```
 -D ∂C/∂n = k_eff · C
@@ -57,7 +56,7 @@ where `D` is `diffusionCoefficient`.
 
 where `k_eff` is the stress-modulated effective reaction rate (see below).
 
-**Gas-transfer boundary condition** at the SiO₂/ambient interface:
+**Gas-transfer boundary condition** at the SiO<sub>2</sub>/ambient interface:
 
 ```
 -D ∂C/∂n = h · (C* - C)
@@ -100,7 +99,7 @@ The updated concentration is `C_new = rhs / diag`, then relaxed:
 
 ### Reaction and Expansion Velocities
 
-The Si/SiO₂ interface recedes at speed:
+The Si/SiO<sub>2</sub> interface recedes at speed:
 
 ```
 v_Si = velocitySign · k_eff · C / (N · γ)
@@ -118,7 +117,7 @@ Si fraction:      1/γ     ≈ 0.441
 Ambient fraction: (γ−1)/γ ≈ 0.559
 ```
 
-The local expansion velocity fed to the deformation solver at each Si/SiO₂
+The local expansion velocity fed to the deformation solver at each Si/SiO<sub>2</sub>
 crossing is:
 
 ```
@@ -171,7 +170,7 @@ The solve has three nested stages.
 
 #### Stage 1 — Harmonic Extension (Predictor Velocity)
 
-At each Si/SiO₂ crossing, the expansion velocity `v_exp` is set as a Dirichlet
+At each Si/SiO<sub>2</sub> crossing, the expansion velocity `v_exp` is set as a Dirichlet
 boundary condition directed along the local reaction-interface normal. This is
 then harmonically extended through the oxide band by iteratively averaging each
 interior node over its Cartesian neighbors until convergence (`harmonicIterations`,
@@ -193,14 +192,14 @@ pressure Poisson equation
 
 is solved with `K = bulkModulus`. Boundary values:
 
-- **Free surface (SiO₂/ambient):** Dirichlet from the traction-free condition:
+- **Free surface (SiO<sub>2</sub>/ambient):** Dirichlet from the traction-free condition:
   ```
   p_surface ≈ p_ambient + n · s_dev · n
   ```
   where `s_dev` is the deviatoric stress from the previous mechanics
   iteration (zero on the first iteration).
 
-- **Reaction interface (Si/SiO₂):** The velocity is prescribed by the oxidation
+- **Reaction interface (Si/SiO<sub>2</sub>):** The velocity is prescribed by the oxidation
   expansion kinematics. Pressure uses a zero-normal-gradient boundary, so no
   substrate spring penalty is introduced.
 
@@ -289,7 +288,7 @@ feedback loop. With the small coupling used here, convergence is fast.
 ### Mask Bending — Quasi-Static Linear Elasticity
 
 The nitride mask is treated as a viscous body (velocity formulation) with
-an effective Si₃N₄ creep viscosity. This is identical in mathematical form to the oxide
+an effective Si<sub>3</sub>N<sub>4</sub> creep viscosity. This is identical in mathematical form to the oxide
 Stokes solve but without a pressure equation — the mask is modeled as
 incompressible-like, so only the vector displacement-rate field is solved.
 The governing equation inside the mask is:
@@ -433,7 +432,7 @@ Convergence: `max|Δv_component| < tolerance` over all interior nodes.
 
 `getScalarVelocity` on the deformation field returns the local free-surface
 normal speed. For a query point on the ambient interface the code searches
-inward along the interface normal until it finds the nearest Si/SiO₂ crossing,
+inward along the interface normal until it finds the nearest Si/SiO<sub>2</sub> crossing,
 then evaluates the expansion velocity `v_exp` at that crossing. This gives a
 spatially varying speed that correctly reflects the local geometry without a
 global average.
@@ -521,6 +520,12 @@ and a contact-velocity residual tolerance of `2.e-2` unless overridden with
 update is internally Aitken-relaxed, so the fixed-point iteration usually stops
 before the iteration cap without exposing another process parameter.
 
+The example gets its baseline process and material values from
+`OxidationProcessPresets<double>`:
+`wet1000CDealGrove100()`, `oxideMechanics1000C(advectionTime)`, and
+`siliconNitrideMask1000C()`. The example then overrides only LOCOS-specific
+items such as nitride oxidant blocking and geometry bounds.
+
 After `apply()`, the internal velocity fields are accessible for diagnostics:
 
 ```cpp
@@ -574,7 +579,7 @@ moves any ambient surface under the nitride with the mask velocity.
 | `transferCoefficient` | 100 μm/hr | Large → C ≈ C* at ambient surface |
 | `equilibriumConcentration` | 1 | C*/N normalized |
 | `oxidantMoleculeDensity` | 1 | Normalized |
-| `expansionCoefficient` | 2.27 | SiO₂/Si volume ratio |
+| `expansionCoefficient` | 2.27 | SiO<sub>2</sub>/Si volume ratio |
 | `velocitySign` | −1 | Si consumed |
 | `temperature` | 1273.15 K | Oxidation temperature |
 | `reactionActivationVolume` | 1.76×10⁻³⁵ m³ | Weak pressure correction on k |
@@ -618,7 +623,7 @@ B/A = k · C*/N  = 0.74  μm/hr    (linear rate constant)
 | `referenceTemperature` | 1273.15 K | Reference temperature for the creep law |
 | `referenceViscosity` | 5×10¹¹ Pa·hr | Creep viscosity at `referenceTemperature` |
 | `creepActivationEnergy` | 0 J/mol | Arrhenius temperature dependence disabled in this example |
-| `poissonRatio` | 0.27 | Si₃N₄ Poisson's ratio; sets λ/μ ratio in Lamé viscosity |
+| `poissonRatio` | 0.27 | Si<sub>3</sub>N<sub>4</sub> Poisson's ratio; sets λ/μ ratio in Lamé viscosity |
 | `unilateralContact` | true | Oxide can push the mask but not pull it |
 | `anchorMode` | `MIN_BOUNDARY` | Remote lateral mask boundary is fixed |
 | `anchorDirection` | 0 | x-direction anchoring for the 2D LOCOS window |
@@ -702,10 +707,10 @@ cmake --build build --target LOCOSOxidation
 
 | File | Contents |
 |---|---|
-| `locos_si_initial.vtk` | Si/SiO₂ interface before oxidation |
+| `locos_si_initial.vtk` | Si/SiO<sub>2</sub> interface before oxidation |
 | `locos_ambient_initial.vtk` | Pad oxide/ambient surface before oxidation |
 | `locos_mask.vtk` | Nitride mask (unchanging geometry reference) |
-| `locos_si_after.vtk` | Si/SiO₂ interface after 0.35 hr |
-| `locos_ambient_after.vtk` | SiO₂/ambient surface after 0.35 hr (bird's beak visible) |
+| `locos_si_after.vtk` | Si/SiO<sub>2</sub> interface after 0.35 hr |
+| `locos_ambient_after.vtk` | SiO<sub>2</sub>/ambient surface after 0.35 hr (bird's beak visible) |
 | `locos_mask_after.vtk` | Nitride mask after 0.35 hr (slight upward bending at edge) |
 | `locos_oxidation_diagnostics.csv` | Cartesian-grid concentration and mechanics fields |

@@ -366,6 +366,12 @@ Bounds:   {-100, -40} to {100, 80} grid indices
 | `pressureIterations` | 500 | Inner pressure Jacobi iterations |
 | `stokesIterations` | 100 | Inner Stokes Jacobi iterations |
 
+The example obtains these default process/material values from
+`OxidationProcessPresets<double>::wet1000CDealGrove100()` and
+`OxidationProcessPresets<double>::oxideMechanics1000C(advectionTime)`, then
+overrides only geometry-specific settings such as `velocitySign` and solver
+bounds.
+
 The Deal-Grove rate constants relate to the above as:
 ```
 B   = 2D · C*/N = 0.314 μm²/hr   (parabolic rate constant)

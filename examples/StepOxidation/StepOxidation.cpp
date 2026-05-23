@@ -9,6 +9,7 @@
 #include <lsDomain.hpp>
 #include <lsGeometricAdvect.hpp>
 #include <lsMakeGeometry.hpp>
+#include <lsOxidationMaterials.hpp>
 #include <lsOxidationModel.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
@@ -121,18 +122,8 @@ int main() {
   writeSurface(siInterface, "step_oxidation_si_initial.vtp");
   writeSurface(ambientInterface, "step_oxidation_ambient_initial.vtp");
 
-  ls::OxidationParameters<NumericType> params;
-  // Wet oxidation of <100> Si at 1000 C, represented in Deal-Grove form.
-  // With C*/N normalized to 1: B = 2D and B/A ~= k for large gas transfer h.
-  // Literature values give B ~= 0.31 um^2/hr and B/A ~= 0.74 um/hr.
-  params.diffusionCoefficient = 0.157;
-  params.reactionRate = 0.74;
-  params.transferCoefficient = 100.0;
-  params.equilibriumConcentration = 1.0;
-  params.oxidantMoleculeDensity = 1.0;
-  params.expansionCoefficient = 2.27;
-  params.temperature = 1273.15;
-  params.reactionActivationVolume = 1.76e-35; // m^3
+  auto params =
+      ls::OxidationProcessPresets<NumericType>::wet1000CDealGrove100();
   // The silicon step is represented as the negative/inside side of this level
   // set. A negative velocity consumes silicon and moves the Si/SiO2 interface
   // into the step; the oxide/ambient interface is moved by the deformation
@@ -147,18 +138,9 @@ int main() {
   viennahrle::Index<D> minIndex{-100, -40};
   viennahrle::Index<D> maxIndex{100, 80};
   oxidationVelocity->setSolveBounds(minIndex, maxIndex);
-  ls::OxidationDeformationParameters<NumericType> deformationParams;
-  deformationParams.viscosity = 1.0e10;   // Pa hr, effective oxide viscosity
-  deformationParams.bulkModulus = 7.5e8;  // Pa, pressure reference from paper
-  deformationParams.shearModulus = 3.0e10;
-  deformationParams.stressTimeStep = advectionTime;
-  deformationParams.mechanicsIterations = 2;
-  deformationParams.mechanicsTolerance = 1e-7;
-  deformationParams.pressureIterations = 500;
-  deformationParams.stokesIterations = 100;
-  deformationParams.pressureTolerance = 1e-6;
-  deformationParams.stokesTolerance = 1e-7;
-  deformationParams.tolerance = 1e-7;
+  auto deformationParams =
+      ls::OxidationProcessPresets<NumericType>::oxideMechanics1000C(
+          advectionTime);
 
   auto deformationVelocity =
       ls::OxidationDeformationVelocityField<NumericType, D>::New(

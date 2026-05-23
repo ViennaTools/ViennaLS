@@ -32,6 +32,7 @@
 #include <lsMaterialMap.hpp>
 #include <lsMesh.hpp>
 #include <lsLOCOSOxidation.hpp>
+#include <lsOxidationMaterials.hpp>
 #include <lsOxidationModel.hpp>
 #include <lsPointData.hpp>
 #include <lsPrune.hpp>
@@ -298,6 +299,16 @@ template <int D> void bindApi(py::module &module) {
       .def_readwrite("relaxation", &OxidationParameters<T>::relaxation)
       .def_readwrite("maxGridPoints", &OxidationParameters<T>::maxGridPoints)
       .def_readwrite("material", &OxidationParameters<T>::material);
+
+  py::class_<OxidationProcessPresets<T>>(
+      module, "OxidationProcessPresets", py::module_local())
+      .def(py::init<>())
+      .def_static("wet1000CDealGrove100",
+                  &OxidationProcessPresets<T>::wet1000CDealGrove100)
+      .def_static("oxideMechanics1000C",
+                  &OxidationProcessPresets<T>::oxideMechanics1000C)
+      .def_static("siliconNitrideMask1000C",
+                  &OxidationProcessPresets<T>::siliconNitrideMask1000C);
 
   py::class_<OxidationDiffusionVelocityField<T, D>, VelocityField<T>,
              SmartPointer<OxidationDiffusionVelocityField<T, D>>>(
