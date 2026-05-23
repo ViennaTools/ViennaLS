@@ -33,10 +33,11 @@ template <class T> struct OxidationMaskParameters {
   int material = -1;
 };
 
-/// Vector velocity field for a compliant oxidation mask driven by the solved
-/// oxide mechanics field. A Cartesian elasticity solve is built inside the mask
-/// level set, oxide-contact motion is applied as a boundary displacement rate,
-/// and the resulting vector field is used to move the entire mask body.
+/// Vector velocity field for a compliant oxidation mask driven by solved oxide
+/// traction. A Cartesian viscous elasticity solve is built inside the mask
+/// level set, oxide-contact faces use a traction ghost velocity, and the
+/// resulting vector field moves the entire mask body. Repeated applications use
+/// Aitken relaxation on the contact-interface velocity update.
 template <class T, int D>
 class OxidationMaskBendingVelocityField final
     : public VelocityField<T>,
@@ -85,12 +86,11 @@ private:
   T lastApplyVelocityChange = std::numeric_limits<T>::max();
   T aitkenOmega = 1.;
   std::vector<T> previousAitkenResidual;
-
-public:
-  std::vector<Node> nodes;
   IndexType requestedMinIndex{};
   IndexType requestedMaxIndex{};
+  std::vector<Node> nodes;
 
+public:
   OxidationMaskBendingVelocityField() = default;
 
   OxidationMaskBendingVelocityField(
@@ -194,7 +194,7 @@ public:
   }
 
   Vec3D<T> getVectorVelocity(const Vec3D<T> &coordinate, int material,
-                             const Vec3D<T> &normalVector,
+                             const Vec3D<T> & /*normalVector*/,
                              unsigned long /*pointId*/) final {
     if (deformationField == nullptr)
       return {0., 0., 0.};

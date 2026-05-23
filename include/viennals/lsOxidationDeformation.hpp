@@ -42,8 +42,9 @@ template <class T> struct OxidationDeformationParameters {
 /// a Cartesian-grid quasi-static Stokes solve. The mechanical update solves a
 /// pressure equation from the current velocity divergence and a velocity
 /// momentum equation, including pressure-gradient and viscoelastic deviatoric
-/// stress terms, with approximate traction/free-surface and elastic-substrate
-/// boundary conditions.
+/// stress terms. The Si/SiO2 interface uses the oxidation expansion velocity,
+/// the oxide/ambient interface uses a traction-free boundary, and optional mask
+/// contacts use the mask velocity field.
 template <class T, int D>
 class OxidationDeformationVelocityField final : public VelocityField<T>,
                                                 public OxidationSolverBase<T, D> {
