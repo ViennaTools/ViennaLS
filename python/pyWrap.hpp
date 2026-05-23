@@ -277,20 +277,13 @@ template <int D> void bindApi(py::module &module) {
       .def_readwrite("expansionCoefficient",
                      &OxidationParameters<T>::expansionCoefficient)
       .def_readwrite("velocitySign", &OxidationParameters<T>::velocitySign)
-      .def_readwrite("stressCouplingCoefficient",
-                     &OxidationParameters<T>::stressCouplingCoefficient)
+      .def_readwrite("temperature", &OxidationParameters<T>::temperature)
+      .def_readwrite("reactionActivationVolume",
+                     &OxidationParameters<T>::reactionActivationVolume)
       .def_readwrite("referencePressure",
                      &OxidationParameters<T>::referencePressure)
-      .def_readwrite("minStressRateFactor",
-                     &OxidationParameters<T>::minStressRateFactor)
-      .def_readwrite("maxStressRateFactor",
-                     &OxidationParameters<T>::maxStressRateFactor)
-      .def_readwrite("diffusionStressCouplingCoefficient",
-                     &OxidationParameters<T>::diffusionStressCouplingCoefficient)
-      .def_readwrite("minDiffusionStressFactor",
-                     &OxidationParameters<T>::minDiffusionStressFactor)
-      .def_readwrite("maxDiffusionStressFactor",
-                     &OxidationParameters<T>::maxDiffusionStressFactor)
+      .def_readwrite("diffusionActivationVolume",
+                     &OxidationParameters<T>::diffusionActivationVolume)
       .def_readwrite("reactionRateRatio111",
                      &OxidationParameters<T>::reactionRateRatio111)
       .def_readwrite("crystalAxis", &OxidationParameters<T>::crystalAxis)
@@ -379,17 +372,9 @@ template <int D> void bindApi(py::module &module) {
                      &OxidationDeformationParameters<T>::pressureRelaxation)
       .def_readwrite("pressureTolerance",
                      &OxidationDeformationParameters<T>::pressureTolerance)
-      .def_readwrite("freeSurfaceTractionScale",
-                     &OxidationDeformationParameters<T>::freeSurfaceTractionScale)
-      .def_readwrite("substrateNormalStiffness",
-                     &OxidationDeformationParameters<T>::substrateNormalStiffness)
       .def_readwrite(
           "minMechanicsBoundaryDistance",
           &OxidationDeformationParameters<T>::minMechanicsBoundaryDistance)
-      .def_readwrite("maskNormalStiffness",
-                     &OxidationDeformationParameters<T>::maskNormalStiffness)
-      .def_readwrite("maskPressure",
-                     &OxidationDeformationParameters<T>::maskPressure)
       .def_readwrite("shearModulus",
                      &OxidationDeformationParameters<T>::shearModulus)
       .def_readwrite("stressRelaxationTime",
@@ -500,15 +485,18 @@ template <int D> void bindApi(py::module &module) {
   py::class_<OxidationMaskParameters<T>>(
       module, "OxidationMaskParameters", py::module_local())
       .def(py::init<>())
-      .def_readwrite("maskViscosity",
-                     &OxidationMaskParameters<T>::maskViscosity)
+      .def_readwrite("temperature",
+                     &OxidationMaskParameters<T>::temperature)
+      .def_readwrite("referenceTemperature",
+                     &OxidationMaskParameters<T>::referenceTemperature)
+      .def_readwrite("referenceViscosity",
+                     &OxidationMaskParameters<T>::referenceViscosity)
+      .def_readwrite("creepActivationEnergy",
+                     &OxidationMaskParameters<T>::creepActivationEnergy)
       .def_readwrite("poissonRatio",
                      &OxidationMaskParameters<T>::poissonRatio)
-      .def_readwrite("maxVelocity", &OxidationMaskParameters<T>::maxVelocity)
       .def_readwrite("unilateralContact",
                      &OxidationMaskParameters<T>::unilateralContact)
-      .def_readwrite("contactGapTolerance",
-                     &OxidationMaskParameters<T>::contactGapTolerance)
       .def_readwrite("anchorMode", &OxidationMaskParameters<T>::anchorMode)
       .def_readwrite("anchorDirection",
                      &OxidationMaskParameters<T>::anchorDirection)

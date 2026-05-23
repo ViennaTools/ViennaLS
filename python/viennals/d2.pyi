@@ -129,13 +129,10 @@ class OxidationParameters:
     oxidantMoleculeDensity: float
     expansionCoefficient: float
     velocitySign: float
-    stressCouplingCoefficient: float
+    temperature: float
+    reactionActivationVolume: float
     referencePressure: float
-    minStressRateFactor: float
-    maxStressRateFactor: float
-    diffusionStressCouplingCoefficient: float
-    minDiffusionStressFactor: float
-    maxDiffusionStressFactor: float
+    diffusionActivationVolume: float
     reactionRateRatio111: float
     crystalAxis: typing.Annotated[list[float], "FixedSize(3)"]
     maskTransferCoefficient: float
@@ -191,11 +188,7 @@ class OxidationDeformationParameters:
     ambientPressure: float
     pressureRelaxation: float
     pressureTolerance: float
-    freeSurfaceTractionScale: float
-    substrateNormalStiffness: float
     minMechanicsBoundaryDistance: float
-    maskNormalStiffness: float
-    maskPressure: float
     shearModulus: float
     stressRelaxationTime: float
     stressTimeStep: float
@@ -258,11 +251,12 @@ class OxidationMaskAnchorMode(enum.IntEnum):
 class OxidationMaskParameters:
     def __init__(self) -> None:
         ...
-    maskViscosity: float
+    temperature: float
+    referenceTemperature: float
+    referenceViscosity: float
+    creepActivationEnergy: float
     poissonRatio: float
-    maxVelocity: float
     unilateralContact: bool
-    contactGapTolerance: float
     anchorMode: OxidationMaskAnchorMode
     anchorDirection: int
     relaxation: float

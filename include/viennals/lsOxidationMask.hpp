@@ -13,17 +13,15 @@ enum class OxidationMaskAnchorMode : int {
 };
 
 template <class T> struct OxidationMaskParameters {
-  // Effective viscosity of the mask material (Pa·hr). Controls how fast the
-  // mask creeps under the oxide traction: larger value → stiffer → less
-  // deflection per unit oxide pressure. This is an effective stack viscosity;
-  // fitted process values may be higher than intrinsic high-temperature Si3N4.
-  T maskViscosity = 5e8;
+  // Arrhenius creep viscosity law:
+  // eta(T) = eta_ref * exp(E/R * (1/T - 1/T_ref)).
+  // Viscosity is in Pa·hr, activation energy in J/mol, temperature in K.
+  T temperature = 1273.15;
+  T referenceTemperature = 1273.15;
+  T referenceViscosity = 5e8;
+  T creepActivationEnergy = 0.;
   T poissonRatio = 0.27;
-  T maxVelocity = std::numeric_limits<T>::max();
   bool unilateralContact = true;
-  // Maximum oxide/mask separation, in level-set grid units, still considered
-  // closed contact. 0 requires the oxide-side ghost node to be inside oxide.
-  T contactGapTolerance = 0.;
   OxidationMaskAnchorMode anchorMode =
       OxidationMaskAnchorMode::MIN_BOUNDARY;
   unsigned anchorDirection = 0;
@@ -85,6 +83,8 @@ private:
   std::array<T, D> maxVelocity_{};
   std::size_t contactNodes = 0;
   T lastApplyVelocityChange = std::numeric_limits<T>::max();
+  T aitkenOmega = 1.;
+  std::vector<T> previousAitkenResidual;
 
 public:
   std::vector<Node> nodes;
@@ -177,6 +177,11 @@ public:
     initialiseGrid();
     buildNodes();
     solveElasticVelocity();
+
+    const auto fixedPointResidual =
+        contactResidualVector(previousVelocities);
+    const T omega = aitkenRelaxation(fixedPointResidual);
+    relaxVelocities(previousVelocities, omega);
     lastApplyVelocityChange = maxVelocityChange(previousVelocities);
 
     maxVelocity_.fill(T(0));
@@ -206,15 +211,12 @@ public:
     IndexType index;
     for (unsigned i = 0; i < D; ++i)
       index[i] = std::llround(coordinate[i] / gridDelta);
-    return clampMagnitude(getVelocity(index));
+    return getVelocity(index);
   }
 
   T getDissipationAlpha(int direction, int /*material*/,
                         const Vec3D<T> & /*centralDifferences*/) final {
-    T alpha = maxVelocity_[direction];
-    if (parameters.maxVelocity != std::numeric_limits<T>::max())
-      alpha = std::min(alpha, parameters.maxVelocity);
-    return alpha;
+    return maxVelocity_[direction];
   }
 
 private:
@@ -238,8 +240,8 @@ private:
     if (previous.empty())
       return std::numeric_limits<T>::max();
 
-    T maxChange = 0.;
-    T maxMagnitude = 0.;
+    T changeSquaredSum = 0.;
+    T magnitudeSquaredSum = std::numeric_limits<T>::epsilon();
     for (const auto &node : nodes) {
       if (!node.contact)
         continue;
@@ -247,20 +249,77 @@ private:
       if (found == previous.end())
         continue;
 
-      T changeSquared = 0.;
-      T magnitudeSquared = 0.;
       for (unsigned i = 0; i < D; ++i) {
         const T delta = node.velocity[i] - found->second[i];
-        changeSquared += delta * delta;
-        magnitudeSquared += node.velocity[i] * node.velocity[i];
+        changeSquaredSum += delta * delta;
+        magnitudeSquaredSum += node.velocity[i] * node.velocity[i];
+        magnitudeSquaredSum += found->second[i] * found->second[i];
       }
-      maxChange = std::max(maxChange, std::sqrt(changeSquared));
-      maxMagnitude = std::max(maxMagnitude, std::sqrt(magnitudeSquared));
     }
 
-    if (maxMagnitude <= std::numeric_limits<T>::epsilon())
-      return maxChange;
-    return maxChange / maxMagnitude;
+    return std::sqrt(changeSquaredSum / magnitudeSquaredSum);
+  }
+
+  std::vector<T> contactResidualVector(
+      const std::unordered_map<std::size_t, Vec3D<T>> &previous) const {
+    std::vector<T> residualVector;
+    residualVector.reserve(contactNodes * D);
+    if (previous.empty())
+      return residualVector;
+
+    for (const auto &node : nodes) {
+      if (!node.contact)
+        continue;
+      const auto found = previous.find(linearIndex(node.index));
+      if (found == previous.end())
+        continue;
+      for (unsigned i = 0; i < D; ++i)
+        residualVector.push_back(node.velocity[i] - found->second[i]);
+    }
+    return residualVector;
+  }
+
+  T aitkenRelaxation(const std::vector<T> &residualVector) {
+    if (residualVector.empty()) {
+      previousAitkenResidual.clear();
+      aitkenOmega = 1.;
+      return 1.;
+    }
+
+    T omega = aitkenOmega;
+    if (previousAitkenResidual.size() == residualVector.size()) {
+      T numerator = 0.;
+      T denominator = 0.;
+      for (std::size_t i = 0; i < residualVector.size(); ++i) {
+        const T delta = residualVector[i] - previousAitkenResidual[i];
+        numerator += previousAitkenResidual[i] * delta;
+        denominator += delta * delta;
+      }
+
+      if (denominator > std::numeric_limits<T>::epsilon()) {
+        omega = -aitkenOmega * numerator / denominator;
+        omega = std::clamp(omega, T(0.05), T(1.5));
+      }
+    }
+
+    previousAitkenResidual = residualVector;
+    aitkenOmega = omega;
+    return omega;
+  }
+
+  void relaxVelocities(const std::unordered_map<std::size_t, Vec3D<T>> &previous,
+                       T omega) {
+    if (previous.empty() || omega == T(1))
+      return;
+
+    for (auto &node : nodes) {
+      const auto found = previous.find(linearIndex(node.index));
+      if (found == previous.end())
+        continue;
+      for (unsigned i = 0; i < D; ++i)
+        node.velocity[i] =
+            found->second[i] + omega * (node.velocity[i] - found->second[i]);
+    }
   }
 
   void buildNodes() {
@@ -523,8 +582,7 @@ private:
   bool isInsideOxide(const IndexType &index) const {
     ConstSparseIterator ambientIt(ambientInterface->getDomain());
     ambientIt.goToIndices(index);
-    return ambientSign * ambientIt.getValue() >=
-           -std::max(parameters.contactGapTolerance, T(0));
+    return ambientSign * ambientIt.getValue() >= T(0);
   }
 
   T maskGradientComponent(const IndexType &index, unsigned direction,
@@ -545,17 +603,28 @@ private:
     return std::clamp(parameters.poissonRatio, T(-0.95), T(0.49));
   }
 
+  static constexpr T gasConstant = T(8.31446261815324);
+
+  T effectiveMaskViscosity() const {
+    const T temperature = std::max(parameters.temperature, T(1.));
+    const T referenceTemperature =
+        std::max(parameters.referenceTemperature, T(1.));
+    return parameters.referenceViscosity *
+           std::exp(parameters.creepActivationEnergy / gasConstant *
+                    (T(1) / temperature - T(1) / referenceTemperature));
+  }
+
   // Lamé viscosity parameters: same structure as elastic Lamé constants but
-  // with maskViscosity (Pa·hr) in place of Young's modulus (Pa), making the
-  // governing equation a viscous Stokes flow rather than elastic equilibrium.
+  // with eta(T) in place of Young's modulus, making the governing equation a
+  // viscous Stokes flow rather than elastic equilibrium.
   T lameMu() const {
     const T nu = clampedPoissonRatio();
-    return parameters.maskViscosity / (T(2) * (T(1) + nu));
+    return effectiveMaskViscosity() / (T(2) * (T(1) + nu));
   }
 
   T lameLambda() const {
     const T nu = clampedPoissonRatio();
-    return parameters.maskViscosity * nu /
+    return effectiveMaskViscosity() * nu /
            ((T(1) + nu) * (T(1) - T(2) * nu));
   }
 
@@ -579,19 +648,6 @@ private:
         insidePhi, outsidePhi, parameters.minBoundaryDistance, gridDelta);
   }
 
-  Vec3D<T> clampMagnitude(const Vec3D<T> &velocity) const {
-    if (parameters.maxVelocity == std::numeric_limits<T>::max())
-      return velocity;
-
-    T magnitudeSquared = 0.;
-    for (unsigned i = 0; i < 3; ++i)
-      magnitudeSquared += velocity[i] * velocity[i];
-    const T magnitude = std::sqrt(magnitudeSquared);
-    if (magnitude <= parameters.maxVelocity || magnitude == T(0))
-      return velocity;
-
-    return detail::vecScaled(velocity, parameters.maxVelocity / magnitude);
-  }
 };
 
 /// Velocity field for the oxide outer interface when part of that interface is

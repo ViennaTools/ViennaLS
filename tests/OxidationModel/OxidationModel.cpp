@@ -136,7 +136,6 @@ int main() {
 
   ls::OxidationDeformationParameters<double> maskedDeformationParameters =
       deformationParameters;
-  maskedDeformationParameters.maskNormalStiffness = 1e6;
   auto maskedDeformation =
       ls::OxidationDeformationVelocityField<double, D>::New(
           reactionInterface, ambientInterface, maskedOxidation, parameters,
@@ -149,7 +148,7 @@ int main() {
   VC_TEST_ASSERT(std::isfinite(maskedDeformation->getResidual()))
 
   ls::OxidationParameters<double> stressParameters = parameters;
-  stressParameters.stressCouplingCoefficient = 1e-9;
+  stressParameters.reactionActivationVolume = 1e-29;
   auto stressOxidation = ls::OxidationDiffusionVelocityField<double, D>::New(
       reactionInterface, ambientInterface, stressParameters);
   stressOxidation->setSolveBounds(minIndex, maxIndex);

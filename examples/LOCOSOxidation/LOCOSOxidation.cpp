@@ -130,9 +130,8 @@ int main() {
   oxParams.oxidantMoleculeDensity = 1.;
   oxParams.expansionCoefficient = 2.27;
   oxParams.velocitySign = -1.;
-  oxParams.stressCouplingCoefficient = 1.e-15;
-  oxParams.minStressRateFactor = 0.25;
-  oxParams.maxStressRateFactor = 4.;
+  oxParams.temperature = 1273.15;
+  oxParams.reactionActivationVolume = 1.76e-35; // m^3
   oxParams.maskTransferCoefficient = 0.; // nitride-like oxidant blocking
   oxParams.maskConcentration = 0.;
   oxParams.maxIterations = 10000;
@@ -143,9 +142,6 @@ int main() {
   defParams.bulkModulus = 7.5e8;
   defParams.shearModulus = 3.e10;
   defParams.stressTimeStep = advectionTime;
-  defParams.freeSurfaceTractionScale = 1.;
-  defParams.substrateNormalStiffness = 1.e9;
-  defParams.maskNormalStiffness = 2.e9;
   defParams.mechanicsIterations = 2;
   defParams.mechanicsTolerance = 1.e-7;
   defParams.pressureIterations = 500;
@@ -160,11 +156,11 @@ int main() {
   couplingParams.relaxation = 1.;
 
   ls::OxidationMaskParameters<NumericType> maskParams;
-  // Effective viscous creep rate of Si3N4 at ~1000 C (Pa*hr).
-  // Larger value -> stiffer mask -> less bending per unit oxide pressure.
-  maskParams.maskViscosity = 5.e11;
+  maskParams.temperature = oxParams.temperature;
+  maskParams.referenceTemperature = oxParams.temperature;
+  maskParams.referenceViscosity = 5.e11;
+  maskParams.creepActivationEnergy = 0.;
   maskParams.poissonRatio = 0.27;
-  maskParams.maxVelocity = 0.25;          // um/hr
   maskParams.relaxation = 0.9;
   maskParams.tolerance = 5.e-6;
 

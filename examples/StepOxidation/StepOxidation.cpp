@@ -131,9 +131,8 @@ int main() {
   params.equilibriumConcentration = 1.0;
   params.oxidantMoleculeDensity = 1.0;
   params.expansionCoefficient = 2.27;
-  params.stressCouplingCoefficient = 1.0e-15; // 1/Pa
-  params.minStressRateFactor = 0.25;
-  params.maxStressRateFactor = 4.0;
+  params.temperature = 1273.15;
+  params.reactionActivationVolume = 1.76e-35; // m^3
   // The silicon step is represented as the negative/inside side of this level
   // set. A negative velocity consumes silicon and moves the Si/SiO2 interface
   // into the step; the oxide/ambient interface is moved by the deformation
@@ -153,8 +152,6 @@ int main() {
   deformationParams.bulkModulus = 7.5e8;  // Pa, pressure reference from paper
   deformationParams.shearModulus = 3.0e10;
   deformationParams.stressTimeStep = advectionTime;
-  deformationParams.freeSurfaceTractionScale = 1.0;
-  deformationParams.substrateNormalStiffness = 1.0e9; // Pa/um elastic support
   deformationParams.mechanicsIterations = 2;
   deformationParams.mechanicsTolerance = 1e-7;
   deformationParams.pressureIterations = 500;

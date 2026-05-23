@@ -75,14 +75,14 @@ Compressive pressure in the oxide lowers the reaction rate through an
 Arrhenius-like factor (Sutardja and Oldham, 1988):
 
 ```
-k_eff = k · clamp(exp(-α · (p - p_ref)), f_min, f_max)
+k_eff = k · exp(-(p - p_ref) · V_k / (k_B · T))
 ```
 
 where:
 - `k`     = `reactionRate` (zero-stress rate constant)
-- `α`     = `stressCouplingCoefficient` (1/Pa; positive means compression slows growth)
+- `V_k`   = `reactionActivationVolume`
+- `T`     = `temperature`
 - `p_ref` = `referencePressure`
-- `f_min` / `f_max` = `minStressRateFactor` / `maxStressRateFactor`
 
 Pressure `p` at each grid node is supplied by the deformation solver and fed
 back between iterations by `OxidationCoupledModel`.
@@ -92,12 +92,12 @@ back between iterations by `OxidationCoupledModel`.
 The same Arrhenius mechanism applies to the diffusivity (Massoud and Plummer, 1987):
 
 ```
-D_eff = D · clamp(exp(-β · (p - p_ref)), f_min_D, f_max_D)
+D_eff = D · exp(-(p - p_ref) · V_D / (k_B · T))
 ```
 
-where `β = diffusionStressCouplingCoefficient`. When `β = 0` (default) the
-diffusivity is constant. A non-zero `β` models the effect of compressive oxide
-stress reducing the free volume available for oxidant diffusion.
+where `V_D = diffusionActivationVolume`. When `V_D = 0` (default) the diffusivity
+is constant. A non-zero `V_D` models the effect of compressive oxide stress
+reducing the free volume available for oxidant diffusion.
 
 ### Crystal-Orientation Reaction Rate
 
@@ -146,20 +146,16 @@ Poisson equation
 is solved with `K = bulkModulus`. Boundary values:
 
 - **Free surface (SiO₂/ambient):** Dirichlet from the approximate traction-free
-  condition. With `freeSurfaceTractionScale = 1`:
+  condition:
   ```
-  p_surface ≈ n · s_dev · n
+  p_surface ≈ p_ambient + n · s_dev · n
   ```
   where `s_dev` is the deviatoric stress from the previous mechanics
   iteration. On the first iteration `s_dev = 0` and `p_surface = 0`.
 
-- **Reaction interface (Si/SiO₂):** Optionally includes an elastic substrate
-  support:
-  ```
-  p_reaction = substrateNormalStiffness · Δt · (v · n)
-  ```
-  This models the Si resisting normal displacement at rate `v · n`. Setting
-  `substrateNormalStiffness = 0` gives a zero-flux pressure Neumann boundary.
+- **Reaction interface (Si/SiO₂):** The velocity is prescribed by the oxidation
+  expansion kinematics. Pressure uses a zero-normal-gradient boundary, so no
+  substrate spring penalty is introduced.
 
 The pressure Poisson equation is solved by point-Jacobi iteration
 (`pressureIterations`, `pressureTolerance`).
@@ -233,7 +229,7 @@ diffusionField->apply()            // one final solve at converged state
 deformationField->apply()
 ```
 
-On each pass, `stressCouplingCoefficient` causes the deformation pressure to
+On each pass, `reactionActivationVolume` causes the deformation pressure to
 modulate the local reaction rate seen by the diffusion solver, closing the
 feedback loop. With the small coupling used here, convergence is fast.
 
@@ -357,18 +353,15 @@ Bounds:   {-100, -40} to {100, 80} grid indices
 | `oxidantMoleculeDensity` | 1 | Normalized |
 | `expansionCoefficient` | 2.27 | SiO₂/Si volume ratio |
 | `velocitySign` | −1 | Si consumed |
-| `stressCouplingCoefficient` | 1×10⁻¹⁵ Pa⁻¹ | Weak Arrhenius pressure correction on k |
-| `minStressRateFactor` | 0.25 | Floor on k rate modulation |
-| `maxStressRateFactor` | 4 | Cap on k rate modulation |
-| `diffusionStressCouplingCoefficient` | 0 | Stress-dependent D (0 = off) |
+| `temperature` | 1273.15 K | Oxidation temperature |
+| `reactionActivationVolume` | 1.76×10⁻³⁵ m³ | Weak pressure correction on k |
+| `diffusionActivationVolume` | 0 | Stress-dependent D (0 = off) |
 | `reactionRateRatio111` | 1 | (111)/(100) rate ratio (1 = isotropic) |
 | `crystalAxis` | {0,1,0} | (100) wafer normal direction |
 | `advectionTime` | 0.1 hr | |
 | `viscosity` | 1×10¹⁰ Pa·hr | Effective oxide viscosity |
 | `bulkModulus` | 7.5×10⁸ Pa | Pressure ← divergence coupling |
 | `shearModulus` | 3×10¹⁰ Pa | Maxwell deviatoric relaxation |
-| `freeSurfaceTractionScale` | 1 | Traction-free pressure at ambient |
-| `substrateNormalStiffness` | 1×10⁹ Pa/μm | Elastic Si substrate |
 | `mechanicsIterations` | 2 | Pressure/velocity outer iterations |
 | `pressureIterations` | 500 | Inner pressure Jacobi iterations |
 | `stokesIterations` | 100 | Inner Stokes Jacobi iterations |

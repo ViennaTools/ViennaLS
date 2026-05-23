@@ -12,11 +12,7 @@ template <class T> struct OxidationDeformationParameters {
   T ambientPressure = 0.;
   T pressureRelaxation = 1.;
   T pressureTolerance = 1e-8;
-  T freeSurfaceTractionScale = 1.;
-  T substrateNormalStiffness = 0.;
   T minMechanicsBoundaryDistance = 0.05;
-  T maskNormalStiffness = 0.;
-  T maskPressure = 0.;
   T shearModulus = 0.;
   T stressRelaxationTime = 0.;
   T stressTimeStep = 1.;
@@ -650,10 +646,10 @@ private:
     if (intersection.boundary == Boundary::AMBIENT)
       return {ambientBoundaryPressure[nodeId], intersection.distance};
     if (intersection.boundary == Boundary::REACTION)
-      return {reactionPressureBoundary(node.index, pressure[nodeId]),
+      return {solidInterfacePressureBoundary(node.index, pressure[nodeId]),
               intersection.distance};
     if (intersection.boundary == Boundary::MASK)
-      return {maskPressureBoundary(node.index, pressure[nodeId]),
+      return {solidInterfacePressureBoundary(node.index, pressure[nodeId]),
               intersection.distance};
 
     return {pressure[nodeId], gridDelta};
@@ -713,10 +709,10 @@ private:
     if (intersection.boundary == Boundary::AMBIENT)
       return {freeSurfacePressureBoundary(node.index), intersection.distance};
     if (intersection.boundary == Boundary::REACTION)
-      return {reactionPressureBoundary(node.index, node.pressure),
+      return {solidInterfacePressureBoundary(node.index, node.pressure),
               intersection.distance};
     if (intersection.boundary == Boundary::MASK)
-      return {maskPressureBoundary(node.index, node.pressure),
+      return {solidInterfacePressureBoundary(node.index, node.pressure),
               intersection.distance};
 
     return {node.pressure, gridDelta};
@@ -787,9 +783,6 @@ private:
   }
 
   T freeSurfacePressureBoundary(const IndexType &index) const {
-    if (deformationParameters.freeSurfaceTractionScale == T(0))
-      return deformationParameters.ambientPressure;
-
     const auto normal = interfaceNormal(index, Boundary::AMBIENT);
     const auto strainRate = strainRateTensorAt(index);
     const auto deviatoricRate = deviatoricTensor(strainRate, divergenceAt(index));
@@ -809,24 +802,12 @@ private:
     }
 
     return deformationParameters.ambientPressure +
-           deformationParameters.freeSurfaceTractionScale *
-               normalStress(deviatoricStress, normal);
+           normalStress(deviatoricStress, normal);
   }
 
-  T reactionPressureBoundary(const IndexType &index,
-                             T fallbackPressure) const {
-    if (deformationParameters.substrateNormalStiffness <= T(0))
-      return fallbackPressure;
-
-    const auto normal = interfaceNormal(index, Boundary::REACTION);
-    const auto boundaryVelocity = reactionBoundaryVelocity(index);
-    T normalVelocity = 0.;
-    for (unsigned i = 0; i < D; ++i)
-      normalVelocity += boundaryVelocity[i] * normal[i];
-
-    return fallbackPressure +
-           deformationParameters.substrateNormalStiffness *
-               deformationParameters.stressTimeStep * normalVelocity;
+  T solidInterfacePressureBoundary(const IndexType &,
+                                   T fallbackPressure) const {
+    return fallbackPressure;
   }
 
   Vec3D<T> freeSurfaceVelocityBoundary(const IndexType &index,
@@ -849,8 +830,7 @@ private:
       const T normalTraction =
           pressure * normal[component] - deviatoricTraction[component];
       const T faceDerivative =
-          deformationParameters.freeSurfaceTractionScale * normalTraction *
-          normal[direction] /
+          normalTraction * normal[direction] /
           std::max(deformationParameters.viscosity,
                    std::numeric_limits<T>::epsilon());
       boundaryVelocity[component] +=
@@ -858,21 +838,6 @@ private:
     }
 
     return boundaryVelocity;
-  }
-
-  T maskPressureBoundary(const IndexType &index, T fallbackPressure) const {
-    if (deformationParameters.maskNormalStiffness <= T(0))
-      return deformationParameters.maskPressure;
-
-    const auto normal = interfaceNormal(index, Boundary::MASK);
-    const auto velocity = getVelocity(index);
-    T normalVelocity = 0.;
-    for (unsigned i = 0; i < D; ++i)
-      normalVelocity += velocity[i] * normal[i];
-
-    return fallbackPressure +
-           deformationParameters.maskNormalStiffness *
-               deformationParameters.stressTimeStep * normalVelocity;
   }
 
   Vec3D<T> maskVelocityBoundary(const IndexType &index,

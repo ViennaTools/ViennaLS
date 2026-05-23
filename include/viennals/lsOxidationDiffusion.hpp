@@ -21,16 +21,16 @@ template <class T> struct OxidationParameters {
   T expansionCoefficient = 1.;
   T velocitySign = 1.;
 
-  // Stress coupling for reaction rate k_eff = k * clamp(exp(-alpha*(p-p_ref)), ...)
-  T stressCouplingCoefficient = 0.;
+  // Stress coupling for reaction rate:
+  // k_eff = k * exp(-(p - p_ref) * V_k / (k_B * T)).
+  // Activation volumes are in m^3, pressure is in Pa, temperature is in K.
+  T temperature = 1273.15;
+  T reactionActivationVolume = 0.;
   T referencePressure = 0.;
-  T minStressRateFactor = 0.01;
-  T maxStressRateFactor = 100.;
 
-  // Stress coupling for diffusion coefficient D_eff = D * clamp(exp(-beta*(p-p_ref)), ...)
-  T diffusionStressCouplingCoefficient = 0.;
-  T minDiffusionStressFactor = 0.01;
-  T maxDiffusionStressFactor = 100.;
+  // Stress coupling for diffusion coefficient:
+  // D_eff = D * exp(-(p - p_ref) * V_D / (k_B * T)).
+  T diffusionActivationVolume = 0.;
 
   // Crystal orientation factor on reaction rate.
   // k(n) = k * [1 + (reactionRateRatio111 - 1) * (1 - (n . crystalAxis)^2)]
@@ -69,6 +69,10 @@ class OxidationDiffusionVelocityField final : public VelocityField<T>,
   using ConstSparseIterator =
       viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>;
 private:
+  static constexpr T boltzmannConstant = T(1.380649e-23);
+  static constexpr T minStressFactor = T(1.e-6);
+  static constexpr T maxStressFactor = T(1.e6);
+
   // bring base members into scope
   using OxidationSolverBase<T, D>::nodeLookup;
   using OxidationSolverBase<T, D>::minIndex;
@@ -459,16 +463,14 @@ private:
   T getEffectiveReactionRate(const IndexType &index) const {
     T rate = parameters.reactionRate;
 
-    if (parameters.stressCouplingCoefficient != T(0)) {
+    if (parameters.reactionActivationVolume != T(0)) {
       T pressure = parameters.referencePressure;
       const auto foundPressure = pressureLookup.find(detail::gridIndexHash<D>(index));
       if (foundPressure != pressureLookup.end())
         pressure = foundPressure->second;
-      const T exponent = -parameters.stressCouplingCoefficient *
-                         (pressure - parameters.referencePressure);
-      rate *= std::min(parameters.maxStressRateFactor,
-                       std::max(parameters.minStressRateFactor,
-                                std::exp(exponent)));
+      const T exponent = stressExponent(pressure,
+                                        parameters.reactionActivationVolume);
+      rate *= stressFactor(exponent);
     }
 
     if (parameters.reactionRateRatio111 != T(1)) {
@@ -486,7 +488,7 @@ private:
   }
 
   T getEffectiveDiffusionCoefficient(const IndexType &index) const {
-    if (parameters.diffusionStressCouplingCoefficient == T(0))
+    if (parameters.diffusionActivationVolume == T(0))
       return parameters.diffusionCoefficient;
 
     T pressure = parameters.referencePressure;
@@ -494,12 +496,24 @@ private:
     if (found != pressureLookup.end())
       pressure = found->second;
 
-    const T exponent = -parameters.diffusionStressCouplingCoefficient *
-                       (pressure - parameters.referencePressure);
-    const T factor = std::min(parameters.maxDiffusionStressFactor,
-                              std::max(parameters.minDiffusionStressFactor,
-                                       std::exp(exponent)));
-    return parameters.diffusionCoefficient * factor;
+    const T exponent = stressExponent(pressure,
+                                      parameters.diffusionActivationVolume);
+    return parameters.diffusionCoefficient * stressFactor(exponent);
+  }
+
+  T stressExponent(T pressure, T activationVolume) const {
+    const T thermalEnergy =
+        boltzmannConstant * std::max(parameters.temperature, T(1.));
+    return -(pressure - parameters.referencePressure) * activationVolume /
+           thermalEnergy;
+  }
+
+  static T stressFactor(T exponent) {
+    if (exponent <= std::log(minStressFactor))
+      return minStressFactor;
+    if (exponent >= std::log(maxStressFactor))
+      return maxStressFactor;
+    return std::exp(exponent);
   }
 
   Vec3D<T> computeSiNormal(const IndexType &index,

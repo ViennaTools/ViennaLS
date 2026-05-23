@@ -147,7 +147,7 @@ template <class T, int D> class LOCOSOxidation {
   TemporalSchemeEnum temporalScheme =
       TemporalSchemeEnum::RUNGE_KUTTA_2ND_ORDER;
   static constexpr int maskInteriorSign = -1;
-  unsigned maskCouplingIterations = 6;
+  unsigned maskCouplingIterations = 8;
   T maskCouplingTolerance = 2.e-2;
   unsigned lastMaskCouplingIterations = 0;
   T lastMaskCouplingResidual = std::numeric_limits<T>::max();

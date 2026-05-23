@@ -133,22 +133,22 @@ Compressive pressure in the oxide lowers the reaction rate through an
 Arrhenius-like factor (Sutardja and Oldham, 1988):
 
 ```
-k_eff = k · clamp(exp(−α · (p − p_ref)), f_min, f_max)
+k_eff = k · exp(−(p − p_ref) · V_k / (k_B · T))
 ```
 
-where `k` is `reactionRate`, `α` is `stressCouplingCoefficient`, `p_ref` is
-`referencePressure`, and `f_min`/`f_max` are the rate-modulation clamps.
+where `k` is `reactionRate`, `V_k` is `reactionActivationVolume`, `T` is
+`temperature`, and `p_ref` is `referencePressure`.
 
 ### Stress-Coupled Diffusion Coefficient
 
 The same Arrhenius mechanism optionally applies to the diffusivity:
 
 ```
-D_eff = D · clamp(exp(−β · (p − p_ref)), f_min_D, f_max_D)
+D_eff = D · exp(−(p − p_ref) · V_D / (k_B · T))
 ```
 
-where `β = diffusionStressCouplingCoefficient`. With `β = 0` (default) the
-diffusivity is constant.
+where `V_D = diffusionActivationVolume`. With `V_D = 0` (default) the diffusivity
+is constant.
 
 ### Crystal-Orientation Reaction Rate
 
@@ -193,27 +193,21 @@ pressure Poisson equation
 
 is solved with `K = bulkModulus`. Boundary values:
 
-- **Free surface (SiO₂/ambient):** Dirichlet from the traction-free condition.
-  With `freeSurfaceTractionScale = 1`:
+- **Free surface (SiO₂/ambient):** Dirichlet from the traction-free condition:
   ```
-  p_surface ≈ n · s_dev · n
+  p_surface ≈ p_ambient + n · s_dev · n
   ```
   where `s_dev` is the deviatoric stress from the previous mechanics
   iteration (zero on the first iteration).
 
-- **Reaction interface (Si/SiO₂):** Elastic substrate support:
-  ```
-  p_reaction = substrateNormalStiffness · Δt · (v · n)
-  ```
-  This models the silicon resisting normal displacement. Setting
-  `substrateNormalStiffness = 0` gives a zero-flux Neumann boundary.
+- **Reaction interface (Si/SiO₂):** The velocity is prescribed by the oxidation
+  expansion kinematics. Pressure uses a zero-normal-gradient boundary, so no
+  substrate spring penalty is introduced.
 
-- **Mask contact:** Elastic mask support:
-  ```
-  p_mask = maskNormalStiffness · Δt · (v · n)
-  ```
-  This models the nitride mask resisting normal penetration from the oxide.
-  Setting `maskNormalStiffness = 0` gives a free slip (Neumann) boundary.
+- **Mask contact:** The oxide velocity is constrained by the current mask
+  mechanics velocity from the oxide/mask interface solve. Pressure uses a
+  zero-normal-gradient boundary; mask resistance enters through the coupled
+  mask mechanics solve rather than a pressure penalty spring.
 
 The pressure Poisson equation is solved by point-Jacobi iteration
 (`pressureIterations`, `pressureTolerance`).
@@ -288,7 +282,7 @@ diffusionField->apply()            // one final solve at converged state
 deformationField->apply()
 ```
 
-On each pass, `stressCouplingCoefficient` causes the deformation pressure to
+On each pass, `reactionActivationVolume` causes the deformation pressure to
 modulate the local reaction rate seen by the diffusion solver, closing the
 feedback loop. With the small coupling used here, convergence is fast.
 
@@ -304,12 +298,13 @@ The governing equation inside the mask is:
 μ ∇²v + (λ + μ) ∇(∇ · v) = 0
 ```
 
-where the Lamé viscosity parameters are derived from `maskViscosity` and
-Poisson's ratio:
+where the Lamé viscosity parameters are derived from the Arrhenius mask
+viscosity `eta(T)` and Poisson's ratio:
 
 ```
-μ_v = maskViscosity / (2(1 + ν))
-λ_v = maskViscosity · ν / ((1 + ν)(1 − 2ν))
+eta(T) = eta_ref · exp(E/R · (1/T − 1/T_ref))
+μ_v = eta(T) / (2(1 + ν))
+λ_v = eta(T) · ν / ((1 + ν)(1 − 2ν))
 ```
 
 #### Solve Domain
@@ -383,16 +378,14 @@ The contact is unilateral by default. If the normal traction is tensile
 (`t_n >= 0` with `n̂` pointing from mask to oxide), the ghost velocity falls back
 to the current mask-node velocity and the oxide does not pull the mask.
 
-Contact can also open. The oxide-side ghost node must be inside the oxide band,
-or within `contactGapTolerance` level-set grid units of the oxide/ambient
-surface. If the mask and oxide are separated by a larger gas gap, no traction is
-applied on that face.
+Contact can also open. The oxide-side ghost node must be inside the oxide band;
+if the mask and oxide are separated by gas, no traction is applied on that face.
 
 **Physical interpretation:**
 
 - Larger oxide pressure → larger `t_n` → larger ghost offset → contact node
   accelerates in the normal direction.
-- Larger `maskViscosity` → larger `μ` and `λ` → smaller ghost offset →
+- Larger `eta(T)` → larger `μ` and `λ` → smaller ghost offset →
   contact node responds less to the same traction. Stiffer mask bends slower.
 - Mask thickness enters naturally through the solve domain geometry: a thicker
   mask has more Cartesian cells in the vertical direction, so the traction-driven
@@ -522,9 +515,11 @@ locos->setTemporalScheme(ls::TemporalSchemeEnum::RUNGE_KUTTA_2ND_ORDER);
 locos->apply(advectionTime);
 ```
 
-The oxide/mask interface fixed-point solve uses model defaults of six coupling
-iterations and a mask-velocity residual tolerance of `2.e-2` unless overridden
-with `setMaskCouplingIterations()` or `setMaskCouplingTolerance()`.
+The oxide/mask interface solve uses model defaults of eight coupling iterations
+and a contact-velocity residual tolerance of `2.e-2` unless overridden with
+`setMaskCouplingIterations()` or `setMaskCouplingTolerance()`. The mask velocity
+update is internally Aitken-relaxed, so the fixed-point iteration usually stops
+before the iteration cap without exposing another process parameter.
 
 After `apply()`, the internal velocity fields are accessible for diagnostics:
 
@@ -546,7 +541,8 @@ locos->getMaskCouplingResidual();
 6. Iterate the oxide/mask interface solve:
    - oxide mechanics uses the current mask velocity as its mask boundary
    - mask mechanics uses the updated oxide stress as contact traction
-   - stop when the contact-velocity fixed-point residual is below tolerance
+   - Aitken-relax the mask velocity update on the contact interface
+   - stop when the contact-velocity residual is below tolerance
 8. Create OxidationConstrainedAmbientVelocityField
 9. BooleanOperation(ambientInterface, maskInterface, RELATIVE_COMPLEMENT)  ← pre-clip
 10. Advect ambientInterface with constrainedAmbient velocity
@@ -580,8 +576,9 @@ moves any ambient surface under the nitride with the mask velocity.
 | `oxidantMoleculeDensity` | 1 | Normalized |
 | `expansionCoefficient` | 2.27 | SiO₂/Si volume ratio |
 | `velocitySign` | −1 | Si consumed |
-| `stressCouplingCoefficient` | 1×10⁻¹⁵ Pa⁻¹ | Weak Arrhenius pressure correction on k |
-| `diffusionStressCouplingCoefficient` | 0 | Stress-dependent D (0 = off) |
+| `temperature` | 1273.15 K | Oxidation temperature |
+| `reactionActivationVolume` | 1.76×10⁻³⁵ m³ | Weak pressure correction on k |
+| `diffusionActivationVolume` | 0 | Stress-dependent D (0 = off) |
 | `reactionRateRatio111` | 1 | (111)/(100) rate ratio (1 = isotropic) |
 | `crystalAxis` | {0,1,0} | (100) wafer normal direction |
 | `maskTransferCoefficient` | 0 | Nitride is a perfect oxidant block |
@@ -601,9 +598,6 @@ B/A = k · C*/N  = 0.74  μm/hr    (linear rate constant)
 | `bulkModulus` | 7.5×10⁸ Pa | Pressure ← divergence coupling |
 | `shearModulus` | 3×10¹⁰ Pa | Maxwell deviatoric relaxation |
 | `stressTimeStep` | 0.35 hr | Maxwell relaxation time step |
-| `freeSurfaceTractionScale` | 1 | Traction-free pressure at ambient surface |
-| `substrateNormalStiffness` | 1×10⁹ Pa/μm | Elastic Si substrate resistance |
-| `maskNormalStiffness` | 2×10⁹ Pa/μm | Elastic normal resistance at mask base |
 | `mechanicsIterations` | 2 | Pressure/velocity outer iterations |
 | `pressureIterations` | 500 | Inner pressure Jacobi iterations |
 | `stokesIterations` | 100 | Inner Stokes Jacobi iterations |
@@ -620,11 +614,12 @@ B/A = k · C*/N  = 0.74  μm/hr    (linear rate constant)
 
 | Parameter | Value | Notes |
 |---|---|---|
-| `maskViscosity` | 5×10¹¹ Pa·hr | Effective creep viscosity of the Si₃N₄ mask stack |
+| `temperature` | 1273.15 K | Mask temperature |
+| `referenceTemperature` | 1273.15 K | Reference temperature for the creep law |
+| `referenceViscosity` | 5×10¹¹ Pa·hr | Creep viscosity at `referenceTemperature` |
+| `creepActivationEnergy` | 0 J/mol | Arrhenius temperature dependence disabled in this example |
 | `poissonRatio` | 0.27 | Si₃N₄ Poisson's ratio; sets λ/μ ratio in Lamé viscosity |
-| `maxVelocity` | 0.25 μm/hr | Clamp on mask bending velocity magnitude |
 | `unilateralContact` | true | Oxide can push the mask but not pull it |
-| `contactGapTolerance` | 0 | Contact opens as soon as the oxide-side ghost node leaves the oxide |
 | `anchorMode` | `MIN_BOUNDARY` | Remote lateral mask boundary is fixed |
 | `anchorDirection` | 0 | x-direction anchoring for the 2D LOCOS window |
 | `relaxation` | 0.9 | Bending solve under-relaxation |
@@ -632,13 +627,12 @@ B/A = k · C*/N  = 0.74  μm/hr    (linear rate constant)
 
 The Lamé viscosity parameters are derived as:
 ```
-μ_v = maskViscosity / (2(1+ν))
-λ_v = maskViscosity · ν / ((1+ν)(1−2ν))
+eta(T) = eta_ref · exp(E/R · (1/T − 1/T_ref))
+μ_v = eta(T) / (2(1+ν))
+λ_v = eta(T) · ν / ((1+ν)(1−2ν))
 ```
 
-These play the same role as `viscosity` does in the oxide Stokes solve. The
-example uses a large effective value so the stress-driven response stays below
-the `maxVelocity` clamp and the lateral bending profile remains visible.
+These play the same role as `viscosity` does in the oxide Stokes solve.
 
 ## Diagnostics
 
@@ -657,17 +651,17 @@ suppression ratio    ≈ 1.9e-4  (< 0.05 → mask sanity check passes)
 ```
 Mask elasticity nodes: 324   (all nodes inside the nitride)
 Contact nodes:          81   (nodes at the oxide/mask interface)
-Interface iterations:   6, residual ≈ 1.4e-2
+Interface iterations:   7, residual ≈ 1.2e-2
 Mask bottom velocity:   upward, no downward pull from oxide contact
 Mask lateral samples:   anchored far side ≈ 0, larger upward velocity near edge
 ```
 
-The oxide/mask interface solve is a fixed-point mechanics solve, not a one-way
-post-process: the oxide boundary uses the current mask velocity, the mask
-boundary uses the resulting oxide traction, and the residual measures the
-relative contact-velocity change between interface iterates. Tighter tolerances
-are possible but require additional full oxide/mask solves. The contact-node
-velocity is largest near the mask edge (x ≈ 0) because that is where the oxide
+The oxide/mask interface solve is an Aitken-accelerated fixed-point mechanics
+solve, not a one-way post-process: the oxide boundary uses the current mask
+velocity, the mask boundary uses the resulting oxide traction, and the residual
+measures the relative contact-velocity change between interface iterates.
+Tighter tolerances are possible but require additional full oxide/mask solves.
+The contact-node velocity is largest near the mask edge (x ≈ 0) because that is where the oxide
 deformation velocity has the largest outward normal component relative to the
 mask face. The remote covered side is anchored to remove the rigid Neumann mode,
 so the solved field bends laterally instead of translating the whole mask.
