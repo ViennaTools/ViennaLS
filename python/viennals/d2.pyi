@@ -6,7 +6,7 @@ import collections.abc
 import enum
 import typing
 import viennals._core
-__all__: list[str] = ['Advect', 'BooleanOperation', 'Box', 'BoxDistribution', 'CalculateCurvatures', 'CalculateNormalVectors', 'CalculateVisibilities', 'Check', 'CompareArea', 'CompareChamfer', 'CompareCriticalDimensions', 'CompareNarrowBand', 'CompareSparseField', 'CompareVolume', 'ConvexHull', 'CustomSphereDistribution', 'Cylinder', 'DetectFeatures', 'Domain', 'Expand', 'FinalizeStencilLocalLaxFriedrichs', 'FromMesh', 'FromSurfaceMesh', 'FromVolumeMesh', 'GeometricAdvect', 'GeometricAdvectDistribution', 'LOCOSOxidation', 'MakeGeometry', 'MarkVoidPoints', 'OxidationConstrainedAmbientVelocityField', 'OxidationCoupledModel', 'OxidationCouplingParameters', 'OxidationDeformationParameters', 'OxidationDeformationVelocityField', 'OxidationDiffusionVelocityField', 'OxidationMaskAnchorMode', 'OxidationMaskBendingVelocityField', 'OxidationMaskParameters', 'OxidationParameters', 'OxidationProcessPresets', 'Plane', 'PointCloud', 'PrepareStencilLocalLaxFriedrichs', 'Prune', 'Reader', 'Reduce', 'RemoveStrayPoints', 'Sphere', 'SphereDistribution', 'StencilLocalLaxFriedrichsScalar', 'ToDiskMesh', 'ToHullMesh', 'ToMesh', 'ToMultiSurfaceMesh', 'ToSurfaceMesh', 'ToVoxelMesh', 'WriteVisualizationMesh', 'Writer', 'hrleGrid']
+__all__: list[str] = ['Advect', 'BooleanOperation', 'Box', 'BoxDistribution', 'CalculateCurvatures', 'CalculateNormalVectors', 'CalculateVisibilities', 'Check', 'CompareArea', 'CompareChamfer', 'CompareCriticalDimensions', 'CompareNarrowBand', 'CompareSparseField', 'CompareVolume', 'ConvexHull', 'CustomSphereDistribution', 'Cylinder', 'DetectFeatures', 'Domain', 'Expand', 'FinalizeStencilLocalLaxFriedrichs', 'FromMesh', 'FromSurfaceMesh', 'FromVolumeMesh', 'GeometricAdvect', 'GeometricAdvectDistribution', 'LOCOSOxidation', 'MakeGeometry', 'MarkVoidPoints', 'OxidationConstrainedAmbientVelocityField', 'OxidationCoupledModel', 'OxidationCouplingParameters', 'OxidationDeformationParameters', 'OxidationDeformationVelocityField', 'OxidationDiffusionVelocityField', 'OxidationMaskAnchorMode', 'OxidationMaskBendingVelocityField', 'OxidationMaskParameters', 'OxidationParameters', 'OxidationProcessPresets', 'Plane', 'PointCloud', 'PrepareStencilLocalLaxFriedrichs', 'Prune', 'Reader', 'Reduce', 'ReactionBoundarySample', 'RemoveStrayPoints', 'Sphere', 'SphereDistribution', 'StencilLocalLaxFriedrichsScalar', 'ToDiskMesh', 'ToHullMesh', 'ToMesh', 'ToMultiSurfaceMesh', 'ToSurfaceMesh', 'ToVoxelMesh', 'WriteVisualizationMesh', 'Writer', 'hrleGrid']
 class Advect:
     @typing.overload
     def __init__(self) -> None:
@@ -155,6 +155,16 @@ class OxidationProcessPresets:
     @staticmethod
     def siliconNitrideMask1000C() -> OxidationMaskParameters:
         ...
+class ReactionBoundarySample:
+    """Sub-grid crossing data returned by OxidationDiffusionVelocityField.getReactionBoundarySample."""
+    def __init__(self) -> None:
+        ...
+    found: bool
+    distance: float
+    concentration: float
+    crossingAxis: int
+    crossingOffset: int
+    nodeIndex: typing.Annotated[collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex], "FixedSize(2)"]
 class OxidationDiffusionVelocityField(viennals._core.VelocityField):
     def __init__(self, reactionInterface: Domain, ambientInterface: Domain, parameters: OxidationParameters = ...) -> None:
         ...
@@ -176,7 +186,11 @@ class OxidationDiffusionVelocityField(viennals._core.VelocityField):
         ...
     def getParameters(self) -> OxidationParameters:
         ...
+    def getReactionBoundarySample(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"]) -> ReactionBoundarySample:
+        ...
     def getResidual(self) -> float:
+        ...
+    def getScalarVelocityFromSample(self, arg0: ReactionBoundarySample) -> float:
         ...
     def setAmbientInterface(self, arg0: Domain) -> None:
         ...

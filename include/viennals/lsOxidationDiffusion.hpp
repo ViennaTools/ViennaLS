@@ -118,6 +118,19 @@ private:
   std::unordered_map<std::size_t, T> pressureLookup;
 
 public:
+  /// Sub-grid accurate sample of the reaction boundary crossing closest to a
+  /// given grid node. Carries the interpolated concentration at the boundary
+  /// point, plus the axis and offset of the edge on which the crossing lies so
+  /// that callers can reconstruct the boundary-point position and normal.
+  struct ReactionBoundarySample {
+    bool found = false;
+    IndexType nodeIndex{};
+    T distance = 1.;
+    T concentration = 0.;
+    unsigned crossingAxis = 0; // Cartesian axis of the crossing edge
+    int crossingOffset = 0;    // +1 or -1: which neighbour the crossing faces
+  };
+
   int maskSign = 1;
 
   std::vector<Node> nodes;
@@ -227,10 +240,15 @@ public:
     solveDiffusion();
 
     maxScalarVelocity_ = 0.;
+    ConstSparseIterator reactionIt(reactionInterface->getDomain());
     for (const auto &node : nodes) {
+      const auto sample = reactionBoundarySampleFromNode(reactionIt, node);
+      if (!sample.found)
+        continue;
       const T rate = getEffectiveReactionRate(node.index);
-      const T vel = std::abs(parameters.velocitySign) * rate * node.concentration /
-                    (parameters.oxidantMoleculeDensity * parameters.expansionCoefficient);
+      const T vel =
+          std::abs(parameters.velocitySign) * rate * sample.concentration /
+          (parameters.oxidantMoleculeDensity * parameters.expansionCoefficient);
       maxScalarVelocity_ = std::max(maxScalarVelocity_, vel);
     }
 
@@ -250,8 +268,13 @@ public:
     for (unsigned i = 0; i < D; ++i)
       index[i] = std::llround(coordinate[i] / gridDelta);
 
-    const T concentration = getConcentration(index);
-    return parameters.velocitySign * getEffectiveReactionRate(index) * concentration /
+    const auto boundarySample = reactionBoundarySample(index);
+    const IndexType rateIndex =
+        boundarySample.found ? boundarySample.nodeIndex : index;
+    const T concentration =
+        boundarySample.found ? boundarySample.concentration
+                             : getReactionBoundaryConcentration(index);
+    return parameters.velocitySign * getEffectiveReactionRate(rateIndex) * concentration /
            (parameters.oxidantMoleculeDensity * parameters.expansionCoefficient);
   }
 
@@ -285,9 +308,43 @@ public:
     return nodes[it->second].concentration;
   }
 
+  T getReactionBoundaryConcentration(const Vec3D<T> &coordinate) const {
+    IndexType index;
+    for (unsigned i = 0; i < D; ++i)
+      index[i] = std::llround(coordinate[i] / gridDelta);
+    return getReactionBoundaryConcentration(index);
+  }
+
+  T getReactionBoundaryConcentration(const IndexType &index) const {
+    const auto sample = reactionBoundarySample(index);
+    return sample.found ? sample.concentration : getConcentration(index);
+  }
+
   unsigned getIterations() const { return iterations; }
   T getResidual() const { return residual; }
   std::size_t getNumberOfSolutionNodes() const { return nodes.size(); }
+
+  /// Return the reaction boundary sample for the grid node nearest to
+  /// `coordinate`. Used by the deformation solver to get both the sub-grid
+  /// concentration and the crossing edge so it can compute a sub-grid normal.
+  ReactionBoundarySample
+  getReactionBoundarySample(const Vec3D<T> &coordinate) const {
+    IndexType index;
+    for (unsigned i = 0; i < D; ++i)
+      index[i] = std::llround(coordinate[i] / gridDelta);
+    return reactionBoundarySample(index);
+  }
+
+  /// Absolute scalar velocity derived from an already-computed boundary sample,
+  /// avoiding a second call to reactionBoundarySample inside getScalarVelocity.
+  T getScalarVelocityFromSample(const ReactionBoundarySample &sample) const {
+    if (!sample.found)
+      return T(0);
+    return std::abs(getEffectiveReactionRate(sample.nodeIndex) *
+                    sample.concentration /
+                    (parameters.oxidantMoleculeDensity *
+                     parameters.expansionCoefficient));
+  }
 
 private:
   void initialiseGrid() {
@@ -433,6 +490,77 @@ private:
       return zeroFluxSide();
 
     return {distance, conductance / denominator, 0.};
+  }
+
+  ReactionBoundarySample reactionBoundarySample(const IndexType &index) const {
+    ConstSparseIterator reactionIt(reactionInterface->getDomain());
+
+    const auto direct = nodeLookup.find(linearIndex(index));
+    if (direct != nodeLookup.end()) {
+      const auto sample =
+          reactionBoundarySampleFromNode(reactionIt, nodes[direct->second]);
+      if (sample.found)
+        return sample;
+    }
+
+    std::size_t bestNode = std::numeric_limits<std::size_t>::max();
+    T bestDistance2 = std::numeric_limits<T>::max();
+    for (std::size_t nodeId = 0; nodeId < nodes.size(); ++nodeId) {
+      T distance2 = 0.;
+      for (unsigned d = 0; d < D; ++d) {
+        const T delta = static_cast<T>(nodes[nodeId].index[d] - index[d]);
+        distance2 += delta * delta;
+      }
+      if (distance2 < bestDistance2) {
+        const auto sample = reactionBoundarySampleFromNode(reactionIt, nodes[nodeId]);
+        if (sample.found) {
+          bestDistance2 = distance2;
+          bestNode = nodeId;
+        }
+      }
+    }
+
+    if (bestNode == std::numeric_limits<std::size_t>::max())
+      return {};
+    return reactionBoundarySampleFromNode(reactionIt, nodes[bestNode]);
+  }
+
+  ReactionBoundarySample
+  reactionBoundarySampleFromNode(ConstSparseIterator &reactionIt,
+                                 const Node &node) const {
+    ReactionBoundarySample best;
+    best.nodeIndex = node.index;
+    T bestDistance = std::numeric_limits<T>::max();
+    const T insidePhi = valueAt(reactionIt, node.index);
+
+    for (unsigned direction = 0; direction < D; ++direction) {
+      for (const int offset : {-1, 1}) {
+        IndexType neighbor = node.index;
+        neighbor[direction] += offset;
+        if (!inBounds(neighbor))
+          continue;
+
+        const T outsidePhi = valueAt(reactionIt, neighbor);
+        if (!crosses(insidePhi, outsidePhi))
+          continue;
+
+        const T distance = crossingDistance(insidePhi, outsidePhi);
+        if (distance >= bestDistance)
+          continue;
+
+        const T diffusion = getEffectiveDiffusionCoefficient(node.index);
+        const auto side = reactionBoundarySide(node.index, distance, diffusion);
+        best.found = true;
+        best.distance = distance;
+        best.concentration =
+            side.nodeCoefficient * node.concentration + side.constant;
+        best.crossingAxis = direction;
+        best.crossingOffset = offset;
+        bestDistance = distance;
+      }
+    }
+
+    return best;
   }
 
   StencilSide ambientBoundarySide(T distance, T diffusion) const {

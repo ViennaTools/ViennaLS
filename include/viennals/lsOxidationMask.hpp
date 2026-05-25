@@ -67,6 +67,12 @@ private:
     Vec3D<T> velocity{0., 0., 0.};
     bool contact = false;
     bool anchor = false;
+    // contactFaceActive[direction*2 + (offset==+1?1:0)]:
+    //   true  → traction BC applies; ghost = velocity[node] + contactFaceTraction[face]
+    //   false → face is free or tensile-contact (use velocity[node] as ghost)
+    // Populated once in buildNodes(); oxide stress doesn't change during inner solve.
+    std::array<bool, 2 * D> contactFaceActive{};
+    std::array<Vec3D<T>, 2 * D> contactFaceTraction{};
   };
 
   SmartPointer<OxidationDeformationVelocityField<T, D>> deformationField =
@@ -345,6 +351,65 @@ private:
       node.anchor = isRigidModeAnchor(node.index);
       if (node.contact)
         ++contactNodes;
+
+      // Precompute traction BCs so the inner GS loop has no HRLE lookups or
+      // stress-tensor queries; oxide stress is fixed during the inner solve.
+      const T mu = lameMu();
+      const T lam = lameLambda();
+      const T normalScale =
+          gridDelta / std::max(lam + T(2) * mu, std::numeric_limits<T>::epsilon());
+      const T tangentialScale =
+          gridDelta / std::max(mu, std::numeric_limits<T>::epsilon());
+
+      for (unsigned dir = 0; dir < D; ++dir) {
+        for (int offset : {-1, 1}) {
+          const unsigned faceIdx = dir * 2u + (offset == 1 ? 1u : 0u);
+          IndexType neighbor = node.index;
+          neighbor[dir] += offset;
+          const bool neighborIsNode =
+              inBounds(neighbor) && nodeLookup.count(linearIndex(neighbor));
+          if (neighborIsNode ||
+              !isContactBoundary(node.index, dir, offset, maskIt)) {
+            node.contactFaceActive[faceIdx] = false;
+            node.contactFaceTraction[faceIdx] = {};
+            continue;
+          }
+
+          // Sample oxide stress at the ghost node (one cell into the oxide).
+          Vec3D<T> faceNormal{0., 0., 0.};
+          faceNormal[dir] = static_cast<T>(offset);
+          Vec3D<T> oxidePt{0., 0., 0.};
+          for (unsigned i = 0; i < D; ++i)
+            oxidePt[i] = node.index[i] * gridDelta;
+          oxidePt[dir] += offset * gridDelta;
+
+          const auto sigma = deformationField->getStressTensor(oxidePt);
+          Vec3D<T> t{0., 0., 0.};
+          for (unsigned i = 0; i < D; ++i)
+            for (unsigned j = 0; j < D; ++j)
+              t[i] += sigma[3 * i + j] * faceNormal[j];
+
+          T tn = 0.;
+          for (unsigned i = 0; i < D; ++i)
+            tn += t[i] * faceNormal[i];
+
+          if (parameters.unilateralContact && tn >= T(0)) {
+            node.contactFaceActive[faceIdx] = false;
+            node.contactFaceTraction[faceIdx] = {};
+            continue;
+          }
+
+          // Fixed traction addition: ghost = vNode + contactFaceTraction
+          Vec3D<T> traction{};
+          for (unsigned i = 0; i < D; ++i) {
+            const T tTangential = t[i] - tn * faceNormal[i];
+            traction[i] = normalScale * tn * faceNormal[i]
+                        + tangentialScale * tTangential;
+          }
+          node.contactFaceActive[faceIdx] = true;
+          node.contactFaceTraction[faceIdx] = traction;
+        }
+      }
     }
   }
 
@@ -354,7 +419,6 @@ private:
     if (nodes.empty())
       return;
 
-    ConstSparseIterator maskIt(maskInterface->getDomain());
     std::vector<Vec3D<T>> previous(nodes.size(), {0., 0., 0.});
     std::vector<Vec3D<T>> next = previous;
 
@@ -376,7 +440,7 @@ private:
         unsigned count = 0;
         for (unsigned direction = 0; direction < D; ++direction) {
           for (int offset : {-1, 1}) {
-            detail::vecAddTo(laplaceAverage, neighborVelocity(maskIt, previous, nodeId,
+            detail::vecAddTo(laplaceAverage, neighborVelocity(previous, nodeId,
                                                               direction, offset));
             ++count;
           }
@@ -386,7 +450,7 @@ private:
             (count == 0) ? previous[nodeId]
                          : detail::vecScaled(laplaceAverage, T(1) / count);
         const Vec3D<T> gradDivCorrection =
-            detail::vecScaled(divergenceGradient(maskIt, previous, nodes[nodeId].index),
+            detail::vecScaled(divergenceGradient(previous, nodes[nodeId].index),
                               gradDivWeight * gridDelta * gridDelta /
                                   (T(2) * static_cast<T>(D)));
         updated = detail::vecAdd(updated, gradDivCorrection);
@@ -409,8 +473,7 @@ private:
       nodes[i].velocity = previous[i];
   }
 
-  Vec3D<T> neighborVelocity(ConstSparseIterator &maskIt,
-                            const std::vector<Vec3D<T>> &velocity,
+  Vec3D<T> neighborVelocity(const std::vector<Vec3D<T>> &velocity,
                             std::size_t nodeId, unsigned direction,
                             int offset) const {
     IndexType neighbor = nodes[nodeId].index;
@@ -422,8 +485,11 @@ private:
     if (found != nodeLookup.end())
       return velocity[found->second];
 
-    if (isContactBoundary(nodes[nodeId].index, direction, offset, maskIt))
-      return tractionGhostVelocity(velocity, nodeId, direction, offset);
+    const unsigned faceIdx = direction * 2u + (offset == 1 ? 1u : 0u);
+    if (nodes[nodeId].contactFaceActive[faceIdx]) {
+      const Vec3D<T> &traction = nodes[nodeId].contactFaceTraction[faceIdx];
+      return detail::vecAdd(velocity[nodeId], traction);
+    }
 
     return velocity[nodeId];
   }
@@ -450,58 +516,9 @@ private:
 
   // Ghost velocity for a Neumann traction BC at the oxide/mask contact face.
   // The face outward normal (mask → oxide) is offset*ê_direction.
-  // Oxide traction: t = σ_oxide · n̂  (full Cauchy stress, row-major 3×3)
-  // Ghost: v_ghost = v_node + h/(λ+2μ)·t_n·n̂ + h/μ·t_tangential
-  Vec3D<T> tractionGhostVelocity(const std::vector<Vec3D<T>> &velocity,
-                                  std::size_t nodeId, unsigned direction,
-                                  int offset) const {
-    // Outward face normal: from mask into oxide
-    Vec3D<T> faceNormal{0., 0., 0.};
-    faceNormal[direction] = static_cast<T>(offset);
 
-    // Sample oxide stress one grid cell into the oxide from the contact face
-    Vec3D<T> oxidePt{0., 0., 0.};
-    for (unsigned i = 0; i < D; ++i)
-      oxidePt[i] = nodes[nodeId].index[i] * gridDelta;
-    oxidePt[direction] += offset * gridDelta;
 
-    // Full Cauchy stress σ = s_dev − p·I, stored row-major: σ[3i+j] = σ_ij
-    const auto sigma = deformationField->getStressTensor(oxidePt);
-
-    // Traction on the mask face: t_i = Σ_j σ_ij · n̂_j
-    Vec3D<T> t{0., 0., 0.};
-    for (unsigned i = 0; i < D; ++i)
-      for (unsigned j = 0; j < D; ++j)
-        t[i] += sigma[3 * i + j] * faceNormal[j];
-
-    // Decompose into normal and tangential components
-    T tn = 0.;
-    for (unsigned i = 0; i < D; ++i)
-      tn += t[i] * faceNormal[i];
-
-    if (parameters.unilateralContact && tn >= T(0))
-      return velocity[nodeId];
-
-    const T mu = lameMu();
-    const T lam = lameLambda();
-    const T normalScale = gridDelta / std::max(lam + T(2) * mu,
-                                               std::numeric_limits<T>::epsilon());
-    const T tangentialScale = gridDelta / std::max(mu,
-                                                   std::numeric_limits<T>::epsilon());
-
-    // v_ghost = v_node + h/(λ+2μ)·t_n·n̂ + h/μ·t_tangential
-    const Vec3D<T> &vNode = velocity[nodeId];
-    Vec3D<T> vGhost{0., 0., 0.};
-    for (unsigned i = 0; i < D; ++i) {
-      const T tTangential = t[i] - tn * faceNormal[i];
-      vGhost[i] = vNode[i] + normalScale * tn * faceNormal[i]
-                            + tangentialScale * tTangential;
-    }
-    return vGhost;
-  }
-
-  Vec3D<T> divergenceGradient(ConstSparseIterator &maskIt,
-                              const std::vector<Vec3D<T>> &velocity,
+  Vec3D<T> divergenceGradient(const std::vector<Vec3D<T>> &velocity,
                               const IndexType &index) const {
     Vec3D<T> gradient{0., 0., 0.};
     for (unsigned component = 0; component < D; ++component) {
@@ -509,15 +526,14 @@ private:
       IndexType minus = index;
       plus[component] += 1;
       minus[component] -= 1;
-      const T plusDiv = divergence(maskIt, velocity, plus);
-      const T minusDiv = divergence(maskIt, velocity, minus);
+      const T plusDiv = divergence(velocity, plus);
+      const T minusDiv = divergence(velocity, minus);
       gradient[component] = (plusDiv - minusDiv) / (T(2) * gridDelta);
     }
     return gradient;
   }
 
-  T divergence(ConstSparseIterator &maskIt,
-               const std::vector<Vec3D<T>> &velocity,
+  T divergence(const std::vector<Vec3D<T>> &velocity,
                const IndexType &index) const {
     if (!inBounds(index))
       return 0.;
@@ -528,9 +544,9 @@ private:
     T result = 0.;
     for (unsigned direction = 0; direction < D; ++direction) {
       const auto plus =
-          neighborVelocity(maskIt, velocity, found->second, direction, 1);
+          neighborVelocity(velocity, found->second, direction, 1);
       const auto minus =
-          neighborVelocity(maskIt, velocity, found->second, direction, -1);
+          neighborVelocity(velocity, found->second, direction, -1);
       result += (plus[direction] - minus[direction]) / (T(2) * gridDelta);
     }
     return result;

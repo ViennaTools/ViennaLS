@@ -87,18 +87,30 @@ int main() {
 
   ls::Vec3D<double> nearReaction{0., 1., 0.};
   ls::Vec3D<double> nearAmbient{0., oxideThickness - 1., 0.};
+  ls::Vec3D<double> reactionBoundary{0., 0., 0.};
 
   const double reactionConcentration =
       oxidation->getConcentration(nearReaction);
   const double ambientConcentration = oxidation->getConcentration(nearAmbient);
+  const double reactionBoundaryConcentration =
+      oxidation->getReactionBoundaryConcentration(reactionBoundary);
 
   VC_TEST_ASSERT(reactionConcentration > 0.)
+  VC_TEST_ASSERT(reactionBoundaryConcentration > 0.)
+  VC_TEST_ASSERT(reactionBoundaryConcentration < reactionConcentration)
   VC_TEST_ASSERT(ambientConcentration > reactionConcentration)
   VC_TEST_ASSERT(ambientConcentration < parameters.equilibriumConcentration)
 
   const double velocity =
       oxidation->getScalarVelocity(nearReaction, 0, {0., 1., 0.}, 0);
   VC_TEST_ASSERT(velocity > 0.)
+  const double boundaryVelocity =
+      oxidation->getScalarVelocity(reactionBoundary, 0, {0., 1., 0.}, 0);
+  const double expectedBoundaryVelocity =
+      parameters.reactionRate * reactionBoundaryConcentration /
+      (parameters.oxidantMoleculeDensity * parameters.expansionCoefficient);
+  VC_TEST_ASSERT(std::abs(boundaryVelocity - expectedBoundaryVelocity) <
+                 1.e-10)
 
   ls::OxidationDeformationParameters<double> deformationParameters;
   deformationParameters.viscosity = 1e3;
@@ -121,7 +133,6 @@ int main() {
   // The (gamma-1)/gamma expansion ratio must be checked at the same y location
   // as the deformation boundary velocity: the reaction interface node at y=0.
   // Querying at y=1 vs y=0 uses different concentrations and breaks the ratio.
-  ls::Vec3D<double> reactionBoundary{0., 0., 0.};
   const double siliconSpeed =
       std::abs(oxidation->getScalarVelocity(reactionBoundary, 0, {0., 1., 0.}, 0));
   const double ambientSpeed =

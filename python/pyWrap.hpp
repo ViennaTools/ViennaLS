@@ -310,6 +310,31 @@ template <int D> void bindApi(py::module &module) {
       .def_static("siliconNitrideMask1000C",
                   &OxidationProcessPresets<T>::siliconNitrideMask1000C);
 
+  // ReactionBoundarySample — sub-grid crossing info returned by
+  // OxidationDiffusionVelocityField::getReactionBoundarySample
+  {
+    using RBS = typename OxidationDiffusionVelocityField<T, D>::ReactionBoundarySample;
+    py::class_<RBS>(module, "ReactionBoundarySample")
+        .def(py::init<>())
+        .def_readwrite("found", &RBS::found)
+        .def_readwrite("distance", &RBS::distance)
+        .def_readwrite("concentration", &RBS::concentration)
+        .def_readwrite("crossingAxis", &RBS::crossingAxis)
+        .def_readwrite("crossingOffset", &RBS::crossingOffset)
+        .def_property(
+            "nodeIndex",
+            [](const RBS &s) {
+              std::array<viennahrle::IndexType, D> arr{};
+              for (unsigned i = 0; i < D; ++i)
+                arr[i] = s.nodeIndex[i];
+              return arr;
+            },
+            [](RBS &s, const std::array<viennahrle::IndexType, D> &arr) {
+              for (unsigned i = 0; i < D; ++i)
+                s.nodeIndex[i] = arr[i];
+            });
+  }
+
   py::class_<OxidationDiffusionVelocityField<T, D>, VelocityField<T>,
              SmartPointer<OxidationDiffusionVelocityField<T, D>>>(
       module, "OxidationDiffusionVelocityField")
@@ -369,7 +394,11 @@ template <int D> void bindApi(py::module &module) {
            &OxidationDiffusionVelocityField<T, D>::getIterations)
       .def("getResidual", &OxidationDiffusionVelocityField<T, D>::getResidual)
       .def("getNumberOfSolutionNodes",
-           &OxidationDiffusionVelocityField<T, D>::getNumberOfSolutionNodes);
+           &OxidationDiffusionVelocityField<T, D>::getNumberOfSolutionNodes)
+      .def("getReactionBoundarySample",
+           &OxidationDiffusionVelocityField<T, D>::getReactionBoundarySample)
+      .def("getScalarVelocityFromSample",
+           &OxidationDiffusionVelocityField<T, D>::getScalarVelocityFromSample);
 
   py::class_<OxidationDeformationParameters<T>>(
       module, "OxidationDeformationParameters", py::module_local())

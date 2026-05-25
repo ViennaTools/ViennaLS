@@ -88,6 +88,11 @@ private:
     std::array<T, 9> strainRateTensor{};
     std::array<T, 9> stressTensor{};
     T vonMisesStress = 0.;
+    // Per-face boundary precomputation: avoids HRLE goToIndices in hot solver loops.
+    // Populated once per apply() in buildNodes(); level-set positions are fixed during the solve.
+    struct FaceBC { Boundary type = Boundary::NONE; T distance = 1.; };
+    std::array<FaceBC, 2 * D> faceBC{};
+    bool touchesAmbient = false;
   };
 
   SmartPointer<Domain<T, D>> reactionInterface = nullptr;
@@ -372,6 +377,28 @@ private:
       if (!increment(index))
         break;
     }
+
+    // Precompute per-face boundary intersections. Level-set positions don't
+    // change during the inner solver, so one computation per apply() suffices.
+    for (auto &node : nodes) {
+      node.touchesAmbient = false;
+      for (unsigned dir = 0; dir < D; ++dir) {
+        for (int off : {-1, 1}) {
+          const unsigned fi = dir * 2u + (off == 1 ? 1u : 0u);
+          IndexType nb = node.index;
+          nb[dir] += off;
+          if (!inBounds(nb) || nodeLookup.count(linearIndex(nb))) {
+            node.faceBC[fi] = {};
+            continue;
+          }
+          const auto bi =
+              boundaryIntersection(reactionIt, ambientIt, maskIt, node.index, nb);
+          node.faceBC[fi] = {bi.boundary, bi.distance};
+          if (bi.boundary == Boundary::AMBIENT)
+            node.touchesAmbient = true;
+        }
+      }
+    }
   }
 
   void solveVelocity() {
@@ -382,10 +409,6 @@ private:
 
     std::vector<Vec3D<T>> previous(nodes.size(), {0., 0., 0.});
     std::vector<Vec3D<T>> next = previous;
-
-    ConstSparseIterator reactionIt(reactionInterface->getDomain());
-    ConstSparseIterator ambientIt(ambientInterface->getDomain());
-    auto maskIt = makeMaskIterator();
 
     for (; iterations < deformationParameters.harmonicIterations; ++iterations) {
       residual = 0.;
@@ -411,9 +434,8 @@ private:
               continue;
             }
 
-            const auto boundary =
-                classifyBoundary(reactionIt, ambientIt, maskIt, node.index,
-                                 neighbor);
+            const unsigned fi = direction * 2u + (offset == 1 ? 1u : 0u);
+            const auto boundary = node.faceBC[fi].type;
             if (boundary == Boundary::REACTION) {
               detail::vecAddTo(sum, reactionBoundaryVelocity(node.index));
             } else if (boundary == Boundary::MASK) {
@@ -484,10 +506,6 @@ private:
     for (std::size_t i = 0; i < nodes.size(); ++i)
       ambientBoundaryPressure[i] = freeSurfacePressureBoundary(nodes[i].index);
 
-    ConstSparseIterator reactionIt(reactionInterface->getDomain());
-    ConstSparseIterator ambientIt(ambientInterface->getDomain());
-    auto maskIt = makeMaskIterator();
-
     T pressureResidual = 0.;
     for (unsigned iteration = 0;
          iteration < deformationParameters.pressureIterations; ++iteration) {
@@ -495,8 +513,7 @@ private:
 
       for (std::size_t nodeId = 0; nodeId < nodes.size(); ++nodeId) {
         const auto &node = nodes[nodeId];
-        if (touchesBoundary(reactionIt, ambientIt, maskIt, node.index,
-                            Boundary::AMBIENT)) {
+        if (node.touchesAmbient) {
           next[nodeId] = ambientBoundaryPressure[nodeId];
           continue;
         }
@@ -505,11 +522,9 @@ private:
         T centerCoefficient = 0.;
         for (unsigned direction = 0; direction < D; ++direction) {
           const auto plus = pressureStencilPoint(
-              reactionIt, ambientIt, maskIt, previous, ambientBoundaryPressure,
-              nodeId, direction, 1);
+              previous, ambientBoundaryPressure, nodeId, direction, 1);
           const auto minus = pressureStencilPoint(
-              reactionIt, ambientIt, maskIt, previous, ambientBoundaryPressure,
-              nodeId, direction, -1);
+              previous, ambientBoundaryPressure, nodeId, direction, -1);
           const T plusCoefficient =
               T(2) / (plus.distance * (plus.distance + minus.distance));
           const T minusCoefficient =
@@ -548,10 +563,6 @@ private:
     std::vector<Vec3D<T>> previous = collectVelocities();
     std::vector<Vec3D<T>> next = previous;
 
-    ConstSparseIterator reactionIt(reactionInterface->getDomain());
-    ConstSparseIterator ambientIt(ambientInterface->getDomain());
-    auto maskIt = makeMaskIterator();
-
     T velocityResidual = 0.;
     for (unsigned iteration = 0;
          iteration < deformationParameters.stokesIterations; ++iteration) {
@@ -563,10 +574,8 @@ private:
         T centerCoefficient = 0.;
 
         for (unsigned direction = 0; direction < D; ++direction) {
-          const auto plus = velocityStencilPoint(reactionIt, ambientIt, maskIt,
-                                                 previous, nodeId, direction, 1);
-          const auto minus = velocityStencilPoint(reactionIt, ambientIt, maskIt,
-                                                  previous, nodeId, direction, -1);
+          const auto plus = velocityStencilPoint(previous, nodeId, direction, 1);
+          const auto minus = velocityStencilPoint(previous, nodeId, direction, -1);
           const T plusCoefficient =
               T(2) / (plus.distance * (plus.distance + minus.distance));
           const T minusCoefficient =
@@ -624,10 +633,7 @@ private:
     return pressures;
   }
 
-  StencilPoint<T> pressureStencilPoint(ConstSparseIterator &reactionIt,
-                                       ConstSparseIterator &ambientIt,
-                                       ConstSparseIterator &maskIt,
-                                       const std::vector<T> &pressure,
+  StencilPoint<T> pressureStencilPoint(const std::vector<T> &pressure,
                                        const std::vector<T> &ambientBoundaryPressure,
                                        std::size_t nodeId, unsigned direction,
                                        int offset) const {
@@ -642,25 +648,21 @@ private:
     if (foundNeighbor != nodeLookup.end())
       return {pressure[foundNeighbor->second], gridDelta};
 
-    const auto intersection =
-        boundaryIntersection(reactionIt, ambientIt, maskIt, node.index, neighbor);
-    if (intersection.boundary == Boundary::AMBIENT)
+    const unsigned fi = direction * 2u + (offset == 1 ? 1u : 0u);
+    const auto &intersection = node.faceBC[fi];
+    if (intersection.type == Boundary::AMBIENT)
       return {ambientBoundaryPressure[nodeId], intersection.distance};
-    if (intersection.boundary == Boundary::REACTION)
-      return {solidInterfacePressureBoundary(node.index, pressure[nodeId]),
-              intersection.distance};
-    if (intersection.boundary == Boundary::MASK)
+    if (intersection.type == Boundary::REACTION ||
+        intersection.type == Boundary::MASK)
       return {solidInterfacePressureBoundary(node.index, pressure[nodeId]),
               intersection.distance};
 
     return {pressure[nodeId], gridDelta};
   }
 
-  StencilPoint<Vec3D<T>> velocityStencilPoint(
-      ConstSparseIterator &reactionIt, ConstSparseIterator &ambientIt,
-      ConstSparseIterator &maskIt,
-      const std::vector<Vec3D<T>> &velocity, std::size_t nodeId,
-      unsigned direction, int offset) const {
+  StencilPoint<Vec3D<T>> velocityStencilPoint(const std::vector<Vec3D<T>> &velocity,
+                                              std::size_t nodeId, unsigned direction,
+                                              int offset) const {
     const auto &node = nodes[nodeId];
     IndexType neighbor = node.index;
     neighbor[direction] += offset;
@@ -672,26 +674,23 @@ private:
     if (foundNeighbor != nodeLookup.end())
       return {velocity[foundNeighbor->second], gridDelta};
 
-    const auto intersection =
-        boundaryIntersection(reactionIt, ambientIt, maskIt, node.index, neighbor);
-    if (intersection.boundary == Boundary::REACTION)
+    const unsigned fi = direction * 2u + (offset == 1 ? 1u : 0u);
+    const auto &intersection = node.faceBC[fi];
+    if (intersection.type == Boundary::REACTION)
       return {reactionBoundaryVelocity(node.index), intersection.distance};
-    if (intersection.boundary == Boundary::AMBIENT)
+    if (intersection.type == Boundary::AMBIENT)
       return {freeSurfaceVelocityBoundary(node.index, direction, offset,
                                           intersection.distance,
                                           velocity[nodeId]),
               intersection.distance};
-    if (intersection.boundary == Boundary::MASK)
+    if (intersection.type == Boundary::MASK)
       return {maskVelocityBoundary(node.index, velocity[nodeId]),
               intersection.distance};
 
     return {velocity[nodeId], gridDelta};
   }
 
-  StencilPoint<T> currentPressureStencilPoint(ConstSparseIterator &reactionIt,
-                                              ConstSparseIterator &ambientIt,
-                                              ConstSparseIterator &maskIt,
-                                              std::size_t nodeId,
+  StencilPoint<T> currentPressureStencilPoint(std::size_t nodeId,
                                               unsigned direction,
                                               int offset) const {
     const auto &node = nodes[nodeId];
@@ -705,14 +704,12 @@ private:
     if (foundNeighbor != nodeLookup.end())
       return {nodes[foundNeighbor->second].pressure, gridDelta};
 
-    const auto intersection =
-        boundaryIntersection(reactionIt, ambientIt, maskIt, node.index, neighbor);
-    if (intersection.boundary == Boundary::AMBIENT)
+    const unsigned fi = direction * 2u + (offset == 1 ? 1u : 0u);
+    const auto &intersection = node.faceBC[fi];
+    if (intersection.type == Boundary::AMBIENT)
       return {freeSurfacePressureBoundary(node.index), intersection.distance};
-    if (intersection.boundary == Boundary::REACTION)
-      return {solidInterfacePressureBoundary(node.index, node.pressure),
-              intersection.distance};
-    if (intersection.boundary == Boundary::MASK)
+    if (intersection.type == Boundary::REACTION ||
+        intersection.type == Boundary::MASK)
       return {solidInterfacePressureBoundary(node.index, node.pressure),
               intersection.distance};
 
@@ -720,10 +717,7 @@ private:
   }
 
   StencilPoint<Vec3D<T>>
-  currentVelocityStencilPoint(ConstSparseIterator &reactionIt,
-                              ConstSparseIterator &ambientIt,
-                              ConstSparseIterator &maskIt,
-                              std::size_t nodeId, unsigned direction,
+  currentVelocityStencilPoint(std::size_t nodeId, unsigned direction,
                               int offset) const {
     const auto &node = nodes[nodeId];
     IndexType neighbor = node.index;
@@ -736,15 +730,15 @@ private:
     if (foundNeighbor != nodeLookup.end())
       return {nodes[foundNeighbor->second].velocity, gridDelta};
 
-    const auto intersection =
-        boundaryIntersection(reactionIt, ambientIt, maskIt, node.index, neighbor);
-    if (intersection.boundary == Boundary::REACTION)
+    const unsigned fi = direction * 2u + (offset == 1 ? 1u : 0u);
+    const auto &intersection = node.faceBC[fi];
+    if (intersection.type == Boundary::REACTION)
       return {reactionBoundaryVelocity(node.index), intersection.distance};
-    if (intersection.boundary == Boundary::AMBIENT)
+    if (intersection.type == Boundary::AMBIENT)
       return {freeSurfaceVelocityBoundary(node.index, direction, offset,
                                           intersection.distance, node.velocity),
               intersection.distance};
-    if (intersection.boundary == Boundary::MASK)
+    if (intersection.type == Boundary::MASK)
       return {maskVelocityBoundary(node.index, node.velocity),
               intersection.distance};
 
@@ -906,9 +900,9 @@ private:
     Vec3D<T> coordinate{0., 0., 0.};
     for (unsigned i = 0; i < D; ++i)
       coordinate[i] = index[i] * gridDelta;
-
     const T expansionVelocity = localExpansionSpeed(coordinate);
-    return detail::vecScaled(reactionNormal(index), reactionSign * expansionVelocity);
+    return detail::vecScaled(reactionNormal(index),
+                             reactionSign * expansionVelocity);
   }
 
   T divergenceAt(const IndexType &index) const {
@@ -1090,13 +1084,8 @@ private:
     if (found == nodeLookup.end())
       return 0.;
 
-    auto reactionIt = ConstSparseIterator(reactionInterface->getDomain());
-    auto ambientIt = ConstSparseIterator(ambientInterface->getDomain());
-    auto maskIt = makeMaskIterator();
-    const auto plus = currentVelocityStencilPoint(reactionIt, ambientIt, maskIt,
-                                                  found->second, direction, 1);
-    const auto minus = currentVelocityStencilPoint(reactionIt, ambientIt, maskIt,
-                                                   found->second, direction, -1);
+    const auto plus = currentVelocityStencilPoint(found->second, direction, 1);
+    const auto minus = currentVelocityStencilPoint(found->second, direction, -1);
     return firstDerivative(minus.value[component],
                            nodes[found->second].velocity[component],
                            plus.value[component], minus.distance,
@@ -1108,13 +1097,8 @@ private:
     if (found == nodeLookup.end())
       return 0.;
 
-    auto reactionIt = ConstSparseIterator(reactionInterface->getDomain());
-    auto ambientIt = ConstSparseIterator(ambientInterface->getDomain());
-    auto maskIt = makeMaskIterator();
-    const auto plus = currentPressureStencilPoint(reactionIt, ambientIt, maskIt,
-                                                  found->second, direction, 1);
-    const auto minus = currentPressureStencilPoint(reactionIt, ambientIt, maskIt,
-                                                   found->second, direction, -1);
+    const auto plus = currentPressureStencilPoint(found->second, direction, 1);
+    const auto minus = currentPressureStencilPoint(found->second, direction, -1);
     return firstDerivative(minus.value, nodes[found->second].pressure,
                            plus.value, minus.distance, plus.distance);
   }
