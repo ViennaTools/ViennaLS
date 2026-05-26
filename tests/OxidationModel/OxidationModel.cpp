@@ -10,14 +10,14 @@
 namespace ls = viennals;
 
 template <int D>
-ls::SmartPointer<ls::OxidationDiffusionVelocityField<double, D>>
+ls::SmartPointer<ls::OxidationDiffusion<double, D>>
 makeOxidationSolve(
     const ls::SmartPointer<ls::Domain<double, D>> &reactionInterface,
     const ls::SmartPointer<ls::Domain<double, D>> &ambientInterface,
     ls::OxidationParameters<double> parameters,
     const viennahrle::Index<D> &minIndex,
     const viennahrle::Index<D> &maxIndex) {
-  auto oxidation = ls::OxidationDiffusionVelocityField<double, D>::New(
+  auto oxidation = ls::OxidationDiffusion<double, D>::New(
       reactionInterface, ambientInterface, parameters);
   oxidation->setSolveBounds(minIndex, maxIndex);
   oxidation->apply();
@@ -63,19 +63,19 @@ int main() {
   parameters.tolerance = 1e-10;
 
   const auto wetPreset =
-      ls::OxidationProcessPresets<double>::wet1000CDealGrove100();
+      ls::OxidationMaterials<double>::wet1000CDealGrove100();
   VC_TEST_ASSERT(std::abs(wetPreset.diffusionCoefficient - 0.157) < 1e-12)
   VC_TEST_ASSERT(std::abs(wetPreset.reactionRate - 0.74) < 1e-12)
   VC_TEST_ASSERT(wetPreset.reactionActivationVolume > 0.)
   const auto oxidePreset =
-      ls::OxidationProcessPresets<double>::oxideMechanics1000C(0.25);
+      ls::OxidationMaterials<double>::oxideMechanics1000C(0.25);
   VC_TEST_ASSERT(oxidePreset.viscosity > 0.)
   VC_TEST_ASSERT(std::abs(oxidePreset.stressTimeStep - 0.25) < 1e-12)
   const auto maskPreset =
-      ls::OxidationProcessPresets<double>::siliconNitrideMask1000C();
+      ls::OxidationMaterials<double>::siliconNitrideMask1000C();
   VC_TEST_ASSERT(maskPreset.referenceViscosity > 0.)
 
-  auto oxidation = ls::OxidationDiffusionVelocityField<double, D>::New(
+  auto oxidation = ls::OxidationDiffusion<double, D>::New(
       reactionInterface, ambientInterface, parameters);
   viennahrle::Index<D> minIndex{-8, -1};
   viennahrle::Index<D> maxIndex{8, 7};
@@ -120,7 +120,7 @@ int main() {
   deformationParameters.tolerance = 1e-8;
 
   auto deformation =
-      ls::OxidationDeformationVelocityField<double, D>::New(
+      ls::OxidationDeformation<double, D>::New(
           reactionInterface, ambientInterface, oxidation, parameters,
           deformationParameters);
   deformation->setSolveBounds(minIndex, maxIndex);
@@ -163,7 +163,7 @@ int main() {
       maskInterface, ls::Box<double, D>::New(maskMin, maskMax))
       .apply();
 
-  auto maskedOxidation = ls::OxidationDiffusionVelocityField<double, D>::New(
+  auto maskedOxidation = ls::OxidationDiffusion<double, D>::New(
       reactionInterface, ambientInterface, parameters);
   maskedOxidation->setMaskInterface(maskInterface, -1);
   maskedOxidation->setSolveBounds(minIndex, maxIndex);
@@ -177,7 +177,7 @@ int main() {
   ls::OxidationDeformationParameters<double> maskedDeformationParameters =
       deformationParameters;
   auto maskedDeformation =
-      ls::OxidationDeformationVelocityField<double, D>::New(
+      ls::OxidationDeformation<double, D>::New(
           reactionInterface, ambientInterface, maskedOxidation, parameters,
           maskedDeformationParameters);
   maskedDeformation->setMaskInterface(maskInterface, -1);
@@ -189,7 +189,7 @@ int main() {
 
   ls::OxidationParameters<double> stressParameters = parameters;
   stressParameters.reactionActivationVolume = 1e-29;
-  auto stressOxidation = ls::OxidationDiffusionVelocityField<double, D>::New(
+  auto stressOxidation = ls::OxidationDiffusion<double, D>::New(
       reactionInterface, ambientInterface, stressParameters);
   stressOxidation->setSolveBounds(minIndex, maxIndex);
   stressOxidation->apply();
@@ -230,7 +230,7 @@ int main() {
   ls::OxidationCouplingParameters<double> couplingParameters;
   couplingParameters.maxIterations = 2;
   couplingParameters.tolerance = 1e12;
-  auto coupled = ls::OxidationCoupledModel<double, D>::New(
+  auto coupled = ls::OxidationModel<double, D>::New(
       oxidation, deformation, couplingParameters);
   coupled->setSolveBounds(minIndex, maxIndex);
   coupled->apply();

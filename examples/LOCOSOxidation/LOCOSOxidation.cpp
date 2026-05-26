@@ -56,9 +56,9 @@ LevelSet makeMask(const double *bounds,
 }
 
 void writeDiagnostics(
-    const ls::SmartPointer<ls::OxidationDiffusionVelocityField<NumericType, D>>
+    const ls::SmartPointer<ls::OxidationDiffusion<NumericType, D>>
         &diffusion,
-    const ls::SmartPointer<ls::OxidationDeformationVelocityField<NumericType, D>>
+    const ls::SmartPointer<ls::OxidationDeformation<NumericType, D>>
         &deformation,
     const viennahrle::Index<D> &minIndex, const viennahrle::Index<D> &maxIndex,
     NumericType gridDelta, const std::string &fileName) {
@@ -124,7 +124,7 @@ int main() {
   // --- Oxidation parameters ---
 
   auto oxParams =
-      ls::OxidationProcessPresets<NumericType>::wet1000CDealGrove100();
+      ls::OxidationMaterials<NumericType>::wet1000CDealGrove100();
   oxParams.velocitySign = -1.;
   oxParams.maskTransferCoefficient = 0.; // nitride-like oxidant blocking
   oxParams.maskConcentration = 0.;
@@ -132,7 +132,7 @@ int main() {
   oxParams.tolerance = 1.e-7;
 
   auto defParams =
-      ls::OxidationProcessPresets<NumericType>::oxideMechanics1000C(
+      ls::OxidationMaterials<NumericType>::oxideMechanics1000C(
           advectionTime);
 
   ls::OxidationCouplingParameters<NumericType> couplingParams;
@@ -141,7 +141,7 @@ int main() {
   couplingParams.relaxation = 1.;
 
   auto maskParams =
-      ls::OxidationProcessPresets<NumericType>::siliconNitrideMask1000C();
+      ls::OxidationMaterials<NumericType>::siliconNitrideMask1000C();
 
   // --- LOCOS step ---
 

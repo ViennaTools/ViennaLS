@@ -71,7 +71,7 @@ void writeSurface(LevelSet levelSet, const std::string &fileName) {
 
 void writeDeformationCSV(
     const ls::SmartPointer<
-        ls::OxidationDeformationVelocityField<NumericType, D>> &deformation,
+        ls::OxidationDeformation<NumericType, D>> &deformation,
     const viennahrle::Index<D> &minIndex, const viennahrle::Index<D> &maxIndex,
     NumericType gridDelta, const std::string &fileName) {
   std::ofstream file(fileName);
@@ -123,7 +123,7 @@ int main() {
   writeSurface(ambientInterface, "step_oxidation_ambient_initial.vtp");
 
   auto params =
-      ls::OxidationProcessPresets<NumericType>::wet1000CDealGrove100();
+      ls::OxidationMaterials<NumericType>::wet1000CDealGrove100();
   // The silicon step is represented as the negative/inside side of this level
   // set. A negative velocity consumes silicon and moves the Si/SiO2 interface
   // into the step; the oxide/ambient interface is moved by the deformation
@@ -133,17 +133,17 @@ int main() {
   params.tolerance = 1e-7;
 
   auto oxidationVelocity =
-      ls::OxidationDiffusionVelocityField<NumericType, D>::New(
+      ls::OxidationDiffusion<NumericType, D>::New(
           siInterface, ambientInterface, params);
   viennahrle::Index<D> minIndex{-100, -40};
   viennahrle::Index<D> maxIndex{100, 80};
   oxidationVelocity->setSolveBounds(minIndex, maxIndex);
   auto deformationParams =
-      ls::OxidationProcessPresets<NumericType>::oxideMechanics1000C(
+      ls::OxidationMaterials<NumericType>::oxideMechanics1000C(
           advectionTime);
 
   auto deformationVelocity =
-      ls::OxidationDeformationVelocityField<NumericType, D>::New(
+      ls::OxidationDeformation<NumericType, D>::New(
           siInterface, ambientInterface, oxidationVelocity, params,
           deformationParams);
   deformationVelocity->setSolveBounds(minIndex, maxIndex);
@@ -153,7 +153,7 @@ int main() {
   couplingParams.tolerance = 1e-6;
   couplingParams.relaxation = 1.0;
   auto coupledOxidation =
-      ls::OxidationCoupledModel<NumericType, D>::New(
+      ls::OxidationModel<NumericType, D>::New(
           oxidationVelocity, deformationVelocity, couplingParams);
   coupledOxidation->setSolveBounds(minIndex, maxIndex);
   coupledOxidation->apply();

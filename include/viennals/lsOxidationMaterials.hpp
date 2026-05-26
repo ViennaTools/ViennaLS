@@ -9,7 +9,7 @@ namespace viennals {
 /// These values are intentionally ordinary parameter objects, not hidden global
 /// state. They make examples reproducible while keeping calibration data in one
 /// place that users can replace with their own process/material database.
-template <class T> struct OxidationProcessPresets {
+template <class T> struct OxidationMaterials {
   static OxidationParameters<T> wet1000CDealGrove100() {
     OxidationParameters<T> params;
     params.diffusionCoefficient = T(0.157);      // um^2/hr, B ~= 2D

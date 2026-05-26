@@ -46,7 +46,7 @@ template <class T> struct OxidationDeformationParameters {
 /// the oxide/ambient interface uses a traction-free boundary, and optional mask
 /// contacts use the mask velocity field.
 template <class T, int D>
-class OxidationDeformationVelocityField final : public VelocityField<T>,
+class OxidationDeformation final : public VelocityField<T>,
                                                 public OxidationSolverBase<T, D> {
   using IndexType = viennahrle::Index<D>;
   using ConstSparseIterator =
@@ -98,7 +98,7 @@ private:
   SmartPointer<Domain<T, D>> reactionInterface = nullptr;
   SmartPointer<Domain<T, D>> ambientInterface = nullptr;
   SmartPointer<Domain<T, D>> maskInterface = nullptr;
-  SmartPointer<OxidationDiffusionVelocityField<T, D>> diffusionField = nullptr;
+  SmartPointer<OxidationDiffusion<T, D>> diffusionField = nullptr;
   SmartPointer<VelocityField<T>> maskVelocityField = nullptr;
   OxidationDeformationParameters<T> deformationParameters;
   OxidationParameters<T> oxidationParameters;
@@ -120,12 +120,12 @@ private:
 public:
   std::vector<Node> nodes;
 
-  OxidationDeformationVelocityField() = default;
+  OxidationDeformation() = default;
 
-  OxidationDeformationVelocityField(
+  OxidationDeformation(
       SmartPointer<Domain<T, D>> passedReactionInterface,
       SmartPointer<Domain<T, D>> passedAmbientInterface,
-      SmartPointer<OxidationDiffusionVelocityField<T, D>> passedDiffusionField,
+      SmartPointer<OxidationDiffusion<T, D>> passedDiffusionField,
       OxidationParameters<T> passedOxidationParameters,
       OxidationDeformationParameters<T> passedDeformationParameters = {})
       : reactionInterface(passedReactionInterface),
@@ -135,7 +135,7 @@ public:
         oxidationParameters(passedOxidationParameters) {}
 
   template <class... Args> static auto New(Args &&...args) {
-    return SmartPointer<OxidationDeformationVelocityField>::New(
+    return SmartPointer<OxidationDeformation>::New(
         std::forward<Args>(args)...);
   }
 
@@ -172,7 +172,7 @@ public:
   }
 
   void setDiffusionField(
-      SmartPointer<OxidationDiffusionVelocityField<T, D>> passedDiffusionField) {
+      SmartPointer<OxidationDiffusion<T, D>> passedDiffusionField) {
     diffusionField = passedDiffusionField;
     solved = false;
   }
@@ -211,7 +211,7 @@ public:
     if (reactionInterface == nullptr || ambientInterface == nullptr ||
         diffusionField == nullptr) {
       Logger::getInstance()
-          .addError("OxidationDeformationVelocityField: Missing interface or "
+          .addError("OxidationDeformation: Missing interface or "
                     "diffusion field.")
           .print();
       return;
@@ -352,7 +352,7 @@ private:
                                  maskInterface, useRequestedBounds,
                                  requestedMinIndex, requestedMaxIndex,
                                  deformationParameters.maxGridPoints,
-                                 "OxidationDeformationVelocityField");
+                                 "OxidationDeformation");
   }
 
   void buildNodes() {

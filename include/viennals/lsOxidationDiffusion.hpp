@@ -11,7 +11,7 @@
 namespace viennals {
 
 /// Parameters for the steady oxidant diffusion model used by
-/// OxidationDiffusionVelocityField.
+/// OxidationDiffusion.
 template <class T> struct OxidationParameters {
   T diffusionCoefficient = 1.;
   T reactionRate = 1.;
@@ -63,7 +63,7 @@ template <class T> struct OxidationParameters {
 /// the paper: oxide is above the reaction interface and below the ambient
 /// interface, i.e. reactionPhi >= 0 and ambientPhi <= 0.
 template <class T, int D>
-class OxidationDiffusionVelocityField final : public VelocityField<T>,
+class OxidationDiffusion final : public VelocityField<T>,
                                               public OxidationSolverBase<T, D> {
   using IndexType = viennahrle::Index<D>;
   using ConstSparseIterator =
@@ -135,9 +135,9 @@ public:
 
   std::vector<Node> nodes;
 
-  OxidationDiffusionVelocityField() = default;
+  OxidationDiffusion() = default;
 
-  OxidationDiffusionVelocityField(
+  OxidationDiffusion(
       SmartPointer<Domain<T, D>> passedReactionInterface,
       SmartPointer<Domain<T, D>> passedAmbientInterface,
       OxidationParameters<T> passedParameters = {})
@@ -146,7 +146,7 @@ public:
   }
 
   template <class... Args> static auto New(Args &&...args) {
-    return SmartPointer<OxidationDiffusionVelocityField>::New(
+    return SmartPointer<OxidationDiffusion>::New(
         std::forward<Args>(args)...);
   }
 
@@ -229,7 +229,7 @@ public:
   void apply() {
     if (reactionInterface == nullptr || ambientInterface == nullptr) {
       Logger::getInstance()
-          .addError("OxidationDiffusionVelocityField: Missing level-set "
+          .addError("OxidationDiffusion: Missing level-set "
                     "interface.")
           .print();
       return;
@@ -352,7 +352,7 @@ private:
                                  maskInterface, useRequestedBounds,
                                  requestedMinIndex, requestedMaxIndex,
                                  parameters.maxGridPoints,
-                                 "OxidationDiffusionVelocityField");
+                                 "OxidationDiffusion");
   }
 
   void buildNodes() {

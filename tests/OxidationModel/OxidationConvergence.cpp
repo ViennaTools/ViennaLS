@@ -73,7 +73,7 @@ NumericType flatAmbientFraction(NumericType minMechanicsBoundaryDistance,
   viennahrle::Index<D> minIndex{-8, -1};
   viennahrle::Index<D> maxIndex{8, 4};
 
-  auto diffusion = ls::OxidationDiffusionVelocityField<NumericType, D>::New(
+  auto diffusion = ls::OxidationDiffusion<NumericType, D>::New(
       reactionInterface, ambientInterface, oxParams);
   diffusion->setSolveBounds(minIndex, maxIndex);
   diffusion->apply();
@@ -90,7 +90,7 @@ NumericType flatAmbientFraction(NumericType minMechanicsBoundaryDistance,
   defParams.stokesTolerance = tolerance;
 
   auto deformation =
-      ls::OxidationDeformationVelocityField<NumericType, D>::New(
+      ls::OxidationDeformation<NumericType, D>::New(
           reactionInterface, ambientInterface, diffusion, oxParams, defParams);
   deformation->setSolveBounds(minIndex, maxIndex);
   deformation->apply();
@@ -147,14 +147,14 @@ void testLOCOSInterfaceConvergence() {
                padOxideThickness + maskThickness);
 
   auto oxParams =
-      ls::OxidationProcessPresets<NumericType>::wet1000CDealGrove100();
+      ls::OxidationMaterials<NumericType>::wet1000CDealGrove100();
   oxParams.velocitySign = -1.;
   oxParams.maskTransferCoefficient = 0.;
   oxParams.maskConcentration = 0.;
   oxParams.tolerance = 1.e-7;
 
   auto defParams =
-      ls::OxidationProcessPresets<NumericType>::oxideMechanics1000C(
+      ls::OxidationMaterials<NumericType>::oxideMechanics1000C(
           advectionTime);
   defParams.pressureIterations = 200;
   defParams.stokesIterations = 60;
@@ -164,7 +164,7 @@ void testLOCOSInterfaceConvergence() {
   couplingParams.tolerance = 1.e-6;
 
   auto maskParams =
-      ls::OxidationProcessPresets<NumericType>::siliconNitrideMask1000C();
+      ls::OxidationMaterials<NumericType>::siliconNitrideMask1000C();
   maskParams.maxIterations = 4000;
 
   const auto toIndex = [](NumericType value) {

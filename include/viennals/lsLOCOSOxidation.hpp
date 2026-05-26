@@ -102,8 +102,8 @@ LOCOSConservationDiagnostics<T> computeLOCOSOpenWindowConservation(
 /// Wrapper that executes one complete LOCOS oxidation time step.
 ///
 /// A LOCOS step couples three physical solves and three level-set advections:
-///   1. Diffusion+deformation coupled solve (OxidationCoupledModel)
-///   2. Nitride mask bending solve (OxidationMaskBendingVelocityField)
+///   1. Diffusion+deformation coupled solve (OxidationModel)
+///   2. Nitride mask bending solve (OxidationMaskBending)
 ///   3. Pre-advection boolean clip (ambientInterface \ maskInterface)
 ///   4. Ambient interface advection (constrained: mask-coupled under nitride)
 ///   5. Si/SiO2 reaction interface advection (diffusion velocity)
@@ -161,9 +161,9 @@ template <class T, int D> class LOCOSOxidation {
   bool maskBendingBoundsSet = false;
 
   // Populated by apply(); available for diagnostics afterwards.
-  SmartPointer<OxidationDiffusionVelocityField<T, D>> diffusionField;
-  SmartPointer<OxidationDeformationVelocityField<T, D>> deformationField;
-  SmartPointer<OxidationMaskBendingVelocityField<T, D>> maskBendingField;
+  SmartPointer<OxidationDiffusion<T, D>> diffusionField;
+  SmartPointer<OxidationDeformation<T, D>> deformationField;
+  SmartPointer<OxidationMaskBending<T, D>> maskBendingField;
 
 public:
   LOCOSOxidation() = default;
@@ -238,19 +238,19 @@ public:
   }
 
   /// Return the diffusion field populated by the most recent apply() call.
-  SmartPointer<OxidationDiffusionVelocityField<T, D>>
+  SmartPointer<OxidationDiffusion<T, D>>
   getDiffusionField() const {
     return diffusionField;
   }
 
   /// Return the deformation field populated by the most recent apply() call.
-  SmartPointer<OxidationDeformationVelocityField<T, D>>
+  SmartPointer<OxidationDeformation<T, D>>
   getDeformationField() const {
     return deformationField;
   }
 
   /// Return the mask bending field populated by the most recent apply() call.
-  SmartPointer<OxidationMaskBendingVelocityField<T, D>>
+  SmartPointer<OxidationMaskBending<T, D>>
   getMaskBendingField() const {
     return maskBendingField;
   }
@@ -289,18 +289,18 @@ public:
 
     // --- Coupled diffusion + deformation solve ---
 
-    diffusionField = OxidationDiffusionVelocityField<T, D>::New(
+    diffusionField = OxidationDiffusion<T, D>::New(
         siInterface, ambientInterface, oxidationParams);
     diffusionField->setMaskInterface(maskInterface, maskInteriorSign);
     diffusionField->setSolveBounds(diffusionMinIndex, diffusionMaxIndex);
 
-    deformationField = OxidationDeformationVelocityField<T, D>::New(
+    deformationField = OxidationDeformation<T, D>::New(
         siInterface, ambientInterface, diffusionField, oxidationParams,
         deformationParams);
     deformationField->setMaskInterface(maskInterface, maskInteriorSign);
     deformationField->setSolveBounds(diffusionMinIndex, diffusionMaxIndex);
 
-    auto coupledModel = OxidationCoupledModel<T, D>::New(
+    auto coupledModel = OxidationModel<T, D>::New(
         diffusionField, deformationField, couplingParams);
     coupledModel->setSolveBounds(diffusionMinIndex, diffusionMaxIndex);
     coupledModel->apply();
@@ -309,7 +309,7 @@ public:
 
     // The bending solve domain is the nitride interior; oxide-side contact
     // faces drive the mask through traction.
-    maskBendingField = OxidationMaskBendingVelocityField<T, D>::New(
+    maskBendingField = OxidationMaskBending<T, D>::New(
         deformationField, maskInterface, maskParams, maskInteriorSign);
     maskBendingField->setAmbientInterface(ambientInterface, maskInteriorSign);
     maskBendingField->setSolveBounds(maskBendingMinIndex, maskBendingMaxIndex);
@@ -331,7 +331,7 @@ public:
     // Ambient nodes inside the nitride are clamped to the mask bending velocity
     // instead of the free oxide velocity.
     auto constrainedAmbient =
-        OxidationConstrainedAmbientVelocityField<T, D>::New(
+        OxidationConstrainedAmbient<T, D>::New(
             deformationField, maskBendingField, maskInterface,
             maskInteriorSign);
 

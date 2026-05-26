@@ -39,7 +39,7 @@ template <class T> struct OxidationMaskParameters {
 /// resulting vector field moves the entire mask body. Repeated applications use
 /// Aitken relaxation on the contact-interface velocity update.
 template <class T, int D>
-class OxidationMaskBendingVelocityField final
+class OxidationMaskBending final
     : public VelocityField<T>,
       public OxidationSolverBase<T, D> {
   using IndexType = viennahrle::Index<D>;
@@ -75,7 +75,7 @@ private:
     std::array<Vec3D<T>, 2 * D> contactFaceTraction{};
   };
 
-  SmartPointer<OxidationDeformationVelocityField<T, D>> deformationField =
+  SmartPointer<OxidationDeformation<T, D>> deformationField =
       nullptr;
   SmartPointer<Domain<T, D>> maskInterface = nullptr;
   SmartPointer<Domain<T, D>> ambientInterface = nullptr;
@@ -97,15 +97,15 @@ private:
   std::vector<Node> nodes;
 
 public:
-  OxidationMaskBendingVelocityField() = default;
+  OxidationMaskBending() = default;
 
-  OxidationMaskBendingVelocityField(
-      SmartPointer<OxidationDeformationVelocityField<T, D>> passedDeformation,
+  OxidationMaskBending(
+      SmartPointer<OxidationDeformation<T, D>> passedDeformation,
       OxidationMaskParameters<T> passedParameters = {})
       : deformationField(passedDeformation), parameters(passedParameters) {}
 
-  OxidationMaskBendingVelocityField(
-      SmartPointer<OxidationDeformationVelocityField<T, D>> passedDeformation,
+  OxidationMaskBending(
+      SmartPointer<OxidationDeformation<T, D>> passedDeformation,
       SmartPointer<Domain<T, D>> passedMaskInterface,
       OxidationMaskParameters<T> passedParameters = {},
       int passedMaskSign = 1)
@@ -113,19 +113,19 @@ public:
         parameters(passedParameters),
         maskSign((passedMaskSign < 0) ? -1 : 1) {}
 
-  static SmartPointer<OxidationMaskBendingVelocityField>
-  New(SmartPointer<OxidationDeformationVelocityField<T, D>> passedDeformation,
+  static SmartPointer<OxidationMaskBending>
+  New(SmartPointer<OxidationDeformation<T, D>> passedDeformation,
       OxidationMaskParameters<T> passedParameters = {}) {
-    return SmartPointer<OxidationMaskBendingVelocityField>::New(
+    return SmartPointer<OxidationMaskBending>::New(
         passedDeformation, passedParameters);
   }
 
-  static SmartPointer<OxidationMaskBendingVelocityField>
-  New(SmartPointer<OxidationDeformationVelocityField<T, D>> passedDeformation,
+  static SmartPointer<OxidationMaskBending>
+  New(SmartPointer<OxidationDeformation<T, D>> passedDeformation,
       SmartPointer<Domain<T, D>> passedMaskInterface,
       OxidationMaskParameters<T> passedParameters = {},
       int passedMaskSign = 1) {
-    return SmartPointer<OxidationMaskBendingVelocityField>::New(
+    return SmartPointer<OxidationMaskBending>::New(
         passedDeformation, passedMaskInterface, passedParameters,
         passedMaskSign);
   }
@@ -139,7 +139,7 @@ public:
 
   /// Provide the SiO₂/ambient interface so that contact faces can be detected
   /// on any mask face that borders the oxide, not only the bottom face.
-  /// ambientSign follows the same convention as OxidationDeformationVelocityField:
+  /// ambientSign follows the same convention as OxidationDeformation:
   /// ambientSign * φ_ambient >= 0 selects nodes inside the oxide band.
   void setAmbientInterface(SmartPointer<Domain<T, D>> passedAmbientInterface,
                            int passedAmbientSign = -1) {
@@ -229,7 +229,7 @@ private:
   void initialiseGrid() {
     initializeGridFromMask(maskInterface, useRequestedBounds, requestedMinIndex,
                            requestedMaxIndex, parameters.maxGridPoints,
-                           "OxidationMaskBendingVelocityField");
+                           "OxidationMaskBending");
   }
 
   std::unordered_map<std::size_t, Vec3D<T>> collectVelocitiesByGridPoint() const {
@@ -671,31 +671,31 @@ private:
 /// field. Mask-contact regions are kinematically constrained to the solved mask
 /// vector velocity and do not receive additional free-surface scalar growth.
 template <class T, int D>
-class OxidationConstrainedAmbientVelocityField final : public VelocityField<T> {
+class OxidationConstrainedAmbient final : public VelocityField<T> {
   using IndexType = viennahrle::Index<D>;
   using ConstSparseIterator =
       viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>;
 
-  SmartPointer<OxidationDeformationVelocityField<T, D>> deformationField =
+  SmartPointer<OxidationDeformation<T, D>> deformationField =
       nullptr;
-  SmartPointer<OxidationMaskBendingVelocityField<T, D>> maskVelocityField =
+  SmartPointer<OxidationMaskBending<T, D>> maskVelocityField =
       nullptr;
   SmartPointer<Domain<T, D>> maskInterface = nullptr;
   int maskSign = 1;
 
 public:
-  OxidationConstrainedAmbientVelocityField() = default;
+  OxidationConstrainedAmbient() = default;
 
-  OxidationConstrainedAmbientVelocityField(
-      SmartPointer<OxidationDeformationVelocityField<T, D>> passedDeformation,
-      SmartPointer<OxidationMaskBendingVelocityField<T, D>> passedMaskVelocity,
+  OxidationConstrainedAmbient(
+      SmartPointer<OxidationDeformation<T, D>> passedDeformation,
+      SmartPointer<OxidationMaskBending<T, D>> passedMaskVelocity,
       SmartPointer<Domain<T, D>> passedMaskInterface, int passedMaskSign = 1)
       : deformationField(passedDeformation),
         maskVelocityField(passedMaskVelocity), maskInterface(passedMaskInterface),
         maskSign((passedMaskSign < 0) ? -1 : 1) {}
 
   template <class... Args> static auto New(Args &&...args) {
-    return SmartPointer<OxidationConstrainedAmbientVelocityField>::New(
+    return SmartPointer<OxidationConstrainedAmbient>::New(
         std::forward<Args>(args)...);
   }
 

@@ -15,11 +15,11 @@ template <class T> struct OxidationCouplingParameters {
 
 /// Iterates diffusion, oxide deformation, and pressure-dependent reaction-rate
 /// feedback on the shared Cartesian solve grid.
-template <class T, int D> class OxidationCoupledModel {
+template <class T, int D> class OxidationModel {
   using IndexType = viennahrle::Index<D>;
 
-  SmartPointer<OxidationDiffusionVelocityField<T, D>> diffusionField = nullptr;
-  SmartPointer<OxidationDeformationVelocityField<T, D>> deformationField =
+  SmartPointer<OxidationDiffusion<T, D>> diffusionField = nullptr;
+  SmartPointer<OxidationDeformation<T, D>> deformationField =
       nullptr;
   OxidationCouplingParameters<T> parameters;
   IndexType minIndex{};
@@ -29,27 +29,27 @@ template <class T, int D> class OxidationCoupledModel {
   T residual = std::numeric_limits<T>::max();
 
 public:
-  OxidationCoupledModel() = default;
+  OxidationModel() = default;
 
-  OxidationCoupledModel(
-      SmartPointer<OxidationDiffusionVelocityField<T, D>> passedDiffusionField,
-      SmartPointer<OxidationDeformationVelocityField<T, D>>
+  OxidationModel(
+      SmartPointer<OxidationDiffusion<T, D>> passedDiffusionField,
+      SmartPointer<OxidationDeformation<T, D>>
           passedDeformationField,
       OxidationCouplingParameters<T> passedParameters = {})
       : diffusionField(passedDiffusionField),
         deformationField(passedDeformationField), parameters(passedParameters) {}
 
   template <class... Args> static auto New(Args &&...args) {
-    return SmartPointer<OxidationCoupledModel>::New(std::forward<Args>(args)...);
+    return SmartPointer<OxidationModel>::New(std::forward<Args>(args)...);
   }
 
   void setDiffusionField(
-      SmartPointer<OxidationDiffusionVelocityField<T, D>> passedDiffusionField) {
+      SmartPointer<OxidationDiffusion<T, D>> passedDiffusionField) {
     diffusionField = passedDiffusionField;
   }
 
   void setDeformationField(
-      SmartPointer<OxidationDeformationVelocityField<T, D>>
+      SmartPointer<OxidationDeformation<T, D>>
           passedDeformationField) {
     deformationField = passedDeformationField;
   }
@@ -72,7 +72,7 @@ public:
     residual = 0.;
     if (diffusionField == nullptr || deformationField == nullptr) {
       Logger::getInstance()
-          .addError("OxidationCoupledModel: Missing diffusion or deformation "
+          .addError("OxidationModel: Missing diffusion or deformation "
                     "field.")
           .print();
       return;
@@ -80,7 +80,7 @@ public:
 
     if (!useRequestedBounds) {
       Logger::getInstance()
-          .addError("OxidationCoupledModel: Solve bounds must be set.")
+          .addError("OxidationModel: Solve bounds must be set.")
           .print();
       return;
     }
