@@ -77,8 +77,10 @@ add_dependencies(${PROJECT_NAME} ${MOD})
 
 set(VIENNALS_LIB_FOLDER ${CMAKE_BINARY_DIR}/${PKG}.libs)
 
-if(VIENNALS_PACKAGE_PYTHON OR MSVC)
-  # Copy the required libraries to the lib folder, this is required for packaging and on Windows
+if((VIENNALS_PACKAGE_PYTHON AND NOT APPLE) OR MSVC)
+  # On macOS, cibuildwheel/delocate vendors dependent dylibs into viennals/.dylibs.
+  # Copying them here as well would load duplicate VTK libraries from viennals.libs.
+  # On other platforms this folder is still required for packaging.
   viennacore_setup_vtk_env(${MOD} ${VIENNALS_LIB_FOLDER})
 endif()
 
