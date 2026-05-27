@@ -78,15 +78,13 @@ public:
       return;
     }
 
-    if (!useRequestedBounds) {
-      Logger::getInstance()
-          .addError("OxidationModel: Solve bounds must be set.")
-          .print();
-      return;
+    if (useRequestedBounds) {
+      diffusionField->setSolveBounds(minIndex, maxIndex);
+      deformationField->setSolveBounds(minIndex, maxIndex);
+    } else {
+      diffusionField->clearSolveBounds();
+      deformationField->clearSolveBounds();
     }
-
-    diffusionField->setSolveBounds(minIndex, maxIndex);
-    deformationField->setSolveBounds(minIndex, maxIndex);
 
     std::unordered_map<std::size_t, T> previousPressures;
     for (; iterations < parameters.maxIterations; ++iterations) {

@@ -3,6 +3,8 @@
 #include <lsOxidationSolverBase.hpp>
 #include <lsOxidationDiffusion.hpp>
 
+#include <omp.h>
+
 namespace viennals {
 
 /// Parameters for the Cartesian-grid oxide deformation model.
@@ -113,6 +115,7 @@ private:
   T avgExpansionSpeed_ = 0.;
   bool avgExpansionSpeedComputed = false;
   bool solved = false;
+  bool nodesDirty_ = true;
   std::array<T, D> maxVelocity_{};
   bool useRequestedBounds = false;
   std::unordered_map<std::size_t, std::array<T, 9>> deviatoricStressHistory;
@@ -141,11 +144,13 @@ public:
 
   void setReactionInterface(SmartPointer<Domain<T, D>> passedInterface) {
     reactionInterface = passedInterface;
+    nodesDirty_ = true;
     solved = false;
   }
 
   void setAmbientInterface(SmartPointer<Domain<T, D>> passedInterface) {
     ambientInterface = passedInterface;
+    nodesDirty_ = true;
     solved = false;
   }
 
@@ -153,11 +158,13 @@ public:
                         int passedMaskSign = 1) {
     maskInterface = passedInterface;
     maskSign = (passedMaskSign < 0) ? -1 : 1;
+    nodesDirty_ = true;
     solved = false;
   }
 
   void clearMaskInterface() {
     maskInterface = nullptr;
+    nodesDirty_ = true;
     solved = false;
   }
 
@@ -199,13 +206,17 @@ public:
     requestedMinIndex = passedMinIndex;
     requestedMaxIndex = passedMaxIndex;
     useRequestedBounds = true;
+    nodesDirty_ = true;
     solved = false;
   }
 
   void clearSolveBounds() {
     useRequestedBounds = false;
+    nodesDirty_ = true;
     solved = false;
   }
+
+  void markGeometryChanged() { nodesDirty_ = true; solved = false; }
 
   void apply() {
     if (reactionInterface == nullptr || ambientInterface == nullptr ||
@@ -217,8 +228,11 @@ public:
       return;
     }
 
-    initialiseGrid();
-    buildNodes();
+    if (nodesDirty_) {
+      initialiseGrid();
+      buildNodes();
+      nodesDirty_ = false;
+    }
     solveVelocity();
     solveMechanics();
     avgExpansionSpeedComputed = false;
@@ -228,6 +242,9 @@ public:
       for (unsigned d = 0; d < D; ++d)
         maxVelocity_[d] = std::max(maxVelocity_[d], std::abs(node.velocity[d]));
     }
+    const auto unresolvedMax = estimateMaxUnresolvedAmbientVelocity();
+    for (unsigned d = 0; d < D; ++d)
+      maxVelocity_[d] = std::max(maxVelocity_[d], unresolvedMax[d]);
 
     solved = true;
   }
@@ -242,7 +259,14 @@ public:
         material != deformationParameters.material)
       return {0., 0., 0.};
 
-    return getVelocity(coordinate);
+    const auto velocity = getVelocity(coordinate);
+    T norm2 = 0.;
+    for (unsigned d = 0; d < D; ++d)
+      norm2 += velocity[d] * velocity[d];
+    if (norm2 > std::numeric_limits<T>::epsilon())
+      return velocity;
+
+    return unresolvedAmbientVelocity(coordinate);
   }
 
   T getScalarVelocity(const Vec3D<T> &coordinate, int material,
@@ -412,6 +436,7 @@ private:
 
     for (; iterations < deformationParameters.harmonicIterations; ++iterations) {
       residual = 0.;
+#pragma omp parallel for schedule(static) reduction(max : residual)
       for (std::size_t nodeId = 0; nodeId < nodes.size(); ++nodeId) {
         const auto &node = nodes[nodeId];
         Vec3D<T> sum{0., 0., 0.};
@@ -497,12 +522,14 @@ private:
       return;
 
     std::vector<T> divergence(nodes.size(), 0.);
+#pragma omp parallel for schedule(static)
     for (std::size_t i = 0; i < nodes.size(); ++i)
       divergence[i] = divergenceAt(nodes[i].index);
 
     std::vector<T> previous = collectPressures();
     std::vector<T> next = previous;
     std::vector<T> ambientBoundaryPressure(nodes.size(), 0.);
+#pragma omp parallel for schedule(static)
     for (std::size_t i = 0; i < nodes.size(); ++i)
       ambientBoundaryPressure[i] = freeSurfacePressureBoundary(nodes[i].index);
 
@@ -510,7 +537,7 @@ private:
     for (unsigned iteration = 0;
          iteration < deformationParameters.pressureIterations; ++iteration) {
       pressureResidual = 0.;
-
+#pragma omp parallel for schedule(static) reduction(max : pressureResidual)
       for (std::size_t nodeId = 0; nodeId < nodes.size(); ++nodeId) {
         const auto &node = nodes[nodeId];
         if (node.touchesAmbient) {
@@ -567,7 +594,7 @@ private:
     for (unsigned iteration = 0;
          iteration < deformationParameters.stokesIterations; ++iteration) {
       velocityResidual = 0.;
-
+#pragma omp parallel for schedule(static) reduction(max : velocityResidual)
       for (std::size_t nodeId = 0; nodeId < nodes.size(); ++nodeId) {
         const auto &node = nodes[nodeId];
         Vec3D<T> sum{0., 0., 0.};
@@ -905,6 +932,41 @@ private:
                              reactionSign * expansionVelocity);
   }
 
+  Vec3D<T> unresolvedAmbientVelocity(const Vec3D<T> &coordinate) const {
+    if (diffusionField == nullptr || ambientInterface == nullptr)
+      return {0., 0., 0.};
+
+    IndexType index;
+    for (unsigned i = 0; i < D; ++i)
+      index[i] = std::llround(coordinate[i] / gridDelta);
+
+    ConstSparseIterator ambientIt(ambientInterface->getDomain());
+    const auto normal = levelSetNormal(ambientIt, index);
+    return detail::vecScaled(normal, localExpansionSpeed(coordinate));
+  }
+
+  Vec3D<T> estimateMaxUnresolvedAmbientVelocity() const {
+    Vec3D<T> maxVelocity{0., 0., 0.};
+    if (ambientInterface == nullptr || diffusionField == nullptr)
+      return maxVelocity;
+
+    ConstSparseIterator ambientIt(ambientInterface->getDomain());
+    for (; !ambientIt.isFinished(); ++ambientIt) {
+      if (!ambientIt.isDefined())
+        continue;
+
+      Vec3D<T> coordinate{0., 0., 0.};
+      const auto &index = ambientIt.getStartIndices();
+      for (unsigned d = 0; d < D; ++d)
+        coordinate[d] = index[d] * gridDelta;
+
+      const auto velocity = unresolvedAmbientVelocity(coordinate);
+      for (unsigned d = 0; d < D; ++d)
+        maxVelocity[d] = std::max(maxVelocity[d], std::abs(velocity[d]));
+    }
+    return maxVelocity;
+  }
+
   T divergenceAt(const IndexType &index) const {
     T divergence = 0.;
     for (unsigned i = 0; i < D; ++i) {
@@ -1027,42 +1089,49 @@ private:
   }
 
   void computeDiagnostics() {
-    for (auto &node : nodes) {
-      node.strainTrace = divergenceAt(node.index);
-    }
+#pragma omp parallel for schedule(static)
+    for (std::size_t i = 0; i < nodes.size(); ++i)
+      nodes[i].strainTrace = divergenceAt(nodes[i].index);
   }
 
   void computeStressTensors() {
-    std::unordered_map<std::size_t, std::array<T, 9>> nextHistory;
     const T relaxationTime = effectiveStressRelaxationTime();
     const T decay =
         (relaxationTime <= std::numeric_limits<T>::epsilon())
             ? T(0)
             : std::exp(-deformationParameters.stressTimeStep / relaxationTime);
 
-    for (auto &node : nodes) {
+    // Per-node computation is independent; collect history keys into a vector
+    // to avoid concurrent map writes, then build the map sequentially below.
+    std::vector<std::pair<std::size_t, std::array<T, 9>>> historyEntries(nodes.size());
+#pragma omp parallel for schedule(static)
+    for (std::size_t i = 0; i < nodes.size(); ++i) {
+      auto &node = nodes[i];
       node.strainRateTensor = strainRateTensorAt(node.index);
       const auto deviatoricRate =
           deviatoricTensor(node.strainRateTensor, node.strainTrace);
-      const auto previousStress =
-          previousDeviatoricStress(node.index);
+      const auto previousStress = previousDeviatoricStress(node.index);
 
       std::array<T, 9> deviatoricStress{};
-      for (unsigned i = 0; i < 9; ++i) {
+      for (unsigned j = 0; j < 9; ++j) {
         const T viscousStress =
-            T(2) * deformationParameters.viscosity * deviatoricRate[i];
-        deviatoricStress[i] =
-            decay * previousStress[i] + (T(1) - decay) * viscousStress;
+            T(2) * deformationParameters.viscosity * deviatoricRate[j];
+        deviatoricStress[j] =
+            decay * previousStress[j] + (T(1) - decay) * viscousStress;
       }
 
       node.stressTensor = deviatoricStress;
-      for (unsigned i = 0; i < 3; ++i)
-        node.stressTensor[tensorIndex(i, i)] -= node.pressure;
+      for (unsigned j = 0; j < 3; ++j)
+        node.stressTensor[tensorIndex(j, j)] -= node.pressure;
 
       node.vonMisesStress = vonMisesFromDeviatoric(deviatoricStress);
-      nextHistory[detail::gridIndexHash<D>(node.index)] = deviatoricStress;
+      historyEntries[i] = {detail::gridIndexHash<D>(node.index), deviatoricStress};
     }
 
+    std::unordered_map<std::size_t, std::array<T, 9>> nextHistory;
+    nextHistory.reserve(nodes.size());
+    for (const auto &entry : historyEntries)
+      nextHistory[entry.first] = entry.second;
     deviatoricStressHistory.swap(nextHistory);
   }
 

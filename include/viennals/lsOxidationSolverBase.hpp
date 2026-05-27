@@ -95,6 +95,12 @@ protected:
   std::array<std::size_t, D> strides{};
   T gridDelta = 1.;
 
+  struct GridBounds {
+    IndexType min{};
+    IndexType max{};
+    bool foundDefinedPoints = false;
+  };
+
   bool crosses(T a, T b) const {
     return (a <= 0. && b >= 0.) || (a >= 0. && b <= 0.);
   }
@@ -195,21 +201,39 @@ protected:
       return false;
     }
 
-    minIndex = reactionGrid.getMinGridPoint();
-    maxIndex = reactionGrid.getMaxGridPoint();
+    IndexType gridMin = reactionGrid.getMinGridPoint();
+    IndexType gridMax = reactionGrid.getMaxGridPoint();
+    for (unsigned i = 0; i < D; ++i) {
+      gridMin[i] = std::max(gridMin[i], ambientGrid.getMinGridPoint(i));
+      gridMax[i] = std::min(gridMax[i], ambientGrid.getMaxGridPoint(i));
+      if (maskInterface != nullptr) {
+        gridMin[i] =
+            std::max(gridMin[i], maskInterface->getGrid().getMinGridPoint(i));
+        gridMax[i] =
+            std::min(gridMax[i], maskInterface->getGrid().getMaxGridPoint(i));
+      }
+    }
+
+    auto bounds = definedPointBounds(reactionInterface);
+    mergeDefinedPointBounds(bounds, ambientInterface);
+    if (maskInterface != nullptr)
+      mergeDefinedPointBounds(bounds, maskInterface);
+
+    minIndex = bounds.foundDefinedPoints ? bounds.min : gridMin;
+    maxIndex = bounds.foundDefinedPoints ? bounds.max : gridMax;
+    applyBoundsPaddingAndClamp(minIndex, maxIndex, gridMin, gridMax);
+
     std::size_t numGridPoints = 1;
     for (unsigned i = 0; i < D; ++i) {
-      minIndex[i] = std::max(minIndex[i], ambientGrid.getMinGridPoint(i));
-      maxIndex[i] = std::min(maxIndex[i], ambientGrid.getMaxGridPoint(i));
-      if (maskInterface != nullptr) {
-        minIndex[i] =
-            std::max(minIndex[i], maskInterface->getGrid().getMinGridPoint(i));
-        maxIndex[i] =
-            std::min(maxIndex[i], maskInterface->getGrid().getMaxGridPoint(i));
-      }
       if (useRequestedBounds) {
         minIndex[i] = std::max(minIndex[i], requestedMinIndex[i]);
         maxIndex[i] = std::min(maxIndex[i], requestedMaxIndex[i]);
+      }
+      if (maxIndex[i] < minIndex[i]) {
+        Logger::getInstance()
+            .addError(solverName + ": Cartesian solve region is empty.")
+            .print();
+        return false;
       }
       extents[i] = static_cast<std::size_t>(maxIndex[i] - minIndex[i] + 1);
       numGridPoints *= extents[i];
@@ -235,13 +259,23 @@ protected:
     auto &grid = maskInterface->getGrid();
     gridDelta = grid.getGridDelta();
 
-    minIndex = grid.getMinGridPoint();
-    maxIndex = grid.getMaxGridPoint();
+    auto bounds = definedPointBounds(maskInterface);
+    minIndex = bounds.foundDefinedPoints ? bounds.min : grid.getMinGridPoint();
+    maxIndex = bounds.foundDefinedPoints ? bounds.max : grid.getMaxGridPoint();
+    applyBoundsPaddingAndClamp(minIndex, maxIndex, grid.getMinGridPoint(),
+                               grid.getMaxGridPoint());
+
     std::size_t numGridPoints = 1;
     for (unsigned i = 0; i < D; ++i) {
       if (useRequestedBounds) {
         minIndex[i] = std::max(minIndex[i], requestedMinIndex[i]);
         maxIndex[i] = std::min(maxIndex[i], requestedMaxIndex[i]);
+      }
+      if (maxIndex[i] < minIndex[i]) {
+        Logger::getInstance()
+            .addError(solverName + ": Cartesian solve region is empty.")
+            .print();
+        return false;
       }
       extents[i] = static_cast<std::size_t>(maxIndex[i] - minIndex[i] + 1);
       numGridPoints *= extents[i];
@@ -256,6 +290,55 @@ protected:
       return false;
     }
     return true;
+  }
+
+private:
+  GridBounds definedPointBounds(SmartPointer<Domain<T, D>> levelSet) const {
+    GridBounds bounds;
+    ConstSparseIterator it(levelSet->getDomain());
+    for (; !it.isFinished(); ++it) {
+      if (!it.isDefined())
+        continue;
+
+      const auto &index = it.getStartIndices();
+      if (!bounds.foundDefinedPoints) {
+        bounds.min = index;
+        bounds.max = index;
+        bounds.foundDefinedPoints = true;
+      } else {
+        for (unsigned i = 0; i < D; ++i) {
+          bounds.min[i] = std::min(bounds.min[i], index[i]);
+          bounds.max[i] = std::max(bounds.max[i], index[i]);
+        }
+      }
+    }
+    return bounds;
+  }
+
+  void mergeDefinedPointBounds(GridBounds &target,
+                               SmartPointer<Domain<T, D>> levelSet) const {
+    const auto source = definedPointBounds(levelSet);
+    if (!source.foundDefinedPoints)
+      return;
+    if (!target.foundDefinedPoints) {
+      target = source;
+      return;
+    }
+    for (unsigned i = 0; i < D; ++i) {
+      target.min[i] = std::min(target.min[i], source.min[i]);
+      target.max[i] = std::max(target.max[i], source.max[i]);
+    }
+  }
+
+  static void applyBoundsPaddingAndClamp(IndexType &minIndex,
+                                         IndexType &maxIndex,
+                                         const IndexType &gridMin,
+                                         const IndexType &gridMax) {
+    constexpr int padding = 4;
+    for (unsigned i = 0; i < D; ++i) {
+      minIndex[i] = std::max(gridMin[i], minIndex[i] - padding);
+      maxIndex[i] = std::min(gridMax[i], maxIndex[i] + padding);
+    }
   }
 };
 

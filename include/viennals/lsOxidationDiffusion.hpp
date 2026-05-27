@@ -8,6 +8,8 @@
 #include <utility>
 #include <vector>
 
+#include <omp.h>
+
 namespace viennals {
 
 /// Parameters for the steady oxidant diffusion model used by
@@ -94,6 +96,9 @@ private:
     IndexType index;
     T concentration = 0.;
     Vec3D<T> siNormal = {0., 0., 0.}; // unit outward normal of Si surface (into oxide)
+    // Per-face boundary cache: eliminates goToIndices() from the parallel solve loop.
+    struct FaceBC { Boundary type = Boundary::NONE; T distance = 1.; };
+    std::array<FaceBC, 2 * D> faceBC{};
   };
 
   struct StencilSide {
@@ -114,6 +119,7 @@ private:
   T residual = std::numeric_limits<T>::max();
   T maxScalarVelocity_ = 0.;
   bool solved = false;
+  bool nodesDirty_ = true;  // true → rebuild grid/nodes on next apply()
   bool useRequestedBounds = false;
   std::unordered_map<std::size_t, T> pressureLookup;
 
@@ -150,26 +156,30 @@ public:
         std::forward<Args>(args)...);
   }
 
+  /// Call after any in-place modification of the level sets (e.g. after
+  /// ls::Advect) so that the next apply() rebuilds the Cartesian node grid.
+  void markGeometryChanged() { nodesDirty_ = true; solved = false; }
+
   void setReactionInterface(SmartPointer<Domain<T, D>> passedInterface) {
     reactionInterface = passedInterface;
-    solved = false;
+    nodesDirty_ = true; solved = false;
   }
 
   void setAmbientInterface(SmartPointer<Domain<T, D>> passedInterface) {
     ambientInterface = passedInterface;
-    solved = false;
+    nodesDirty_ = true; solved = false;
   }
 
   void setMaskInterface(SmartPointer<Domain<T, D>> passedInterface,
                         int passedMaskSign = 1) {
     maskInterface = passedInterface;
     maskSign = (passedMaskSign < 0) ? -1 : 1;
-    solved = false;
+    nodesDirty_ = true; solved = false;
   }
 
   void clearMaskInterface() {
     maskInterface = nullptr;
-    solved = false;
+    nodesDirty_ = true; solved = false;
   }
 
   void setParameters(OxidationParameters<T> passedParameters) {
@@ -218,12 +228,12 @@ public:
     requestedMinIndex = passedMinIndex;
     requestedMaxIndex = passedMaxIndex;
     useRequestedBounds = true;
-    solved = false;
+    nodesDirty_ = true; solved = false;
   }
 
   void clearSolveBounds() {
     useRequestedBounds = false;
-    solved = false;
+    nodesDirty_ = true; solved = false;
   }
 
   void apply() {
@@ -235,8 +245,11 @@ public:
       return;
     }
 
-    initialiseGrid();
-    buildNodes();
+    if (nodesDirty_) {
+      initialiseGrid();
+      buildNodes();
+      nodesDirty_ = false;
+    }
     solveDiffusion();
 
     maxScalarVelocity_ = 0.;
@@ -380,6 +393,29 @@ private:
       if (!increment(index))
         break;
     }
+
+    // Precompute per-face boundary intersections. Level-set positions are fixed
+    // during the inner solve, so one computation per apply() suffices and the
+    // hot loop becomes iterator-free (enabling parallelism).
+    ConstSparseIterator faceReactionIt(reactionInterface->getDomain());
+    ConstSparseIterator faceAmbientIt(ambientInterface->getDomain());
+    auto faceMaskIt = makeMaskIterator();
+    for (auto &node : nodes) {
+      for (unsigned dir = 0; dir < D; ++dir) {
+        for (int off : {-1, 1}) {
+          const unsigned fi = dir * 2u + (off == 1 ? 1u : 0u);
+          IndexType nb = node.index;
+          nb[dir] += off;
+          if (!inBounds(nb) || nodeLookup.count(linearIndex(nb))) {
+            node.faceBC[fi] = {};
+            continue;
+          }
+          const auto bc = classifyBoundary(faceReactionIt, faceAmbientIt,
+                                           faceMaskIt, node.index, nb);
+          node.faceBC[fi] = {bc.first, bc.second};
+        }
+      }
+    }
   }
 
   void solveDiffusion() {
@@ -391,12 +427,10 @@ private:
     std::vector<T> previous(nodes.size(), parameters.equilibriumConcentration);
     std::vector<T> next = previous;
 
-    ConstSparseIterator reactionIt(reactionInterface->getDomain());
-    ConstSparseIterator ambientIt(ambientInterface->getDomain());
-    auto maskIt = makeMaskIterator();
-
+    // Face BCs are precomputed in buildNodes(); no per-iteration iterators needed.
     for (; iterations < parameters.maxIterations; ++iterations) {
       residual = 0.;
+#pragma omp parallel for schedule(static) reduction(max : residual)
       for (std::size_t nodeId = 0; nodeId < nodes.size(); ++nodeId) {
         const auto &node = nodes[nodeId];
         T rightHandSide = 0.;
@@ -404,10 +438,10 @@ private:
 
         const T D_eff = getEffectiveDiffusionCoefficient(node.index);
         for (unsigned direction = 0; direction < D; ++direction) {
-          const auto negativeSide = makeStencilSide(
-              reactionIt, ambientIt, maskIt, previous, node.index, direction, -1, D_eff);
-          const auto positiveSide = makeStencilSide(
-              reactionIt, ambientIt, maskIt, previous, node.index, direction, 1, D_eff);
+          const auto negativeSide =
+              makeStencilSide(node, previous, direction, -1, D_eff);
+          const auto positiveSide =
+              makeStencilSide(node, previous, direction, 1, D_eff);
           addAxisContribution(rightHandSide, diagonal, negativeSide,
                               positiveSide, D_eff);
         }
@@ -430,13 +464,10 @@ private:
       nodes[i].concentration = previous[i];
   }
 
-  StencilSide makeStencilSide(ConstSparseIterator &reactionIt,
-                              ConstSparseIterator &ambientIt,
-                              ConstSparseIterator &maskIt,
-                              const std::vector<T> &previous,
-                              const IndexType &nodeIndex, unsigned direction,
-                              int offset, T diffusion) const {
-    IndexType neighbor = nodeIndex;
+  // Uses precomputed node.faceBC — no HRLE iterator access, safe for parallel execution.
+  StencilSide makeStencilSide(const Node &node, const std::vector<T> &previous,
+                              unsigned direction, int offset, T diffusion) const {
+    IndexType neighbor = node.index;
     neighbor[direction] += offset;
 
     if (!inBounds(neighbor))
@@ -446,14 +477,14 @@ private:
     if (foundNeighbor != nodeLookup.end())
       return {gridDelta, 0., previous[foundNeighbor->second]};
 
-    const auto boundary =
-        classifyBoundary(reactionIt, ambientIt, maskIt, nodeIndex, neighbor);
-    if (boundary.first == Boundary::REACTION)
-      return reactionBoundarySide(nodeIndex, boundary.second, diffusion);
-    if (boundary.first == Boundary::AMBIENT)
-      return ambientBoundarySide(boundary.second, diffusion);
-    if (boundary.first == Boundary::MASK)
-      return maskBoundarySide(boundary.second, diffusion);
+    const unsigned fi = direction * 2u + (offset == 1 ? 1u : 0u);
+    const auto &face = node.faceBC[fi];
+    if (face.type == Boundary::REACTION)
+      return reactionBoundarySide(node.index, face.distance, diffusion);
+    if (face.type == Boundary::AMBIENT)
+      return ambientBoundarySide(face.distance, diffusion);
+    if (face.type == Boundary::MASK)
+      return maskBoundarySide(face.distance, diffusion);
     return zeroFluxSide();
   }
 

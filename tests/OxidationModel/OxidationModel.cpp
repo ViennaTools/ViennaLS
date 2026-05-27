@@ -61,6 +61,7 @@ int main() {
   parameters.expansionCoefficient = 2.27;
   parameters.maxIterations = 20000;
   parameters.tolerance = 1e-10;
+  parameters.maxGridPoints = 100000;
 
   const auto wetPreset =
       ls::OxidationMaterials<double>::wet1000CDealGrove100();
@@ -74,6 +75,12 @@ int main() {
   const auto maskPreset =
       ls::OxidationMaterials<double>::siliconNitrideMask1000C();
   VC_TEST_ASSERT(maskPreset.referenceViscosity > 0.)
+
+  auto autoBoundedOxidation = ls::OxidationDiffusion<double, D>::New(
+      reactionInterface, ambientInterface, parameters);
+  autoBoundedOxidation->apply();
+  VC_TEST_ASSERT(autoBoundedOxidation->getNumberOfSolutionNodes() > 0)
+  VC_TEST_ASSERT(autoBoundedOxidation->getResidual() < 1e-6)
 
   auto oxidation = ls::OxidationDiffusion<double, D>::New(
       reactionInterface, ambientInterface, parameters);
