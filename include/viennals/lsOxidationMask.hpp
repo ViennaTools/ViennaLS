@@ -182,6 +182,7 @@ public:
     const auto previousVelocities = collectVelocitiesByGridPoint();
     initialiseGrid();
     buildNodes();
+    correctAnchorFlags();
     solveElasticVelocity();
 
     const auto fixedPointResidual =
@@ -413,6 +414,37 @@ private:
     }
   }
 
+  // Re-tag anchor nodes based on actual node bounds (not padded solve bounds).
+  // buildNodes() calls isRigidModeAnchor() which compares against the padded
+  // solve-bounds minIndex/maxIndex; those are 4+ cells beyond actual mask nodes
+  // so no node ever matches → no anchor → rigid-body floating.
+  // This method fixes that by scanning the built node list for the true extremes.
+  void correctAnchorFlags() {
+    if (parameters.anchorMode == OxidationMaskAnchorMode::NONE || nodes.empty())
+      return;
+
+    const unsigned dir =
+        std::min(parameters.anchorDirection, static_cast<unsigned>(D - 1));
+    const bool applyMin =
+        parameters.anchorMode == OxidationMaskAnchorMode::MIN_BOUNDARY ||
+        parameters.anchorMode == OxidationMaskAnchorMode::BOTH_BOUNDARIES;
+    const bool applyMax =
+        parameters.anchorMode == OxidationMaskAnchorMode::MAX_BOUNDARY ||
+        parameters.anchorMode == OxidationMaskAnchorMode::BOTH_BOUNDARIES;
+
+    auto nodeMin = nodes[0].index[dir];
+    auto nodeMax = nodes[0].index[dir];
+    for (const auto &node : nodes) {
+      if (node.index[dir] < nodeMin) nodeMin = node.index[dir];
+      if (node.index[dir] > nodeMax) nodeMax = node.index[dir];
+    }
+
+    for (auto &node : nodes)
+      node.anchor =
+          (applyMin && node.index[dir] == nodeMin) ||
+          (applyMax && node.index[dir] == nodeMax);
+  }
+
   void solveElasticVelocity() {
     iterations = 0;
     residual = 0.;
@@ -473,25 +505,62 @@ private:
       nodes[i].velocity = previous[i];
   }
 
+  // Returns neighbor velocity without ghost extrapolation (used inside ghost
+  // computations to avoid recursion).
+  Vec3D<T> simpleNeighborVelocity(const std::vector<Vec3D<T>> &velocity,
+                                  std::size_t nodeId, unsigned direction,
+                                  int offset) const {
+    IndexType neighbor = nodes[nodeId].index;
+    neighbor[direction] += offset;
+    if (!inBounds(neighbor))
+      return velocity[nodeId];
+    const auto found = nodeLookup.find(linearIndex(neighbor));
+    return (found != nodeLookup.end()) ? velocity[found->second]
+                                       : velocity[nodeId];
+  }
+
+  // Ghost velocity for a traction-free face (σ·n = 0).
+  // The formula drops gridDelta because the derivative scale and the ghost
+  // extension scale cancel: ghost[n] = node[n] - coeff * Σ_t (v+t[t]-v-t[t])/2,
+  //                          ghost[t] = node[t] - (v+t[n]-v-t[n])/2.
+  // This is independent of which side (offset) the ghost sits on.
+  Vec3D<T> tractionFreeGhost(const std::vector<Vec3D<T>> &velocity,
+                              std::size_t nodeId, unsigned normalDir) const {
+    const T coeff = lameLambda() /
+                    std::max(lameLambda() + T(2) * lameMu(),
+                             std::numeric_limits<T>::epsilon());
+    Vec3D<T> ghost = velocity[nodeId];
+    for (unsigned tanDir = 0; tanDir < D; ++tanDir) {
+      if (tanDir == normalDir)
+        continue;
+      const Vec3D<T> vPlus  = simpleNeighborVelocity(velocity, nodeId, tanDir, +1);
+      const Vec3D<T> vMinus = simpleNeighborVelocity(velocity, nodeId, tanDir, -1);
+      const T dvTanTan  = (vPlus[tanDir]    - vMinus[tanDir])   * T(0.5);
+      const T dvNormTan = (vPlus[normalDir] - vMinus[normalDir]) * T(0.5);
+      ghost[normalDir] -= coeff * dvTanTan;
+      ghost[tanDir]    -= dvNormTan;
+    }
+    return ghost;
+  }
+
   Vec3D<T> neighborVelocity(const std::vector<Vec3D<T>> &velocity,
                             std::size_t nodeId, unsigned direction,
                             int offset) const {
     IndexType neighbor = nodes[nodeId].index;
     neighbor[direction] += offset;
-    if (!inBounds(neighbor))
-      return velocity[nodeId];
 
-    const auto found = nodeLookup.find(linearIndex(neighbor));
-    if (found != nodeLookup.end())
-      return velocity[found->second];
-
-    const unsigned faceIdx = direction * 2u + (offset == 1 ? 1u : 0u);
-    if (nodes[nodeId].contactFaceActive[faceIdx]) {
-      const Vec3D<T> &traction = nodes[nodeId].contactFaceTraction[faceIdx];
-      return detail::vecAdd(velocity[nodeId], traction);
+    if (inBounds(neighbor)) {
+      const auto found = nodeLookup.find(linearIndex(neighbor));
+      if (found != nodeLookup.end())
+        return velocity[found->second];
     }
 
-    return velocity[nodeId];
+    const unsigned faceIdx = direction * 2u + (offset == 1 ? 1u : 0u);
+    if (nodes[nodeId].contactFaceActive[faceIdx])
+      return detail::vecAdd(velocity[nodeId],
+                            nodes[nodeId].contactFaceTraction[faceIdx]);
+
+    return tractionFreeGhost(velocity, nodeId, direction);
   }
 
   bool isRigidModeAnchor(const IndexType &index) const {
@@ -513,10 +582,6 @@ private:
              (maxAnchor && index[direction] == maxIndex[direction]);
     }
   }
-
-  // Ghost velocity for a Neumann traction BC at the oxide/mask contact face.
-  // The face outward normal (mask → oxide) is offset*ê_direction.
-
 
   Vec3D<T> divergenceGradient(const std::vector<Vec3D<T>> &velocity,
                               const IndexType &index) const {
