@@ -95,9 +95,6 @@ public:
       if (residual < parameters.tolerance)
         break;
     }
-
-    diffusionField->apply();
-    deformationField->apply();
   }
 
   unsigned getIterations() const { return iterations; }

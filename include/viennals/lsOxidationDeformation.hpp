@@ -3,6 +3,8 @@
 #include <lsOxidationSolverBase.hpp>
 #include <lsOxidationDiffusion.hpp>
 
+#include <algorithm>
+
 #include <omp.h>
 
 namespace viennals {
@@ -423,6 +425,7 @@ private:
         }
       }
     }
+
   }
 
   void solveVelocity() {
@@ -1078,6 +1081,7 @@ private:
     }
 
     if (norm <= std::numeric_limits<T>::epsilon()) {
+      normal = Vec3D<T>{0., 0., 0.};
       normal[D - 1] = 1.;
       return normal;
     }
@@ -1251,7 +1255,9 @@ private:
       return {Boundary::REACTION,
               crossingDistance(reactionInside, reactionOutside)};
     if (!reactionCrosses && ambientCrosses && !maskCrosses)
-      return {Boundary::AMBIENT, crossingDistance(ambientInside, ambientOutside)};
+      return ambientCrossingInsideMask(maskInside, maskOutside,
+                                       crossingDistance(ambientInside,
+                                                        ambientOutside));
     if (!reactionCrosses && !ambientCrosses && maskCrosses)
       return {Boundary::MASK, crossingDistance(maskInside, maskOutside)};
 
@@ -1266,6 +1272,12 @@ private:
                     : std::numeric_limits<T>::max();
     if (reactionDistance <= ambientDistance && reactionDistance <= maskDistance)
       return {Boundary::REACTION, reactionDistance};
+    if (ambientDistance != std::numeric_limits<T>::max()) {
+      const auto maskedAmbient =
+          ambientCrossingInsideMask(maskInside, maskOutside, ambientDistance);
+      if (maskedAmbient.boundary == Boundary::MASK)
+        return maskedAmbient;
+    }
     if (maskDistance <= ambientDistance)
       return {Boundary::MASK, maskDistance};
     return {Boundary::AMBIENT, ambientDistance};
@@ -1315,19 +1327,35 @@ private:
     return valueAt(maskIt, index);
   }
 
+  BoundaryIntersection ambientCrossingInsideMask(T maskInside, T maskOutside,
+                                                 T distance) const {
+    if (isMaskAtCrossing(maskInside, maskOutside, distance))
+      return {Boundary::MASK, distance};
+    // Outer node is wholly inside the mask body: the oxide/gas surface has
+    // drifted into the nitride. Apply mask Dirichlet BC (not traction-free)
+    // so the deformation solver does not advance the surface further in.
+    // Mirrors the equivalent check in lsOxidationDiffusion::classifyBoundary.
+    if (maskInterface != nullptr &&
+        static_cast<T>(maskSign) * maskOutside >= T(0))
+      return {Boundary::MASK, distance};
+    return {Boundary::AMBIENT, distance};
+  }
+
+  bool isMaskAtCrossing(T maskInside, T maskOutside, T distance) const {
+    if (maskInterface == nullptr)
+      return false;
+    const T fraction = std::clamp(distance / gridDelta, T(0), T(1));
+    const T insidePhi = detail::clampLevelSetPhi(maskInside);
+    const T outsidePhi = detail::clampLevelSetPhi(maskOutside);
+    const T maskPhi = insidePhi + fraction * (outsidePhi - insidePhi);
+    return static_cast<T>(maskSign) * maskPhi >= T(0);
+  }
+
   T crossingDistance(T insidePhi, T outsidePhi) const {
     return detail::levelSetCrossingDistance(
         insidePhi, outsidePhi,
         deformationParameters.minMechanicsBoundaryDistance, gridDelta);
   }
-
-  // Vec3D<T> getNearbyVelocity(const IndexType &index) const {
-  //   const auto nearby = findNearbyNode(index);
-  //   if (nearby == std::numeric_limits<std::size_t>::max())
-  //     return {0., 0., 0.};
-  //   return nodes[nearby].velocity;
-  // }
-
 
   static T firstDerivative(T minusValue, T centerValue, T plusValue,
                            T minusDistance, T plusDistance) {

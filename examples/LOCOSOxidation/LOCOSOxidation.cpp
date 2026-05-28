@@ -172,7 +172,7 @@ int main() {
   locos->setSolveBounds(diffMinIndex, diffMaxIndex);
   locos->setMaskBendingBounds(maskMinIndex, maskMaxIndex);
   locos->setSpatialScheme(ls::SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
-  locos->setTemporalScheme(ls::TemporalSchemeEnum::RUNGE_KUTTA_2ND_ORDER);
+  locos->setTemporalScheme(ls::TemporalSchemeEnum::FORWARD_EULER);
   locos->apply(advectionTime);
 
   // --- Diagnostics ---

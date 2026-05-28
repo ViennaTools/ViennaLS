@@ -68,11 +68,11 @@ private:
     bool contact = false;
     bool anchor = false;
     // contactFaceActive[direction*2 + (offset==+1?1:0)]:
-    //   true  → traction BC applies; ghost = velocity[node] + contactFaceTraction[face]
+    //   true  → velocity-continuity BC applies at the oxide/mask contact face
     //   false → face is free or tensile-contact (use velocity[node] as ghost)
     // Populated once in buildNodes(); oxide stress doesn't change during inner solve.
     std::array<bool, 2 * D> contactFaceActive{};
-    std::array<Vec3D<T>, 2 * D> contactFaceTraction{};
+    std::array<Vec3D<T>, 2 * D> contactFaceVelocity{};
   };
 
   SmartPointer<OxidationDeformation<T, D>> deformationField =
@@ -353,15 +353,6 @@ private:
       if (node.contact)
         ++contactNodes;
 
-      // Precompute traction BCs so the inner GS loop has no HRLE lookups or
-      // stress-tensor queries; oxide stress is fixed during the inner solve.
-      const T mu = lameMu();
-      const T lam = lameLambda();
-      const T normalScale =
-          gridDelta / std::max(lam + T(2) * mu, std::numeric_limits<T>::epsilon());
-      const T tangentialScale =
-          gridDelta / std::max(mu, std::numeric_limits<T>::epsilon());
-
       for (unsigned dir = 0; dir < D; ++dir) {
         for (int offset : {-1, 1}) {
           const unsigned faceIdx = dir * 2u + (offset == 1 ? 1u : 0u);
@@ -372,11 +363,10 @@ private:
           if (neighborIsNode ||
               !isContactBoundary(node.index, dir, offset, maskIt)) {
             node.contactFaceActive[faceIdx] = false;
-            node.contactFaceTraction[faceIdx] = {};
+            node.contactFaceVelocity[faceIdx] = {};
             continue;
           }
 
-          // Sample oxide stress at the ghost node (one cell into the oxide).
           Vec3D<T> faceNormal{0., 0., 0.};
           faceNormal[dir] = static_cast<T>(offset);
           Vec3D<T> oxidePt{0., 0., 0.};
@@ -396,19 +386,20 @@ private:
 
           if (parameters.unilateralContact && tn >= T(0)) {
             node.contactFaceActive[faceIdx] = false;
-            node.contactFaceTraction[faceIdx] = {};
+            node.contactFaceVelocity[faceIdx] = {};
             continue;
           }
 
-          // Fixed traction addition: ghost = vNode + contactFaceTraction
-          Vec3D<T> traction{};
-          for (unsigned i = 0; i < D; ++i) {
-            const T tTangential = t[i] - tn * faceNormal[i];
-            traction[i] = normalScale * tn * faceNormal[i]
-                        + tangentialScale * tTangential;
-          }
+          // Bonded oxide/mask contact: use the local oxide velocity as a
+          // Dirichlet boundary value for the mask velocity. The outer coupling
+          // loop then feeds the mask velocity back to the oxide deformation
+          // solve, enforcing velocity continuity without a fitted traction
+          // scale.
+          const auto contactVelocity =
+              deformationField->getVectorVelocity(oxidePt, parameters.material,
+                                                  faceNormal, 0);
           node.contactFaceActive[faceIdx] = true;
-          node.contactFaceTraction[faceIdx] = traction;
+          node.contactFaceVelocity[faceIdx] = contactVelocity;
         }
       }
     }
@@ -557,8 +548,9 @@ private:
 
     const unsigned faceIdx = direction * 2u + (offset == 1 ? 1u : 0u);
     if (nodes[nodeId].contactFaceActive[faceIdx])
-      return detail::vecAdd(velocity[nodeId],
-                            nodes[nodeId].contactFaceTraction[faceIdx]);
+      return detail::vecSubtract(
+          detail::vecScaled(nodes[nodeId].contactFaceVelocity[faceIdx], T(2)),
+          velocity[nodeId]);
 
     return tractionFreeGhost(velocity, nodeId, direction);
   }
@@ -747,6 +739,8 @@ class OxidationConstrainedAmbient final : public VelocityField<T> {
       nullptr;
   SmartPointer<Domain<T, D>> maskInterface = nullptr;
   int maskSign = 1;
+  std::unordered_map<std::size_t, T> maskPhiCache_;
+  T maskGridDelta_ = 1.;
 
 public:
   OxidationConstrainedAmbient() = default;
@@ -757,7 +751,9 @@ public:
       SmartPointer<Domain<T, D>> passedMaskInterface, int passedMaskSign = 1)
       : deformationField(passedDeformation),
         maskVelocityField(passedMaskVelocity), maskInterface(passedMaskInterface),
-        maskSign((passedMaskSign < 0) ? -1 : 1) {}
+        maskSign((passedMaskSign < 0) ? -1 : 1) {
+    buildMaskPhiCache();
+  }
 
   template <class... Args> static auto New(Args &&...args) {
     return SmartPointer<OxidationConstrainedAmbient>::New(
@@ -767,19 +763,58 @@ public:
   Vec3D<T> getVectorVelocity(const Vec3D<T> &coordinate, int material,
                              const Vec3D<T> &normalVector,
                              unsigned long pointId) final {
-    if (isMaskContact(coordinate) && maskVelocityField != nullptr)
+    const T signedPhi = getSignedMaskPhi(coordinate);
+
+    // At/inside mask surface: kinematic constraint — oxide tracks mask exactly.
+    if (signedPhi >= T(0) && maskVelocityField != nullptr)
       return maskVelocityField->getVectorVelocity(coordinate, material,
                                                   normalVector, pointId);
     if (deformationField == nullptr)
       return {0., 0., 0.};
-    return deformationField->getVectorVelocity(coordinate, material,
-                                               normalVector, pointId);
+
+    auto v_def = deformationField->getVectorVelocity(coordinate, material,
+                                                     normalVector, pointId);
+
+    // Gap zone (0 < b < Δx, i.e. signedPhi ∈ (−Δx, 0)): enforce no-separation.
+    // Project both velocities onto the oxide outward normal; if the mask is
+    // moving away faster than the deformation field, boost the deformation
+    // velocity in the normal direction to match.  This prevents the gap from
+    // widening without touching the level-set geometry, so there are no
+    // corner-snap artefacts at the bird's beak edge.
+    if (maskVelocityField != nullptr) {
+      // Use a 3-cell zone so gaps that have grown to 1–2 grid cells are still
+      // caught.  The boost is safe at this radius: at the bird's beak
+      // def_n >> mask_n, so target_n < def_n and the branch is never taken.
+      if (signedPhi > -T(3) * maskGridDelta_) {
+        auto v_mask = maskVelocityField->getVectorVelocity(
+            coordinate, material, normalVector, pointId);
+        T def_n = T(0), mask_n = T(0);
+        for (int k = 0; k < D; ++k) {
+          def_n  += v_def[k]  * normalVector[k];
+          mask_n += v_mask[k] * normalVector[k];
+        }
+        // Target: oxide normal velocity exceeds mask by a closing fraction of
+        // the local velocity scale.  This drives the oxide into the mask so
+        // the RELATIVE_COMPLEMENT clip always snaps the surfaces co-planar
+        // rather than leaving any persistent void.
+        const T ref_v = std::max(std::abs(mask_n), std::abs(def_n));
+        const T target_n = mask_n + T(1.) * ref_v;
+        if (target_n > def_n) {
+          const T boost = target_n - def_n;
+          Vec3D<T> v_out = v_def;
+          for (int k = 0; k < D; ++k)
+            v_out[k] += boost * normalVector[k];
+          return v_out;
+        }
+      }
+    }
+    return v_def;
   }
 
   T getScalarVelocity(const Vec3D<T> &coordinate, int material,
                       const Vec3D<T> &normalVector,
                       unsigned long pointId) final {
-    if (isMaskContact(coordinate))
+    if (getSignedMaskPhi(coordinate) >= T(0))
       return 0.;
     if (deformationField == nullptr)
       return 0.;
@@ -800,17 +835,35 @@ public:
   }
 
 private:
-  bool isMaskContact(const Vec3D<T> &coordinate) const {
+  // Returns maskSign * maskPhi at the grid node nearest to coordinate.
+  // Positive → inside mask (contact), negative → outside mask (gap or free).
+  // Uses a pre-built cache so no HRLE iterator is constructed in the hot path.
+  // Nodes outside the narrow band return lowest() (unambiguously outside mask).
+  T getSignedMaskPhi(const Vec3D<T> &coordinate) const {
     if (maskInterface == nullptr)
-      return false;
-    ConstSparseIterator maskIt(maskInterface->getDomain());
+      return std::numeric_limits<T>::lowest();
     IndexType index;
-    const T gridDelta = maskInterface->getGrid().getGridDelta();
     for (unsigned i = 0; i < D; ++i)
-      index[i] = std::llround(coordinate[i] / gridDelta);
-    maskIt.goToIndices(index);
-    return maskSign * maskIt.getValue() >= T(0);
+      index[i] = std::llround(coordinate[i] / maskGridDelta_);
+    const auto it = maskPhiCache_.find(detail::gridIndexHash<D>(index));
+    return (it != maskPhiCache_.end()) ? it->second
+                                       : std::numeric_limits<T>::lowest();
   }
+
+  void buildMaskPhiCache() {
+    maskPhiCache_.clear();
+    if (maskInterface == nullptr)
+      return;
+    maskGridDelta_ = maskInterface->getGrid().getGridDelta();
+    for (ConstSparseIterator it(maskInterface->getDomain());
+         !it.isFinished(); ++it) {
+      if (!it.isDefined())
+        continue;
+      const auto key = detail::gridIndexHash<D>(it.getStartIndices());
+      maskPhiCache_[key] = static_cast<T>(maskSign) * it.getValue();
+    }
+  }
+
 };
 
 } // namespace viennals

@@ -145,7 +145,7 @@ template <class T, int D> class LOCOSOxidation {
   SpatialSchemeEnum spatialScheme =
       SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER;
   TemporalSchemeEnum temporalScheme =
-      TemporalSchemeEnum::RUNGE_KUTTA_2ND_ORDER;
+      TemporalSchemeEnum::FORWARD_EULER;
   static constexpr int maskInteriorSign = -1;
   unsigned maskCouplingIterations = 8;
   T maskCouplingTolerance = 2.e-2;
@@ -270,39 +270,24 @@ public:
           .print();
       return;
     }
-    if (!diffusionBoundsSet) {
-      Logger::getInstance()
-          .addError(
-              "LOCOSOxidation: diffusion solve bounds not set. "
-              "Call setSolveBounds() before apply().")
-          .print();
-      return;
-    }
-    if (!maskBendingBoundsSet) {
-      Logger::getInstance()
-          .addError(
-              "LOCOSOxidation: mask bending bounds not set. "
-              "Call setMaskBendingBounds() before apply().")
-          .print();
-      return;
-    }
-
     // --- Coupled diffusion + deformation solve ---
 
     diffusionField = OxidationDiffusion<T, D>::New(
         siInterface, ambientInterface, oxidationParams);
     diffusionField->setMaskInterface(maskInterface, maskInteriorSign);
-    diffusionField->setSolveBounds(diffusionMinIndex, diffusionMaxIndex);
 
     deformationField = OxidationDeformation<T, D>::New(
         siInterface, ambientInterface, diffusionField, oxidationParams,
         deformationParams);
     deformationField->setMaskInterface(maskInterface, maskInteriorSign);
-    deformationField->setSolveBounds(diffusionMinIndex, diffusionMaxIndex);
 
+    // OxidationModel::apply() forwards solve bounds to the sub-solvers; if
+    // bounds were not set, the sub-solvers auto-compute from the level-set
+    // narrow band — no explicit setSolveBounds call is needed here.
     auto coupledModel = OxidationModel<T, D>::New(
         diffusionField, deformationField, couplingParams);
-    coupledModel->setSolveBounds(diffusionMinIndex, diffusionMaxIndex);
+    if (diffusionBoundsSet)
+      coupledModel->setSolveBounds(diffusionMinIndex, diffusionMaxIndex);
     coupledModel->apply();
 
     // --- Mask bending solve ---
@@ -312,7 +297,8 @@ public:
     maskBendingField = OxidationMaskBending<T, D>::New(
         deformationField, maskInterface, maskParams, maskInteriorSign);
     maskBendingField->setAmbientInterface(ambientInterface, maskInteriorSign);
-    maskBendingField->setSolveBounds(maskBendingMinIndex, maskBendingMaxIndex);
+    if (maskBendingBoundsSet)
+      maskBendingField->setSolveBounds(maskBendingMinIndex, maskBendingMaxIndex);
     maskBendingField->apply();
 
     lastMaskCouplingIterations = 1;
@@ -335,11 +321,19 @@ public:
             deformationField, maskBendingField, maskInterface,
             maskInteriorSign);
 
+    // Enforce oxide/mask non-penetration each step.
+    // Sub-grid gaps (oxide surface below mask bottom by < Δx) close naturally
+    // under the deformation velocity — isMaskContact is false in the gap zone,
+    // so the Stokes velocity drives the oxide surface toward the mask without
+    // the corner-snap artifact that a CUSTOM comparator would introduce.
+    auto applyMaskContact = [&]() {
+      BooleanOperation<T, D>(ambientInterface, maskInterface,
+                             BooleanOperationEnum::RELATIVE_COMPLEMENT).apply();
+    };
+
     // --- Pre-advection clip (mandatory) ---
     // The ambient interface must not overlap the mask before advection begins.
-    BooleanOperation<T, D>(ambientInterface, maskInterface,
-                           BooleanOperationEnum::RELATIVE_COMPLEMENT)
-        .apply();
+    applyMaskContact();
 
     // --- Three level-set advections ---
 
@@ -359,11 +353,8 @@ public:
     advect(maskInterface, maskBendingField);
 
     // --- Post-advection clip (mandatory) ---
-    // Corrects any penetration of the ambient interface into the mask volume
-    // that accumulated during the time step.
-    BooleanOperation<T, D>(ambientInterface, maskInterface,
-                           BooleanOperationEnum::RELATIVE_COMPLEMENT)
-        .apply();
+    // Removes any oxide that advected into the mask body during this step.
+    applyMaskContact();
   }
 };
 

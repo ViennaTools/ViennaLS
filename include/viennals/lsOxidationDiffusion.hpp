@@ -113,6 +113,7 @@ private:
   OxidationParameters<T> parameters;
   int reactionSign = 1;
   int ambientSign = -1;
+  int maskSign = 1;
   IndexType requestedMinIndex{};
   IndexType requestedMaxIndex{};
   unsigned iterations = 0;
@@ -122,6 +123,7 @@ private:
   bool nodesDirty_ = true;  // true → rebuild grid/nodes on next apply()
   bool useRequestedBounds = false;
   std::unordered_map<std::size_t, T> pressureLookup;
+  std::vector<Node> nodes;
 
 public:
   /// Sub-grid accurate sample of the reaction boundary crossing closest to a
@@ -136,10 +138,6 @@ public:
     unsigned crossingAxis = 0; // Cartesian axis of the crossing edge
     int crossingOffset = 0;    // +1 or -1: which neighbour the crossing faces
   };
-
-  int maskSign = 1;
-
-  std::vector<Node> nodes;
 
   OxidationDiffusion() = default;
 
@@ -287,7 +285,8 @@ public:
     const T concentration =
         boundarySample.found ? boundarySample.concentration
                              : getReactionBoundaryConcentration(index);
-    return parameters.velocitySign * getEffectiveReactionRate(rateIndex) * concentration /
+    return parameters.velocitySign * getEffectiveReactionRate(rateIndex) *
+           concentration /
            (parameters.oxidantMoleculeDensity * parameters.expansionCoefficient);
   }
 
@@ -534,21 +533,51 @@ private:
         return sample;
     }
 
+    // The reaction velocity is a local interface quantity.  A global nearest
+    // search can smear open-window concentrations deep under a mask if the
+    // local oxide band is temporarily missing or clipped near contact.  Keep
+    // the fallback strictly local, consistent with the velocity-extension
+    // radius used elsewhere in the oxidation fields.
     std::size_t bestNode = std::numeric_limits<std::size_t>::max();
     T bestDistance2 = std::numeric_limits<T>::max();
-    for (std::size_t nodeId = 0; nodeId < nodes.size(); ++nodeId) {
-      T distance2 = 0.;
-      for (unsigned d = 0; d < D; ++d) {
-        const T delta = static_cast<T>(nodes[nodeId].index[d] - index[d]);
-        distance2 += delta * delta;
-      }
-      if (distance2 < bestDistance2) {
-        const auto sample = reactionBoundarySampleFromNode(reactionIt, nodes[nodeId]);
-        if (sample.found) {
-          bestDistance2 = distance2;
-          bestNode = nodeId;
+
+    for (int radius = 1; radius <= 4; ++radius) {
+      IndexType offset{};
+      offset.fill(-radius);
+      while (true) {
+        IndexType candidate = index;
+        T distance2 = 0.;
+        for (unsigned d = 0; d < D; ++d) {
+          candidate[d] += offset[d];
+          distance2 += static_cast<T>(offset[d] * offset[d]);
         }
+
+        if (distance2 > T(0) && inBounds(candidate)) {
+          const auto found = nodeLookup.find(linearIndex(candidate));
+          if (found != nodeLookup.end() && distance2 < bestDistance2) {
+            const auto sample =
+                reactionBoundarySampleFromNode(reactionIt, nodes[found->second]);
+            if (sample.found) {
+              bestDistance2 = distance2;
+              bestNode = found->second;
+            }
+          }
+        }
+
+        unsigned dim = 0;
+        for (; dim < D; ++dim) {
+          if (offset[dim] < radius) {
+            ++offset[dim];
+            break;
+          }
+          offset[dim] = -radius;
+        }
+        if (dim == D)
+          break;
       }
+
+      if (bestNode != std::numeric_limits<std::size_t>::max())
+        break;
     }
 
     if (bestNode == std::numeric_limits<std::size_t>::max())
@@ -732,6 +761,19 @@ private:
 
     if (reactionDistance <= ambientDistance && reactionDistance <= maskDistance)
       return {Boundary::REACTION, reactionDistance};
+
+    // Ambient crossing heads into mask-occupied space: the oxide/gas surface
+    // has drifted under the nitride. Classify as MASK regardless of whether
+    // the crossings are coincident (isMaskAtCrossing) or the outer node is
+    // wholly inside the mask body (valueAtMask check). This is equivalent to
+    // sealing the diffusion domain with UNION(ambientInterface, maskInterface)
+    // without mutating any level set.
+    if (ambientDistance != std::numeric_limits<T>::max() &&
+        (isMaskAtCrossing(maskInside, maskOutside, ambientDistance) ||
+         (maskInterface != nullptr &&
+          static_cast<T>(maskSign) * valueAtMask(maskIt, outside) >= T(0))))
+      return {Boundary::MASK, ambientDistance};
+
     if (maskDistance <= ambientDistance)
       return {Boundary::MASK, maskDistance};
     return {Boundary::AMBIENT, ambientDistance};
@@ -757,6 +799,16 @@ private:
     if (maskInterface == nullptr)
       return std::numeric_limits<T>::max();
     return valueAt(maskIt, index);
+  }
+
+  bool isMaskAtCrossing(T maskInside, T maskOutside, T distance) const {
+    if (maskInterface == nullptr)
+      return false;
+    const T fraction = std::clamp(distance / gridDelta, T(0), T(1));
+    const T insidePhi = detail::clampLevelSetPhi(maskInside);
+    const T outsidePhi = detail::clampLevelSetPhi(maskOutside);
+    const T maskPhi = insidePhi + fraction * (outsidePhi - insidePhi);
+    return static_cast<T>(maskSign) * maskPhi >= T(0);
   }
 
   T crossingDistance(T insidePhi, T outsidePhi) const {

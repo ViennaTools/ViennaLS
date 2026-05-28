@@ -24,7 +24,7 @@ inline std::size_t gridIndexHash(const viennahrle::Index<D> &index) {
   std::size_t seed = 0;
   for (unsigned i = 0; i < static_cast<unsigned>(D); ++i) {
     seed ^= std::hash<long long>{}(static_cast<long long>(index[i])) +
-             0x9e3779b9 + (seed << 6) + (seed >> 2);
+             std::size_t(0x9e3779b97f4a7c15ULL) + (seed << 6) + (seed >> 2);
   }
   return seed;
 }

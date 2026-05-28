@@ -146,7 +146,7 @@ int runSimulation() {
   if constexpr (D == 3) {
     bounds[4] = -zExtent; bounds[5] = zExtent;
   }
-  ls::Domain<NumericType, D>::BoundaryType boundaryCons[D];
+  typename ls::Domain<NumericType, D>::BoundaryType boundaryCons[D];
   boundaryCons[0] = ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
   boundaryCons[1] = ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
   if constexpr (D == 3) {
@@ -263,7 +263,7 @@ int runSimulation() {
   ambientAdvection.setSpatialScheme(
       ls::SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
   ambientAdvection.setTemporalScheme(
-      ls::TemporalSchemeEnum::RUNGE_KUTTA_2ND_ORDER);
+      ls::TemporalSchemeEnum::FORWARD_EULER);
   ambientAdvection.setAdvectionTime(advectionTime);
   ambientAdvection.apply();
 
@@ -273,7 +273,7 @@ int runSimulation() {
   reactionAdvection.setSpatialScheme(
       ls::SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
   reactionAdvection.setTemporalScheme(
-      ls::TemporalSchemeEnum::RUNGE_KUTTA_2ND_ORDER);
+      ls::TemporalSchemeEnum::FORWARD_EULER);
   reactionAdvection.setAdvectionTime(advectionTime);
   reactionAdvection.apply();
 
