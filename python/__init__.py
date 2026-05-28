@@ -37,6 +37,20 @@ d2 = _C.d2
 d3 = _C.d3
 _sys.modules[__name__ + ".d2"] = d2
 _sys.modules[__name__ + ".d3"] = d3
+
+_SHARED_OXIDATION_TYPES = (
+    "OxidationParameters",
+    "OxidationMaterials",
+    "OxidationDeformationParameters",
+    "OxidationMaskAnchorMode",
+    "OxidationMaskParameters",
+    "OxidationCouplingParameters",
+)
+for _name in _SHARED_OXIDATION_TYPES:
+    if hasattr(_C, _name):
+        setattr(d2, _name, getattr(_C, _name))
+        setattr(d3, _name, getattr(_C, _name))
+
 PROXY_DIM = 2  # default dimension for proxy classes
 
 
