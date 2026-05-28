@@ -23,8 +23,8 @@ from viennals._core import Mesh
 from viennals._core import NormalCalculationMethodEnum
 from viennals._core import PointData
 from viennals._core import Slice
-from viennals._core import SpatialSchemeEnum as IntegrationSchemeEnum
 from viennals._core import SpatialSchemeEnum
+from viennals._core import SpatialSchemeEnum as IntegrationSchemeEnum
 from viennals._core import TemporalSchemeEnum
 from viennals._core import TransformEnum
 from viennals._core import TransformMesh
@@ -46,8 +46,8 @@ from viennals.d2 import CompareChamfer
 from viennals.d2 import CompareCriticalDimensions
 from viennals.d2 import CompareNarrowBand
 from viennals.d2 import CompareSparseField
-from viennals.d2 import CompareVolume
 from viennals.d2 import CompareVolume as CompareArea
+from viennals.d2 import CompareVolume
 from viennals.d2 import ConvexHull
 from viennals.d2 import CustomSphereDistribution
 from viennals.d2 import Cylinder
@@ -112,6 +112,6 @@ def setDimension(d: int):
         
     """
 PROXY_DIM: int = 2
-__version__: str = '5.7.2'
-version: str = '5.7.2'
+__version__: str = '5.7.3'
+version: str = '5.7.3'
 _C = _core
