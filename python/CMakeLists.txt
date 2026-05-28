@@ -21,6 +21,13 @@ else()
   list(APPEND CMAKE_INSTALL_RPATH "@loader_path")
   list(APPEND CMAKE_INSTALL_RPATH "@loader_path/../vtkmodules")
   list(APPEND CMAKE_INSTALL_RPATH "@loader_path/../viennals.libs")
+
+  if(VIENNALS_PACKAGE_PYTHON AND NOT VIENNALS_VTK_PYTHON_LIBS)
+    # Do not install viennals.libs manually on macOS. This build-tree rpath
+    # only lets delocate resolve VTK's @rpath dependencies during wheel repair;
+    # delocate then vendors the dylibs into viennals/.dylibs and strips it.
+    list(APPEND CMAKE_INSTALL_RPATH "${CMAKE_BINARY_DIR}/_deps/vtk-build/lib")
+  endif()
 endif()
 
 # --------------------------------------------------------------------------------------------------------
@@ -78,9 +85,8 @@ add_dependencies(${PROJECT_NAME} ${MOD})
 set(VIENNALS_LIB_FOLDER ${CMAKE_BINARY_DIR}/${PKG}.libs)
 
 if((VIENNALS_PACKAGE_PYTHON AND NOT APPLE) OR MSVC)
-  # On macOS, cibuildwheel/delocate vendors dependent dylibs into viennals/.dylibs.
-  # Copying them here as well would load duplicate VTK libraries from viennals.libs.
-  # On other platforms this folder is still required for packaging.
+  # macOS wheels let delocate own dylib vendoring to avoid duplicate VTK copies.
+  # Other package builds still need this staged dependency folder.
   viennacore_setup_vtk_env(${MOD} ${VIENNALS_LIB_FOLDER})
 endif()
 
