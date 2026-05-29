@@ -244,9 +244,16 @@ public:
     }
 
     if (nodesDirty_) {
-      initialiseGrid();
+      if (!initialiseGrid())
+        return; // base class already logged the error
       buildNodes();
       nodesDirty_ = false;
+      if (nodes.empty())
+        Logger::getInstance()
+            .addWarning("OxidationDiffusion: no oxide nodes found after "
+                        "buildNodes(). Verify that the reaction and ambient "
+                        "level sets enclose a non-empty oxide band.")
+            .print();
     }
     solveDiffusion();
 
@@ -359,12 +366,12 @@ public:
   }
 
 private:
-  void initialiseGrid() {
-    initializeGridFromInterfaces(reactionInterface, ambientInterface,
-                                 maskInterface, useRequestedBounds,
-                                 requestedMinIndex, requestedMaxIndex,
-                                 parameters.maxGridPoints,
-                                 "OxidationDiffusion");
+  bool initialiseGrid() {
+    return initializeGridFromInterfaces(reactionInterface, ambientInterface,
+                                        maskInterface, useRequestedBounds,
+                                        requestedMinIndex, requestedMaxIndex,
+                                        parameters.maxGridPoints,
+                                        "OxidationDiffusion");
   }
 
   void buildNodes() {
@@ -423,7 +430,7 @@ private:
     if (nodes.empty())
       return;
 
-    std::vector<T> previous(nodes.size(), parameters.equilibriumConcentration);
+    std::vector<T> previous(nodes.size(), 0.);
     std::vector<T> next = previous;
 
     // Face BCs are precomputed in buildNodes(); no per-iteration iterators needed.

@@ -2,6 +2,7 @@
 
 #include <lsOxidationMask.hpp>
 
+#include <string>
 #include <unordered_map>
 
 namespace viennals {
@@ -88,19 +89,59 @@ public:
 
     std::unordered_map<std::size_t, T> previousPressures;
     for (; iterations < parameters.maxIterations; ++iterations) {
+      logDebug("OxidationModel: coupling iteration " +
+              std::to_string(iterations + 1) + "/" +
+              std::to_string(parameters.maxIterations) +
+              " starting diffusion solve");
       diffusionField->apply();
+      logDebug("OxidationModel: diffusion solve complete, nodes=" +
+              std::to_string(diffusionField->getNumberOfSolutionNodes()) +
+              ", iterations=" +
+              std::to_string(diffusionField->getIterations()) +
+              ", residual=" + std::to_string(diffusionField->getResidual()));
+
+      logDebug("OxidationModel: coupling iteration " +
+              std::to_string(iterations + 1) + "/" +
+              std::to_string(parameters.maxIterations) +
+              " starting deformation solve");
       deformationField->apply();
+      logDebug("OxidationModel: deformation solve complete, nodes=" +
+              std::to_string(deformationField->getNumberOfSolutionNodes()) +
+              ", iterations=" +
+              std::to_string(deformationField->getIterations()) +
+              ", residual=" + std::to_string(deformationField->getResidual()));
 
       residual = updateDiffusionPressureField(previousPressures);
+      logDebug("OxidationModel: coupling iteration " +
+              std::to_string(iterations + 1) +
+              " pressure-feedback residual=" + std::to_string(residual));
       if (residual < parameters.tolerance)
         break;
     }
+    const unsigned completedIterations =
+        std::min(iterations + 1, parameters.maxIterations);
+    logDebug("OxidationModel: coupled solve complete, iterations=" +
+            std::to_string(completedIterations) +
+            ", residual=" + std::to_string(residual));
+    if (residual > parameters.tolerance)
+      Logger::getInstance()
+          .addWarning("OxidationModel: pressure-concentration coupling did not "
+                      "converge after " + std::to_string(completedIterations) +
+                      " iterations (residual=" + std::to_string(residual) +
+                      ", tolerance=" + std::to_string(parameters.tolerance) +
+                      "). Consider increasing maxIterations or relaxation.")
+          .print();
   }
 
   unsigned getIterations() const { return iterations; }
   T getResidual() const { return residual; }
 
 private:
+  static void logDebug(const std::string &message) {
+    if (Logger::hasDebug())
+      Logger::getInstance().addDebug(message).print();
+  }
+
   T updateDiffusionPressureField(
       std::unordered_map<std::size_t, T> &previousPressures) {
     T maxChange = 0.;

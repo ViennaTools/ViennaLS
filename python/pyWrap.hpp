@@ -181,13 +181,6 @@ inline void bindOxidationSharedTypes(py::module &module) {
                      &OxidationDeformationParameters<T>::maxGridPoints)
       .def_readwrite("material", &OxidationDeformationParameters<T>::material);
 
-  py::enum_<OxidationMaskAnchorMode>(module, "OxidationMaskAnchorMode",
-                                     py::module_local())
-      .value("NONE", OxidationMaskAnchorMode::NONE)
-      .value("MIN_BOUNDARY", OxidationMaskAnchorMode::MIN_BOUNDARY)
-      .value("MAX_BOUNDARY", OxidationMaskAnchorMode::MAX_BOUNDARY)
-      .value("BOTH_BOUNDARIES", OxidationMaskAnchorMode::BOTH_BOUNDARIES);
-
   py::class_<OxidationMaskParameters<T>>(module, "OxidationMaskParameters",
                                          py::module_local())
       .def(py::init<>())
@@ -201,9 +194,6 @@ inline void bindOxidationSharedTypes(py::module &module) {
       .def_readwrite("poissonRatio", &OxidationMaskParameters<T>::poissonRatio)
       .def_readwrite("unilateralContact",
                      &OxidationMaskParameters<T>::unilateralContact)
-      .def_readwrite("anchorMode", &OxidationMaskParameters<T>::anchorMode)
-      .def_readwrite("anchorDirection",
-                     &OxidationMaskParameters<T>::anchorDirection)
       .def_readwrite("relaxation", &OxidationMaskParameters<T>::relaxation)
       .def_readwrite("tolerance", &OxidationMaskParameters<T>::tolerance)
       .def_readwrite("minBoundaryDistance",

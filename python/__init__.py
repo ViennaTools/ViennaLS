@@ -42,7 +42,6 @@ _SHARED_OXIDATION_TYPES = (
     "OxidationParameters",
     "OxidationMaterials",
     "OxidationDeformationParameters",
-    "OxidationMaskAnchorMode",
     "OxidationMaskParameters",
     "OxidationCouplingParameters",
 )

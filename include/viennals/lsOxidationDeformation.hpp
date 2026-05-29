@@ -231,9 +231,16 @@ public:
     }
 
     if (nodesDirty_) {
-      initialiseGrid();
+      if (!initialiseGrid())
+        return; // base class already logged the error
       buildNodes();
       nodesDirty_ = false;
+      if (nodes.empty())
+        Logger::getInstance()
+            .addWarning("OxidationDeformation: no oxide nodes found after "
+                        "buildNodes(). Verify that the reaction and ambient "
+                        "level sets enclose a non-empty oxide band.")
+            .print();
     }
     solveVelocity();
     solveMechanics();
@@ -373,12 +380,12 @@ public:
   }
 
 private:
-  void initialiseGrid() {
-    initializeGridFromInterfaces(reactionInterface, ambientInterface,
-                                 maskInterface, useRequestedBounds,
-                                 requestedMinIndex, requestedMaxIndex,
-                                 deformationParameters.maxGridPoints,
-                                 "OxidationDeformation");
+  bool initialiseGrid() {
+    return initializeGridFromInterfaces(reactionInterface, ambientInterface,
+                                        maskInterface, useRequestedBounds,
+                                        requestedMinIndex, requestedMaxIndex,
+                                        deformationParameters.maxGridPoints,
+                                        "OxidationDeformation");
   }
 
   void buildNodes() {

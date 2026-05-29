@@ -5,13 +5,6 @@
 
 namespace viennals {
 
-enum class OxidationMaskAnchorMode : int {
-  NONE = 0,
-  MIN_BOUNDARY = 1,
-  MAX_BOUNDARY = 2,
-  BOTH_BOUNDARIES = 3
-};
-
 template <class T> struct OxidationMaskParameters {
   // Arrhenius creep viscosity law:
   // eta(T) = eta_ref * exp(E/R * (1/T - 1/T_ref)).
@@ -22,9 +15,6 @@ template <class T> struct OxidationMaskParameters {
   T creepActivationEnergy = 0.;
   T poissonRatio = 0.27;
   bool unilateralContact = true;
-  OxidationMaskAnchorMode anchorMode =
-      OxidationMaskAnchorMode::MIN_BOUNDARY;
-  unsigned anchorDirection = 0;
   T relaxation = 1.;
   T tolerance = 1e-8;
   T minBoundaryDistance = 1e-6;
@@ -66,7 +56,6 @@ private:
     IndexType index;
     Vec3D<T> velocity{0., 0., 0.};
     bool contact = false;
-    bool anchor = false;
     // contactFaceActive[direction*2 + (offset==+1?1:0)]:
     //   true  → velocity-continuity BC applies at the oxide/mask contact face
     //   false → face is free or tensile-contact (use velocity[node] as ghost)
@@ -174,15 +163,37 @@ public:
   T getLastApplyVelocityChange() const { return lastApplyVelocityChange; }
 
   void apply() {
-    if (deformationField == nullptr || maskInterface == nullptr) {
+    if (maskInterface == nullptr) {
+      solved = true;
+      return;
+    }
+    if (deformationField == nullptr) {
+      Logger::getInstance()
+          .addWarning("OxidationMaskBending: deformation field is null; "
+                      "mask bending will produce zero velocities.")
+          .print();
       solved = true;
       return;
     }
 
     const auto previousVelocities = collectVelocitiesByGridPoint();
-    initialiseGrid();
+    if (!initialiseGrid())
+      return; // base class already logged the error
     buildNodes();
-    correctAnchorFlags();
+    if (nodes.empty()) {
+      Logger::getInstance()
+          .addWarning("OxidationMaskBending: no mask nodes found after "
+                      "buildNodes(). Verify that the mask level set defines "
+                      "a non-empty interior region within the solve bounds.")
+          .print();
+      solved = true;
+      return;
+    }
+    if (contactNodes == 0)
+      Logger::getInstance()
+          .addDebug("OxidationMaskBending: mask has no oxide-contact nodes; "
+                    "no traction will be applied this step.")
+          .print();
     solveElasticVelocity();
 
     const auto fixedPointResidual =
@@ -227,10 +238,11 @@ public:
   }
 
 private:
-  void initialiseGrid() {
-    initializeGridFromMask(maskInterface, useRequestedBounds, requestedMinIndex,
-                           requestedMaxIndex, parameters.maxGridPoints,
-                           "OxidationMaskBending");
+  bool initialiseGrid() {
+    return initializeGridFromMask(maskInterface, useRequestedBounds,
+                                  requestedMinIndex, requestedMaxIndex,
+                                  parameters.maxGridPoints,
+                                  "OxidationMaskBending");
   }
 
   std::unordered_map<std::size_t, Vec3D<T>> collectVelocitiesByGridPoint() const {
@@ -349,7 +361,6 @@ private:
     contactNodes = 0;
     for (auto &node : nodes) {
       node.contact = touchesContactBoundary(maskIt, node.index);
-      node.anchor = isRigidModeAnchor(node.index);
       if (node.contact)
         ++contactNodes;
 
@@ -405,37 +416,6 @@ private:
     }
   }
 
-  // Re-tag anchor nodes based on actual node bounds (not padded solve bounds).
-  // buildNodes() calls isRigidModeAnchor() which compares against the padded
-  // solve-bounds minIndex/maxIndex; those are 4+ cells beyond actual mask nodes
-  // so no node ever matches → no anchor → rigid-body floating.
-  // This method fixes that by scanning the built node list for the true extremes.
-  void correctAnchorFlags() {
-    if (parameters.anchorMode == OxidationMaskAnchorMode::NONE || nodes.empty())
-      return;
-
-    const unsigned dir =
-        std::min(parameters.anchorDirection, static_cast<unsigned>(D - 1));
-    const bool applyMin =
-        parameters.anchorMode == OxidationMaskAnchorMode::MIN_BOUNDARY ||
-        parameters.anchorMode == OxidationMaskAnchorMode::BOTH_BOUNDARIES;
-    const bool applyMax =
-        parameters.anchorMode == OxidationMaskAnchorMode::MAX_BOUNDARY ||
-        parameters.anchorMode == OxidationMaskAnchorMode::BOTH_BOUNDARIES;
-
-    auto nodeMin = nodes[0].index[dir];
-    auto nodeMax = nodes[0].index[dir];
-    for (const auto &node : nodes) {
-      if (node.index[dir] < nodeMin) nodeMin = node.index[dir];
-      if (node.index[dir] > nodeMax) nodeMax = node.index[dir];
-    }
-
-    for (auto &node : nodes)
-      node.anchor =
-          (applyMin && node.index[dir] == nodeMin) ||
-          (applyMax && node.index[dir] == nodeMax);
-  }
-
   void solveElasticVelocity() {
     iterations = 0;
     residual = 0.;
@@ -454,10 +434,6 @@ private:
     for (; iterations < parameters.maxIterations; ++iterations) {
       residual = 0.;
       for (std::size_t nodeId = 0; nodeId < nodes.size(); ++nodeId) {
-        if (nodes[nodeId].anchor) {
-          next[nodeId] = {0., 0., 0.};
-          continue;
-        }
 
         Vec3D<T> laplaceAverage{0., 0., 0.};
         unsigned count = 0;
@@ -553,26 +529,6 @@ private:
           velocity[nodeId]);
 
     return tractionFreeGhost(velocity, nodeId, direction);
-  }
-
-  bool isRigidModeAnchor(const IndexType &index) const {
-    if constexpr (D <= 1) {
-      return false;
-    } else {
-      if (parameters.anchorMode == OxidationMaskAnchorMode::NONE)
-        return false;
-
-      const unsigned direction =
-          std::min(parameters.anchorDirection, static_cast<unsigned>(D - 1));
-      const bool minAnchor =
-          parameters.anchorMode == OxidationMaskAnchorMode::MIN_BOUNDARY ||
-          parameters.anchorMode == OxidationMaskAnchorMode::BOTH_BOUNDARIES;
-      const bool maxAnchor =
-          parameters.anchorMode == OxidationMaskAnchorMode::MAX_BOUNDARY ||
-          parameters.anchorMode == OxidationMaskAnchorMode::BOTH_BOUNDARIES;
-      return (minAnchor && index[direction] == minIndex[direction]) ||
-             (maxAnchor && index[direction] == maxIndex[direction]);
-    }
   }
 
   Vec3D<T> divergenceGradient(const std::vector<Vec3D<T>> &velocity,
