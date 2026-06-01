@@ -31,7 +31,7 @@
 #include <lsMarkVoidPoints.hpp>
 #include <lsMaterialMap.hpp>
 #include <lsMesh.hpp>
-#include <lsLOCOSOxidation.hpp>
+#include <lsOxidation.hpp>
 #include <lsOxidationMaterials.hpp>
 #include <lsOxidationModel.hpp>
 #include <lsPointData.hpp>
@@ -691,35 +691,35 @@ template <int D> void bindApi(py::module &module) {
       .def("getIterations", &OxidationModel<T, D>::getIterations)
       .def("getResidual", &OxidationModel<T, D>::getResidual);
 
-  py::class_<LOCOSOxidation<T, D>, SmartPointer<LOCOSOxidation<T, D>>>(
-      module, "LOCOSOxidation")
+  py::class_<Oxidation<T, D>, SmartPointer<Oxidation<T, D>>>(
+      module, "Oxidation")
       .def(py::init([](SmartPointer<Domain<T, D>> &siInterface,
                        SmartPointer<Domain<T, D>> &ambientInterface,
                        SmartPointer<Domain<T, D>> &maskInterface) {
-             return LOCOSOxidation<T, D>::New(siInterface, ambientInterface,
+             return Oxidation<T, D>::New(siInterface, ambientInterface,
                                              maskInterface);
            }),
            py::arg("siInterface"), py::arg("ambientInterface"),
            py::arg("maskInterface"))
-      .def("setSiInterface", &LOCOSOxidation<T, D>::setSiInterface)
-      .def("setAmbientInterface", &LOCOSOxidation<T, D>::setAmbientInterface)
-      .def("setMaskInterface", &LOCOSOxidation<T, D>::setMaskInterface)
+      .def("setSiInterface", &Oxidation<T, D>::setSiInterface)
+      .def("setAmbientInterface", &Oxidation<T, D>::setAmbientInterface)
+      .def("setMaskInterface", &Oxidation<T, D>::setMaskInterface)
       .def("setOxidationParameters",
-           &LOCOSOxidation<T, D>::setOxidationParameters)
+           &Oxidation<T, D>::setOxidationParameters)
       .def("setDeformationParameters",
-           &LOCOSOxidation<T, D>::setDeformationParameters)
+           &Oxidation<T, D>::setDeformationParameters)
       .def("setCouplingParameters",
-           &LOCOSOxidation<T, D>::setCouplingParameters)
-      .def("setMaskParameters", &LOCOSOxidation<T, D>::setMaskParameters)
-      .def("setSpatialScheme", &LOCOSOxidation<T, D>::setSpatialScheme)
-      .def("setTemporalScheme", &LOCOSOxidation<T, D>::setTemporalScheme)
+           &Oxidation<T, D>::setCouplingParameters)
+      .def("setMaskParameters", &Oxidation<T, D>::setMaskParameters)
+      .def("setSpatialScheme", &Oxidation<T, D>::setSpatialScheme)
+      .def("setTemporalScheme", &Oxidation<T, D>::setTemporalScheme)
       .def("setMaskCouplingIterations",
-           &LOCOSOxidation<T, D>::setMaskCouplingIterations)
+           &Oxidation<T, D>::setMaskCouplingIterations)
       .def("setMaskCouplingTolerance",
-           &LOCOSOxidation<T, D>::setMaskCouplingTolerance)
+           &Oxidation<T, D>::setMaskCouplingTolerance)
       .def(
           "setSolveBounds",
-          [](LOCOSOxidation<T, D> &model,
+          [](Oxidation<T, D> &model,
              std::array<viennahrle::IndexType, D> passedMinIndex,
              std::array<viennahrle::IndexType, D> passedMaxIndex) {
             viennahrle::Index<D> minIndex{};
@@ -733,7 +733,7 @@ template <int D> void bindApi(py::module &module) {
           py::arg("minIndex"), py::arg("maxIndex"))
       .def(
           "setMaskBendingBounds",
-          [](LOCOSOxidation<T, D> &model,
+          [](Oxidation<T, D> &model,
              std::array<viennahrle::IndexType, D> passedMinIndex,
              std::array<viennahrle::IndexType, D> passedMaxIndex) {
             viennahrle::Index<D> minIndex{};
@@ -745,19 +745,19 @@ template <int D> void bindApi(py::module &module) {
             model.setMaskBendingBounds(minIndex, maxIndex);
           },
           py::arg("minIndex"), py::arg("maxIndex"))
-      .def("apply", &LOCOSOxidation<T, D>::apply, py::arg("advectionTime"))
-      .def("applyCFLLimited", &LOCOSOxidation<T, D>::applyCFLLimited,
+      .def("apply", &Oxidation<T, D>::apply, py::arg("advectionTime"))
+      .def("applyCFLLimited", &Oxidation<T, D>::applyCFLLimited,
            py::arg("requestedTime"), py::arg("cflFactor"),
            "Execute one CFL-limited LOCOS step; returns the actual time advanced.")
-      .def("getLastMaxVelocity", &LOCOSOxidation<T, D>::getLastMaxVelocity,
+      .def("getLastMaxVelocity", &Oxidation<T, D>::getLastMaxVelocity,
            "Maximum interface velocity (µm/hr) from the most recent CFL step.")
-      .def("getDiffusionField", &LOCOSOxidation<T, D>::getDiffusionField)
-      .def("getDeformationField", &LOCOSOxidation<T, D>::getDeformationField)
-      .def("getMaskBendingField", &LOCOSOxidation<T, D>::getMaskBendingField)
+      .def("getDiffusionField", &Oxidation<T, D>::getDiffusionField)
+      .def("getDeformationField", &Oxidation<T, D>::getDeformationField)
+      .def("getMaskBendingField", &Oxidation<T, D>::getMaskBendingField)
       .def("getMaskCouplingIterations",
-           &LOCOSOxidation<T, D>::getMaskCouplingIterations)
+           &Oxidation<T, D>::getMaskCouplingIterations)
       .def("getMaskCouplingResidual",
-           &LOCOSOxidation<T, D>::getMaskCouplingResidual);
+           &Oxidation<T, D>::getMaskCouplingResidual);
 
   // BooleanOperation
   py::class_<BooleanOperation<T, D>, SmartPointer<BooleanOperation<T, D>>>(

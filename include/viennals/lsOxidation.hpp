@@ -103,38 +103,48 @@ LOCOSConservationDiagnostics<T> computeLOCOSOpenWindowConservation(
   return result;
 }
 
-/// Wrapper that executes one complete LOCOS oxidation time step.
+/// Unified oxidation time-step orchestrator.
 ///
-/// A LOCOS step couples three physical solves and three level-set advections:
+/// Couples diffusion, viscoelastic deformation, and (optionally) mask bending
+/// into a single CFL-limited step. When a mask interface is provided the solver
+/// operates in LOCOS mode; without one it performs standard planar or step
+/// oxidation.
+///
+/// Standard mode (no mask):
 ///   1. Diffusion+deformation coupled solve (OxidationModel)
-///   2. Nitride mask bending solve (OxidationMaskBending)
+///   2. Ambient interface advection (deformation velocity)
+///   3. Si/SiO2 reaction interface advection (diffusion velocity)
+///   4. Interior fill for warm-start persistence
+///
+/// LOCOS mode (mask provided):
+///   1. Diffusion+deformation coupled solve (OxidationModel)
+///   2. Nitride mask bending solve (OxidationMaskBending) + coupling loop
 ///   3. Pre-advection boolean clip (ambientInterface \ maskInterface)
 ///   4. Ambient interface advection (constrained: mask-coupled under nitride)
 ///   5. Si/SiO2 reaction interface advection (diffusion velocity)
 ///   6. Mask advection (mask bending velocity)
-///   7. Post-advection boolean clip (ambientInterface \ maskInterface)
+///   7. Interior fills + post-advection boolean clip
 ///
-/// The two boolean clips are mandatory: they keep the ambient and mask level
-/// sets from overlapping, which would corrupt subsequent velocity evaluations.
-/// This class makes both clips structural rather than hidden in user code.
-///
-/// LOCOS assumes the mask level set follows the usual ViennaLS solid
-/// convention: negative values are inside the nitride. The wrapper applies that
-/// convention internally for the diffusion, deformation, constrained ambient,
-/// and mask bending fields.
-///
-/// Usage:
+/// Usage (standard):
 /// @code
-///   auto locos = ls::LOCOSOxidation<double, 2>::New(si, ambient, mask);
-///   locos->setOxidationParameters(oxParams);
-///   locos->setDeformationParameters(defParams);
-///   locos->setMaskParameters(maskParams);
-///   locos->setSolveBounds(minIdx, maxIdx);
-///   locos->setMaskBendingBounds(maskMinIdx, maskMaxIdx);
-///   locos->apply(0.35);  // advection time in hours
-///   locos->getDiffusionField()->getConcentration(pt);  // diagnostics
+///   auto ox = ls::Oxidation<double, 2>::New(si, ambient);
+///   ox->setOxidationParameters(oxParams);
+///   ox->setDeformationParameters(defParams);
+///   ox->apply(0.1);  // advection time in hours
 /// @endcode
-template <class T, int D> class LOCOSOxidation {
+///
+/// Usage (LOCOS):
+/// @code
+///   auto ox = ls::Oxidation<double, 2>::New(si, ambient, mask);
+///   ox->setOxidationParameters(oxParams);
+///   ox->setDeformationParameters(defParams);
+///   ox->setMaskParameters(maskParams);
+///   ox->setSolveBounds(minIdx, maxIdx);
+///   ox->setMaskBendingBounds(maskMinIdx, maskMaxIdx);
+///   ox->applyCFLLimited(0.35, 0.499);
+///   ox->getDiffusionField()->getConcentration(pt);  // diagnostics
+/// @endcode
+template <class T, int D> class Oxidation {
   using IndexType = viennahrle::Index<D>;
 
   SmartPointer<Domain<T, D>> siInterface = nullptr;
@@ -173,17 +183,17 @@ template <class T, int D> class LOCOSOxidation {
   std::unordered_map<std::size_t, T> concentrationCache_;
 
 public:
-  LOCOSOxidation() = default;
+  Oxidation() = default;
 
-  LOCOSOxidation(SmartPointer<Domain<T, D>> passedSiInterface,
-                 SmartPointer<Domain<T, D>> passedAmbientInterface,
-                 SmartPointer<Domain<T, D>> passedMaskInterface)
+  Oxidation(SmartPointer<Domain<T, D>> passedSiInterface,
+            SmartPointer<Domain<T, D>> passedAmbientInterface,
+            SmartPointer<Domain<T, D>> passedMaskInterface = nullptr)
       : siInterface(passedSiInterface),
         ambientInterface(passedAmbientInterface),
         maskInterface(passedMaskInterface) {}
 
   template <class... Args> static auto New(Args &&...args) {
-    return SmartPointer<LOCOSOxidation>::New(std::forward<Args>(args)...);
+    return SmartPointer<Oxidation>::New(std::forward<Args>(args)...);
   }
 
   void setSiInterface(SmartPointer<Domain<T, D>> si) { siInterface = si; }
@@ -207,12 +217,10 @@ public:
     maskParams = params;
   }
 
-  /// Set the spatial integration scheme for all three advections.
-  /// Mirrors the lsAdvect::setSpatialScheme API.
+  /// Set the spatial integration scheme for all advections.
   void setSpatialScheme(SpatialSchemeEnum scheme) { spatialScheme = scheme; }
 
-  /// Set the temporal integration scheme for all three advections.
-  /// Mirrors the lsAdvect::setTemporalScheme API.
+  /// Set the temporal integration scheme for all advections.
   void setTemporalScheme(TemporalSchemeEnum scheme) {
     temporalScheme = scheme;
   }
@@ -226,17 +234,14 @@ public:
   }
 
   /// Set the Cartesian index bounding box for the diffusion and deformation
-  /// solves. Required before the first call to apply().
+  /// solves. If not set, bounds are auto-computed from the level-set narrow band.
   void setSolveBounds(const IndexType &minIndex, const IndexType &maxIndex) {
     diffusionMinIndex = minIndex;
     diffusionMaxIndex = maxIndex;
     diffusionBoundsSet = true;
   }
 
-  /// Set the Cartesian index bounding box for the mask bending solve.
-  /// The box should bracket the mask geometry with a one-cell margin on each
-  /// side (one row below the mask bottom and one row above the mask top).
-  /// Required before the first call to apply().
+  /// Set the Cartesian index bounding box for the mask bending solve (LOCOS).
   void setMaskBendingBounds(const IndexType &minIndex,
                             const IndexType &maxIndex) {
     maskBendingMinIndex = minIndex;
@@ -245,20 +250,17 @@ public:
   }
 
   /// Return the diffusion field populated by the most recent apply() call.
-  SmartPointer<OxidationDiffusion<T, D>>
-  getDiffusionField() const {
+  SmartPointer<OxidationDiffusion<T, D>> getDiffusionField() const {
     return diffusionField;
   }
 
   /// Return the deformation field populated by the most recent apply() call.
-  SmartPointer<OxidationDeformation<T, D>>
-  getDeformationField() const {
+  SmartPointer<OxidationDeformation<T, D>> getDeformationField() const {
     return deformationField;
   }
 
-  /// Return the mask bending field populated by the most recent apply() call.
-  SmartPointer<OxidationMaskBending<T, D>>
-  getMaskBendingField() const {
+  /// Return the mask bending field (null when no mask is set).
+  SmartPointer<OxidationMaskBending<T, D>> getMaskBendingField() const {
     return maskBendingField;
   }
 
@@ -269,15 +271,12 @@ public:
   T getMaskCouplingResidual() const { return lastMaskCouplingResidual; }
 
   /// Maximum interface velocity (µm/hr) from the most recent CFL-limited step.
-  /// Use this to compute the next step request rather than reusing actualDt.
   T getLastMaxVelocity() const { return lastMaxVelocity_; }
 
-  /// Execute one complete LOCOS time step of duration advectionTime.
+  /// Execute one oxidation time step of duration advectionTime.
   void apply(T advectionTime) { applyImpl(advectionTime, std::nullopt); }
 
-  /// Execute one LOCOS step, but limit the physical advection time by a CFL
-  /// estimate computed from the freshly solved diffusion/deformation/mask
-  /// velocity fields. Returns the actual advanced time.
+  /// Execute one CFL-limited oxidation step; returns the actual time advanced.
   T applyCFLLimited(T requestedTime, T cflFactor) {
     return applyImpl(requestedTime,
                      std::clamp(cflFactor, T(1e-3), T(0.499)));
@@ -290,10 +289,9 @@ private:
   }
 
   T applyImpl(T requestedTime, std::optional<T> cflFactor) {
-    if (siInterface == nullptr || ambientInterface == nullptr ||
-        maskInterface == nullptr) {
+    if (siInterface == nullptr || ambientInterface == nullptr) {
       Logger::getInstance()
-          .addError("LOCOSOxidation: one or more level-set interfaces are null.")
+          .addError("Oxidation: Si or ambient interface is null.")
           .print();
       return T(0);
     }
@@ -301,7 +299,10 @@ private:
     if (requestedTime <= T(0))
       return T(0);
 
-    logInfo("LOCOS: starting time step, requested_dt=" +
+    const bool hasMask = (maskInterface != nullptr);
+    const std::string prefix = hasMask ? "LOCOS" : "Oxidation";
+
+    logInfo(prefix + ": starting time step, requested_dt=" +
             std::to_string(requestedTime) + " hr");
 
     auto solveFields = [&](T stressTimeStep) {
@@ -313,82 +314,77 @@ private:
       diffusionField = OxidationDiffusion<T, D>::New(
           siInterface, ambientInterface, oxidationParams);
       diffusionField->setConcentrationCache(concentrationCache_);
-      diffusionField->setMaskInterface(maskInterface, maskInteriorSign);
+      if (hasMask)
+        diffusionField->setMaskInterface(maskInterface, maskInteriorSign);
 
       deformationField = OxidationDeformation<T, D>::New(
           siInterface, ambientInterface, diffusionField, oxidationParams,
           stepDeformationParams);
-      deformationField->setMaskInterface(maskInterface, maskInteriorSign);
-      // Velocity, pressure, and stress history are restored from
-      // ambientInterface->getPointData() inside deformationField->apply()
-      // via seedFromLevelSet() — no separate in-memory cache needed.
+      if (hasMask)
+        deformationField->setMaskInterface(maskInterface, maskInteriorSign);
 
-      // OxidationModel::apply() forwards solve bounds to the sub-solvers; if
-      // bounds were not set, the sub-solvers auto-compute from the level-set
-      // narrow band — no explicit setSolveBounds call is needed here.
       auto coupledModel = OxidationModel<T, D>::New(
           diffusionField, deformationField, couplingParams);
       if (diffusionBoundsSet)
         coupledModel->setSolveBounds(diffusionMinIndex, diffusionMaxIndex);
-      logInfo("LOCOS: solving coupled diffusion/deformation field for dt=" +
+      logInfo(prefix + ": solving coupled diffusion/deformation field for dt=" +
               std::to_string(stressTimeStep) + " hr");
       coupledModel->apply();
-      logInfo("LOCOS: coupled diffusion/deformation solve complete");
+      logInfo(prefix + ": coupled diffusion/deformation solve complete");
 
-      // --- Mask bending solve ---
-
-      // The bending solve domain is the nitride interior; oxide-side contact
-      // faces drive the mask through traction.
-      maskBendingField = OxidationMaskBending<T, D>::New(
-          deformationField, maskInterface, maskParams, maskInteriorSign);
-      maskBendingField->setAmbientInterface(ambientInterface, maskInteriorSign);
-      if (maskBendingBoundsSet)
-        maskBendingField->setSolveBounds(maskBendingMinIndex,
-                                         maskBendingMaxIndex);
-      logInfo("LOCOS: solving mask bending field");
-      maskBendingField->apply();
-      T initialRes = maskBendingField->getLastApplyVelocityChange();
-      if (initialRes >= std::numeric_limits<T>::max() * T(0.99)) {
-        logInfo("LOCOS: mask bending solve complete, residual=initial");
-      } else {
-        logInfo("LOCOS: mask bending solve complete, residual=" +
-                std::to_string(initialRes));
-      }
-
-      lastMaskCouplingIterations = 1;
-      lastMaskCouplingResidual = maskBendingField->getLastApplyVelocityChange();
-      deformationField->setMaskVelocityField(maskBendingField);
-      for (unsigned iteration = 1; iteration < maskCouplingIterations;
-           ++iteration) {
-        deformationField->setMaskVelocityField(maskBendingField);
-        logInfo("LOCOS: coupling iteration " + std::to_string(iteration + 1) +
-                " solving coupled field");
-        coupledModel->apply();
-        logInfo("LOCOS: coupling iteration " + std::to_string(iteration + 1) +
-                " solving mask field");
+      if (hasMask) {
+        // --- Mask bending solve ---
+        maskBendingField = OxidationMaskBending<T, D>::New(
+            deformationField, maskInterface, maskParams, maskInteriorSign);
+        maskBendingField->setAmbientInterface(ambientInterface, maskInteriorSign);
+        if (maskBendingBoundsSet)
+          maskBendingField->setSolveBounds(maskBendingMinIndex,
+                                           maskBendingMaxIndex);
+        logInfo(prefix + ": solving mask bending field");
         maskBendingField->apply();
-        lastMaskCouplingIterations = iteration + 1;
+        T initialRes = maskBendingField->getLastApplyVelocityChange();
+        logInfo(prefix + ": mask bending solve complete, residual=" +
+                (initialRes >= std::numeric_limits<T>::max() * T(0.99)
+                     ? std::string("initial")
+                     : std::to_string(initialRes)));
+
+        lastMaskCouplingIterations = 1;
         lastMaskCouplingResidual = maskBendingField->getLastApplyVelocityChange();
-        logInfo("LOCOS: coupling iteration " + std::to_string(iteration + 1) +
-                " residual=" + std::to_string(lastMaskCouplingResidual));
-        if (lastMaskCouplingResidual <= maskCouplingTolerance)
-          break;
-      }
-      if (lastMaskCouplingResidual <= maskCouplingTolerance) {
-        logInfo("LOCOS: mask/oxide coupling converged in " +
-                std::to_string(lastMaskCouplingIterations) +
-                " iterations (residual=" +
-                std::to_string(lastMaskCouplingResidual) + ")");
+        deformationField->setMaskVelocityField(maskBendingField);
+        for (unsigned iteration = 1; iteration < maskCouplingIterations;
+             ++iteration) {
+          deformationField->setMaskVelocityField(maskBendingField);
+          logInfo(prefix + ": coupling iteration " +
+                  std::to_string(iteration + 1) + " solving coupled field");
+          coupledModel->apply();
+          logInfo(prefix + ": coupling iteration " +
+                  std::to_string(iteration + 1) + " solving mask field");
+          maskBendingField->apply();
+          lastMaskCouplingIterations = iteration + 1;
+          lastMaskCouplingResidual = maskBendingField->getLastApplyVelocityChange();
+          logInfo(prefix + ": coupling iteration " +
+                  std::to_string(iteration + 1) + " residual=" +
+                  std::to_string(lastMaskCouplingResidual));
+          if (lastMaskCouplingResidual <= maskCouplingTolerance)
+            break;
+        }
+        if (lastMaskCouplingResidual <= maskCouplingTolerance) {
+          logInfo(prefix + ": mask/oxide coupling converged in " +
+                  std::to_string(lastMaskCouplingIterations) +
+                  " iterations (residual=" +
+                  std::to_string(lastMaskCouplingResidual) + ")");
+        } else {
+          Logger::getInstance()
+              .addWarning(prefix + ": mask/oxide coupling did not converge "
+                          "after " + std::to_string(lastMaskCouplingIterations) +
+                          " iterations (residual=" +
+                          std::to_string(lastMaskCouplingResidual) +
+                          ", tolerance=" + std::to_string(maskCouplingTolerance) +
+                          "). Consider increasing maskCouplingIterations.")
+              .print();
+        }
       } else {
-        Logger::getInstance()
-            .addWarning("LOCOSOxidation: mask/oxide coupling did not converge "
-                        "after " + std::to_string(lastMaskCouplingIterations) +
-                        " iterations (residual=" +
-                        std::to_string(lastMaskCouplingResidual) +
-                        ", tolerance=" +
-                        std::to_string(maskCouplingTolerance) +
-                        "). Consider increasing maskCouplingIterations.")
-            .print();
+        maskBendingField = nullptr;
       }
 
       concentrationCache_ = diffusionField->getConcentrationCache();
@@ -402,8 +398,9 @@ private:
       for (unsigned d = 0; d < D; ++d) {
         maxVelocity = std::max(maxVelocity,
                                deformationField->getDissipationAlpha(d, -1, {}));
-        maxVelocity = std::max(maxVelocity,
-                               maskBendingField->getDissipationAlpha(d, -1, {}));
+        if (hasMask)
+          maxVelocity = std::max(maxVelocity,
+                                 maskBendingField->getDissipationAlpha(d, -1, {}));
       }
       lastMaxVelocity_ = maxVelocity;
       if (maxVelocity > std::numeric_limits<T>::epsilon()) {
@@ -411,52 +408,37 @@ private:
         advectionTime = std::min(advectionTime,
                                  (*cflFactor) * gridDelta / maxVelocity);
       }
-      logInfo("LOCOS: CFL decision requested_dt=" +
+      logInfo(prefix + ": CFL decision requested_dt=" +
               std::to_string(requestedTime) +
               " hr, actual_dt=" + std::to_string(advectionTime) +
               " hr, max_velocity=" + std::to_string(maxVelocity) + " um/hr");
 
-      // The viscoelastic stress update depends on the step duration. If CFL
-      // reduced the step, repeat the coupled solve with the actual duration
-      // before advecting.
       if (advectionTime < requestedTime * (T(1) - T(1e-8)))
         solveFields(advectionTime);
     }
 
-    // Ambient nodes inside the nitride are clamped to the mask bending velocity
-    // instead of the free oxide velocity.
-    auto constrainedAmbient =
-        OxidationConstrainedAmbient<T, D>::New(
-            deformationField, maskBendingField, maskInterface,
-            maskInteriorSign);
+    // When a mask is present, the ambient interface is constrained to follow
+    // the mask in the contact region. Without a mask the deformation field
+    // drives the ambient surface directly.
+    SmartPointer<VelocityField<T>> ambientVelocity;
+    if (hasMask) {
+      ambientVelocity = OxidationConstrainedAmbient<T, D>::New(
+          deformationField, maskBendingField, maskInterface, maskInteriorSign);
+    } else {
+      ambientVelocity = deformationField;
+    }
 
-    // Enforce oxide/mask non-penetration each step.
-    // Sub-grid gaps (oxide surface below mask bottom by < Δx) close naturally
-    // under the deformation velocity — isMaskContact is false in the gap zone,
-    // so the Stokes velocity drives the oxide surface toward the mask without
-    // the corner-snap artifact that a CUSTOM comparator would introduce.
-    auto applyMaskContact = [&]() {
-      BooleanOperation<T, D>(ambientInterface, maskInterface,
-                             BooleanOperationEnum::RELATIVE_COMPLEMENT).apply();
-    };
-
-    // Prevent concurrent apply() calls inside lsAdvect's parallel velocity
-    // queries: mark the diffusion solution valid so getScalarVelocity() never
-    // re-enters apply() from multiple threads.
     diffusionField->markSolved();
 
-    // --- Pre-advection clip (mandatory) ---
-    // The ambient interface must not overlap the mask before advection begins.
-    applyMaskContact();
+    // Pre-advection clip: keep oxide outside the mask body (LOCOS only).
+    if (hasMask)
+      BooleanOperation<T, D>(ambientInterface, maskInterface,
+                             BooleanOperationEnum::RELATIVE_COMPLEMENT).apply();
 
-    // Persist all solver fields after the clip so pointData sizes match the
-    // post-clip HRLE domains that lsAdvect will remap.
-    // lsInterior then fills each body's interior with all warm-start data.
     diffusionField->writePersistentFields();
     deformationField->writeFieldsToLevelSet();
-    maskBendingField->writeFieldsToLevelSet();
-
-    // --- Three level-set advections ---
+    if (hasMask)
+      maskBendingField->writeFieldsToLevelSet();
 
     auto advect = [&](SmartPointer<Domain<T, D>> levelSet,
                       SmartPointer<VelocityField<T>> velocityField) {
@@ -469,21 +451,22 @@ private:
       adv.apply();
     };
 
-    advect(ambientInterface, constrainedAmbient);
+    advect(ambientInterface, ambientVelocity);
     advect(siInterface, diffusionField);
-    advect(maskInterface, maskBendingField);
+    if (hasMask)
+      advect(maskInterface, maskBendingField);
 
-    // Fill each body's interior so the next substep can warm-start from
-    // pointData across substep and outer-step boundaries.
     Interior<T, D>(ambientInterface).apply();
-    Interior<T, D>(maskInterface).apply();
+    if (hasMask)
+      Interior<T, D>(maskInterface).apply();
 
-    // --- Post-advection clip (mandatory) ---
-    // Removes any oxide that advected into the mask body during this step.
-    applyMaskContact();
+    // Post-advection clip: remove oxide that grew into the mask (LOCOS only).
+    if (hasMask)
+      BooleanOperation<T, D>(ambientInterface, maskInterface,
+                             BooleanOperationEnum::RELATIVE_COMPLEMENT).apply();
 
-    logInfo("LOCOS: time step complete, actual_dt=" + std::to_string(advectionTime) +
-            " hr");
+    logInfo(prefix + ": time step complete, actual_dt=" +
+            std::to_string(advectionTime) + " hr");
 
     return advectionTime;
   }

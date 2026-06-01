@@ -7,7 +7,7 @@
 
 #include <lsDomain.hpp>
 #include <lsGeometricAdvect.hpp>
-#include <lsLOCOSOxidation.hpp>
+#include <lsOxidation.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsOxidationMaterials.hpp>
 #include <lsToSurfaceMesh.hpp>
@@ -163,7 +163,7 @@ int main() {
                                     toIndex(padOxideThickness + maskThickness) + 1};
 
   auto locos =
-      ls::LOCOSOxidation<NumericType, D>::New(siInterface, ambientInterface,
+      ls::Oxidation<NumericType, D>::New(siInterface, ambientInterface,
                                               maskInterface);
   locos->setOxidationParameters(oxParams);
   locos->setDeformationParameters(defParams);
