@@ -246,7 +246,11 @@ public:
                         "buildNodes(). Verify that the reaction and ambient "
                         "level sets enclose a non-empty oxide band.")
             .print();
-      hasPreviousSolution_ = false; // Geometry changed, invalidate warm-start
+      hasPreviousSolution_ = false; // Geometry changed, invalidate in-memory warm-start
+      // Try restoring velocity, pressure, and stress history from level set
+      // pointData (written by writeFieldsToLevelSet() before the previous
+      // advection and remapped+filled by lsAdvect + lsInterior).
+      seedFromLevelSet();
     } else if (hasPreviousSolution_ && previousVelocity_.size() == nodes.size() &&
                previousPressure_.size() == nodes.size()) {
       // Warm-start: restore previous solution as initial guess for solver.
@@ -405,7 +409,126 @@ public:
       callback(node.index, node.pressure);
   }
 
+  /// Write velocity (Vec3D) and viscoelastic stress history (3 tensor-row
+  /// vectors) into ambientInterface->getPointData(). Called alongside
+  /// OxidationDiffusion::writePersistentFields() so a single lsInterior pass
+  /// fills the oxide interior with all warm-start data.
+  void writeFieldsToLevelSet() {
+    if (nodes.empty() || ambientInterface == nullptr)
+      return;
+
+    using VD = typename PointData<T>::VectorDataType;
+    VD velocity, stressR0, stressR1, stressR2;
+
+    ConstSparseIterator it(ambientInterface->getDomain());
+    for (; !it.isFinished(); ++it) {
+      if (!it.isDefined())
+        continue;
+      const IndexType idx = it.getStartIndices();
+      const auto key = detail::gridIndexHash<D>(idx);
+      const auto nIt = nodeLookup.find(linearIndex(idx));
+
+      if (nIt != nodeLookup.end()) {
+        const auto &n = nodes[nIt->second];
+        velocity.push_back(n.velocity);
+        const auto sIt = deviatoricStressHistory.find(key);
+        if (sIt != deviatoricStressHistory.end()) {
+          const auto &s = sIt->second;
+          stressR0.push_back({s[0], s[1], s[2]});
+          stressR1.push_back({s[3], s[4], s[5]});
+          stressR2.push_back({s[6], s[7], s[8]});
+        } else {
+          stressR0.push_back({T(0), T(0), T(0)});
+          stressR1.push_back({T(0), T(0), T(0)});
+          stressR2.push_back({T(0), T(0), T(0)});
+        }
+      } else {
+        velocity.push_back({T(0), T(0), T(0)});
+        stressR0.push_back({T(0), T(0), T(0)});
+        stressR1.push_back({T(0), T(0), T(0)});
+        stressR2.push_back({T(0), T(0), T(0)});
+      }
+    }
+
+    auto &pd = ambientInterface->getPointData();
+    pd.insertReplaceVectorData(std::move(velocity),  "OxVelocity");
+    pd.insertReplaceVectorData(std::move(stressR0),  "OxStressR0");
+    pd.insertReplaceVectorData(std::move(stressR1),  "OxStressR1");
+    pd.insertReplaceVectorData(std::move(stressR2),  "OxStressR2");
+  }
+
 private:
+  /// Reads velocity, pressure (shared with diffusion's "OxPressure"), and
+  /// stress history from ambientInterface pointData into the warm-start state.
+  /// Called in apply() after buildNodes() when hasPreviousSolution_=false.
+  void seedFromLevelSet() {
+    if (ambientInterface == nullptr || nodes.empty())
+      return;
+
+    auto &pd = ambientInterface->getPointData();
+    const int vIdx  = pd.getVectorDataIndex("OxVelocity");
+    const int r0Idx = pd.getVectorDataIndex("OxStressR0");
+    const int r1Idx = pd.getVectorDataIndex("OxStressR1");
+    const int r2Idx = pd.getVectorDataIndex("OxStressR2");
+    const int pIdx  = pd.getScalarDataIndex("OxPressure");
+
+    const bool hasVelocity = (vIdx != -1);
+    const bool hasStress   = (r0Idx != -1 && r1Idx != -1 && r2Idx != -1);
+    const bool hasPressure = (pIdx  != -1);
+
+    if (!hasVelocity && !hasStress && !hasPressure)
+      return;
+
+    const auto *vd  = hasVelocity ? pd.getVectorData(vIdx)  : nullptr;
+    const auto *r0d = hasStress   ? pd.getVectorData(r0Idx) : nullptr;
+    const auto *r1d = hasStress   ? pd.getVectorData(r1Idx) : nullptr;
+    const auto *r2d = hasStress   ? pd.getVectorData(r2Idx) : nullptr;
+    const auto *ppd = hasPressure ? pd.getScalarData(pIdx)  : nullptr;
+
+    previousVelocity_.assign(nodes.size(), Vec3D<T>{});
+    previousPressure_.assign(nodes.size(), T(0));
+
+    ConstSparseIterator it(ambientInterface->getDomain());
+    for (; !it.isFinished(); ++it) {
+      if (!it.isDefined())
+        continue;
+      const auto ptId = it.getPointId();
+      const IndexType idx = it.getStartIndices();
+      const auto key = detail::gridIndexHash<D>(idx);
+      const auto nIt = nodeLookup.find(linearIndex(idx));
+
+      if (nIt != nodeLookup.end()) {
+        const std::size_t ni = nIt->second;
+        if (vd  && ptId < static_cast<decltype(ptId)>(vd->size()))
+          previousVelocity_[ni] = (*vd)[ptId];
+        if (ppd && ptId < static_cast<decltype(ptId)>(ppd->size()))
+          previousPressure_[ni] = (*ppd)[ptId];
+      }
+
+      if (hasStress &&
+          ptId < static_cast<decltype(ptId)>(r0d->size())) {
+        const auto &row0 = (*r0d)[ptId];
+        const auto &row1 = (*r1d)[ptId];
+        const auto &row2 = (*r2d)[ptId];
+        std::array<T, 9> s{row0[0], row0[1], row0[2],
+                           row1[0], row1[1], row1[2],
+                           row2[0], row2[1], row2[2]};
+        deviatoricStressHistory[key] = s;
+      }
+    }
+
+    if (hasVelocity || hasPressure) {
+      hasPreviousSolution_ = true;
+      // Apply the restored state immediately to the current nodes so
+      // the Stokes solve warm-starts on this (nodesDirty_=true) apply() call.
+      for (std::size_t i = 0; i < nodes.size(); ++i) {
+        nodes[i].velocity = previousVelocity_[i];
+        nodes[i].pressure = previousPressure_[i];
+      }
+    }
+  }
+
+public:
   bool initialiseGrid() {
     return initializeGridFromInterfaces(reactionInterface, ambientInterface,
                                         maskInterface, useRequestedBounds,
@@ -529,6 +652,15 @@ private:
       nodes[i].velocity = previous[i];
   }
 
+  // Helper: determine if node is "red" in checkerboard coloring
+  // Red if sum of coordinates is even, black if odd
+  bool isRedNode(const IndexType &index) const {
+    int sum = 0;
+    for (unsigned d = 0; d < D; ++d)
+      sum += index[d];
+    return (sum % 2) == 0;
+  }
+
   void solveMechanics() {
     T mechanicsResidual = 0.;
     for (unsigned iteration = 0;
@@ -573,41 +705,49 @@ private:
     for (unsigned iteration = 0;
          iteration < deformationParameters.pressureIterations; ++iteration) {
       pressureResidual = 0.;
+
+      for (int color = 0; color < 2; ++color) {
+        const bool isRed = (color == 0);
 #pragma omp parallel for schedule(static) reduction(max : pressureResidual)
-      for (std::size_t nodeId = 0; nodeId < nodes.size(); ++nodeId) {
-        const auto &node = nodes[nodeId];
-        if (node.touchesAmbient) {
-          next[nodeId] = ambientBoundaryPressure[nodeId];
-          continue;
-        }
+        for (std::size_t nodeId = 0; nodeId < nodes.size(); ++nodeId) {
+          if (isRedNode(nodes[nodeId].index) != isRed)
+            continue;
 
-        T pressureSum = 0.;
-        T centerCoefficient = 0.;
-        for (unsigned direction = 0; direction < D; ++direction) {
-          const auto plus = pressureStencilPoint(
-              previous, ambientBoundaryPressure, nodeId, direction, 1);
-          const auto minus = pressureStencilPoint(
-              previous, ambientBoundaryPressure, nodeId, direction, -1);
-          const T plusCoefficient =
-              T(2) / (plus.distance * (plus.distance + minus.distance));
-          const T minusCoefficient =
-              T(2) / (minus.distance * (plus.distance + minus.distance));
-          pressureSum += plusCoefficient * plus.value +
-                         minusCoefficient * minus.value;
-          centerCoefficient += plusCoefficient + minusCoefficient;
-        }
+          const auto &node = nodes[nodeId];
+          if (node.touchesAmbient) {
+            next[nodeId] = ambientBoundaryPressure[nodeId];
+            continue;
+          }
 
-        const T source = -deformationParameters.bulkModulus * divergence[nodeId];
-        const T updated =
-            (centerCoefficient <= std::numeric_limits<T>::epsilon())
-                ? previous[nodeId]
-                : (pressureSum - source) / centerCoefficient;
-        next[nodeId] =
-            deformationParameters.pressureRelaxation * updated +
-            (T(1) - deformationParameters.pressureRelaxation) *
-                previous[nodeId];
-        pressureResidual =
-            std::max(pressureResidual, std::abs(next[nodeId] - previous[nodeId]));
+          T pressureSum = 0.;
+          T centerCoefficient = 0.;
+          for (unsigned direction = 0; direction < D; ++direction) {
+            const auto plus = pressureStencilPoint(
+                previous, ambientBoundaryPressure, nodeId, direction, 1);
+            const auto minus = pressureStencilPoint(
+                previous, ambientBoundaryPressure, nodeId, direction, -1);
+            const T plusCoefficient =
+                T(2) / (plus.distance * (plus.distance + minus.distance));
+            const T minusCoefficient =
+                T(2) / (minus.distance * (plus.distance + minus.distance));
+            pressureSum += plusCoefficient * plus.value +
+                           minusCoefficient * minus.value;
+            centerCoefficient += plusCoefficient + minusCoefficient;
+          }
+
+          const T source = -deformationParameters.bulkModulus * divergence[nodeId];
+          const T updated =
+              (centerCoefficient <= std::numeric_limits<T>::epsilon())
+                  ? next[nodeId]
+                  : (pressureSum - source) / centerCoefficient;
+          const T newValue =
+              deformationParameters.pressureRelaxation * updated +
+              (T(1) - deformationParameters.pressureRelaxation) *
+                  next[nodeId];
+          pressureResidual =
+              std::max(pressureResidual, std::abs(newValue - next[nodeId]));
+          next[nodeId] = newValue;
+        }
       }
 
       previous.swap(next);
@@ -630,45 +770,53 @@ private:
     for (unsigned iteration = 0;
          iteration < deformationParameters.stokesIterations; ++iteration) {
       velocityResidual = 0.;
+
+      for (int color = 0; color < 2; ++color) {
+        const bool isRed = (color == 0);
 #pragma omp parallel for schedule(static) reduction(max : velocityResidual)
-      for (std::size_t nodeId = 0; nodeId < nodes.size(); ++nodeId) {
-        const auto &node = nodes[nodeId];
-        Vec3D<T> sum{0., 0., 0.};
-        T centerCoefficient = 0.;
+        for (std::size_t nodeId = 0; nodeId < nodes.size(); ++nodeId) {
+          if (isRedNode(nodes[nodeId].index) != isRed)
+            continue;
 
-        for (unsigned direction = 0; direction < D; ++direction) {
-          const auto plus = velocityStencilPoint(previous, nodeId, direction, 1);
-          const auto minus = velocityStencilPoint(previous, nodeId, direction, -1);
-          const T plusCoefficient =
-              T(2) / (plus.distance * (plus.distance + minus.distance));
-          const T minusCoefficient =
-              T(2) / (minus.distance * (plus.distance + minus.distance));
-          detail::vecAddTo(sum, detail::vecScaled(plus.value, plusCoefficient));
-          detail::vecAddTo(sum, detail::vecScaled(minus.value, minusCoefficient));
-          centerCoefficient += plusCoefficient + minusCoefficient;
+          const auto &node = nodes[nodeId];
+          Vec3D<T> sum{0., 0., 0.};
+          T centerCoefficient = 0.;
+
+          for (unsigned direction = 0; direction < D; ++direction) {
+            const auto plus = velocityStencilPoint(previous, nodeId, direction, 1);
+            const auto minus = velocityStencilPoint(previous, nodeId, direction, -1);
+            const T plusCoefficient =
+                T(2) / (plus.distance * (plus.distance + minus.distance));
+            const T minusCoefficient =
+                T(2) / (minus.distance * (plus.distance + minus.distance));
+            detail::vecAddTo(sum, detail::vecScaled(plus.value, plusCoefficient));
+            detail::vecAddTo(sum, detail::vecScaled(minus.value, minusCoefficient));
+            centerCoefficient += plusCoefficient + minusCoefficient;
+          }
+
+          if (centerCoefficient <= std::numeric_limits<T>::epsilon())
+            continue;
+
+          const auto forcing = momentumForcing(node.index);
+          Vec3D<T> updated = sum;
+          for (unsigned component = 0; component < D; ++component) {
+            updated[component] =
+                (sum[component] -
+                 forcing[component] / deformationParameters.viscosity) /
+                centerCoefficient;
+          }
+
+          const Vec3D<T> newValue =
+              detail::vecAdd(detail::vecScaled(updated, deformationParameters.relaxation),
+                             detail::vecScaled(next[nodeId],
+                                               T(1) - deformationParameters.relaxation));
+
+          const Vec3D<T> delta = detail::vecSubtract(newValue, next[nodeId]);
+          for (unsigned component = 0; component < D; ++component)
+            velocityResidual =
+                std::max(velocityResidual, std::abs(delta[component]));
+          next[nodeId] = newValue;
         }
-
-        if (centerCoefficient <= std::numeric_limits<T>::epsilon())
-          continue;
-
-        const auto forcing = momentumForcing(node.index);
-        Vec3D<T> updated = sum;
-        for (unsigned component = 0; component < D; ++component) {
-          updated[component] =
-              (sum[component] -
-               forcing[component] / deformationParameters.viscosity) /
-              centerCoefficient;
-        }
-
-        next[nodeId] =
-            detail::vecAdd(detail::vecScaled(updated, deformationParameters.relaxation),
-                           detail::vecScaled(previous[nodeId],
-                                             T(1) - deformationParameters.relaxation));
-
-        const Vec3D<T> delta = detail::vecSubtract(next[nodeId], previous[nodeId]);
-        for (unsigned component = 0; component < D; ++component)
-          velocityResidual =
-              std::max(velocityResidual, std::abs(delta[component]));
       }
 
       previous.swap(next);

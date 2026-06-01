@@ -122,7 +122,9 @@ private:
   bool solved = false;
   bool nodesDirty_ = true;  // true → rebuild grid/nodes on next apply()
   bool useRequestedBounds = false;
+  bool warmStartable_ = false; // true when nodes[i].concentration holds a prior solution
   std::unordered_map<std::size_t, T> pressureLookup;
+  std::unordered_map<std::size_t, T> concentrationCache_;
   std::vector<Node> nodes;
 
 public:
@@ -257,6 +259,10 @@ public:
     }
     solveDiffusion();
 
+    concentrationCache_.clear();
+    for (const auto &node : nodes)
+      concentrationCache_[detail::gridIndexHash<D>(node.index)] = node.concentration;
+
     maxScalarVelocity_ = 0.;
     ConstSparseIterator reactionIt(reactionInterface->getDomain());
     for (const auto &node : nodes) {
@@ -343,6 +349,66 @@ public:
   T getResidual() const { return residual; }
   std::size_t getNumberOfSolutionNodes() const { return nodes.size(); }
 
+  const std::unordered_map<std::size_t, T> &getConcentrationCache() const {
+    return concentrationCache_;
+  }
+
+  void setConcentrationCache(std::unordered_map<std::size_t, T> cache) {
+    concentrationCache_ = std::move(cache);
+  }
+
+  /// Mark the current solution as valid without re-solving. Call this before
+  /// any parallel advection (lsAdvect) that uses this field as a velocity
+  /// source to prevent concurrent apply() calls inside getScalarVelocity().
+  void markSolved() { solved = true; }
+
+  /// Write per-node concentration into ambientInterface->getPointData() so
+  /// that lsInterior + lsAdvect can carry it across timestep boundaries.
+  /// Safe to call regardless of the solved flag; uses the most recent nodes.
+  void writeConcentrationToLevelSet() {
+    if (nodes.empty() || ambientInterface == nullptr)
+      return;
+
+    std::vector<T> concentrations;
+    ConstSparseIterator it(ambientInterface->getDomain());
+    for (; !it.isFinished(); ++it) {
+      if (!it.isDefined())
+        continue;
+      const IndexType idx = it.getStartIndices();
+      const auto nodeIt = nodeLookup.find(linearIndex(idx));
+      concentrations.push_back(nodeIt != nodeLookup.end()
+                                   ? nodes[nodeIt->second].concentration
+                                   : parameters.equilibriumConcentration);
+    }
+    ambientInterface->getPointData().insertReplaceScalarData(
+        std::move(concentrations), "OxConcentration");
+  }
+
+  /// Write per-node pressure into ambientInterface->getPointData() so that
+  /// it survives advection and can warm-start the coupling loop next step.
+  void writePressureToLevelSet() {
+    if (pressureLookup.empty() || ambientInterface == nullptr)
+      return;
+
+    std::vector<T> pressures;
+    ConstSparseIterator it(ambientInterface->getDomain());
+    for (; !it.isFinished(); ++it) {
+      if (!it.isDefined())
+        continue;
+      const IndexType idx = it.getStartIndices();
+      const auto pIt = pressureLookup.find(detail::gridIndexHash<D>(idx));
+      pressures.push_back(pIt != pressureLookup.end() ? pIt->second : T(0));
+    }
+    ambientInterface->getPointData().insertReplaceScalarData(
+        std::move(pressures), "OxPressure");
+  }
+
+  /// Convenience wrapper: persist both concentration and pressure in one call.
+  void writePersistentFields() {
+    writeConcentrationToLevelSet();
+    writePressureToLevelSet();
+  }
+
   /// Return the reaction boundary sample for the grid node nearest to
   /// `coordinate`. Used by the deformation solver to get both the sub-grid
   /// concentration and the crossing edge so it can compute a sub-grid normal.
@@ -378,6 +444,43 @@ private:
     nodes.clear();
     nodeLookup.clear();
 
+    // On the first substep after an outer-step boundary the in-memory cache is
+    // empty. Fall back to the concentration stored in the level set's pointData
+    // (written by writeConcentrationToLevelSet() before the previous advection
+    // and remapped by lsAdvect + lsInterior).
+    warmStartable_ = !concentrationCache_.empty();
+    if (!warmStartable_) {
+      // Single HRLE pass restores both concentration and pressure from the
+      // pointData written by writePersistentFields() before the last advection.
+      const int cIdx =
+          ambientInterface->getPointData().getScalarDataIndex("OxConcentration");
+      const int pIdx =
+          ambientInterface->getPointData().getScalarDataIndex("OxPressure");
+      const auto *cd = (cIdx != -1)
+                           ? ambientInterface->getPointData().getScalarData(cIdx)
+                           : nullptr;
+      const auto *pd = (pIdx != -1)
+                           ? ambientInterface->getPointData().getScalarData(pIdx)
+                           : nullptr;
+      if (cd != nullptr || pd != nullptr) {
+        ConstSparseIterator it(ambientInterface->getDomain());
+        for (; !it.isFinished(); ++it) {
+          if (!it.isDefined())
+            continue;
+          const auto ptId = it.getPointId();
+          const std::size_t key =
+              detail::gridIndexHash<D>(it.getStartIndices());
+          if (cd != nullptr &&
+              ptId < static_cast<decltype(ptId)>(cd->size()))
+            concentrationCache_[key] = (*cd)[ptId];
+          if (pd != nullptr &&
+              ptId < static_cast<decltype(ptId)>(pd->size()))
+            pressureLookup[key] = (*pd)[ptId];
+        }
+        warmStartable_ = !concentrationCache_.empty();
+      }
+    }
+
     ConstSparseIterator reactionIt(reactionInterface->getDomain());
     ConstSparseIterator ambientIt(ambientInterface->getDomain());
     auto maskIt = makeMaskIterator();
@@ -390,7 +493,11 @@ private:
           !isInsideMask(maskIt, index)) {
         const std::size_t id = nodes.size();
         nodeLookup.emplace(linearIndex(index), id);
-        Node newNode{index, parameters.equilibriumConcentration};
+        T seedConc = parameters.equilibriumConcentration;
+        auto cacheIt = concentrationCache_.find(detail::gridIndexHash<D>(index));
+        if (cacheIt != concentrationCache_.end())
+          seedConc = cacheIt->second;
+        Node newNode{index, seedConc};
         if (parameters.reactionRateRatio111 != T(1))
           newNode.siNormal = computeSiNormal(index, reactionIt);
         nodes.push_back(newNode);
@@ -430,7 +537,13 @@ private:
     if (nodes.empty())
       return;
 
-    std::vector<T> previous(nodes.size(), 0.);
+    // Warm-start from previous solution when available; cold-start from zero
+    // otherwise to avoid slow propagation from a non-informative uniform field.
+    std::vector<T> previous(nodes.size());
+    if (warmStartable_) {
+      for (std::size_t i = 0; i < nodes.size(); ++i)
+        previous[i] = nodes[i].concentration;
+    }
     std::vector<T> next = previous;
 
     // Face BCs are precomputed in buildNodes(); no per-iteration iterators needed.

@@ -123,10 +123,13 @@ CPMAddPackage(
   EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 
 CPMFindPackage(
-  NAME ViennaHRLE
-  VERSION 1.1.2
-  GIT_REPOSITORY "https://github.com/ViennaTools/ViennaHRLE"
-  EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
+NAME ViennaHRLE
+VERSION 1.1.2
+GIT_REPOSITORY "https://github.com/ViennaTools/ViennaHRLE"
+EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
+
+# # Use local ViennaHRLE with interior point support
+# add_subdirectory(../ViennaHRLE ViennaHRLE.build)
 
 target_link_libraries(${PROJECT_NAME} INTERFACE ViennaHRLE ViennaCore)
 

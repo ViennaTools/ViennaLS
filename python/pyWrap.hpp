@@ -473,7 +473,16 @@ template <int D> void bindApi(py::module &module) {
       .def("getReactionBoundarySample",
            &OxidationDiffusion<T, D>::getReactionBoundarySample)
       .def("getScalarVelocityFromSample",
-           &OxidationDiffusion<T, D>::getScalarVelocityFromSample);
+           &OxidationDiffusion<T, D>::getScalarVelocityFromSample)
+      .def("markSolved", &OxidationDiffusion<T, D>::markSolved)
+      .def("markGeometryChanged", &OxidationDiffusion<T, D>::markGeometryChanged)
+      .def("writePersistentFields",
+           &OxidationDiffusion<T, D>::writePersistentFields)
+      .def("getConcentrationCache",
+           &OxidationDiffusion<T, D>::getConcentrationCache,
+           py::return_value_policy::copy)
+      .def("setConcentrationCache",
+           &OxidationDiffusion<T, D>::setConcentrationCache);
 
   py::class_<OxidationDeformation<T, D>, VelocityField<T>,
              SmartPointer<OxidationDeformation<T, D>>>(
@@ -553,11 +562,31 @@ template <int D> void bindApi(py::module &module) {
       .def("setDeformationParameters",
            &OxidationDeformation<T, D>::setDeformationParameters)
       .def("setOxideSigns",
-           &OxidationDeformation<T, D>::setOxideSigns);
+           &OxidationDeformation<T, D>::setOxideSigns)
+      .def("setReactionInterface",
+           &OxidationDeformation<T, D>::setReactionInterface)
+      .def("setDiffusionField",
+           &OxidationDeformation<T, D>::setDiffusionField)
+      .def("setMaskVelocityField",
+           &OxidationDeformation<T, D>::setMaskVelocityField)
+      .def("clearMaskVelocityField",
+           &OxidationDeformation<T, D>::clearMaskVelocityField)
+      .def("markGeometryChanged",
+           &OxidationDeformation<T, D>::markGeometryChanged)
+      .def("writeFieldsToLevelSet",
+           &OxidationDeformation<T, D>::writeFieldsToLevelSet);
 
   py::class_<OxidationMaskBending<T, D>, VelocityField<T>,
              SmartPointer<OxidationMaskBending<T, D>>>(
       module, "OxidationMaskBending")
+      .def(py::init(
+               [](SmartPointer<OxidationDeformation<T, D>> &deformationField,
+                  OxidationMaskParameters<T> maskParameters) {
+                 return OxidationMaskBending<T, D>::New(deformationField,
+                                                        maskParameters);
+               }),
+           py::arg("deformationField"),
+           py::arg("maskParameters") = OxidationMaskParameters<T>())
       .def(py::init(
                [](SmartPointer<OxidationDeformation<T, D>>
                       &deformationField,
@@ -605,7 +634,9 @@ template <int D> void bindApi(py::module &module) {
       .def("getNumberOfSolutionNodes",
            &OxidationMaskBending<T, D>::getNumberOfSolutionNodes)
       .def("getNumberOfContactNodes",
-           &OxidationMaskBending<T, D>::getNumberOfContactNodes);
+           &OxidationMaskBending<T, D>::getNumberOfContactNodes)
+      .def("writeFieldsToLevelSet",
+           &OxidationMaskBending<T, D>::writeFieldsToLevelSet);
 
   py::class_<OxidationConstrainedAmbient<T, D>, VelocityField<T>,
              SmartPointer<OxidationConstrainedAmbient<T, D>>>(
@@ -715,6 +746,11 @@ template <int D> void bindApi(py::module &module) {
           },
           py::arg("minIndex"), py::arg("maxIndex"))
       .def("apply", &LOCOSOxidation<T, D>::apply, py::arg("advectionTime"))
+      .def("applyCFLLimited", &LOCOSOxidation<T, D>::applyCFLLimited,
+           py::arg("requestedTime"), py::arg("cflFactor"),
+           "Execute one CFL-limited LOCOS step; returns the actual time advanced.")
+      .def("getLastMaxVelocity", &LOCOSOxidation<T, D>::getLastMaxVelocity,
+           "Maximum interface velocity (µm/hr) from the most recent CFL step.")
       .def("getDiffusionField", &LOCOSOxidation<T, D>::getDiffusionField)
       .def("getDeformationField", &LOCOSOxidation<T, D>::getDeformationField)
       .def("getMaskBendingField", &LOCOSOxidation<T, D>::getMaskBendingField)

@@ -3,13 +3,16 @@
 #include <lsAdvect.hpp>
 #include <lsAdvectIntegrationSchemes.hpp>
 #include <lsBooleanOperation.hpp>
+#include <lsInterior.hpp>
 #include <lsOxidationModel.hpp>
 
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 #include <limits>
 #include <optional>
 #include <string>
+#include <unordered_map>
 
 namespace viennals {
 
@@ -165,6 +168,9 @@ template <class T, int D> class LOCOSOxidation {
   SmartPointer<OxidationDiffusion<T, D>> diffusionField;
   SmartPointer<OxidationDeformation<T, D>> deformationField;
   SmartPointer<OxidationMaskBending<T, D>> maskBendingField;
+  T lastMaxVelocity_ = T(0);
+
+  std::unordered_map<std::size_t, T> concentrationCache_;
 
 public:
   LOCOSOxidation() = default;
@@ -262,6 +268,10 @@ public:
 
   T getMaskCouplingResidual() const { return lastMaskCouplingResidual; }
 
+  /// Maximum interface velocity (µm/hr) from the most recent CFL-limited step.
+  /// Use this to compute the next step request rather than reusing actualDt.
+  T getLastMaxVelocity() const { return lastMaxVelocity_; }
+
   /// Execute one complete LOCOS time step of duration advectionTime.
   void apply(T advectionTime) { applyImpl(advectionTime, std::nullopt); }
 
@@ -291,6 +301,9 @@ private:
     if (requestedTime <= T(0))
       return T(0);
 
+    logInfo("LOCOS: starting time step, requested_dt=" +
+            std::to_string(requestedTime) + " hr");
+
     auto solveFields = [&](T stressTimeStep) {
       auto stepDeformationParams = deformationParams;
       stepDeformationParams.stressTimeStep = stressTimeStep;
@@ -299,12 +312,16 @@ private:
 
       diffusionField = OxidationDiffusion<T, D>::New(
           siInterface, ambientInterface, oxidationParams);
+      diffusionField->setConcentrationCache(concentrationCache_);
       diffusionField->setMaskInterface(maskInterface, maskInteriorSign);
 
       deformationField = OxidationDeformation<T, D>::New(
           siInterface, ambientInterface, diffusionField, oxidationParams,
           stepDeformationParams);
       deformationField->setMaskInterface(maskInterface, maskInteriorSign);
+      // Velocity, pressure, and stress history are restored from
+      // ambientInterface->getPointData() inside deformationField->apply()
+      // via seedFromLevelSet() — no separate in-memory cache needed.
 
       // OxidationModel::apply() forwards solve bounds to the sub-solvers; if
       // bounds were not set, the sub-solvers auto-compute from the level-set
@@ -373,6 +390,8 @@ private:
                         "). Consider increasing maskCouplingIterations.")
             .print();
       }
+
+      concentrationCache_ = diffusionField->getConcentrationCache();
     };
 
     solveFields(requestedTime);
@@ -386,6 +405,7 @@ private:
         maxVelocity = std::max(maxVelocity,
                                maskBendingField->getDissipationAlpha(d, -1, {}));
       }
+      lastMaxVelocity_ = maxVelocity;
       if (maxVelocity > std::numeric_limits<T>::epsilon()) {
         const T gridDelta = siInterface->getGrid().getGridDelta();
         advectionTime = std::min(advectionTime,
@@ -420,9 +440,21 @@ private:
                              BooleanOperationEnum::RELATIVE_COMPLEMENT).apply();
     };
 
+    // Prevent concurrent apply() calls inside lsAdvect's parallel velocity
+    // queries: mark the diffusion solution valid so getScalarVelocity() never
+    // re-enters apply() from multiple threads.
+    diffusionField->markSolved();
+
     // --- Pre-advection clip (mandatory) ---
     // The ambient interface must not overlap the mask before advection begins.
     applyMaskContact();
+
+    // Persist all solver fields after the clip so pointData sizes match the
+    // post-clip HRLE domains that lsAdvect will remap.
+    // lsInterior then fills each body's interior with all warm-start data.
+    diffusionField->writePersistentFields();
+    deformationField->writeFieldsToLevelSet();
+    maskBendingField->writeFieldsToLevelSet();
 
     // --- Three level-set advections ---
 
@@ -441,9 +473,17 @@ private:
     advect(siInterface, diffusionField);
     advect(maskInterface, maskBendingField);
 
+    // Fill each body's interior so the next substep can warm-start from
+    // pointData across substep and outer-step boundaries.
+    Interior<T, D>(ambientInterface).apply();
+    Interior<T, D>(maskInterface).apply();
+
     // --- Post-advection clip (mandatory) ---
     // Removes any oxide that advected into the mask body during this step.
     applyMaskContact();
+
+    logInfo("LOCOS: time step complete, actual_dt=" + std::to_string(advectionTime) +
+            " hr");
 
     return advectionTime;
   }

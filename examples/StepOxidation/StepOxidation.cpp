@@ -51,23 +51,23 @@ LevelSet<D> makeStepLevelSet(const double *bounds,
   (void)zMin;
 
   auto step = ls::Domain<NumericType, D>::New(bounds, boundaryCons, gridDelta);
-  ls::VectorType<NumericType, D> planeOrigin(0.);
+  ls::VectorType<NumericType, D> planeOrigin{0.};
   planeOrigin[1] = leftTop;
-  ls::VectorType<NumericType, D> planeNormal(0.);
+  ls::VectorType<NumericType, D> planeNormal{0.};
   planeNormal[1] = 1.;
   ls::MakeGeometry<NumericType, D>(
       step, ls::Plane<NumericType, D>::New(planeOrigin, planeNormal))
       .apply();
 
-  ls::VectorType<NumericType, D> rightMin(0.);
+  ls::VectorType<NumericType, D> rightMin{0.};
   rightMin[0] = stepX; rightMin[1] = leftTop;
   if constexpr (D == 3) rightMin[2] = stepZ;
 
-  ls::VectorType<NumericType, D> rightMax(0.);
+  ls::VectorType<NumericType, D> rightMax{0.};
   rightMax[0] = xMax; rightMax[1] = rightTop;
   if constexpr (D == 3) rightMax[2] = zMax;
   auto rightBlock =
-      makeBoxLevelSet(bounds, boundaryCons, gridDelta, rightMin, rightMax);
+      makeBoxLevelSet<D>(bounds, boundaryCons, gridDelta, rightMin, rightMax);
 
   ls::BooleanOperation<NumericType, D>(
       step, rightBlock, ls::BooleanOperationEnum::UNION)
@@ -154,8 +154,8 @@ int runSimulation() {
   }
 
   auto siInterface =
-      makeStepLevelSet(bounds, boundaryCons, gridDelta, -xExtent, xExtent, yMin,
-                       leftSiTop, rightSiTop, stepX, -zExtent, zExtent, stepZ);
+      makeStepLevelSet<D>(bounds, boundaryCons, gridDelta, -xExtent, xExtent, yMin,
+                          leftSiTop, rightSiTop, stepX, -zExtent, zExtent, stepZ);
 
   auto ambientInterface = ls::Domain<NumericType, D>::New(siInterface);
   auto initialOxide =

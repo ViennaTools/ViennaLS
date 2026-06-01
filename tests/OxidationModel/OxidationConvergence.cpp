@@ -70,8 +70,8 @@ NumericType flatAmbientFraction(NumericType minMechanicsBoundaryDistance,
   oxParams.maxIterations = 20000;
   oxParams.tolerance = tolerance;
 
-  viennahrle::Index<D> minIndex{-8, -1};
-  viennahrle::Index<D> maxIndex{8, 4};
+  viennahrle::Index<D> minIndex{-8, -2};
+  viennahrle::Index<D> maxIndex{8, 8};
 
   auto diffusion = ls::OxidationDiffusion<NumericType, D>::New(
       reactionInterface, ambientInterface, oxParams);

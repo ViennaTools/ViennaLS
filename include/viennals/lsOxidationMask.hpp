@@ -3,6 +3,8 @@
 #include <lsOxidationSolverBase.hpp>
 #include <lsOxidationDeformation.hpp>
 
+#include <omp.h>
+
 namespace viennals {
 
 template <class T> struct OxidationMaskParameters {
@@ -84,6 +86,9 @@ private:
   IndexType requestedMinIndex{};
   IndexType requestedMaxIndex{};
   std::vector<Node> nodes;
+  std::unordered_map<std::size_t, T> ambientPhiCache_;
+  std::vector<Vec3D<T>> solverPrevious_;
+  std::vector<Vec3D<T>> solverNext_;
 
 public:
   OxidationMaskBending() = default;
@@ -180,6 +185,7 @@ public:
     if (!initialiseGrid())
       return; // base class already logged the error
     buildNodes();
+    seedFromLevelSet(); // warm-start velocity from previous substep's pointData
     if (nodes.empty()) {
       Logger::getInstance()
           .addWarning("OxidationMaskBending: no mask nodes found after "
@@ -237,12 +243,60 @@ public:
     return maxVelocity_[direction];
   }
 
+  /// Write mask bending velocity into maskInterface->getPointData() so that
+  /// lsInterior + lsAdvect carry it across timestep boundaries.
+  void writeFieldsToLevelSet() {
+    if (nodes.empty() || maskInterface == nullptr)
+      return;
+
+    using VD = typename PointData<T>::VectorDataType;
+    VD velocity;
+
+    ConstSparseIterator it(maskInterface->getDomain());
+    for (; !it.isFinished(); ++it) {
+      if (!it.isDefined())
+        continue;
+      const IndexType idx = it.getStartIndices();
+      const auto nIt = nodeLookup.find(linearIndex(idx));
+      velocity.push_back(nIt != nodeLookup.end()
+                             ? nodes[nIt->second].velocity
+                             : Vec3D<T>{T(0), T(0), T(0)});
+    }
+    maskInterface->getPointData().insertReplaceVectorData(
+        std::move(velocity), "MaskVelocity");
+  }
+
 private:
   bool initialiseGrid() {
     return initializeGridFromMask(maskInterface, useRequestedBounds,
                                   requestedMinIndex, requestedMaxIndex,
                                   parameters.maxGridPoints,
                                   "OxidationMaskBending");
+  }
+
+  /// Seed nodes[i].velocity from maskInterface->getPointData()["MaskVelocity"]
+  /// so solveElasticVelocity() warm-starts from the previous substep's field.
+  void seedFromLevelSet() {
+    if (maskInterface == nullptr || nodes.empty())
+      return;
+    const int vIdx = maskInterface->getPointData().getVectorDataIndex("MaskVelocity");
+    if (vIdx == -1)
+      return;
+    const auto *vd = maskInterface->getPointData().getVectorData(vIdx);
+    if (vd == nullptr)
+      return;
+
+    ConstSparseIterator it(maskInterface->getDomain());
+    for (; !it.isFinished(); ++it) {
+      if (!it.isDefined())
+        continue;
+      const auto ptId = it.getPointId();
+      if (ptId >= static_cast<decltype(ptId)>(vd->size()))
+        continue;
+      const auto nIt = nodeLookup.find(linearIndex(it.getStartIndices()));
+      if (nIt != nodeLookup.end())
+        nodes[nIt->second].velocity = (*vd)[ptId];
+    }
   }
 
   std::unordered_map<std::size_t, Vec3D<T>> collectVelocitiesByGridPoint() const {
@@ -341,9 +395,23 @@ private:
     }
   }
 
+  void buildAmbientPhiCache() {
+    ambientPhiCache_.clear();
+    if (ambientInterface == nullptr)
+      return;
+    for (ConstSparseIterator it(ambientInterface->getDomain());
+         !it.isFinished(); ++it) {
+      if (!it.isDefined())
+        continue;
+      ambientPhiCache_[detail::gridIndexHash<D>(it.getStartIndices())] =
+          static_cast<T>(ambientSign) * it.getValue();
+    }
+  }
+
   void buildNodes() {
     nodes.clear();
     nodeLookup.clear();
+    buildAmbientPhiCache();
 
     ConstSparseIterator maskIt(maskInterface->getDomain());
     IndexType index = minIndex;
@@ -422,8 +490,8 @@ private:
     if (nodes.empty())
       return;
 
-    std::vector<Vec3D<T>> previous(nodes.size(), {0., 0., 0.});
-    std::vector<Vec3D<T>> next = previous;
+    solverPrevious_.assign(nodes.size(), {0., 0., 0.});
+    solverNext_.resize(nodes.size());
 
     const T lambda = lameLambda();
     const T mu = lameMu();
@@ -433,43 +501,44 @@ private:
 
     for (; iterations < parameters.maxIterations; ++iterations) {
       residual = 0.;
+#pragma omp parallel for schedule(static) reduction(max : residual)
       for (std::size_t nodeId = 0; nodeId < nodes.size(); ++nodeId) {
 
         Vec3D<T> laplaceAverage{0., 0., 0.};
         unsigned count = 0;
         for (unsigned direction = 0; direction < D; ++direction) {
           for (int offset : {-1, 1}) {
-            detail::vecAddTo(laplaceAverage, neighborVelocity(previous, nodeId,
+            detail::vecAddTo(laplaceAverage, neighborVelocity(solverPrevious_, nodeId,
                                                               direction, offset));
             ++count;
           }
         }
 
         Vec3D<T> updated =
-            (count == 0) ? previous[nodeId]
+            (count == 0) ? solverPrevious_[nodeId]
                          : detail::vecScaled(laplaceAverage, T(1) / count);
         const Vec3D<T> gradDivCorrection =
-            detail::vecScaled(divergenceGradient(previous, nodes[nodeId].index),
+            detail::vecScaled(divergenceGradient(solverPrevious_, nodes[nodeId].index),
                               gradDivWeight * gridDelta * gridDelta /
                                   (T(2) * static_cast<T>(D)));
         updated = detail::vecAdd(updated, gradDivCorrection);
 
-        next[nodeId] =
+        solverNext_[nodeId] =
             detail::vecAdd(detail::vecScaled(updated, parameters.relaxation),
-                           detail::vecScaled(previous[nodeId], T(1) - parameters.relaxation));
+                           detail::vecScaled(solverPrevious_[nodeId], T(1) - parameters.relaxation));
 
-        const Vec3D<T> delta = detail::vecSubtract(next[nodeId], previous[nodeId]);
+        const Vec3D<T> delta = detail::vecSubtract(solverNext_[nodeId], solverPrevious_[nodeId]);
         for (unsigned component = 0; component < D; ++component)
           residual = std::max(residual, std::abs(delta[component]));
       }
 
-      previous.swap(next);
+      solverPrevious_.swap(solverNext_);
       if (residual < parameters.tolerance)
         break;
     }
 
     for (std::size_t i = 0; i < nodes.size(); ++i)
-      nodes[i].velocity = previous[i];
+      nodes[i].velocity = solverPrevious_[i];
   }
 
   // Returns neighbor velocity without ghost extrapolation (used inside ghost
@@ -609,9 +678,10 @@ private:
   }
 
   bool isInsideOxide(const IndexType &index) const {
-    ConstSparseIterator ambientIt(ambientInterface->getDomain());
-    ambientIt.goToIndices(index);
-    return ambientSign * ambientIt.getValue() >= T(0);
+    if (ambientInterface == nullptr)
+      return false;
+    const auto it = ambientPhiCache_.find(detail::gridIndexHash<D>(index));
+    return it != ambientPhiCache_.end() && it->second >= T(0);
   }
 
   T maskGradientComponent(const IndexType &index, unsigned direction,
