@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -76,7 +77,10 @@ private:
   static constexpr T maxStressFactor = T(1.e6);
 
   // bring base members into scope
-  using OxidationSolverBase<T, D>::nodeLookup;
+  using OxidationSolverBase<T, D>::noNode;
+  using OxidationSolverBase<T, D>::nodeLookupFlat;
+  using OxidationSolverBase<T, D>::initNodeLookup;
+  using OxidationSolverBase<T, D>::lookupNode;
   using OxidationSolverBase<T, D>::minIndex;
   using OxidationSolverBase<T, D>::maxIndex;
   using OxidationSolverBase<T, D>::extents;
@@ -323,14 +327,14 @@ public:
   }
 
   T getConcentration(const IndexType &index) const {
-    auto it = nodeLookup.find(linearIndex(index));
-    if (it == nodeLookup.end()) {
+    const std::size_t nodeId = lookupNode(index);
+    if (nodeId == noNode) {
       const auto nearby = findNearbyNode(index);
-      if (nearby == std::numeric_limits<std::size_t>::max())
+      if (nearby == noNode)
         return 0.;
       return nodes[nearby].concentration;
     }
-    return nodes[it->second].concentration;
+    return nodes[nodeId].concentration;
   }
 
   T getReactionBoundaryConcentration(const Vec3D<T> &coordinate) const {
@@ -375,9 +379,9 @@ public:
       if (!it.isDefined())
         continue;
       const IndexType idx = it.getStartIndices();
-      const auto nodeIt = nodeLookup.find(linearIndex(idx));
-      concentrations.push_back(nodeIt != nodeLookup.end()
-                                   ? nodes[nodeIt->second].concentration
+      const std::size_t nodeId = lookupNode(idx);
+      concentrations.push_back(nodeId != noNode
+                                   ? nodes[nodeId].concentration
                                    : parameters.equilibriumConcentration);
     }
     ambientInterface->getPointData().insertReplaceScalarData(
@@ -442,7 +446,7 @@ private:
 
   void buildNodes() {
     nodes.clear();
-    nodeLookup.clear();
+    initNodeLookup();
 
     // On the first substep after an outer-step boundary the in-memory cache is
     // empty. Fall back to the concentration stored in the level set's pointData
@@ -492,7 +496,7 @@ private:
       if (isInsideOxide(reactionPhi, ambientPhi) &&
           !isInsideMask(maskIt, index)) {
         const std::size_t id = nodes.size();
-        nodeLookup.emplace(linearIndex(index), id);
+        nodeLookupFlat[linearIndex(index)] = id;
         T seedConc = parameters.equilibriumConcentration;
         auto cacheIt = concentrationCache_.find(detail::gridIndexHash<D>(index));
         if (cacheIt != concentrationCache_.end())
@@ -519,7 +523,7 @@ private:
           const unsigned fi = dir * 2u + (off == 1 ? 1u : 0u);
           IndexType nb = node.index;
           nb[dir] += off;
-          if (!inBounds(nb) || nodeLookup.count(linearIndex(nb))) {
+          if (!inBounds(nb) || lookupNode(nb) != noNode) {
             node.faceBC[fi] = {};
             continue;
           }
@@ -531,60 +535,158 @@ private:
     }
   }
 
+  // Evaluates the stencil at one node: fills diag = A[i,i] and
+  // rhs = sum_j(A_off[i,j] * x[j]) + bc_constants[i].
+  // Called with x = zeros to precompute the geometry-fixed diagonal and b.
+  template <class SolverT>
+  void computeStencilAt(std::size_t nodeId, const std::vector<SolverT> &x,
+                        T &diag, T &rhs) const {
+    const auto &node = nodes[nodeId];
+    diag = T(0);
+    rhs  = T(0);
+    const T D_eff = getEffectiveDiffusionCoefficient(node.index);
+    for (unsigned direction = 0; direction < D; ++direction) {
+      const auto neg = makeStencilSide(node, x, direction, -1, D_eff);
+      const auto pos = makeStencilSide(node, x, direction,  1, D_eff);
+      addAxisContribution(rhs, diag, neg, pos, D_eff);
+    }
+  }
+
+  // Computes Av = A * v using precomputed diagonal and b (RHS constants).
+  // (Av)[i] = precomputedDiag[i]*v[i] - rhs_at_v[i] + b[i]
+  // Stencil arithmetic stays in T; only storage uses SolverT.
+  template <class SolverT>
+  void matvec(const std::vector<SolverT> &v,
+              const std::vector<T> &precomputedDiag,
+              const std::vector<T> &b,
+              std::vector<SolverT> &Av) const {
+#pragma omp parallel for schedule(static)
+    for (std::size_t i = 0; i < nodes.size(); ++i) {
+      T diag, rhs;
+      computeStencilAt(i, v, diag, rhs);
+      Av[i] = static_cast<SolverT>(precomputedDiag[i] * v[i] - rhs + b[i]);
+    }
+  }
+
   void solveDiffusion() {
     iterations = 0;
     residual = 0.;
     if (nodes.empty())
       return;
 
-    // Warm-start from previous solution when available; cold-start from zero
-    // otherwise to avoid slow propagation from a non-informative uniform field.
-    std::vector<T> previous(nodes.size());
-    if (warmStartable_) {
-      for (std::size_t i = 0; i < nodes.size(); ++i)
-        previous[i] = nodes[i].concentration;
+    // Work vectors use float to halve memory bandwidth in the SpMV hot path.
+    // Stencil arithmetic and dot-product accumulation remain in T (double).
+    using SolverT = float;
+
+    const std::size_t n = nodes.size();
+    const T eps = std::numeric_limits<T>::epsilon();
+
+    // Geometry-fixed diagonal and BC source vector (kept in T for full precision).
+    std::vector<T> diag(n), b(n);
+    {
+      const std::vector<SolverT> zeros(n, SolverT(0));
+#pragma omp parallel for schedule(static)
+      for (std::size_t i = 0; i < n; ++i)
+        computeStencilAt(i, zeros, diag[i], b[i]);
     }
-    std::vector<T> next = previous;
 
-    // Face BCs are precomputed in buildNodes(); no per-iteration iterators needed.
+    // Initial guess: warm-start or diagonal-preconditioned b.
+    std::vector<SolverT> x(n);
+    for (std::size_t i = 0; i < n; ++i)
+      x[i] = static_cast<SolverT>(warmStartable_ ? nodes[i].concentration
+                                                  : (diag[i] > eps ? b[i] / diag[i] : T(0)));
+
+    // r = b - A*x
+    std::vector<SolverT> Ax(n);
+    matvec(x, diag, b, Ax);
+    std::vector<SolverT> r(n), r_hat(n);
+    for (std::size_t i = 0; i < n; ++i) {
+      r[i]     = static_cast<SolverT>(b[i] - Ax[i]);
+      r_hat[i] = r[i];
+    }
+
+    // BiCGSTAB with diagonal (Jacobi) preconditioner.
+    // Scalars (rho, alpha, omega, beta) and dot products stay in T for stability.
+    std::vector<SolverT> p(n, SolverT(0)), v(n, SolverT(0)), y(n), z(n), s(n), t(n);
+    T rho = T(1), alpha = T(1), omega = T(1);
+
     for (; iterations < parameters.maxIterations; ++iterations) {
-      residual = 0.;
-#pragma omp parallel for schedule(static) reduction(max : residual)
-      for (std::size_t nodeId = 0; nodeId < nodes.size(); ++nodeId) {
-        const auto &node = nodes[nodeId];
-        T rightHandSide = 0.;
-        T diagonal = 0.;
+      T rho_new = T(0);
+      for (std::size_t i = 0; i < n; ++i)
+        rho_new += static_cast<T>(r_hat[i]) * static_cast<T>(r[i]);
 
-        const T D_eff = getEffectiveDiffusionCoefficient(node.index);
-        for (unsigned direction = 0; direction < D; ++direction) {
-          const auto negativeSide =
-              makeStencilSide(node, previous, direction, -1, D_eff);
-          const auto positiveSide =
-              makeStencilSide(node, previous, direction, 1, D_eff);
-          addAxisContribution(rightHandSide, diagonal, negativeSide,
-                              positiveSide, D_eff);
-        }
+      if (std::abs(rho_new) < T(1e-100))
+        break;
 
-        const T updated =
-            (diagonal <= std::numeric_limits<T>::epsilon())
-                ? previous[nodeId]
-                : rightHandSide / diagonal;
-        next[nodeId] = parameters.relaxation * updated +
-                       (T(1) - parameters.relaxation) * previous[nodeId];
-        residual = std::max(residual, std::abs(next[nodeId] - previous[nodeId]));
+      const T beta = (rho_new / rho) * (alpha / omega);
+      rho = rho_new;
+
+      for (std::size_t i = 0; i < n; ++i)
+        p[i] = static_cast<SolverT>(r[i] + beta * (p[i] - omega * v[i]));
+
+      for (std::size_t i = 0; i < n; ++i) {
+        const T pi = p[i];
+        y[i] = static_cast<SolverT>((diag[i] > eps) ? pi / diag[i] : pi);
       }
 
-      previous.swap(next);
-      if (residual < parameters.tolerance)
+      matvec(y, diag, b, v);
+
+      T r_hat_v = T(0);
+      for (std::size_t i = 0; i < n; ++i)
+        r_hat_v += static_cast<T>(r_hat[i]) * static_cast<T>(v[i]);
+      if (std::abs(r_hat_v) < T(1e-100))
         break;
+
+      alpha = rho_new / r_hat_v;
+
+      for (std::size_t i = 0; i < n; ++i)
+        s[i] = static_cast<SolverT>(r[i] - alpha * v[i]);
+
+      residual = T(0);
+      for (std::size_t i = 0; i < n; ++i)
+        residual = std::max(residual, std::abs(static_cast<T>(s[i])));
+      if (residual < parameters.tolerance) {
+        for (std::size_t i = 0; i < n; ++i)
+          x[i] = static_cast<SolverT>(x[i] + alpha * y[i]);
+        ++iterations;
+        break;
+      }
+
+      for (std::size_t i = 0; i < n; ++i) {
+        const T si = s[i];
+        z[i] = static_cast<SolverT>((diag[i] > eps) ? si / diag[i] : si);
+      }
+
+      matvec(z, diag, b, t);
+
+      T t_s = T(0), t_t = T(0);
+      for (std::size_t i = 0; i < n; ++i) {
+        t_s += static_cast<T>(t[i]) * static_cast<T>(s[i]);
+        t_t += static_cast<T>(t[i]) * static_cast<T>(t[i]);
+      }
+      omega = (t_t > T(1e-100)) ? t_s / t_t : T(0);
+
+      for (std::size_t i = 0; i < n; ++i) {
+        x[i] = static_cast<SolverT>(x[i] + alpha * y[i] + omega * z[i]);
+        r[i]  = static_cast<SolverT>(s[i] - omega * t[i]);
+      }
+
+      residual = T(0);
+      for (std::size_t i = 0; i < n; ++i)
+        residual = std::max(residual, std::abs(static_cast<T>(r[i])));
+      if (residual < parameters.tolerance) {
+        ++iterations;
+        break;
+      }
     }
 
-    for (std::size_t i = 0; i < nodes.size(); ++i)
-      nodes[i].concentration = previous[i];
+    for (std::size_t i = 0; i < n; ++i)
+      nodes[i].concentration = x[i];
   }
 
   // Uses precomputed node.faceBC — no HRLE iterator access, safe for parallel execution.
-  StencilSide makeStencilSide(const Node &node, const std::vector<T> &previous,
+  template <class SolverT>
+  StencilSide makeStencilSide(const Node &node, const std::vector<SolverT> &previous,
                               unsigned direction, int offset, T diffusion) const {
     IndexType neighbor = node.index;
     neighbor[direction] += offset;
@@ -592,9 +694,9 @@ private:
     if (!inBounds(neighbor))
       return zeroFluxSide();
 
-    const auto foundNeighbor = nodeLookup.find(linearIndex(neighbor));
-    if (foundNeighbor != nodeLookup.end())
-      return {gridDelta, 0., previous[foundNeighbor->second]};
+    const std::size_t neighborId = lookupNode(neighbor);
+    if (neighborId != noNode)
+      return {gridDelta, 0., previous[neighborId]};
 
     const unsigned fi = direction * 2u + (offset == 1 ? 1u : 0u);
     const auto &face = node.faceBC[fi];
@@ -645,10 +747,10 @@ private:
   ReactionBoundarySample reactionBoundarySample(const IndexType &index) const {
     ConstSparseIterator reactionIt(reactionInterface->getDomain());
 
-    const auto direct = nodeLookup.find(linearIndex(index));
-    if (direct != nodeLookup.end()) {
+    const std::size_t directId = lookupNode(index);
+    if (directId != noNode) {
       const auto sample =
-          reactionBoundarySampleFromNode(reactionIt, nodes[direct->second]);
+          reactionBoundarySampleFromNode(reactionIt, nodes[directId]);
       if (sample.found)
         return sample;
     }
@@ -673,13 +775,13 @@ private:
         }
 
         if (distance2 > T(0) && inBounds(candidate)) {
-          const auto found = nodeLookup.find(linearIndex(candidate));
-          if (found != nodeLookup.end() && distance2 < bestDistance2) {
+          const std::size_t foundId = nodeLookupFlat[linearIndex(candidate)];
+          if (foundId != noNode && distance2 < bestDistance2) {
             const auto sample =
-                reactionBoundarySampleFromNode(reactionIt, nodes[found->second]);
+                reactionBoundarySampleFromNode(reactionIt, nodes[foundId]);
             if (sample.found) {
               bestDistance2 = distance2;
-              bestNode = found->second;
+              bestNode = foundId;
             }
           }
         }
@@ -782,9 +884,9 @@ private:
     }
 
     if (parameters.reactionRateRatio111 != T(1)) {
-      const auto nodeIt = nodeLookup.find(linearIndex(index));
-      if (nodeIt != nodeLookup.end()) {
-        const auto &normal = nodes[nodeIt->second].siNormal;
+      const std::size_t nodeId = lookupNode(index);
+      if (nodeId != noNode) {
+        const auto &normal = nodes[nodeId].siNormal;
         T dot = T(0);
         for (unsigned d = 0; d < D; ++d)
           dot += normal[d] * parameters.crystalAxis[d];

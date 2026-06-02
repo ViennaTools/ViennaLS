@@ -4,6 +4,7 @@
 #include <lsOxidationDeformation.hpp>
 
 #include <omp.h>
+#include <unordered_map>
 
 namespace viennals {
 
@@ -40,7 +41,10 @@ class OxidationMaskBending final
 
 private:
   // bring base members into scope
-  using OxidationSolverBase<T, D>::nodeLookup;
+  using OxidationSolverBase<T, D>::noNode;
+  using OxidationSolverBase<T, D>::nodeLookupFlat;
+  using OxidationSolverBase<T, D>::initNodeLookup;
+  using OxidationSolverBase<T, D>::lookupNode;
   using OxidationSolverBase<T, D>::minIndex;
   using OxidationSolverBase<T, D>::maxIndex;
   using OxidationSolverBase<T, D>::extents;
@@ -87,8 +91,6 @@ private:
   IndexType requestedMaxIndex{};
   std::vector<Node> nodes;
   std::unordered_map<std::size_t, T> ambientPhiCache_;
-  std::vector<Vec3D<T>> solverPrevious_;
-  std::vector<Vec3D<T>> solverNext_;
 
 public:
   OxidationMaskBending() = default;
@@ -257,9 +259,9 @@ public:
       if (!it.isDefined())
         continue;
       const IndexType idx = it.getStartIndices();
-      const auto nIt = nodeLookup.find(linearIndex(idx));
-      velocity.push_back(nIt != nodeLookup.end()
-                             ? nodes[nIt->second].velocity
+      const std::size_t nId = lookupNode(idx);
+      velocity.push_back(nId != noNode
+                             ? nodes[nId].velocity
                              : Vec3D<T>{T(0), T(0), T(0)});
     }
     maskInterface->getPointData().insertReplaceVectorData(
@@ -293,9 +295,9 @@ private:
       const auto ptId = it.getPointId();
       if (ptId >= static_cast<decltype(ptId)>(vd->size()))
         continue;
-      const auto nIt = nodeLookup.find(linearIndex(it.getStartIndices()));
-      if (nIt != nodeLookup.end())
-        nodes[nIt->second].velocity = (*vd)[ptId];
+      const std::size_t nId = lookupNode(it.getStartIndices());
+      if (nId != noNode)
+        nodes[nId].velocity = (*vd)[ptId];
     }
   }
 
@@ -410,7 +412,7 @@ private:
 
   void buildNodes() {
     nodes.clear();
-    nodeLookup.clear();
+    initNodeLookup();
     buildAmbientPhiCache();
 
     ConstSparseIterator maskIt(maskInterface->getDomain());
@@ -418,7 +420,7 @@ private:
     while (true) {
       if (isInsideMask(maskIt, index)) {
         const std::size_t id = nodes.size();
-        nodeLookup.emplace(linearIndex(index), id);
+        nodeLookupFlat[linearIndex(index)] = id;
         nodes.push_back({index});
       }
 
@@ -438,7 +440,7 @@ private:
           IndexType neighbor = node.index;
           neighbor[dir] += offset;
           const bool neighborIsNode =
-              inBounds(neighbor) && nodeLookup.count(linearIndex(neighbor));
+              inBounds(neighbor) && lookupNode(neighbor) != noNode;
           if (neighborIsNode ||
               !isContactBoundary(node.index, dir, offset, maskIt)) {
             node.contactFaceActive[faceIdx] = false;
@@ -484,88 +486,33 @@ private:
     }
   }
 
-  void solveElasticVelocity() {
-    iterations = 0;
-    residual = 0.;
-    if (nodes.empty())
-      return;
-
-    solverPrevious_.assign(nodes.size(), {0., 0., 0.});
-    solverNext_.resize(nodes.size());
-
-    const T lambda = lameLambda();
-    const T mu = lameMu();
-    const T gradDivWeight =
-        (lambda + mu) / std::max(lambda + T(2) * mu,
-                                 std::numeric_limits<T>::epsilon());
-
-    for (; iterations < parameters.maxIterations; ++iterations) {
-      residual = 0.;
-#pragma omp parallel for schedule(static) reduction(max : residual)
-      for (std::size_t nodeId = 0; nodeId < nodes.size(); ++nodeId) {
-
-        Vec3D<T> laplaceAverage{0., 0., 0.};
-        unsigned count = 0;
-        for (unsigned direction = 0; direction < D; ++direction) {
-          for (int offset : {-1, 1}) {
-            detail::vecAddTo(laplaceAverage, neighborVelocity(solverPrevious_, nodeId,
-                                                              direction, offset));
-            ++count;
-          }
-        }
-
-        Vec3D<T> updated =
-            (count == 0) ? solverPrevious_[nodeId]
-                         : detail::vecScaled(laplaceAverage, T(1) / count);
-        const Vec3D<T> gradDivCorrection =
-            detail::vecScaled(divergenceGradient(solverPrevious_, nodes[nodeId].index),
-                              gradDivWeight * gridDelta * gridDelta /
-                                  (T(2) * static_cast<T>(D)));
-        updated = detail::vecAdd(updated, gradDivCorrection);
-
-        solverNext_[nodeId] =
-            detail::vecAdd(detail::vecScaled(updated, parameters.relaxation),
-                           detail::vecScaled(solverPrevious_[nodeId], T(1) - parameters.relaxation));
-
-        const Vec3D<T> delta = detail::vecSubtract(solverNext_[nodeId], solverPrevious_[nodeId]);
-        for (unsigned component = 0; component < D; ++component)
-          residual = std::max(residual, std::abs(delta[component]));
-      }
-
-      solverPrevious_.swap(solverNext_);
-      if (residual < parameters.tolerance)
-        break;
-    }
-
-    for (std::size_t i = 0; i < nodes.size(); ++i)
-      nodes[i].velocity = solverPrevious_[i];
-  }
-
-  // Returns neighbor velocity without ghost extrapolation (used inside ghost
-  // computations to avoid recursion).
-  Vec3D<T> simpleNeighborVelocity(const std::vector<Vec3D<T>> &velocity,
-                                  std::size_t nodeId, unsigned direction,
-                                  int offset) const {
+  // Returns neighbor velocity without ghost extrapolation.
+  // All arithmetic is in T; reads from the SolverT work vector are widened.
+  template <class SolverT>
+  Vec3D<T> simpleNeighborVelocity(const std::vector<Vec3D<SolverT>> &velocity,
+                                   std::size_t nodeId, unsigned direction,
+                                   int offset) const {
     IndexType neighbor = nodes[nodeId].index;
     neighbor[direction] += offset;
+    const auto toT = [](const Vec3D<SolverT> &v) -> Vec3D<T> {
+      return {static_cast<T>(v[0]), static_cast<T>(v[1]), static_cast<T>(v[2])};
+    };
     if (!inBounds(neighbor))
-      return velocity[nodeId];
-    const auto found = nodeLookup.find(linearIndex(neighbor));
-    return (found != nodeLookup.end()) ? velocity[found->second]
-                                       : velocity[nodeId];
+      return toT(velocity[nodeId]);
+    const std::size_t foundId = nodeLookupFlat[linearIndex(neighbor)];
+    return (foundId != noNode) ? toT(velocity[foundId]) : toT(velocity[nodeId]);
   }
 
-  // Ghost velocity for a traction-free face (σ·n = 0).
-  // The formula drops gridDelta because the derivative scale and the ghost
-  // extension scale cancel: ghost[n] = node[n] - coeff * Σ_t (v+t[t]-v-t[t])/2,
-  //                          ghost[t] = node[t] - (v+t[n]-v-t[n])/2.
-  // This is independent of which side (offset) the ghost sits on.
-  Vec3D<T> tractionFreeGhost(const std::vector<Vec3D<T>> &velocity,
+  // Ghost velocity enforcing σ·n = 0 at a traction-free face.
+  template <class SolverT>
+  Vec3D<T> tractionFreeGhost(const std::vector<Vec3D<SolverT>> &velocity,
                               std::size_t nodeId, unsigned normalDir) const {
     const T coeff = lameLambda() /
                     std::max(lameLambda() + T(2) * lameMu(),
                              std::numeric_limits<T>::epsilon());
-    Vec3D<T> ghost = velocity[nodeId];
+    Vec3D<T> ghost{static_cast<T>(velocity[nodeId][0]),
+                   static_cast<T>(velocity[nodeId][1]),
+                   static_cast<T>(velocity[nodeId][2])};
     for (unsigned tanDir = 0; tanDir < D; ++tanDir) {
       if (tanDir == normalDir)
         continue;
@@ -579,59 +526,220 @@ private:
     return ghost;
   }
 
-  Vec3D<T> neighborVelocity(const std::vector<Vec3D<T>> &velocity,
-                            std::size_t nodeId, unsigned direction,
-                            int offset) const {
+  template <class SolverT>
+  Vec3D<T> neighborVelocity(const std::vector<Vec3D<SolverT>> &velocity,
+                             std::size_t nodeId, unsigned direction,
+                             int offset) const {
     IndexType neighbor = nodes[nodeId].index;
     neighbor[direction] += offset;
 
     if (inBounds(neighbor)) {
-      const auto found = nodeLookup.find(linearIndex(neighbor));
-      if (found != nodeLookup.end())
-        return velocity[found->second];
+      const std::size_t foundId = nodeLookupFlat[linearIndex(neighbor)];
+      if (foundId != noNode)
+        return {static_cast<T>(velocity[foundId][0]),
+                static_cast<T>(velocity[foundId][1]),
+                static_cast<T>(velocity[foundId][2])};
     }
 
     const unsigned faceIdx = direction * 2u + (offset == 1 ? 1u : 0u);
     if (nodes[nodeId].contactFaceActive[faceIdx])
       return detail::vecSubtract(
           detail::vecScaled(nodes[nodeId].contactFaceVelocity[faceIdx], T(2)),
-          velocity[nodeId]);
+          Vec3D<T>{static_cast<T>(velocity[nodeId][0]),
+                   static_cast<T>(velocity[nodeId][1]),
+                   static_cast<T>(velocity[nodeId][2])});
 
     return tractionFreeGhost(velocity, nodeId, direction);
   }
 
-  Vec3D<T> divergenceGradient(const std::vector<Vec3D<T>> &velocity,
-                              const IndexType &index) const {
-    Vec3D<T> gradient{0., 0., 0.};
+  template <class SolverT>
+  Vec3D<T> divergenceGradient(const std::vector<Vec3D<SolverT>> &velocity,
+                               const IndexType &index) const {
+    Vec3D<T> gradient{T(0), T(0), T(0)};
     for (unsigned component = 0; component < D; ++component) {
       IndexType plus = index;
       IndexType minus = index;
-      plus[component] += 1;
+      plus[component]  += 1;
       minus[component] -= 1;
-      const T plusDiv = divergence(velocity, plus);
+      const T plusDiv  = divergence(velocity, plus);
       const T minusDiv = divergence(velocity, minus);
       gradient[component] = (plusDiv - minusDiv) / (T(2) * gridDelta);
     }
     return gradient;
   }
 
-  T divergence(const std::vector<Vec3D<T>> &velocity,
+  template <class SolverT>
+  T divergence(const std::vector<Vec3D<SolverT>> &velocity,
                const IndexType &index) const {
     if (!inBounds(index))
-      return 0.;
-    const auto found = nodeLookup.find(linearIndex(index));
-    if (found == nodeLookup.end())
-      return 0.;
+      return T(0);
+    const std::size_t nodeId = nodeLookupFlat[linearIndex(index)];
+    if (nodeId == noNode)
+      return T(0);
 
-    T result = 0.;
+    T result = T(0);
     for (unsigned direction = 0; direction < D; ++direction) {
-      const auto plus =
-          neighborVelocity(velocity, found->second, direction, 1);
-      const auto minus =
-          neighborVelocity(velocity, found->second, direction, -1);
+      const Vec3D<T> plus  = neighborVelocity(velocity, nodeId, direction,  1);
+      const Vec3D<T> minus = neighborVelocity(velocity, nodeId, direction, -1);
       result += (plus[direction] - minus[direction]) / (T(2) * gridDelta);
     }
     return result;
+  }
+
+  // Evaluates the elastic stencil F(v)[i] = laplaceAverage + gradDivCorrection.
+  // (A·v)[i] = v[i] - F(v)[i] + b[i],  where b[i] = F(0)[i] (contact BC constants).
+  template <class SolverT>
+  Vec3D<T> computeElasticStencilAt(std::size_t nodeId,
+                                    const std::vector<Vec3D<SolverT>> &v,
+                                    T gradDivWeight) const {
+    Vec3D<T> laplaceAverage{T(0), T(0), T(0)};
+    for (unsigned direction = 0; direction < D; ++direction)
+      for (int offset : {-1, 1})
+        detail::vecAddTo(laplaceAverage, neighborVelocity(v, nodeId, direction, offset));
+
+    const T count = static_cast<T>(2 * D);
+    const Vec3D<T> lapAvg = detail::vecScaled(laplaceAverage, T(1) / count);
+    const Vec3D<T> gradDivCorr = detail::vecScaled(
+        divergenceGradient(v, nodes[nodeId].index),
+        gradDivWeight * gridDelta * gridDelta / (T(2) * static_cast<T>(D)));
+
+    return detail::vecAdd(lapAvg, gradDivCorr);
+  }
+
+  // (Av)[i] = v[i] - F(v)[i] + b[i], stored as SolverT.
+  template <class SolverT>
+  void elasticMatvec(const std::vector<Vec3D<SolverT>> &v,
+                     const std::vector<Vec3D<T>> &b,
+                     T gradDivWeight,
+                     std::vector<Vec3D<SolverT>> &Av) const {
+#pragma omp parallel for schedule(static)
+    for (std::size_t i = 0; i < nodes.size(); ++i) {
+      const Vec3D<T> Fv = computeElasticStencilAt(i, v, gradDivWeight);
+      for (unsigned c = 0; c < D; ++c)
+        Av[i][c] = static_cast<SolverT>(static_cast<T>(v[i][c]) - Fv[c] + b[i][c]);
+    }
+  }
+
+  void solveElasticVelocity() {
+    iterations = 0;
+    residual = 0.;
+    if (nodes.empty())
+      return;
+
+    using SolverT = float;
+
+    const T lambda = lameLambda();
+    const T mu = lameMu();
+    const T gradDivWeight =
+        (lambda + mu) / std::max(lambda + T(2) * mu,
+                                 std::numeric_limits<T>::epsilon());
+
+    const std::size_t n = nodes.size();
+    const Vec3D<SolverT> zero3{SolverT(0), SolverT(0), SolverT(0)};
+
+    // b[i] = F(0)[i]: contact BC constants (reaction/contact velocities).
+    // OOB and traction-free faces contribute v[i]=0 at zeros.
+    std::vector<Vec3D<T>> b(n);
+    {
+      const std::vector<Vec3D<SolverT>> zeros(n, zero3);
+#pragma omp parallel for schedule(static)
+      for (std::size_t i = 0; i < n; ++i)
+        b[i] = computeElasticStencilAt(i, zeros, gradDivWeight);
+    }
+
+    // Cold start from zeros (matching original Jacobi behavior).
+    std::vector<Vec3D<SolverT>> x(n, zero3);
+
+    // r = b - A*x. With x=0: A*0 = 0 - F(0) + b = 0, so r = b.
+    std::vector<Vec3D<SolverT>> r(n), r_hat(n);
+    for (std::size_t i = 0; i < n; ++i)
+      for (unsigned c = 0; c < D; ++c) {
+        r[i][c]     = static_cast<SolverT>(b[i][c]);
+        r_hat[i][c] = r[i][c];
+      }
+
+    // BiCGSTAB with identity preconditioner.
+    // For most interior nodes the diagonal of A is ≈ 1; the identity preconditioner
+    // is exact there and a reasonable approximation at boundary nodes.
+    std::vector<Vec3D<SolverT>> pv(n, zero3), sv(n, zero3), y(n), z(n), s(n), t(n);
+    T rho = T(1), alpha = T(1), omega = T(1);
+
+    auto vecDot = [&](const std::vector<Vec3D<SolverT>> &a,
+                      const std::vector<Vec3D<SolverT>> &bv) {
+      T sum = T(0);
+      for (std::size_t i = 0; i < n; ++i)
+        for (unsigned c = 0; c < D; ++c)
+          sum += static_cast<T>(a[i][c]) * static_cast<T>(bv[i][c]);
+      return sum;
+    };
+
+    auto vecMaxAbs = [&](const std::vector<Vec3D<SolverT>> &vin) {
+      T m = T(0);
+      for (std::size_t i = 0; i < n; ++i)
+        for (unsigned c = 0; c < D; ++c)
+          m = std::max(m, std::abs(static_cast<T>(vin[i][c])));
+      return m;
+    };
+
+    for (; iterations < parameters.maxIterations; ++iterations) {
+      const T rho_new = vecDot(r_hat, r);
+      if (std::abs(rho_new) < T(1e-100))
+        break;
+
+      const T beta = (rho_new / rho) * (alpha / omega);
+      rho = rho_new;
+
+      for (std::size_t i = 0; i < n; ++i)
+        for (unsigned c = 0; c < D; ++c)
+          pv[i][c] = static_cast<SolverT>(r[i][c] + beta * (pv[i][c] - omega * sv[i][c]));
+
+      // Identity preconditioner: y = p
+      y = pv;
+      elasticMatvec(y, b, gradDivWeight, sv);
+
+      const T r_hat_v = vecDot(r_hat, sv);
+      if (std::abs(r_hat_v) < T(1e-100))
+        break;
+
+      alpha = rho_new / r_hat_v;
+
+      for (std::size_t i = 0; i < n; ++i)
+        for (unsigned c = 0; c < D; ++c)
+          s[i][c] = static_cast<SolverT>(r[i][c] - alpha * sv[i][c]);
+
+      residual = vecMaxAbs(s);
+      if (residual < parameters.tolerance) {
+        for (std::size_t i = 0; i < n; ++i)
+          for (unsigned c = 0; c < D; ++c)
+            x[i][c] = static_cast<SolverT>(x[i][c] + alpha * y[i][c]);
+        ++iterations;
+        break;
+      }
+
+      // Identity preconditioner: z = s
+      z = s;
+      elasticMatvec(z, b, gradDivWeight, t);
+
+      const T t_s = vecDot(t, s);
+      const T t_t = vecDot(t, t);
+      omega = (t_t > T(1e-100)) ? t_s / t_t : T(0);
+
+      for (std::size_t i = 0; i < n; ++i)
+        for (unsigned c = 0; c < D; ++c) {
+          x[i][c] = static_cast<SolverT>(x[i][c] + alpha * y[i][c] + omega * z[i][c]);
+          r[i][c]  = static_cast<SolverT>(s[i][c] - omega * t[i][c]);
+        }
+
+      residual = vecMaxAbs(r);
+      if (residual < parameters.tolerance) {
+        ++iterations;
+        break;
+      }
+    }
+
+    for (std::size_t i = 0; i < n; ++i)
+      for (unsigned c = 0; c < D; ++c)
+        nodes[i].velocity[c] = static_cast<T>(x[i][c]);
   }
 
   bool touchesContactBoundary(ConstSparseIterator &maskIt,
@@ -647,7 +755,7 @@ private:
             return true;
           continue;
         }
-        if (nodeLookup.find(linearIndex(neighbor)) != nodeLookup.end())
+        if (lookupNode(neighbor) != noNode)
           continue;
         if (!crosses(valueAt(maskIt, index), valueAt(maskIt, neighbor)))
           continue;
@@ -728,12 +836,12 @@ private:
   }
 
   Vec3D<T> getVelocity(const IndexType &index) const {
-    const auto found = nodeLookup.find(linearIndex(index));
-    if (found != nodeLookup.end())
-      return nodes[found->second].velocity;
+    const std::size_t nodeId = lookupNode(index);
+    if (nodeId != noNode)
+      return nodes[nodeId].velocity;
 
     const auto nearby = findNearbyNode(index);
-    if (nearby == std::numeric_limits<std::size_t>::max())
+    if (nearby == noNode)
       return {0., 0., 0.};
     return nodes[nearby].velocity;
   }

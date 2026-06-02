@@ -11,7 +11,7 @@
 #include <functional>
 #include <limits>
 #include <string>
-#include <unordered_map>
+#include <vector>
 
 namespace viennals {
 
@@ -88,7 +88,8 @@ protected:
   using ConstSparseIterator =
       viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>;
 
-  std::unordered_map<std::size_t, std::size_t> nodeLookup;
+  static constexpr std::size_t noNode = std::numeric_limits<std::size_t>::max();
+  std::vector<std::size_t> nodeLookupFlat;
   IndexType minIndex{};
   IndexType maxIndex{};
   std::array<std::size_t, D> extents{};
@@ -115,6 +116,19 @@ protected:
       if (index[i] < minIndex[i] || index[i] > maxIndex[i])
         return false;
     return true;
+  }
+
+  void initNodeLookup() {
+    std::size_t total = 1;
+    for (unsigned i = 0; i < D; ++i)
+      total *= extents[i];
+    nodeLookupFlat.assign(total, noNode);
+  }
+
+  std::size_t lookupNode(const IndexType &index) const {
+    if (!inBounds(index))
+      return noNode;
+    return nodeLookupFlat[linearIndex(index)];
   }
 
   std::size_t linearIndex(const IndexType &index) const {
@@ -155,10 +169,10 @@ protected:
         }
 
         if (distance2 > 0 && inBounds(candidate)) {
-          const auto found = nodeLookup.find(linearIndex(candidate));
-          if (found != nodeLookup.end() && distance2 < bestDistance2) {
+          const std::size_t foundId = nodeLookupFlat[linearIndex(candidate)];
+          if (foundId != noNode && distance2 < bestDistance2) {
             bestDistance2 = distance2;
-            bestNode = found->second;
+            bestNode = foundId;
           }
         }
 
