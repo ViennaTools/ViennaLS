@@ -55,15 +55,17 @@ template <class T> struct OxidationPresets {
     return params;
   }
 
-  /// LPCVD Si3N4 mask creep at 1000 °C (Hu 1991).
-  /// referenceViscosity = 5×10¹¹ Pa·hr; creepActivationEnergy = 0 disables
-  /// Arrhenius scaling — set it (J/mol) to enable temperature dependence.
+  /// LPCVD Si3N4 mask creep at 1000 °C (Hu 1991; Senez et al. 1994).
+  /// referenceViscosity = 5×10¹¹ Pa·hr at 1273.15 K with Arrhenius scaling:
+  /// E_a = 3.86×10⁵ J/mol ≈ 4 eV (Senez, IEEE Trans. Electron Devices, 1994).
+  /// Set temperature in OxidationMaskParameters (or via psOxidation) to get
+  /// the correct viscosity at a temperature other than 1000 °C.
   static OxidationMaskParameters<T> siliconNitrideMask1000C() {
     OxidationMaskParameters<T> params;
     params.temperature = T(1273.15);
     params.referenceTemperature = T(1273.15);
-    params.referenceViscosity = T(5.e11);        // Pa·hr
-    params.creepActivationEnergy = T(0.);        // set to enable Arrhenius scaling
+    params.referenceViscosity = T(5.e11);            // Pa·hr at 1000 °C
+    params.creepActivationEnergy = T(3.86e5);        // J/mol ≈ 4 eV (Senez 1994)
     params.poissonRatio = T(0.27);
     params.relaxation = T(0.9);
     params.tolerance = T(5.e-6);
