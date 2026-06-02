@@ -3,7 +3,7 @@
 #include <lsGeometries.hpp>
 #include <lsOxidation.hpp>
 #include <lsMakeGeometry.hpp>
-#include <lsOxidationMaterials.hpp>
+#include <lsOxidationPresets.hpp>
 #include <lsOxidationModel.hpp>
 #include <lsTestAsserts.hpp>
 
@@ -147,14 +147,14 @@ void testLOCOSInterfaceConvergence() {
                padOxideThickness + maskThickness);
 
   auto oxParams =
-      ls::OxidationMaterials<NumericType>::wet1000CDealGrove100();
+      ls::OxidationPresets<NumericType>::wet1000CDealGrove100();
   oxParams.velocitySign = -1.;
   oxParams.maskTransferCoefficient = 0.;
   oxParams.maskConcentration = 0.;
   oxParams.tolerance = 1.e-7;
 
   auto defParams =
-      ls::OxidationMaterials<NumericType>::oxideMechanics1000C(
+      ls::OxidationPresets<NumericType>::oxideMechanics1000C(
           advectionTime);
   defParams.pressureIterations = 200;
   defParams.stokesIterations = 60;
@@ -164,7 +164,7 @@ void testLOCOSInterfaceConvergence() {
   couplingParams.tolerance = 1.e-6;
 
   auto maskParams =
-      ls::OxidationMaterials<NumericType>::siliconNitrideMask1000C();
+      ls::OxidationPresets<NumericType>::siliconNitrideMask1000C();
   maskParams.maxIterations = 4000;
 
   const auto toIndex = [](NumericType value) {

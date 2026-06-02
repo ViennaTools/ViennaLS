@@ -9,7 +9,7 @@
 #include <lsDomain.hpp>
 #include <lsGeometricAdvect.hpp>
 #include <lsMakeGeometry.hpp>
-#include <lsOxidationMaterials.hpp>
+#include <lsOxidationPresets.hpp>
 #include <lsOxidationModel.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
@@ -167,7 +167,7 @@ int runSimulation() {
   writeSurface(ambientInterface, "step_oxidation_ambient_initial.vtp");
 
   auto params =
-      ls::OxidationMaterials<NumericType>::wet1000CDealGrove100();
+      ls::OxidationPresets<NumericType>::wet1000CDealGrove100();
   // The silicon step is represented as the negative/inside side of this level
   // set. A negative velocity consumes silicon and moves the Si/SiO2 interface
   // into the step; the oxide/ambient interface is moved by the deformation
@@ -189,7 +189,7 @@ int runSimulation() {
   }
   oxidationVelocity->setSolveBounds(minIndex, maxIndex);
   auto deformationParams =
-      ls::OxidationMaterials<NumericType>::oxideMechanics1000C(
+      ls::OxidationPresets<NumericType>::oxideMechanics1000C(
           advectionTime);
 
   auto deformationVelocity =

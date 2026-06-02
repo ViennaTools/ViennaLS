@@ -1,7 +1,7 @@
 #include <lsDomain.hpp>
 #include <lsGeometries.hpp>
 #include <lsMakeGeometry.hpp>
-#include <lsOxidationMaterials.hpp>
+#include <lsOxidationPresets.hpp>
 #include <lsOxidationModel.hpp>
 #include <lsTestAsserts.hpp>
 
@@ -64,16 +64,16 @@ int main() {
   parameters.maxGridPoints = 100000;
 
   const auto wetPreset =
-      ls::OxidationMaterials<double>::wet1000CDealGrove100();
+      ls::OxidationPresets<double>::wet1000CDealGrove100();
   VC_TEST_ASSERT(std::abs(wetPreset.diffusionCoefficient - 0.157) < 1e-12)
   VC_TEST_ASSERT(std::abs(wetPreset.reactionRate - 0.74) < 1e-12)
   VC_TEST_ASSERT(wetPreset.reactionActivationVolume > 0.)
   const auto oxidePreset =
-      ls::OxidationMaterials<double>::oxideMechanics1000C(0.25);
+      ls::OxidationPresets<double>::oxideMechanics1000C(0.25);
   VC_TEST_ASSERT(oxidePreset.viscosity > 0.)
   VC_TEST_ASSERT(std::abs(oxidePreset.stressTimeStep - 0.25) < 1e-12)
   const auto maskPreset =
-      ls::OxidationMaterials<double>::siliconNitrideMask1000C();
+      ls::OxidationPresets<double>::siliconNitrideMask1000C();
   VC_TEST_ASSERT(maskPreset.referenceViscosity > 0.)
 
   auto autoBoundedOxidation = ls::OxidationDiffusion<double, D>::New(

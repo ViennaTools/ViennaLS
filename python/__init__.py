@@ -40,7 +40,7 @@ _sys.modules[__name__ + ".d3"] = d3
 
 _SHARED_OXIDATION_TYPES = (
     "OxidationParameters",
-    "OxidationMaterials",
+    "OxidationPresets",
     "OxidationDeformationParameters",
     "OxidationMaskParameters",
     "OxidationCouplingParameters",

@@ -3,7 +3,7 @@
 #include <lsGeometries.hpp>
 #include <lsMakeGeometry.hpp>
 #include <lsOxidation.hpp>
-#include <lsOxidationMaterials.hpp>
+#include <lsOxidationPresets.hpp>
 #include <lsTestAsserts.hpp>
 
 #include <array>
@@ -80,12 +80,12 @@ void testStandardOxidation() {
   auto ambientInitial = ls::Domain<NumericType, D>::New(ambient);
 
   auto oxParams =
-      ls::OxidationMaterials<NumericType>::wet1000CDealGrove100();
+      ls::OxidationPresets<NumericType>::wet1000CDealGrove100();
   oxParams.velocitySign = -1.;
   oxParams.tolerance    = 1e-7;
 
   auto defParams =
-      ls::OxidationMaterials<NumericType>::oxideMechanics1000C(1.);
+      ls::OxidationPresets<NumericType>::oxideMechanics1000C(1.);
   defParams.mechanicsIterations = 10;
   defParams.pressureIterations  = 300;
   defParams.stokesIterations    = 80;
@@ -180,14 +180,14 @@ void testLOCOSOxidation() {
                       {maskEdge,  padOx + maskThick});
 
   auto oxParams =
-      ls::OxidationMaterials<NumericType>::wet1000CDealGrove100();
+      ls::OxidationPresets<NumericType>::wet1000CDealGrove100();
   oxParams.velocitySign              = -1.;
   oxParams.maskTransferCoefficient   = 0.;
   oxParams.maskConcentration         = 0.;
   oxParams.tolerance                 = 1e-7;
 
   auto defParams =
-      ls::OxidationMaterials<NumericType>::oxideMechanics1000C(advectionTime);
+      ls::OxidationPresets<NumericType>::oxideMechanics1000C(advectionTime);
   defParams.pressureIterations = 200;
   defParams.stokesIterations   = 60;
 
@@ -196,7 +196,7 @@ void testLOCOSOxidation() {
   coupling.tolerance     = 1e-6;
 
   auto maskParams =
-      ls::OxidationMaterials<NumericType>::siliconNitrideMask1000C();
+      ls::OxidationPresets<NumericType>::siliconNitrideMask1000C();
   maskParams.maxIterations = 4000;
 
   const auto toIndex = [gridDelta](NumericType v) {

@@ -32,7 +32,7 @@
 #include <lsMaterialMap.hpp>
 #include <lsMesh.hpp>
 #include <lsOxidation.hpp>
-#include <lsOxidationMaterials.hpp>
+#include <lsOxidationPresets.hpp>
 #include <lsOxidationModel.hpp>
 #include <lsPointData.hpp>
 #include <lsPrune.hpp>
@@ -130,15 +130,15 @@ inline void bindOxidationSharedTypes(py::module &module) {
       .def_readwrite("maxGridPoints", &OxidationParameters<T>::maxGridPoints)
       .def_readwrite("material", &OxidationParameters<T>::material);
 
-  py::class_<OxidationMaterials<T>>(module, "OxidationMaterials",
-                                    py::module_local())
+  py::class_<OxidationPresets<T>>(module, "OxidationPresets",
+                                  py::module_local())
       .def(py::init<>())
       .def_static("wet1000CDealGrove100",
-                  &OxidationMaterials<T>::wet1000CDealGrove100)
+                  &OxidationPresets<T>::wet1000CDealGrove100)
       .def_static("oxideMechanics1000C",
-                  &OxidationMaterials<T>::oxideMechanics1000C)
+                  &OxidationPresets<T>::oxideMechanics1000C)
       .def_static("siliconNitrideMask1000C",
-                  &OxidationMaterials<T>::siliconNitrideMask1000C);
+                  &OxidationPresets<T>::siliconNitrideMask1000C);
 
   py::class_<OxidationDeformationParameters<T>>(
       module, "OxidationDeformationParameters", py::module_local())

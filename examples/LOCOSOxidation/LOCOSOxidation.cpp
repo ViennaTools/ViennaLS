@@ -9,7 +9,7 @@
 #include <lsGeometricAdvect.hpp>
 #include <lsOxidation.hpp>
 #include <lsMakeGeometry.hpp>
-#include <lsOxidationMaterials.hpp>
+#include <lsOxidationPresets.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
@@ -124,7 +124,7 @@ int main() {
   // --- Oxidation parameters ---
 
   auto oxParams =
-      ls::OxidationMaterials<NumericType>::wet1000CDealGrove100();
+      ls::OxidationPresets<NumericType>::wet1000CDealGrove100();
   oxParams.velocitySign = -1.;
   oxParams.maskTransferCoefficient = 0.; // nitride-like oxidant blocking
   oxParams.maskConcentration = 0.;
@@ -132,7 +132,7 @@ int main() {
   oxParams.tolerance = 1.e-7;
 
   auto defParams =
-      ls::OxidationMaterials<NumericType>::oxideMechanics1000C(
+      ls::OxidationPresets<NumericType>::oxideMechanics1000C(
           advectionTime);
 
   ls::OxidationCouplingParameters<NumericType> couplingParams;
@@ -141,7 +141,7 @@ int main() {
   couplingParams.relaxation = 1.;
 
   auto maskParams =
-      ls::OxidationMaterials<NumericType>::siliconNitrideMask1000C();
+      ls::OxidationPresets<NumericType>::siliconNitrideMask1000C();
 
   // --- LOCOS step ---
 
