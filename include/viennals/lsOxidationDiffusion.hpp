@@ -9,7 +9,13 @@
 #include <utility>
 #include <vector>
 
+#include <vcTimer.hpp>
+
 #include <omp.h>
+
+#ifdef VIENNALS_GPU_BICGSTAB
+#include <lsOxidationBiCGSTABInterface.hpp>
+#endif
 
 namespace viennals {
 
@@ -100,9 +106,6 @@ private:
     IndexType index;
     T concentration = 0.;
     Vec3D<T> siNormal = {0., 0., 0.}; // unit outward normal of Si surface (into oxide)
-    // Per-face boundary cache: eliminates goToIndices() from the parallel solve loop.
-    struct FaceBC { Boundary type = Boundary::NONE; T distance = 1.; };
-    std::array<FaceBC, 2 * D> faceBC{};
   };
 
   struct StencilSide {
@@ -130,6 +133,24 @@ private:
   std::unordered_map<std::size_t, T> pressureLookup;
   std::unordered_map<std::size_t, T> concentrationCache_;
   std::vector<Node> nodes;
+  // Face-major flat BC arrays: index = fi * n + nodeId, where fi in [0, 2*D).
+  // Face-major layout gives coalesced GPU reads when all warp threads access
+  // the same face of consecutive nodes.
+  std::vector<Boundary> faceBCTypes_;
+  std::vector<T> faceBCDists_;
+  // Neighbor node IDs for every face (geometry-only, rebuilt with nodes).
+  // Entry == noNode for boundary / out-of-bounds faces.
+  std::vector<std::size_t> neighborIds_;
+
+#ifdef VIENNALS_GPU_BICGSTAB
+  // Opaque pointer to device-side buffers (GpuBiCGSTABBuffers is defined only
+  // in the CUDA translation unit; we hold a raw pointer here so g++ never sees
+  // the CUDA internals).
+  gpu::GpuBiCGSTABBuffers* gpuBufs_ = nullptr;
+  // Minimum node count required to engage the GPU solver.
+  // Below this threshold the PCIe round-trip cost outweighs the parallel gain.
+  static constexpr std::size_t kGpuThreshold = 20000;
+#endif
 
 public:
   /// Sub-grid accurate sample of the reaction boundary crossing closest to a
@@ -153,6 +174,13 @@ public:
       OxidationParameters<T> passedParameters = {})
       : reactionInterface(passedReactionInterface),
         ambientInterface(passedAmbientInterface), parameters(passedParameters) {
+  }
+
+  ~OxidationDiffusion() {
+#ifdef VIENNALS_GPU_BICGSTAB
+    gpu::freeGpuBuffers(gpuBufs_);
+    gpuBufs_ = nullptr;
+#endif
   }
 
   template <class... Args> static auto New(Args &&...args) {
@@ -511,26 +539,112 @@ private:
         break;
     }
 
-    // Precompute per-face boundary intersections. Level-set positions are fixed
-    // during the inner solve, so one computation per apply() suffices and the
-    // hot loop becomes iterator-free (enabling parallelism).
+    // Precompute per-face boundary intersections into flat face-major arrays.
+    // Level-set positions are fixed during the inner solve; one pass per apply().
+    const std::size_t n = nodes.size();
+    faceBCTypes_.assign(2 * D * n, Boundary::NONE);
+    faceBCDists_.assign(2 * D * n, T(1));
     ConstSparseIterator faceReactionIt(reactionInterface->getDomain());
     ConstSparseIterator faceAmbientIt(ambientInterface->getDomain());
     auto faceMaskIt = makeMaskIterator();
-    for (auto &node : nodes) {
+    for (std::size_t id = 0; id < n; ++id) {
+      const auto &node = nodes[id];
       for (unsigned dir = 0; dir < D; ++dir) {
         for (int off : {-1, 1}) {
           const unsigned fi = dir * 2u + (off == 1 ? 1u : 0u);
           IndexType nb = node.index;
           nb[dir] += off;
-          if (!inBounds(nb) || lookupNode(nb) != noNode) {
-            node.faceBC[fi] = {};
-            continue;
-          }
+          if (!inBounds(nb) || lookupNode(nb) != noNode)
+            continue; // NONE/1.0 already set by assign()
           const auto bc = classifyBoundary(faceReactionIt, faceAmbientIt,
                                            faceMaskIt, node.index, nb);
-          node.faceBC[fi] = {bc.first, bc.second};
+          faceBCTypes_[fi * n + id] = bc.first;
+          faceBCDists_[fi * n + id] = bc.second;
         }
+      }
+    }
+
+    // Precompute per-face neighbor node IDs (geometry-only).
+    // Used by computeFaceCoeffs() and uploaded once to GPU.
+    neighborIds_.assign(2 * D * n, noNode);
+    for (std::size_t id = 0; id < n; ++id) {
+      for (unsigned dir = 0; dir < D; ++dir) {
+        for (int off : {-1, 1}) {
+          const unsigned fi = dir * 2u + (off == 1 ? 1u : 0u);
+          IndexType nb = nodes[id].index;
+          nb[dir] += off;
+          if (inBounds(nb))
+            neighborIds_[fi * n + id] = lookupNode(nb);
+        }
+      }
+    }
+
+#ifdef VIENNALS_GPU_BICGSTAB
+    // Free any stale allocation from a previous buildNodes() call.
+    gpu::freeGpuBuffers(gpuBufs_);
+    gpuBufs_ = nullptr;
+
+    if (n >= kGpuThreshold) {
+      gpuBufs_ = gpu::allocGpuBuffers(static_cast<uint32_t>(n), 2 * D);
+
+      if (gpuBufs_) {
+        // Convert std::size_t neighbor IDs to uint32_t for the device
+        const std::size_t nf = 2u * D * n;
+        std::vector<uint32_t> nb32(nf);
+        for (std::size_t k = 0; k < nf; ++k)
+          nb32[k] = (neighborIds_[k] == noNode)
+                        ? gpu::kNoNode
+                        : static_cast<uint32_t>(neighborIds_[k]);
+        gpu::gpuUploadNeighborIds(gpuBufs_, nb32.data(), nf);
+      }
+    }
+#endif
+  }
+
+  // Precompute per-face coupling coefficients for the GPU SpMV.
+  //
+  //   faceCoeffs[fi * n + id] = 2*D_eff / (dist_fi * distSum_axis)
+  //
+  // Only interior faces (neighbor != noNode) get a nonzero entry;
+  // boundary and out-of-bounds faces contribute to diag/b but not to
+  // the off-diagonal coupling stored here.  Must be called after diag/b
+  // are computed (or at least after D_eff is known), because D_eff
+  // depends on pressure when diffusionActivationVolume != 0.
+  void computeFaceCoeffs(std::vector<T> &faceCoeffs) const {
+    const std::size_t n = nodes.size();
+    faceCoeffs.assign(2 * D * n, T(0));
+    const T eps = std::numeric_limits<T>::epsilon();
+
+    for (std::size_t id = 0; id < n; ++id) {
+      const T D_eff = getEffectiveDiffusionCoefficient(nodes[id].index);
+      for (unsigned dir = 0; dir < D; ++dir) {
+        const unsigned fiNeg = dir * 2u;
+        const unsigned fiPos = dir * 2u + 1u;
+
+        const std::size_t nbNeg = neighborIds_[fiNeg * n + id];
+        const std::size_t nbPos = neighborIds_[fiPos * n + id];
+
+        // Effective distance for each face:
+        //  - interior neighbour  → gridDelta
+        //  - boundary crossing   → faceBCDists_  (< gridDelta)
+        //  - out-of-bounds/NONE  → gridDelta  (matches zeroFluxSide())
+        auto faceDist = [&](unsigned fi, std::size_t nb) -> T {
+          if (nb != noNode)
+            return gridDelta;
+          if (faceBCTypes_[fi * n + id] != Boundary::NONE)
+            return faceBCDists_[fi * n + id];
+          return gridDelta;
+        };
+
+        const T distNeg = faceDist(fiNeg, nbNeg);
+        const T distPos = faceDist(fiPos, nbPos);
+        const T distSum = distNeg + distPos;
+        if (distSum <= eps) continue;
+
+        if (nbNeg != noNode)
+          faceCoeffs[fiNeg * n + id] = T(2) * D_eff / (distNeg * distSum);
+        if (nbPos != noNode)
+          faceCoeffs[fiPos * n + id] = T(2) * D_eff / (distPos * distSum);
       }
     }
   }
@@ -541,13 +655,12 @@ private:
   template <class SolverT>
   void computeStencilAt(std::size_t nodeId, const std::vector<SolverT> &x,
                         T &diag, T &rhs) const {
-    const auto &node = nodes[nodeId];
     diag = T(0);
     rhs  = T(0);
-    const T D_eff = getEffectiveDiffusionCoefficient(node.index);
+    const T D_eff = getEffectiveDiffusionCoefficient(nodes[nodeId].index);
     for (unsigned direction = 0; direction < D; ++direction) {
-      const auto neg = makeStencilSide(node, x, direction, -1, D_eff);
-      const auto pos = makeStencilSide(node, x, direction,  1, D_eff);
+      const auto neg = makeStencilSide(nodeId, x, direction, -1, D_eff);
+      const auto pos = makeStencilSide(nodeId, x, direction,  1, D_eff);
       addAxisContribution(rhs, diag, neg, pos, D_eff);
     }
   }
@@ -582,6 +695,8 @@ private:
     const T eps = std::numeric_limits<T>::epsilon();
 
     // Geometry-fixed diagonal and BC source vector (kept in T for full precision).
+    Timer<> tDiag;
+    tDiag.start();
     std::vector<T> diag(n), b(n);
     {
       const std::vector<SolverT> zeros(n, SolverT(0));
@@ -589,12 +704,73 @@ private:
       for (std::size_t i = 0; i < n; ++i)
         computeStencilAt(i, zeros, diag[i], b[i]);
     }
+    tDiag.finish();
 
     // Initial guess: warm-start or diagonal-preconditioned b.
     std::vector<SolverT> x(n);
     for (std::size_t i = 0; i < n; ++i)
       x[i] = static_cast<SolverT>(warmStartable_ ? nodes[i].concentration
                                                   : (diag[i] > eps ? b[i] / diag[i] : T(0)));
+
+#ifdef VIENNALS_GPU_BICGSTAB
+    // ── GPU BiCGSTAB path ──────────────────────────────────────────────
+    // Engaged when buildNodes() allocated the GPU buffers (n >= kGpuThreshold).
+    // Uploads diag, b, and face coefficients fresh each call (they are
+    // pressure-dependent via D_eff), then runs the full BiCGSTAB loop on
+    // the device.  Only dot-product scalars and the max-abs residual are
+    // downloaded; work vectors stay on the GPU between iterations.
+    if (gpu::gpuIsValid(gpuBufs_)) {
+      // Build float copies of diag and b for upload (SolverT = float)
+      Timer<> tPrep, tUpload, tSolve;
+      tPrep.start();
+      std::vector<float> diagF(n), bF(n);
+      for (std::size_t i = 0; i < n; ++i) {
+        diagF[i] = static_cast<float>(diag[i]);
+        bF[i]    = static_cast<float>(b[i]);
+      }
+
+      // Face coupling coefficients (pressure-dependent; recomputed each call)
+      std::vector<T> faceCoeffs;
+      computeFaceCoeffs(faceCoeffs);
+      std::vector<float> coeffF(faceCoeffs.size());
+      for (std::size_t k = 0; k < faceCoeffs.size(); ++k)
+        coeffF[k] = static_cast<float>(faceCoeffs[k]);
+      tPrep.finish();
+
+      tUpload.start();
+      gpu::gpuUploadSolverArrays(gpuBufs_,
+                                 diagF.data(), bF.data(), coeffF.data(),
+                                 static_cast<uint32_t>(n), faceCoeffs.size());
+      tUpload.finish();
+
+      // Solve on GPU; x holds the initial guess and receives the solution.
+      tSolve.start();
+      gpu::gpuSolveBiCGSTAB(gpuBufs_, x.data(),
+                             static_cast<float>(eps),
+                             parameters.maxIterations,
+                             static_cast<float>(parameters.tolerance),
+                             iterations, residual);
+      tSolve.finish();
+
+      // Write solution back to nodes
+      for (std::size_t i = 0; i < n; ++i)
+        nodes[i].concentration = x[i];
+
+      if (Logger::hasTiming()) {
+        const std::string tag = "diffusion n=" + std::to_string(n) +
+                                " iters=" + std::to_string(iterations) +
+                                " res=" + std::to_string(residual) +
+                                " [GPU]";
+        Logger::getInstance()
+            .addTiming(tag + " diag/b precompute", tDiag)
+            .addTiming(tag + " GPU prep+faceCoeffs", tPrep)
+            .addTiming(tag + " GPU upload", tUpload)
+            .addTiming(tag + " GPU BiCGSTAB", tSolve)
+            .print();
+      }
+      return;
+    }
+#endif
 
     // r = b - A*x
     std::vector<SolverT> Ax(n);
@@ -607,6 +783,13 @@ private:
 
     // BiCGSTAB with diagonal (Jacobi) preconditioner.
     // Scalars (rho, alpha, omega, beta) and dot products stay in T for stability.
+    Timer<> tCpuSolve;
+    tCpuSolve.start();
+    T b_norm = T(0);
+    for (std::size_t i = 0; i < n; ++i)
+      b_norm = std::max(b_norm, std::abs(b[i]));
+    if (b_norm < T(1e-100)) b_norm = T(1);
+
     std::vector<SolverT> p(n, SolverT(0)), v(n, SolverT(0)), y(n), z(n), s(n), t(n);
     T rho = T(1), alpha = T(1), omega = T(1);
 
@@ -645,7 +828,7 @@ private:
       residual = T(0);
       for (std::size_t i = 0; i < n; ++i)
         residual = std::max(residual, std::abs(static_cast<T>(s[i])));
-      if (residual < parameters.tolerance) {
+      if (residual < parameters.tolerance * b_norm) {
         for (std::size_t i = 0; i < n; ++i)
           x[i] = static_cast<SolverT>(x[i] + alpha * y[i]);
         ++iterations;
@@ -674,7 +857,7 @@ private:
       residual = T(0);
       for (std::size_t i = 0; i < n; ++i)
         residual = std::max(residual, std::abs(static_cast<T>(r[i])));
-      if (residual < parameters.tolerance) {
+      if (residual < parameters.tolerance * b_norm) {
         ++iterations;
         break;
       }
@@ -682,13 +865,38 @@ private:
 
     for (std::size_t i = 0; i < n; ++i)
       nodes[i].concentration = x[i];
+
+    tCpuSolve.finish();
+    if (Logger::hasTiming()) {
+#ifdef VIENNALS_GPU_BICGSTAB
+      const std::string path = " [CPU n<" + std::to_string(kGpuThreshold) + "]";
+#else
+      const std::string path = " [CPU]";
+#endif
+      const std::string tag = "diffusion n=" + std::to_string(n) +
+                              " iters=" + std::to_string(iterations) +
+                              " res=" + std::to_string(residual) + path;
+      Logger::getInstance()
+          .addTiming(tag + " diag/b precompute", tDiag)
+          .addTiming(tag + " CPU BiCGSTAB", tCpuSolve)
+          .print();
+    }
+    if (residual > parameters.tolerance * b_norm)
+      Logger::getInstance()
+          .addWarning("solveDiffusion: BiCGSTAB did not converge after " +
+                      std::to_string(iterations) + "/" +
+                      std::to_string(parameters.maxIterations) +
+                      " iterations (residual=" + std::to_string(residual / b_norm) +
+                      ", tolerance=" + std::to_string(parameters.tolerance) + ")")
+          .print();
   }
 
-  // Uses precomputed node.faceBC — no HRLE iterator access, safe for parallel execution.
+  // Uses precomputed flat faceBC arrays — no HRLE access, safe for parallel execution.
   template <class SolverT>
-  StencilSide makeStencilSide(const Node &node, const std::vector<SolverT> &previous,
+  StencilSide makeStencilSide(std::size_t nodeId, const std::vector<SolverT> &previous,
                               unsigned direction, int offset, T diffusion) const {
-    IndexType neighbor = node.index;
+    const IndexType &nodeIndex = nodes[nodeId].index;
+    IndexType neighbor = nodeIndex;
     neighbor[direction] += offset;
 
     if (!inBounds(neighbor))
@@ -699,13 +907,15 @@ private:
       return {gridDelta, 0., previous[neighborId]};
 
     const unsigned fi = direction * 2u + (offset == 1 ? 1u : 0u);
-    const auto &face = node.faceBC[fi];
-    if (face.type == Boundary::REACTION)
-      return reactionBoundarySide(node.index, face.distance, diffusion);
-    if (face.type == Boundary::AMBIENT)
-      return ambientBoundarySide(face.distance, diffusion);
-    if (face.type == Boundary::MASK)
-      return maskBoundarySide(face.distance, diffusion);
+    const std::size_t n = nodes.size();
+    const Boundary faceType = faceBCTypes_[fi * n + nodeId];
+    const T faceDist       = faceBCDists_[fi * n + nodeId];
+    if (faceType == Boundary::REACTION)
+      return reactionBoundarySide(nodeIndex, faceDist, diffusion);
+    if (faceType == Boundary::AMBIENT)
+      return ambientBoundarySide(faceDist, diffusion);
+    if (faceType == Boundary::MASK)
+      return maskBoundarySide(faceDist, diffusion);
     return zeroFluxSide();
   }
 

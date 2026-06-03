@@ -7,6 +7,7 @@
 #include <unordered_map>
 
 #include <omp.h>
+#include <vcTimer.hpp>
 
 namespace viennals {
 
@@ -96,11 +97,6 @@ private:
     std::array<T, 9> strainRateTensor{};
     std::array<T, 9> stressTensor{};
     T vonMisesStress = 0.;
-    // Per-face boundary precomputation: avoids HRLE goToIndices in hot solver loops.
-    // Populated once per apply() in buildNodes(); level-set positions are fixed during the solve.
-    struct FaceBC { Boundary type = Boundary::NONE; T distance = 1.; };
-    std::array<FaceBC, 2 * D> faceBC{};
-    bool touchesAmbient = false;
   };
 
   SmartPointer<Domain<T, D>> reactionInterface = nullptr;
@@ -118,6 +114,11 @@ private:
   IndexType requestedMaxIndex{};
   unsigned iterations = 0;
   T residual = std::numeric_limits<T>::max();
+  // Last achieved iteration counts and residuals for pressure and Stokes solves.
+  unsigned lastPressureIters_ = 0;
+  T lastPressureResidual_ = 0.;
+  unsigned lastStokesIters_ = 0;
+  T lastStokesResidual_ = 0.;
   T avgExpansionSpeed_ = 0.;
   bool avgExpansionSpeedComputed = false;
   bool solved = false;
@@ -130,6 +131,11 @@ private:
   std::vector<Vec3D<T>> previousVelocity_;
   std::vector<T> previousPressure_;
   bool hasPreviousSolution_ = false;
+
+  // Face-major flat BC arrays: index = fi * n + nodeId, fi in [0, 2*D).
+  std::vector<Boundary> faceBCTypes_;
+  std::vector<T> faceBCDists_;
+  std::vector<uint8_t> touchesAmbient_; // 1 if node touches the ambient (free) surface
 
 public:
   std::vector<Node> nodes;
@@ -267,8 +273,21 @@ public:
       }
     }
 
+    const std::size_t nn = nodes.size();
+    Timer<> tHarmonic, tMechanics;
+    tHarmonic.start();
     solveVelocity();
+    tHarmonic.finish();
+    tMechanics.start();
     solveMechanics();
+    tMechanics.finish();
+    if (Logger::hasTiming())
+      Logger::getInstance()
+          .addTiming("      deformation n=" + std::to_string(nn) +
+                     " harmonic", tHarmonic)
+          .addTiming("      deformation n=" + std::to_string(nn) +
+                     " mechanics-total", tMechanics)
+          .print();
     avgExpansionSpeedComputed = false;
 
     maxVelocity_.fill(T(0));
@@ -343,10 +362,51 @@ private:
   template <class ValueType, class NodeAccessor>
   ValueType getField(const Vec3D<T> &coordinate, ValueType fallback,
                      NodeAccessor accessor) const {
-    IndexType index;
-    for (unsigned i = 0; i < D; ++i)
-      index[i] = std::llround(coordinate[i] / gridDelta);
-    return getField(index, fallback, accessor);
+    // D-linear interpolation for Vec3D<T> (velocity) and scalar T (pressure).
+    // These are the types queried during level-set advection; interpolating at
+    // the exact interface coordinate eliminates the O(gridDelta) nearest-node
+    // error that caused the SiO2/mask interface to shift with grid delta.
+    // Other types (e.g. stress tensor std::array<T,9>) use nearest-node because
+    // they lack scalar multiply and are not used for advection.
+    if constexpr (!std::is_same_v<ValueType, Vec3D<T>> &&
+                  !std::is_same_v<ValueType, T>) {
+      IndexType index;
+      for (unsigned i = 0; i < D; ++i)
+        index[i] = std::llround(coordinate[i] / gridDelta);
+      return getField(index, fallback, accessor);
+    } else {
+      using IdxScalar = std::decay_t<decltype(std::declval<IndexType>()[0])>;
+      IndexType lo;
+      T frac[D];
+      for (unsigned d = 0; d < D; ++d) {
+        const T c     = coordinate[d] / gridDelta;
+        const T c_flo = std::floor(c);
+        lo[d]   = static_cast<IdxScalar>(c_flo);
+        frac[d] = c - c_flo;
+      }
+
+      ValueType result{};
+      T totalWeight = T(0);
+      for (int corner = 0; corner < (1 << D); ++corner) {
+        IndexType idx = lo;
+        T w = T(1);
+        for (unsigned d = 0; d < D; ++d) {
+          if ((corner >> d) & 1) { idx[d]++; w *= frac[d]; }
+          else                    { w *= T(1) - frac[d]; }
+        }
+        if (w < T(1e-14)) continue;
+        const std::size_t nodeId = lookupNode(idx);
+        if (nodeId == noNode) continue;
+        result = result + accessor(nodes[nodeId]) * w;
+        totalWeight += w;
+      }
+
+      if (totalWeight < T(1e-14))
+        return fallback;
+      if (totalWeight < T(1) - T(1e-6))
+        result = result * (T(1) / totalWeight);
+      return result;
+    }
   }
 
 public:
@@ -563,24 +623,26 @@ public:
         break;
     }
 
-    // Precompute per-face boundary intersections. Level-set positions don't
-    // change during the inner solver, so one computation per apply() suffices.
-    for (auto &node : nodes) {
-      node.touchesAmbient = false;
+    // Precompute per-face boundary intersections into flat face-major arrays.
+    const std::size_t n = nodes.size();
+    faceBCTypes_.assign(2 * D * n, Boundary::NONE);
+    faceBCDists_.assign(2 * D * n, T(1));
+    touchesAmbient_.assign(n, uint8_t(0));
+    for (std::size_t id = 0; id < n; ++id) {
+      const auto &node = nodes[id];
       for (unsigned dir = 0; dir < D; ++dir) {
         for (int off : {-1, 1}) {
           const unsigned fi = dir * 2u + (off == 1 ? 1u : 0u);
           IndexType nb = node.index;
           nb[dir] += off;
-          if (!inBounds(nb) || lookupNode(nb) != noNode) {
-            node.faceBC[fi] = {};
-            continue;
-          }
+          if (!inBounds(nb) || lookupNode(nb) != noNode)
+            continue; // NONE/1.0 already set
           const auto bi =
               boundaryIntersection(reactionIt, ambientIt, maskIt, node.index, nb);
-          node.faceBC[fi] = {bi.boundary, bi.distance};
+          faceBCTypes_[fi * n + id] = bi.boundary;
+          faceBCDists_[fi * n + id] = bi.distance;
           if (bi.boundary == Boundary::AMBIENT)
-            node.touchesAmbient = true;
+            touchesAmbient_[id] = uint8_t(1);
         }
       }
     }
@@ -619,7 +681,7 @@ public:
         }
 
         const unsigned fi = direction * 2u + (offset == 1 ? 1u : 0u);
-        const auto boundary = node.faceBC[fi].type;
+        const Boundary boundary = faceBCTypes_[fi * nodes.size() + nodeId];
         if (boundary == Boundary::REACTION) {
           detail::vecAddTo(sum, reactionBoundaryVelocity(node.index));
         } else if (boundary == Boundary::MASK) {
@@ -706,6 +768,8 @@ public:
       return m;
     };
 
+    const T b_norm = [&]{ T m = T(0); for (std::size_t i = 0; i < n; ++i) for (unsigned c = 0; c < D; ++c) m = std::max(m, std::abs(b[i][c])); return (m < T(1e-100)) ? T(1) : m; }();
+
     for (; iterations < deformationParameters.harmonicIterations; ++iterations) {
       const T rho_new = vecDot(r_hat, r);
       if (std::abs(rho_new) < T(1e-100))
@@ -736,7 +800,7 @@ public:
           s[i][c] = static_cast<SolverT>(r[i][c] - alpha * sv[i][c]);
 
       residual = vecMaxAbs(s);
-      if (residual < deformationParameters.tolerance) {
+      if (residual < deformationParameters.tolerance * b_norm) {
         for (std::size_t i = 0; i < n; ++i)
           for (unsigned c = 0; c < D; ++c)
             x[i][c] = static_cast<SolverT>(x[i][c] + alpha * y[i][c]);
@@ -762,7 +826,7 @@ public:
         }
 
       residual = vecMaxAbs(r);
-      if (residual < deformationParameters.tolerance) {
+      if (residual < deformationParameters.tolerance * b_norm) {
         ++iterations;
         break;
       }
@@ -771,23 +835,97 @@ public:
     for (std::size_t i = 0; i < n; ++i)
       for (unsigned c = 0; c < D; ++c)
         nodes[i].velocity[c] = static_cast<T>(x[i][c]);
+    if (residual > deformationParameters.tolerance * b_norm)
+      Logger::getInstance()
+          .addWarning("solveVelocity (harmonic): BiCGSTAB did not converge after " +
+                      std::to_string(iterations) + "/" +
+                      std::to_string(deformationParameters.harmonicIterations) +
+                      " iterations (residual=" + std::to_string(residual / b_norm) +
+                      ", tolerance=" + std::to_string(deformationParameters.tolerance) + ")")
+          .print();
   }
 
   void solveMechanics() {
     T mechanicsResidual = 0.;
+
+    // Aitken Δ² acceleration: x_{k-1} state stored across outer iterations.
+    // On iteration k≥1 we have three consecutive iterates (x_{k-1}, x_k, G(x_k))
+    // and compute the scalar θ that minimises ‖(1-θ)F_{k-1} + θF_k‖ over the
+    // combined velocity+pressure state, then replace G(x_k) with the blend
+    // (1-θ)x_k + θ·G(x_k).  θ<1 damps oscillating iterates; θ>1 accelerates
+    // monotone ones.  Clamped to [0.1, 4.0] for safety.
+    std::vector<Vec3D<T>> aitkenPrevVel;
+    std::vector<T>        aitkenPrevPres;
+
     for (unsigned iteration = 0;
          iteration < deformationParameters.mechanicsIterations; ++iteration) {
-      const auto previousVelocity = collectVelocities();
+      const auto previousVelocity = collectVelocities();  // x_k
       const auto previousPressure = collectPressures();
 
       computeDiagnostics();
       computeStressTensors();
+
+      Timer<> tPressure, tStokes;
+      tPressure.start();
       solvePressure();
+      tPressure.finish();
+      tStokes.start();
       solveStokesVelocity();
+      tStokes.finish();
+      // nodes now hold G(x_k) = raw x_{k+1}
+
+      T aitkenTheta = T(1);
+      if (iteration >= 1) {
+        const std::size_t n = nodes.size();
+        T dot_Fkm1_dF = T(0), dot_dF_dF = T(0);
+        for (std::size_t i = 0; i < n; ++i) {
+          for (unsigned c = 0; c < D; ++c) {
+            const T Fkm1 = previousVelocity[i][c] - aitkenPrevVel[i][c];
+            const T Fk   = nodes[i].velocity[c]   - previousVelocity[i][c];
+            const T dF   = Fk - Fkm1;
+            dot_Fkm1_dF += Fkm1 * dF;
+            dot_dF_dF   += dF   * dF;
+          }
+          const T Fkm1_p = previousPressure[i] - aitkenPrevPres[i];
+          const T Fk_p   = nodes[i].pressure   - previousPressure[i];
+          const T dF_p   = Fk_p - Fkm1_p;
+          dot_Fkm1_dF += Fkm1_p * dF_p;
+          dot_dF_dF   += dF_p   * dF_p;
+        }
+        if (dot_dF_dF > T(1e-100)) {
+          aitkenTheta = std::max(T(0.1),
+                        std::min(T(4.0), -dot_Fkm1_dF / dot_dF_dF));
+          const T omT = T(1) - aitkenTheta;
+          for (std::size_t i = 0; i < n; ++i) {
+            for (unsigned c = 0; c < D; ++c)
+              nodes[i].velocity[c] = omT * previousVelocity[i][c]
+                                   + aitkenTheta * nodes[i].velocity[c];
+            nodes[i].pressure = omT * previousPressure[i]
+                               + aitkenTheta * nodes[i].pressure;
+          }
+        }
+      }
+      aitkenPrevVel  = previousVelocity;
+      aitkenPrevPres = previousPressure;
 
       mechanicsResidual =
           std::max(maxVelocityChange(previousVelocity),
                    maxPressureChange(previousPressure));
+
+      if (Logger::hasTiming())
+        Logger::getInstance()
+            .addTiming("        mechanics[" + std::to_string(iteration) +
+                       "] pressure iters=" + std::to_string(lastPressureIters_) +
+                       "/" + std::to_string(deformationParameters.pressureIterations) +
+                       " res=" + std::to_string(lastPressureResidual_), tPressure)
+            .addTiming("        mechanics[" + std::to_string(iteration) +
+                       "] stokes   iters=" + std::to_string(lastStokesIters_) +
+                       "/" + std::to_string(deformationParameters.stokesIterations) +
+                       " res=" + std::to_string(lastStokesResidual_) +
+                       " coupling=" + std::to_string(mechanicsResidual) +
+                       " theta=" + std::to_string(aitkenTheta), tStokes)
+            .print();
+
       if (mechanicsResidual < deformationParameters.mechanicsTolerance)
         break;
     }
@@ -795,6 +933,13 @@ public:
     computeDiagnostics();
     computeStressTensors();
     residual = mechanicsResidual;
+    if (residual > deformationParameters.mechanicsTolerance)
+      Logger::getInstance()
+          .addWarning("solveMechanics: did not converge after " +
+                      std::to_string(deformationParameters.mechanicsIterations) +
+                      " iterations (residual=" + std::to_string(residual) +
+                      ", tolerance=" + std::to_string(deformationParameters.mechanicsTolerance) + ")")
+          .print();
   }
 
   // Fills diag = centerCoefficient and rhs = pressureSum for one node.
@@ -804,7 +949,7 @@ public:
                                  const std::vector<SolverT> &p,
                                  const std::vector<T> &ambientBP,
                                  T &diag, T &rhs) const {
-    if (nodes[nodeId].touchesAmbient) {
+    if (touchesAmbient_[nodeId]) {
       diag = T(1);
       rhs  = ambientBP[nodeId];
       return;
@@ -862,13 +1007,145 @@ public:
         computePressureStencilAt(i, zeros, ambientBP, diag[i], pBC[i]);
     }
 
+    // Precompute off-diagonal structure and the CORRECT matrix diagonal for SSOR.
+    //
+    // Key insight: diag[i] from computePressureStencilAt includes self-coupling
+    // contributions from REACTION/MASK/OOB faces (those return v[nodeId] itself).
+    // The ACTUAL matrix diagonal A[i,i] = sum of off-diagonal (interior-neighbor)
+    // coefficients only.  Using the wrong diagonal in the SSOR sweeps makes the
+    // preconditioner invalid near boundaries.
+    //
+    // Also: NONE-type non-interior faces (OOB or no crossing) use gridDelta in
+    // pressureStencilPoint, NOT faceBCDists_ (which defaults to T(1)).
+    //
+    // Face-major layout: fi = dir*2 + (offset==+1 ? 1 : 0)
+    //   Even fi (offset=-1): lower-index neighbor → forward sweep
+    //   Odd  fi (offset=+1): higher-index neighbor → backward sweep
+    std::vector<T>           pressCoeff(2 * D * n, T(0));
+    std::vector<std::size_t> pressNeighId(2 * D * n, noNode);
+    std::vector<T>           actualDiag(n, T(0));  // A[i,i] = sum of interior coefficients
+
+    for (std::size_t id = 0; id < n; ++id) {
+      if (touchesAmbient_[id]) { actualDiag[id] = T(1); continue; } // identity row
+      for (unsigned dir = 0; dir < D; ++dir) {
+        const unsigned fiNeg = dir * 2u;
+        const unsigned fiPos = dir * 2u + 1u;
+        IndexType nbNeg = nodes[id].index;  nbNeg[dir] -= 1;
+        IndexType nbPos = nodes[id].index;  nbPos[dir] += 1;
+        const std::size_t jNeg = inBounds(nbNeg) ? nodeLookupFlat[linearIndex(nbNeg)] : noNode;
+        const std::size_t jPos = inBounds(nbPos) ? nodeLookupFlat[linearIndex(nbPos)] : noNode;
+
+        // Effective distance matching pressureStencilPoint:
+        //   interior neighbour  → gridDelta
+        //   AMBIENT/REACTION/MASK crossing → faceBCDists_ (actual sub-grid distance)
+        //   NONE (OOB or no crossing) → gridDelta  (pressureStencilPoint fallthrough)
+        auto effectiveDist = [&](unsigned fi, std::size_t j) -> T {
+          if (j != noNode)  return gridDelta;
+          const Boundary bt = faceBCTypes_[fi * n + id];
+          if (bt != Boundary::NONE) return faceBCDists_[fi * n + id];
+          return gridDelta;
+        };
+
+        const T dNeg = effectiveDist(fiNeg, jNeg);
+        const T dPos = effectiveDist(fiPos, jPos);
+        const T dSum = dNeg + dPos;
+        if (dSum <= eps) continue;
+
+        if (jNeg != noNode) {
+          const T c = T(2) / (dNeg * dSum);
+          pressCoeff[fiNeg * n + id]   = c;
+          pressNeighId[fiNeg * n + id] = jNeg;
+          actualDiag[id] += c;            // A[i,i] += interior off-diagonal coefficient
+        }
+        if (jPos != noNode) {
+          const T c = T(2) / (dPos * dSum);
+          pressCoeff[fiPos * n + id]   = c;
+          pressNeighId[fiPos * n + id] = jPos;
+          actualDiag[id] += c;
+        }
+      }
+      // Guard against fully-isolated nodes (surrounded by boundaries on every face)
+      if (actualDiag[id] <= eps) actualDiag[id] = T(1);
+    }
+
+    // ILU(0) preconditioner for the (non-symmetric) pressure matrix.
+    //
+    // The sub-grid interface distances make A[i,j] ≠ A[j,i] in general, so
+    // SSOR is not guaranteed to converge.  ILU(0) handles non-symmetric
+    // matrices robustly.
+    //
+    // Factorisation A ≈ L * U (zero fill-in, natural node ordering):
+    //   L  – unit lower triangular: L[i,j] = A[i,j] / U[j,j]  for j < i
+    //   U  – upper triangular:      U[i,j] = A[i,j]            for j > i
+    //   U[i,i] = A[i,i] - Σ_{k<i} L[i,k] * A[k,i]
+    //
+    // With A[i,j] = -pressCoeff[fi*n+i] and A[j,i] = -pressCoeff[(fi^1)*n+j]:
+    //   U[i,i] = actualDiag[i] - Σ_{lower j} pressCoeff[fi_L*n+i]
+    //                                         * pressCoeff[fi_U*n+j]
+    //                                         / ilu_diag[j]
+    //
+    // Preconditioner application M_ILU^{-1} r = z:
+    //   Forward (L y = r, unit lower triangular, no diagonal divide):
+    //     y[i] = r[i] + Σ_{j<i} (pressCoeff[fi_L*n+i] / ilu_diag[j]) * y[j]
+    //   Backward (U z = y):
+    //     z[i] = (y[i] + Σ_{j>i} pressCoeff[fi_U*n+i] * z[j]) / ilu_diag[i]
+    std::vector<T> ilu_diag(n);
+    for (std::size_t id = 0; id < n; ++id) {
+      if (touchesAmbient_[id]) { ilu_diag[id] = T(1); continue; }
+      ilu_diag[id] = actualDiag[id];
+      for (unsigned dir = 0; dir < D; ++dir) {
+        const unsigned fi_L = dir * 2u;        // lower face (offset=-1)
+        const unsigned fi_U = fi_L + 1u;       // upper face (offset=+1, j's face toward i)
+        const std::size_t j = pressNeighId[fi_L * n + id];
+        if (j == noNode || ilu_diag[j] <= eps) continue;
+        // L[id,j] = A[id,j] / U[j,j] = (-pressCoeff_L) / ilu_diag[j]
+        // A[j,id] = -pressCoeff[fi_U * n + j]   (j's upper-face coefficient toward id)
+        // ilu_diag[id] -= L[id,j] * A[j,id]
+        //              = (-pressCoeff_L / ilu_diag[j]) * (-pressCoeff_fi_U[j])
+        //              = pressCoeff_L * pressCoeff_fi_U[j] / ilu_diag[j]  (positive drop)
+        ilu_diag[id] -= pressCoeff[fi_L * n + id] * pressCoeff[fi_U * n + j] / ilu_diag[j];
+      }
+      if (ilu_diag[id] <= eps) ilu_diag[id] = actualDiag[id]; // guard non-positive pivot
+    }
+
+    auto applyIlu = [&](const std::vector<SolverT> &in,
+                        std::vector<SolverT>        &out) {
+      std::vector<T> y(n);
+      // Forward solve: L * y = in  (L is unit lower triangular)
+      for (std::size_t i = 0; i < n; ++i) {
+        T val = static_cast<T>(in[i]);
+        for (unsigned dir = 0; dir < D; ++dir) {
+          const unsigned fi_L = dir * 2u;
+          const std::size_t j = pressNeighId[fi_L * n + i];
+          if (j != noNode)
+            // L[i,j] = -pressCoeff[fi_L*n+i] / ilu_diag[j], subtract A[i,j]*y[j]:
+            // y[i] -= L[i,j] * y[j] = -(-pressCoeff/ilu_diag[j]) * y[j] = +(coeff/ilu) * y[j]
+            val += (pressCoeff[fi_L * n + i] / ilu_diag[j]) * y[j];
+        }
+        y[i] = val;   // no diagonal divide (unit lower triangular)
+      }
+      // Backward solve: U * z = y
+      for (std::size_t i = n; i-- > 0; ) {
+        T val = y[i];
+        for (unsigned dir = 0; dir < D; ++dir) {
+          const unsigned fi_U = dir * 2u + 1u;
+          const std::size_t j = pressNeighId[fi_U * n + i];
+          if (j != noNode)
+            // U[i,j] = -pressCoeff[fi_U*n+i], subtract U[i,j]*z[j]:
+            // val -= U[i,j] * z[j] = -(-pressCoeff) * z[j] = +(pressCoeff) * z[j]
+            val += pressCoeff[fi_U * n + i] * static_cast<T>(out[j]);
+        }
+        out[i] = static_cast<SolverT>(val / ilu_diag[i]);
+      }
+    };
+
     std::vector<T> b(n);
     for (std::size_t i = 0; i < n; ++i)
       b[i] = pBC[i] + deformationParameters.bulkModulus * divergence[i];
 
     std::vector<SolverT> x(n);
     for (std::size_t i = 0; i < n; ++i)
-      x[i] = static_cast<SolverT>(nodes[i].touchesAmbient ? ambientBP[i] : nodes[i].pressure);
+      x[i] = static_cast<SolverT>(touchesAmbient_[i] ? ambientBP[i] : nodes[i].pressure);
 
     std::vector<SolverT> Ax(n);
     pressureMatvec(x, ambientBP, diag, pBC, Ax);
@@ -878,11 +1155,16 @@ public:
       r_hat[i] = r[i];
     }
 
+    T b_norm = T(0);
+    for (std::size_t i = 0; i < n; ++i)
+      b_norm = std::max(b_norm, std::abs(b[i]));
+    if (b_norm < T(1e-100)) b_norm = T(1);  // trivial / zero-RHS system
+
     T rho = T(1), alpha = T(1), omega = T(1);
     T pressureResidual = T(0);
+    unsigned pressureIter = 0;
 
-    for (unsigned iteration = 0;
-         iteration < deformationParameters.pressureIterations; ++iteration) {
+    for (; pressureIter < deformationParameters.pressureIterations; ++pressureIter) {
       T rho_new = T(0);
       for (std::size_t i = 0; i < n; ++i)
         rho_new += static_cast<T>(r_hat[i]) * static_cast<T>(r[i]);
@@ -896,10 +1178,7 @@ public:
       for (std::size_t i = 0; i < n; ++i)
         p[i] = static_cast<SolverT>(r[i] + beta * (p[i] - omega * v[i]));
 
-      for (std::size_t i = 0; i < n; ++i) {
-        const T pi = p[i];
-        y[i] = static_cast<SolverT>((diag[i] > eps) ? pi / diag[i] : pi);
-      }
+      applyIlu(p, y);
 
       pressureMatvec(y, ambientBP, diag, pBC, v);
 
@@ -917,16 +1196,13 @@ public:
       pressureResidual = T(0);
       for (std::size_t i = 0; i < n; ++i)
         pressureResidual = std::max(pressureResidual, std::abs(static_cast<T>(s[i])));
-      if (pressureResidual < deformationParameters.pressureTolerance) {
+      if (pressureResidual < deformationParameters.pressureTolerance * b_norm) {
         for (std::size_t i = 0; i < n; ++i)
           x[i] = static_cast<SolverT>(x[i] + alpha * y[i]);
         break;
       }
 
-      for (std::size_t i = 0; i < n; ++i) {
-        const T si = s[i];
-        z[i] = static_cast<SolverT>((diag[i] > eps) ? si / diag[i] : si);
-      }
+      applyIlu(s, z);
 
       pressureMatvec(z, ambientBP, diag, pBC, t);
 
@@ -945,12 +1221,23 @@ public:
       pressureResidual = T(0);
       for (std::size_t i = 0; i < n; ++i)
         pressureResidual = std::max(pressureResidual, std::abs(static_cast<T>(r[i])));
-      if (pressureResidual < deformationParameters.pressureTolerance)
+      if (pressureResidual < deformationParameters.pressureTolerance * b_norm)
         break;
     }
 
     for (std::size_t i = 0; i < n; ++i)
       nodes[i].pressure = x[i];
+
+    lastPressureIters_    = pressureIter;
+    lastPressureResidual_ = pressureResidual / b_norm;
+    if (lastPressureResidual_ > deformationParameters.pressureTolerance)
+      Logger::getInstance()
+          .addWarning("solvePressure: BiCGSTAB did not converge after " +
+                      std::to_string(lastPressureIters_) + "/" +
+                      std::to_string(deformationParameters.pressureIterations) +
+                      " iterations (residual=" + std::to_string(lastPressureResidual_) +
+                      ", tolerance=" + std::to_string(deformationParameters.pressureTolerance) + ")")
+          .print();
   }
 
   // Fills scalar diag = centerCoefficient and Vec3D rhs = velocitySum for one node.
@@ -1050,11 +1337,13 @@ public:
         r_hat[i][c] = r[i][c];
       }
 
+    const T b_norm = [&]{ T m = T(0); for (std::size_t i = 0; i < n; ++i) for (unsigned c = 0; c < D; ++c) m = std::max(m, std::abs(b[i][c])); return (m < T(1e-100)) ? T(1) : m; }();
+
     T rho = T(1), alpha = T(1), omega = T(1);
     T velocityResidual = T(0);
+    unsigned stokesIter = 0;
 
-    for (unsigned iteration = 0;
-         iteration < deformationParameters.stokesIterations; ++iteration) {
+    for (; stokesIter < deformationParameters.stokesIterations; ++stokesIter) {
       const T rho_new = vecDot(r_hat, r);
       if (std::abs(rho_new) < T(1e-100))
         break;
@@ -1085,7 +1374,7 @@ public:
           s[i][c] = static_cast<SolverT>(r[i][c] - alpha * sv[i][c]);
 
       velocityResidual = vecMaxAbs(s);
-      if (velocityResidual < deformationParameters.stokesTolerance) {
+      if (velocityResidual < deformationParameters.stokesTolerance * b_norm) {
         for (std::size_t i = 0; i < n; ++i)
           for (unsigned c = 0; c < D; ++c)
             x[i][c] = static_cast<SolverT>(x[i][c] + alpha * y[i][c]);
@@ -1111,13 +1400,24 @@ public:
         }
 
       velocityResidual = vecMaxAbs(r);
-      if (velocityResidual < deformationParameters.stokesTolerance)
+      if (velocityResidual < deformationParameters.stokesTolerance * b_norm)
         break;
     }
 
     for (std::size_t i = 0; i < n; ++i)
       for (unsigned c = 0; c < D; ++c)
         nodes[i].velocity[c] = static_cast<T>(x[i][c]);
+
+    lastStokesIters_    = stokesIter;
+    lastStokesResidual_ = velocityResidual / b_norm;
+    if (lastStokesResidual_ > deformationParameters.stokesTolerance)
+      Logger::getInstance()
+          .addWarning("solveStokesVelocity: BiCGSTAB did not converge after " +
+                      std::to_string(lastStokesIters_) + "/" +
+                      std::to_string(deformationParameters.stokesIterations) +
+                      " iterations (residual=" + std::to_string(lastStokesResidual_) +
+                      ", tolerance=" + std::to_string(deformationParameters.stokesTolerance) + ")")
+          .print();
   }
 
   std::vector<Vec3D<T>> collectVelocities() const {
@@ -1153,13 +1453,14 @@ public:
       return {static_cast<T>(pressure[neighborId]), gridDelta};
 
     const unsigned fi = direction * 2u + (offset == 1 ? 1u : 0u);
-    const auto &intersection = node.faceBC[fi];
-    if (intersection.type == Boundary::AMBIENT)
-      return {ambientBoundaryPressure[nodeId], intersection.distance};
-    if (intersection.type == Boundary::REACTION ||
-        intersection.type == Boundary::MASK)
+    const std::size_t nn = nodes.size();
+    const Boundary faceType = faceBCTypes_[fi * nn + nodeId];
+    const T faceDist        = faceBCDists_[fi * nn + nodeId];
+    if (faceType == Boundary::AMBIENT)
+      return {ambientBoundaryPressure[nodeId], faceDist};
+    if (faceType == Boundary::REACTION || faceType == Boundary::MASK)
       return {solidInterfacePressureBoundary(node.index, static_cast<T>(pressure[nodeId])),
-              intersection.distance};
+              faceDist};
 
     return {static_cast<T>(pressure[nodeId]), gridDelta};
   }
@@ -1184,16 +1485,17 @@ public:
       return {toT(velocity[neighborId]), gridDelta};
 
     const unsigned fi = direction * 2u + (offset == 1 ? 1u : 0u);
-    const auto &intersection = node.faceBC[fi];
-    if (intersection.type == Boundary::REACTION)
-      return {reactionBoundaryVelocity(node.index), intersection.distance};
-    if (intersection.type == Boundary::AMBIENT)
+    const std::size_t nn = nodes.size();
+    const Boundary faceType = faceBCTypes_[fi * nn + nodeId];
+    const T faceDist        = faceBCDists_[fi * nn + nodeId];
+    if (faceType == Boundary::REACTION)
+      return {reactionBoundaryVelocity(node.index), faceDist};
+    if (faceType == Boundary::AMBIENT)
       return {freeSurfaceVelocityBoundary(node.index, direction, offset,
-                                          intersection.distance, toT(velocity[nodeId])),
-              intersection.distance};
-    if (intersection.type == Boundary::MASK)
-      return {maskVelocityBoundary(node.index, toT(velocity[nodeId])),
-              intersection.distance};
+                                          faceDist, toT(velocity[nodeId])),
+              faceDist};
+    if (faceType == Boundary::MASK)
+      return {maskVelocityBoundary(node.index, toT(velocity[nodeId])), faceDist};
 
     return {toT(velocity[nodeId]), gridDelta};
   }
@@ -1213,13 +1515,13 @@ public:
       return {nodes[neighborId].pressure, gridDelta};
 
     const unsigned fi = direction * 2u + (offset == 1 ? 1u : 0u);
-    const auto &intersection = node.faceBC[fi];
-    if (intersection.type == Boundary::AMBIENT)
-      return {freeSurfacePressureBoundary(node.index), intersection.distance};
-    if (intersection.type == Boundary::REACTION ||
-        intersection.type == Boundary::MASK)
-      return {solidInterfacePressureBoundary(node.index, node.pressure),
-              intersection.distance};
+    const std::size_t nn = nodes.size();
+    const Boundary faceType = faceBCTypes_[fi * nn + nodeId];
+    const T faceDist        = faceBCDists_[fi * nn + nodeId];
+    if (faceType == Boundary::AMBIENT)
+      return {freeSurfacePressureBoundary(node.index), faceDist};
+    if (faceType == Boundary::REACTION || faceType == Boundary::MASK)
+      return {solidInterfacePressureBoundary(node.index, node.pressure), faceDist};
 
     return {node.pressure, gridDelta};
   }
@@ -1239,16 +1541,17 @@ public:
       return {nodes[neighborId].velocity, gridDelta};
 
     const unsigned fi = direction * 2u + (offset == 1 ? 1u : 0u);
-    const auto &intersection = node.faceBC[fi];
-    if (intersection.type == Boundary::REACTION)
-      return {reactionBoundaryVelocity(node.index), intersection.distance};
-    if (intersection.type == Boundary::AMBIENT)
+    const std::size_t nn = nodes.size();
+    const Boundary faceType = faceBCTypes_[fi * nn + nodeId];
+    const T faceDist        = faceBCDists_[fi * nn + nodeId];
+    if (faceType == Boundary::REACTION)
+      return {reactionBoundaryVelocity(node.index), faceDist};
+    if (faceType == Boundary::AMBIENT)
       return {freeSurfaceVelocityBoundary(node.index, direction, offset,
-                                          intersection.distance, node.velocity),
-              intersection.distance};
-    if (intersection.type == Boundary::MASK)
-      return {maskVelocityBoundary(node.index, node.velocity),
-              intersection.distance};
+                                          faceDist, node.velocity),
+              faceDist};
+    if (faceType == Boundary::MASK)
+      return {maskVelocityBoundary(node.index, node.velocity), faceDist};
 
     return {node.velocity, gridDelta};
   }

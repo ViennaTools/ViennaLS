@@ -62,12 +62,6 @@ private:
     IndexType index;
     Vec3D<T> velocity{0., 0., 0.};
     bool contact = false;
-    // contactFaceActive[direction*2 + (offset==+1?1:0)]:
-    //   true  → velocity-continuity BC applies at the oxide/mask contact face
-    //   false → face is free or tensile-contact (use velocity[node] as ghost)
-    // Populated once in buildNodes(); oxide stress doesn't change during inner solve.
-    std::array<bool, 2 * D> contactFaceActive{};
-    std::array<Vec3D<T>, 2 * D> contactFaceVelocity{};
   };
 
   SmartPointer<OxidationDeformation<T, D>> deformationField =
@@ -90,6 +84,9 @@ private:
   IndexType requestedMinIndex{};
   IndexType requestedMaxIndex{};
   std::vector<Node> nodes;
+  // Face-major flat contact BC arrays: index = faceIdx * n + nodeId.
+  std::vector<uint8_t> contactFaceActive_;   // 1 if contact BC applies
+  std::vector<Vec3D<T>> contactFaceVelocity_; // Dirichlet velocity at contact face
   std::unordered_map<std::size_t, T> ambientPhiCache_;
 
 public:
@@ -428,8 +425,13 @@ private:
         break;
     }
 
+    const std::size_t n = nodes.size();
+    contactFaceActive_.assign(2 * D * n, uint8_t(0));
+    contactFaceVelocity_.assign(2 * D * n, Vec3D<T>{T(0), T(0), T(0)});
+
     contactNodes = 0;
-    for (auto &node : nodes) {
+    for (std::size_t id = 0; id < n; ++id) {
+      auto &node = nodes[id];
       node.contact = touchesContactBoundary(maskIt, node.index);
       if (node.contact)
         ++contactNodes;
@@ -442,11 +444,8 @@ private:
           const bool neighborIsNode =
               inBounds(neighbor) && lookupNode(neighbor) != noNode;
           if (neighborIsNode ||
-              !isContactBoundary(node.index, dir, offset, maskIt)) {
-            node.contactFaceActive[faceIdx] = false;
-            node.contactFaceVelocity[faceIdx] = {};
-            continue;
-          }
+              !isContactBoundary(node.index, dir, offset, maskIt))
+            continue; // inactive already set by assign()
 
           Vec3D<T> faceNormal{0., 0., 0.};
           faceNormal[dir] = static_cast<T>(offset);
@@ -465,22 +464,15 @@ private:
           for (unsigned i = 0; i < D; ++i)
             tn += t[i] * faceNormal[i];
 
-          if (parameters.unilateralContact && tn >= T(0)) {
-            node.contactFaceActive[faceIdx] = false;
-            node.contactFaceVelocity[faceIdx] = {};
-            continue;
-          }
+          if (parameters.unilateralContact && tn >= T(0))
+            continue; // tensile contact — leave inactive
 
-          // Bonded oxide/mask contact: use the local oxide velocity as a
-          // Dirichlet boundary value for the mask velocity. The outer coupling
-          // loop then feeds the mask velocity back to the oxide deformation
-          // solve, enforcing velocity continuity without a fitted traction
-          // scale.
+          // Bonded contact: Dirichlet BC = local oxide velocity.
           const auto contactVelocity =
               deformationField->getVectorVelocity(oxidePt, parameters.material,
                                                   faceNormal, 0);
-          node.contactFaceActive[faceIdx] = true;
-          node.contactFaceVelocity[faceIdx] = contactVelocity;
+          contactFaceActive_[faceIdx * n + id]   = uint8_t(1);
+          contactFaceVelocity_[faceIdx * n + id] = contactVelocity;
         }
       }
     }
@@ -542,9 +534,10 @@ private:
     }
 
     const unsigned faceIdx = direction * 2u + (offset == 1 ? 1u : 0u);
-    if (nodes[nodeId].contactFaceActive[faceIdx])
+    const std::size_t nn = nodes.size();
+    if (contactFaceActive_[faceIdx * nn + nodeId])
       return detail::vecSubtract(
-          detail::vecScaled(nodes[nodeId].contactFaceVelocity[faceIdx], T(2)),
+          detail::vecScaled(contactFaceVelocity_[faceIdx * nn + nodeId], T(2)),
           Vec3D<T>{static_cast<T>(velocity[nodeId][0]),
                    static_cast<T>(velocity[nodeId][1]),
                    static_cast<T>(velocity[nodeId][2])});
@@ -681,6 +674,8 @@ private:
       return m;
     };
 
+    const T b_norm = [&]{ T m = T(0); for (std::size_t i = 0; i < n; ++i) for (unsigned c = 0; c < D; ++c) m = std::max(m, std::abs(b[i][c])); return (m < T(1e-100)) ? T(1) : m; }();
+
     for (; iterations < parameters.maxIterations; ++iterations) {
       const T rho_new = vecDot(r_hat, r);
       if (std::abs(rho_new) < T(1e-100))
@@ -708,7 +703,7 @@ private:
           s[i][c] = static_cast<SolverT>(r[i][c] - alpha * sv[i][c]);
 
       residual = vecMaxAbs(s);
-      if (residual < parameters.tolerance) {
+      if (residual < parameters.tolerance * b_norm) {
         for (std::size_t i = 0; i < n; ++i)
           for (unsigned c = 0; c < D; ++c)
             x[i][c] = static_cast<SolverT>(x[i][c] + alpha * y[i][c]);
@@ -731,7 +726,7 @@ private:
         }
 
       residual = vecMaxAbs(r);
-      if (residual < parameters.tolerance) {
+      if (residual < parameters.tolerance * b_norm) {
         ++iterations;
         break;
       }
@@ -740,6 +735,14 @@ private:
     for (std::size_t i = 0; i < n; ++i)
       for (unsigned c = 0; c < D; ++c)
         nodes[i].velocity[c] = static_cast<T>(x[i][c]);
+    if (residual > parameters.tolerance * b_norm)
+      Logger::getInstance()
+          .addWarning("solveElasticVelocity: BiCGSTAB did not converge after " +
+                      std::to_string(iterations) + "/" +
+                      std::to_string(parameters.maxIterations) +
+                      " iterations (residual=" + std::to_string(residual / b_norm) +
+                      ", tolerance=" + std::to_string(parameters.tolerance) + ")")
+          .print();
   }
 
   bool touchesContactBoundary(ConstSparseIterator &maskIt,
