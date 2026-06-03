@@ -11,6 +11,8 @@ project(
 option(VIENNALS_USE_VTK "Build with VTK file support" ON)
 option(VIENNALS_VTK_RENDERING "Build with VTK rendering support" ON)
 
+option(VIENNALS_USE_GPU "Enable GPU-accelerated BiCGSTAB linear solver via CUDA" OFF)
+
 option(VIENNALS_PRECOMPILE_HEADERS "Build template specialisations for shorter compile times" OFF)
 option(VIENNALS_STATIC_BUILD "Build dependencies as static libraries" OFF)
 option(VIENNALS_ENABLE_SANITIZER "Enable Sanitizers" OFF)
@@ -88,6 +90,45 @@ if(MSVC)
   # https://learn.microsoft.com/cpp/c-runtime-library/math-constants
   # TODO: In case C++20 is adpoted any time soon: https://cppreference.com/w/cpp/numeric/constants
   target_compile_definitions(${PROJECT_NAME} INTERFACE _USE_MATH_DEFINES=1)
+endif()
+
+# --------------------------------------------------------------------------------------------------------
+# GPU support (CUDA Runtime, no OptiX)
+# --------------------------------------------------------------------------------------------------------
+
+if(VIENNALS_USE_GPU)
+  enable_language(CUDA)
+  find_package(CUDAToolkit REQUIRED)
+
+  # Compile the CUDA kernels into a small static library so that consuming
+  # .cpp files (compiled by g++) never see __global__ / <<< >>> syntax.
+  add_library(ViennaLS_GPU STATIC
+    ${PROJECT_SOURCE_DIR}/gpu/lsOxidationBiCGSTABKernels.cu)
+
+  target_compile_definitions(ViennaLS_GPU
+    PRIVATE VIENNALS_GPU_BICGSTAB=1)
+
+  target_include_directories(ViennaLS_GPU
+    PRIVATE
+      ${PROJECT_SOURCE_DIR}/include/viennals
+      ${CUDAToolkit_INCLUDE_DIRS})
+
+  set_target_properties(ViennaLS_GPU PROPERTIES
+    CUDA_SEPARABLE_COMPILATION OFF
+    POSITION_INDEPENDENT_CODE  ON)
+
+  target_link_libraries(ViennaLS_GPU PUBLIC CUDA::cudart)
+
+  # Expose the define and the GPU library to downstream targets.
+  # BUILD_INTERFACE limits the ViennaLS_GPU dependency to the build tree so it
+  # is never exported to the install tree (avoiding the "not in export set" error
+  # from packageProject when ViennaLS_GPU is a non-installed local target).
+  target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_GPU_BICGSTAB=1)
+  target_link_libraries(${PROJECT_NAME} INTERFACE
+    $<BUILD_INTERFACE:ViennaLS_GPU>)
+  target_include_directories(${PROJECT_NAME} INTERFACE ${CUDAToolkit_INCLUDE_DIRS})
+
+  message(STATUS "[ViennaLS] GPU BiCGSTAB solver enabled (CUDA ${CUDAToolkit_VERSION})")
 endif()
 
 # --------------------------------------------------------------------------------------------------------

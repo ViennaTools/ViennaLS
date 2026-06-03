@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+
+#include <vcTimer.hpp>
 #include <limits>
 #include <optional>
 #include <string>
@@ -299,6 +301,9 @@ private:
     if (requestedTime <= T(0))
       return T(0);
 
+    Timer<> tStep;
+    tStep.start();
+
     const bool hasMask = (maskInterface != nullptr);
     const std::string prefix = hasMask ? "LOCOS" : "Oxidation";
 
@@ -329,7 +334,12 @@ private:
         coupledModel->setSolveBounds(diffusionMinIndex, diffusionMaxIndex);
       logInfo(prefix + ": solving coupled diffusion/deformation field for dt=" +
               std::to_string(stressTimeStep) + " hr");
+      Timer<> tCoupled;
+      tCoupled.start();
       coupledModel->apply();
+      tCoupled.finish();
+      if (Logger::hasTiming())
+        Logger::getInstance().addTiming("  coupled(iter=1)", tCoupled).print();
       logInfo(prefix + ": coupled diffusion/deformation solve complete");
 
       if (hasMask) {
@@ -341,7 +351,12 @@ private:
           maskBendingField->setSolveBounds(maskBendingMinIndex,
                                            maskBendingMaxIndex);
         logInfo(prefix + ": solving mask bending field");
+        Timer<> tMask;
+        tMask.start();
         maskBendingField->apply();
+        tMask.finish();
+        if (Logger::hasTiming())
+          Logger::getInstance().addTiming("  maskBending(iter=1)", tMask).print();
         T initialRes = maskBendingField->getLastApplyVelocityChange();
         logInfo(prefix + ": mask bending solve complete, residual=" +
                 (initialRes >= std::numeric_limits<T>::max() * T(0.99)
@@ -356,10 +371,22 @@ private:
           deformationField->setMaskVelocityField(maskBendingField);
           logInfo(prefix + ": coupling iteration " +
                   std::to_string(iteration + 1) + " solving coupled field");
+          Timer<> tIterCoupled, tIterMask;
+          tIterCoupled.start();
           coupledModel->apply();
+          tIterCoupled.finish();
           logInfo(prefix + ": coupling iteration " +
                   std::to_string(iteration + 1) + " solving mask field");
+          tIterMask.start();
           maskBendingField->apply();
+          tIterMask.finish();
+          if (Logger::hasTiming())
+            Logger::getInstance()
+                .addTiming("  coupled(iter=" + std::to_string(iteration + 1) + ")",
+                            tIterCoupled)
+                .addTiming("  maskBending(iter=" + std::to_string(iteration + 1) + ")",
+                            tIterMask)
+                .print();
           lastMaskCouplingIterations = iteration + 1;
           lastMaskCouplingResidual = maskBendingField->getLastApplyVelocityChange();
           logInfo(prefix + ": coupling iteration " +
@@ -451,10 +478,18 @@ private:
       adv.apply();
     };
 
+    Timer<> tAdvect;
+    tAdvect.start();
     advect(ambientInterface, ambientVelocity);
     advect(siInterface, diffusionField);
     if (hasMask)
       advect(maskInterface, maskBendingField);
+    tAdvect.finish();
+    if (Logger::hasTiming())
+      Logger::getInstance()
+          .addTiming(std::string("  advection(") + (hasMask ? "3" : "2") + " surfaces)",
+                     tAdvect)
+          .print();
 
     Interior<T, D>(ambientInterface).apply();
     if (hasMask)
@@ -467,6 +502,10 @@ private:
 
     logInfo(prefix + ": time step complete, actual_dt=" +
             std::to_string(advectionTime) + " hr");
+
+    tStep.finish();
+    if (Logger::hasTiming())
+      Logger::getInstance().addTiming("── step total", tStep).print();
 
     return advectionTime;
   }
