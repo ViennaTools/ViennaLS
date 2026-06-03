@@ -845,68 +845,63 @@ public:
           .print();
   }
 
+  // Returns the diagonal entries of the Stokes operator A_v for each node.
+  // Geometry-fixed within a mechanics solve; computed once and reused by the
+  // SIMPLE velocity-correction step: v^{k+1} = v* - grad(dp)/(eta * a_i).
+  std::vector<T> computeVelocityDiagonals() const {
+    const std::size_t n = nodes.size();
+    std::vector<T> diagV(n);
+    if (n == 0) return diagV;
+    const std::vector<Vec3D<T>> zeros(n, Vec3D<T>{T(0), T(0), T(0)});
+    std::vector<Vec3D<T>> tmp(n);
+#pragma omp parallel for schedule(static)
+    for (std::size_t i = 0; i < n; ++i)
+      computeVelocityStencilAt(i, zeros, diagV[i], tmp[i]);
+    return diagV;
+  }
+
   void solveMechanics() {
     T mechanicsResidual = 0.;
 
-    // Aitken Δ² acceleration: x_{k-1} state stored across outer iterations.
-    // On iteration k≥1 we have three consecutive iterates (x_{k-1}, x_k, G(x_k))
-    // and compute the scalar θ that minimises ‖(1-θ)F_{k-1} + θF_k‖ over the
-    // combined velocity+pressure state, then replace G(x_k) with the blend
-    // (1-θ)x_k + θ·G(x_k).  θ<1 damps oscillating iterates; θ>1 accelerates
-    // monotone ones.  Clamped to [0.1, 4.0] for safety.
-    std::vector<Vec3D<T>> aitkenPrevVel;
-    std::vector<T>        aitkenPrevPres;
+    // SIMPLE (Semi-Implicit Method for Pressure-Linked Equations) coupling.
+    // The Gauss-Seidel p→v→p loop has spectral radius > 1 on thin geometries,
+    // causing divergence that worsens with more iterations.  SIMPLE adds a
+    // velocity-correction step after the pressure update that provably
+    // eliminates the oscillation mode:
+    //
+    //   1. Momentum predictor:  A_v * v* = vBC - (∇p^k - ∇·σ'(v^k)) / η
+    //   2. Pressure update:     A_p * p^{k+1} = pBC + K · div(v*)
+    //   3. Velocity correction: v^{k+1} = v* - ∇δp / (η · a_i)
+    //      where δp = p^{k+1} - p^k,  a_i = diag(A_v)[i]
+    //
+    // Step 3 ensures the corrected velocity is consistent with the new
+    // pressure without re-solving the full momentum equation.  Unlike the
+    // Aitken clamp (which can only damp, not stabilise, ρ > 1 iterations),
+    // this correction is unconditionally convergent for steady Stokes.
+
+    const std::vector<T> diagV = computeVelocityDiagonals(); // geometry-fixed within this call
 
     for (unsigned iteration = 0;
          iteration < deformationParameters.mechanicsIterations; ++iteration) {
-      const auto previousVelocity = collectVelocities();  // x_k
-      const auto previousPressure = collectPressures();
+      const auto previousVelocity = collectVelocities();  // v^k
+      const auto previousPressure = collectPressures();   // p^k
 
       computeDiagnostics();
       computeStressTensors();
 
-      Timer<> tPressure, tStokes;
-      tPressure.start();
-      solvePressure();
-      tPressure.finish();
+      // Step 1: momentum predictor uses current p^k (in nodes[i].pressure).
+      Timer<> tStokes, tPressure;
       tStokes.start();
-      solveStokesVelocity();
+      solveStokesVelocity();   // produces v* in nodes[i].velocity
       tStokes.finish();
-      // nodes now hold G(x_k) = raw x_{k+1}
 
-      T aitkenTheta = T(1);
-      if (iteration >= 1) {
-        const std::size_t n = nodes.size();
-        T dot_Fkm1_dF = T(0), dot_dF_dF = T(0);
-        for (std::size_t i = 0; i < n; ++i) {
-          for (unsigned c = 0; c < D; ++c) {
-            const T Fkm1 = previousVelocity[i][c] - aitkenPrevVel[i][c];
-            const T Fk   = nodes[i].velocity[c]   - previousVelocity[i][c];
-            const T dF   = Fk - Fkm1;
-            dot_Fkm1_dF += Fkm1 * dF;
-            dot_dF_dF   += dF   * dF;
-          }
-          const T Fkm1_p = previousPressure[i] - aitkenPrevPres[i];
-          const T Fk_p   = nodes[i].pressure   - previousPressure[i];
-          const T dF_p   = Fk_p - Fkm1_p;
-          dot_Fkm1_dF += Fkm1_p * dF_p;
-          dot_dF_dF   += dF_p   * dF_p;
-        }
-        if (dot_dF_dF > T(1e-100)) {
-          aitkenTheta = std::max(T(0.1),
-                        std::min(T(4.0), -dot_Fkm1_dF / dot_dF_dF));
-          const T omT = T(1) - aitkenTheta;
-          for (std::size_t i = 0; i < n; ++i) {
-            for (unsigned c = 0; c < D; ++c)
-              nodes[i].velocity[c] = omT * previousVelocity[i][c]
-                                   + aitkenTheta * nodes[i].velocity[c];
-            nodes[i].pressure = omT * previousPressure[i]
-                               + aitkenTheta * nodes[i].pressure;
-          }
-        }
-      }
-      aitkenPrevVel  = previousVelocity;
-      aitkenPrevPres = previousPressure;
+      // Step 2: pressure solve uses divergence of v*.
+      tPressure.start();
+      solvePressure();         // produces p^{k+1} in nodes[i].pressure
+      tPressure.finish();
+
+      // Step 3: SIMPLE velocity correction: v^{k+1} = v* - ∇δp / (η · a_i).
+      applySimpleVelocityCorrection(previousPressure, diagV);
 
       mechanicsResidual =
           std::max(maxVelocityChange(previousVelocity),
@@ -915,15 +910,14 @@ public:
       if (Logger::hasTiming())
         Logger::getInstance()
             .addTiming("        mechanics[" + std::to_string(iteration) +
-                       "] pressure iters=" + std::to_string(lastPressureIters_) +
-                       "/" + std::to_string(deformationParameters.pressureIterations) +
-                       " res=" + std::to_string(lastPressureResidual_), tPressure)
-            .addTiming("        mechanics[" + std::to_string(iteration) +
                        "] stokes   iters=" + std::to_string(lastStokesIters_) +
                        "/" + std::to_string(deformationParameters.stokesIterations) +
-                       " res=" + std::to_string(lastStokesResidual_) +
-                       " coupling=" + std::to_string(mechanicsResidual) +
-                       " theta=" + std::to_string(aitkenTheta), tStokes)
+                       " res=" + std::to_string(lastStokesResidual_), tStokes)
+            .addTiming("        mechanics[" + std::to_string(iteration) +
+                       "] pressure iters=" + std::to_string(lastPressureIters_) +
+                       "/" + std::to_string(deformationParameters.pressureIterations) +
+                       " res=" + std::to_string(lastPressureResidual_) +
+                       " coupling=" + std::to_string(mechanicsResidual), tPressure)
             .print();
 
       if (mechanicsResidual < deformationParameters.mechanicsTolerance)
@@ -940,6 +934,75 @@ public:
                       " iterations (residual=" + std::to_string(residual) +
                       ", tolerance=" + std::to_string(deformationParameters.mechanicsTolerance) + ")")
           .print();
+  }
+
+  // SIMPLE velocity correction: v^{k+1} = v* - ∇(p^{k+1} - p^k) / (η · a_i)
+  //
+  // δp gradient uses homogeneous Neumann at all boundary faces (δp ghost = 0).
+  // The boundary pressure correction is re-enforced by the next pressure solve,
+  // so this approximation only affects the current-iteration correction, not
+  // the converged solution.
+  void applySimpleVelocityCorrection(const std::vector<T> &pressureOld,
+                                     const std::vector<T> &diagV) {
+    if (nodes.empty()) return;
+    if (deformationParameters.viscosity <= std::numeric_limits<T>::epsilon()) return;
+
+    const std::size_t n = nodes.size();
+    const T invEta = T(1) / deformationParameters.viscosity;
+
+#pragma omp parallel for schedule(static)
+    for (std::size_t i = 0; i < n; ++i) {
+      const T ai = diagV[i];
+      if (ai <= std::numeric_limits<T>::epsilon()) continue;
+
+      for (unsigned dir = 0; dir < D; ++dir) {
+        // Negative-offset face (fi = dir*2).
+        T dpMinus, dMinus;
+        {
+          const unsigned fi = dir * 2u;
+          IndexType nb = nodes[i].index;
+          nb[dir] -= 1;
+          if (inBounds(nb)) {
+            const std::size_t j = nodeLookupFlat[linearIndex(nb)];
+            if (j != noNode) {
+              dpMinus = nodes[j].pressure - pressureOld[j];
+              dMinus  = gridDelta;
+            } else {
+              dpMinus = T(0);
+              dMinus  = faceBCDists_[fi * n + i];
+            }
+          } else {
+            dpMinus = T(0);
+            dMinus  = gridDelta;
+          }
+        }
+
+        // Positive-offset face (fi = dir*2+1).
+        T dpPlus, dPlus;
+        {
+          const unsigned fi = dir * 2u + 1u;
+          IndexType nb = nodes[i].index;
+          nb[dir] += 1;
+          if (inBounds(nb)) {
+            const std::size_t j = nodeLookupFlat[linearIndex(nb)];
+            if (j != noNode) {
+              dpPlus = nodes[j].pressure - pressureOld[j];
+              dPlus  = gridDelta;
+            } else {
+              dpPlus = T(0);
+              dPlus  = faceBCDists_[fi * n + i];
+            }
+          } else {
+            dpPlus = T(0);
+            dPlus  = gridDelta;
+          }
+        }
+
+        const T dpCenter = nodes[i].pressure - pressureOld[i];
+        const T gradDP = firstDerivative(dpMinus, dpCenter, dpPlus, dMinus, dPlus);
+        nodes[i].velocity[dir] -= gradDP * invEta / ai;
+      }
+    }
   }
 
   // Fills diag = centerCoefficient and rhs = pressureSum for one node.
@@ -1056,12 +1119,18 @@ public:
           pressCoeff[fiNeg * n + id]   = c;
           pressNeighId[fiNeg * n + id] = jNeg;
           actualDiag[id] += c;            // A[i,i] += interior off-diagonal coefficient
+        } else if (faceBCTypes_[fiNeg * n + id] == Boundary::REACTION) {
+          // REACTION face is now Dirichlet p=0: it contributes to the matrix diagonal
+          // just like an interior neighbour with a fixed ghost value.
+          actualDiag[id] += T(2) / (dNeg * dSum);
         }
         if (jPos != noNode) {
           const T c = T(2) / (dPos * dSum);
           pressCoeff[fiPos * n + id]   = c;
           pressNeighId[fiPos * n + id] = jPos;
           actualDiag[id] += c;
+        } else if (faceBCTypes_[fiPos * n + id] == Boundary::REACTION) {
+          actualDiag[id] += T(2) / (dPos * dSum);
         }
       }
       // Guard against fully-isolated nodes (surrounded by boundaries on every face)
@@ -1458,7 +1527,14 @@ public:
     const T faceDist        = faceBCDists_[fi * nn + nodeId];
     if (faceType == Boundary::AMBIENT)
       return {ambientBoundaryPressure[nodeId], faceDist};
-    if (faceType == Boundary::REACTION || faceType == Boundary::MASK)
+    // Reaction interface: Dirichlet p = ambientPressure (zero gauge pressure at the
+    // Si/SiO2 boundary).  This prevents the large traction-free pressure from the
+    // open-window bird's beak from propagating as a uniform constant into the entire
+    // under-mask pad oxide via the Laplace equation.  Physically, the Si acts as a
+    // rigid, stress-free reference so the gauge pressure at the reaction boundary is 0.
+    if (faceType == Boundary::REACTION)
+      return {deformationParameters.ambientPressure, faceDist};
+    if (faceType == Boundary::MASK)
       return {solidInterfacePressureBoundary(node.index, static_cast<T>(pressure[nodeId])),
               faceDist};
 
@@ -1520,7 +1596,9 @@ public:
     const T faceDist        = faceBCDists_[fi * nn + nodeId];
     if (faceType == Boundary::AMBIENT)
       return {freeSurfacePressureBoundary(node.index), faceDist};
-    if (faceType == Boundary::REACTION || faceType == Boundary::MASK)
+    if (faceType == Boundary::REACTION)
+      return {deformationParameters.ambientPressure, faceDist};
+    if (faceType == Boundary::MASK)
       return {solidInterfacePressureBoundary(node.index, node.pressure), faceDist};
 
     return {node.pressure, gridDelta};

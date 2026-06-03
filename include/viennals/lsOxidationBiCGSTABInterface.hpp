@@ -53,6 +53,7 @@ void gpuUploadSolverArrays(GpuBiCGSTABBuffers* gpu,
 
 // Run GPU BiCGSTAB.
 //   x (length n, host): initial guess on entry, solution on exit.
+//   outResidual is the raw (unnormalized) max-abs residual on exit.
 void gpuSolveBiCGSTAB(GpuBiCGSTABBuffers* gpu,
                       float*   x,
                       float    diagEps,

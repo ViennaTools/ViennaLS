@@ -358,8 +358,17 @@ inline void solveBiCGSTAB(
     // Upload initial guess to device
     LS_CUDA_CHECK(cudaMemcpy(gpu.d_x, x.data(), n * sizeof(float),
                              cudaMemcpyHostToDevice));
-    LS_CUDA_CHECK(cudaMemset(gpu.d_p, 0, n * sizeof(float)));
-    LS_CUDA_CHECK(cudaMemset(gpu.d_v, 0, n * sizeof(float)));
+    // Zero all work vectors.  cudaMalloc does not zero GPU memory, and d_z in
+    // particular is read (multiplied by omega=0) on the early-convergence path
+    // before it has been written by jacobiKernel — giving 0*NaN = NaN if the
+    // GPU heap happened to contain NaN from a prior allocation.
+    LS_CUDA_CHECK(cudaMemset(gpu.d_p,   0, n * sizeof(float)));
+    LS_CUDA_CHECK(cudaMemset(gpu.d_v,   0, n * sizeof(float)));
+    LS_CUDA_CHECK(cudaMemset(gpu.d_y,   0, n * sizeof(float)));
+    LS_CUDA_CHECK(cudaMemset(gpu.d_z,   0, n * sizeof(float)));
+    LS_CUDA_CHECK(cudaMemset(gpu.d_s,   0, n * sizeof(float)));
+    LS_CUDA_CHECK(cudaMemset(gpu.d_t,   0, n * sizeof(float)));
+    LS_CUDA_CHECK(cudaMemset(gpu.d_Ax,  0, n * sizeof(float)));
 
     // r0 = b - A*x0
     gpu.spmv(gpu.d_x, gpu.d_Ax);
@@ -367,6 +376,15 @@ inline void solveBiCGSTAB(
     // r_hat = r0 (shadow residual; never changes)
     LS_CUDA_CHECK(cudaMemcpy(gpu.d_rhat, gpu.d_r, n * sizeof(float),
                              cudaMemcpyDeviceToDevice));
+
+    // Normalise both convergence checks by ||b||_inf, matching the CPU path which
+    // uses `residual < tolerance * b_norm`.  Without this the GPU checks the
+    // raw (unnormalised) residual, which is 10–1000× tighter than the CPU
+    // threshold.  BiCGSTAB then keeps iterating on an already-converged system
+    // until breakdown (ρ → 0 → α = NaN) poisons the solution.
+    // Both the s-check (early exit) and r-check (end-of-loop) use eff_tol.
+    const float b_norm = gpu.maxAbs(gpu.d_b);
+    const float eff_tol = (b_norm > 1e-37f) ? tolerance * b_norm : tolerance;
 
     double rho   = 1.0;
     double alpha = 1.0;
@@ -407,7 +425,7 @@ inline void solveBiCGSTAB(
 
         // Check convergence on s
         outResidual = static_cast<double>(gpu.maxAbs(gpu.d_s));
-        if (outResidual < tolerance) {
+        if (outResidual < eff_tol) {
             // x += alpha*y  (z term is zero since we converged early)
             updateXKernel<<<blk, kThreadsPerBlock>>>(
                 gpu.d_x, static_cast<float>(alpha), gpu.d_y,
@@ -440,7 +458,7 @@ inline void solveBiCGSTAB(
         // Check convergence on r
         outResidual = static_cast<double>(gpu.maxAbs(gpu.d_r));
         ++outIterations;
-        if (outResidual < tolerance) break;
+        if (outResidual < eff_tol) break;
     }
 
     // Download solution to host

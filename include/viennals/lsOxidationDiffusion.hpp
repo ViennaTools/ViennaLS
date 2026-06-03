@@ -408,9 +408,16 @@ public:
         continue;
       const IndexType idx = it.getStartIndices();
       const std::size_t nodeId = lookupNode(idx);
+      // Non-solve-grid narrow-band points (mask interior, gas-phase boundary)
+      // get concentration 0.  Using equilibriumConcentration here contaminates
+      // the output: mask-interior points are impermeable (C≈0), and newly
+      // appeared bird's-beak points inherit C=1 spuriously after advection.
+      // The in-memory concentrationCache_ is the warm-start source for the
+      // next substep; the level-set value is only the fallback when that cache
+      // is cold, and C=0 converges just as quickly as C=1 from a cold start.
       concentrations.push_back(nodeId != noNode
                                    ? nodes[nodeId].concentration
-                                   : parameters.equilibriumConcentration);
+                                   : T(0));
     }
     ambientInterface->getPointData().insertReplaceScalarData(
         std::move(concentrations), "OxConcentration");

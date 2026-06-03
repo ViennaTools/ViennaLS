@@ -350,8 +350,15 @@ private:
                                          const IndexType &gridMax) {
     constexpr int padding = 4;
     for (unsigned i = 0; i < D; ++i) {
-      minIndex[i] = std::max(gridMin[i], minIndex[i] - padding);
-      maxIndex[i] = std::min(gridMax[i], maxIndex[i] + padding);
+      // Clamp to the physical grid before adding/subtracting padding.
+      // lsInterior on an INFINITE_BOUNDARY level-set can leave far-field
+      // sentinel entries (near std::numeric_limits<IndexType>::min/max) in
+      // the HRLE structure.  definedPointBounds() visits them and records
+      // the extreme index.  Subtracting padding from that sentinel directly
+      // overflows, turning the tiny sentinel into a large positive value and
+      // making extents[i] enormous.  Clamping first makes the arithmetic safe.
+      minIndex[i] = std::max(gridMin[i], std::max(gridMin[i], minIndex[i]) - padding);
+      maxIndex[i] = std::min(gridMax[i], std::min(gridMax[i], maxIndex[i]) + padding);
     }
   }
 };
