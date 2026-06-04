@@ -185,6 +185,13 @@ template <class T, int D> class Oxidation {
   std::unordered_map<std::size_t, T> concentrationCache_;
 
 public:
+  const std::unordered_map<std::size_t, T> &getConcentrationCache() const {
+    return concentrationCache_;
+  }
+  void setConcentrationCache(std::unordered_map<std::size_t, T> cache) {
+    concentrationCache_ = std::move(cache);
+  }
+
   Oxidation() = default;
 
   Oxidation(SmartPointer<Domain<T, D>> passedSiInterface,
@@ -491,14 +498,31 @@ private:
                      tAdvect)
           .print();
 
-    Interior<T, D>(ambientInterface).apply();
-    if (hasMask)
-      Interior<T, D>(maskInterface).apply();
-
     // Post-advection clip: remove oxide that grew into the mask (LOCOS only).
-    if (hasMask)
+    // Mask gets Interior fill first so the BooleanOp has accurate φ_mask values
+    // at points inside the mask region.
+    if (hasMask) {
+      Interior<T, D>(maskInterface).apply();
       BooleanOperation<T, D>(ambientInterface, maskInterface,
                              BooleanOperationEnum::RELATIVE_COMPLEMENT).apply();
+      // Re-write mask velocity with the Interior-filled HRLE for the same
+      // reason as the oxide re-write below — lsAdvect left only the narrow
+      // band, so pointData is smaller than the post-Interior HRLE.
+      maskBendingField->writeFieldsToLevelSet();
+    }
+    // Interior-fill the oxide AFTER the clip so the HRLE has all interior
+    // points defined.  Doing this before the BooleanOp is useless — the op
+    // rebuilds ambientInterface as a narrow band, stripping Interior fill.
+    Interior<T, D>(ambientInterface).apply();
+
+    // Re-write persistent fields (concentration, pressure) now that the HRLE
+    // has interior points.  The first writePersistentFields() above only
+    // covered the narrow band; after lsAdvect the new HRLE is again a narrow
+    // band stripped of interior data.  By re-writing here we ensure that the
+    // next outer step's buildNodes() can warm-start ALL oxide nodes — not just
+    // the surface band — when it reads back from pointData.
+    diffusionField->writePersistentFields();
+    deformationField->writeFieldsToLevelSet();
 
     logInfo(prefix + ": time step complete, actual_dt=" +
             std::to_string(advectionTime) + " hr");
