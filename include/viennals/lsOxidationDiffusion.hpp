@@ -713,11 +713,29 @@ private:
     }
     tDiag.finish();
 
-    // Initial guess: warm-start or diagonal-preconditioned b.
+    // Initial guess: warm-start or diagonal-preconditioned b.  Sanitize the
+    // warm start so a previous failed solve cannot seed NaNs into the next one.
+    auto fallbackInitialGuess = [&](std::size_t i) -> T {
+      if (std::isfinite(diag[i]) && std::isfinite(b[i]) && diag[i] > eps) {
+        const T guess = b[i] / diag[i];
+        if (std::isfinite(guess))
+          return guess;
+      }
+      return T(0);
+    };
+
     std::vector<SolverT> x(n);
-    for (std::size_t i = 0; i < n; ++i)
-      x[i] = static_cast<SolverT>(warmStartable_ ? nodes[i].concentration
-                                                  : (diag[i] > eps ? b[i] / diag[i] : T(0)));
+    for (std::size_t i = 0; i < n; ++i) {
+      T guess = warmStartable_ ? nodes[i].concentration : fallbackInitialGuess(i);
+      if (!std::isfinite(guess))
+        guess = fallbackInitialGuess(i);
+      x[i] = static_cast<SolverT>(guess);
+      if (!std::isfinite(x[i]))
+        x[i] = SolverT(0);
+    }
+    const auto initialGuess = x;
+
+    bool usedGpuFallback = false;
 
 #ifdef VIENNALS_GPU_BICGSTAB
     // ── GPU BiCGSTAB path ──────────────────────────────────────────────
@@ -727,47 +745,79 @@ private:
     // the device.  Only dot-product scalars and the max-abs residual are
     // downloaded; work vectors stay on the GPU between iterations.
     if (gpu::gpuIsValid(gpuBufs_)) {
-      // Build float copies of diag and b for upload (SolverT = float)
       Timer<> tPrep, tUpload, tSolve;
       tPrep.start();
-      std::vector<float> diagF(n), bF(n);
+      std::vector<double> diagGpu(n), bGpu(n);
       for (std::size_t i = 0; i < n; ++i) {
-        diagF[i] = static_cast<float>(diag[i]);
-        bF[i]    = static_cast<float>(b[i]);
+        diagGpu[i] = static_cast<double>(diag[i]);
+        bGpu[i]    = static_cast<double>(b[i]);
       }
 
       // Face coupling coefficients (pressure-dependent; recomputed each call)
       std::vector<T> faceCoeffs;
       computeFaceCoeffs(faceCoeffs);
-      std::vector<float> coeffF(faceCoeffs.size());
+      std::vector<double> coeffGpu(faceCoeffs.size());
       for (std::size_t k = 0; k < faceCoeffs.size(); ++k)
-        coeffF[k] = static_cast<float>(faceCoeffs[k]);
+        coeffGpu[k] = static_cast<double>(faceCoeffs[k]);
+
+      std::vector<double> xGpu(n);
+      for (std::size_t i = 0; i < n; ++i)
+        xGpu[i] = static_cast<double>(x[i]);
       tPrep.finish();
 
       tUpload.start();
       gpu::gpuUploadSolverArrays(gpuBufs_,
-                                 diagF.data(), bF.data(), coeffF.data(),
+                                 diagGpu.data(), bGpu.data(), coeffGpu.data(),
                                  static_cast<uint32_t>(n), faceCoeffs.size());
       tUpload.finish();
 
-      // Solve on GPU; x holds the initial guess and receives the solution.
+      // Solve on GPU; xGpu holds the initial guess and receives the solution.
       tSolve.start();
-      gpu::gpuSolveBiCGSTAB(gpuBufs_, x.data(),
-                             static_cast<float>(eps),
-                             parameters.maxIterations,
-                             static_cast<float>(parameters.tolerance),
-                             iterations, residual);
+      const bool gpuConverged =
+          gpu::gpuSolveBiCGSTAB(gpuBufs_, xGpu.data(),
+                                static_cast<double>(eps),
+                                parameters.maxIterations,
+                                static_cast<double>(parameters.tolerance),
+                                iterations, residual);
       tSolve.finish();
 
-      // Write solution back to nodes
-      for (std::size_t i = 0; i < n; ++i)
-        nodes[i].concentration = x[i];
+      const bool finiteGpuSolution =
+          gpuConverged &&
+          std::all_of(xGpu.begin(), xGpu.end(),
+                      [](double value) { return std::isfinite(value); });
+      const unsigned gpuIterations = iterations;
+      const T gpuResidual = residual;
+
+      if (finiteGpuSolution) {
+        // Write solution back to nodes only after convergence and finite checks.
+        for (std::size_t i = 0; i < n; ++i)
+          nodes[i].concentration = static_cast<T>(xGpu[i]);
+
+        if (Logger::hasTiming()) {
+          const std::string tag = "diffusion n=" + std::to_string(n) +
+                                  " iters=" + std::to_string(iterations) +
+                                  " res=" + std::to_string(residual) +
+                                  " [GPU]";
+          Logger::getInstance()
+              .addTiming(tag + " diag/b precompute", tDiag)
+              .addTiming(tag + " GPU prep+faceCoeffs", tPrep)
+              .addTiming(tag + " GPU upload", tUpload)
+              .addTiming(tag + " GPU BiCGSTAB", tSolve)
+              .print();
+        }
+        return;
+      }
+
+      x = initialGuess;
+      usedGpuFallback = true;
+      iterations = 0;
+      residual = T(0);
 
       if (Logger::hasTiming()) {
         const std::string tag = "diffusion n=" + std::to_string(n) +
-                                " iters=" + std::to_string(iterations) +
-                                " res=" + std::to_string(residual) +
-                                " [GPU]";
+                                " iters=" + std::to_string(gpuIterations) +
+                                " res=" + std::to_string(gpuResidual) +
+                                " [GPU fallback]";
         Logger::getInstance()
             .addTiming(tag + " diag/b precompute", tDiag)
             .addTiming(tag + " GPU prep+faceCoeffs", tPrep)
@@ -775,7 +825,13 @@ private:
             .addTiming(tag + " GPU BiCGSTAB", tSolve)
             .print();
       }
-      return;
+      Logger::getInstance()
+          .addWarning("solveDiffusion: GPU BiCGSTAB failed, did not converge, "
+                      "or produced non-finite concentrations (iters=" +
+                      std::to_string(gpuIterations) + ", residual=" +
+                      std::to_string(gpuResidual) +
+                      "); falling back to CPU BiCGSTAB.")
+          .print();
     }
 #endif
 
@@ -870,13 +926,29 @@ private:
       }
     }
 
-    for (std::size_t i = 0; i < n; ++i)
-      nodes[i].concentration = x[i];
+    const bool finiteCpuSolution =
+        std::all_of(x.begin(), x.end(),
+                    [](SolverT value) { return std::isfinite(value); });
+    if (finiteCpuSolution) {
+      for (std::size_t i = 0; i < n; ++i)
+        nodes[i].concentration = x[i];
+    } else {
+      for (std::size_t i = 0; i < n; ++i)
+        nodes[i].concentration = initialGuess[i];
+      residual = std::numeric_limits<T>::infinity();
+      Logger::getInstance()
+          .addWarning("solveDiffusion: CPU BiCGSTAB produced non-finite "
+                      "concentrations; keeping the sanitized initial guess.")
+          .print();
+    }
 
     tCpuSolve.finish();
     if (Logger::hasTiming()) {
 #ifdef VIENNALS_GPU_BICGSTAB
-      const std::string path = " [CPU n<" + std::to_string(kGpuThreshold) + "]";
+      const std::string path =
+          usedGpuFallback
+              ? " [CPU fallback]"
+              : " [CPU n<" + std::to_string(kGpuThreshold) + "]";
 #else
       const std::string path = " [CPU]";
 #endif

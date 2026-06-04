@@ -41,30 +41,32 @@ void gpuUploadNeighborIds(GpuBiCGSTABBuffers* gpu,
 }
 
 void gpuUploadSolverArrays(GpuBiCGSTABBuffers* gpu,
-                           const float* diag,
-                           const float* b,
-                           const float* coeff,
+                           const double* diag,
+                           const double* b,
+                           const double* coeff,
                            uint32_t diagLen,
                            std::size_t coeffLen) {
-    LS_CUDA_CHECK(cudaMemcpy(gpu->d_diag, diag, diagLen  * sizeof(float),
+    LS_CUDA_CHECK(cudaMemcpy(gpu->d_diag, diag, diagLen  * sizeof(double),
                              cudaMemcpyHostToDevice));
-    LS_CUDA_CHECK(cudaMemcpy(gpu->d_b,    b,    diagLen  * sizeof(float),
+    LS_CUDA_CHECK(cudaMemcpy(gpu->d_b,    b,    diagLen  * sizeof(double),
                              cudaMemcpyHostToDevice));
-    LS_CUDA_CHECK(cudaMemcpy(gpu->d_coeff, coeff, coeffLen * sizeof(float),
+    LS_CUDA_CHECK(cudaMemcpy(gpu->d_coeff, coeff, coeffLen * sizeof(double),
                              cudaMemcpyHostToDevice));
 }
 
-void gpuSolveBiCGSTAB(GpuBiCGSTABBuffers* gpu,
-                      float*   x,
-                      float    diagEps,
+bool gpuSolveBiCGSTAB(GpuBiCGSTABBuffers* gpu,
+                      double*  x,
+                      double   diagEps,
                       unsigned maxIter,
-                      float    tolerance,
+                      double   tolerance,
                       unsigned& outIterations,
                       double&   outResidual) {
-    std::vector<float> xVec(x, x + gpu->n);
-    solveBiCGSTAB(*gpu, xVec, diagEps, maxIter, tolerance,
-                  outIterations, outResidual);
-    std::copy(xVec.begin(), xVec.end(), x);
+    std::vector<double> xVec(x, x + gpu->n);
+    const bool ok = solveBiCGSTAB(*gpu, xVec, diagEps, maxIter, tolerance,
+                                  outIterations, outResidual);
+    if (ok)
+        std::copy(xVec.begin(), xVec.end(), x);
+    return ok;
 }
 
 } // namespace gpu

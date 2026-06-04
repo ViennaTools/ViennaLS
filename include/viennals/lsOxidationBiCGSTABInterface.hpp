@@ -45,20 +45,21 @@ void gpuUploadNeighborIds(GpuBiCGSTABBuffers* gpu,
 // Upload per-solve arrays (diag, b, faceCoeffs).
 // `diagLen` == n, `coeffLen` == nFaces * n.
 void gpuUploadSolverArrays(GpuBiCGSTABBuffers* gpu,
-                           const float* diag,
-                           const float* b,
-                           const float* coeff,
+                           const double* diag,
+                           const double* b,
+                           const double* coeff,
                            uint32_t diagLen,
                            std::size_t coeffLen);
 
 // Run GPU BiCGSTAB.
 //   x (length n, host): initial guess on entry, solution on exit.
 //   outResidual is the raw (unnormalized) max-abs residual on exit.
-void gpuSolveBiCGSTAB(GpuBiCGSTABBuffers* gpu,
-                      float*   x,
-                      float    diagEps,
+// Returns true only when the GPU solve converged and produced finite values.
+bool gpuSolveBiCGSTAB(GpuBiCGSTABBuffers* gpu,
+                      double*  x,
+                      double   diagEps,
                       unsigned maxIter,
-                      float    tolerance,
+                      double   tolerance,
                       unsigned& outIterations,
                       double&   outResidual);
 
