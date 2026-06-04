@@ -42,6 +42,15 @@ void gpuUploadNeighborIds(GpuBiCGSTABBuffers* gpu,
                           const uint32_t* nb,
                           std::size_t count);
 
+// Build the CSR sparsity pattern from h_nb (face-major, length nFaces*n),
+// upload to the device, and run CUSPARSE symbolic analysis for ILU(0) and
+// the two triangular solves.  Must be called after gpuUploadNeighborIds and
+// before the first gpuUploadSolverArrays / gpuSolveBiCGSTAB call.
+void gpuSetupCSR(GpuBiCGSTABBuffers* gpu,
+                 const uint32_t* h_nb,
+                 uint32_t n,
+                 int nFaces);
+
 // Upload per-solve arrays (diag, b, faceCoeffs).
 // `diagLen` == n, `coeffLen` == nFaces * n.
 void gpuUploadSolverArrays(GpuBiCGSTABBuffers* gpu,

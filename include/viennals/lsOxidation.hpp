@@ -182,6 +182,7 @@ template <class T, int D> class Oxidation {
   SmartPointer<OxidationMaskBending<T, D>> maskBendingField;
   T lastMaxVelocity_ = T(0);
 
+  GpuMode gpuMode_ = GpuMode::Auto;
   std::unordered_map<std::size_t, T> concentrationCache_;
 
 public:
@@ -204,6 +205,8 @@ public:
   template <class... Args> static auto New(Args &&...args) {
     return SmartPointer<Oxidation>::New(std::forward<Args>(args)...);
   }
+
+  void setGpuMode(GpuMode mode) { gpuMode_ = mode; }
 
   void setSiInterface(SmartPointer<Domain<T, D>> si) { siInterface = si; }
   void setAmbientInterface(SmartPointer<Domain<T, D>> ambient) {
@@ -326,6 +329,7 @@ private:
       diffusionField = OxidationDiffusion<T, D>::New(
           siInterface, ambientInterface, oxidationParams);
       diffusionField->setConcentrationCache(concentrationCache_);
+      diffusionField->setGpuMode(gpuMode_);
       if (hasMask)
         diffusionField->setMaskInterface(maskInterface, maskInteriorSign);
 
@@ -510,10 +514,11 @@ private:
       // band, so pointData is smaller than the post-Interior HRLE.
       maskBendingField->writeFieldsToLevelSet();
     }
-    // Interior-fill the oxide AFTER the clip so the HRLE has all interior
-    // points defined.  Doing this before the BooleanOp is useless — the op
-    // rebuilds ambientInterface as a narrow band, stripping Interior fill.
-    Interior<T, D>(ambientInterface).apply();
+    {
+      Interior<T, D> fill(ambientInterface);
+      fill.setGuide(siInterface);  // stop fill at Si surface
+      fill.apply();
+    }
 
     // Re-write persistent fields (concentration, pressure) now that the HRLE
     // has interior points.  The first writePersistentFields() above only

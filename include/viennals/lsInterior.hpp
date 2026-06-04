@@ -2,6 +2,7 @@
 
 #include <lsPreCompileMacros.hpp>
 
+#include <hrleSparseIterator.hpp>
 #include <hrleSparseStarIterator.hpp>
 #include <lsDomain.hpp>
 
@@ -16,6 +17,7 @@ using namespace viennacore;
 /// Returns the number of added points
 template <class T, int D> class Interior {
   SmartPointer<Domain<T, D>> levelSet = nullptr;
+  SmartPointer<Domain<T, D>> guide = nullptr;
   int width = 0;
   bool updatePointData = true;
 
@@ -28,6 +30,11 @@ public:
   void setLevelSet(SmartPointer<Domain<T, D>> passedlsDomain) {
     levelSet = passedlsDomain;
   }
+
+  /// Set a guide level set: the fill will not activate points that are inside
+  /// the guide (φ_guide < 0).  Pass the Si surface to stop the oxide Interior
+  /// fill at the Si-SiO2 interface.
+  void setGuide(SmartPointer<Domain<T, D>> g) { guide = g; }
 
   /// Set whether to update the point data stored in the LS
   /// during this algorithm. Defaults to true.
@@ -45,41 +52,7 @@ public:
     if (levelSet->getNumberOfPoints() == 0)
       return;
 
-    // Store initial domain extents by iterating through all domain points
-    auto &domain = levelSet->getDomain();
-    auto &grid = levelSet->getGrid();
-
-    viennahrle::Index<D> initialMinExtent = grid.getMaxGridPoint();
-    viennahrle::Index<D> initialMaxExtent = grid.getMinGridPoint();
-
-    // Use ConstSparseStarIterator to find all points and track extents
-    viennahrle::ConstSparseStarIterator<typename Domain<T, D>::DomainType, 1>
-        extentIt(domain, grid.getMinGridPoint());
-    viennahrle::Index<D> extentEnd = grid.incrementIndices(grid.getMaxGridPoint());
-
-    bool foundPoints = false;
-    while (extentIt.getIndices() < extentEnd) {
-      if (extentIt.getCenter().isDefined()) {
-        viennahrle::Index<D> idx = extentIt.getIndices();
-        foundPoints = true;
-        for (int d = 0; d < D; ++d) {
-          if (idx[d] < initialMinExtent[d])
-            initialMinExtent[d] = idx[d];
-          if (idx[d] > initialMaxExtent[d])
-            initialMaxExtent[d] = idx[d];
-        }
-      }
-      extentIt.next();
-    }
-
-    // If no points found, use grid bounds as fallback
-    if (!foundPoints) {
-      initialMinExtent = grid.getMinGridPoint();
-      initialMaxExtent = grid.getMaxGridPoint();
-    }
-
     const int startWidth = levelSet->getLevelSetWidth();
-    const T startLimit = startWidth * 0.5;
 
     for (int currentCycle = 0; currentCycle < 100;
          ++currentCycle) {
@@ -120,22 +93,25 @@ public:
                 ? newDomain.getSegmentation()[p]
                 : grid.incrementIndices(grid.getMaxGridPoint());
 
+        // Per-thread guide iterator: advances in lock-step with main iterator.
+        using GuideIt = viennahrle::ConstSparseIterator<
+            typename Domain<T, D>::DomainType>;
+        std::unique_ptr<GuideIt> guideIt;
+        if (guide != nullptr)
+          guideIt = std::make_unique<GuideIt>(guide->getDomain(), startVector);
+
         for (viennahrle::ConstSparseStarIterator<
                  typename Domain<T, D>::DomainType, 1>
                  neighborIt(domain, startVector);
              neighborIt.getIndices() < endVector; neighborIt.next()) {
 
           auto &centerIt = neighborIt.getCenter();
-          viennahrle::Index<D> idx = neighborIt.getIndices();
 
-          // Check if point is within initial domain extents (all axes, both directions)
-          bool withinInitialExtents = true;
-          for (int d = 0; d < D; ++d) {
-            // Check extents
-            if (idx[d] < initialMinExtent[d] || idx[d] > initialMaxExtent[d]) {
-              withinInitialExtents = false;
-              break;
-            }
+          // If a guide is set, block activation for points inside it (φ < 0).
+          bool insideGuide = false;
+          if (guideIt) {
+            guideIt->goToIndicesSequential(neighborIt.getIndices());
+            insideGuide = (guideIt->getValue() < T(0));
           }
 
           if (centerIt.getValue() == Domain<T, D>::NEG_VALUE) {
@@ -156,9 +132,9 @@ public:
                   definedNeighbor = i;
                 }
               }
-              // Only activate when a proper defined neighbor drives the fill.
-              if (definedDistance >= -limit && withinInitialExtents &&
-                  definedNeighbor != -1) {
+              // Only activate when a proper defined neighbor drives the fill
+              // and the point is not inside the guide (e.g. Si substrate).
+              if (!insideGuide && definedDistance >= -limit && definedNeighbor != -1) {
                 addedPoints++;
                 domainSegment.insertNextDefinedPoint(neighborIt.getIndices(),
                                                      definedDistance);
@@ -194,7 +170,16 @@ public:
       if (addedPoints == 0)
         break;
     }
-    levelSet->getDomain().segment();
+    // segment() is intentionally skipped here.  When the Interior fill
+    // produces a dense HRLE (many small runs from a deep fill), the
+    // balanced-partition boundaries computed by getNewSegmentation() land
+    // in the middle of existing runs.  The SparseIterator inside segment()
+    // then starts at the run's true beginning (before the boundary), causing
+    // adjacent threads to overlap and producing a corrupt multi-segment domain
+    // that goToIndices later walks off.  The single-segment domain left by
+    // the final finalize()+deepCopy() is valid for all downstream consumers:
+    // ConstSparseIterator in buildNodes(), writePersistentFields(), and
+    // lsAdvect (which re-segments its output internally).
     // levelSet->finalize(width);
   }
 };

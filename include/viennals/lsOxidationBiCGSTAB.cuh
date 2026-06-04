@@ -15,6 +15,7 @@
 #ifdef VIENNALS_GPU_BICGSTAB
 
 #include <cuda_runtime.h>
+#include <cusparse.h>
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -46,6 +47,20 @@ inline int blocksFor(int n) {
         if (_e != cudaSuccess)                                                 \
             fprintf(stderr, "CUDA error %s:%d – %s\n", __FILE__, __LINE__,    \
                     cudaGetErrorString(_e));                                    \
+    } while (0)
+#endif
+
+// ─────────────────────── CUSPARSE error check ────────────────────────────
+
+#ifdef NDEBUG
+#define LS_CUSPARSE_CHECK(call) (call)
+#else
+#define LS_CUSPARSE_CHECK(call)                                                \
+    do {                                                                       \
+        cusparseStatus_t _s = (call);                                          \
+        if (_s != CUSPARSE_STATUS_SUCCESS)                                     \
+            fprintf(stderr, "CUSPARSE error %s:%d – %d\n", __FILE__,          \
+                    __LINE__, static_cast<int>(_s));                           \
     } while (0)
 #endif
 
@@ -270,6 +285,39 @@ struct GpuBiCGSTABBuffers {
     double*                 d_dot  = nullptr;
     unsigned long long int* d_maxu = nullptr;
 
+    // ── ILU(0) preconditioner state ───────────────────────────────────────
+    // CUSPARSE handles/descriptors (created once per buffer lifetime).
+    cusparseHandle_t  csHandle = nullptr;
+    // Matrix descriptors: A (general, for ILU factorization), L, U (for SpSV).
+    cusparseMatDescr_t   descrA   = nullptr;  // legacy descriptor; still used by csrilu02
+    cusparseSpMatDescr_t spMatL   = nullptr;  // generic CSR descriptor for L factor
+    cusparseSpMatDescr_t spMatU   = nullptr;  // generic CSR descriptor for U factor
+    // ILU(0) factorization info and triangular-solve descriptors.
+    // csrilu02Info_t is deprecated in CUDA 12 but is the only supported
+    // in-place ILU(0) factorization interface; use it with the warning suppressed.
+    csrilu02Info_t      iluInfo  = nullptr;
+    cusparseSpSVDescr_t svDescrL = nullptr;  // SpSV solve descriptor for L
+    cusparseSpSVDescr_t svDescrU = nullptr;  // SpSV solve descriptor for U
+    // CSR arrays for the ILU(0) factor (pattern set in setupCSR; values refreshed each solve).
+    int*    d_csrRowPtr = nullptr;  // n+1 entries
+    int*    d_csrColInd = nullptr;  // nnz entries
+    double* d_iluVal    = nullptr;  // nnz entries — overwritten in-place by ILU(0)
+    // Intermediate vector for the two-step triangular solve: L*svTmp = rhs, U*out = svTmp.
+    double* d_svTmp     = nullptr;  // n entries
+    // CUSPARSE internal work buffers (sizes determined at analysis time).
+    void*   d_iluBuf    = nullptr;
+    void*   d_svBufL    = nullptr;
+    void*   d_svBufU    = nullptr;
+    // Number of non-zeros in the ILU pattern.
+    int     nnz         = 0;
+    // True when setupCSR and analysis have completed successfully.
+    bool    iluReady    = false;
+    // Host-side CSR index arrays (kept for fillAndFactorizeILU value assembly).
+    std::vector<int> h_csrRowPtr;
+    std::vector<int> h_csrColInd;
+    // h_csrFaceIdx[k] = face index fi for off-diagonal entry k, or -1 for diagonal.
+    std::vector<int> h_csrFaceIdx;
+
     uint32_t n      = 0;
     int      nFaces = 0;
     bool     valid  = false;
@@ -282,11 +330,25 @@ struct GpuBiCGSTABBuffers {
     ~GpuBiCGSTABBuffers() { free(); }
 
     void free() {
+        // Destroy CUSPARSE objects before freeing device memory.
+        iluReady = false;
+        if (svDescrU)  { cusparseSpSV_destroyDescr(svDescrU);   svDescrU = nullptr; }
+        if (svDescrL)  { cusparseSpSV_destroyDescr(svDescrL);   svDescrL = nullptr; }
+        if (spMatU)    { cusparseDestroySpMat(spMatU);           spMatU   = nullptr; }
+        if (spMatL)    { cusparseDestroySpMat(spMatL);           spMatL   = nullptr; }
+        if (iluInfo)   { cusparseDestroyCsrilu02Info(iluInfo);   iluInfo  = nullptr; }
+        if (descrA)    { cusparseDestroyMatDescr(descrA);        descrA   = nullptr; }
+        if (csHandle)  { cusparseDestroy(csHandle);              csHandle = nullptr; }
+
         auto f = [](auto*& p) { if (p) { cudaFree(p); p = nullptr; } };
+        f(d_iluBuf); f(d_svBufL); f(d_svBufU);
+        f(d_svTmp); f(d_iluVal); f(d_csrColInd); f(d_csrRowPtr);
         f(d_diag); f(d_b); f(d_nb); f(d_coeff);
         f(d_x); f(d_r); f(d_rhat); f(d_p); f(d_v);
         f(d_y); f(d_z); f(d_s); f(d_t); f(d_Ax);
         f(d_dot); f(d_maxu);
+        nnz = 0;
+        h_csrRowPtr.clear(); h_csrColInd.clear(); h_csrFaceIdx.clear();
         n = 0; nFaces = 0; valid = false;
     }
 
@@ -296,22 +358,28 @@ struct GpuBiCGSTABBuffers {
         nFaces = faceCount;
         const size_t N  = n;
         const size_t NF = N * static_cast<size_t>(nFaces);
-        LS_CUDA_CHECK(cudaMalloc(&d_diag,  N  * sizeof(double)));
-        LS_CUDA_CHECK(cudaMalloc(&d_b,     N  * sizeof(double)));
-        LS_CUDA_CHECK(cudaMalloc(&d_nb,    NF * sizeof(uint32_t)));
-        LS_CUDA_CHECK(cudaMalloc(&d_coeff, NF * sizeof(double)));
-        LS_CUDA_CHECK(cudaMalloc(&d_x,     N  * sizeof(double)));
-        LS_CUDA_CHECK(cudaMalloc(&d_r,     N  * sizeof(double)));
-        LS_CUDA_CHECK(cudaMalloc(&d_rhat,  N  * sizeof(double)));
-        LS_CUDA_CHECK(cudaMalloc(&d_p,     N  * sizeof(double)));
-        LS_CUDA_CHECK(cudaMalloc(&d_v,     N  * sizeof(double)));
-        LS_CUDA_CHECK(cudaMalloc(&d_y,     N  * sizeof(double)));
-        LS_CUDA_CHECK(cudaMalloc(&d_z,     N  * sizeof(double)));
-        LS_CUDA_CHECK(cudaMalloc(&d_s,     N  * sizeof(double)));
-        LS_CUDA_CHECK(cudaMalloc(&d_t,     N  * sizeof(double)));
-        LS_CUDA_CHECK(cudaMalloc(&d_Ax,    N  * sizeof(double)));
-        LS_CUDA_CHECK(cudaMalloc(&d_dot,   sizeof(double)));
-        LS_CUDA_CHECK(cudaMalloc(&d_maxu,  sizeof(unsigned long long int)));
+        // Every cudaMalloc is checked; any failure marks the buffers invalid.
+        // This prevents the GPU path from being entered with null device pointers
+        // when the CUDA context cannot be initialized (e.g. driver mismatch).
+#define TRY_MALLOC(ptr, sz) \
+        if (cudaMalloc(&(ptr), (sz)) != cudaSuccess) { cudaGetLastError(); return; }
+        TRY_MALLOC(d_diag,  N  * sizeof(double))
+        TRY_MALLOC(d_b,     N  * sizeof(double))
+        TRY_MALLOC(d_nb,    NF * sizeof(uint32_t))
+        TRY_MALLOC(d_coeff, NF * sizeof(double))
+        TRY_MALLOC(d_x,     N  * sizeof(double))
+        TRY_MALLOC(d_r,     N  * sizeof(double))
+        TRY_MALLOC(d_rhat,  N  * sizeof(double))
+        TRY_MALLOC(d_p,     N  * sizeof(double))
+        TRY_MALLOC(d_v,     N  * sizeof(double))
+        TRY_MALLOC(d_y,     N  * sizeof(double))
+        TRY_MALLOC(d_z,     N  * sizeof(double))
+        TRY_MALLOC(d_s,     N  * sizeof(double))
+        TRY_MALLOC(d_t,     N  * sizeof(double))
+        TRY_MALLOC(d_Ax,    N  * sizeof(double))
+        TRY_MALLOC(d_dot,   sizeof(double))
+        TRY_MALLOC(d_maxu,  sizeof(unsigned long long int))
+#undef TRY_MALLOC
         valid = true;
     }
 
@@ -355,6 +423,350 @@ struct GpuBiCGSTABBuffers {
         else
             spmvKernel<6><<<blk, kThreadsPerBlock>>>(
                 v_in, d_diag, d_nb, d_coeff, Av_out, n);
+    }
+
+    // ── ILU(0) setup ───────────────────────────────────────────────────
+
+    // Build the CSR sparsity pattern from the face-major neighbor array h_nb,
+    // upload index arrays to the device, create CUSPARSE handles/descriptors,
+    // and run symbolic analysis for both the ILU(0) factorization and the
+    // two triangular solves.  Called once per buildNodes() cycle.
+    // h_nb is the nb32 array in face-major layout: h_nb[fi * nodeCount + i].
+    void setupCSR(const uint32_t* h_nb, uint32_t nodeCount, int faceCount) {
+        // Destroy any previous ILU state but keep the main CUDA allocations.
+        iluReady = false;
+        if (svDescrU)  { cusparseSpSV_destroyDescr(svDescrU);   svDescrU = nullptr; }
+        if (svDescrL)  { cusparseSpSV_destroyDescr(svDescrL);   svDescrL = nullptr; }
+        if (spMatU)    { cusparseDestroySpMat(spMatU);           spMatU   = nullptr; }
+        if (spMatL)    { cusparseDestroySpMat(spMatL);           spMatL   = nullptr; }
+        if (iluInfo)   { cusparseDestroyCsrilu02Info(iluInfo);   iluInfo  = nullptr; }
+        if (descrA)    { cusparseDestroyMatDescr(descrA);        descrA   = nullptr; }
+        if (csHandle)  { cusparseDestroy(csHandle);              csHandle = nullptr; }
+        if (d_iluBuf)  { cudaFree(d_iluBuf);  d_iluBuf  = nullptr; }
+        if (d_svBufL)  { cudaFree(d_svBufL);  d_svBufL  = nullptr; }
+        if (d_svBufU)  { cudaFree(d_svBufU);  d_svBufU  = nullptr; }
+        if (d_svTmp)   { cudaFree(d_svTmp);   d_svTmp   = nullptr; }
+        if (d_iluVal)  { cudaFree(d_iluVal);  d_iluVal  = nullptr; }
+        if (d_csrColInd) { cudaFree(d_csrColInd); d_csrColInd = nullptr; }
+        if (d_csrRowPtr) { cudaFree(d_csrRowPtr); d_csrRowPtr = nullptr; }
+        h_csrRowPtr.clear(); h_csrColInd.clear(); h_csrFaceIdx.clear();
+        nnz = 0;
+
+        // ── Build sorted CSR on CPU ────────────────────────────────────
+        // For each row i, collect: the diagonal entry (col = i, faceIdx = -1)
+        // and all valid off-diagonal entries (col = h_nb[fi*n+i], faceIdx = fi).
+        // Then sort by column index.
+        const uint32_t N = nodeCount;
+        h_csrRowPtr.resize(static_cast<std::size_t>(N) + 1, 0);
+
+        // First pass: count entries per row.
+        for (uint32_t i = 0; i < N; ++i) {
+            int cnt = 1; // diagonal always present
+            for (int fi = 0; fi < faceCount; ++fi) {
+                const uint32_t j = h_nb[static_cast<uint32_t>(fi) * N + i];
+                if (j != 0xFFFFFFFFu)
+                    ++cnt;
+            }
+            h_csrRowPtr[i + 1] = cnt;
+        }
+        // Prefix-sum into row pointers.
+        for (uint32_t i = 0; i < N; ++i)
+            h_csrRowPtr[i + 1] += h_csrRowPtr[i];
+
+        const int totalNnz = h_csrRowPtr[N];
+        h_csrColInd.resize(static_cast<std::size_t>(totalNnz));
+        h_csrFaceIdx.resize(static_cast<std::size_t>(totalNnz));
+
+        // Second pass: fill column indices and face indices.
+        // Use a temporary write-pointer per row.
+        std::vector<int> writePtr(h_csrRowPtr.begin(), h_csrRowPtr.begin() + N);
+        for (uint32_t i = 0; i < N; ++i) {
+            const int base = writePtr[i];
+            int k = base;
+            // Diagonal entry first (will sort to correct position).
+            h_csrColInd[k]  = static_cast<int>(i);
+            h_csrFaceIdx[k] = -1;
+            ++k;
+            // Off-diagonal entries.
+            for (int fi = 0; fi < faceCount; ++fi) {
+                const uint32_t j = h_nb[static_cast<uint32_t>(fi) * N + i];
+                if (j != 0xFFFFFFFFu) {
+                    h_csrColInd[k]  = static_cast<int>(j);
+                    h_csrFaceIdx[k] = fi;
+                    ++k;
+                }
+            }
+            const int rowEnd = h_csrRowPtr[i + 1];
+            const int rowLen = rowEnd - base;
+            // Sort the row's entries by column index (insertion sort — rows are small).
+            for (int a = 1; a < rowLen; ++a) {
+                const int colA  = h_csrColInd[base + a];
+                const int faceA = h_csrFaceIdx[base + a];
+                int b = a - 1;
+                while (b >= 0 && h_csrColInd[base + b] > colA) {
+                    h_csrColInd[base + b + 1]  = h_csrColInd[base + b];
+                    h_csrFaceIdx[base + b + 1] = h_csrFaceIdx[base + b];
+                    --b;
+                }
+                h_csrColInd[base + b + 1]  = colA;
+                h_csrFaceIdx[base + b + 1] = faceA;
+            }
+        }
+        nnz = totalNnz;
+
+        // ── Upload CSR index arrays to device ──────────────────────────
+        LS_CUDA_CHECK(cudaMalloc(&d_csrRowPtr,
+                                 (static_cast<std::size_t>(N) + 1) * sizeof(int)));
+        LS_CUDA_CHECK(cudaMalloc(&d_csrColInd,
+                                 static_cast<std::size_t>(nnz) * sizeof(int)));
+        LS_CUDA_CHECK(cudaMalloc(&d_iluVal,
+                                 static_cast<std::size_t>(nnz) * sizeof(double)));
+        LS_CUDA_CHECK(cudaMalloc(&d_svTmp,
+                                 static_cast<std::size_t>(N) * sizeof(double)));
+
+        LS_CUDA_CHECK(cudaMemcpy(d_csrRowPtr, h_csrRowPtr.data(),
+                                 (static_cast<std::size_t>(N) + 1) * sizeof(int),
+                                 cudaMemcpyHostToDevice));
+        LS_CUDA_CHECK(cudaMemcpy(d_csrColInd, h_csrColInd.data(),
+                                 static_cast<std::size_t>(nnz) * sizeof(int),
+                                 cudaMemcpyHostToDevice));
+
+        // Fill placeholder values so that analysis can proceed:
+        // diagonal = 1.0, off-diagonal = -1.0 / faceCount.
+        {
+            const double offVal = -1.0 / static_cast<double>(faceCount > 0 ? faceCount : 1);
+            std::vector<double> hPlaceholder(static_cast<std::size_t>(nnz));
+            for (uint32_t i = 0; i < N; ++i) {
+                for (int k = h_csrRowPtr[i]; k < h_csrRowPtr[i + 1]; ++k) {
+                    hPlaceholder[k] = (h_csrColInd[k] == static_cast<int>(i))
+                                      ? 1.0 : offVal;
+                }
+            }
+            LS_CUDA_CHECK(cudaMemcpy(d_iluVal, hPlaceholder.data(),
+                                     static_cast<std::size_t>(nnz) * sizeof(double),
+                                     cudaMemcpyHostToDevice));
+        }
+
+        // ── Create CUSPARSE handle and descriptors ────────────────────
+        if (cusparseCreate(&csHandle) != CUSPARSE_STATUS_SUCCESS) {
+            fprintf(stderr, "GpuBiCGSTABBuffers: cusparseCreate failed\n");
+            return;
+        }
+
+        if (cusparseCreateMatDescr(&descrA) != CUSPARSE_STATUS_SUCCESS) return;
+        cusparseSetMatType(descrA, CUSPARSE_MATRIX_TYPE_GENERAL);
+        cusparseSetMatIndexBase(descrA, CUSPARSE_INDEX_BASE_ZERO);
+
+        // ── Create ILU(0) info (legacy API, still present in CUDA 12) ────
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+        if (cusparseCreateCsrilu02Info(&iluInfo) != CUSPARSE_STATUS_SUCCESS) return;
+#pragma GCC diagnostic pop
+
+        // ── Create generic SpMat descriptors for L and U (CUDA 12 SpSV API) ─
+        // Both L and U share d_iluVal (in-place ILU factorization).
+        cusparseFillMode_t fillL = CUSPARSE_FILL_MODE_LOWER;
+        cusparseDiagType_t diagL = CUSPARSE_DIAG_TYPE_UNIT;
+        cusparseFillMode_t fillU = CUSPARSE_FILL_MODE_UPPER;
+        cusparseDiagType_t diagU = CUSPARSE_DIAG_TYPE_NON_UNIT;
+
+        if (cusparseCreateCsr(&spMatL, static_cast<int64_t>(N), static_cast<int64_t>(N),
+                              static_cast<int64_t>(nnz),
+                              d_csrRowPtr, d_csrColInd, d_iluVal,
+                              CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
+                              CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F) != CUSPARSE_STATUS_SUCCESS) return;
+        cusparseSpMatSetAttribute(spMatL, CUSPARSE_SPMAT_FILL_MODE,
+                                  static_cast<void*>(&fillL), sizeof(fillL));
+        cusparseSpMatSetAttribute(spMatL, CUSPARSE_SPMAT_DIAG_TYPE,
+                                  static_cast<void*>(&diagL), sizeof(diagL));
+
+        if (cusparseCreateCsr(&spMatU, static_cast<int64_t>(N), static_cast<int64_t>(N),
+                              static_cast<int64_t>(nnz),
+                              d_csrRowPtr, d_csrColInd, d_iluVal,
+                              CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
+                              CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F) != CUSPARSE_STATUS_SUCCESS) return;
+        cusparseSpMatSetAttribute(spMatU, CUSPARSE_SPMAT_FILL_MODE,
+                                  static_cast<void*>(&fillU), sizeof(fillU));
+        cusparseSpMatSetAttribute(spMatU, CUSPARSE_SPMAT_DIAG_TYPE,
+                                  static_cast<void*>(&diagU), sizeof(diagU));
+
+        if (cusparseSpSV_createDescr(&svDescrL) != CUSPARSE_STATUS_SUCCESS) return;
+        if (cusparseSpSV_createDescr(&svDescrU) != CUSPARSE_STATUS_SUCCESS) return;
+
+        const int iN = static_cast<int>(N);
+
+        // ── ILU(0) analysis ───────────────────────────────────────────
+        int iluBufSize = 0;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+        cusparseStatus_t st = cusparseDcsrilu02_bufferSize(
+            csHandle, iN, nnz, descrA,
+            d_iluVal, d_csrRowPtr, d_csrColInd,
+            iluInfo, &iluBufSize);
+#pragma GCC diagnostic pop
+        if (st != CUSPARSE_STATUS_SUCCESS) {
+            fprintf(stderr, "GpuBiCGSTABBuffers: cusparseDcsrilu02_bufferSize failed\n");
+            return;
+        }
+        LS_CUDA_CHECK(cudaMalloc(&d_iluBuf, static_cast<std::size_t>(iluBufSize)));
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+        st = cusparseDcsrilu02_analysis(
+            csHandle, iN, nnz, descrA,
+            d_iluVal, d_csrRowPtr, d_csrColInd,
+            iluInfo, CUSPARSE_SOLVE_POLICY_USE_LEVEL, d_iluBuf);
+#pragma GCC diagnostic pop
+        if (st != CUSPARSE_STATUS_SUCCESS) {
+            fprintf(stderr, "GpuBiCGSTABBuffers: cusparseDcsrilu02_analysis failed\n");
+            return;
+        }
+
+        // ── Triangular-solve analyses (L and U, done once per pattern) ─
+        // Temporary dense-vector descriptors pointing to d_svTmp (analysis only).
+        cusparseDnVecDescr_t vecTmp1 = nullptr, vecTmp2 = nullptr;
+        cusparseCreateDnVec(&vecTmp1, static_cast<int64_t>(N), d_svTmp, CUDA_R_64F);
+        cusparseCreateDnVec(&vecTmp2, static_cast<int64_t>(N), d_svTmp, CUDA_R_64F);
+
+        const double one = 1.0;
+        size_t svBufSizeL = 0, svBufSizeU = 0;
+
+        st = cusparseSpSV_bufferSize(
+            csHandle, CUSPARSE_OPERATION_NON_TRANSPOSE, &one,
+            spMatL, vecTmp1, vecTmp2, CUDA_R_64F,
+            CUSPARSE_SPSV_ALG_DEFAULT, svDescrL, &svBufSizeL);
+        if (st != CUSPARSE_STATUS_SUCCESS) {
+            fprintf(stderr, "GpuBiCGSTABBuffers: cusparseSpSV_bufferSize (L) failed\n");
+            cusparseDestroyDnVec(vecTmp1); cusparseDestroyDnVec(vecTmp2);
+            return;
+        }
+
+        st = cusparseSpSV_bufferSize(
+            csHandle, CUSPARSE_OPERATION_NON_TRANSPOSE, &one,
+            spMatU, vecTmp1, vecTmp2, CUDA_R_64F,
+            CUSPARSE_SPSV_ALG_DEFAULT, svDescrU, &svBufSizeU);
+        if (st != CUSPARSE_STATUS_SUCCESS) {
+            fprintf(stderr, "GpuBiCGSTABBuffers: cusparseSpSV_bufferSize (U) failed\n");
+            cusparseDestroyDnVec(vecTmp1); cusparseDestroyDnVec(vecTmp2);
+            return;
+        }
+
+        LS_CUDA_CHECK(cudaMalloc(&d_svBufL, svBufSizeL ? svBufSizeL : 1));
+        LS_CUDA_CHECK(cudaMalloc(&d_svBufU, svBufSizeU ? svBufSizeU : 1));
+
+        st = cusparseSpSV_analysis(
+            csHandle, CUSPARSE_OPERATION_NON_TRANSPOSE, &one,
+            spMatL, vecTmp1, vecTmp2, CUDA_R_64F,
+            CUSPARSE_SPSV_ALG_DEFAULT, svDescrL, d_svBufL);
+        if (st != CUSPARSE_STATUS_SUCCESS) {
+            fprintf(stderr, "GpuBiCGSTABBuffers: cusparseSpSV_analysis (L) failed\n");
+            cusparseDestroyDnVec(vecTmp1); cusparseDestroyDnVec(vecTmp2);
+            return;
+        }
+
+        st = cusparseSpSV_analysis(
+            csHandle, CUSPARSE_OPERATION_NON_TRANSPOSE, &one,
+            spMatU, vecTmp1, vecTmp2, CUDA_R_64F,
+            CUSPARSE_SPSV_ALG_DEFAULT, svDescrU, d_svBufU);
+        if (st != CUSPARSE_STATUS_SUCCESS) {
+            fprintf(stderr, "GpuBiCGSTABBuffers: cusparseSpSV_analysis (U) failed\n");
+            cusparseDestroyDnVec(vecTmp1); cusparseDestroyDnVec(vecTmp2);
+            return;
+        }
+
+        cusparseDestroyDnVec(vecTmp1);
+        cusparseDestroyDnVec(vecTmp2);
+        iluReady = true;
+    }
+
+    // ── ILU(0) fill + factorize ────────────────────────────────────────
+    // Assemble CSR values from diagH + coeffH, upload to d_iluVal, then
+    // run in-place ILU(0) factorization.  Called from gpuUploadSolverArrays
+    // every solve (coefficients change with pressure).
+    // diagH[i]          = A[i,i]  (diagonal)
+    // coeffH[fi*n+i]    = off-diagonal coupling for face fi at node i
+    //                     (the SpMV computes A*v as: diag[i]*v[i] - coeff*v[nb],
+    //                      so the matrix entry is A[i,j] = -coeff[fi*n+i])
+    void fillAndFactorizeILU(const double* diagH,
+                              const double* coeffH,
+                              int           nFacesIn) {
+        if (!iluReady) return;  // setupCSR not yet called or previously failed
+
+        const int N = static_cast<int>(n);
+        // Build CSR values on CPU.
+        std::vector<double> hVal(static_cast<std::size_t>(nnz));
+        for (int i = 0; i < N; ++i) {
+            for (int k = h_csrRowPtr[i]; k < h_csrRowPtr[i + 1]; ++k) {
+                const int fi = h_csrFaceIdx[k];
+                if (fi < 0) {
+                    // Diagonal entry.
+                    hVal[k] = diagH[i];
+                } else {
+                    // Off-diagonal: A[i,j] = -coeff[fi*n+i].
+                    hVal[k] = -coeffH[static_cast<std::size_t>(fi) * static_cast<std::size_t>(N) +
+                                      static_cast<std::size_t>(i)];
+                }
+            }
+        }
+        LS_CUDA_CHECK(cudaMemcpy(d_iluVal, hVal.data(),
+                                 static_cast<std::size_t>(nnz) * sizeof(double),
+                                 cudaMemcpyHostToDevice));
+
+        // In-place ILU(0) factorization: d_iluVal is overwritten with L\U factors.
+        cusparseStatus_t st;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+        st = cusparseDcsrilu02(
+            csHandle, N, nnz, descrA,
+            d_iluVal, d_csrRowPtr, d_csrColInd,
+            iluInfo, CUSPARSE_SOLVE_POLICY_USE_LEVEL, d_iluBuf);
+#pragma GCC diagnostic pop
+        if (st != CUSPARSE_STATUS_SUCCESS) {
+            fprintf(stderr, "GpuBiCGSTABBuffers: cusparseDcsrilu02 failed\n");
+            iluReady = false;
+            return;
+        }
+
+        // Check for structural zero-pivot.
+        int pivotPos = -1;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+        st = cusparseXcsrilu02_zeroPivot(csHandle, iluInfo, &pivotPos);
+#pragma GCC diagnostic pop
+        if (st == CUSPARSE_STATUS_ZERO_PIVOT) {
+            fprintf(stderr, "GpuBiCGSTABBuffers: ILU(0) zero pivot at row %d\n",
+                    pivotPos);
+            iluReady = false;
+        }
+    }
+
+    // ── Apply ILU(0) preconditioner: sol = (LU)^{-1} * rhs ───────────
+    // Two-step triangular solve: L * tmp = rhs, U * sol = tmp.
+    void applyILU(const double* rhs, double* sol) const {
+        const double one = 1.0;
+        const int64_t iN = static_cast<int64_t>(n);
+
+        // Temporary dense-vector descriptors for this solve call.
+        cusparseDnVecDescr_t vecRhs = nullptr, vecTmp = nullptr, vecSol = nullptr;
+        cusparseCreateDnVec(&vecRhs, iN, const_cast<double*>(rhs), CUDA_R_64F);
+        cusparseCreateDnVec(&vecTmp, iN, d_svTmp, CUDA_R_64F);
+        cusparseCreateDnVec(&vecSol, iN, sol,      CUDA_R_64F);
+
+        // Lower triangular solve: L * d_svTmp = rhs
+        LS_CUSPARSE_CHECK(cusparseSpSV_solve(
+            csHandle, CUSPARSE_OPERATION_NON_TRANSPOSE, &one,
+            spMatL, vecRhs, vecTmp, CUDA_R_64F,
+            CUSPARSE_SPSV_ALG_DEFAULT, svDescrL));
+
+        // Upper triangular solve: U * sol = d_svTmp
+        LS_CUSPARSE_CHECK(cusparseSpSV_solve(
+            csHandle, CUSPARSE_OPERATION_NON_TRANSPOSE, &one,
+            spMatU, vecTmp, vecSol, CUDA_R_64F,
+            CUSPARSE_SPSV_ALG_DEFAULT, svDescrU));
+
+        cusparseDestroyDnVec(vecRhs);
+        cusparseDestroyDnVec(vecTmp);
+        cusparseDestroyDnVec(vecSol);
     }
 };
 
@@ -423,6 +835,10 @@ inline bool solveBiCGSTAB(
     outIterations = 0;
     outResidual   = 0.0;
 
+    // Restart counter: limits breakdown-restarts to avoid infinite loops.
+    int restartCount = 0;
+    static constexpr int kMaxRestarts = 3;
+
     outResidual = static_cast<double>(gpu.maxAbs(gpu.d_r));
     if (!std::isfinite(outResidual))
         return false;
@@ -435,8 +851,21 @@ inline bool solveBiCGSTAB(
         // rho_new = <r_hat, r>
         const double rho_new =
             static_cast<double>(gpu.dotProduct(gpu.d_rhat, gpu.d_r));
-        if (!std::isfinite(rho_new) || std::abs(rho_new) < 1e-100)
+        if (!std::isfinite(rho_new))
             return false;
+        if (std::abs(rho_new) < 1e-100) {
+            // ρ-breakdown: restart from current r.
+            if (restartCount >= kMaxRestarts)
+                return false;
+            ++restartCount;
+            // Reset shadow residual to current r and reinitialise scalars.
+            LS_CUDA_CHECK(cudaMemcpy(gpu.d_rhat, gpu.d_r, n * sizeof(double),
+                                     cudaMemcpyDeviceToDevice));
+            LS_CUDA_CHECK(cudaMemset(gpu.d_p, 0, n * sizeof(double)));
+            LS_CUDA_CHECK(cudaMemset(gpu.d_v, 0, n * sizeof(double)));
+            rho = 1.0; alpha = 1.0; omega = 1.0;
+            continue;
+        }
         if (!std::isfinite(rho) || !std::isfinite(alpha) ||
             !std::isfinite(omega) || std::abs(omega) < 1e-100)
             return false;
@@ -453,9 +882,12 @@ inline bool solveBiCGSTAB(
         updatePKernel<<<blk, kThreadsPerBlock>>>(
             gpu.d_r, beta, beta_omega, gpu.d_v, gpu.d_p, n);
 
-        // y = M^{-1} p  (Jacobi preconditioner)
-        jacobiKernel<<<blk, kThreadsPerBlock>>>(
-            gpu.d_p, gpu.d_diag, gpu.d_y, diagEps, n);
+        // y = M^{-1} p
+        if (gpu.iluReady)
+            gpu.applyILU(gpu.d_p, gpu.d_y);
+        else
+            jacobiKernel<<<blk, kThreadsPerBlock>>>(
+                gpu.d_p, gpu.d_diag, gpu.d_y, diagEps, n);
 
         // v = A y
         gpu.spmv(gpu.d_y, gpu.d_v);
@@ -463,8 +895,20 @@ inline bool solveBiCGSTAB(
         // alpha = rho_new / <r_hat, v>
         const double r_hat_v =
             static_cast<double>(gpu.dotProduct(gpu.d_rhat, gpu.d_v));
-        if (!std::isfinite(r_hat_v) || std::abs(r_hat_v) < 1e-100)
+        if (!std::isfinite(r_hat_v))
             return false;
+        if (std::abs(r_hat_v) < 1e-100) {
+            // Lanczos breakdown: restart from current r.
+            if (restartCount >= kMaxRestarts)
+                return false;
+            ++restartCount;
+            LS_CUDA_CHECK(cudaMemcpy(gpu.d_rhat, gpu.d_r, n * sizeof(double),
+                                     cudaMemcpyDeviceToDevice));
+            LS_CUDA_CHECK(cudaMemset(gpu.d_p, 0, n * sizeof(double)));
+            LS_CUDA_CHECK(cudaMemset(gpu.d_v, 0, n * sizeof(double)));
+            rho = 1.0; alpha = 1.0; omega = 1.0;
+            continue;
+        }
         alpha = rho_new / r_hat_v;
         if (!std::isfinite(alpha))
             return false;
@@ -487,9 +931,12 @@ inline bool solveBiCGSTAB(
             break;
         }
 
-        // z = M^{-1} s  (Jacobi)
-        jacobiKernel<<<blk, kThreadsPerBlock>>>(
-            gpu.d_s, gpu.d_diag, gpu.d_z, diagEps, n);
+        // z = M^{-1} s
+        if (gpu.iluReady)
+            gpu.applyILU(gpu.d_s, gpu.d_z);
+        else
+            jacobiKernel<<<blk, kThreadsPerBlock>>>(
+                gpu.d_s, gpu.d_diag, gpu.d_z, diagEps, n);
 
         // t = A z
         gpu.spmv(gpu.d_z, gpu.d_t);

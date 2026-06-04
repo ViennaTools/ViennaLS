@@ -19,6 +19,15 @@
 
 namespace viennals {
 
+/// Selects the BiCGSTAB back-end for the diffusion solve.
+/// On CPU-only builds (VIENNALS_GPU_BICGSTAB not defined) all modes silently
+/// fall through to the CPU path.
+enum class GpuMode {
+  Auto, ///< GPU when node count >= kGpuThreshold (default)
+  Gpu,  ///< Always attempt GPU; fall back to CPU only if allocation fails
+  Cpu   ///< Always use CPU
+};
+
 /// Parameters for the steady oxidant diffusion model used by
 /// OxidationDiffusion.
 template <class T> struct OxidationParameters {
@@ -142,13 +151,14 @@ private:
   // Entry == noNode for boundary / out-of-bounds faces.
   std::vector<std::size_t> neighborIds_;
 
+  GpuMode gpuMode_ = GpuMode::Auto;
+
 #ifdef VIENNALS_GPU_BICGSTAB
   // Opaque pointer to device-side buffers (GpuBiCGSTABBuffers is defined only
   // in the CUDA translation unit; we hold a raw pointer here so g++ never sees
   // the CUDA internals).
   gpu::GpuBiCGSTABBuffers* gpuBufs_ = nullptr;
-  // Minimum node count required to engage the GPU solver.
-  // Below this threshold the PCIe round-trip cost outweighs the parallel gain.
+  // Minimum node count required to engage the GPU solver in Auto mode.
   static constexpr std::size_t kGpuThreshold = 20000;
 #endif
 
@@ -389,6 +399,10 @@ public:
     concentrationCache_ = std::move(cache);
   }
 
+  /// Set the GPU solver selection mode.  See GpuMode for the three options.
+  /// On CPU-only builds (VIENNALS_GPU_BICGSTAB not defined) this is a no-op.
+  void setGpuMode(GpuMode mode) { gpuMode_ = mode; }
+
   /// Mark the current solution as valid without re-solving. Call this before
   /// any parallel advection (lsAdvect) that uses this field as a velocity
   /// source to prevent concurrent apply() calls inside getScalarVelocity().
@@ -591,7 +605,9 @@ private:
     gpu::freeGpuBuffers(gpuBufs_);
     gpuBufs_ = nullptr;
 
-    if (n >= kGpuThreshold) {
+    const bool tryGpu = (gpuMode_ == GpuMode::Gpu) ||
+                        (gpuMode_ == GpuMode::Auto && n >= kGpuThreshold);
+    if (tryGpu) {
       gpuBufs_ = gpu::allocGpuBuffers(static_cast<uint32_t>(n), 2 * D);
 
       if (gpuBufs_) {
@@ -603,6 +619,8 @@ private:
                         ? gpu::kNoNode
                         : static_cast<uint32_t>(neighborIds_[k]);
         gpu::gpuUploadNeighborIds(gpuBufs_, nb32.data(), nf);
+        gpu::gpuSetupCSR(gpuBufs_, nb32.data(),
+                         static_cast<uint32_t>(n), 2 * D);
       }
     }
 #endif
@@ -946,9 +964,10 @@ private:
     if (Logger::hasTiming()) {
 #ifdef VIENNALS_GPU_BICGSTAB
       const std::string path =
-          usedGpuFallback
-              ? " [CPU fallback]"
-              : " [CPU n<" + std::to_string(kGpuThreshold) + "]";
+          usedGpuFallback    ? " [CPU fallback]"
+          : gpuMode_ == GpuMode::Cpu  ? " [CPU]"
+          : gpuMode_ == GpuMode::Gpu  ? " [CPU alloc-failed]"
+          : " [CPU n<" + std::to_string(kGpuThreshold) + "]";
 #else
       const std::string path = " [CPU]";
 #endif

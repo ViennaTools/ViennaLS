@@ -15,6 +15,17 @@ namespace viennals {
 namespace gpu {
 
 GpuBiCGSTABBuffers* allocGpuBuffers(uint32_t n, int nFaces) {
+    // Bail out if no device exists or if a CUDA context cannot actually be
+    // created (driver mismatch, permissions, etc.).  cudaGetDeviceCount only
+    // enumerates devices; cudaFree(nullptr) forces real context initialization.
+    int deviceCount = 0;
+    if (cudaGetDeviceCount(&deviceCount) != cudaSuccess || deviceCount == 0)
+        return nullptr;
+    if (cudaFree(nullptr) != cudaSuccess) {
+        cudaGetLastError();  // consume so later CUDA calls start clean
+        return nullptr;
+    }
+
     auto* b = new (std::nothrow) GpuBiCGSTABBuffers();
     if (!b) return nullptr;
     b->allocate(n, nFaces);
@@ -52,6 +63,16 @@ void gpuUploadSolverArrays(GpuBiCGSTABBuffers* gpu,
                              cudaMemcpyHostToDevice));
     LS_CUDA_CHECK(cudaMemcpy(gpu->d_coeff, coeff, coeffLen * sizeof(double),
                              cudaMemcpyHostToDevice));
+    // Refresh ILU(0) values and re-factorize whenever the coefficients change.
+    if (gpu->iluReady)
+        gpu->fillAndFactorizeILU(diag, coeff, gpu->nFaces);
+}
+
+void gpuSetupCSR(GpuBiCGSTABBuffers* gpu,
+                 const uint32_t* h_nb,
+                 uint32_t n,
+                 int nFaces) {
+    gpu->setupCSR(h_nb, n, nFaces);
 }
 
 bool gpuSolveBiCGSTAB(GpuBiCGSTABBuffers* gpu,

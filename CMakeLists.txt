@@ -117,7 +117,7 @@ if(VIENNALS_USE_GPU)
     CUDA_SEPARABLE_COMPILATION OFF
     POSITION_INDEPENDENT_CODE  ON)
 
-  target_link_libraries(ViennaLS_GPU PUBLIC CUDA::cudart)
+  target_link_libraries(ViennaLS_GPU PUBLIC CUDA::cudart CUDA::cusparse)
 
   # Expose the define and the GPU library to downstream targets.
   # BUILD_INTERFACE limits the ViennaLS_GPU dependency to the build tree so it
