@@ -3,6 +3,9 @@
 #include <lsOxidationSolverBase.hpp>
 #include <lsOxidationDeformation.hpp>
 
+#include <algorithm>
+#include <array>
+#include <cmath>
 #include <omp.h>
 #include <stdexcept>
 #include <unordered_map>
@@ -24,7 +27,13 @@ template <class T> struct OxidationMaskParameters {
   T creepActivationEnergy = 0.;
   T poissonRatio = 0.27;
   bool unilateralContact = true;
+  // Outer Aitken relaxation factor applied to the mask/oxide coupling residual.
+  // Independent of the multigrid smoother below.
   T relaxation = 1.;
+  // SOR omega for the multigrid V-cycle smoother (both forward and backward
+  // sweeps).  1.0 is standard Gauss-Seidel; values in (1, 1.4] add over-
+  // relaxation.  Do not share this with the Aitken relaxation above.
+  T multigridSmootherOmega = 1.0;
   T tolerance = 1e-8;
   T minBoundaryDistance = 1e-6;
   unsigned maxIterations = 10000;
@@ -78,6 +87,22 @@ private:
     bool fixed = false;
   };
 
+  struct SparseMatrix {
+    std::size_t nodeCount = 0;
+    std::vector<std::size_t> rowPtr;
+    std::vector<std::size_t> colIndex;
+    std::vector<T> values;
+    std::vector<T> invDiagonal;
+  };
+
+  struct MultigridLevel {
+    std::vector<IndexType> indices;
+    // For level l > 0, children maps each coarse node to level l-1 nodes.
+    std::vector<std::vector<std::size_t>> children;
+    std::vector<std::size_t> fineToCoarse;
+    SparseMatrix matrix;
+  };
+
   SmartPointer<OxidationDeformation<T, D>> deformationField =
       nullptr;
   SmartPointer<Domain<T, D>> maskInterface = nullptr;
@@ -105,6 +130,15 @@ private:
   std::vector<Vec3D<T>> contactFaceTraction_; // Oxide traction on mask face
   std::vector<T> contactFaceDistance_;        // Node-to-interface distance
   std::unordered_map<std::size_t, T> ambientPhiCache_;
+
+  // Cached multigrid hierarchy.  The stiffness matrix depends on the node
+  // geometry and the contact face classification (active/inactive) but NOT on
+  // the traction magnitudes, which only affect the load vector b.  When the
+  // contact pattern is unchanged from the previous apply() call, the hierarchy
+  // can be reused and the O(n) matrix build and Galerkin coarsening skipped.
+  std::vector<MultigridLevel> cachedMultigridLevels_;
+  std::vector<uint8_t>        cachedContactFaceActive_; // snapshot at last build
+  std::size_t                 cachedNodeCount_ = 0;
 
 public:
   OxidationMaskBending() = default;
@@ -753,12 +787,617 @@ private:
     }
   }
 
+  static constexpr std::size_t mgNoNode =
+      std::numeric_limits<std::size_t>::max();
+
+  static Vec3D<T> zeroVec() { return Vec3D<T>{T(0), T(0), T(0)}; }
+
+  static IndexType coarsenIndex(const IndexType &index) {
+    IndexType coarse{};
+    for (unsigned d = 0; d < D; ++d) {
+      const auto value = index[d];
+      coarse[d] = (value >= 0) ? value / 2 : -((-value + 1) / 2);
+    }
+    return coarse;
+  }
+
+  std::vector<MultigridLevel> buildMultigridHierarchy() const {
+    std::vector<MultigridLevel> levels;
+    levels.emplace_back();
+    auto &fine = levels.back();
+    fine.indices.reserve(nodes.size());
+    for (const auto &node : nodes)
+      fine.indices.push_back(node.index);
+
+    constexpr unsigned maxLevels = 12;
+    constexpr std::size_t minCoarsenNodes = 48;
+    while (levels.size() < maxLevels &&
+           levels.back().indices.size() > minCoarsenNodes) {
+      const auto &previous = levels.back();
+      MultigridLevel coarse;
+      coarse.indices.reserve(previous.indices.size() / 2 + 1);
+      coarse.children.reserve(previous.indices.size() / 2 + 1);
+      coarse.fineToCoarse.assign(previous.indices.size(), mgNoNode);
+
+      std::unordered_map<std::size_t, std::size_t> coarseLookup;
+      coarseLookup.reserve(previous.indices.size());
+      for (std::size_t fineId = 0; fineId < previous.indices.size(); ++fineId) {
+        const IndexType coarseIndex = coarsenIndex(previous.indices[fineId]);
+        const std::size_t key = detail::gridIndexHash<D>(coarseIndex);
+        auto found = coarseLookup.find(key);
+        if (found == coarseLookup.end()) {
+          const std::size_t coarseId = coarse.indices.size();
+          coarseLookup.emplace(key, coarseId);
+          coarse.indices.push_back(coarseIndex);
+          coarse.children.emplace_back();
+          found = coarseLookup.find(key);
+        }
+
+        const std::size_t coarseId = found->second;
+        coarse.children[coarseId].push_back(fineId);
+        coarse.fineToCoarse[fineId] = coarseId;
+      }
+
+      if (coarse.indices.empty() ||
+          coarse.indices.size() >= previous.indices.size())
+        break;
+
+      // Stop if any grid dimension collapses to a single cell on the coarse
+      // level.  For thin masks this happens quickly in the thickness direction,
+      // and a 1-cell-thick level loses all stress-gradient information across
+      // that dimension, making the smoother degenerate.
+      {
+        IndexType lo = coarse.indices.front(), hi = coarse.indices.front();
+        for (const auto &idx : coarse.indices)
+          for (unsigned d = 0; d < D; ++d) {
+            lo[d] = std::min(lo[d], idx[d]);
+            hi[d] = std::max(hi[d], idx[d]);
+          }
+        bool degenerate = false;
+        for (unsigned d = 0; d < D; ++d)
+          if (hi[d] == lo[d])
+            degenerate = true;
+        if (degenerate)
+          break;
+      }
+
+      levels.push_back(std::move(coarse));
+    }
+    return levels;
+  }
+
+  static T vectorDot(const std::vector<Vec3D<T>> &a,
+                     const std::vector<Vec3D<T>> &b) {
+    T sum = T(0);
+    for (std::size_t i = 0; i < a.size(); ++i)
+      for (unsigned c = 0; c < D; ++c)
+        sum += a[i][c] * b[i][c];
+    return sum;
+  }
+
+  static T vectorNorm(const std::vector<Vec3D<T>> &v) {
+    return std::sqrt(std::max(vectorDot(v, v), T(0)));
+  }
+
+  static void vectorScale(std::vector<Vec3D<T>> &v, T scale) {
+    for (auto &entry : v)
+      for (unsigned c = 0; c < D; ++c)
+        entry[c] *= scale;
+  }
+
+  static void vectorAxpy(std::vector<Vec3D<T>> &y, T alpha,
+                         const std::vector<Vec3D<T>> &x) {
+    for (std::size_t i = 0; i < y.size(); ++i)
+      for (unsigned c = 0; c < D; ++c)
+        y[i][c] += alpha * x[i][c];
+  }
+
+  static void vectorSubtractInPlace(std::vector<Vec3D<T>> &y, T alpha,
+                                    const std::vector<Vec3D<T>> &x) {
+    for (std::size_t i = 0; i < y.size(); ++i)
+      for (unsigned c = 0; c < D; ++c)
+        y[i][c] -= alpha * x[i][c];
+  }
+
+  static T flatValue(const std::vector<Vec3D<T>> &v, std::size_t row) {
+    return v[row / D][row % D];
+  }
+
+  static void flatSet(std::vector<Vec3D<T>> &v, std::size_t row, T value) {
+    v[row / D][row % D] = value;
+  }
+
+  void collectLocalCandidatesRecursive(unsigned dim, const IndexType &center,
+                                       IndexType &candidate,
+                                       std::vector<std::size_t> &out) const {
+    if (dim == D) {
+      if (!inBounds(candidate))
+        return;
+      const std::size_t nodeId = lookupNode(candidate);
+      if (nodeId != noNode)
+        out.push_back(nodeId);
+      return;
+    }
+
+    for (int offset = -2; offset <= 2; ++offset) {
+      candidate[dim] = center[dim] + offset;
+      collectLocalCandidatesRecursive(dim + 1, center, candidate, out);
+    }
+  }
+
+  void collectLocalCandidates(std::size_t rowNode,
+                              std::vector<std::size_t> &out) const {
+    out.clear();
+    IndexType candidate = nodes[rowNode].index;
+    collectLocalCandidatesRecursive(0, nodes[rowNode].index, candidate, out);
+    out.push_back(rowNode);
+    std::sort(out.begin(), out.end());
+    out.erase(std::unique(out.begin(), out.end()), out.end());
+  }
+
+  SparseMatrix compressSparseRows(
+      std::vector<std::unordered_map<std::size_t, T>> &rows,
+      std::size_t nodeCount) const {
+    SparseMatrix matrix;
+    matrix.nodeCount = nodeCount;
+    matrix.rowPtr.assign(rows.size() + 1, 0);
+    matrix.invDiagonal.assign(rows.size(), T(1));
+
+    for (std::size_t row = 0; row < rows.size(); ++row) {
+      std::vector<std::pair<std::size_t, T>> entries(rows[row].begin(),
+                                                     rows[row].end());
+      std::sort(entries.begin(), entries.end(),
+                [](const auto &a, const auto &b) { return a.first < b.first; });
+
+      matrix.rowPtr[row] = matrix.values.size();
+      T diagonal = T(0);
+      for (const auto &[col, value] : entries) {
+        if (std::abs(value) <= std::numeric_limits<T>::epsilon() * T(100))
+          continue;
+        if (!std::isfinite(value))
+          throwNonFinite("traction sparse matrix assembly");
+        matrix.colIndex.push_back(col);
+        matrix.values.push_back(value);
+        if (col == row)
+          diagonal += value;
+      }
+
+      if (std::abs(diagonal) > std::numeric_limits<T>::epsilon())
+        matrix.invDiagonal[row] = T(1) / diagonal;
+      else
+        matrix.invDiagonal[row] = T(1);
+    }
+    matrix.rowPtr[rows.size()] = matrix.values.size();
+    return matrix;
+  }
+
+  SparseMatrix buildFineElasticMatrix(const std::vector<Vec3D<T>> &b,
+                                      T gradDivWeight) const {
+    const std::size_t n = nodes.size();
+    std::vector<std::unordered_map<std::size_t, T>> rows(n * D);
+    std::vector<Vec3D<T>> basis(n, zeroVec());
+    std::vector<std::size_t> candidates;
+
+    for (std::size_t rowNode = 0; rowNode < n; ++rowNode) {
+      if (nodes[rowNode].fixed) {
+        for (unsigned rowComponent = 0; rowComponent < D; ++rowComponent) {
+          const std::size_t row = rowNode * D + rowComponent;
+          rows[row][row] = T(1);
+        }
+        continue;
+      }
+
+      // Build A column-by-column via probing.  The operator is (A·v)[i][c] =
+      // v[i][c] - F(v)[i][c], where F is affine: F(v) = F_linear(v) + F(0).
+      // b[rowNode] = F(0)[rowNode] (the traction load vector).  The matrix
+      // entry is the linear part only:
+      //   A[row, col] = δ(row,col) - (F(e_col)[rowComp] - F(0)[rowComp])
+      //               = δ(row,col) - (Fbasis[rowComp] - b[rowNode][rowComp])
+      // b is constant with respect to col so it cancels between probes; it
+      // is included here to isolate the linear part of F from its affine offset.
+      collectLocalCandidates(rowNode, candidates);
+      for (std::size_t colNode : candidates) {
+        for (unsigned colComponent = 0; colComponent < D; ++colComponent) {
+          basis[colNode][colComponent] = T(1);
+          const Vec3D<T> Fbasis =
+              computeElasticStencilAt(rowNode, basis, gradDivWeight);
+          basis[colNode][colComponent] = T(0);
+
+          for (unsigned rowComponent = 0; rowComponent < D; ++rowComponent) {
+            const std::size_t row = rowNode * D + rowComponent;
+            const std::size_t col = colNode * D + colComponent;
+            const T identity =
+                (rowNode == colNode && rowComponent == colComponent) ? T(1)
+                                                                     : T(0);
+            const T value = identity - (Fbasis[rowComponent] -
+                                        b[rowNode][rowComponent]);
+            rows[row][col] += value;
+          }
+        }
+      }
+    }
+
+    return compressSparseRows(rows, n);
+  }
+
+  SparseMatrix buildGalerkinMatrix(const SparseMatrix &fine,
+                                   const MultigridLevel &coarseLevel) const {
+    const std::size_t coarseNodes = coarseLevel.indices.size();
+    std::vector<std::unordered_map<std::size_t, T>> rows(coarseNodes * D);
+
+    for (std::size_t fineRow = 0; fineRow < fine.nodeCount * D; ++fineRow) {
+      const std::size_t fineRowNode = fineRow / D;
+      if (fineRowNode >= coarseLevel.fineToCoarse.size())
+        continue;
+      const std::size_t coarseRowNode = coarseLevel.fineToCoarse[fineRowNode];
+      if (coarseRowNode == mgNoNode)
+        continue;
+
+      const T restrictionWeight =
+          T(1) / static_cast<T>(
+                     std::max<std::size_t>(coarseLevel.children[coarseRowNode].size(),
+                                           1));
+      const std::size_t coarseRow = coarseRowNode * D + fineRow % D;
+
+      for (std::size_t nz = fine.rowPtr[fineRow]; nz < fine.rowPtr[fineRow + 1];
+           ++nz) {
+        const std::size_t fineCol = fine.colIndex[nz];
+        const std::size_t fineColNode = fineCol / D;
+        if (fineColNode >= coarseLevel.fineToCoarse.size())
+          continue;
+        const std::size_t coarseColNode = coarseLevel.fineToCoarse[fineColNode];
+        if (coarseColNode == mgNoNode)
+          continue;
+        const std::size_t coarseCol = coarseColNode * D + fineCol % D;
+        rows[coarseRow][coarseCol] += restrictionWeight * fine.values[nz];
+      }
+    }
+
+    return compressSparseRows(rows, coarseNodes);
+  }
+
+  void sparseMatvec(const SparseMatrix &matrix,
+                    const std::vector<Vec3D<T>> &x,
+                    std::vector<Vec3D<T>> &Ax) const {
+    Ax.assign(matrix.nodeCount, zeroVec());
+#pragma omp parallel for schedule(static)
+    for (std::size_t row = 0; row < matrix.nodeCount * D; ++row) {
+      T sum = T(0);
+      for (std::size_t nz = matrix.rowPtr[row]; nz < matrix.rowPtr[row + 1];
+           ++nz)
+        sum += matrix.values[nz] * flatValue(x, matrix.colIndex[nz]);
+      flatSet(Ax, row, sum);
+    }
+  }
+
+  void multigridProlong(const std::vector<MultigridLevel> &levels,
+                        std::size_t coarseLevelId,
+                        const std::vector<Vec3D<T>> &coarse,
+                        std::vector<Vec3D<T>> &fine) const {
+    const auto &fineLevel = levels[coarseLevelId - 1];
+    const auto &coarseLevel = levels[coarseLevelId];
+    fine.assign(fineLevel.indices.size(), zeroVec());
+    for (std::size_t coarseId = 0; coarseId < coarseLevel.children.size();
+         ++coarseId)
+      for (std::size_t fineId : coarseLevel.children[coarseId])
+        for (unsigned c = 0; c < D; ++c)
+          fine[fineId][c] = coarse[coarseId][c];
+  }
+
+  void multigridSmooth(const SparseMatrix &matrix,
+                       const std::vector<Vec3D<T>> &rhs,
+                       std::vector<Vec3D<T>> &x,
+                       unsigned sweeps,
+                       T omega) const {
+    const std::size_t rows = matrix.nodeCount * D;
+    auto relaxRow = [&](std::size_t row) {
+      T offDiagonal = T(0);
+      for (std::size_t nz = matrix.rowPtr[row]; nz < matrix.rowPtr[row + 1];
+           ++nz) {
+        const std::size_t col = matrix.colIndex[nz];
+        if (col == row)
+          continue;
+        offDiagonal += matrix.values[nz] * flatValue(x, col);
+      }
+      const T updated =
+          (flatValue(rhs, row) - offDiagonal) * matrix.invDiagonal[row];
+      flatSet(x, row, flatValue(x, row) + omega * (updated - flatValue(x, row)));
+    };
+
+    for (unsigned sweep = 0; sweep < sweeps; ++sweep) {
+      for (std::size_t row = 0; row < rows; ++row)
+        relaxRow(row);
+      for (std::size_t row = rows; row-- > 0;)
+        relaxRow(row);
+    }
+  }
+
+  void multigridResidual(const SparseMatrix &matrix,
+                         const std::vector<Vec3D<T>> &rhs,
+                         const std::vector<Vec3D<T>> &x,
+                         std::vector<Vec3D<T>> &residualOut) const {
+    sparseMatvec(matrix, x, residualOut);
+    for (std::size_t i = 0; i < rhs.size(); ++i)
+      for (unsigned c = 0; c < D; ++c)
+        residualOut[i][c] = rhs[i][c] - residualOut[i][c];
+  }
+
+  void multigridRestrict(const std::vector<Vec3D<T>> &fineResidual,
+                         const MultigridLevel &coarseLevel,
+                         std::vector<Vec3D<T>> &coarseRhs) const {
+    coarseRhs.assign(coarseLevel.indices.size(), zeroVec());
+    for (std::size_t coarseId = 0; coarseId < coarseLevel.children.size();
+         ++coarseId) {
+      const auto &children = coarseLevel.children[coarseId];
+      if (children.empty())
+        continue;
+      for (std::size_t fineId : children)
+        for (unsigned c = 0; c < D; ++c)
+          coarseRhs[coarseId][c] += fineResidual[fineId][c];
+      const T scale = T(1) / static_cast<T>(children.size());
+      for (unsigned c = 0; c < D; ++c)
+        coarseRhs[coarseId][c] *= scale;
+    }
+  }
+
+  void multigridProlongAdd(const std::vector<Vec3D<T>> &coarseCorrection,
+                            const MultigridLevel &coarseLevel,
+                            std::vector<Vec3D<T>> &fineCorrection) const {
+    for (std::size_t coarseId = 0; coarseId < coarseLevel.children.size();
+         ++coarseId) {
+      for (std::size_t fineId : coarseLevel.children[coarseId])
+        for (unsigned c = 0; c < D; ++c)
+          fineCorrection[fineId][c] += coarseCorrection[coarseId][c];
+    }
+  }
+
+  void multigridVCycle(const std::vector<MultigridLevel> &levels,
+                       std::size_t levelId,
+                       const std::vector<Vec3D<T>> &rhs,
+                       std::vector<Vec3D<T>> &x,
+                       T smootherOmega) const {
+    const auto &level = levels[levelId];
+    if (levelId + 1 >= levels.size() || level.indices.size() <= 32) {
+      multigridSmooth(level.matrix, rhs, x, 40, smootherOmega);
+      return;
+    }
+
+    multigridSmooth(level.matrix, rhs, x, 2, smootherOmega);
+
+    std::vector<Vec3D<T>> fineResidual;
+    multigridResidual(level.matrix, rhs, x, fineResidual);
+
+    std::vector<Vec3D<T>> coarseRhs;
+    const auto &coarseLevel = levels[levelId + 1];
+    multigridRestrict(fineResidual, coarseLevel, coarseRhs);
+
+    std::vector<Vec3D<T>> coarseCorrection(coarseRhs.size(), zeroVec());
+    multigridVCycle(levels, levelId + 1, coarseRhs, coarseCorrection,
+                    smootherOmega);
+    multigridProlongAdd(coarseCorrection, coarseLevel, x);
+
+    multigridSmooth(level.matrix, rhs, x, 2, smootherOmega);
+  }
+
+  std::vector<Vec3D<T>>
+  multigridPrecondition(const std::vector<MultigridLevel> &levels,
+                        const std::vector<Vec3D<T>> &rhs,
+                        T smootherOmega) const {
+    std::vector<Vec3D<T>> correction(rhs.size(), zeroVec());
+    if (levels.empty())
+      return correction;
+    multigridVCycle(levels, 0, rhs, correction, smootherOmega);
+    return correction;
+  }
+
+  void exactElasticResidual(const SparseMatrix &matrix,
+                            const std::vector<Vec3D<T>> &x,
+                            const std::vector<Vec3D<T>> &b,
+                            std::vector<Vec3D<T>> &r) const {
+    std::vector<Vec3D<T>> Ax(x.size(), zeroVec());
+    sparseMatvec(matrix, x, Ax);
+    r.assign(x.size(), zeroVec());
+    for (std::size_t i = 0; i < x.size(); ++i)
+      for (unsigned c = 0; c < D; ++c)
+        r[i][c] = b[i][c] - Ax[i][c];
+  }
+
+  static std::vector<T>
+  solveUpperTriangular(const std::vector<std::vector<T>> &h,
+                       const std::vector<T> &g,
+                       unsigned usedColumns) {
+    std::vector<T> y(usedColumns, T(0));
+    for (int row = static_cast<int>(usedColumns) - 1; row >= 0; --row) {
+      T sum = g[static_cast<std::size_t>(row)];
+      for (unsigned col = static_cast<unsigned>(row) + 1;
+           col < usedColumns; ++col)
+        sum -= h[static_cast<std::size_t>(row)][col] * y[col];
+      const T diag = h[static_cast<std::size_t>(row)]
+                      [static_cast<std::size_t>(row)];
+      if (std::abs(diag) > std::numeric_limits<T>::epsilon())
+        y[static_cast<std::size_t>(row)] = sum / diag;
+    }
+    return y;
+  }
+
   void solveElasticVelocity() {
     if (parameters.contactMode == 1) {
-      solveElasticVelocityRelaxation();
+      solveElasticVelocityMultigridGMRES();
       return;
     }
     solveElasticVelocityBiCGSTAB();
+  }
+
+  void solveElasticVelocityMultigridGMRES() {
+    iterations = 0;
+    residual = 0.;
+    if (nodes.empty())
+      return;
+
+    const T lambda = lameLambda();
+    const T mu = lameMu();
+    const T gradDivWeight =
+        (lambda + mu) / std::max(lambda + T(2) * mu,
+                                 std::numeric_limits<T>::epsilon());
+    const T smootherOmega =
+        std::clamp(parameters.multigridSmootherOmega, T(0.2), T(1.4));
+
+    const std::size_t n = nodes.size();
+    const std::vector<Vec3D<T>> zeros(n, zeroVec());
+    std::vector<Vec3D<T>> b(n, zeroVec());
+#pragma omp parallel for schedule(static)
+    for (std::size_t i = 0; i < n; ++i) {
+      if (nodes[i].fixed)
+        b[i] = zeroVec();
+      else
+        b[i] = computeElasticStencilAt(i, zeros, gradDivWeight);
+    }
+
+    std::vector<Vec3D<T>> x(n, zeroVec());
+    for (std::size_t i = 0; i < n; ++i)
+      x[i] = nodes[i].fixed ? zeroVec() : nodes[i].velocity;
+
+    // Rebuild the multigrid hierarchy only when the node count or the contact
+    // face classification changes.  The stiffness matrix depends only on node
+    // geometry and which faces are active (compressive), not on the traction
+    // magnitudes — those only enter the load vector b computed above.  Within
+    // a single time step the coupling iterations run without advection, so the
+    // mask geometry and contact pattern are typically stable after the first
+    // call and the matrix can be reused for all subsequent iterations.
+    const bool hierarchyDirty =
+        cachedNodeCount_ != n ||
+        cachedContactFaceActive_ != contactFaceActive_;
+
+    if (hierarchyDirty) {
+      cachedMultigridLevels_ = buildMultigridHierarchy();
+      if (cachedMultigridLevels_.empty())
+        return;
+      cachedMultigridLevels_[0].matrix =
+          buildFineElasticMatrix(b, gradDivWeight);
+      for (std::size_t level = 1; level < cachedMultigridLevels_.size();
+           ++level)
+        cachedMultigridLevels_[level].matrix =
+            buildGalerkinMatrix(cachedMultigridLevels_[level - 1].matrix,
+                                cachedMultigridLevels_[level]);
+      cachedNodeCount_          = n;
+      cachedContactFaceActive_  = contactFaceActive_;
+    }
+
+    if (cachedMultigridLevels_.empty())
+      return;
+    const auto &multigridLevels = cachedMultigridLevels_;
+
+    std::vector<Vec3D<T>> r;
+    exactElasticResidual(multigridLevels[0].matrix, x, b, r);
+
+    const T bNorm = std::max(vectorNorm(b), std::numeric_limits<T>::epsilon());
+    residual = vectorNorm(r) / bNorm;
+    if (residual < parameters.tolerance) {
+      for (std::size_t i = 0; i < n; ++i)
+        nodes[i].velocity = x[i];
+      return;
+    }
+
+    constexpr unsigned restart = 32;
+    while (iterations < parameters.maxIterations &&
+           residual > parameters.tolerance) {
+      const T beta = vectorNorm(r);
+      if (!std::isfinite(beta))
+        throwNonFinite("traction multigrid GMRES residual");
+      if (beta <= std::numeric_limits<T>::epsilon())
+        break;
+
+      const unsigned innerLimit =
+          std::min<unsigned>(restart, parameters.maxIterations - iterations);
+      std::vector<std::vector<Vec3D<T>>> v(innerLimit + 1,
+                                           std::vector<Vec3D<T>>(n, zeroVec()));
+      std::vector<std::vector<Vec3D<T>>> z(innerLimit,
+                                           std::vector<Vec3D<T>>(n, zeroVec()));
+      v[0] = r;
+      vectorScale(v[0], T(1) / beta);
+
+      std::vector<std::vector<T>> h(innerLimit + 1,
+                                    std::vector<T>(innerLimit, T(0)));
+      std::vector<T> cs(innerLimit, T(0));
+      std::vector<T> sn(innerLimit, T(0));
+      std::vector<T> g(innerLimit + 1, T(0));
+      g[0] = beta;
+
+      unsigned usedColumns = 0;
+      for (unsigned j = 0; j < innerLimit; ++j) {
+        z[j] = multigridPrecondition(multigridLevels, v[j], smootherOmega);
+
+        std::vector<Vec3D<T>> w(n, zeroVec());
+        sparseMatvec(multigridLevels[0].matrix, z[j], w);
+
+        for (unsigned i = 0; i <= j; ++i) {
+          h[i][j] = vectorDot(w, v[i]);
+          vectorSubtractInPlace(w, h[i][j], v[i]);
+        }
+
+        h[j + 1][j] = vectorNorm(w);
+        if (h[j + 1][j] > std::numeric_limits<T>::epsilon()) {
+          v[j + 1] = w;
+          vectorScale(v[j + 1], T(1) / h[j + 1][j]);
+        }
+
+        for (unsigned i = 0; i < j; ++i) {
+          const T h0 = h[i][j];
+          const T h1 = h[i + 1][j];
+          h[i][j] = cs[i] * h0 + sn[i] * h1;
+          h[i + 1][j] = -sn[i] * h0 + cs[i] * h1;
+        }
+
+        const T h0 = h[j][j];
+        const T h1 = h[j + 1][j];
+        const T denom = std::hypot(h0, h1);
+        if (denom <= std::numeric_limits<T>::epsilon()) {
+          cs[j] = T(1);
+          sn[j] = T(0);
+        } else {
+          cs[j] = h0 / denom;
+          sn[j] = h1 / denom;
+        }
+        h[j][j] = cs[j] * h0 + sn[j] * h1;
+        h[j + 1][j] = T(0);
+
+        const T g0 = g[j];
+        g[j] = cs[j] * g0;
+        g[j + 1] = -sn[j] * g0;
+
+        ++iterations;
+        usedColumns = j + 1;
+        residual = std::abs(g[j + 1]) / bNorm;
+        if (!std::isfinite(residual))
+          throwNonFinite("traction multigrid GMRES residual");
+        if (residual < parameters.tolerance)
+          break;
+      }
+
+      if (usedColumns == 0)
+        break;
+
+      const auto y = solveUpperTriangular(h, g, usedColumns);
+      for (unsigned col = 0; col < usedColumns; ++col)
+        vectorAxpy(x, y[col], z[col]);
+
+      exactElasticResidual(multigridLevels[0].matrix, x, b, r);
+      residual = vectorNorm(r) / bNorm;
+      if (!std::isfinite(residual))
+        throwNonFinite("traction multigrid GMRES residual");
+    }
+
+    for (std::size_t i = 0; i < n; ++i)
+      nodes[i].velocity = x[i];
+
+    if (residual > parameters.tolerance)
+      Logger::getInstance()
+          .addWarning("solveElasticVelocity: traction multigrid GMRES did not "
+                      "converge after " + std::to_string(iterations) + "/" +
+                      std::to_string(parameters.maxIterations) +
+                      " iterations (residual=" + std::to_string(residual) +
+                      ", tolerance=" + std::to_string(parameters.tolerance) + ")")
+          .print();
   }
 
   void solveElasticVelocityRelaxation() {
@@ -1071,6 +1710,22 @@ private:
 
     const unsigned dir =
         static_cast<unsigned>(parameters.anchorBoundaryDirection);
+
+    // Warn if the anchor is placed along the oxide-growth direction (D-1 in a
+    // standard LOCOS cross-section is the vertical/y axis).  Clamping the top
+    // or bottom of the mask instead of a far lateral edge removes the degrees
+    // of freedom the bending solve needs and will suppress the bird's-beak
+    // deflection entirely.
+    if (dir == static_cast<unsigned>(D - 1))
+      Logger::getInstance()
+          .addWarning("OxidationMaskBending: anchorBoundaryDirection=" +
+                      std::to_string(parameters.anchorBoundaryDirection) +
+                      " points along the oxide-growth axis (direction D-1=" +
+                      std::to_string(D - 1) + ").  The anchor is normally "
+                      "placed at a lateral edge (direction 0) so bending "
+                      "degrees of freedom are preserved.  Set "
+                      "anchorBoundaryDirection=0 for a LOCOS cross-section.")
+          .print();
     IndexType nodeMin = nodes.front().index;
     IndexType nodeMax = nodes.front().index;
     for (const auto &node : nodes) {
