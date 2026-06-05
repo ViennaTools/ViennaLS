@@ -254,6 +254,7 @@ public:
           .print();
     solveElasticVelocity();
     validateNodeVelocities("solveElasticVelocity");
+    smoothVelocityField();
 
     const auto fixedPointResidual =
         contactResidualVector(previousVelocities);
@@ -483,16 +484,64 @@ private:
 
       if (denominator > std::numeric_limits<T>::epsilon()) {
         omega = -aitkenOmega * numerator / denominator;
-        if (std::isfinite(omega))
-          omega = std::clamp(omega, T(0.05), T(1.5));
-        else
+        if (std::isfinite(omega)) {
+          // Traction contact mode: cap at 1.0 (no extrapolation).  The
+          // compressive/tensile contact state can alternate across coupling
+          // iterations, and omega > 1 extrapolates through the fixed point
+          // for those nodes, producing sign-alternating velocities that
+          // appear as zigzag kinks after level-set advection.
+          const T omegaMax =
+              (parameters.contactMode == 1) ? T(1.0) : T(1.5);
+          omega = std::clamp(omega, T(0.05), omegaMax);
+        } else {
           throwNonFinite("mask Aitken coefficient");
+        }
       }
     }
 
     previousAitkenResidual = residualVector;
     aitkenOmega = omega;
     return omega;
+  }
+
+  // One pass of Laplacian (neighbour-average) smoothing on the mask velocity
+  // field.  Damps grid-scale oscillations that arise near the contact-to-free
+  // boundary transition without materially changing the bulk velocity.
+  // Fixed (anchor) nodes are skipped — they must stay at zero.
+  void smoothVelocityField() {
+    const std::size_t n = nodes.size();
+    if (n == 0)
+      return;
+
+    std::vector<Vec3D<T>> smoothed(n);
+    for (std::size_t id = 0; id < n; ++id) {
+      if (nodes[id].fixed) {
+        smoothed[id] = {T(0), T(0), T(0)};
+        continue;
+      }
+      Vec3D<T> sum = nodes[id].velocity;
+      int count = 1;
+      for (unsigned dir = 0; dir < D; ++dir) {
+        for (int off : {-1, 1}) {
+          IndexType nb = nodes[id].index;
+          nb[dir] += off;
+          if (!inBounds(nb))
+            continue;
+          const std::size_t nbId = nodeLookupFlat[linearIndex(nb)];
+          if (nbId == noNode)
+            continue;
+          for (unsigned c = 0; c < D; ++c)
+            sum[c] += nodes[nbId].velocity[c];
+          ++count;
+        }
+      }
+      const T w = T(1) / static_cast<T>(count);
+      for (unsigned c = 0; c < D; ++c)
+        smoothed[id][c] = sum[c] * w;
+    }
+
+    for (std::size_t id = 0; id < n; ++id)
+      nodes[id].velocity = smoothed[id];
   }
 
   void relaxVelocities(const std::unordered_map<std::size_t, Vec3D<T>> &previous,
