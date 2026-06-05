@@ -183,6 +183,7 @@ template <class T, int D> class Oxidation {
   T lastMaxVelocity_ = T(0);
 
   GpuMode gpuMode_ = GpuMode::Auto;
+  GpuPreconditioner gpuPreconditioner_ = GpuPreconditioner::Jacobi;
   std::unordered_map<std::size_t, T> concentrationCache_;
 
 public:
@@ -207,6 +208,9 @@ public:
   }
 
   void setGpuMode(GpuMode mode) { gpuMode_ = mode; }
+  void setGpuPreconditioner(GpuPreconditioner preconditioner) {
+    gpuPreconditioner_ = preconditioner;
+  }
 
   void setSiInterface(SmartPointer<Domain<T, D>> si) { siInterface = si; }
   void setAmbientInterface(SmartPointer<Domain<T, D>> ambient) {
@@ -330,6 +334,7 @@ private:
           siInterface, ambientInterface, oxidationParams);
       diffusionField->setConcentrationCache(concentrationCache_);
       diffusionField->setGpuMode(gpuMode_);
+      diffusionField->setGpuPreconditioner(gpuPreconditioner_);
       if (hasMask)
         diffusionField->setMaskInterface(maskInterface, maskInteriorSign);
 

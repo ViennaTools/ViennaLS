@@ -98,7 +98,27 @@ endif()
 
 if(VIENNALS_USE_GPU)
   enable_language(CUDA)
+  get_filename_component(_VIENNALS_CUDA_COMPILER_REAL "${CMAKE_CUDA_COMPILER}" REALPATH)
+  get_filename_component(_VIENNALS_CUDA_COMPILER_BIN "${_VIENNALS_CUDA_COMPILER_REAL}" DIRECTORY)
+  get_filename_component(_VIENNALS_CUDA_COMPILER_ROOT "${_VIENNALS_CUDA_COMPILER_BIN}" DIRECTORY)
+  if(CMAKE_CUDA_COMPILER AND NOT DEFINED CUDAToolkit_ROOT)
+    set(CUDAToolkit_ROOT
+        "${_VIENNALS_CUDA_COMPILER_ROOT}"
+        CACHE PATH "CUDA Toolkit root used by ViennaLS")
+  endif()
   find_package(CUDAToolkit REQUIRED)
+
+  if(CUDAToolkit_NVCC_EXECUTABLE)
+    get_filename_component(_VIENNALS_CUDATOOLKIT_NVCC_REAL "${CUDAToolkit_NVCC_EXECUTABLE}" REALPATH)
+    if(NOT _VIENNALS_CUDATOOLKIT_NVCC_REAL STREQUAL _VIENNALS_CUDA_COMPILER_REAL)
+      message(FATAL_ERROR
+        "[ViennaLS] CUDA compiler/toolkit mismatch:\n"
+        "  CMAKE_CUDA_COMPILER=${CMAKE_CUDA_COMPILER}\n"
+        "  CUDAToolkit_NVCC_EXECUTABLE=${CUDAToolkit_NVCC_EXECUTABLE}\n"
+        "Use a fresh build directory or pass -DCUDAToolkit_ROOT=${_VIENNALS_CUDA_COMPILER_ROOT} "
+        "so CUDAToolkit matches the selected CUDA compiler.")
+    endif()
+  endif()
 
   # Compile the CUDA kernels into a small static library so that consuming
   # .cpp files (compiled by g++) never see __global__ / <<< >>> syntax.
@@ -118,6 +138,17 @@ if(VIENNALS_USE_GPU)
     POSITION_INDEPENDENT_CODE  ON)
 
   target_link_libraries(ViennaLS_GPU PUBLIC CUDA::cudart CUDA::cusparse)
+
+  if(UNIX AND NOT APPLE)
+    foreach(_VIENNALS_CUDA_TARGET CUDA::cudart CUDA::cusparse)
+      get_target_property(_VIENNALS_CUDA_LIBRARY ${_VIENNALS_CUDA_TARGET} IMPORTED_LOCATION)
+      if(_VIENNALS_CUDA_LIBRARY)
+        get_filename_component(_VIENNALS_CUDA_LIBRARY_DIR "${_VIENNALS_CUDA_LIBRARY}" DIRECTORY)
+        target_link_options(ViennaLS_GPU INTERFACE
+          "$<BUILD_INTERFACE:LINKER:-rpath,${_VIENNALS_CUDA_LIBRARY_DIR}>")
+      endif()
+    endforeach()
+  endif()
 
   # Expose the define and the GPU library to downstream targets.
   # BUILD_INTERFACE limits the ViennaLS_GPU dependency to the build tree so it

@@ -5,6 +5,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <stdexcept>
+#include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -20,12 +22,22 @@
 namespace viennals {
 
 /// Selects the BiCGSTAB back-end for the diffusion solve.
-/// On CPU-only builds (VIENNALS_GPU_BICGSTAB not defined) all modes silently
-/// fall through to the CPU path.
+/// Cpu always uses CPU. Auto uses CPU below the GPU threshold and GPU above it.
+/// Once GPU is selected or requested, GPU failures are reported instead of
+/// falling back to CPU.
 enum class GpuMode {
   Auto, ///< GPU when node count >= kGpuThreshold (default)
-  Gpu,  ///< Always attempt GPU; fall back to CPU only if allocation fails
+  Gpu,  ///< Always use GPU; fail if unavailable or unsuccessful
   Cpu   ///< Always use CPU
+};
+
+/// Selects the preconditioner used by the GPU BiCGSTAB solver.
+/// Jacobi matches the CPU solver's preconditioner and is the default. ILU0 is
+/// experimental because cuSPARSE SpSV value-analysis behavior differs between
+/// CUDA versions and can introduce structured solver error if stale.
+enum class GpuPreconditioner {
+  Jacobi,
+  ILU0
 };
 
 /// Parameters for the steady oxidant diffusion model used by
@@ -152,6 +164,7 @@ private:
   std::vector<std::size_t> neighborIds_;
 
   GpuMode gpuMode_ = GpuMode::Auto;
+  GpuPreconditioner gpuPreconditioner_ = GpuPreconditioner::Jacobi;
 
 #ifdef VIENNALS_GPU_BICGSTAB
   // Opaque pointer to device-side buffers (GpuBiCGSTABBuffers is defined only
@@ -402,6 +415,10 @@ public:
   /// Set the GPU solver selection mode.  See GpuMode for the three options.
   /// On CPU-only builds (VIENNALS_GPU_BICGSTAB not defined) this is a no-op.
   void setGpuMode(GpuMode mode) { gpuMode_ = mode; }
+  /// Set the GPU BiCGSTAB preconditioner. Jacobi matches the CPU solver.
+  void setGpuPreconditioner(GpuPreconditioner preconditioner) {
+    gpuPreconditioner_ = preconditioner;
+  }
 
   /// Mark the current solution as valid without re-solving. Call this before
   /// any parallel advection (lsAdvect) that uses this field as a velocity
@@ -600,6 +617,7 @@ private:
       }
     }
 
+    bool loggedBackend = false;
 #ifdef VIENNALS_GPU_BICGSTAB
     // Free any stale allocation from a previous buildNodes() call.
     gpu::freeGpuBuffers(gpuBufs_);
@@ -608,7 +626,10 @@ private:
     const bool tryGpu = (gpuMode_ == GpuMode::Gpu) ||
                         (gpuMode_ == GpuMode::Auto && n >= kGpuThreshold);
     if (tryGpu) {
-      gpuBufs_ = gpu::allocGpuBuffers(static_cast<uint32_t>(n), 2 * D);
+      const bool useIlu0 =
+          gpuPreconditioner_ == GpuPreconditioner::ILU0;
+      gpuBufs_ = gpu::allocGpuBuffers(static_cast<uint32_t>(n), 2 * D,
+                                      useIlu0);
 
       if (gpuBufs_) {
         // Convert std::size_t neighbor IDs to uint32_t for the device
@@ -618,12 +639,49 @@ private:
           nb32[k] = (neighborIds_[k] == noNode)
                         ? gpu::kNoNode
                         : static_cast<uint32_t>(neighborIds_[k]);
-        gpu::gpuUploadNeighborIds(gpuBufs_, nb32.data(), nf);
-        gpu::gpuSetupCSR(gpuBufs_, nb32.data(),
-                         static_cast<uint32_t>(n), 2 * D);
+        if (!gpu::gpuUploadNeighborIds(gpuBufs_, nb32.data(), nf)) {
+          gpu::freeGpuBuffers(gpuBufs_);
+          gpuBufs_ = nullptr;
+          throwStrictGpuError("OxidationDiffusion: GPU mode was selected, but "
+                              "uploading GPU neighbor IDs failed." +
+                              gpuErrorDetail());
+        }
+        if (useIlu0 &&
+            !gpu::gpuSetupCSR(gpuBufs_, nb32.data(),
+                              static_cast<uint32_t>(n), 2 * D)) {
+          gpu::freeGpuBuffers(gpuBufs_);
+          gpuBufs_ = nullptr;
+          throwStrictGpuError("OxidationDiffusion: GPU mode was selected, but "
+                              "CUSPARSE setup for the GPU BiCGSTAB solver "
+                              "failed." + gpuErrorDetail());
+        }
+        logDiffusionBackend(
+            "GPU BiCGSTAB",
+            "preconditioner=" +
+                std::string(useIlu0 ? "ILU0" : "Jacobi"));
+        loggedBackend = true;
+      } else {
+        throwStrictGpuError("OxidationDiffusion: GPU mode was selected, but "
+                            "CUDA buffers could not be "
+                            "allocated or the CUDA context could not be "
+                            "initialized." + gpuErrorDetail());
       }
     }
 #endif
+    if (!loggedBackend) {
+      std::string reason;
+      if (gpuMode_ == GpuMode::Cpu) {
+        reason = "GPU disabled by configuration";
+      } else {
+#ifdef VIENNALS_GPU_BICGSTAB
+        reason = "node count below GPU threshold " +
+                 std::to_string(kGpuThreshold);
+#else
+        reason = "ViennaLS was built without GPU BiCGSTAB support";
+#endif
+      }
+      logDiffusionBackend("CPU BiCGSTAB", reason);
+    }
   }
 
   // Precompute per-face coupling coefficients for the GPU SpMV.
@@ -639,6 +697,7 @@ private:
     const std::size_t n = nodes.size();
     faceCoeffs.assign(2 * D * n, T(0));
     const T eps = std::numeric_limits<T>::epsilon();
+    const std::vector<T> zeros(n, T(0));
 
     for (std::size_t id = 0; id < n; ++id) {
       const T D_eff = getEffectiveDiffusionCoefficient(nodes[id].index);
@@ -646,29 +705,18 @@ private:
         const unsigned fiNeg = dir * 2u;
         const unsigned fiPos = dir * 2u + 1u;
 
-        const std::size_t nbNeg = neighborIds_[fiNeg * n + id];
-        const std::size_t nbPos = neighborIds_[fiPos * n + id];
-
-        // Effective distance for each face:
-        //  - interior neighbour  → gridDelta
-        //  - boundary crossing   → faceBCDists_  (< gridDelta)
-        //  - out-of-bounds/NONE  → gridDelta  (matches zeroFluxSide())
-        auto faceDist = [&](unsigned fi, std::size_t nb) -> T {
-          if (nb != noNode)
-            return gridDelta;
-          if (faceBCTypes_[fi * n + id] != Boundary::NONE)
-            return faceBCDists_[fi * n + id];
-          return gridDelta;
-        };
-
-        const T distNeg = faceDist(fiNeg, nbNeg);
-        const T distPos = faceDist(fiPos, nbPos);
+        // Use the exact side construction used by the CPU stencil so the GPU
+        // SpMV cannot drift from computeStencilAt() at cut-cell boundaries.
+        const auto neg = makeStencilSide(id, zeros, dir, -1, D_eff);
+        const auto pos = makeStencilSide(id, zeros, dir,  1, D_eff);
+        const T distNeg = neg.distance;
+        const T distPos = pos.distance;
         const T distSum = distNeg + distPos;
         if (distSum <= eps) continue;
 
-        if (nbNeg != noNode)
+        if (neighborIds_[fiNeg * n + id] != noNode && distNeg > eps)
           faceCoeffs[fiNeg * n + id] = T(2) * D_eff / (distNeg * distSum);
-        if (nbPos != noNode)
+        if (neighborIds_[fiPos * n + id] != noNode && distPos > eps)
           faceCoeffs[fiPos * n + id] = T(2) * D_eff / (distPos * distSum);
       }
     }
@@ -753,8 +801,6 @@ private:
     }
     const auto initialGuess = x;
 
-    bool usedGpuFallback = false;
-
 #ifdef VIENNALS_GPU_BICGSTAB
     // ── GPU BiCGSTAB path ──────────────────────────────────────────────
     // Engaged when buildNodes() allocated the GPU buffers (n >= kGpuThreshold).
@@ -784,10 +830,26 @@ private:
       tPrep.finish();
 
       tUpload.start();
-      gpu::gpuUploadSolverArrays(gpuBufs_,
-                                 diagGpu.data(), bGpu.data(), coeffGpu.data(),
-                                 static_cast<uint32_t>(n), faceCoeffs.size());
+      const bool gpuUploadOk =
+          gpu::gpuUploadSolverArrays(gpuBufs_, diagGpu.data(), bGpu.data(),
+                                     coeffGpu.data(),
+                                     static_cast<uint32_t>(n),
+                                     faceCoeffs.size());
       tUpload.finish();
+      if (!gpuUploadOk) {
+        if (Logger::hasTiming()) {
+          const std::string tag = "diffusion n=" + std::to_string(n) +
+                                  " [GPU upload failed]";
+          Logger::getInstance()
+              .addTiming(tag + " diag/b precompute", tDiag)
+              .addTiming(tag + " GPU prep+faceCoeffs", tPrep)
+              .addTiming(tag + " GPU upload", tUpload)
+              .print();
+        }
+        throwStrictGpuError("OxidationDiffusion: GPU mode was selected, but "
+                            "uploading GPU solver arrays or factorizing ILU "
+                            "failed." + gpuErrorDetail());
+      }
 
       // Solve on GPU; xGpu holds the initial guess and receives the solution.
       tSolve.start();
@@ -826,16 +888,11 @@ private:
         return;
       }
 
-      x = initialGuess;
-      usedGpuFallback = true;
-      iterations = 0;
-      residual = T(0);
-
       if (Logger::hasTiming()) {
         const std::string tag = "diffusion n=" + std::to_string(n) +
                                 " iters=" + std::to_string(gpuIterations) +
                                 " res=" + std::to_string(gpuResidual) +
-                                " [GPU fallback]";
+                                " [GPU failed]";
         Logger::getInstance()
             .addTiming(tag + " diag/b precompute", tDiag)
             .addTiming(tag + " GPU prep+faceCoeffs", tPrep)
@@ -843,13 +900,17 @@ private:
             .addTiming(tag + " GPU BiCGSTAB", tSolve)
             .print();
       }
-      Logger::getInstance()
-          .addWarning("solveDiffusion: GPU BiCGSTAB failed, did not converge, "
-                      "or produced non-finite concentrations (iters=" +
-                      std::to_string(gpuIterations) + ", residual=" +
-                      std::to_string(gpuResidual) +
-                      "); falling back to CPU BiCGSTAB.")
-          .print();
+      throwStrictGpuError(
+          "OxidationDiffusion: GPU mode was selected, but GPU BiCGSTAB "
+          "failed, did not converge, or produced non-finite concentrations "
+          "(iters=" + std::to_string(gpuIterations) +
+          ", residual=" + std::to_string(gpuResidual) + ").");
+    }
+#else
+    if (gpuMode_ == GpuMode::Gpu) {
+      throwStrictGpuError("OxidationDiffusion: explicit GPU mode was "
+                          "requested, but ViennaLS was built without "
+                          "VIENNALS_GPU_BICGSTAB.");
     }
 #endif
 
@@ -964,10 +1025,9 @@ private:
     if (Logger::hasTiming()) {
 #ifdef VIENNALS_GPU_BICGSTAB
       const std::string path =
-          usedGpuFallback    ? " [CPU fallback]"
-          : gpuMode_ == GpuMode::Cpu  ? " [CPU]"
-          : gpuMode_ == GpuMode::Gpu  ? " [CPU alloc-failed]"
-          : " [CPU n<" + std::to_string(kGpuThreshold) + "]";
+          gpuMode_ == GpuMode::Cpu
+              ? " [CPU]"
+              : " [CPU n<" + std::to_string(kGpuThreshold) + "]";
 #else
       const std::string path = " [CPU]";
 #endif
@@ -987,6 +1047,32 @@ private:
                       " iterations (residual=" + std::to_string(residual / b_norm) +
                       ", tolerance=" + std::to_string(parameters.tolerance) + ")")
           .print();
+  }
+
+  [[noreturn]] static void throwStrictGpuError(const std::string &message) {
+    Logger::getInstance().addError(message).print();
+    throw std::runtime_error(message);
+  }
+
+#ifdef VIENNALS_GPU_BICGSTAB
+  static std::string gpuErrorDetail() {
+    const char *detail = gpu::gpuGetLastErrorMessage();
+    if (detail && detail[0] != '\0')
+      return std::string(" Detail: ") + detail;
+    return {};
+  }
+#endif
+
+  void logDiffusionBackend(const std::string &backend,
+                           const std::string &detail) const {
+    if (!Logger::hasInfo())
+      return;
+    Logger::getInstance()
+        .addInfo("OxidationDiffusion: using " + backend +
+                 " for diffusion solve (nodes=" +
+                 std::to_string(nodes.size()) +
+                 (detail.empty() ? std::string() : ", " + detail) + ").")
+        .print();
   }
 
   // Uses precomputed flat faceBC arrays — no HRLE access, safe for parallel execution.
