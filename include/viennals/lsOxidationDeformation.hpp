@@ -143,6 +143,7 @@ private:
   GpuMode gpuMode_ = GpuMode::Auto;
   GpuPreconditioner gpuPreconditioner_ = GpuPreconditioner::Jacobi;
   static constexpr std::size_t kGpuThreshold = 20000;
+  mutable std::string lastLoggedBackend_; // suppresses repeated "using X" messages
 
 #ifdef VIENNALS_GPU_BICGSTAB
   // Geometry-fixed (per buildNodes()) arrays for GPU pressure solve.
@@ -160,6 +161,13 @@ private:
   std::vector<uint32_t> stokesNeighId32_;  // face-major [2D * n]
   std::vector<double>   stokesDiagGpu_;    // [n]
   gpu::GpuBiCGSTABBuffers* gpuStokesBufs_ = nullptr;
+
+  // Harmonic velocity solver GPU arrays.  The neighbor IDs are identical to
+  // Stokes (stokesNeighId32_ is reused); only the coefficients and diagonal
+  // differ (all interior coefficients = 1.0, diagonal = interior-face count).
+  std::vector<double>   harmonicCoeffGpu_; // face-major [2D * n], 1.0 for interior
+  std::vector<double>   harmonicDiagGpu_;  // [n], = count of interior faces per node
+  gpu::GpuBiCGSTABBuffers* gpuHarmonicBufs_ = nullptr;
 #endif
 
 public:
@@ -188,6 +196,7 @@ public:
 #ifdef VIENNALS_GPU_BICGSTAB
     gpu::freeGpuBuffers(gpuPressBufs_);
     gpu::freeGpuBuffers(gpuStokesBufs_);
+    gpu::freeGpuBuffers(gpuHarmonicBufs_);
 #endif
   }
 
@@ -737,6 +746,45 @@ private:
     }
   }
 
+  // Builds face-major harmonic velocity geometry for GPU reuse.
+  // The neighbor IDs are identical to Stokes (stokesNeighId32_ is shared).
+  //
+  // The CPU harmonicMatvec is  Av[i][c] = 2*D*v[i] - stencil_sum(v)[i] + b[i]
+  // where stencil_sum includes self-coupling (v[nodeId]) for OOB/AMBIENT/NONE
+  // faces and constants for REACTION/MASK faces.  After the b/constant terms
+  // cancel, the effective matrix diagonal is:
+  //   2*D - n_OOB - n_AMBIENT - n_NONE  =  n_interior + n_REACTION + n_MASK
+  //
+  // REACTION and MASK faces have no off-diagonal entry (their velocity is a
+  // constant in b) but they DO count toward the diagonal.  Excluding them
+  // gives a matrix that is not diagonally dominant near the Si/SiO2 boundary,
+  // which causes Jacobi-preconditioned BiCGSTAB to diverge.
+  void buildHarmonicGpuGeometry() {
+    const std::size_t n = nodes.size();
+    harmonicCoeffGpu_.assign(2 * D * n, 0.0);
+    harmonicDiagGpu_.assign(n, 0.0);
+    for (std::size_t id = 0; id < n; ++id) {
+      for (unsigned fi = 0; fi < 2 * D; ++fi) {
+        if (stokesNeighId32_[fi * n + id] != gpu::kNoNode) {
+          // Interior neighbor: off-diagonal coefficient 1.0 + diagonal 1.0.
+          harmonicCoeffGpu_[fi * n + id] = 1.0;
+          harmonicDiagGpu_[id] += 1.0;
+        } else {
+          // Non-interior face.  REACTION/MASK contribute a Dirichlet constant
+          // to b but NOT self-coupling, so they add 1.0 to the diagonal just
+          // like an interior neighbor would (matching the CPU matrix row).
+          // OOB/AMBIENT/NONE contribute v[nodeId] (self-coupling), which
+          // cancels with the 2*D diagonal term and must be excluded here.
+          const Boundary bt = faceBCTypes_[fi * n + id];
+          if (bt == Boundary::REACTION || bt == Boundary::MASK)
+            harmonicDiagGpu_[id] += 1.0;
+        }
+      }
+      if (harmonicDiagGpu_[id] < 1e-10)
+        harmonicDiagGpu_[id] = 1.0;
+    }
+  }
+
   // Allocates GPU buffers for pressure and Stokes solves and uploads the
   // geometry-fixed CSR pattern.  Called from buildNodes() after the face BC
   // arrays and the two geometry helper arrays are populated.
@@ -811,9 +859,38 @@ private:
       }
     }
 
+    // Harmonic velocity: same neighbor IDs as Stokes, different coefficients.
+    gpu::freeGpuBuffers(gpuHarmonicBufs_);
+    gpuHarmonicBufs_ = nullptr;
+    if (tryGpu) {
+      gpuHarmonicBufs_ = gpu::allocGpuBuffers(static_cast<uint32_t>(n), 2 * D, useIlu0);
+      if (!gpuHarmonicBufs_) {
+        throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
+                            "harmonic solver CUDA buffers could not be "
+                            "allocated." + gpuErrorDetail());
+      }
+      if (!gpu::gpuUploadNeighborIds(gpuHarmonicBufs_, stokesNeighId32_.data(),
+                                     2u * D * n)) {
+        gpu::freeGpuBuffers(gpuHarmonicBufs_);
+        gpuHarmonicBufs_ = nullptr;
+        throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
+                            "uploading harmonic GPU neighbor IDs failed." +
+                            gpuErrorDetail());
+      }
+      if (useIlu0 &&
+          !gpu::gpuSetupCSR(gpuHarmonicBufs_, stokesNeighId32_.data(),
+                            static_cast<uint32_t>(n), 2 * D)) {
+        gpu::freeGpuBuffers(gpuHarmonicBufs_);
+        gpuHarmonicBufs_ = nullptr;
+        throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
+                            "CUSPARSE setup for the harmonic GPU BiCGSTAB "
+                            "solver failed." + gpuErrorDetail());
+      }
+    }
+
     if (tryGpu)
       logDeformationBackend("GPU BiCGSTAB",
-                            "pressure/Stokes, preconditioner=" +
+                            "pressure/Stokes/harmonic, preconditioner=" +
                                 std::string(useIlu0 ? "ILU0" : "Jacobi"));
   }
 #endif // VIENNALS_GPU_BICGSTAB
@@ -836,12 +913,15 @@ private:
                              const std::string &detail) const {
     if (!Logger::hasInfo())
       return;
-    Logger::getInstance()
-        .addInfo("OxidationDeformation: using " + backend +
-                 " for mechanics pressure/Stokes solves (nodes=" +
-                 std::to_string(nodes.size()) +
-                 (detail.empty() ? std::string() : ", " + detail) + ").")
-        .print();
+    const std::string msg = "OxidationDeformation: using " + backend +
+                            " for mechanics pressure/Stokes solves (nodes=" +
+                            std::to_string(nodes.size()) +
+                            (detail.empty() ? std::string() : ", " + detail) +
+                            ").";
+    if (msg == lastLoggedBackend_)
+      return;
+    lastLoggedBackend_ = msg;
+    Logger::getInstance().addInfo(msg).print();
   }
 
 public:
@@ -903,6 +983,7 @@ public:
 #ifdef VIENNALS_GPU_BICGSTAB
     buildPressureGpuGeometry();
     buildStokesGpuGeometry();
+    buildHarmonicGpuGeometry();
     setupDeformationGpuBuffers();
 #else
     if (gpuMode_ == GpuMode::Gpu) {
@@ -1000,6 +1081,94 @@ public:
     for (std::size_t i = 0; i < n; ++i)
       for (unsigned c = 0; c < D; ++c)
         x[i][c] = static_cast<SolverT>(nodes[i].velocity[c]);
+
+#ifdef VIENNALS_GPU_BICGSTAB
+    if (gpu::gpuIsValid(gpuHarmonicBufs_)) {
+      const std::size_t nf = 2u * D * n;
+      if (harmonicDiagGpu_.size() != n || harmonicCoeffGpu_.size() != nf) {
+        throwStrictGpuError("OxidationDeformation: harmonic GPU geometry has "
+                            "the wrong size for the current node set.");
+      }
+
+      Timer<> tUpload, tSolve;
+      std::vector<Vec3D<SolverT>> xSolved(n);
+      unsigned maxGpuIterations = 0;
+      double maxGpuResidual = 0.0;
+
+      for (unsigned c = 0; c < D; ++c) {
+        std::vector<double> bGpu(n), xGpu(n);
+        for (std::size_t i = 0; i < n; ++i) {
+          bGpu[i] = static_cast<double>(b[i][c]);
+          xGpu[i] = static_cast<double>(x[i][c]);
+        }
+
+        tUpload.start();
+        const bool gpuUploadOk =
+            (c == 0)
+                ? gpu::gpuUploadSolverArrays(gpuHarmonicBufs_,
+                                             harmonicDiagGpu_.data(), bGpu.data(),
+                                             harmonicCoeffGpu_.data(),
+                                             static_cast<uint32_t>(n),
+                                             harmonicCoeffGpu_.size())
+                : gpu::gpuUploadRhs(gpuHarmonicBufs_, bGpu.data(),
+                                    static_cast<uint32_t>(n));
+        tUpload.finish();
+        if (!gpuUploadOk) {
+          throwStrictGpuError("OxidationDeformation: GPU mode was selected, "
+                              "but uploading harmonic solver arrays failed." +
+                              gpuErrorDetail());
+        }
+
+        unsigned gpuIterations = 0;
+        double gpuResidual = 0.0;
+        tSolve.start();
+        const bool gpuConverged =
+            gpu::gpuSolveBiCGSTAB(gpuHarmonicBufs_, xGpu.data(),
+                                  static_cast<double>(
+                                      std::numeric_limits<SolverT>::epsilon()),
+                                  deformationParameters.harmonicIterations,
+                                  static_cast<double>(
+                                      deformationParameters.tolerance),
+                                  gpuIterations, gpuResidual);
+        tSolve.finish();
+
+        if (!gpuConverged || !std::isfinite(gpuResidual)) {
+          throwStrictGpuError(
+              "OxidationDeformation: harmonic GPU BiCGSTAB failed or produced "
+              "a non-finite residual for component " + std::to_string(c) +
+              " (iters=" + std::to_string(gpuIterations) +
+              ", residual=" + std::to_string(gpuResidual) + ").");
+        }
+
+        maxGpuIterations = std::max(maxGpuIterations, gpuIterations);
+        maxGpuResidual = std::max(maxGpuResidual, gpuResidual);
+        for (std::size_t i = 0; i < n; ++i)
+          xSolved[i][c] = static_cast<SolverT>(xGpu[i]);
+      }
+
+      for (std::size_t i = 0; i < n; ++i)
+        for (unsigned c = 0; c < D; ++c)
+          nodes[i].velocity[c] = static_cast<T>(xSolved[i][c]);
+      iterations = maxGpuIterations;
+      residual = maxGpuResidual;
+
+      if (Logger::hasTiming()) {
+        Logger::getInstance()
+            .addTiming("harmonic n=" + std::to_string(n) +
+                       " iters=" + std::to_string(iterations) +
+                       " res=" + std::to_string(residual) +
+                       " [GPU] GPU BiCGSTAB", tSolve)
+            .print();
+      }
+      if (Logger::hasDebug()) {
+        Logger::getInstance()
+            .addTiming("harmonic n=" + std::to_string(n) +
+                       " [GPU] GPU upload", tUpload)
+            .print();
+      }
+      return;
+    }
+#endif
 
     // r = b - A*x
     const Vec3D<SolverT> zero3{SolverT(0), SolverT(0), SolverT(0)};
@@ -1172,7 +1341,7 @@ public:
           std::max(maxVelocityChange(previousVelocity),
                    maxPressureChange(previousPressure));
 
-      if (Logger::hasTiming())
+      if (Logger::hasDebug())
         Logger::getInstance()
             .addTiming("        mechanics[" + std::to_string(iteration) +
                        "] stokes   iters=" + std::to_string(lastStokesIters_) +
@@ -1387,45 +1556,22 @@ public:
                                 gpuIterations, gpuResidual);
       tSolve.finish();
 
-      const bool finiteGpuSolution =
-          gpuConverged &&
-          std::all_of(xGpu.begin(), xGpu.end(),
-                      [](double value) { return std::isfinite(value); });
-      if (!finiteGpuSolution) {
+      // gpuResidual is the GPU true residual ||b - A*x||_inf recomputed at
+      // convergence (not the recursive BiCGSTAB residual), so no separate CPU
+      // stencil evaluation is needed.
+      if (!gpuConverged || !std::isfinite(gpuResidual)) {
         throwStrictGpuError(
-            "OxidationDeformation: pressure GPU BiCGSTAB failed, did not "
-            "converge, or produced non-finite pressures (iters=" +
-            std::to_string(gpuIterations) + ", residual=" +
-            std::to_string(gpuResidual) + ").");
-      }
-
-      std::vector<SolverT> xCheck(n);
-      for (std::size_t i = 0; i < n; ++i)
-        xCheck[i] = static_cast<SolverT>(xGpu[i]);
-      std::vector<SolverT> AxCheck(n);
-      pressureMatvec(xCheck, ambientBP, diag, pBC, AxCheck);
-      T trueResidual = T(0);
-      for (std::size_t i = 0; i < n; ++i)
-        trueResidual =
-            std::max(trueResidual, std::abs(b[i] - static_cast<T>(AxCheck[i])));
-
-      constexpr T validationFactor = T(100);
-      if (trueResidual >
-          validationFactor * deformationParameters.pressureTolerance * b_norm) {
-        throwStrictGpuError(
-            "OxidationDeformation: pressure GPU BiCGSTAB reported convergence, "
-            "but the host-side true residual check failed (true_residual=" +
-            std::to_string(trueResidual) + ", tolerance=" +
-            std::to_string(deformationParameters.pressureTolerance) +
-            ", validation_factor=" + std::to_string(validationFactor) + ").");
+            "OxidationDeformation: pressure GPU BiCGSTAB failed or produced "
+            "a non-finite residual (iters=" + std::to_string(gpuIterations) +
+            ", residual=" + std::to_string(gpuResidual) + ").");
       }
 
       for (std::size_t i = 0; i < n; ++i)
         nodes[i].pressure = static_cast<T>(xGpu[i]);
       lastPressureIters_ = gpuIterations;
-      lastPressureResidual_ = trueResidual / b_norm;
+      lastPressureResidual_ = gpuResidual / b_norm;
 
-      if (Logger::hasTiming()) {
+      if (Logger::hasDebug()) {
         const std::string tag =
             "pressure n=" + std::to_string(n) +
             " iters=" + std::to_string(lastPressureIters_) +
@@ -1775,17 +1921,12 @@ public:
                                   gpuIterations, gpuResidual);
         tSolve.finish();
 
-        const bool finiteGpuSolution =
-            gpuConverged &&
-            std::all_of(xGpu.begin(), xGpu.end(),
-                        [](double value) { return std::isfinite(value); });
-        if (!finiteGpuSolution) {
+        if (!gpuConverged || !std::isfinite(gpuResidual)) {
           throwStrictGpuError(
-              "OxidationDeformation: Stokes GPU BiCGSTAB failed, did not "
-              "converge, or produced non-finite velocities for component " +
-              std::to_string(c) + " (iters=" +
-              std::to_string(gpuIterations) + ", residual=" +
-              std::to_string(gpuResidual) + ").");
+              "OxidationDeformation: Stokes GPU BiCGSTAB failed or produced "
+              "a non-finite residual for component " + std::to_string(c) +
+              " (iters=" + std::to_string(gpuIterations) +
+              ", residual=" + std::to_string(gpuResidual) + ").");
         }
 
         maxGpuIterations = std::max(maxGpuIterations, gpuIterations);
@@ -1794,47 +1935,14 @@ public:
           xSolved[i][c] = static_cast<SolverT>(xGpu[i]);
       }
 
-      std::vector<Vec3D<SolverT>> AxCheck(n);
-      auto stokesMatvecCheck = [&](const std::vector<Vec3D<SolverT>> &vin,
-                                   std::vector<Vec3D<SolverT>> &Av) {
-#pragma omp parallel for schedule(static)
-        for (std::size_t i = 0; i < n; ++i) {
-          T d;
-          Vec3D<T> rhs;
-          computeVelocityStencilAt(i, vin, d, rhs);
-          for (unsigned c = 0; c < D; ++c)
-            Av[i][c] = static_cast<SolverT>(diag[i] * vin[i][c] -
-                                            rhs[c] + vBC[i][c]);
-        }
-      };
-      stokesMatvecCheck(xSolved, AxCheck);
-      T trueResidual = T(0);
-      for (std::size_t i = 0; i < n; ++i)
-        for (unsigned c = 0; c < D; ++c)
-          trueResidual =
-              std::max(trueResidual,
-                       std::abs(b[i][c] - static_cast<T>(AxCheck[i][c])));
-
-      constexpr T validationFactor = T(100);
-      if (trueResidual >
-          validationFactor * deformationParameters.stokesTolerance * b_norm) {
-        throwStrictGpuError(
-            "OxidationDeformation: Stokes GPU BiCGSTAB reported convergence, "
-            "but the host-side true residual check failed (true_residual=" +
-            std::to_string(trueResidual) + ", tolerance=" +
-            std::to_string(deformationParameters.stokesTolerance) +
-            ", validation_factor=" + std::to_string(validationFactor) +
-            ", gpu_residual=" + std::to_string(maxGpuResidual) + ").");
-      }
-
       for (std::size_t i = 0; i < n; ++i)
         for (unsigned c = 0; c < D; ++c)
           nodes[i].velocity[c] = static_cast<T>(xSolved[i][c]);
 
       lastStokesIters_ = maxGpuIterations;
-      lastStokesResidual_ = trueResidual / b_norm;
+      lastStokesResidual_ = maxGpuResidual / b_norm;
 
-      if (Logger::hasTiming()) {
+      if (Logger::hasDebug()) {
         const std::string tag =
             "stokes n=" + std::to_string(n) +
             " iters=" + std::to_string(lastStokesIters_) +

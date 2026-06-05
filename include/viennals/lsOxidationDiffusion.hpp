@@ -149,6 +149,7 @@ private:
   T maxScalarVelocity_ = 0.;
   bool solved = false;
   bool nodesDirty_ = true;  // true → rebuild grid/nodes on next apply()
+  mutable std::string lastLoggedBackend_; // suppresses repeated "using X" messages
   bool useRequestedBounds = false;
   bool warmStartable_ = false; // true when nodes[i].concentration holds a prior solution
   std::unordered_map<std::size_t, T> pressureLookup;
@@ -837,7 +838,7 @@ private:
                                      faceCoeffs.size());
       tUpload.finish();
       if (!gpuUploadOk) {
-        if (Logger::hasTiming()) {
+        if (Logger::hasDebug()) {
           const std::string tag = "diffusion n=" + std::to_string(n) +
                                   " [GPU upload failed]";
           Logger::getInstance()
@@ -879,16 +880,21 @@ private:
                                   " res=" + std::to_string(residual) +
                                   " [GPU]";
           Logger::getInstance()
+              .addTiming(tag + " GPU BiCGSTAB", tSolve)
+              .print();
+        }
+        if (Logger::hasDebug()) {
+          const std::string tag = "diffusion n=" + std::to_string(n) + " [GPU]";
+          Logger::getInstance()
               .addTiming(tag + " diag/b precompute", tDiag)
               .addTiming(tag + " GPU prep+faceCoeffs", tPrep)
               .addTiming(tag + " GPU upload", tUpload)
-              .addTiming(tag + " GPU BiCGSTAB", tSolve)
               .print();
         }
         return;
       }
 
-      if (Logger::hasTiming()) {
+      if (Logger::hasDebug()) {
         const std::string tag = "diffusion n=" + std::to_string(n) +
                                 " iters=" + std::to_string(gpuIterations) +
                                 " res=" + std::to_string(gpuResidual) +
@@ -1035,8 +1041,21 @@ private:
                               " iters=" + std::to_string(iterations) +
                               " res=" + std::to_string(residual) + path;
       Logger::getInstance()
-          .addTiming(tag + " diag/b precompute", tDiag)
           .addTiming(tag + " CPU BiCGSTAB", tCpuSolve)
+          .print();
+    }
+    if (Logger::hasDebug()) {
+#ifdef VIENNALS_GPU_BICGSTAB
+      const std::string path =
+          gpuMode_ == GpuMode::Cpu
+              ? " [CPU]"
+              : " [CPU n<" + std::to_string(kGpuThreshold) + "]";
+#else
+      const std::string path = " [CPU]";
+#endif
+      Logger::getInstance()
+          .addTiming("diffusion n=" + std::to_string(n) + path +
+                     " diag/b precompute", tDiag)
           .print();
     }
     if (residual > parameters.tolerance * b_norm)
@@ -1067,12 +1086,15 @@ private:
                            const std::string &detail) const {
     if (!Logger::hasInfo())
       return;
-    Logger::getInstance()
-        .addInfo("OxidationDiffusion: using " + backend +
-                 " for diffusion solve (nodes=" +
-                 std::to_string(nodes.size()) +
-                 (detail.empty() ? std::string() : ", " + detail) + ").")
-        .print();
+    const std::string msg = "OxidationDiffusion: using " + backend +
+                            " for diffusion solve (nodes=" +
+                            std::to_string(nodes.size()) +
+                            (detail.empty() ? std::string() : ", " + detail) +
+                            ").";
+    if (msg == lastLoggedBackend_)
+      return;
+    lastLoggedBackend_ = msg;
+    Logger::getInstance().addInfo(msg).print();
   }
 
   // Uses precomputed flat faceBC arrays — no HRLE access, safe for parallel execution.

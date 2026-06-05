@@ -304,6 +304,11 @@ private:
       Logger::getInstance().addInfo(message).print();
   }
 
+  static void logDebug(const std::string &message) {
+    if (Logger::hasDebug())
+      Logger::getInstance().addDebug(message).print();
+  }
+
   T applyImpl(T requestedTime, std::optional<T> cflFactor) {
     if (siInterface == nullptr || ambientInterface == nullptr) {
       Logger::getInstance()
@@ -350,15 +355,15 @@ private:
           diffusionField, deformationField, couplingParams);
       if (diffusionBoundsSet)
         coupledModel->setSolveBounds(diffusionMinIndex, diffusionMaxIndex);
-      logInfo(prefix + ": solving coupled diffusion/deformation field for dt=" +
-              std::to_string(stressTimeStep) + " hr");
+      logDebug(prefix + ": solving coupled diffusion/deformation field for dt=" +
+               std::to_string(stressTimeStep) + " hr");
       Timer<> tCoupled;
       tCoupled.start();
       coupledModel->apply();
       tCoupled.finish();
       if (Logger::hasTiming())
         Logger::getInstance().addTiming("  coupled(iter=1)", tCoupled).print();
-      logInfo(prefix + ": coupled diffusion/deformation solve complete");
+      logDebug(prefix + ": coupled diffusion/deformation solve complete");
 
       if (hasMask) {
         // --- Mask bending solve ---
@@ -368,7 +373,7 @@ private:
         if (maskBendingBoundsSet)
           maskBendingField->setSolveBounds(maskBendingMinIndex,
                                            maskBendingMaxIndex);
-        logInfo(prefix + ": solving mask bending field");
+        logDebug(prefix + ": solving mask bending field");
         Timer<> tMask;
         tMask.start();
         maskBendingField->apply();
@@ -376,10 +381,10 @@ private:
         if (Logger::hasTiming())
           Logger::getInstance().addTiming("  maskBending(iter=1)", tMask).print();
         T initialRes = maskBendingField->getLastApplyVelocityChange();
-        logInfo(prefix + ": mask bending solve complete, residual=" +
-                (initialRes >= std::numeric_limits<T>::max() * T(0.99)
-                     ? std::string("initial")
-                     : std::to_string(initialRes)));
+        logDebug(prefix + ": mask bending solve complete, residual=" +
+                 (initialRes >= std::numeric_limits<T>::max() * T(0.99)
+                      ? std::string("initial")
+                      : std::to_string(initialRes)));
 
         lastMaskCouplingIterations = 1;
         lastMaskCouplingResidual = maskBendingField->getLastApplyVelocityChange();
@@ -387,14 +392,14 @@ private:
         for (unsigned iteration = 1; iteration < maskCouplingIterations;
              ++iteration) {
           deformationField->setMaskVelocityField(maskBendingField);
-          logInfo(prefix + ": coupling iteration " +
-                  std::to_string(iteration + 1) + " solving coupled field");
+          logDebug(prefix + ": coupling iteration " +
+                   std::to_string(iteration + 1) + " solving coupled field");
           Timer<> tIterCoupled, tIterMask;
           tIterCoupled.start();
           coupledModel->apply();
           tIterCoupled.finish();
-          logInfo(prefix + ": coupling iteration " +
-                  std::to_string(iteration + 1) + " solving mask field");
+          logDebug(prefix + ": coupling iteration " +
+                   std::to_string(iteration + 1) + " solving mask field");
           tIterMask.start();
           maskBendingField->apply();
           tIterMask.finish();
@@ -407,9 +412,9 @@ private:
                 .print();
           lastMaskCouplingIterations = iteration + 1;
           lastMaskCouplingResidual = maskBendingField->getLastApplyVelocityChange();
-          logInfo(prefix + ": coupling iteration " +
-                  std::to_string(iteration + 1) + " residual=" +
-                  std::to_string(lastMaskCouplingResidual));
+          logDebug(prefix + ": coupling iteration " +
+                   std::to_string(iteration + 1) + " residual=" +
+                   std::to_string(lastMaskCouplingResidual));
           if (lastMaskCouplingResidual <= maskCouplingTolerance)
             break;
         }
