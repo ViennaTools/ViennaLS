@@ -55,7 +55,7 @@ bool gpuSetupCSR(GpuBiCGSTABBuffers* gpu,
                  uint32_t n,
                  int nFaces);
 
-// Upload per-solve arrays (diag, b, faceCoeffs).
+// Upload per-solve arrays (diag, b, faceCoeffs) and re-factorize ILU(0).
 // `diagLen` == n, `coeffLen` == nFaces * n.
 bool gpuUploadSolverArrays(GpuBiCGSTABBuffers* gpu,
                            const double* diag,
@@ -63,6 +63,13 @@ bool gpuUploadSolverArrays(GpuBiCGSTABBuffers* gpu,
                            const double* coeff,
                            uint32_t diagLen,
                            std::size_t coeffLen);
+
+// Upload only the RHS vector (d_b).  Use when the matrix geometry is already
+// uploaded and only the right-hand side changes (e.g. successive Stokes
+// component solves that share the same stiffness matrix).
+bool gpuUploadRhs(GpuBiCGSTABBuffers* gpu,
+                  const double* b,
+                  uint32_t n);
 
 // Run GPU BiCGSTAB.
 //   x (length n, host): initial guess on entry, solution on exit.

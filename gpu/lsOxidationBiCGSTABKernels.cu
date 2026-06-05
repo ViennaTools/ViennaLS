@@ -154,6 +154,21 @@ bool gpuUploadSolverArrays(GpuBiCGSTABBuffers* gpu,
     return false;
 }
 
+bool gpuUploadRhs(GpuBiCGSTABBuffers* gpu, const double* b, uint32_t n) {
+    if (n != gpu->n) {
+        setLastGpuError(std::string("RHS upload length mismatch (got ") +
+                        std::to_string(n) + ", expected " +
+                        std::to_string(gpu->n) + ")");
+        return false;
+    }
+    if (!gpu->activateDevice("gpuUploadRhs"))
+        return false;
+    return gpu->checkCuda(
+        cudaMemcpy(gpu->d_b, b, static_cast<std::size_t>(n) * sizeof(double),
+                   cudaMemcpyHostToDevice),
+        "cudaMemcpy(d_b)");
+}
+
 bool gpuSetupCSR(GpuBiCGSTABBuffers* gpu,
                  const uint32_t* h_nb,
                  uint32_t n,

@@ -4,6 +4,8 @@
 #include <lsOxidationDiffusion.hpp>
 
 #include <algorithm>
+#include <stdexcept>
+#include <string>
 #include <unordered_map>
 
 #include <omp.h>
@@ -137,6 +139,29 @@ private:
   std::vector<T> faceBCDists_;
   std::vector<uint8_t> touchesAmbient_; // 1 if node touches the ambient (free) surface
 
+  // GPU solver selection. Semantics match OxidationDiffusion.
+  GpuMode gpuMode_ = GpuMode::Auto;
+  GpuPreconditioner gpuPreconditioner_ = GpuPreconditioner::Jacobi;
+  static constexpr std::size_t kGpuThreshold = 20000;
+
+#ifdef VIENNALS_GPU_BICGSTAB
+  // Geometry-fixed (per buildNodes()) arrays for GPU pressure solve.
+  // Layout matches pressCoeff/pressNeighId in solvePressure() so the
+  // same spmvKernel can be reused without any CPU-side reformatting.
+  std::vector<double>   pressCoeffGpu_;    // face-major [2D * n]
+  std::vector<uint32_t> pressNeighId32_;   // face-major [2D * n]
+  std::vector<double>   actualDiagGpu_;    // [n], effective GPU matrix diagonal
+  gpu::GpuBiCGSTABBuffers* gpuPressBufs_ = nullptr;
+
+  // Geometry-fixed arrays for GPU Stokes velocity solve.
+  // stokesDiagGpu_ excludes OOB and AMBIENT self-coupling (those cancel with
+  // the vBC term), retaining only interior + REACTION + MASK contributions.
+  std::vector<double>   stokesCoeffGpu_;   // face-major [2D * n]
+  std::vector<uint32_t> stokesNeighId32_;  // face-major [2D * n]
+  std::vector<double>   stokesDiagGpu_;    // [n]
+  gpu::GpuBiCGSTABBuffers* gpuStokesBufs_ = nullptr;
+#endif
+
 public:
   std::vector<Node> nodes;
 
@@ -158,6 +183,16 @@ public:
     return SmartPointer<OxidationDeformation>::New(
         std::forward<Args>(args)...);
   }
+
+  ~OxidationDeformation() {
+#ifdef VIENNALS_GPU_BICGSTAB
+    gpu::freeGpuBuffers(gpuPressBufs_);
+    gpu::freeGpuBuffers(gpuStokesBufs_);
+#endif
+  }
+
+  void setGpuMode(GpuMode mode) { gpuMode_ = mode; }
+  void setGpuPreconditioner(GpuPreconditioner prec) { gpuPreconditioner_ = prec; }
 
   void setReactionInterface(SmartPointer<Domain<T, D>> passedInterface) {
     reactionInterface = passedInterface;
@@ -591,6 +626,224 @@ private:
     }
   }
 
+#ifdef VIENNALS_GPU_BICGSTAB
+  // Builds the face-major pressure matrix geometry for GPU reuse.
+  // The logic mirrors the explicit precomputation in solvePressure() so the
+  // same actualDiagGpu_ / pressCoeffGpu_ arrays can feed both the CPU ILU(0)
+  // factorization and the GPU SpMV without recomputation.
+  void buildPressureGpuGeometry() {
+    const std::size_t n = nodes.size();
+    const T eps = std::numeric_limits<T>::epsilon();
+    pressCoeffGpu_.assign(2 * D * n, 0.0);
+    pressNeighId32_.assign(2 * D * n, gpu::kNoNode);
+    actualDiagGpu_.assign(n, 0.0);
+
+    for (std::size_t id = 0; id < n; ++id) {
+      if (touchesAmbient_[id]) { actualDiagGpu_[id] = 1.0; continue; }
+      for (unsigned dir = 0; dir < D; ++dir) {
+        const unsigned fiNeg = dir * 2u;
+        const unsigned fiPos = dir * 2u + 1u;
+        IndexType nbNeg = nodes[id].index;  nbNeg[dir] -= 1;
+        IndexType nbPos = nodes[id].index;  nbPos[dir] += 1;
+        const std::size_t jNeg = inBounds(nbNeg) ? nodeLookupFlat[linearIndex(nbNeg)] : noNode;
+        const std::size_t jPos = inBounds(nbPos) ? nodeLookupFlat[linearIndex(nbPos)] : noNode;
+
+        auto effDist = [&](unsigned fi, std::size_t j) -> T {
+          if (j != noNode) return gridDelta;
+          const Boundary bt = faceBCTypes_[fi * n + id];
+          return (bt != Boundary::NONE) ? faceBCDists_[fi * n + id] : gridDelta;
+        };
+
+        const T dNeg = effDist(fiNeg, jNeg);
+        const T dPos = effDist(fiPos, jPos);
+        const T dSum = dNeg + dPos;
+        if (dSum <= eps) continue;
+
+        auto processFace = [&](unsigned fi, std::size_t j, T d) {
+          const T c = T(2) / (d * dSum);
+          if (j != noNode) {
+            pressCoeffGpu_[fi * n + id]  = static_cast<double>(c);
+            pressNeighId32_[fi * n + id] = static_cast<uint32_t>(j);
+            actualDiagGpu_[id] += c;
+          } else if (faceBCTypes_[fi * n + id] == Boundary::REACTION) {
+            actualDiagGpu_[id] += c; // Dirichlet p=0 ghost adds to diagonal
+          }
+        };
+        processFace(fiNeg, jNeg, dNeg);
+        processFace(fiPos, jPos, dPos);
+      }
+      if (actualDiagGpu_[id] <= eps) actualDiagGpu_[id] = 1.0;
+    }
+  }
+
+  // Builds the face-major Stokes velocity matrix geometry for GPU reuse.
+  // The effective diagonal (stokesDiagGpu_) excludes OOB and AMBIENT face
+  // self-coupling terms because those cancel exactly with the vBC correction
+  // in the stokesMatvec.  REACTION and MASK boundaries contribute only to the
+  // diagonal (their constant velocity values go into the RHS via vBC).
+  void buildStokesGpuGeometry() {
+    const std::size_t n = nodes.size();
+    const T eps = std::numeric_limits<T>::epsilon();
+    stokesCoeffGpu_.assign(2 * D * n, 0.0);
+    stokesNeighId32_.assign(2 * D * n, gpu::kNoNode);
+    stokesDiagGpu_.assign(n, 0.0);
+
+    for (std::size_t id = 0; id < n; ++id) {
+      for (unsigned dir = 0; dir < D; ++dir) {
+        const unsigned fiNeg = dir * 2u;
+        const unsigned fiPos = dir * 2u + 1u;
+        IndexType nbNeg = nodes[id].index;  nbNeg[dir] -= 1;
+        IndexType nbPos = nodes[id].index;  nbPos[dir] += 1;
+        const bool negInBounds = inBounds(nbNeg);
+        const bool posInBounds = inBounds(nbPos);
+        const std::size_t jNeg = negInBounds ? nodeLookupFlat[linearIndex(nbNeg)] : noNode;
+        const std::size_t jPos = posInBounds ? nodeLookupFlat[linearIndex(nbPos)] : noNode;
+
+        // Distance matching velocityStencilPoint: gridDelta for OOB/interior,
+        // faceBCDists_ for boundary-crossing faces.
+        auto stokesFaceDist = [&](unsigned fi, bool inb, std::size_t j) -> T {
+          if (!inb || j != noNode) return gridDelta;
+          const Boundary bt = faceBCTypes_[fi * n + id];
+          return (bt != Boundary::NONE) ? faceBCDists_[fi * n + id]
+                                        : gridDelta;
+        };
+
+        const T dNeg = stokesFaceDist(fiNeg, negInBounds, jNeg);
+        const T dPos = stokesFaceDist(fiPos, posInBounds, jPos);
+        const T dSum = dNeg + dPos;
+        if (dSum <= eps) continue;
+
+        auto processFace = [&](unsigned fi, bool inb, std::size_t j, T d) {
+          const T c = T(2) / (d * dSum);
+          if (inb && j != noNode) {
+            // Interior neighbor: off-diagonal and diagonal contribution.
+            stokesCoeffGpu_[fi * n + id]  = static_cast<double>(c);
+            stokesNeighId32_[fi * n + id] = static_cast<uint32_t>(j);
+            stokesDiagGpu_[id] += c;
+          } else if (inb) {
+            // Boundary-crossing face.  OOB and AMBIENT are self-coupling
+            // (cancelled by vBC), so only REACTION and MASK add to the diagonal.
+            const Boundary bt = faceBCTypes_[fi * n + id];
+            if (bt == Boundary::REACTION || bt == Boundary::MASK)
+              stokesDiagGpu_[id] += c;
+            // AMBIENT and OOB are excluded: their self-coupling exactly cancels
+            // with the vBC correction in the GPU RHS.
+          }
+          // !inb (OOB): self-coupling, excluded.
+        };
+        processFace(fiNeg, negInBounds, jNeg, dNeg);
+        processFace(fiPos, posInBounds, jPos, dPos);
+      }
+    }
+  }
+
+  // Allocates GPU buffers for pressure and Stokes solves and uploads the
+  // geometry-fixed CSR pattern.  Called from buildNodes() after the face BC
+  // arrays and the two geometry helper arrays are populated.
+  void setupDeformationGpuBuffers() {
+    const std::size_t n = nodes.size();
+    if (n == 0) {
+      gpu::freeGpuBuffers(gpuPressBufs_);
+      gpuPressBufs_ = nullptr;
+      gpu::freeGpuBuffers(gpuStokesBufs_);
+      gpuStokesBufs_ = nullptr;
+      return;
+    }
+    const bool tryGpu = (gpuMode_ == GpuMode::Gpu) ||
+                        (gpuMode_ == GpuMode::Auto && n >= kGpuThreshold);
+    const bool useIlu0 = (gpuPreconditioner_ == GpuPreconditioner::ILU0);
+
+    gpu::freeGpuBuffers(gpuPressBufs_);
+    gpuPressBufs_ = nullptr;
+    if (tryGpu) {
+      gpuPressBufs_ = gpu::allocGpuBuffers(static_cast<uint32_t>(n), 2 * D, useIlu0);
+      if (!gpuPressBufs_) {
+        throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
+                            "pressure solver CUDA buffers could not be "
+                            "allocated or the CUDA context could not be "
+                            "initialized." + gpuErrorDetail());
+      }
+      if (!gpu::gpuUploadNeighborIds(gpuPressBufs_, pressNeighId32_.data(),
+                                     2u * D * n)) {
+        gpu::freeGpuBuffers(gpuPressBufs_);
+        gpuPressBufs_ = nullptr;
+        throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
+                            "uploading pressure GPU neighbor IDs failed." +
+                            gpuErrorDetail());
+      }
+      if (useIlu0 &&
+          !gpu::gpuSetupCSR(gpuPressBufs_, pressNeighId32_.data(),
+                            static_cast<uint32_t>(n), 2 * D)) {
+        gpu::freeGpuBuffers(gpuPressBufs_);
+        gpuPressBufs_ = nullptr;
+        throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
+                            "CUSPARSE setup for the pressure GPU BiCGSTAB "
+                            "solver failed." + gpuErrorDetail());
+      }
+    }
+
+    gpu::freeGpuBuffers(gpuStokesBufs_);
+    gpuStokesBufs_ = nullptr;
+    if (tryGpu) {
+      gpuStokesBufs_ = gpu::allocGpuBuffers(static_cast<uint32_t>(n), 2 * D, useIlu0);
+      if (!gpuStokesBufs_) {
+        throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
+                            "Stokes solver CUDA buffers could not be "
+                            "allocated or the CUDA context could not be "
+                            "initialized." + gpuErrorDetail());
+      }
+      if (!gpu::gpuUploadNeighborIds(gpuStokesBufs_, stokesNeighId32_.data(),
+                                     2u * D * n)) {
+        gpu::freeGpuBuffers(gpuStokesBufs_);
+        gpuStokesBufs_ = nullptr;
+        throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
+                            "uploading Stokes GPU neighbor IDs failed." +
+                            gpuErrorDetail());
+      }
+      if (useIlu0 &&
+          !gpu::gpuSetupCSR(gpuStokesBufs_, stokesNeighId32_.data(),
+                            static_cast<uint32_t>(n), 2 * D)) {
+        gpu::freeGpuBuffers(gpuStokesBufs_);
+        gpuStokesBufs_ = nullptr;
+        throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
+                            "CUSPARSE setup for the Stokes GPU BiCGSTAB "
+                            "solver failed." + gpuErrorDetail());
+      }
+    }
+
+    if (tryGpu)
+      logDeformationBackend("GPU BiCGSTAB",
+                            "pressure/Stokes, preconditioner=" +
+                                std::string(useIlu0 ? "ILU0" : "Jacobi"));
+  }
+#endif // VIENNALS_GPU_BICGSTAB
+
+  [[noreturn]] static void throwStrictGpuError(const std::string &message) {
+    Logger::getInstance().addError(message).print();
+    throw std::runtime_error(message);
+  }
+
+#ifdef VIENNALS_GPU_BICGSTAB
+  static std::string gpuErrorDetail() {
+    const char *detail = gpu::gpuGetLastErrorMessage();
+    if (detail && detail[0] != '\0')
+      return std::string(" Detail: ") + detail;
+    return {};
+  }
+#endif
+
+  void logDeformationBackend(const std::string &backend,
+                             const std::string &detail) const {
+    if (!Logger::hasInfo())
+      return;
+    Logger::getInstance()
+        .addInfo("OxidationDeformation: using " + backend +
+                 " for mechanics pressure/Stokes solves (nodes=" +
+                 std::to_string(nodes.size()) +
+                 (detail.empty() ? std::string() : ", " + detail) + ").")
+        .print();
+  }
+
 public:
   bool initialiseGrid() {
     return initializeGridFromInterfaces(reactionInterface, ambientInterface,
@@ -646,6 +899,18 @@ public:
         }
       }
     }
+
+#ifdef VIENNALS_GPU_BICGSTAB
+    buildPressureGpuGeometry();
+    buildStokesGpuGeometry();
+    setupDeformationGpuBuffers();
+#else
+    if (gpuMode_ == GpuMode::Gpu) {
+      throwStrictGpuError("OxidationDeformation: explicit GPU mode was "
+                          "requested, but ViennaLS was built without "
+                          "VIENNALS_GPU_BICGSTAB.");
+    }
+#endif
 
   }
 
@@ -1070,6 +1335,110 @@ public:
         computePressureStencilAt(i, zeros, ambientBP, diag[i], pBC[i]);
     }
 
+    std::vector<T> b(n);
+    T b_norm = T(0);
+    for (std::size_t i = 0; i < n; ++i) {
+      b[i] = pBC[i] + deformationParameters.bulkModulus * divergence[i];
+      b_norm = std::max(b_norm, std::abs(b[i]));
+    }
+    if (b_norm < T(1e-100)) b_norm = T(1);
+
+    std::vector<SolverT> x(n);
+    for (std::size_t i = 0; i < n; ++i)
+      x[i] = static_cast<SolverT>(touchesAmbient_[i] ? ambientBP[i] : nodes[i].pressure);
+
+#ifdef VIENNALS_GPU_BICGSTAB
+    if (gpu::gpuIsValid(gpuPressBufs_)) {
+      const std::size_t nf = 2u * D * n;
+      if (actualDiagGpu_.size() != n || pressCoeffGpu_.size() != nf) {
+        throwStrictGpuError("OxidationDeformation: pressure GPU geometry has "
+                            "the wrong size for the current node set.");
+      }
+
+      Timer<> tUpload, tSolve;
+      std::vector<double> bGpu(n), xGpu(n);
+      for (std::size_t i = 0; i < n; ++i) {
+        bGpu[i] = static_cast<double>(b[i]);
+        xGpu[i] = static_cast<double>(x[i]);
+      }
+
+      tUpload.start();
+      const bool gpuUploadOk =
+          gpu::gpuUploadSolverArrays(gpuPressBufs_, actualDiagGpu_.data(),
+                                     bGpu.data(), pressCoeffGpu_.data(),
+                                     static_cast<uint32_t>(n),
+                                     pressCoeffGpu_.size());
+      tUpload.finish();
+      if (!gpuUploadOk) {
+        throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
+                            "uploading pressure solver arrays or factorizing "
+                            "ILU failed." + gpuErrorDetail());
+      }
+
+      unsigned gpuIterations = 0;
+      double gpuResidual = 0.0;
+      tSolve.start();
+      const bool gpuConverged =
+          gpu::gpuSolveBiCGSTAB(gpuPressBufs_, xGpu.data(),
+                                static_cast<double>(eps),
+                                deformationParameters.pressureIterations,
+                                static_cast<double>(
+                                    deformationParameters.pressureTolerance),
+                                gpuIterations, gpuResidual);
+      tSolve.finish();
+
+      const bool finiteGpuSolution =
+          gpuConverged &&
+          std::all_of(xGpu.begin(), xGpu.end(),
+                      [](double value) { return std::isfinite(value); });
+      if (!finiteGpuSolution) {
+        throwStrictGpuError(
+            "OxidationDeformation: pressure GPU BiCGSTAB failed, did not "
+            "converge, or produced non-finite pressures (iters=" +
+            std::to_string(gpuIterations) + ", residual=" +
+            std::to_string(gpuResidual) + ").");
+      }
+
+      std::vector<SolverT> xCheck(n);
+      for (std::size_t i = 0; i < n; ++i)
+        xCheck[i] = static_cast<SolverT>(xGpu[i]);
+      std::vector<SolverT> AxCheck(n);
+      pressureMatvec(xCheck, ambientBP, diag, pBC, AxCheck);
+      T trueResidual = T(0);
+      for (std::size_t i = 0; i < n; ++i)
+        trueResidual =
+            std::max(trueResidual, std::abs(b[i] - static_cast<T>(AxCheck[i])));
+
+      constexpr T validationFactor = T(100);
+      if (trueResidual >
+          validationFactor * deformationParameters.pressureTolerance * b_norm) {
+        throwStrictGpuError(
+            "OxidationDeformation: pressure GPU BiCGSTAB reported convergence, "
+            "but the host-side true residual check failed (true_residual=" +
+            std::to_string(trueResidual) + ", tolerance=" +
+            std::to_string(deformationParameters.pressureTolerance) +
+            ", validation_factor=" + std::to_string(validationFactor) + ").");
+      }
+
+      for (std::size_t i = 0; i < n; ++i)
+        nodes[i].pressure = static_cast<T>(xGpu[i]);
+      lastPressureIters_ = gpuIterations;
+      lastPressureResidual_ = trueResidual / b_norm;
+
+      if (Logger::hasTiming()) {
+        const std::string tag =
+            "pressure n=" + std::to_string(n) +
+            " iters=" + std::to_string(lastPressureIters_) +
+            " res=" + std::to_string(lastPressureResidual_) + " [GPU]";
+        Logger::getInstance()
+            .addTiming(tag + " GPU upload", tUpload)
+            .addTiming(tag + " GPU BiCGSTAB", tSolve)
+            .print();
+      }
+      return;
+    }
+#endif
+
     // Precompute off-diagonal structure and the CORRECT matrix diagonal for SSOR.
     //
     // Key insight: diag[i] from computePressureStencilAt includes self-coupling
@@ -1208,14 +1577,6 @@ public:
       }
     };
 
-    std::vector<T> b(n);
-    for (std::size_t i = 0; i < n; ++i)
-      b[i] = pBC[i] + deformationParameters.bulkModulus * divergence[i];
-
-    std::vector<SolverT> x(n);
-    for (std::size_t i = 0; i < n; ++i)
-      x[i] = static_cast<SolverT>(touchesAmbient_[i] ? ambientBP[i] : nodes[i].pressure);
-
     std::vector<SolverT> Ax(n);
     pressureMatvec(x, ambientBP, diag, pBC, Ax);
     std::vector<SolverT> r(n), r_hat(n), p(n, SolverT(0)), v(n, SolverT(0)), y(n), z(n), s(n), t(n);
@@ -1223,11 +1584,6 @@ public:
       r[i]     = static_cast<SolverT>(b[i] - Ax[i]);
       r_hat[i] = r[i];
     }
-
-    T b_norm = T(0);
-    for (std::size_t i = 0; i < n; ++i)
-      b_norm = std::max(b_norm, std::abs(b[i]));
-    if (b_norm < T(1e-100)) b_norm = T(1);  // trivial / zero-RHS system
 
     T rho = T(1), alpha = T(1), omega = T(1);
     T pressureResidual = T(0);
@@ -1352,9 +1708,14 @@ public:
     }
 
     std::vector<Vec3D<T>> b(n);
-    for (std::size_t i = 0; i < n; ++i)
-      for (unsigned c = 0; c < D; ++c)
+    T b_norm = T(0);
+    for (std::size_t i = 0; i < n; ++i) {
+      for (unsigned c = 0; c < D; ++c) {
         b[i][c] = vBC[i][c] - forcing[i][c] / deformationParameters.viscosity;
+        b_norm = std::max(b_norm, std::abs(b[i][c]));
+      }
+    }
+    if (b_norm < T(1e-100)) b_norm = T(1);
 
     // Initial guess from current node velocities (warm-start), converted to SolverT.
     std::vector<Vec3D<SolverT>> x(n);
@@ -1364,6 +1725,128 @@ public:
         for (unsigned c = 0; c < D; ++c)
           x[i][c] = static_cast<SolverT>(vel[i][c]);
     }
+
+#ifdef VIENNALS_GPU_BICGSTAB
+    if (gpu::gpuIsValid(gpuStokesBufs_)) {
+      const std::size_t nf = 2u * D * n;
+      if (stokesDiagGpu_.size() != n || stokesCoeffGpu_.size() != nf) {
+        throwStrictGpuError("OxidationDeformation: Stokes GPU geometry has "
+                            "the wrong size for the current node set.");
+      }
+
+      Timer<> tUpload, tSolve;
+      std::vector<Vec3D<SolverT>> xSolved(n);
+      unsigned maxGpuIterations = 0;
+      double maxGpuResidual = 0.0;
+
+      for (unsigned c = 0; c < D; ++c) {
+        std::vector<double> bGpu(n), xGpu(n);
+        for (std::size_t i = 0; i < n; ++i) {
+          bGpu[i] = static_cast<double>(b[i][c]);
+          xGpu[i] = static_cast<double>(x[i][c]);
+        }
+
+        tUpload.start();
+        const bool gpuUploadOk =
+            (c == 0)
+                ? gpu::gpuUploadSolverArrays(gpuStokesBufs_,
+                                             stokesDiagGpu_.data(), bGpu.data(),
+                                             stokesCoeffGpu_.data(),
+                                             static_cast<uint32_t>(n),
+                                             stokesCoeffGpu_.size())
+                : gpu::gpuUploadRhs(gpuStokesBufs_, bGpu.data(),
+                                    static_cast<uint32_t>(n));
+        tUpload.finish();
+        if (!gpuUploadOk) {
+          throwStrictGpuError("OxidationDeformation: GPU mode was selected, "
+                              "but uploading Stokes solver arrays failed." +
+                              gpuErrorDetail());
+        }
+
+        unsigned gpuIterations = 0;
+        double gpuResidual = 0.0;
+        tSolve.start();
+        const bool gpuConverged =
+            gpu::gpuSolveBiCGSTAB(gpuStokesBufs_, xGpu.data(),
+                                  static_cast<double>(eps),
+                                  deformationParameters.stokesIterations,
+                                  static_cast<double>(
+                                      deformationParameters.stokesTolerance),
+                                  gpuIterations, gpuResidual);
+        tSolve.finish();
+
+        const bool finiteGpuSolution =
+            gpuConverged &&
+            std::all_of(xGpu.begin(), xGpu.end(),
+                        [](double value) { return std::isfinite(value); });
+        if (!finiteGpuSolution) {
+          throwStrictGpuError(
+              "OxidationDeformation: Stokes GPU BiCGSTAB failed, did not "
+              "converge, or produced non-finite velocities for component " +
+              std::to_string(c) + " (iters=" +
+              std::to_string(gpuIterations) + ", residual=" +
+              std::to_string(gpuResidual) + ").");
+        }
+
+        maxGpuIterations = std::max(maxGpuIterations, gpuIterations);
+        maxGpuResidual = std::max(maxGpuResidual, gpuResidual);
+        for (std::size_t i = 0; i < n; ++i)
+          xSolved[i][c] = static_cast<SolverT>(xGpu[i]);
+      }
+
+      std::vector<Vec3D<SolverT>> AxCheck(n);
+      auto stokesMatvecCheck = [&](const std::vector<Vec3D<SolverT>> &vin,
+                                   std::vector<Vec3D<SolverT>> &Av) {
+#pragma omp parallel for schedule(static)
+        for (std::size_t i = 0; i < n; ++i) {
+          T d;
+          Vec3D<T> rhs;
+          computeVelocityStencilAt(i, vin, d, rhs);
+          for (unsigned c = 0; c < D; ++c)
+            Av[i][c] = static_cast<SolverT>(diag[i] * vin[i][c] -
+                                            rhs[c] + vBC[i][c]);
+        }
+      };
+      stokesMatvecCheck(xSolved, AxCheck);
+      T trueResidual = T(0);
+      for (std::size_t i = 0; i < n; ++i)
+        for (unsigned c = 0; c < D; ++c)
+          trueResidual =
+              std::max(trueResidual,
+                       std::abs(b[i][c] - static_cast<T>(AxCheck[i][c])));
+
+      constexpr T validationFactor = T(100);
+      if (trueResidual >
+          validationFactor * deformationParameters.stokesTolerance * b_norm) {
+        throwStrictGpuError(
+            "OxidationDeformation: Stokes GPU BiCGSTAB reported convergence, "
+            "but the host-side true residual check failed (true_residual=" +
+            std::to_string(trueResidual) + ", tolerance=" +
+            std::to_string(deformationParameters.stokesTolerance) +
+            ", validation_factor=" + std::to_string(validationFactor) +
+            ", gpu_residual=" + std::to_string(maxGpuResidual) + ").");
+      }
+
+      for (std::size_t i = 0; i < n; ++i)
+        for (unsigned c = 0; c < D; ++c)
+          nodes[i].velocity[c] = static_cast<T>(xSolved[i][c]);
+
+      lastStokesIters_ = maxGpuIterations;
+      lastStokesResidual_ = trueResidual / b_norm;
+
+      if (Logger::hasTiming()) {
+        const std::string tag =
+            "stokes n=" + std::to_string(n) +
+            " iters=" + std::to_string(lastStokesIters_) +
+            " res=" + std::to_string(lastStokesResidual_) + " [GPU]";
+        Logger::getInstance()
+            .addTiming(tag + " GPU upload", tUpload)
+            .addTiming(tag + " GPU BiCGSTAB", tSolve)
+            .print();
+      }
+      return;
+    }
+#endif
 
     // Stokes SpMV: (Av)[i] = diag[i]*vin[i] - rhs_at_vin[i] + vBC[i], stored as SolverT.
     auto stokesMatvec = [&](const std::vector<Vec3D<SolverT>> &vin,
@@ -1405,8 +1888,6 @@ public:
         r[i][c]     = static_cast<SolverT>(b[i][c] - Ax[i][c]);
         r_hat[i][c] = r[i][c];
       }
-
-    const T b_norm = [&]{ T m = T(0); for (std::size_t i = 0; i < n; ++i) for (unsigned c = 0; c < D; ++c) m = std::max(m, std::abs(b[i][c])); return (m < T(1e-100)) ? T(1) : m; }();
 
     T rho = T(1), alpha = T(1), omega = T(1);
     T velocityResidual = T(0);

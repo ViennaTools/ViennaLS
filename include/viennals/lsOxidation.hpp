@@ -341,6 +341,8 @@ private:
       deformationField = OxidationDeformation<T, D>::New(
           siInterface, ambientInterface, diffusionField, oxidationParams,
           stepDeformationParams);
+      deformationField->setGpuMode(gpuMode_);
+      deformationField->setGpuPreconditioner(gpuPreconditioner_);
       if (hasMask)
         deformationField->setMaskInterface(maskInterface, maskInteriorSign);
 
