@@ -184,6 +184,7 @@ inline void bindOxidationSharedTypes(py::module &module) {
   py::class_<OxidationMaskParameters<T>>(module, "OxidationMaskParameters",
                                          py::module_local())
       .def(py::init<>())
+      .def_readwrite("contactMode", &OxidationMaskParameters<T>::contactMode)
       .def_readwrite("temperature", &OxidationMaskParameters<T>::temperature)
       .def_readwrite("referenceTemperature",
                      &OxidationMaskParameters<T>::referenceTemperature)
@@ -202,7 +203,13 @@ inline void bindOxidationSharedTypes(py::module &module) {
                      &OxidationMaskParameters<T>::maxIterations)
       .def_readwrite("maxGridPoints",
                      &OxidationMaskParameters<T>::maxGridPoints)
-      .def_readwrite("material", &OxidationMaskParameters<T>::material);
+      .def_readwrite("material", &OxidationMaskParameters<T>::material)
+      .def_readwrite("anchorBoundaryDirection",
+                     &OxidationMaskParameters<T>::anchorBoundaryDirection)
+      .def_readwrite("anchorBoundarySide",
+                     &OxidationMaskParameters<T>::anchorBoundarySide)
+      .def_readwrite("anchorBoundaryLayers",
+                     &OxidationMaskParameters<T>::anchorBoundaryLayers);
 
   py::class_<OxidationCouplingParameters<T>>(
       module, "OxidationCouplingParameters", py::module_local())
@@ -635,6 +642,8 @@ template <int D> void bindApi(py::module &module) {
            &OxidationMaskBending<T, D>::getNumberOfSolutionNodes)
       .def("getNumberOfContactNodes",
            &OxidationMaskBending<T, D>::getNumberOfContactNodes)
+      .def("getNumberOfFixedNodes",
+           &OxidationMaskBending<T, D>::getNumberOfFixedNodes)
       .def("writeFieldsToLevelSet",
            &OxidationMaskBending<T, D>::writeFieldsToLevelSet);
 

@@ -6,6 +6,7 @@
 #include <lsOxidationPresets.hpp>
 #include <lsTestAsserts.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 
@@ -247,9 +248,142 @@ void testLOCOSOxidation() {
 }
 
 // ---------------------------------------------------------------------------
+// LOCOS mask mechanics sensitivity.
+//
+// The mask contact geometry is identical for all cases: same bottom surface,
+// same mask edge, same pad oxide.  Only the mask top surface or viscosity
+// changes.  The traction-driven contact solve should therefore make thicker
+// and more viscous masks less mobile than a thin/soft mask.
+// ---------------------------------------------------------------------------
+
+struct LOCOSMaskResponse {
+  NumericType actualDt = 0.;
+  NumericType verticalMaskSpeed = 0.;
+  NumericType underMaskOxideSpeed = 0.;
+  NumericType maxMaskSpeed = 0.;
+  std::size_t maskNodes = 0;
+  std::size_t contactNodes = 0;
+  std::size_t fixedNodes = 0;
+};
+
+LOCOSMaskResponse runLOCOSMaskResponse(NumericType maskThick,
+                                       NumericType maskViscosity) {
+  constexpr NumericType gridDelta          = 0.1;
+  constexpr NumericType xExtent            = 1.5;
+  constexpr NumericType yMin               = -0.5;
+  constexpr NumericType yMax               = 1.2;
+  constexpr NumericType padOx              = 0.15;
+  constexpr NumericType maskEdge           = 0.;
+  constexpr NumericType maskContactEpsilon = 1e-6;
+  constexpr NumericType advectionTime      = 0.12;
+
+  double bounds[2 * D] = {-xExtent, xExtent, yMin, yMax};
+  ls::Domain<NumericType, D>::BoundaryType bc[D];
+  bc[0] = ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
+  bc[1] = ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
+
+  auto si = makePlane(bounds, bc, gridDelta, 0.);
+  auto ambient = ls::Domain<NumericType, D>::New(si);
+  auto sphere = ls::SmartPointer<ls::SphereDistribution<
+      viennahrle::CoordType, D>>::New(padOx);
+  ls::GeometricAdvect<NumericType, D>(ambient, sphere).apply();
+
+  auto mask = makeBox(bounds, bc, gridDelta,
+                      {-xExtent, padOx - maskContactEpsilon},
+                      {maskEdge, padOx + maskThick});
+
+  auto oxParams =
+      ls::OxidationPresets<NumericType>::wet1000CDealGrove100();
+  oxParams.velocitySign = -1.;
+  oxParams.maskTransferCoefficient = 0.;
+  oxParams.maskConcentration = 0.;
+  oxParams.tolerance = 1e-7;
+
+  auto defParams =
+      ls::OxidationPresets<NumericType>::oxideMechanics1000C(advectionTime);
+  defParams.pressureIterations = 200;
+  defParams.stokesIterations = 60;
+
+  ls::OxidationCouplingParameters<NumericType> coupling;
+  coupling.maxIterations = 6;
+  coupling.tolerance = 1e-6;
+
+  auto maskParams =
+      ls::OxidationPresets<NumericType>::siliconNitrideMask1000C();
+  maskParams.contactMode = 1;
+  maskParams.referenceViscosity = maskViscosity;
+  maskParams.anchorBoundaryDirection = 0;
+  maskParams.anchorBoundarySide = -1;
+  maskParams.anchorBoundaryLayers = 1;
+  maskParams.maxIterations = 4000;
+
+  const auto toIndex = [gridDelta](NumericType v) {
+    return static_cast<viennahrle::IndexType>(std::llround(v / gridDelta));
+  };
+
+  auto ox = ls::Oxidation<NumericType, D>::New(si, ambient, mask);
+  ox->setOxidationParameters(oxParams);
+  ox->setDeformationParameters(defParams);
+  ox->setCouplingParameters(coupling);
+  ox->setMaskParameters(maskParams);
+  viennahrle::Index<D> diffMin{toIndex(-xExtent), toIndex(yMin)};
+  viennahrle::Index<D> diffMax{toIndex(xExtent), toIndex(yMax)};
+  ox->setSolveBounds(diffMin, diffMax);
+  viennahrle::Index<D> mbMin{toIndex(-xExtent), toIndex(padOx) - 1};
+  viennahrle::Index<D> mbMax{toIndex(maskEdge), toIndex(padOx + maskThick) + 1};
+  ox->setMaskBendingBounds(mbMin, mbMax);
+  ox->setMaskCouplingIterations(8);
+  ox->setMaskCouplingTolerance(5e-2);
+
+  LOCOSMaskResponse response;
+  response.actualDt = ox->applyCFLLimited(advectionTime, 0.499);
+  auto maskField = ox->getMaskBendingField();
+  VC_TEST_ASSERT(maskField != nullptr)
+
+  const ls::Vec3D<NumericType> zero{0., 0., 0.};
+  response.verticalMaskSpeed = maskField->getDissipationAlpha(1, -1, zero);
+  response.maxMaskSpeed = std::max(maskField->getDissipationAlpha(0, -1, zero),
+                                   response.verticalMaskSpeed);
+  auto deformationField = ox->getDeformationField();
+  VC_TEST_ASSERT(deformationField != nullptr)
+  const ls::Vec3D<NumericType> underMaskPoint{
+      NumericType(-0.2), padOx - gridDelta * NumericType(0.25), 0.};
+  const auto underMaskVelocity =
+      deformationField->getVectorVelocity(underMaskPoint, -1, zero, 0);
+  response.underMaskOxideSpeed = std::abs(underMaskVelocity[1]);
+  response.maskNodes = maskField->getNumberOfSolutionNodes();
+  response.contactNodes = maskField->getNumberOfContactNodes();
+  response.fixedNodes = maskField->getNumberOfFixedNodes();
+  return response;
+}
+
+void testLOCOSMaskStiffnessSensitivity() {
+  const auto thin =
+      runLOCOSMaskResponse(NumericType(0.2), NumericType(5.e11));
+  const auto thick =
+      runLOCOSMaskResponse(NumericType(0.4), NumericType(5.e11));
+  const auto soft =
+      runLOCOSMaskResponse(NumericType(0.2), NumericType(2.5e11));
+
+  VC_TEST_ASSERT(thin.actualDt > NumericType(0))
+  VC_TEST_ASSERT(thick.actualDt > NumericType(0))
+  VC_TEST_ASSERT(soft.actualDt > NumericType(0))
+  VC_TEST_ASSERT(thin.contactNodes > 0)
+  VC_TEST_ASSERT(thin.fixedNodes > 0)
+  VC_TEST_ASSERT(thick.maskNodes > thin.maskNodes)
+  VC_TEST_ASSERT(thin.verticalMaskSpeed > NumericType(0))
+  VC_TEST_ASSERT(thin.underMaskOxideSpeed > NumericType(0))
+  VC_TEST_ASSERT(soft.verticalMaskSpeed > thin.verticalMaskSpeed)
+  VC_TEST_ASSERT(thick.verticalMaskSpeed < thin.verticalMaskSpeed)
+  VC_TEST_ASSERT(soft.underMaskOxideSpeed > thin.underMaskOxideSpeed)
+  VC_TEST_ASSERT(thick.underMaskOxideSpeed < thin.underMaskOxideSpeed)
+}
+
+// ---------------------------------------------------------------------------
 
 int main() {
   testStandardOxidation();
   testLOCOSOxidation();
+  testLOCOSMaskStiffnessSensitivity();
   return 0;
 }
