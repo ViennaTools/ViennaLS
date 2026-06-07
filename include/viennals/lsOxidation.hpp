@@ -8,11 +8,13 @@
 
 #include <algorithm>
 #include <cmath>
+#include <exception>
 #include <iostream>
 
 #include <vcTimer.hpp>
 #include <limits>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 
@@ -329,7 +331,71 @@ private:
     logInfo(prefix + ": starting time step, requested_dt=" +
             std::to_string(requestedTime) + " hr");
 
-    auto solveFields = [&](T stressTimeStep) {
+    const auto baseConcentrationCache = concentrationCache_;
+    std::string lastFieldFailureReason;
+    bool lastFailureWasMaskFixedPoint = false;
+    T adaptiveMaskRelaxationScale = T(1);
+
+    auto solveFields = [&](T stressTimeStep, bool logCouplingResult) -> bool {
+      auto rejectSolve = [&](const std::string &reason) {
+        lastFieldFailureReason = reason;
+        return false;
+      };
+
+      auto validateCoupledModel =
+          [&](const SmartPointer<OxidationModel<T, D>> &model) {
+            if (!model->hasConverged()) {
+              const auto reason = model->getFailureReason();
+              return rejectSolve(
+                  reason.empty()
+                      ? "pressure-concentration coupling failed (residual=" +
+                            std::to_string(model->getResidual()) +
+                            ", tolerance=" +
+                            std::to_string(couplingParams.tolerance) + ")"
+                      : reason);
+            }
+            if (!diffusionField->lastSolveConverged() ||
+                !diffusionField->hasFiniteConcentrationField()) {
+              return rejectSolve(
+                  "diffusion solve failed (residual=" +
+                  std::to_string(diffusionField->getNormalizedResidual()) +
+                  ", tolerance=" +
+                  std::to_string(oxidationParams.tolerance) + ")");
+            }
+            if (!deformationField->lastSolveConverged() ||
+                !deformationField->hasFiniteSolution()) {
+              return rejectSolve(
+                  "deformation solve failed (mechanics=" +
+                  std::to_string(deformationField->getResidual()) +
+                  ", pressure=" +
+                  std::to_string(deformationField->getLastPressureResidual()) +
+                  ", stokes=" +
+                  std::to_string(deformationField->getLastStokesResidual()) +
+                  ")");
+            }
+            return true;
+          };
+
+      auto validateMaskSolve = [&]() {
+        if (maskBendingField == nullptr)
+          return true;
+        const T maskResidual = maskBendingField->getResidual();
+        if (!std::isfinite(maskResidual) ||
+            maskResidual > maskParams.tolerance) {
+          return rejectSolve(
+              "mask traction solve failed (residual=" +
+              std::to_string(maskResidual) + ", tolerance=" +
+              std::to_string(maskParams.tolerance) + ")");
+        }
+        const T couplingResidual =
+            maskBendingField->getLastApplyVelocityChange();
+        if (!std::isfinite(couplingResidual))
+          return rejectSolve("mask velocity coupling produced non-finite values");
+        return true;
+      };
+
+      lastFieldFailureReason.clear();
+      lastFailureWasMaskFixedPoint = false;
       auto stepDeformationParams = deformationParams;
       stepDeformationParams.stressTimeStep = stressTimeStep;
 
@@ -337,7 +403,7 @@ private:
 
       diffusionField = OxidationDiffusion<T, D>::New(
           siInterface, ambientInterface, oxidationParams);
-      diffusionField->setConcentrationCache(concentrationCache_);
+      diffusionField->setConcentrationCache(baseConcentrationCache);
       diffusionField->setGpuMode(gpuMode_);
       diffusionField->setGpuPreconditioner(gpuPreconditioner_);
       if (hasMask)
@@ -364,11 +430,17 @@ private:
       if (Logger::hasTiming())
         Logger::getInstance().addTiming("  coupled(iter=1)", tCoupled).print();
       logDebug(prefix + ": coupled diffusion/deformation solve complete");
+      if (!validateCoupledModel(coupledModel))
+        return false;
 
       if (hasMask) {
         // --- Mask bending solve ---
+        auto stepMaskParams = maskParams;
+        stepMaskParams.relaxation =
+            std::clamp(maskParams.relaxation * adaptiveMaskRelaxationScale,
+                       T(0.01), T(1));
         maskBendingField = OxidationMaskBending<T, D>::New(
-            deformationField, maskInterface, maskParams, maskInteriorSign);
+            deformationField, maskInterface, stepMaskParams, maskInteriorSign);
         maskBendingField->setAmbientInterface(ambientInterface, maskInteriorSign);
         if (maskBendingBoundsSet)
           maskBendingField->setSolveBounds(maskBendingMinIndex,
@@ -376,10 +448,18 @@ private:
         logDebug(prefix + ": solving mask bending field");
         Timer<> tMask;
         tMask.start();
-        maskBendingField->apply();
+        try {
+          maskBendingField->apply();
+        } catch (const std::exception &e) {
+          tMask.finish();
+          return rejectSolve("mask bending solve error: " +
+                             std::string(e.what()));
+        }
         tMask.finish();
         if (Logger::hasTiming())
           Logger::getInstance().addTiming("  maskBending(iter=1)", tMask).print();
+        if (!validateMaskSolve())
+          return false;
         T initialRes = maskBendingField->getLastApplyVelocityChange();
         logDebug(prefix + ": mask bending solve complete, residual=" +
                  (initialRes >= std::numeric_limits<T>::max() * T(0.99)
@@ -398,11 +478,22 @@ private:
           tIterCoupled.start();
           coupledModel->apply();
           tIterCoupled.finish();
+          if (!validateCoupledModel(coupledModel))
+            return false;
           logDebug(prefix + ": coupling iteration " +
                    std::to_string(iteration + 1) + " solving mask field");
           tIterMask.start();
-          maskBendingField->apply();
+          try {
+            maskBendingField->apply();
+          } catch (const std::exception &e) {
+            tIterMask.finish();
+            return rejectSolve("mask bending solve error at iteration " +
+                               std::to_string(iteration + 1) + ": " +
+                               e.what());
+          }
           tIterMask.finish();
+          if (!validateMaskSolve())
+            return false;
           if (Logger::hasTiming())
             Logger::getInstance()
                 .addTiming("  coupled(iter=" + std::to_string(iteration + 1) + ")",
@@ -418,65 +509,245 @@ private:
           if (lastMaskCouplingResidual <= maskCouplingTolerance)
             break;
         }
-        if (lastMaskCouplingResidual <= maskCouplingTolerance) {
+        const T maskAbsoluteDisplacement =
+            maskBendingField->getLastApplyAbsoluteVelocityChange() *
+            stressTimeStep;
+        // Max physical displacement per step from the mask velocity field.
+        // Independent of coupling oscillation amplitude — the oscillation check
+        // (maskAbsoluteDisplacement) measures how much the velocity CHANGES
+        // between iterations; this measures how far the surface actually moves.
+        // When the active-set oscillates at a fixed amplitude, reducing dt
+        // does not reduce maskAbsoluteDisplacement, but it does reduce this.
+        T maxMaskVelocity = T(0);
+        for (unsigned d = 0; d < D; ++d)
+          maxMaskVelocity = std::max(maxMaskVelocity,
+                                     maskBendingField->getDissipationAlpha(
+                                         static_cast<int>(d), -1, {}));
+        const T maskMaxDisplacement = maxMaskVelocity * stressTimeStep;
+        const T maskDisplacementTolerance =
+            maskCouplingTolerance * siInterface->getGrid().getGridDelta();
+        const bool maskCouplingConverged =
+            lastMaskCouplingResidual <= maskCouplingTolerance ||
+            (std::isfinite(maskAbsoluteDisplacement) &&
+             maskAbsoluteDisplacement <= maskDisplacementTolerance) ||
+            (std::isfinite(maskMaxDisplacement) &&
+             maskMaxDisplacement <= maskDisplacementTolerance);
+        if (maskCouplingConverged) {
           logInfo(prefix + ": mask/oxide coupling converged in " +
                   std::to_string(lastMaskCouplingIterations) +
                   " iterations (residual=" +
-                  std::to_string(lastMaskCouplingResidual) + ")");
-        } else {
+                  std::to_string(lastMaskCouplingResidual) +
+                  ", displacement=" +
+                  std::to_string(maskAbsoluteDisplacement) +
+                  " um, maxDisplacement=" +
+                  std::to_string(maskMaxDisplacement) + " um)");
+        } else if (logCouplingResult) {
           Logger::getInstance()
               .addWarning(prefix + ": mask/oxide coupling did not converge "
                           "after " + std::to_string(lastMaskCouplingIterations) +
                           " iterations (residual=" +
                           std::to_string(lastMaskCouplingResidual) +
+                          ", displacement=" +
+                          std::to_string(maskAbsoluteDisplacement) + " um" +
                           ", tolerance=" + std::to_string(maskCouplingTolerance) +
                           "). Consider increasing maskCouplingIterations.")
               .print();
         }
+        if (!maskCouplingConverged) {
+          lastFailureWasMaskFixedPoint = true;
+          return rejectSolve(
+              "mask/oxide coupling failed (residual=" +
+              std::to_string(lastMaskCouplingResidual) +
+              ", displacement=" +
+              std::to_string(maskAbsoluteDisplacement) +
+              " um, maxDisplacement=" +
+              std::to_string(maskMaxDisplacement) + " um" +
+              ", tolerance=" + std::to_string(maskCouplingTolerance) +
+              ", relaxation=" +
+              std::to_string(stepMaskParams.relaxation) + ")");
+        }
+        return true;
       } else {
         maskBendingField = nullptr;
       }
 
-      concentrationCache_ = diffusionField->getConcentrationCache();
+      return true;
     };
 
-    solveFields(requestedTime);
+    auto makeAmbientVelocity = [&]() -> SmartPointer<VelocityField<T>> {
+      if (hasMask) {
+        return OxidationConstrainedAmbient<T, D>::New(
+            deformationField, maskBendingField, maskInterface, ambientInterface,
+            maskInteriorSign);
+      }
+      return deformationField;
+    };
 
     T advectionTime = requestedTime;
-    if (cflFactor) {
-      T maxVelocity = diffusionField->getDissipationAlpha(0, -1, {});
-      for (unsigned d = 0; d < D; ++d) {
-        maxVelocity = std::max(maxVelocity,
-                               deformationField->getDissipationAlpha(d, -1, {}));
-        if (hasMask)
-          maxVelocity = std::max(maxVelocity,
-                                 maskBendingField->getDissipationAlpha(d, -1, {}));
-      }
-      lastMaxVelocity_ = maxVelocity;
-      if (maxVelocity > std::numeric_limits<T>::epsilon()) {
-        const T gridDelta = siInterface->getGrid().getGridDelta();
-        advectionTime = std::min(advectionTime,
-                                 (*cflFactor) * gridDelta / maxVelocity);
-      }
-      logInfo(prefix + ": CFL decision requested_dt=" +
-              std::to_string(requestedTime) +
-              " hr, actual_dt=" + std::to_string(advectionTime) +
-              " hr, max_velocity=" + std::to_string(maxVelocity) + " um/hr");
-
-      if (advectionTime < requestedTime * (T(1) - T(1e-8)))
-        solveFields(advectionTime);
-    }
-
-    // When a mask is present, the ambient interface is constrained to follow
-    // the mask in the contact region. Without a mask the deformation field
-    // drives the ambient surface directly.
     SmartPointer<VelocityField<T>> ambientVelocity;
-    if (hasMask) {
-      ambientVelocity = OxidationConstrainedAmbient<T, D>::New(
-          deformationField, maskBendingField, maskInterface, maskInteriorSign);
+
+    auto computeMaxVelocity =
+        [&](const SmartPointer<VelocityField<T>> &passedAmbientVelocity) {
+          T maxVelocity = diffusionField->getDissipationAlpha(0, -1, {});
+          for (unsigned d = 0; d < D; ++d) {
+            maxVelocity = std::max(
+                maxVelocity,
+                passedAmbientVelocity->getDissipationAlpha(d, -1, {}));
+            if (hasMask)
+              maxVelocity = std::max(
+                  maxVelocity,
+                  maskBendingField->getDissipationAlpha(d, -1, {}));
+          }
+          return maxVelocity;
+        };
+
+    auto cflLimitedTime = [&](T trialTime, T maxVelocity) {
+      if (maxVelocity <= std::numeric_limits<T>::epsilon())
+        return trialTime;
+      const T gridDelta = siInterface->getGrid().getGridDelta();
+      return std::min(trialTime, (*cflFactor) * gridDelta / maxVelocity);
+    };
+
+    if (cflFactor) {
+      T trialTime = requestedTime;
+      const T minTrialTime =
+          std::max(requestedTime * T(1e-10),
+                   std::numeric_limits<T>::epsilon() * T(100));
+      bool accepted = false;
+      for (unsigned attempt = 0; attempt < 16; ++attempt) {
+        const bool predictorConverged = solveFields(trialTime, false);
+        if (!predictorConverged) {
+          const bool dampMask =
+              lastFailureWasMaskFixedPoint &&
+              adaptiveMaskRelaxationScale > T(0.051);
+          if (dampMask)
+            adaptiveMaskRelaxationScale =
+                std::max(T(0.05), adaptiveMaskRelaxationScale * T(0.5));
+          const T nextTrial = dampMask ? trialTime : trialTime * T(0.5);
+          logInfo(prefix + ": rejecting non-converged coupled predictor "
+                  "(" +
+                  (lastFieldFailureReason.empty()
+                       ? "mask residual=" +
+                             std::to_string(lastMaskCouplingResidual)
+                       : lastFieldFailureReason) +
+                  (dampMask ? ", retrying with mask relaxation scale=" +
+                                  std::to_string(adaptiveMaskRelaxationScale)
+                            : std::string()) +
+                  "), retrying with requested_dt=" +
+                  std::to_string(nextTrial) + " hr");
+          trialTime = nextTrial;
+          if (trialTime < minTrialTime)
+            break;
+          continue;
+        }
+
+        ambientVelocity = makeAmbientVelocity();
+        T maxVelocity = computeMaxVelocity(ambientVelocity);
+        if (!std::isfinite(maxVelocity))
+          throw std::runtime_error(prefix +
+                                   ": non-finite CFL velocity estimate.");
+
+        advectionTime = cflLimitedTime(trialTime, maxVelocity);
+        logInfo(prefix + ": CFL decision requested_dt=" +
+                std::to_string(trialTime) +
+                " hr, actual_dt=" + std::to_string(advectionTime) +
+                " hr, max_velocity=" + std::to_string(maxVelocity) + " um/hr");
+
+        if (advectionTime < trialTime * (T(1) - T(1e-8))) {
+          const bool finalConverged = solveFields(advectionTime, false);
+          if (!finalConverged) {
+            const bool dampMask =
+                lastFailureWasMaskFixedPoint &&
+                adaptiveMaskRelaxationScale > T(0.051);
+            if (dampMask)
+              adaptiveMaskRelaxationScale =
+                  std::max(T(0.05), adaptiveMaskRelaxationScale * T(0.5));
+            const T nextTrial = dampMask ? advectionTime : advectionTime * T(0.5);
+            logInfo(prefix + ": rejecting non-converged CFL re-solve "
+                    "(" +
+                    (lastFieldFailureReason.empty()
+                         ? "mask residual=" +
+                               std::to_string(lastMaskCouplingResidual)
+                         : lastFieldFailureReason) +
+                    (dampMask ? ", retrying with mask relaxation scale=" +
+                                    std::to_string(adaptiveMaskRelaxationScale)
+                              : std::string()) +
+                    "), retrying with requested_dt=" +
+                    std::to_string(nextTrial) + " hr");
+            trialTime = nextTrial;
+            if (trialTime < minTrialTime)
+              break;
+            continue;
+          }
+          ambientVelocity = makeAmbientVelocity();
+          maxVelocity = computeMaxVelocity(ambientVelocity);
+          if (!std::isfinite(maxVelocity))
+            throw std::runtime_error(prefix +
+                                     ": non-finite accepted CFL velocity.");
+
+          const T verifiedTime = cflLimitedTime(advectionTime, maxVelocity);
+          if (verifiedTime < advectionTime * (T(1) - T(1e-8))) {
+            logInfo(prefix + ": rejecting CFL re-solve because accepted "
+                    "velocity requires requested_dt=" +
+                    std::to_string(verifiedTime) + " hr");
+            trialTime = verifiedTime;
+            if (trialTime < minTrialTime)
+              break;
+            continue;
+          }
+        }
+
+        lastMaxVelocity_ = computeMaxVelocity(ambientVelocity);
+        accepted = true;
+        break;
+      }
+      if (!accepted) {
+        // Last resort: if the oxide solve (diffusion + deformation) is still
+        // finite — only the mask coupling diverged — freeze the mask for one
+        // minimal step so the geometry can evolve past the singular contact
+        // configuration.  The mask doesn't move; the oxide advances at
+        // minTrialTime with no mask feedback this step.
+        const bool oxideFinite =
+            diffusionField && deformationField &&
+            diffusionField->hasFiniteConcentrationField() &&
+            deformationField->hasFiniteSolution();
+        if (hasMask && oxideFinite) {
+          Logger::getInstance()
+              .addWarning(prefix +
+                          ": all CFL attempts exhausted; freezing mask for "
+                          "one step at dt=" +
+                          std::to_string(minTrialTime) +
+                          " hr (last failure: " + lastFieldFailureReason +
+                          "). Consider increasing maskReferenceViscosity or "
+                          "maskCouplingIterations.")
+              .print();
+          if (deformationField)
+            deformationField->clearMaskTractionQuery();
+          maskBendingField = nullptr; // skip mask advection this step
+          ambientVelocity = makeAmbientVelocity();
+          advectionTime = minTrialTime;
+          lastMaxVelocity_ = computeMaxVelocity(ambientVelocity);
+        } else {
+          throw std::runtime_error(
+              prefix + ": unable to find a converged CFL-limited step" +
+              (lastFieldFailureReason.empty()
+                   ? std::string(".")
+                   : std::string(" (last failure: ") +
+                         lastFieldFailureReason + ")."));
+        }
+      }
     } else {
-      ambientVelocity = deformationField;
+      const bool fieldsConverged = solveFields(requestedTime, true);
+      if (!fieldsConverged)
+        throw std::runtime_error(
+            prefix + ": coupled solve failed" +
+            (lastFieldFailureReason.empty()
+                 ? std::string(".")
+                 : std::string(" (") + lastFieldFailureReason + ")."));
+      ambientVelocity = makeAmbientVelocity();
     }
+
+    concentrationCache_ = diffusionField->getConcentrationCache();
 
     diffusionField->markSolved();
 
@@ -487,7 +758,7 @@ private:
 
     diffusionField->writePersistentFields();
     deformationField->writeFieldsToLevelSet();
-    if (hasMask)
+    if (hasMask && maskBendingField)
       maskBendingField->writeFieldsToLevelSet();
 
     auto advect = [&](SmartPointer<Domain<T, D>> levelSet,
@@ -505,7 +776,7 @@ private:
     tAdvect.start();
     advect(ambientInterface, ambientVelocity);
     advect(siInterface, diffusionField);
-    if (hasMask)
+    if (hasMask && maskBendingField)
       advect(maskInterface, maskBendingField);
     tAdvect.finish();
     if (Logger::hasTiming())
@@ -524,7 +795,8 @@ private:
       // Re-write mask velocity with the Interior-filled HRLE for the same
       // reason as the oxide re-write below — lsAdvect left only the narrow
       // band, so pointData is smaller than the post-Interior HRLE.
-      maskBendingField->writeFieldsToLevelSet();
+      if (maskBendingField)
+        maskBendingField->writeFieldsToLevelSet();
     }
     {
       Interior<T, D> fill(ambientInterface);

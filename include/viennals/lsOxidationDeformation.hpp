@@ -4,6 +4,7 @@
 #include <lsOxidationDiffusion.hpp>
 
 #include <algorithm>
+#include <functional>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -106,6 +107,12 @@ private:
   SmartPointer<Domain<T, D>> maskInterface = nullptr;
   SmartPointer<OxidationDiffusion<T, D>> diffusionField = nullptr;
   SmartPointer<VelocityField<T>> maskVelocityField = nullptr;
+  // Traction query registered by OxidationMaskBending after each elastic solve.
+  // When set, MASK faces in the Stokes solver use mixed contact: the normal
+  // velocity follows the mask (no penetration), while tangential components use
+  // a Neumann traction BC.  The function returns σ_mask · n_oxide at the face
+  // between the oxide node (oxideIndex) and the mask in (direction, offset).
+  std::function<Vec3D<T>(IndexType, unsigned, int)> maskTractionQuery_;
   OxidationDeformationParameters<T> deformationParameters;
   OxidationParameters<T> oxidationParameters;
   int reactionSign = 1;
@@ -134,6 +141,20 @@ private:
   std::vector<T> previousPressure_;
   bool hasPreviousSolution_ = false;
 
+  static bool isFiniteVec(const Vec3D<T> &value) {
+    for (unsigned i = 0; i < 3; ++i)
+      if (!std::isfinite(value[i]))
+        return false;
+    return true;
+  }
+
+  static bool isFiniteTensor(const std::array<T, 9> &value) {
+    for (const auto component : value)
+      if (!std::isfinite(component))
+        return false;
+    return true;
+  }
+
   // Face-major flat BC arrays: index = fi * n + nodeId, fi in [0, 2*D).
   std::vector<Boundary> faceBCTypes_;
   std::vector<T> faceBCDists_;
@@ -154,12 +175,12 @@ private:
   std::vector<double>   actualDiagGpu_;    // [n], effective GPU matrix diagonal
   gpu::GpuBiCGSTABBuffers* gpuPressBufs_ = nullptr;
 
-  // Geometry-fixed arrays for GPU Stokes velocity solve.
-  // stokesDiagGpu_ excludes OOB and AMBIENT self-coupling (those cancel with
-  // the vBC term), retaining only interior + REACTION + MASK contributions.
+  // Geometry-fixed arrays for GPU Stokes velocity solve.  The diagonal is
+  // component-major because mixed MASK contact is Dirichlet in the normal
+  // component and Neumann/self-canceling in tangential components.
   std::vector<double>   stokesCoeffGpu_;   // face-major [2D * n]
   std::vector<uint32_t> stokesNeighId32_;  // face-major [2D * n]
-  std::vector<double>   stokesDiagGpu_;    // [n]
+  std::vector<double>   stokesDiagGpu_;    // component-major [D * n]
   gpu::GpuBiCGSTABBuffers* gpuStokesBufs_ = nullptr;
 
   // Harmonic velocity solver GPU arrays.  The neighbor IDs are identical to
@@ -237,6 +258,27 @@ public:
   void clearMaskVelocityField() {
     maskVelocityField = nullptr;
     solved = false;
+  }
+
+  /// Register the mask-stress traction query used by the Stokes Neumann BC.
+  /// Called by OxidationMaskBending::apply() after each elastic solve.
+  /// The first call triggers a GPU geometry rebuild (Dirichlet→Neumann transition
+  /// for MASK faces); subsequent calls just update the lambda and are free.
+  /// Does NOT set solved=false: the current velocity is still valid; the new
+  /// callback takes effect on the NEXT oxide apply() call.
+  void setMaskTractionQuery(
+      std::function<Vec3D<T>(IndexType, unsigned, int)> fn) {
+    const bool wasSet = static_cast<bool>(maskTractionQuery_);
+    maskTractionQuery_ = std::move(fn);
+    if (!wasSet)
+      nodesDirty_ = true; // first registration: rebuild GPU Stokes diagonal
+  }
+
+  void clearMaskTractionQuery() {
+    const bool wasSet = static_cast<bool>(maskTractionQuery_);
+    maskTractionQuery_ = nullptr;
+    if (wasSet)
+      nodesDirty_ = true; // transitioning back to Dirichlet: rebuild
   }
 
   void setDiffusionField(
@@ -321,6 +363,18 @@ public:
     Timer<> tHarmonic, tMechanics;
     tHarmonic.start();
     solveVelocity();
+    // When the Neumann MASK BC is active, the harmonic warm-start used Dirichlet
+    // MASK (computeHarmonicStencilAt is intentionally unchanged).  With a soft
+    // mask the Dirichlet velocity can be large, producing an initial Stokes
+    // residual far from the Neumann equilibrium and requiring many SIMPLE
+    // iterations to unwind.  Restore the previous Neumann-consistent solution as
+    // the SIMPLE warm-start whenever one is available; the SIMPLE will still
+    // converge to the correct answer, just from a much closer starting point.
+    if (maskTractionQuery_ && hasPreviousSolution_ &&
+        previousVelocity_.size() == nn) {
+      for (std::size_t i = 0; i < nn; ++i)
+        nodes[i].velocity = previousVelocity_[i];
+    }
     tHarmonic.finish();
     tMechanics.start();
     solveMechanics();
@@ -504,6 +558,28 @@ public:
 
   unsigned getIterations() const { return iterations; }
   T getResidual() const { return residual; }
+  T getLastPressureResidual() const { return lastPressureResidual_; }
+  T getLastStokesResidual() const { return lastStokesResidual_; }
+  bool lastSolveConverged() const {
+    return std::isfinite(residual) &&
+           residual <= deformationParameters.mechanicsTolerance &&
+           std::isfinite(lastPressureResidual_) &&
+           lastPressureResidual_ <= deformationParameters.pressureTolerance &&
+           std::isfinite(lastStokesResidual_) &&
+           lastStokesResidual_ <= deformationParameters.stokesTolerance &&
+           hasFiniteSolution();
+  }
+  bool hasFiniteSolution() const {
+    for (const auto &node : nodes) {
+      if (!isFiniteVec(node.velocity) || !std::isfinite(node.pressure) ||
+          !std::isfinite(node.strainTrace) ||
+          !isFiniteTensor(node.strainRateTensor) ||
+          !isFiniteTensor(node.stressTensor) ||
+          !std::isfinite(node.vonMisesStress))
+        return false;
+    }
+    return true;
+  }
   std::size_t getNumberOfSolutionNodes() const { return nodes.size(); }
   T avgExpansionSpeed() {
     if (!avgExpansionSpeedComputed) {
@@ -538,9 +614,11 @@ public:
 
       if (nId != noNode) {
         const auto &n = nodes[nId];
-        velocity.push_back(n.velocity);
+        velocity.push_back(isFiniteVec(n.velocity) ? n.velocity
+                                                   : Vec3D<T>{T(0), T(0), T(0)});
         const auto sIt = deviatoricStressHistory.find(key);
-        if (sIt != deviatoricStressHistory.end()) {
+        if (sIt != deviatoricStressHistory.end() &&
+            isFiniteTensor(sIt->second)) {
           const auto &s = sIt->second;
           stressR0.push_back({s[0], s[1], s[2]});
           stressR1.push_back({s[3], s[4], s[5]});
@@ -606,21 +684,26 @@ private:
       const std::size_t ni = lookupNode(idx);
 
       if (ni != noNode) {
-        if (vd  && ptId < static_cast<decltype(ptId)>(vd->size()))
+        if (vd  && ptId < static_cast<decltype(ptId)>(vd->size()) &&
+            isFiniteVec((*vd)[ptId]))
           previousVelocity_[ni] = (*vd)[ptId];
-        if (ppd && ptId < static_cast<decltype(ptId)>(ppd->size()))
+        if (ppd && ptId < static_cast<decltype(ptId)>(ppd->size()) &&
+            std::isfinite((*ppd)[ptId]))
           previousPressure_[ni] = (*ppd)[ptId];
       }
 
       if (hasStress &&
-          ptId < static_cast<decltype(ptId)>(r0d->size())) {
+          ptId < static_cast<decltype(ptId)>(r0d->size()) &&
+          ptId < static_cast<decltype(ptId)>(r1d->size()) &&
+          ptId < static_cast<decltype(ptId)>(r2d->size())) {
         const auto &row0 = (*r0d)[ptId];
         const auto &row1 = (*r1d)[ptId];
         const auto &row2 = (*r2d)[ptId];
         std::array<T, 9> s{row0[0], row0[1], row0[2],
                            row1[0], row1[1], row1[2],
                            row2[0], row2[1], row2[2]};
-        deviatoricStressHistory[key] = s;
+        if (isFiniteTensor(s))
+          deviatoricStressHistory[key] = s;
       }
     }
 
@@ -686,16 +769,22 @@ private:
   }
 
   // Builds the face-major Stokes velocity matrix geometry for GPU reuse.
-  // The effective diagonal (stokesDiagGpu_) excludes OOB and AMBIENT face
-  // self-coupling terms because those cancel exactly with the vBC correction
-  // in the stokesMatvec.  REACTION and MASK boundaries contribute only to the
-  // diagonal (their constant velocity values go into the RHS via vBC).
+  // The effective diagonal excludes OOB and AMBIENT face self-coupling because
+  // those cancel exactly with the vBC correction in the Stokes matvec.  Mixed
+  // MASK contact is component-dependent: the face-normal component is
+  // Dirichlet-like and contributes to the diagonal; tangential components are
+  // Neumann-like and self-cancel.
   void buildStokesGpuGeometry() {
     const std::size_t n = nodes.size();
     const T eps = std::numeric_limits<T>::epsilon();
     stokesCoeffGpu_.assign(2 * D * n, 0.0);
     stokesNeighId32_.assign(2 * D * n, gpu::kNoNode);
-    stokesDiagGpu_.assign(n, 0.0);
+    stokesDiagGpu_.assign(D * n, 0.0);
+
+    auto addDiag = [&](std::size_t id, T c) {
+      for (unsigned comp = 0; comp < D; ++comp)
+        stokesDiagGpu_[comp * n + id] += static_cast<double>(c);
+    };
 
     for (std::size_t id = 0; id < n; ++id) {
       for (unsigned dir = 0; dir < D; ++dir) {
@@ -728,21 +817,32 @@ private:
             // Interior neighbor: off-diagonal and diagonal contribution.
             stokesCoeffGpu_[fi * n + id]  = static_cast<double>(c);
             stokesNeighId32_[fi * n + id] = static_cast<uint32_t>(j);
-            stokesDiagGpu_[id] += c;
+            addDiag(id, c);
           } else if (inb) {
-            // Boundary-crossing face.  OOB and AMBIENT are self-coupling
-            // (cancelled by vBC), so only REACTION and MASK add to the diagonal.
+            // Boundary-crossing face.
+            // REACTION: Dirichlet → adds to diagonal.
+            // MASK with traction query: mixed contact → normal component adds,
+            //   tangential components self-cancel.
+            // MASK without traction query: Dirichlet (kinematic) → adds to diagonal.
+            // AMBIENT / OOB: excluded (self-coupling cancels with vBC correction).
             const Boundary bt = faceBCTypes_[fi * n + id];
-            if (bt == Boundary::REACTION || bt == Boundary::MASK)
-              stokesDiagGpu_[id] += c;
-            // AMBIENT and OOB are excluded: their self-coupling exactly cancels
-            // with the vBC correction in the GPU RHS.
+            if (bt == Boundary::REACTION)
+              addDiag(id, c);
+            else if (bt == Boundary::MASK) {
+              if (maskTractionQuery_)
+                stokesDiagGpu_[dir * n + id] += static_cast<double>(c);
+              else
+                addDiag(id, c);
+            }
           }
           // !inb (OOB): self-coupling, excluded.
         };
         processFace(fiNeg, negInBounds, jNeg, dNeg);
         processFace(fiPos, posInBounds, jPos, dPos);
       }
+      for (unsigned comp = 0; comp < D; ++comp)
+        if (stokesDiagGpu_[comp * n + id] <= static_cast<double>(eps))
+          stokesDiagGpu_[comp * n + id] = 1.0;
     }
   }
 
@@ -1079,8 +1179,10 @@ public:
     // Warm-start from previous substep's velocity field.
     std::vector<Vec3D<SolverT>> x(n);
     for (std::size_t i = 0; i < n; ++i)
-      for (unsigned c = 0; c < D; ++c)
-        x[i][c] = static_cast<SolverT>(nodes[i].velocity[c]);
+      for (unsigned c = 0; c < D; ++c) {
+        const T value = nodes[i].velocity[c];
+        x[i][c] = static_cast<SolverT>(std::isfinite(value) ? value : T(0));
+      }
 
 #ifdef VIENNALS_GPU_BICGSTAB
     if (gpu::gpuIsValid(gpuHarmonicBufs_)) {
@@ -1206,10 +1308,15 @@ public:
 
     for (; iterations < deformationParameters.harmonicIterations; ++iterations) {
       const T rho_new = vecDot(r_hat, r);
-      if (std::abs(rho_new) < T(1e-100))
+      if (!std::isfinite(rho_new) || std::abs(rho_new) < T(1e-100))
+        break;
+      if (!std::isfinite(rho) || !std::isfinite(alpha) ||
+          !std::isfinite(omega) || std::abs(omega) < T(1e-100))
         break;
 
       const T beta = (rho_new / rho) * (alpha / omega);
+      if (!std::isfinite(beta))
+        break;
       rho = rho_new;
 
       for (std::size_t i = 0; i < n; ++i)
@@ -1224,16 +1331,20 @@ public:
       harmonicMatvec(y, b, sv);
 
       const T r_hat_v = vecDot(r_hat, sv);
-      if (std::abs(r_hat_v) < T(1e-100))
+      if (!std::isfinite(r_hat_v) || std::abs(r_hat_v) < T(1e-100))
         break;
 
       alpha = rho_new / r_hat_v;
+      if (!std::isfinite(alpha))
+        break;
 
       for (std::size_t i = 0; i < n; ++i)
         for (unsigned c = 0; c < D; ++c)
           s[i][c] = static_cast<SolverT>(r[i][c] - alpha * sv[i][c]);
 
       residual = vecMaxAbs(s);
+      if (!std::isfinite(residual))
+        break;
       if (residual < deformationParameters.tolerance * b_norm) {
         for (std::size_t i = 0; i < n; ++i)
           for (unsigned c = 0; c < D; ++c)
@@ -1251,7 +1362,11 @@ public:
 
       const T t_s = vecDot(t, s);
       const T t_t = vecDot(t, t);
+      if (!std::isfinite(t_s) || !std::isfinite(t_t))
+        break;
       omega = (t_t > T(1e-100)) ? t_s / t_t : T(0);
+      if (!std::isfinite(omega))
+        break;
 
       for (std::size_t i = 0; i < n; ++i)
         for (unsigned c = 0; c < D; ++c) {
@@ -1260,15 +1375,27 @@ public:
         }
 
       residual = vecMaxAbs(r);
+      if (!std::isfinite(residual))
+        break;
       if (residual < deformationParameters.tolerance * b_norm) {
         ++iterations;
         break;
       }
     }
 
+    bool finiteSolution = true;
     for (std::size_t i = 0; i < n; ++i)
       for (unsigned c = 0; c < D; ++c)
-        nodes[i].velocity[c] = static_cast<T>(x[i][c]);
+        if (!std::isfinite(static_cast<T>(x[i][c])))
+          finiteSolution = false;
+
+    if (finiteSolution) {
+      for (std::size_t i = 0; i < n; ++i)
+        for (unsigned c = 0; c < D; ++c)
+          nodes[i].velocity[c] = static_cast<T>(x[i][c]);
+    } else {
+      residual = std::numeric_limits<T>::infinity();
+    }
     if (residual > deformationParameters.tolerance * b_norm)
       Logger::getInstance()
           .addWarning("solveVelocity (harmonic): BiCGSTAB did not converge after " +
@@ -1279,18 +1406,77 @@ public:
           .print();
   }
 
-  // Returns the diagonal entries of the Stokes operator A_v for each node.
+  // Returns component-wise diagonal entries of the Stokes operator A_v.
   // Geometry-fixed within a mechanics solve; computed once and reused by the
-  // SIMPLE velocity-correction step: v^{k+1} = v* - grad(dp)/(eta * a_i).
-  std::vector<T> computeVelocityDiagonals() const {
+  // SIMPLE velocity-correction step: v_c^{k+1}=v_c* - grad_c(dp)/(eta*a_ic).
+  //
+  // With mixed MASK contact, normal components are Dirichlet-like and retain the
+  // MASK face coefficient. Tangential components contribute ghost=v_node+const,
+  // so their self-coupling cancels and the face coefficient is removed.
+  std::vector<Vec3D<T>> computeVelocityDiagonals() const {
     const std::size_t n = nodes.size();
-    std::vector<T> diagV(n);
+    std::vector<Vec3D<T>> diagV(n, Vec3D<T>{T(0), T(0), T(0)});
     if (n == 0) return diagV;
     const std::vector<Vec3D<T>> zeros(n, Vec3D<T>{T(0), T(0), T(0)});
     std::vector<Vec3D<T>> tmp(n);
 #pragma omp parallel for schedule(static)
-    for (std::size_t i = 0; i < n; ++i)
-      computeVelocityStencilAt(i, zeros, diagV[i], tmp[i]);
+    for (std::size_t i = 0; i < n; ++i) {
+      T diag{};
+      computeVelocityStencilAt(i, zeros, diag, tmp[i]);
+      for (unsigned comp = 0; comp < D; ++comp)
+        diagV[i][comp] = diag;
+    }
+
+    if (maskTractionQuery_) {
+      // Subtract MASK tangential self-coupling from the effective diagonal.
+      const T eps = std::numeric_limits<T>::epsilon();
+#pragma omp parallel for schedule(static)
+      for (std::size_t i = 0; i < n; ++i) {
+        for (unsigned dir = 0; dir < D; ++dir) {
+          const unsigned fi_neg = dir * 2u;
+          const unsigned fi_pos = dir * 2u + 1u;
+          IndexType nbNeg = nodes[i].index;  nbNeg[dir] -= 1;
+          IndexType nbPos = nodes[i].index;  nbPos[dir] += 1;
+          const bool negIn = inBounds(nbNeg);
+          const bool posIn = inBounds(nbPos);
+          const std::size_t jNeg = negIn ? nodeLookupFlat[linearIndex(nbNeg)] : noNode;
+          const std::size_t jPos = posIn ? nodeLookupFlat[linearIndex(nbPos)] : noNode;
+
+          const bool negMask = negIn && jNeg == noNode &&
+                               faceBCTypes_[fi_neg * n + i] == Boundary::MASK;
+          const bool posMask = posIn && jPos == noNode &&
+                               faceBCTypes_[fi_pos * n + i] == Boundary::MASK;
+          if (!negMask && !posMask)
+            continue;
+
+          // Match the distance logic in velocityStencilPoint.
+          auto fd = [&](unsigned fi, bool inb, std::size_t j) -> T {
+            if (!inb || j != noNode) return gridDelta;
+            return faceBCDists_[fi * n + i];
+          };
+          const T dNeg = fd(fi_neg, negIn, jNeg);
+          const T dPos = fd(fi_pos, posIn, jPos);
+          const T dSum = dNeg + dPos;
+          if (dSum <= eps)
+            continue;
+          if (negMask) {
+            const T c = T(2) / (dNeg * dSum);
+            for (unsigned comp = 0; comp < D; ++comp)
+              if (comp != dir)
+                diagV[i][comp] -= c;
+          }
+          if (posMask) {
+            const T c = T(2) / (dPos * dSum);
+            for (unsigned comp = 0; comp < D; ++comp)
+              if (comp != dir)
+                diagV[i][comp] -= c;
+          }
+        }
+        for (unsigned comp = 0; comp < D; ++comp)
+          if (diagV[i][comp] <= eps)
+            diagV[i][comp] = eps;
+      }
+    }
     return diagV;
   }
 
@@ -1313,7 +1499,7 @@ public:
     // Aitken clamp (which can only damp, not stabilise, ρ > 1 iterations),
     // this correction is unconditionally convergent for steady Stokes.
 
-    const std::vector<T> diagV = computeVelocityDiagonals(); // geometry-fixed within this call
+    const std::vector<Vec3D<T>> diagV = computeVelocityDiagonals(); // geometry-fixed within this call
 
     for (unsigned iteration = 0;
          iteration < deformationParameters.mechanicsIterations; ++iteration) {
@@ -1328,11 +1514,19 @@ public:
       tStokes.start();
       solveStokesVelocity();   // produces v* in nodes[i].velocity
       tStokes.finish();
+      if (!std::isfinite(lastStokesResidual_)) {
+        mechanicsResidual = std::numeric_limits<T>::infinity();
+        break;
+      }
 
       // Step 2: pressure solve uses divergence of v*.
       tPressure.start();
       solvePressure();         // produces p^{k+1} in nodes[i].pressure
       tPressure.finish();
+      if (!std::isfinite(lastPressureResidual_)) {
+        mechanicsResidual = std::numeric_limits<T>::infinity();
+        break;
+      }
 
       // Step 3: SIMPLE velocity correction: v^{k+1} = v* - ∇δp / (η · a_i).
       applySimpleVelocityCorrection(previousPressure, diagV);
@@ -1340,6 +1534,10 @@ public:
       mechanicsResidual =
           std::max(maxVelocityChange(previousVelocity),
                    maxPressureChange(previousPressure));
+      if (!std::isfinite(mechanicsResidual)) {
+        mechanicsResidual = std::numeric_limits<T>::infinity();
+        break;
+      }
 
       if (Logger::hasDebug())
         Logger::getInstance()
@@ -1377,7 +1575,7 @@ public:
   // so this approximation only affects the current-iteration correction, not
   // the converged solution.
   void applySimpleVelocityCorrection(const std::vector<T> &pressureOld,
-                                     const std::vector<T> &diagV) {
+                                     const std::vector<Vec3D<T>> &diagV) {
     if (nodes.empty()) return;
     if (deformationParameters.viscosity <= std::numeric_limits<T>::epsilon()) return;
 
@@ -1386,10 +1584,11 @@ public:
 
 #pragma omp parallel for schedule(static)
     for (std::size_t i = 0; i < n; ++i) {
-      const T ai = diagV[i];
-      if (ai <= std::numeric_limits<T>::epsilon()) continue;
-
       for (unsigned dir = 0; dir < D; ++dir) {
+        const T ai = diagV[i][dir];
+        if (ai <= std::numeric_limits<T>::epsilon())
+          continue;
+
         // Negative-offset face (fi = dir*2).
         T dpMinus, dMinus;
         {
@@ -1434,7 +1633,10 @@ public:
 
         const T dpCenter = nodes[i].pressure - pressureOld[i];
         const T gradDP = firstDerivative(dpMinus, dpCenter, dpPlus, dMinus, dPlus);
-        nodes[i].velocity[dir] -= gradDP * invEta / ai;
+        const T correction = gradDP * invEta / ai;
+        if (std::isfinite(correction) &&
+            std::isfinite(nodes[i].velocity[dir]))
+          nodes[i].velocity[dir] -= correction;
       }
     }
   }
@@ -1513,8 +1715,12 @@ public:
     if (b_norm < T(1e-100)) b_norm = T(1);
 
     std::vector<SolverT> x(n);
-    for (std::size_t i = 0; i < n; ++i)
-      x[i] = static_cast<SolverT>(touchesAmbient_[i] ? ambientBP[i] : nodes[i].pressure);
+    for (std::size_t i = 0; i < n; ++i) {
+      T guess = touchesAmbient_[i] ? ambientBP[i] : nodes[i].pressure;
+      if (!std::isfinite(guess))
+        guess = deformationParameters.ambientPressure;
+      x[i] = static_cast<SolverT>(guess);
+    }
 
 #ifdef VIENNALS_GPU_BICGSTAB
     if (gpu::gpuIsValid(gpuPressBufs_)) {
@@ -1734,16 +1940,39 @@ public:
     T rho = T(1), alpha = T(1), omega = T(1);
     T pressureResidual = T(0);
     unsigned pressureIter = 0;
+    bool pressureBreakdown = false;
+    for (std::size_t i = 0; i < n; ++i) {
+      const T ri = static_cast<T>(r[i]);
+      if (!std::isfinite(ri)) {
+        pressureBreakdown = true;
+        break;
+      }
+      pressureResidual = std::max(pressureResidual, std::abs(ri));
+    }
 
-    for (; pressureIter < deformationParameters.pressureIterations; ++pressureIter) {
+    for (; !pressureBreakdown &&
+           pressureIter < deformationParameters.pressureIterations; ++pressureIter) {
       T rho_new = T(0);
       for (std::size_t i = 0; i < n; ++i)
         rho_new += static_cast<T>(r_hat[i]) * static_cast<T>(r[i]);
 
+      if (!std::isfinite(rho_new)) {
+        pressureBreakdown = true;
+        break;
+      }
       if (std::abs(rho_new) < T(1e-100))
         break;
+      if (!std::isfinite(rho) || !std::isfinite(alpha) ||
+          !std::isfinite(omega) || std::abs(omega) < T(1e-100)) {
+        pressureBreakdown = true;
+        break;
+      }
 
       const T beta = (rho_new / rho) * (alpha / omega);
+      if (!std::isfinite(beta)) {
+        pressureBreakdown = true;
+        break;
+      }
       rho = rho_new;
 
       for (std::size_t i = 0; i < n; ++i)
@@ -1756,10 +1985,18 @@ public:
       T r_hat_v = T(0);
       for (std::size_t i = 0; i < n; ++i)
         r_hat_v += static_cast<T>(r_hat[i]) * static_cast<T>(v[i]);
+      if (!std::isfinite(r_hat_v)) {
+        pressureBreakdown = true;
+        break;
+      }
       if (std::abs(r_hat_v) < T(1e-100))
         break;
 
       alpha = rho_new / r_hat_v;
+      if (!std::isfinite(alpha)) {
+        pressureBreakdown = true;
+        break;
+      }
 
       for (std::size_t i = 0; i < n; ++i)
         s[i] = static_cast<SolverT>(r[i] - alpha * v[i]);
@@ -1767,6 +2004,10 @@ public:
       pressureResidual = T(0);
       for (std::size_t i = 0; i < n; ++i)
         pressureResidual = std::max(pressureResidual, std::abs(static_cast<T>(s[i])));
+      if (!std::isfinite(pressureResidual)) {
+        pressureBreakdown = true;
+        break;
+      }
       if (pressureResidual < deformationParameters.pressureTolerance * b_norm) {
         for (std::size_t i = 0; i < n; ++i)
           x[i] = static_cast<SolverT>(x[i] + alpha * y[i]);
@@ -1782,7 +2023,15 @@ public:
         t_s += static_cast<T>(t[i]) * static_cast<T>(s[i]);
         t_t += static_cast<T>(t[i]) * static_cast<T>(t[i]);
       }
+      if (!std::isfinite(t_s) || !std::isfinite(t_t)) {
+        pressureBreakdown = true;
+        break;
+      }
       omega = (t_t > T(1e-100)) ? t_s / t_t : T(0);
+      if (!std::isfinite(omega)) {
+        pressureBreakdown = true;
+        break;
+      }
 
       for (std::size_t i = 0; i < n; ++i) {
         x[i] = static_cast<SolverT>(x[i] + alpha * y[i] + omega * z[i]);
@@ -1792,15 +2041,30 @@ public:
       pressureResidual = T(0);
       for (std::size_t i = 0; i < n; ++i)
         pressureResidual = std::max(pressureResidual, std::abs(static_cast<T>(r[i])));
+      if (!std::isfinite(pressureResidual)) {
+        pressureBreakdown = true;
+        break;
+      }
       if (pressureResidual < deformationParameters.pressureTolerance * b_norm)
         break;
     }
 
+    if (pressureBreakdown)
+      pressureResidual = std::numeric_limits<T>::infinity();
+
+    bool finiteSolution = !pressureBreakdown;
     for (std::size_t i = 0; i < n; ++i)
-      nodes[i].pressure = x[i];
+      if (!std::isfinite(static_cast<T>(x[i])))
+        finiteSolution = false;
 
     lastPressureIters_    = pressureIter;
     lastPressureResidual_ = pressureResidual / b_norm;
+    if (finiteSolution) {
+      for (std::size_t i = 0; i < n; ++i)
+        nodes[i].pressure = x[i];
+    } else {
+      lastPressureResidual_ = std::numeric_limits<T>::infinity();
+    }
     if (lastPressureResidual_ > deformationParameters.pressureTolerance)
       Logger::getInstance()
           .addWarning("solvePressure: BiCGSTAB did not converge after " +
@@ -1852,6 +2116,7 @@ public:
         forcing[i] = momentumForcing(nodes[i].index);
       }
     }
+    const auto precondDiag = computeVelocityDiagonals();
 
     std::vector<Vec3D<T>> b(n);
     T b_norm = T(0);
@@ -1868,14 +2133,16 @@ public:
     {
       const auto vel = collectVelocities();
       for (std::size_t i = 0; i < n; ++i)
-        for (unsigned c = 0; c < D; ++c)
-          x[i][c] = static_cast<SolverT>(vel[i][c]);
+        for (unsigned c = 0; c < D; ++c) {
+          const T value = vel[i][c];
+          x[i][c] = static_cast<SolverT>(std::isfinite(value) ? value : T(0));
+        }
     }
 
 #ifdef VIENNALS_GPU_BICGSTAB
     if (gpu::gpuIsValid(gpuStokesBufs_)) {
       const std::size_t nf = 2u * D * n;
-      if (stokesDiagGpu_.size() != n || stokesCoeffGpu_.size() != nf) {
+      if (stokesDiagGpu_.size() != D * n || stokesCoeffGpu_.size() != nf) {
         throwStrictGpuError("OxidationDeformation: Stokes GPU geometry has "
                             "the wrong size for the current node set.");
       }
@@ -1894,14 +2161,11 @@ public:
 
         tUpload.start();
         const bool gpuUploadOk =
-            (c == 0)
-                ? gpu::gpuUploadSolverArrays(gpuStokesBufs_,
-                                             stokesDiagGpu_.data(), bGpu.data(),
-                                             stokesCoeffGpu_.data(),
-                                             static_cast<uint32_t>(n),
-                                             stokesCoeffGpu_.size())
-                : gpu::gpuUploadRhs(gpuStokesBufs_, bGpu.data(),
-                                    static_cast<uint32_t>(n));
+            gpu::gpuUploadSolverArrays(gpuStokesBufs_,
+                                       stokesDiagGpu_.data() + c * n,
+                                       bGpu.data(), stokesCoeffGpu_.data(),
+                                       static_cast<uint32_t>(n),
+                                       stokesCoeffGpu_.size());
         tUpload.finish();
         if (!gpuUploadOk) {
           throwStrictGpuError("OxidationDeformation: GPU mode was selected, "
@@ -1973,16 +2237,25 @@ public:
                       const std::vector<Vec3D<SolverT>> &bv) {
       T sum = T(0);
       for (std::size_t i = 0; i < n; ++i)
-        for (unsigned c = 0; c < D; ++c)
-          sum += static_cast<T>(a[i][c]) * static_cast<T>(bv[i][c]);
+        for (unsigned c = 0; c < D; ++c) {
+          const T av = static_cast<T>(a[i][c]);
+          const T bvVal = static_cast<T>(bv[i][c]);
+          if (!std::isfinite(av) || !std::isfinite(bvVal))
+            return std::numeric_limits<T>::quiet_NaN();
+          sum += av * bvVal;
+        }
       return sum;
     };
 
     auto vecMaxAbs = [&](const std::vector<Vec3D<SolverT>> &vin) {
       T m = T(0);
       for (std::size_t i = 0; i < n; ++i)
-        for (unsigned c = 0; c < D; ++c)
-          m = std::max(m, std::abs(static_cast<T>(vin[i][c])));
+        for (unsigned c = 0; c < D; ++c) {
+          const T value = static_cast<T>(vin[i][c]);
+          if (!std::isfinite(value))
+            return std::numeric_limits<T>::infinity();
+          m = std::max(m, std::abs(value));
+        }
       return m;
     };
 
@@ -2000,13 +2273,28 @@ public:
     T rho = T(1), alpha = T(1), omega = T(1);
     T velocityResidual = T(0);
     unsigned stokesIter = 0;
+    bool stokesBreakdown = false;
+    velocityResidual = vecMaxAbs(r);
 
     for (; stokesIter < deformationParameters.stokesIterations; ++stokesIter) {
       const T rho_new = vecDot(r_hat, r);
+      if (!std::isfinite(rho_new)) {
+        stokesBreakdown = true;
+        break;
+      }
       if (std::abs(rho_new) < T(1e-100))
         break;
+      if (!std::isfinite(rho) || !std::isfinite(alpha) ||
+          !std::isfinite(omega) || std::abs(omega) < T(1e-100)) {
+        stokesBreakdown = true;
+        break;
+      }
 
       const T beta = (rho_new / rho) * (alpha / omega);
+      if (!std::isfinite(beta)) {
+        stokesBreakdown = true;
+        break;
+      }
       rho = rho_new;
 
       for (std::size_t i = 0; i < n; ++i)
@@ -2016,22 +2304,35 @@ public:
       for (std::size_t i = 0; i < n; ++i)
         for (unsigned c = 0; c < D; ++c) {
           const T pvc = pv[i][c];
-          y[i][c] = static_cast<SolverT>((diag[i] > eps) ? pvc / diag[i] : pvc);
+          const T pcDiag = precondDiag[i][c];
+          y[i][c] = static_cast<SolverT>((pcDiag > eps) ? pvc / pcDiag : pvc);
         }
 
       stokesMatvec(y, sv);
 
       const T r_hat_v = vecDot(r_hat, sv);
+      if (!std::isfinite(r_hat_v)) {
+        stokesBreakdown = true;
+        break;
+      }
       if (std::abs(r_hat_v) < T(1e-100))
         break;
 
       alpha = rho_new / r_hat_v;
+      if (!std::isfinite(alpha)) {
+        stokesBreakdown = true;
+        break;
+      }
 
       for (std::size_t i = 0; i < n; ++i)
         for (unsigned c = 0; c < D; ++c)
           s[i][c] = static_cast<SolverT>(r[i][c] - alpha * sv[i][c]);
 
       velocityResidual = vecMaxAbs(s);
+      if (!std::isfinite(velocityResidual)) {
+        stokesBreakdown = true;
+        break;
+      }
       if (velocityResidual < deformationParameters.stokesTolerance * b_norm) {
         for (std::size_t i = 0; i < n; ++i)
           for (unsigned c = 0; c < D; ++c)
@@ -2042,14 +2343,23 @@ public:
       for (std::size_t i = 0; i < n; ++i)
         for (unsigned c = 0; c < D; ++c) {
           const T sc = s[i][c];
-          z[i][c] = static_cast<SolverT>((diag[i] > eps) ? sc / diag[i] : sc);
+          const T pcDiag = precondDiag[i][c];
+          z[i][c] = static_cast<SolverT>((pcDiag > eps) ? sc / pcDiag : sc);
         }
 
       stokesMatvec(z, t);
 
       const T t_s = vecDot(t, s);
       const T t_t = vecDot(t, t);
+      if (!std::isfinite(t_s) || !std::isfinite(t_t)) {
+        stokesBreakdown = true;
+        break;
+      }
       omega = (t_t > T(1e-100)) ? t_s / t_t : T(0);
+      if (!std::isfinite(omega)) {
+        stokesBreakdown = true;
+        break;
+      }
 
       for (std::size_t i = 0; i < n; ++i)
         for (unsigned c = 0; c < D; ++c) {
@@ -2058,16 +2368,33 @@ public:
         }
 
       velocityResidual = vecMaxAbs(r);
+      if (!std::isfinite(velocityResidual)) {
+        stokesBreakdown = true;
+        break;
+      }
       if (velocityResidual < deformationParameters.stokesTolerance * b_norm)
         break;
     }
 
+    if (stokesBreakdown)
+      velocityResidual = std::numeric_limits<T>::infinity();
+
+    bool finiteSolution = !stokesBreakdown;
     for (std::size_t i = 0; i < n; ++i)
       for (unsigned c = 0; c < D; ++c)
-        nodes[i].velocity[c] = static_cast<T>(x[i][c]);
+        if (!std::isfinite(static_cast<T>(x[i][c])))
+          finiteSolution = false;
+
+    if (finiteSolution) {
+      for (std::size_t i = 0; i < n; ++i)
+        for (unsigned c = 0; c < D; ++c)
+          nodes[i].velocity[c] = static_cast<T>(x[i][c]);
+    }
 
     lastStokesIters_    = stokesIter;
-    lastStokesResidual_ = velocityResidual / b_norm;
+    lastStokesResidual_ =
+        finiteSolution ? velocityResidual / b_norm
+                       : std::numeric_limits<T>::infinity();
     if (lastStokesResidual_ > deformationParameters.stokesTolerance)
       Logger::getInstance()
           .addWarning("solveStokesVelocity: BiCGSTAB did not converge after " +
@@ -2159,8 +2486,13 @@ public:
       return {freeSurfaceVelocityBoundary(node.index, direction, offset,
                                           faceDist, toT(velocity[nodeId])),
               faceDist};
-    if (faceType == Boundary::MASK)
+    if (faceType == Boundary::MASK) {
+      if (maskTractionQuery_)
+        return {maskMixedContactVelocityBoundary(node.index, direction, offset,
+                                                 faceDist, toT(velocity[nodeId])),
+                faceDist};
       return {maskVelocityBoundary(node.index, toT(velocity[nodeId])), faceDist};
+    }
 
     return {toT(velocity[nodeId]), gridDelta};
   }
@@ -2217,8 +2549,13 @@ public:
       return {freeSurfaceVelocityBoundary(node.index, direction, offset,
                                           faceDist, node.velocity),
               faceDist};
-    if (faceType == Boundary::MASK)
+    if (faceType == Boundary::MASK) {
+      if (maskTractionQuery_)
+        return {maskMixedContactVelocityBoundary(node.index, direction, offset,
+                                                 faceDist, node.velocity),
+                faceDist};
       return {maskVelocityBoundary(node.index, node.velocity), faceDist};
+    }
 
     return {node.velocity, gridDelta};
   }
@@ -2310,6 +2647,78 @@ public:
           static_cast<T>(offset) * distance * faceDerivative;
     }
 
+    return boundaryVelocity;
+  }
+
+  // Ghost velocity enforcing σ_oxide · n_oxide = appliedTraction (Neumann BC).
+  // n_oxide = offset * e_dir (oxide outward normal at the mask face).
+  // appliedTraction = σ_mask · n_oxide queried from maskTractionQuery_.
+  //
+  // The formula mirrors freeSurfaceVelocityBoundary but subtracts appliedTraction
+  // from the imbalance term, shifting the target from zero to the mask traction:
+  //   normalTraction[c] = p·n[c] - σ'[c,j]·n[j] + appliedTraction[c]
+  //                     = -(σ_oxide · n)[c] + appliedTraction[c]
+  // This is zero when σ_oxide · n = appliedTraction, i.e. at equilibrium.
+  Vec3D<T> maskTractionVelocityBoundary(const IndexType &index,
+                                        unsigned direction, int offset,
+                                        T distance,
+                                        const Vec3D<T> &interiorVelocity) const {
+    const Vec3D<T> appliedTraction = maskTractionQuery_(index, direction, offset);
+    // Oxide outward normal at mask face: Cartesian face direction.
+    Vec3D<T> n{T(0), T(0), T(0)};
+    n[direction] = static_cast<T>(offset);
+
+    Vec3D<T> boundaryVelocity = interiorVelocity;
+    const auto deviatoricStress = deviatoricStressAt(index);
+    const T pressure = pressureAt(index);
+    const T eta = std::max(deformationParameters.viscosity,
+                           std::numeric_limits<T>::epsilon());
+
+    Vec3D<T> deviatoricTraction{T(0), T(0), T(0)};
+    for (unsigned comp = 0; comp < D; ++comp)
+      for (unsigned j = 0; j < D; ++j)
+        deviatoricTraction[comp] +=
+            deviatoricStress[tensorIndex(comp, j)] * n[j];
+
+    for (unsigned comp = 0; comp < D; ++comp) {
+      const T normalTraction =
+          pressure * n[comp] - deviatoricTraction[comp] + appliedTraction[comp];
+      // n[direction] = ±1, so this equals ±normalTraction[comp] / eta.
+      const T faceDerivative = normalTraction * n[direction] / eta;
+      boundaryVelocity[comp] +=
+          static_cast<T>(offset) * distance * faceDerivative;
+    }
+    return boundaryVelocity;
+  }
+
+  Vec3D<T> maskContactVelocity(const IndexType &index, unsigned direction,
+                               int offset) const {
+    if (maskVelocityField == nullptr)
+      return {T(0), T(0), T(0)};
+
+    Vec3D<T> coordinate{T(0), T(0), T(0)};
+    IndexType maskIndex = index;
+    maskIndex[direction] += offset;
+    for (unsigned i = 0; i < D; ++i)
+      coordinate[i] = maskIndex[i] * gridDelta;
+
+    return maskVelocityField->getVectorVelocity(coordinate,
+                                                deformationParameters.material,
+                                                {T(0), T(0), T(0)}, 0);
+  }
+
+  // Mixed mask contact: no penetration in the face-normal direction, while
+  // tangential components use the traction ghost above.  This lets the mask
+  // stiffness feed back through the oxide normal stress without welding the
+  // tangential velocity to the mask.
+  Vec3D<T> maskMixedContactVelocityBoundary(
+      const IndexType &index, unsigned direction, int offset, T distance,
+      const Vec3D<T> &interiorVelocity) const {
+    Vec3D<T> boundaryVelocity =
+        maskTractionVelocityBoundary(index, direction, offset, distance,
+                                     interiorVelocity);
+    const Vec3D<T> maskVelocity = maskContactVelocity(index, direction, offset);
+    boundaryVelocity[direction] = maskVelocity[direction];
     return boundaryVelocity;
   }
 

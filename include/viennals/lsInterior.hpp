@@ -181,6 +181,8 @@ public:
     // ConstSparseIterator in buildNodes(), writePersistentFields(), and
     // lsAdvect (which re-segments its output internally).
     // levelSet->finalize(width);
+    levelSet->getDomain().segment();
+
   }
 };
 

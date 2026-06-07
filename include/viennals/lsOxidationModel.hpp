@@ -2,6 +2,7 @@
 
 #include <lsOxidationMask.hpp>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -30,6 +31,8 @@ template <class T, int D> class OxidationModel {
   bool useRequestedBounds = false;
   unsigned iterations = 0;
   T residual = std::numeric_limits<T>::max();
+  bool converged_ = false;
+  std::string failureReason_;
 
 public:
   OxidationModel() = default;
@@ -73,6 +76,8 @@ public:
   void apply() {
     iterations = 0;
     residual = 0.;
+    converged_ = false;
+    failureReason_.clear();
     if (diffusionField == nullptr || deformationField == nullptr) {
       Logger::getInstance()
           .addError("OxidationModel: Missing diffusion or deformation "
@@ -106,6 +111,19 @@ public:
               ", iterations=" +
               std::to_string(diffusionField->getIterations()) +
               ", residual=" + std::to_string(diffusionField->getResidual()));
+      if (!diffusionField->lastSolveConverged() ||
+          !diffusionField->hasFiniteConcentrationField()) {
+        residual = std::numeric_limits<T>::infinity();
+        failureReason_ = "diffusion solve failed (residual=" +
+                         std::to_string(diffusionField->getNormalizedResidual()) +
+                         ", tolerance=" +
+                         std::to_string(diffusionField->getParameters().tolerance) +
+                         ")";
+        Logger::getInstance()
+            .addWarning("OxidationModel: " + failureReason_ + ".")
+            .print();
+        return;
+      }
 
       logDebug("OxidationModel: coupling iteration " +
               std::to_string(iterations + 1) + "/" +
@@ -120,6 +138,21 @@ public:
               ", iterations=" +
               std::to_string(deformationField->getIterations()) +
               ", residual=" + std::to_string(deformationField->getResidual()));
+      if (!deformationField->lastSolveConverged() ||
+          !deformationField->hasFiniteSolution()) {
+        residual = std::numeric_limits<T>::infinity();
+        failureReason_ = "deformation solve failed (mechanics=" +
+                         std::to_string(deformationField->getResidual()) +
+                         ", pressure=" +
+                         std::to_string(deformationField->getLastPressureResidual()) +
+                         ", stokes=" +
+                         std::to_string(deformationField->getLastStokesResidual()) +
+                         ")";
+        Logger::getInstance()
+            .addWarning("OxidationModel: " + failureReason_ + ".")
+            .print();
+        return;
+      }
       if (Logger::hasTiming())
         Logger::getInstance()
             .addTiming("    deformation(couplingIter=" +
@@ -140,6 +173,15 @@ public:
             [&](const IndexType &, T p) { p_raw[ii++] = p; });
       }
       const std::size_t n = p_raw.size();
+      if (!std::all_of(p_raw.begin(), p_raw.end(),
+                       [](T value) { return std::isfinite(value); })) {
+        residual = std::numeric_limits<T>::infinity();
+        failureReason_ = "deformation pressure feedback produced non-finite values";
+        Logger::getInstance()
+            .addWarning("OxidationModel: " + failureReason_ + ".")
+            .print();
+        return;
+      }
 
       // Aitken Δ²: find θ minimising ||(1-θ)F_{k-1} + θF_k||².
       // Clamped to [0.1, 1.0]: no extrapolation (θ>1) because the
@@ -191,7 +233,8 @@ public:
     logDebug("OxidationModel: coupled solve complete, iterations=" +
             std::to_string(completedIterations) +
             ", residual=" + std::to_string(residual));
-    if (residual > parameters.tolerance)
+    converged_ = std::isfinite(residual) && residual <= parameters.tolerance;
+    if (!converged_)
       Logger::getInstance()
           .addWarning("OxidationModel: pressure-concentration coupling did not "
                       "converge after " + std::to_string(completedIterations) +
@@ -203,6 +246,8 @@ public:
 
   unsigned getIterations() const { return iterations; }
   T getResidual() const { return residual; }
+  bool hasConverged() const { return converged_; }
+  std::string getFailureReason() const { return failureReason_; }
 
 private:
   static void logDebug(const std::string &message) {

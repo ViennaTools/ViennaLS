@@ -146,6 +146,8 @@ private:
   IndexType requestedMaxIndex{};
   unsigned iterations = 0;
   T residual = std::numeric_limits<T>::max();
+  T normalizedResidual_ = std::numeric_limits<T>::max();
+  bool lastSolveConverged_ = false;
   T maxScalarVelocity_ = 0.;
   bool solved = false;
   bool nodesDirty_ = true;  // true → rebuild grid/nodes on next apply()
@@ -258,7 +260,11 @@ public:
   }
 
   void setPressure(const IndexType &index, T pressure) {
-    pressureLookup[detail::gridIndexHash<D>(index)] = pressure;
+    const auto key = detail::gridIndexHash<D>(index);
+    if (std::isfinite(pressure))
+      pressureLookup[key] = pressure;
+    else
+      pressureLookup.erase(key);
     solved = false;
   }
 
@@ -403,7 +409,15 @@ public:
 
   unsigned getIterations() const { return iterations; }
   T getResidual() const { return residual; }
+  T getNormalizedResidual() const { return normalizedResidual_; }
+  bool lastSolveConverged() const { return lastSolveConverged_; }
   std::size_t getNumberOfSolutionNodes() const { return nodes.size(); }
+  bool hasFiniteConcentrationField() const {
+    for (const auto &node : nodes)
+      if (!std::isfinite(node.concentration))
+        return false;
+    return true;
+  }
 
   const std::unordered_map<std::size_t, T> &getConcentrationCache() const {
     return concentrationCache_;
@@ -447,9 +461,8 @@ public:
       // The in-memory concentrationCache_ is the warm-start source for the
       // next substep; the level-set value is only the fallback when that cache
       // is cold, and C=0 converges just as quickly as C=1 from a cold start.
-      concentrations.push_back(nodeId != noNode
-                                   ? nodes[nodeId].concentration
-                                   : T(0));
+      const T value = nodeId != noNode ? nodes[nodeId].concentration : T(0);
+      concentrations.push_back(std::isfinite(value) ? value : T(0));
     }
     ambientInterface->getPointData().insertReplaceScalarData(
         std::move(concentrations), "OxConcentration");
@@ -468,7 +481,8 @@ public:
         continue;
       const IndexType idx = it.getStartIndices();
       const auto pIt = pressureLookup.find(detail::gridIndexHash<D>(idx));
-      pressures.push_back(pIt != pressureLookup.end() ? pIt->second : T(0));
+      const T value = pIt != pressureLookup.end() ? pIt->second : T(0);
+      pressures.push_back(std::isfinite(value) ? value : T(0));
     }
     ambientInterface->getPointData().insertReplaceScalarData(
         std::move(pressures), "OxPressure");
@@ -542,10 +556,12 @@ private:
           const std::size_t key =
               detail::gridIndexHash<D>(it.getStartIndices());
           if (cd != nullptr &&
-              ptId < static_cast<decltype(ptId)>(cd->size()))
+              ptId < static_cast<decltype(ptId)>(cd->size()) &&
+              std::isfinite((*cd)[ptId]))
             concentrationCache_[key] = (*cd)[ptId];
           if (pd != nullptr &&
-              ptId < static_cast<decltype(ptId)>(pd->size()))
+              ptId < static_cast<decltype(ptId)>(pd->size()) &&
+              std::isfinite((*pd)[ptId]))
             pressureLookup[key] = (*pd)[ptId];
         }
         warmStartable_ = !concentrationCache_.empty();
@@ -568,6 +584,8 @@ private:
         auto cacheIt = concentrationCache_.find(detail::gridIndexHash<D>(index));
         if (cacheIt != concentrationCache_.end())
           seedConc = cacheIt->second;
+        if (!std::isfinite(seedConc))
+          seedConc = parameters.equilibriumConcentration;
         Node newNode{index, seedConc};
         if (parameters.reactionRateRatio111 != T(1))
           newNode.siNormal = computeSiNormal(index, reactionIt);
@@ -758,8 +776,12 @@ private:
   void solveDiffusion() {
     iterations = 0;
     residual = 0.;
-    if (nodes.empty())
+    normalizedResidual_ = 0.;
+    lastSolveConverged_ = false;
+    if (nodes.empty()) {
+      lastSolveConverged_ = true;
       return;
+    }
 
     // Work vectors use float to halve memory bandwidth in the SpMV hot path.
     // Stencil arithmetic and dot-product accumulation remain in T (double).
@@ -779,6 +801,25 @@ private:
         computeStencilAt(i, zeros, diag[i], b[i]);
     }
     tDiag.finish();
+
+    T b_norm = T(0);
+    bool finiteSystem = true;
+    for (std::size_t i = 0; i < n; ++i) {
+      finiteSystem = finiteSystem && std::isfinite(diag[i]) &&
+                     std::isfinite(b[i]);
+      b_norm = std::max(b_norm, std::abs(b[i]));
+    }
+    if (b_norm < T(1e-100))
+      b_norm = T(1);
+    if (!finiteSystem) {
+      residual = std::numeric_limits<T>::infinity();
+      normalizedResidual_ = residual;
+      Logger::getInstance()
+          .addWarning("solveDiffusion: assembled non-finite matrix/RHS; "
+                      "rejecting this coupled trial.")
+          .print();
+      return;
+    }
 
     // Initial guess: warm-start or diagonal-preconditioned b.  Sanitize the
     // warm start so a previous failed solve cannot seed NaNs into the next one.
@@ -873,6 +914,9 @@ private:
         // Write solution back to nodes only after convergence and finite checks.
         for (std::size_t i = 0; i < n; ++i)
           nodes[i].concentration = static_cast<T>(xGpu[i]);
+        normalizedResidual_ = gpuResidual / b_norm;
+        lastSolveConverged_ = std::isfinite(normalizedResidual_) &&
+                              normalizedResidual_ <= parameters.tolerance;
 
         if (Logger::hasTiming()) {
           const std::string tag = "diffusion n=" + std::to_string(n) +
@@ -933,23 +977,41 @@ private:
     // Scalars (rho, alpha, omega, beta) and dot products stay in T for stability.
     Timer<> tCpuSolve;
     tCpuSolve.start();
-    T b_norm = T(0);
-    for (std::size_t i = 0; i < n; ++i)
-      b_norm = std::max(b_norm, std::abs(b[i]));
-    if (b_norm < T(1e-100)) b_norm = T(1);
-
     std::vector<SolverT> p(n, SolverT(0)), v(n, SolverT(0)), y(n), z(n), s(n), t(n);
     T rho = T(1), alpha = T(1), omega = T(1);
+    bool bicgstabBreakdown = false;
+    for (std::size_t i = 0; i < n; ++i) {
+      const T ri = static_cast<T>(r[i]);
+      if (!std::isfinite(ri)) {
+        bicgstabBreakdown = true;
+        break;
+      }
+      residual = std::max(residual, std::abs(ri));
+    }
 
-    for (; iterations < parameters.maxIterations; ++iterations) {
+    for (; !bicgstabBreakdown &&
+           iterations < parameters.maxIterations; ++iterations) {
       T rho_new = T(0);
       for (std::size_t i = 0; i < n; ++i)
         rho_new += static_cast<T>(r_hat[i]) * static_cast<T>(r[i]);
 
+      if (!std::isfinite(rho_new)) {
+        bicgstabBreakdown = true;
+        break;
+      }
       if (std::abs(rho_new) < T(1e-100))
         break;
+      if (!std::isfinite(rho) || !std::isfinite(alpha) ||
+          !std::isfinite(omega) || std::abs(omega) < T(1e-100)) {
+        bicgstabBreakdown = true;
+        break;
+      }
 
       const T beta = (rho_new / rho) * (alpha / omega);
+      if (!std::isfinite(beta)) {
+        bicgstabBreakdown = true;
+        break;
+      }
       rho = rho_new;
 
       for (std::size_t i = 0; i < n; ++i)
@@ -965,10 +1027,18 @@ private:
       T r_hat_v = T(0);
       for (std::size_t i = 0; i < n; ++i)
         r_hat_v += static_cast<T>(r_hat[i]) * static_cast<T>(v[i]);
+      if (!std::isfinite(r_hat_v)) {
+        bicgstabBreakdown = true;
+        break;
+      }
       if (std::abs(r_hat_v) < T(1e-100))
         break;
 
       alpha = rho_new / r_hat_v;
+      if (!std::isfinite(alpha)) {
+        bicgstabBreakdown = true;
+        break;
+      }
 
       for (std::size_t i = 0; i < n; ++i)
         s[i] = static_cast<SolverT>(r[i] - alpha * v[i]);
@@ -976,6 +1046,10 @@ private:
       residual = T(0);
       for (std::size_t i = 0; i < n; ++i)
         residual = std::max(residual, std::abs(static_cast<T>(s[i])));
+      if (!std::isfinite(residual)) {
+        bicgstabBreakdown = true;
+        break;
+      }
       if (residual < parameters.tolerance * b_norm) {
         for (std::size_t i = 0; i < n; ++i)
           x[i] = static_cast<SolverT>(x[i] + alpha * y[i]);
@@ -995,7 +1069,15 @@ private:
         t_s += static_cast<T>(t[i]) * static_cast<T>(s[i]);
         t_t += static_cast<T>(t[i]) * static_cast<T>(t[i]);
       }
+      if (!std::isfinite(t_s) || !std::isfinite(t_t)) {
+        bicgstabBreakdown = true;
+        break;
+      }
       omega = (t_t > T(1e-100)) ? t_s / t_t : T(0);
+      if (!std::isfinite(omega)) {
+        bicgstabBreakdown = true;
+        break;
+      }
 
       for (std::size_t i = 0; i < n; ++i) {
         x[i] = static_cast<SolverT>(x[i] + alpha * y[i] + omega * z[i]);
@@ -1005,13 +1087,21 @@ private:
       residual = T(0);
       for (std::size_t i = 0; i < n; ++i)
         residual = std::max(residual, std::abs(static_cast<T>(r[i])));
+      if (!std::isfinite(residual)) {
+        bicgstabBreakdown = true;
+        break;
+      }
       if (residual < parameters.tolerance * b_norm) {
         ++iterations;
         break;
       }
     }
 
+    if (bicgstabBreakdown)
+      residual = std::numeric_limits<T>::infinity();
+
     const bool finiteCpuSolution =
+        !bicgstabBreakdown &&
         std::all_of(x.begin(), x.end(),
                     [](SolverT value) { return std::isfinite(value); });
     if (finiteCpuSolution) {
@@ -1026,6 +1116,10 @@ private:
                       "concentrations; keeping the sanitized initial guess.")
           .print();
     }
+    normalizedResidual_ = residual / b_norm;
+    lastSolveConverged_ = finiteCpuSolution &&
+                          std::isfinite(normalizedResidual_) &&
+                          normalizedResidual_ <= parameters.tolerance;
 
     tCpuSolve.finish();
     if (Logger::hasTiming()) {
@@ -1294,6 +1388,8 @@ private:
       const auto foundPressure = pressureLookup.find(detail::gridIndexHash<D>(index));
       if (foundPressure != pressureLookup.end())
         pressure = foundPressure->second;
+      if (!std::isfinite(pressure))
+        pressure = parameters.referencePressure;
       const T exponent = stressExponent(pressure,
                                         parameters.reactionActivationVolume);
       rate *= stressFactor(exponent);
@@ -1321,6 +1417,8 @@ private:
     const auto found = pressureLookup.find(detail::gridIndexHash<D>(index));
     if (found != pressureLookup.end())
       pressure = found->second;
+    if (!std::isfinite(pressure))
+      pressure = parameters.referencePressure;
 
     const T exponent = stressExponent(pressure,
                                       parameters.diffusionActivationVolume);
@@ -1335,6 +1433,8 @@ private:
   }
 
   static T stressFactor(T exponent) {
+    if (!std::isfinite(exponent))
+      return T(1);
     if (exponent <= std::log(minStressFactor))
       return minStressFactor;
     if (exponent >= std::log(maxStressFactor))
