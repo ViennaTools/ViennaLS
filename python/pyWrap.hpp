@@ -193,9 +193,16 @@ inline void bindOxidationSharedTypes(py::module &module) {
       .def_readwrite("creepActivationEnergy",
                      &OxidationMaskParameters<T>::creepActivationEnergy)
       .def_readwrite("poissonRatio", &OxidationMaskParameters<T>::poissonRatio)
+      .def_readwrite("youngModulus", &OxidationMaskParameters<T>::youngModulus)
       .def_readwrite("unilateralContact",
                      &OxidationMaskParameters<T>::unilateralContact)
       .def_readwrite("relaxation", &OxidationMaskParameters<T>::relaxation)
+      .def_readwrite("contactLoadRelaxation",
+                     &OxidationMaskParameters<T>::contactLoadRelaxation)
+      .def_readwrite("contactReleaseFraction",
+                     &OxidationMaskParameters<T>::contactReleaseFraction)
+      .def_readwrite("multigridSmootherOmega",
+                     &OxidationMaskParameters<T>::multigridSmootherOmega)
       .def_readwrite("tolerance", &OxidationMaskParameters<T>::tolerance)
       .def_readwrite("minBoundaryDistance",
                      &OxidationMaskParameters<T>::minBoundaryDistance)
@@ -1141,7 +1148,7 @@ template <int D> void bindApi(py::module &module) {
            (void(MakeGeometry<T, D>::*)(bool)) &
                MakeGeometry<T, D>::setIgnoreBoundaryConditions)
       .def("setIgnoreBoundaryConditions",
-           (void(MakeGeometry<T, D>::*)(std::array<bool, 3>)) &
+           (void(MakeGeometry<T, D>::*)(std::array<bool, D>)) &
                MakeGeometry<T, D>::setIgnoreBoundaryConditions)
       .def("apply", &MakeGeometry<T, D>::apply, "Generate the geometry.");
 
