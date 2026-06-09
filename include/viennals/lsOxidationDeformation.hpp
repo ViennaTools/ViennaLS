@@ -19,7 +19,6 @@ template <class T> struct OxidationDeformationParameters {
   T viscosity = 1.;
   T bulkModulus = 1.;
   T ambientPressure = 0.;
-  T pressureRelaxation = 1.;
   T pressureTolerance = 1e-8;
   T minMechanicsBoundaryDistance = 0.05;
   T shearModulus = 0.;
@@ -32,7 +31,8 @@ template <class T> struct OxidationDeformationParameters {
   T mechanicsTolerance = 1e-8;
   T stokesTolerance = 1e-8;
   T tolerance = 1e-8;
-  T relaxation = 1.;
+  T relaxation = 0.7;          // SIMPLE velocity under-relaxation (0 < α ≤ 1)
+  T pressureRelaxation = 0.5;  // SIMPLE pressure under-relaxation (0 < β ≤ 1)
   std::size_t maxGridPoints = 5000000;
   int material = -1;
 };
@@ -718,10 +718,12 @@ private:
             pressCoeffGpu_[fi * n + id]  = static_cast<double>(c);
             pressNeighId32_[fi * n + id] = static_cast<uint32_t>(j);
             actualDiagGpu_[id] += c;
-          } else if (j != noNode || faceBCTypes_[fi * n + id] == Boundary::REACTION) {
-            // Ambient-touching pressure nodes are identity-row Dirichlet nodes.
-            // Adjacent rows must treat them as fixed values, not unknown
-            // off-diagonal neighbours.
+          } else if (j != noNode ||
+                     faceBCTypes_[fi * n + id] == Boundary::AMBIENT) {
+            // j is an ambient-only neighbour (identity-row Dirichlet p=0), OR
+            // this face crosses the free surface directly (AMBIENT Dirichlet p=0
+            // at the sub-grid crossing distance).
+            // REACTION faces are solid-wall Neumann ∂p/∂n=0: no contribution.
             actualDiagGpu_[id] += c;
           }
         };
@@ -1547,7 +1549,7 @@ public:
 
         const T dpCenter = nodes[i].pressure - pressureOld[i];
         const T gradDP = firstDerivative(dpMinus, dpCenter, dpPlus, dMinus, dPlus);
-        const T correction = gradDP * invEta / ai;
+        const T correction = gradDP * invEta / ai * deformationParameters.relaxation;
         if (std::isfinite(correction) &&
             std::isfinite(nodes[i].velocity[dir]))
           nodes[i].velocity[dir] -= correction;
@@ -1737,8 +1739,12 @@ public:
             ", residual=" + std::to_string(gpuResidual) + ").");
       }
 
-      for (std::size_t i = 0; i < n; ++i)
-        nodes[i].pressure = static_cast<T>(xGpu[i]);
+      {
+        const T beta = deformationParameters.pressureRelaxation;
+        const T oneMinB = T(1) - beta;
+        for (std::size_t i = 0; i < n; ++i)
+          nodes[i].pressure = oneMinB * nodes[i].pressure + beta * static_cast<T>(xGpu[i]);
+      }
       lastPressureIters_ = gpuIterations;
       lastPressureResidual_ = gpuResidual / b_norm;
 
@@ -1806,9 +1812,11 @@ public:
           pressNeighId[fiNeg * n + id] = jNeg;
           actualDiag[id] += c;            // A[i,i] += interior off-diagonal coefficient
         } else if (jNeg != noNode ||
-                   faceBCTypes_[fiNeg * n + id] == Boundary::REACTION) {
-          // REACTION and ambient-touching pressure nodes are Dirichlet: they
-          // contribute to the diagonal/RHS, not as off-diagonal unknowns.
+                   faceBCTypes_[fiNeg * n + id] == Boundary::AMBIENT) {
+          // j is an ambient-only neighbour (identity-row Dirichlet p=0), OR
+          // this face directly crosses the free surface (AMBIENT Dirichlet p=0
+          // at the sub-grid crossing distance).  RHS contribution is c·0=0.
+          // REACTION faces are solid-wall Neumann ∂p/∂n=0: no contribution.
           actualDiag[id] += T(2) / (dNeg * dSum);
         }
         if (jPos != noNode && !touchesAmbient_[jPos]) {
@@ -1817,7 +1825,7 @@ public:
           pressNeighId[fiPos * n + id] = jPos;
           actualDiag[id] += c;
         } else if (jPos != noNode ||
-                   faceBCTypes_[fiPos * n + id] == Boundary::REACTION) {
+                   faceBCTypes_[fiPos * n + id] == Boundary::AMBIENT) {
           actualDiag[id] += T(2) / (dPos * dSum);
         }
       }
@@ -2035,8 +2043,10 @@ public:
     lastPressureIters_    = pressureIter;
     lastPressureResidual_ = pressureResidual / b_norm;
     if (finiteSolution) {
+      const T beta    = deformationParameters.pressureRelaxation;
+      const T oneMinB = T(1) - beta;
       for (std::size_t i = 0; i < n; ++i)
-        nodes[i].pressure = x[i];
+        nodes[i].pressure = oneMinB * nodes[i].pressure + beta * static_cast<T>(x[i]);
     } else {
       lastPressureResidual_ = std::numeric_limits<T>::infinity();
     }
@@ -2421,13 +2431,13 @@ public:
     const T faceDist        = faceBCDists_[fi * nn + nodeId];
     if (faceType == Boundary::AMBIENT)
       return {ambientBoundaryPressure[nodeId], faceDist};
-    // Reaction interface: Dirichlet p = ambientPressure (zero gauge pressure at the
-    // Si/SiO2 boundary).  This prevents the large traction-free pressure from the
-    // open-window bird's beak from propagating as a uniform constant into the entire
-    // under-mask pad oxide via the Laplace equation.  Physically, the Si acts as a
-    // rigid, stress-free reference so the gauge pressure at the reaction boundary is 0.
+    // Reaction interface: Neumann ∂p/∂n=0 (solid-wall BC for pressure).
+    // The ghost node takes the same value as the interior node, giving zero
+    // contribution to the Laplacian stencil.  The pressure is anchored only by
+    // the AMBIENT Dirichlet (p=0 at the free surface), which is always present
+    // for any connected oxide region.
     if (faceType == Boundary::REACTION)
-      return {deformationParameters.ambientPressure, faceDist};
+      return {static_cast<T>(pressure[nodeId]), faceDist};
     if (faceType == Boundary::MASK)
       return {maskPressureBoundary(node.index, direction, offset,
                                    static_cast<T>(pressure[nodeId])),
@@ -2492,7 +2502,7 @@ public:
     if (faceType == Boundary::AMBIENT)
       return {freeSurfacePressureBoundary(node.index), faceDist};
     if (faceType == Boundary::REACTION)
-      return {deformationParameters.ambientPressure, faceDist};
+      return {node.pressure, faceDist};  // Neumann ∂p/∂n=0
     if (faceType == Boundary::MASK)
       return {maskPressureBoundary(node.index, direction, offset,
                                    node.pressure),
