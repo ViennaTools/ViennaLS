@@ -1148,7 +1148,7 @@ template <int D> void bindApi(py::module &module) {
            (void(MakeGeometry<T, D>::*)(bool)) &
                MakeGeometry<T, D>::setIgnoreBoundaryConditions)
       .def("setIgnoreBoundaryConditions",
-           (void(MakeGeometry<T, D>::*)(std::array<bool, D>)) &
+           (void(MakeGeometry<T, D>::*)(std::array<bool, 3>)) &
                MakeGeometry<T, D>::setIgnoreBoundaryConditions)
       .def("apply", &MakeGeometry<T, D>::apply, "Generate the geometry.");
 
