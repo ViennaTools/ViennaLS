@@ -436,6 +436,7 @@ private:
       if (hasMask) {
         // --- Mask bending solve ---
         auto stepMaskParams = maskParams;
+        stepMaskParams.stressTimeStep = stressTimeStep;
         stepMaskParams.relaxation =
             std::clamp(maskParams.relaxation * adaptiveMaskRelaxationScale,
                        T(0.01), T(1));
@@ -721,8 +722,6 @@ private:
                           "). Consider increasing maskReferenceViscosity or "
                           "maskCouplingIterations.")
               .print();
-          if (deformationField)
-            deformationField->clearMaskTractionQuery();
           maskBendingField = nullptr; // skip mask advection this step
           ambientVelocity = makeAmbientVelocity();
           advectionTime = minTrialTime;
@@ -760,6 +759,9 @@ private:
     deformationField->writeFieldsToLevelSet();
     if (hasMask && maskBendingField)
       maskBendingField->writeFieldsToLevelSet();
+
+    if (hasMask && maskBendingField)
+      maskBendingField->finalizeElasticAdvectionVelocity();
 
     auto advect = [&](SmartPointer<Domain<T, D>> levelSet,
                       SmartPointer<VelocityField<T>> velocityField) {

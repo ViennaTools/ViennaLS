@@ -107,12 +107,6 @@ private:
   SmartPointer<Domain<T, D>> maskInterface = nullptr;
   SmartPointer<OxidationDiffusion<T, D>> diffusionField = nullptr;
   SmartPointer<VelocityField<T>> maskVelocityField = nullptr;
-  // Traction query registered by OxidationMaskBending after each elastic solve.
-  // When set, MASK faces in the Stokes solver use mixed contact: the normal
-  // velocity follows the mask (no penetration), while tangential components use
-  // a Neumann traction BC.  The function returns σ_mask · n_oxide at the face
-  // between the oxide node (oxideIndex) and the mask in (direction, offset).
-  std::function<Vec3D<T>(IndexType, unsigned, int)> maskTractionQuery_;
   OxidationDeformationParameters<T> deformationParameters;
   OxidationParameters<T> oxidationParameters;
   int reactionSign = 1;
@@ -260,27 +254,6 @@ public:
     solved = false;
   }
 
-  /// Register the mask-stress traction query used by the Stokes Neumann BC.
-  /// Called by OxidationMaskBending::apply() after each elastic solve.
-  /// The first call triggers a GPU geometry rebuild (Dirichlet→Neumann transition
-  /// for MASK faces); subsequent calls just update the lambda and are free.
-  /// Does NOT set solved=false: the current velocity is still valid; the new
-  /// callback takes effect on the NEXT oxide apply() call.
-  void setMaskTractionQuery(
-      std::function<Vec3D<T>(IndexType, unsigned, int)> fn) {
-    const bool wasSet = static_cast<bool>(maskTractionQuery_);
-    maskTractionQuery_ = std::move(fn);
-    if (!wasSet)
-      nodesDirty_ = true; // first registration: rebuild GPU Stokes diagonal
-  }
-
-  void clearMaskTractionQuery() {
-    const bool wasSet = static_cast<bool>(maskTractionQuery_);
-    maskTractionQuery_ = nullptr;
-    if (wasSet)
-      nodesDirty_ = true; // transitioning back to Dirichlet: rebuild
-  }
-
   void setDiffusionField(
       SmartPointer<OxidationDiffusion<T, D>> passedDiffusionField) {
     diffusionField = passedDiffusionField;
@@ -363,18 +336,6 @@ public:
     Timer<> tHarmonic, tMechanics;
     tHarmonic.start();
     solveVelocity();
-    // When the Neumann MASK BC is active, the harmonic warm-start used Dirichlet
-    // MASK (computeHarmonicStencilAt is intentionally unchanged).  With a soft
-    // mask the Dirichlet velocity can be large, producing an initial Stokes
-    // residual far from the Neumann equilibrium and requiring many SIMPLE
-    // iterations to unwind.  Restore the previous Neumann-consistent solution as
-    // the SIMPLE warm-start whenever one is available; the SIMPLE will still
-    // converge to the correct answer, just from a much closer starting point.
-    if (maskTractionQuery_ && hasPreviousSolution_ &&
-        previousVelocity_.size() == nn) {
-      for (std::size_t i = 0; i < nn; ++i)
-        nodes[i].velocity = previousVelocity_[i];
-    }
     tHarmonic.finish();
     tMechanics.start();
     solveMechanics();
@@ -753,12 +714,15 @@ private:
 
         auto processFace = [&](unsigned fi, std::size_t j, T d) {
           const T c = T(2) / (d * dSum);
-          if (j != noNode) {
+          if (j != noNode && !touchesAmbient_[j]) {
             pressCoeffGpu_[fi * n + id]  = static_cast<double>(c);
             pressNeighId32_[fi * n + id] = static_cast<uint32_t>(j);
             actualDiagGpu_[id] += c;
-          } else if (faceBCTypes_[fi * n + id] == Boundary::REACTION) {
-            actualDiagGpu_[id] += c; // Dirichlet p=0 ghost adds to diagonal
+          } else if (j != noNode || faceBCTypes_[fi * n + id] == Boundary::REACTION) {
+            // Ambient-touching pressure nodes are identity-row Dirichlet nodes.
+            // Adjacent rows must treat them as fixed values, not unknown
+            // off-diagonal neighbours.
+            actualDiagGpu_[id] += c;
           }
         };
         processFace(fiNeg, jNeg, dNeg);
@@ -769,11 +733,10 @@ private:
   }
 
   // Builds the face-major Stokes velocity matrix geometry for GPU reuse.
-  // The effective diagonal excludes OOB and AMBIENT face self-coupling because
-  // those cancel exactly with the vBC correction in the Stokes matvec.  Mixed
-  // MASK contact is component-dependent: the face-normal component is
-  // Dirichlet-like and contributes to the diagonal; tangential components are
-  // Neumann-like and self-cancel.
+  // The effective diagonal excludes OOB, AMBIENT, and traction-coupled MASK
+  // face self-coupling because those cancel exactly with the vBC correction in
+  // the Stokes matvec.  Kinematic MASK faces remain Dirichlet-like and
+  // contribute to the diagonal.
   void buildStokesGpuGeometry() {
     const std::size_t n = nodes.size();
     const T eps = std::numeric_limits<T>::epsilon();
@@ -820,20 +783,11 @@ private:
             addDiag(id, c);
           } else if (inb) {
             // Boundary-crossing face.
-            // REACTION: Dirichlet → adds to diagonal.
-            // MASK with traction query: mixed contact → normal component adds,
-            //   tangential components self-cancel.
-            // MASK without traction query: Dirichlet (kinematic) → adds to diagonal.
+            // REACTION / MASK: Dirichlet → adds to diagonal.
             // AMBIENT / OOB: excluded (self-coupling cancels with vBC correction).
             const Boundary bt = faceBCTypes_[fi * n + id];
-            if (bt == Boundary::REACTION)
+            if (bt == Boundary::REACTION || bt == Boundary::MASK)
               addDiag(id, c);
-            else if (bt == Boundary::MASK) {
-              if (maskTractionQuery_)
-                stokesDiagGpu_[dir * n + id] += static_cast<double>(c);
-              else
-                addDiag(id, c);
-            }
           }
           // !inb (OOB): self-coupling, excluded.
         };
@@ -1063,6 +1017,8 @@ public:
     touchesAmbient_.assign(n, uint8_t(0));
     for (std::size_t id = 0; id < n; ++id) {
       const auto &node = nodes[id];
+      bool touchesAmbient = false;
+      bool touchesSolidBoundary = false;
       for (unsigned dir = 0; dir < D; ++dir) {
         for (int off : {-1, 1}) {
           const unsigned fi = dir * 2u + (off == 1 ? 1u : 0u);
@@ -1075,9 +1031,18 @@ public:
           faceBCTypes_[fi * n + id] = bi.boundary;
           faceBCDists_[fi * n + id] = bi.distance;
           if (bi.boundary == Boundary::AMBIENT)
-            touchesAmbient_[id] = uint8_t(1);
+            touchesAmbient = true;
+          else if (bi.boundary == Boundary::MASK ||
+                   bi.boundary == Boundary::REACTION)
+            touchesSolidBoundary = true;
         }
       }
+      // Do not collapse mixed mask/reaction/ambient corner nodes to a single
+      // ambient pressure identity row.  Those nodes need their per-face
+      // boundary conditions; otherwise the mask-edge triple point injects an
+      // artificial free-surface pressure singularity.
+      touchesAmbient_[id] =
+          (touchesAmbient && !touchesSolidBoundary) ? uint8_t(1) : uint8_t(0);
     }
 
 #ifdef VIENNALS_GPU_BICGSTAB
@@ -1160,7 +1125,7 @@ public:
     if (nodes.empty())
       return;
 
-    using SolverT = float;
+    using SolverT = T;
 
     const std::size_t n = nodes.size();
     const T diagVal = static_cast<T>(2 * D); // constant for all nodes
@@ -1410,9 +1375,8 @@ public:
   // Geometry-fixed within a mechanics solve; computed once and reused by the
   // SIMPLE velocity-correction step: v_c^{k+1}=v_c* - grad_c(dp)/(eta*a_ic).
   //
-  // With mixed MASK contact, normal components are Dirichlet-like and retain the
-  // MASK face coefficient. Tangential components contribute ghost=v_node+const,
-  // so their self-coupling cancels and the face coefficient is removed.
+  // With traction-coupled MASK contact, ghost=v_node+const for every component,
+  // so the MASK face self-coupling cancels and the face coefficient is removed.
   std::vector<Vec3D<T>> computeVelocityDiagonals() const {
     const std::size_t n = nodes.size();
     std::vector<Vec3D<T>> diagV(n, Vec3D<T>{T(0), T(0), T(0)});
@@ -1427,56 +1391,6 @@ public:
         diagV[i][comp] = diag;
     }
 
-    if (maskTractionQuery_) {
-      // Subtract MASK tangential self-coupling from the effective diagonal.
-      const T eps = std::numeric_limits<T>::epsilon();
-#pragma omp parallel for schedule(static)
-      for (std::size_t i = 0; i < n; ++i) {
-        for (unsigned dir = 0; dir < D; ++dir) {
-          const unsigned fi_neg = dir * 2u;
-          const unsigned fi_pos = dir * 2u + 1u;
-          IndexType nbNeg = nodes[i].index;  nbNeg[dir] -= 1;
-          IndexType nbPos = nodes[i].index;  nbPos[dir] += 1;
-          const bool negIn = inBounds(nbNeg);
-          const bool posIn = inBounds(nbPos);
-          const std::size_t jNeg = negIn ? nodeLookupFlat[linearIndex(nbNeg)] : noNode;
-          const std::size_t jPos = posIn ? nodeLookupFlat[linearIndex(nbPos)] : noNode;
-
-          const bool negMask = negIn && jNeg == noNode &&
-                               faceBCTypes_[fi_neg * n + i] == Boundary::MASK;
-          const bool posMask = posIn && jPos == noNode &&
-                               faceBCTypes_[fi_pos * n + i] == Boundary::MASK;
-          if (!negMask && !posMask)
-            continue;
-
-          // Match the distance logic in velocityStencilPoint.
-          auto fd = [&](unsigned fi, bool inb, std::size_t j) -> T {
-            if (!inb || j != noNode) return gridDelta;
-            return faceBCDists_[fi * n + i];
-          };
-          const T dNeg = fd(fi_neg, negIn, jNeg);
-          const T dPos = fd(fi_pos, posIn, jPos);
-          const T dSum = dNeg + dPos;
-          if (dSum <= eps)
-            continue;
-          if (negMask) {
-            const T c = T(2) / (dNeg * dSum);
-            for (unsigned comp = 0; comp < D; ++comp)
-              if (comp != dir)
-                diagV[i][comp] -= c;
-          }
-          if (posMask) {
-            const T c = T(2) / (dPos * dSum);
-            for (unsigned comp = 0; comp < D; ++comp)
-              if (comp != dir)
-                diagV[i][comp] -= c;
-          }
-        }
-        for (unsigned comp = 0; comp < D; ++comp)
-          if (diagV[i][comp] <= eps)
-            diagV[i][comp] = eps;
-      }
-    }
     return diagV;
   }
 
@@ -1685,7 +1599,7 @@ public:
     if (nodes.empty())
       return;
 
-    using SolverT = float;
+    using SolverT = T;
 
     const std::size_t n = nodes.size();
     const T eps = std::numeric_limits<T>::epsilon();
@@ -1697,6 +1611,38 @@ public:
       ambientBP[i]  = freeSurfacePressureBoundary(nodes[i].index);
     }
 
+    auto warnBadPressureAssembly = [](const std::string &stage,
+                                      std::size_t nodeId,
+                                      const IndexType &idx,
+                                      T value) {
+      Logger::getInstance()
+          .addWarning("solvePressure: non-finite/overflow " + stage +
+                      " at node=" + std::to_string(nodeId) +
+                      " index=(" + std::to_string(idx[0]) + "," +
+                      std::to_string(idx[1]) +
+                      (D == 3 ? "," + std::to_string(idx[2])
+                              : std::string()) +
+                      ") value=" + std::to_string(value))
+          .print();
+    };
+
+    const T solverMax =
+        static_cast<T>(std::numeric_limits<SolverT>::max());
+    for (std::size_t i = 0; i < n; ++i) {
+      if (!std::isfinite(divergence[i]) ||
+          std::abs(divergence[i]) > solverMax) {
+        warnBadPressureAssembly("divergence", i, nodes[i].index,
+                                divergence[i]);
+        break;
+      }
+      if (!std::isfinite(ambientBP[i]) ||
+          std::abs(ambientBP[i]) > solverMax) {
+        warnBadPressureAssembly("ambient pressure boundary", i,
+                                nodes[i].index, ambientBP[i]);
+        break;
+      }
+    }
+
     // Geometry-fixed diagonal and BC constants (kept in T for full precision).
     std::vector<T> diag(n), pBC(n);
     {
@@ -1706,11 +1652,30 @@ public:
         computePressureStencilAt(i, zeros, ambientBP, diag[i], pBC[i]);
     }
 
+    for (std::size_t i = 0; i < n; ++i) {
+      if (!std::isfinite(diag[i]) || std::abs(diag[i]) > solverMax) {
+        warnBadPressureAssembly("pressure diagonal", i, nodes[i].index,
+                                diag[i]);
+        break;
+      }
+      if (!std::isfinite(pBC[i]) || std::abs(pBC[i]) > solverMax) {
+        warnBadPressureAssembly("pressure boundary rhs", i, nodes[i].index,
+                                pBC[i]);
+        break;
+      }
+    }
+
     std::vector<T> b(n);
     T b_norm = T(0);
     for (std::size_t i = 0; i < n; ++i) {
       b[i] = pBC[i] + deformationParameters.bulkModulus * divergence[i];
       b_norm = std::max(b_norm, std::abs(b[i]));
+    }
+    for (std::size_t i = 0; i < n; ++i) {
+      if (!std::isfinite(b[i]) || std::abs(b[i]) > solverMax) {
+        warnBadPressureAssembly("pressure rhs", i, nodes[i].index, b[i]);
+        break;
+      }
     }
     if (b_norm < T(1e-100)) b_norm = T(1);
 
@@ -1835,22 +1800,24 @@ public:
         const T dSum = dNeg + dPos;
         if (dSum <= eps) continue;
 
-        if (jNeg != noNode) {
+        if (jNeg != noNode && !touchesAmbient_[jNeg]) {
           const T c = T(2) / (dNeg * dSum);
           pressCoeff[fiNeg * n + id]   = c;
           pressNeighId[fiNeg * n + id] = jNeg;
           actualDiag[id] += c;            // A[i,i] += interior off-diagonal coefficient
-        } else if (faceBCTypes_[fiNeg * n + id] == Boundary::REACTION) {
-          // REACTION face is now Dirichlet p=0: it contributes to the matrix diagonal
-          // just like an interior neighbour with a fixed ghost value.
+        } else if (jNeg != noNode ||
+                   faceBCTypes_[fiNeg * n + id] == Boundary::REACTION) {
+          // REACTION and ambient-touching pressure nodes are Dirichlet: they
+          // contribute to the diagonal/RHS, not as off-diagonal unknowns.
           actualDiag[id] += T(2) / (dNeg * dSum);
         }
-        if (jPos != noNode) {
+        if (jPos != noNode && !touchesAmbient_[jPos]) {
           const T c = T(2) / (dPos * dSum);
           pressCoeff[fiPos * n + id]   = c;
           pressNeighId[fiPos * n + id] = jPos;
           actualDiag[id] += c;
-        } else if (faceBCTypes_[fiPos * n + id] == Boundary::REACTION) {
+        } else if (jPos != noNode ||
+                   faceBCTypes_[fiPos * n + id] == Boundary::REACTION) {
           actualDiag[id] += T(2) / (dPos * dSum);
         }
       }
@@ -1931,6 +1898,14 @@ public:
 
     std::vector<SolverT> Ax(n);
     pressureMatvec(x, ambientBP, diag, pBC, Ax);
+    for (std::size_t i = 0; i < n; ++i) {
+      if (!std::isfinite(static_cast<T>(Ax[i])) ||
+          std::abs(static_cast<T>(Ax[i])) > solverMax) {
+        warnBadPressureAssembly("initial pressure matvec", i, nodes[i].index,
+                                static_cast<T>(Ax[i]));
+        break;
+      }
+    }
     std::vector<SolverT> r(n), r_hat(n), p(n, SolverT(0)), v(n, SolverT(0)), y(n), z(n), s(n), t(n);
     for (std::size_t i = 0; i < n; ++i) {
       r[i]     = static_cast<SolverT>(b[i] - Ax[i]);
@@ -2100,7 +2075,7 @@ public:
     if (nodes.empty())
       return;
 
-    using SolverT = float;
+    using SolverT = T;
 
     const std::size_t n = nodes.size();
     const T eps = std::numeric_limits<T>::epsilon();
@@ -2434,8 +2409,11 @@ public:
       return {static_cast<T>(pressure[nodeId]), gridDelta};
 
     const std::size_t neighborId = nodeLookupFlat[linearIndex(neighbor)];
-    if (neighborId != noNode)
+    if (neighborId != noNode) {
+      if (touchesAmbient_[neighborId])
+        return {ambientBoundaryPressure[neighborId], gridDelta};
       return {static_cast<T>(pressure[neighborId]), gridDelta};
+    }
 
     const unsigned fi = direction * 2u + (offset == 1 ? 1u : 0u);
     const std::size_t nn = nodes.size();
@@ -2451,7 +2429,8 @@ public:
     if (faceType == Boundary::REACTION)
       return {deformationParameters.ambientPressure, faceDist};
     if (faceType == Boundary::MASK)
-      return {solidInterfacePressureBoundary(node.index, static_cast<T>(pressure[nodeId])),
+      return {maskPressureBoundary(node.index, direction, offset,
+                                   static_cast<T>(pressure[nodeId])),
               faceDist};
 
     return {static_cast<T>(pressure[nodeId]), gridDelta};
@@ -2486,13 +2465,8 @@ public:
       return {freeSurfaceVelocityBoundary(node.index, direction, offset,
                                           faceDist, toT(velocity[nodeId])),
               faceDist};
-    if (faceType == Boundary::MASK) {
-      if (maskTractionQuery_)
-        return {maskMixedContactVelocityBoundary(node.index, direction, offset,
-                                                 faceDist, toT(velocity[nodeId])),
-                faceDist};
+    if (faceType == Boundary::MASK)
       return {maskVelocityBoundary(node.index, toT(velocity[nodeId])), faceDist};
-    }
 
     return {toT(velocity[nodeId]), gridDelta};
   }
@@ -2520,7 +2494,9 @@ public:
     if (faceType == Boundary::REACTION)
       return {deformationParameters.ambientPressure, faceDist};
     if (faceType == Boundary::MASK)
-      return {solidInterfacePressureBoundary(node.index, node.pressure), faceDist};
+      return {maskPressureBoundary(node.index, direction, offset,
+                                   node.pressure),
+              faceDist};
 
     return {node.pressure, gridDelta};
   }
@@ -2549,13 +2525,8 @@ public:
       return {freeSurfaceVelocityBoundary(node.index, direction, offset,
                                           faceDist, node.velocity),
               faceDist};
-    if (faceType == Boundary::MASK) {
-      if (maskTractionQuery_)
-        return {maskMixedContactVelocityBoundary(node.index, direction, offset,
-                                                 faceDist, node.velocity),
-                faceDist};
+    if (faceType == Boundary::MASK)
       return {maskVelocityBoundary(node.index, node.velocity), faceDist};
-    }
 
     return {node.velocity, gridDelta};
   }
@@ -2592,8 +2563,8 @@ public:
     return maxChange / maxPressure;
   }
 
-  T freeSurfacePressureBoundary(const IndexType &index) const {
-    const auto normal = interfaceNormal(index, Boundary::AMBIENT);
+  std::array<T, 9> currentBoundaryDeviatoricStress(
+      const IndexType &index) const {
     const auto strainRate = strainRateTensorAt(index);
     const auto deviatoricRate = deviatoricTensor(strainRate, divergenceAt(index));
     const auto previousStress = previousDeviatoricStress(index);
@@ -2611,12 +2582,19 @@ public:
           decay * previousStress[i] + (T(1) - decay) * viscousStress;
     }
 
+    return deviatoricStress;
+  }
+
+  T freeSurfacePressureBoundary(const IndexType &index) const {
+    const auto normal = interfaceNormal(index, Boundary::AMBIENT);
+    const auto deviatoricStress = currentBoundaryDeviatoricStress(index);
+
     return deformationParameters.ambientPressure +
            normalStress(deviatoricStress, normal);
   }
 
-  T solidInterfacePressureBoundary(const IndexType &,
-                                   T fallbackPressure) const {
+  T maskPressureBoundary(const IndexType & /*index*/, unsigned /*direction*/,
+                         int /*offset*/, T fallbackPressure) const {
     return fallbackPressure;
   }
 
@@ -2647,78 +2625,6 @@ public:
           static_cast<T>(offset) * distance * faceDerivative;
     }
 
-    return boundaryVelocity;
-  }
-
-  // Ghost velocity enforcing σ_oxide · n_oxide = appliedTraction (Neumann BC).
-  // n_oxide = offset * e_dir (oxide outward normal at the mask face).
-  // appliedTraction = σ_mask · n_oxide queried from maskTractionQuery_.
-  //
-  // The formula mirrors freeSurfaceVelocityBoundary but subtracts appliedTraction
-  // from the imbalance term, shifting the target from zero to the mask traction:
-  //   normalTraction[c] = p·n[c] - σ'[c,j]·n[j] + appliedTraction[c]
-  //                     = -(σ_oxide · n)[c] + appliedTraction[c]
-  // This is zero when σ_oxide · n = appliedTraction, i.e. at equilibrium.
-  Vec3D<T> maskTractionVelocityBoundary(const IndexType &index,
-                                        unsigned direction, int offset,
-                                        T distance,
-                                        const Vec3D<T> &interiorVelocity) const {
-    const Vec3D<T> appliedTraction = maskTractionQuery_(index, direction, offset);
-    // Oxide outward normal at mask face: Cartesian face direction.
-    Vec3D<T> n{T(0), T(0), T(0)};
-    n[direction] = static_cast<T>(offset);
-
-    Vec3D<T> boundaryVelocity = interiorVelocity;
-    const auto deviatoricStress = deviatoricStressAt(index);
-    const T pressure = pressureAt(index);
-    const T eta = std::max(deformationParameters.viscosity,
-                           std::numeric_limits<T>::epsilon());
-
-    Vec3D<T> deviatoricTraction{T(0), T(0), T(0)};
-    for (unsigned comp = 0; comp < D; ++comp)
-      for (unsigned j = 0; j < D; ++j)
-        deviatoricTraction[comp] +=
-            deviatoricStress[tensorIndex(comp, j)] * n[j];
-
-    for (unsigned comp = 0; comp < D; ++comp) {
-      const T normalTraction =
-          pressure * n[comp] - deviatoricTraction[comp] + appliedTraction[comp];
-      // n[direction] = ±1, so this equals ±normalTraction[comp] / eta.
-      const T faceDerivative = normalTraction * n[direction] / eta;
-      boundaryVelocity[comp] +=
-          static_cast<T>(offset) * distance * faceDerivative;
-    }
-    return boundaryVelocity;
-  }
-
-  Vec3D<T> maskContactVelocity(const IndexType &index, unsigned direction,
-                               int offset) const {
-    if (maskVelocityField == nullptr)
-      return {T(0), T(0), T(0)};
-
-    Vec3D<T> coordinate{T(0), T(0), T(0)};
-    IndexType maskIndex = index;
-    maskIndex[direction] += offset;
-    for (unsigned i = 0; i < D; ++i)
-      coordinate[i] = maskIndex[i] * gridDelta;
-
-    return maskVelocityField->getVectorVelocity(coordinate,
-                                                deformationParameters.material,
-                                                {T(0), T(0), T(0)}, 0);
-  }
-
-  // Mixed mask contact: no penetration in the face-normal direction, while
-  // tangential components use the traction ghost above.  This lets the mask
-  // stiffness feed back through the oxide normal stress without welding the
-  // tangential velocity to the mask.
-  Vec3D<T> maskMixedContactVelocityBoundary(
-      const IndexType &index, unsigned direction, int offset, T distance,
-      const Vec3D<T> &interiorVelocity) const {
-    Vec3D<T> boundaryVelocity =
-        maskTractionVelocityBoundary(index, direction, offset, distance,
-                                     interiorVelocity);
-    const Vec3D<T> maskVelocity = maskContactVelocity(index, direction, offset);
-    boundaryVelocity[direction] = maskVelocity[direction];
     return boundaryVelocity;
   }
 

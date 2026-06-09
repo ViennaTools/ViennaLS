@@ -19,13 +19,15 @@ template <class T> struct OxidationMaskParameters {
   //   0 = kinematic: mask velocity at oxide-contact faces equals the solved
   //       oxide velocity (legacy Dirichlet BC). No traction computation.
   //   1 = oneway: mask solved with oxide stress traction as Neumann BC
-  //       (multigrid GMRES); oxide still uses kinematic Dirichlet at mask
-  //       faces. Stable; captures mask bending driven by oxide force.
-  //   2 = twoway: as mode 1, plus the mask stress traction is fed back to
-  //       the oxide as a Neumann BC, enforcing full stress continuity across
-  //       the interface. Most physical; risk of coupling oscillation at large
-  //       bending or low mask viscosity.
-  int contactMode = 2;
+  //       (multigrid GMRES); oxide uses kinematic Dirichlet at mask faces.
+  //       Stable; captures mask bending driven by oxide force. (Config
+  //       aliases: "oneway", "traction", "1", "2".)
+  //   2 = elastic: multigrid-GMRES elastic solve with youngModulus and
+  //       poissonRatio. Oxide contact prescribes elastic displacement
+  //       (v_oxide × dt). The outer coupling loop in lsOxidation feeds the
+  //       solved mask displacement back into the next oxide solve. (Config
+  //       aliases: "elastic", "twoway" and variants, "3", "4".)
+  int contactMode = 1;
   // Arrhenius creep viscosity law:
   // eta(T) = eta_ref * exp(E/R * (1/T - 1/T_ref)).
   // Viscosity is in Pa·hr, activation energy in J/mol, temperature in K.
@@ -33,6 +35,13 @@ template <class T> struct OxidationMaskParameters {
   T referenceTemperature = 1273.15;
   T referenceViscosity = 5e8;
   T creepActivationEnergy = 0.;
+  // Young's modulus for elastic contact mode (2), in Pa.
+  // Si₃N₄ at 1000 °C: ~250–270 GPa.
+  T youngModulus = T(270e9);
+  // Current solve timestep in hours; set by lsOxidation before each apply().
+  // Elastic modes use it to scale oxide velocity to contact displacement
+  // (v * dt) and to convert the solved displacement back to advection velocity.
+  T stressTimeStep = T(1);
   T poissonRatio = 0.27;
   // false = bonded mask/oxide interface (traction continuity in compression
   // and tension); true = optional unilateral contact/release model.
@@ -55,7 +64,11 @@ template <class T> struct OxidationMaskParameters {
   // relaxation.  Do not share this with the Aitken relaxation above.
   T multigridSmootherOmega = 1.0;
   T tolerance = 1e-8;
-  T minBoundaryDistance = 1e-6;
+  // Minimum sub-grid boundary distance as a fraction of gridDelta. This is a
+  // mechanical derivative length scale, so keep it comparable to the oxide
+  // deformation solver; near-zero distances make elastic contact stresses blow
+  // up as E * u / d.
+  T minBoundaryDistance = 0.05;
   unsigned maxIterations = 10000;
   std::size_t maxGridPoints = 5000000;
   int material = -1;
@@ -150,14 +163,18 @@ private:
   std::unordered_map<std::size_t, Vec3D<T>> previousContactTraction_;
   std::unordered_map<std::size_t, T> previousContactReleaseScale_;
   std::vector<T> previousAitkenResidual;
+  // Elastic mode (contactMode==2): snapshot of u_new (elastic equilibrium
+  // displacement in µm, stored as µm/hr with implicit dt_ref=1 hr) taken by
+  // finalizeElasticAdvectionVelocity(). Used by writeFieldsToLevelSet() to
+  // write the "MaskVelocity" warm-start for the next substep's solver.
+  std::vector<Vec3D<T>> elasticU_;
   IndexType requestedMinIndex{};
   IndexType requestedMaxIndex{};
   std::vector<Node> nodes;
   // Face-major flat contact BC arrays: index = faceIdx * n + nodeId.
   std::vector<uint8_t> contactFaceActive_;      // 1 if contact BC applies
-  std::vector<Vec3D<T>> contactFaceVelocity_;   // Legacy Dirichlet velocity
+  std::vector<Vec3D<T>> contactFaceVelocity_;   // Dirichlet velocity at contact
   std::vector<Vec3D<T>> contactFaceTraction_;   // Oxide traction on mask face
-  std::vector<Vec3D<T>> contactFaceMaskTraction_; // Mask stress traction post-solve
   std::vector<T> contactFaceDistance_;          // Node-to-interface distance
   std::unordered_map<std::size_t, T> ambientPhiCache_;
 
@@ -187,10 +204,7 @@ public:
         parameters(passedParameters),
         maskSign((passedMaskSign < 0) ? -1 : 1) {}
 
-  ~OxidationMaskBending() {
-    if (deformationField != nullptr)
-      deformationField->clearMaskTractionQuery();
-  }
+  ~OxidationMaskBending() = default;
 
   static SmartPointer<OxidationMaskBending>
   New(SmartPointer<OxidationDeformation<T, D>> passedDeformation,
@@ -256,36 +270,6 @@ public:
     return lastApplyAbsoluteVelocityChange;
   }
 
-  /// Returns the traction the mask applies to the oxide at the face between
-  /// oxideIndex and the mask in (direction, offset).
-  ///
-  /// The oxide Neumann BC requires σ_oxide · n_oxide_out = t_applied, where
-  /// n_oxide_out = offset * e_dir and t_applied = σ_mask · n_oxide_out.
-  ///
-  /// computeMaskContactTractions stores σ_mask · n_mask_out where
-  /// n_mask_out = -offset * e_dir (opposite to n_oxide_out).  So the stored
-  /// value is the negative of what the oxide BC needs; we return its negation.
-  Vec3D<T> getMaskStressTraction(const IndexType &oxideIndex,
-                                 unsigned direction, int offset) const {
-    IndexType maskIndex = oxideIndex;
-    maskIndex[direction] += offset;
-    if (!inBounds(maskIndex))
-      return {T(0), T(0), T(0)};
-    const std::size_t maskNodeId = lookupNode(maskIndex);
-    if (maskNodeId == noNode)
-      return {T(0), T(0), T(0)};
-    // The mask's contact face toward the oxide is in direction -offset.
-    const int maskOffset = -offset;
-    const unsigned maskFaceIdx = direction * 2u + (maskOffset == 1 ? 1u : 0u);
-    const std::size_t n = nodes.size();
-    if (!contactFaceActive_[maskFaceIdx * n + maskNodeId])
-      return {T(0), T(0), T(0)};
-    // Negate: stored traction = σ_mask · n_mask_out = σ_mask · (-offset * e_dir),
-    // but we need σ_mask · n_oxide_out = σ_mask · (+offset * e_dir).
-    const Vec3D<T> &t = contactFaceMaskTraction_[maskFaceIdx * n + maskNodeId];
-    return {-t[0], -t[1], -t[2]};
-  }
-
   void apply() {
     if (maskInterface == nullptr) {
       solved = true;
@@ -303,6 +287,7 @@ public:
     const auto previousVelocities = collectVelocitiesByGridPoint();
     if (!initialiseGrid())
       return; // base class already logged the error
+    elasticU_.clear(); // reset before coupling so getVectorVelocity divides by dt
     buildNodes();
     seedFromLevelSet(); // warm-start velocity from previous substep's pointData
     seedFromPrevious(previousVelocities);
@@ -312,7 +297,6 @@ public:
                       "buildNodes(). Verify that the mask level set defines "
                       "a non-empty interior region within the solve bounds.")
           .print();
-      deformationField->clearMaskTractionQuery();
       solved = true;
       return;
     }
@@ -365,13 +349,50 @@ public:
     }
 
     solved = true;
+  }
 
-    if (parameters.contactMode == 2) {
-      computeMaskContactTractions();
-      registerTractionCallback();
-    } else {
-      deformationField->clearMaskTractionQuery();
+  // Called from lsOxidation after writeFieldsToLevelSet() and before advect().
+  //
+  // Elastic mode (2): the contact faces use kinematic (Dirichlet) BC so the
+  // mask stays bonded to the oxide surface.  The solver output u_new is the
+  // elastic bending displacement (in µm, stored as µm/hr with implicit
+  // dt_ref=1 hr).  Convert to advection velocity u_new/dt and update
+  // maxVelocity_ for CFL subcycling.  No-op for viscous modes.
+  void finalizeElasticAdvectionVelocity() {
+    if (!isElasticContactMode() || nodes.empty())
+      return;
+    const T dt = parameters.stressTimeStep;
+    if (dt <= T(0)) {
+      for (auto &node : nodes)
+        node.velocity = {T(0), T(0), T(0)};
+      return;
     }
+
+    const std::size_t n = nodes.size();
+    elasticU_.resize(n);
+    for (std::size_t i = 0; i < n; ++i)
+      elasticU_[i] = nodes[i].velocity;
+
+    T maxUNew = T(0);
+    for (std::size_t i = 0; i < n; ++i)
+      for (unsigned d = 0; d < D; ++d)
+        maxUNew = std::max(maxUNew, std::abs(elasticU_[i][d]));
+
+    const T invDt = T(1) / dt;
+    for (std::size_t i = 0; i < n; ++i)
+      for (unsigned d = 0; d < D; ++d)
+        nodes[i].velocity[d] = elasticU_[i][d] * invDt;
+
+    Logger::getInstance()
+        .addInfo("ElasticFinalize: dt=" + std::to_string(dt) +
+                 " max|u_new|=" + std::to_string(maxUNew) +
+                 " max|u_new/dt|=" + std::to_string(maxUNew * invDt))
+        .print();
+
+    maxVelocity_.fill(T(0));
+    for (const auto &node : nodes)
+      for (unsigned d = 0; d < D; ++d)
+        maxVelocity_[d] = std::max(maxVelocity_[d], std::abs(node.velocity[d]));
   }
 
   Vec3D<T> getVectorVelocity(const Vec3D<T> &coordinate, int material,
@@ -392,6 +413,19 @@ public:
     IndexType index;
     for (unsigned i = 0; i < D; ++i)
       index[i] = std::llround(coordinate[i] / gridDelta);
+
+    // Elastic mode: the solver stores u_new (displacement in µm) as if it were
+    // a velocity (µm/hr, with implicit dt_ref=1hr).  The oxide needs the actual
+    // advection velocity u_new/dt.  Before finalization elasticU_ is empty and
+    // nodes[i].velocity = u_new; we divide by dt here.  After finalization
+    // nodes[i].velocity = u_new/dt already, so we return it directly.
+    if (isElasticContactMode() && elasticU_.empty()) {
+      const T dt = parameters.stressTimeStep;
+      if (dt <= T(0))
+        return {T(0), T(0), T(0)};
+      return detail::vecScaled(getVelocity(index), T(1) / dt);
+    }
+
     return getVelocity(index);
   }
 
@@ -407,17 +441,26 @@ public:
       return;
 
     using VD = typename PointData<T>::VectorDataType;
-    VD velocity;
 
+    // Elastic mode: after finalization, elasticU_ holds u_new (the displacement
+    // in µm, stored as µm/hr). Use it as the "MaskVelocity" warm-start so the
+    // next substep's solver begins near its expected solution.
+    // Before finalization (elasticU_ empty), fall back to nodes[nId].velocity
+    // which still equals u_new from the current solve.
+    const bool useElasticU =
+        isElasticContactMode() && !elasticU_.empty();
+
+    VD velocity;
     ConstSparseIterator it(maskInterface->getDomain());
     for (; !it.isFinished(); ++it) {
       if (!it.isDefined())
         continue;
-      const IndexType idx = it.getStartIndices();
-      const std::size_t nId = lookupNode(idx);
-      velocity.push_back(nId != noNode
-                             ? nodes[nId].velocity
-                             : Vec3D<T>{T(0), T(0), T(0)});
+      const std::size_t nId = lookupNode(it.getStartIndices());
+      Vec3D<T> v{T(0), T(0), T(0)};
+      if (nId != noNode)
+        v = (useElasticU && nId < elasticU_.size()) ? elasticU_[nId]
+                                                     : nodes[nId].velocity;
+      velocity.push_back(v);
     }
     maskInterface->getPointData().insertReplaceVectorData(
         std::move(velocity), "MaskVelocity");
@@ -751,7 +794,6 @@ private:
     contactFaceActive_.assign(2 * D * n, uint8_t(0));
     contactFaceVelocity_.assign(2 * D * n, Vec3D<T>{T(0), T(0), T(0)});
     contactFaceTraction_.assign(2 * D * n, Vec3D<T>{T(0), T(0), T(0)});
-    contactFaceMaskTraction_.assign(2 * D * n, Vec3D<T>{T(0), T(0), T(0)});
     contactFaceDistance_.assign(2 * D * n, gridDelta);
 
     contactNodes = 0;
@@ -862,10 +904,16 @@ private:
           ++activeContactFaces_;
           contactFaceTraction_[faceIdx * n + id]  = contactLoad;
           contactFaceDistance_[faceIdx * n + id]  = faceDistance;
-          if (parameters.contactMode == 0) {
-            contactFaceVelocity_[faceIdx * n + id] =
-                deformationField->getVectorVelocity(oxidePt, parameters.material,
-                                                    faceNormal, 0);
+          if (usesKinematicContactBoundary()) {
+            auto oxVel = deformationField->getVectorVelocity(oxidePt,
+                                                             parameters.material,
+                                                             faceNormal, 0);
+            if (isElasticContactMode()) {
+              // Scale by dt: elastic solver uses dt_ref=1hr so the Dirichlet BC
+              // must be the physical displacement (v_oxide × dt), not the velocity.
+              oxVel = detail::vecScaled(oxVel, parameters.stressTimeStep);
+            }
+            contactFaceVelocity_[faceIdx * n + id] = oxVel;
           }
         }
       }
@@ -952,90 +1000,6 @@ private:
                                Vec3D<T>{T(0), T(0), T(0)});
   }
 
-  // Compute σ_mask · n_mask at each active contact face using the solved mask
-  // velocity field and store in contactFaceMaskTraction_.  Called at the end of
-  // apply() so OxidationDeformation can use these as Neumann BCs on the oxide.
-  //
-  // n_mask = off * e_dir (mask outward normal at that face, pointing into oxide).
-  // σ_mask[i,j] = λ·div(v)·δ_ij + 2μ·ε_ij,  ε_ij = ½(∂v_i/∂x_j + ∂v_j/∂x_i).
-  void computeMaskContactTractions() {
-    const T lambda = lameLambda();
-    const T mu = lameMu();
-    const std::size_t n = nodes.size();
-    if (n == 0) return;
-
-    std::vector<Vec3D<T>> vel(n);
-    for (std::size_t i = 0; i < n; ++i)
-      vel[i] = nodes[i].velocity;
-
-    for (std::size_t id = 0; id < n; ++id) {
-      for (unsigned dir = 0; dir < D; ++dir) {
-        for (int off : {-1, 1}) {
-          const unsigned fi = dir * 2u + (off == 1 ? 1u : 0u);
-          if (!contactFaceActive_[fi * n + id])
-            continue;
-
-          const T faceDistance = std::max(contactFaceDistance_[fi * n + id],
-                                          std::numeric_limits<T>::epsilon());
-          const Vec3D<T> ghost =
-              stressBoundaryGhost(vel, id, dir, off, faceDistance,
-                                  contactFaceTraction_[fi * n + id]);
-          Vec3D<T> normalDerivative{T(0), T(0), T(0)};
-          for (unsigned comp = 0; comp < D; ++comp)
-            normalDerivative[comp] =
-                (ghost[comp] - vel[id][comp]) /
-                (static_cast<T>(off) * faceDistance);
-
-          T tangentialDivergence = T(0);
-          for (unsigned k = 0; k < D; ++k) {
-            if (k == dir)
-              continue;
-            const Vec3D<T> vP = simpleNeighborVelocity(vel, id, k, +1);
-            const Vec3D<T> vM = simpleNeighborVelocity(vel, id, k, -1);
-            tangentialDivergence +=
-                (vP[k] - vM[k]) / (T(2) * gridDelta);
-          }
-          const T divV = normalDerivative[dir] + tangentialDivergence;
-
-          Vec3D<T> traction{T(0), T(0), T(0)};
-
-          // Normal component: t[dir] = off * (λ·div + 2μ·∂v[dir]/∂x[dir]).
-          {
-            const T dvn_dn = normalDerivative[dir];
-            traction[dir] = static_cast<T>(off) * (lambda * divV + T(2) * mu * dvn_dn);
-          }
-
-          // Shear components: t[comp] = off * μ·(∂v[comp]/∂x[dir] + ∂v[dir]/∂x[comp]).
-          for (unsigned comp = 0; comp < D; ++comp) {
-            if (comp == dir) continue;
-            const Vec3D<T> wP = simpleNeighborVelocity(vel, id, comp, +1);
-            const Vec3D<T> wM = simpleNeighborVelocity(vel, id, comp, -1);
-            const T dvComp_dn = normalDerivative[comp];
-            const T dvDir_ds  = (wP[dir]  - wM[dir])  / (T(2) * gridDelta);
-            traction[comp] = static_cast<T>(off) * mu * (dvComp_dn + dvDir_ds);
-          }
-
-          contactFaceMaskTraction_[fi * n + id] = traction;
-        }
-      }
-    }
-  }
-
-  // Register a lambda on deformationField so the oxide Stokes solver can query
-  // getMaskStressTraction() during its Neumann BC evaluation.
-  void registerTractionCallback() {
-    if (deformationField == nullptr)
-      return;
-    if (parameters.contactMode != 2 || nodes.empty()) {
-      deformationField->clearMaskTractionQuery();
-      return;
-    }
-    deformationField->setMaskTractionQuery(
-        [this](IndexType idx, unsigned dir, int off) -> Vec3D<T> {
-          return this->getMaskStressTraction(idx, dir, off);
-        });
-  }
-
   template <class SolverT>
   Vec3D<T> neighborVelocity(const std::vector<Vec3D<SolverT>> &velocity,
                              std::size_t nodeId, unsigned direction,
@@ -1054,7 +1018,7 @@ private:
     const unsigned faceIdx = direction * 2u + (offset == 1 ? 1u : 0u);
     const std::size_t nn = nodes.size();
     if (contactFaceActive_[faceIdx * nn + nodeId]) {
-      if (parameters.contactMode == 0)
+      if (usesKinematicContactBoundary())
         return detail::vecSubtract(
             detail::vecScaled(contactFaceVelocity_[faceIdx * nn + nodeId], T(2)),
             Vec3D<T>{static_cast<T>(velocity[nodeId][0]),
@@ -2147,7 +2111,24 @@ private:
 
   static constexpr T gasConstant = T(8.31446261815324);
 
+  bool isElasticContactMode() const {
+    return parameters.contactMode == 2;
+  }
+
+  bool usesKinematicContactBoundary() const {
+    return parameters.contactMode == 0 || isElasticContactMode();
+  }
+
   T effectiveMaskViscosity() const {
+    // Elastic mode: η_eff = E (Pa·hr, with implicit dt_ref = 1 hr).
+    // lameMu/lameLambda equal the standard elastic Lamé constants G and λ.
+    // Contact faces use kinematic (Dirichlet) BC: v_contact = v_oxide × dt,
+    // so the solver gives u_new ≈ v_oxide × dt (displacement in µm stored as
+    // µm/hr).  finalizeElasticAdvectionVelocity() converts u_new → u_new/dt
+    // (the actual advection velocity µm/hr).  Displacement feedback into the
+    // oxide comes through the outer coupling loop in lsOxidation.
+    if (isElasticContactMode())
+      return parameters.youngModulus; // Pa·hr with implicit dt_ref = 1 hr
     const T temperature = std::max(parameters.temperature, T(1.));
     const T referenceTemperature =
         std::max(parameters.referenceTemperature, T(1.));
