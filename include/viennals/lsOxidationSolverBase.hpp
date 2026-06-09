@@ -103,7 +103,11 @@ protected:
   };
 
   bool crosses(T a, T b) const {
-    return (a <= 0. && b >= 0.) || (a >= 0. && b <= 0.);
+    // Use a small tolerance consistent with isInsideOxide so that grid points
+    // that land exactly on an interface (phi ≈ 0 from floating-point rounding
+    // in GeometricAdvect) are treated as surface points in boundary detection.
+    constexpr T eps = T(1e-9);
+    return (a <= eps && b >= -eps) || (a >= -eps && b <= eps);
   }
 
   T valueAt(ConstSparseIterator &it, const IndexType &index) const {

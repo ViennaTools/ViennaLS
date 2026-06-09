@@ -1444,14 +1444,27 @@ private:
 
   Vec3D<T> computeSiNormal(const IndexType &index,
                            ConstSparseIterator &reactionIt) const {
+    // Reflect neighbor indices that fall outside the HRLE grid.  This handles
+    // REFLECTIVE boundary conditions correctly: phi(b-k) = phi(b+k), so the
+    // centered difference at b gives zero lateral gradient as expected.
+    auto reflectToGrid = [&](IndexType idx) {
+      auto &g = reactionInterface->getGrid();
+      for (unsigned d2 = 0; d2 < D; ++d2) {
+        const auto lo = g.getMinGridPoint(d2);
+        const auto hi = g.getMaxGridPoint(d2);
+        if (idx[d2] < lo) idx[d2] = 2 * lo - idx[d2];
+        if (idx[d2] > hi) idx[d2] = 2 * hi - idx[d2];
+      }
+      return idx;
+    };
     Vec3D<T> gradient{0., 0., 0.};
     for (unsigned d = 0; d < D; ++d) {
       IndexType plus = index, minus = index;
       plus[d] += 1;
       minus[d] -= 1;
       gradient[d] =
-          (detail::clampLevelSetPhi(valueAt(reactionIt, plus)) -
-           detail::clampLevelSetPhi(valueAt(reactionIt, minus))) /
+          (detail::clampLevelSetPhi(valueAt(reactionIt, reflectToGrid(plus))) -
+           detail::clampLevelSetPhi(valueAt(reactionIt, reflectToGrid(minus)))) /
           (T(2) * gridDelta);
     }
     T len = T(0);
@@ -1518,7 +1531,13 @@ private:
   }
 
   bool isInsideOxide(T reactionPhi, T ambientPhi) const {
-    return reactionSign * reactionPhi >= 0. && ambientSign * ambientPhi >= 0.;
+    // GeometricAdvect can leave a tiny positive residual (~4*epsilon) when the
+    // interface lands exactly on a grid point at non-zero coordinates, because
+    // k*gridDelta is not exactly representable in floating point.  Allow a
+    // tolerance of 1e-9 grid units so that grid points on the surface (phi≈0)
+    // are correctly classified as inside the oxide.
+    constexpr T eps = T(1e-9);
+    return reactionSign * reactionPhi >= -eps && ambientSign * ambientPhi >= -eps;
   }
 
   ConstSparseIterator makeMaskIterator() const {

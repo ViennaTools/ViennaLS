@@ -3079,7 +3079,13 @@ public:
   }
 
   bool isInsideOxide(T reactionPhi, T ambientPhi) const {
-    return reactionSign * reactionPhi >= 0. && ambientSign * ambientPhi >= 0.;
+    // GeometricAdvect can leave a tiny positive residual (~4*epsilon) when the
+    // interface lands exactly on a grid point at non-zero coordinates, because
+    // k*gridDelta is not exactly representable in floating point.  Allow a
+    // tolerance of 1e-9 grid units so that grid points on the surface (phi≈0)
+    // are correctly classified as inside the oxide.
+    constexpr T eps = T(1e-9);
+    return reactionSign * reactionPhi >= -eps && ambientSign * ambientPhi >= -eps;
   }
 
   ConstSparseIterator makeMaskIterator() const {
