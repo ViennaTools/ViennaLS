@@ -272,19 +272,27 @@ class OxidationDeformationVelocityField(viennals._core.VelocityField):
 class OxidationMaskParameters:
     def __init__(self) -> None:
         ...
+    contactMode: int
     temperature: float
     referenceTemperature: float
     referenceViscosity: float
     creepActivationEnergy: float
+    youngModulus: float
+    stressTimeStep: float
     poissonRatio: float
     unilateralContact: bool
-    anchorDirection: int
     relaxation: float
+    contactLoadRelaxation: float
+    contactReleaseFraction: float
+    multigridSmootherOmega: float
     tolerance: float
     minBoundaryDistance: float
     maxIterations: int
     maxGridPoints: int
     material: int
+    anchorBoundaryDirection: int
+    anchorBoundarySide: int
+    anchorBoundaryLayers: int
 class OxidationMaskBendingVelocityField(viennals._core.VelocityField):
     def __init__(self, deformationField: OxidationDeformationVelocityField, maskInterface: Domain, maskParameters: OxidationMaskParameters = ..., maskSign: typing.SupportsInt | typing.SupportsIndex = ...) -> None:
         ...
