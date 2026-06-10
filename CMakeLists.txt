@@ -35,6 +35,12 @@ if(VIENNALS_VTK_PYTHON_LIBS AND VIENNALS_PACKAGE_PYTHON)
   set(VIENNALS_PACKAGE_PYTHON OFF)
 endif()
 
+if(SKBUILD)
+  # When invoked via `pip install`, always build the Python extension even if
+  # the caller omits -DVIENNALS_BUILD_PYTHON=ON from cmake.args.
+  set(VIENNALS_BUILD_PYTHON ON)
+endif()
+
 if(VIENNALS_PACKAGE_PYTHON)
   message(
     STATUS
