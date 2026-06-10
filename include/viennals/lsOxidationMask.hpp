@@ -464,6 +464,62 @@ public:
     }
     maskInterface->getPointData().insertReplaceVectorData(
         std::move(velocity), "MaskVelocity");
+
+    // Cauchy stress tensor in the mask: σ = λ(∇·u)I + 2μ·sym(∇u)
+    // In elastic mode use the raw displacement u_new (elasticU_); in viscous
+    // mode use the velocity field — both give the correct stress via the same
+    // Lamé constants (which already encode the physical units).
+    const T lambda = lameLambda();
+    const T mu = lameMu();
+
+    std::vector<Vec3D<T>> velForStress(nodes.size());
+    for (std::size_t i = 0; i < nodes.size(); ++i)
+      velForStress[i] = (useElasticU && i < elasticU_.size())
+                            ? elasticU_[i]
+                            : nodes[i].velocity;
+
+    VD stressR0, stressR1, stressR2;
+    ConstSparseIterator sit(maskInterface->getDomain());
+    for (; !sit.isFinished(); ++sit) {
+      if (!sit.isDefined())
+        continue;
+      const std::size_t nId = lookupNode(sit.getStartIndices());
+      Vec3D<T> row0{T(0), T(0), T(0)};
+      Vec3D<T> row1{T(0), T(0), T(0)};
+      Vec3D<T> row2{T(0), T(0), T(0)};
+      if (nId != noNode) {
+        // grad[j][i] = ∂v_i/∂x_j via central differences
+        std::array<Vec3D<T>, 3> grad{};
+        for (unsigned j = 0; j < static_cast<unsigned>(D); ++j) {
+          const auto vp = simpleNeighborVelocity(velForStress, nId, j, +1);
+          const auto vm = simpleNeighborVelocity(velForStress, nId, j, -1);
+          for (unsigned i = 0; i < 3; ++i)
+            grad[j][i] = (vp[i] - vm[i]) / (T(2) * gridDelta);
+        }
+        T div = T(0);
+        for (unsigned i = 0; i < static_cast<unsigned>(D); ++i)
+          div += grad[i][i];
+        // σ_ij = λ·div·δ_ij + μ·(∂v_i/∂x_j + ∂v_j/∂x_i)
+        row0[0] = lambda * div + T(2) * mu * grad[0][0];
+        row0[1] = mu * (grad[1][0] + grad[0][1]);
+        row0[2] = (D > 2) ? mu * (grad[2][0] + grad[0][2]) : T(0);
+        row1[0] = row0[1];
+        row1[1] = lambda * div + T(2) * mu * grad[1][1];
+        row1[2] = (D > 2) ? mu * (grad[2][1] + grad[1][2]) : T(0);
+        row2[0] = row0[2];
+        row2[1] = row1[2];
+        row2[2] = (D > 2) ? lambda * div + T(2) * mu * grad[2][2] : T(0);
+      }
+      stressR0.push_back(row0);
+      stressR1.push_back(row1);
+      stressR2.push_back(row2);
+    }
+    maskInterface->getPointData().insertReplaceVectorData(
+        std::move(stressR0), "MaskStressR0");
+    maskInterface->getPointData().insertReplaceVectorData(
+        std::move(stressR1), "MaskStressR1");
+    maskInterface->getPointData().insertReplaceVectorData(
+        std::move(stressR2), "MaskStressR2");
   }
 
 private:
