@@ -73,7 +73,7 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' }}
         shell: pwsh
         run: |
-          ./vcpkg/vcpkg install --triplet x64-windows
+          ./vcpkg/vcpkg install --triplet x64-windows-release
 
       - name: 🛠️ Disable IPO
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -91,7 +91,7 @@ jobs:
           .\venv\Scripts\python -m pip install --upgrade pip
           .\venv\Scripts\python -m pip install . `
             --config-settings=cmake.define.CMAKE_TOOLCHAIN_FILE="$toolchain" `
-            --config-settings=cmake.define.VCPKG_TARGET_TRIPLET="x64-windows"
+            --config-settings=cmake.define.VCPKG_TARGET_TRIPLET="x64-windows-release"
           .\venv\Scripts\python -c "import viennals; print(viennals.__doc__)"
 
       - name: 🐍 Build and check Python Module (Other)
