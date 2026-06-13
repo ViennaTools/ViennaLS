@@ -1,7 +1,7 @@
 #pragma once
 
-#include <lsOxidationSolverBase.hpp>
 #include <lsOxidationDiffusion.hpp>
+#include <lsOxidationSolverBase.hpp>
 
 #include <algorithm>
 #include <functional>
@@ -31,8 +31,8 @@ template <class T> struct OxidationDeformationParameters {
   T mechanicsTolerance = 1e-8;
   T stokesTolerance = 1e-8;
   T tolerance = 1e-8;
-  T relaxation = 0.7;          // SIMPLE velocity under-relaxation (0 < α ≤ 1)
-  T pressureRelaxation = 0.5;  // SIMPLE pressure under-relaxation (0 < β ≤ 1)
+  T relaxation = 0.7;         // SIMPLE velocity under-relaxation (0 < α ≤ 1)
+  T pressureRelaxation = 0.5; // SIMPLE pressure under-relaxation (0 < β ≤ 1)
   std::size_t maxGridPoints = 5000000;
   int material = -1;
 };
@@ -47,16 +47,16 @@ template <class T> struct OxidationDeformationParameters {
 ///   (gamma - 1) / gamma * k C / N
 ///
 /// along the reaction-interface normal. The initial velocity field in the oxide
-/// is obtained from a component-wise harmonic extension and is then relaxed with
-/// a Cartesian-grid quasi-static Stokes solve. The mechanical update solves a
-/// pressure equation from the current velocity divergence and a velocity
-/// momentum equation, including pressure-gradient and viscoelastic deviatoric
-/// stress terms. The Si/SiO2 interface uses the oxidation expansion velocity,
-/// the oxide/ambient interface uses a traction-free boundary, and optional mask
-/// contacts use the mask velocity field.
+/// is obtained from a component-wise harmonic extension and is then relaxed
+/// with a Cartesian-grid quasi-static Stokes solve. The mechanical update
+/// solves a pressure equation from the current velocity divergence and a
+/// velocity momentum equation, including pressure-gradient and viscoelastic
+/// deviatoric stress terms. The Si/SiO2 interface uses the oxidation expansion
+/// velocity, the oxide/ambient interface uses a traction-free boundary, and
+/// optional mask contacts use the mask velocity field.
 template <class T, int D>
 class OxidationDeformation final : public VelocityField<T>,
-                                                public OxidationSolverBase<T, D> {
+                                   public OxidationSolverBase<T, D> {
   using IndexType = viennahrle::Index<D>;
   using ConstSparseIterator =
       viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>;
@@ -117,7 +117,8 @@ private:
   IndexType requestedMaxIndex{};
   unsigned iterations = 0;
   T residual = std::numeric_limits<T>::max();
-  // Last achieved iteration counts and residuals for pressure and Stokes solves.
+  // Last achieved iteration counts and residuals for pressure and Stokes
+  // solves.
   unsigned lastPressureIters_ = 0;
   T lastPressureResidual_ = 0.;
   unsigned lastStokesIters_ = 0;
@@ -153,36 +154,40 @@ private:
   // Face-major flat BC arrays: index = fi * n + nodeId, fi in [0, 2*D).
   std::vector<Boundary> faceBCTypes_;
   std::vector<T> faceBCDists_;
-  std::vector<uint8_t> touchesAmbient_; // 1 if node touches the ambient (free) surface
+  std::vector<uint8_t>
+      touchesAmbient_; // 1 if node touches the ambient (free) surface
 
   // GPU solver selection. Semantics match OxidationDiffusion.
   GpuMode gpuMode_ = GpuMode::Cpu;
   GpuPreconditioner gpuPreconditioner_ = GpuPreconditioner::Jacobi;
-  mutable std::string lastLoggedBackend_; // suppresses repeated "using X" messages
+  mutable std::string
+      lastLoggedBackend_; // suppresses repeated "using X" messages
 
 #ifdef VIENNALS_GPU_BICGSTAB
   // Geometry-fixed (per buildNodes()) arrays for GPU pressure solve.
   // Layout matches pressCoeff/pressNeighId in solvePressure() so the
   // same spmvKernel can be reused without any CPU-side reformatting.
-  std::vector<double>   pressCoeffGpu_;    // face-major [2D * n]
-  std::vector<uint32_t> pressNeighId32_;   // face-major [2D * n]
-  std::vector<double>   actualDiagGpu_;    // [n], effective GPU matrix diagonal
-  gpu::GpuBiCGSTABBuffers* gpuPressBufs_ = nullptr;
+  std::vector<double> pressCoeffGpu_;    // face-major [2D * n]
+  std::vector<uint32_t> pressNeighId32_; // face-major [2D * n]
+  std::vector<double> actualDiagGpu_;    // [n], effective GPU matrix diagonal
+  gpu::GpuBiCGSTABBuffers *gpuPressBufs_ = nullptr;
 
   // Geometry-fixed arrays for GPU Stokes velocity solve.  The diagonal is
   // component-major because mixed MASK contact is Dirichlet in the normal
   // component and Neumann/self-canceling in tangential components.
-  std::vector<double>   stokesCoeffGpu_;   // face-major [2D * n]
-  std::vector<uint32_t> stokesNeighId32_;  // face-major [2D * n]
-  std::vector<double>   stokesDiagGpu_;    // component-major [D * n]
-  gpu::GpuBiCGSTABBuffers* gpuStokesBufs_ = nullptr;
+  std::vector<double> stokesCoeffGpu_;    // face-major [2D * n]
+  std::vector<uint32_t> stokesNeighId32_; // face-major [2D * n]
+  std::vector<double> stokesDiagGpu_;     // component-major [D * n]
+  gpu::GpuBiCGSTABBuffers *gpuStokesBufs_ = nullptr;
 
   // Harmonic velocity solver GPU arrays.  The neighbor IDs are identical to
   // Stokes (stokesNeighId32_ is reused); only the coefficients and diagonal
   // differ (all interior coefficients = 1.0, diagonal = interior-face count).
-  std::vector<double>   harmonicCoeffGpu_; // face-major [2D * n], 1.0 for interior
-  std::vector<double>   harmonicDiagGpu_;  // [n], = count of interior faces per node
-  gpu::GpuBiCGSTABBuffers* gpuHarmonicBufs_ = nullptr;
+  std::vector<double>
+      harmonicCoeffGpu_; // face-major [2D * n], 1.0 for interior
+  std::vector<double>
+      harmonicDiagGpu_; // [n], = count of interior faces per node
+  gpu::GpuBiCGSTABBuffers *gpuHarmonicBufs_ = nullptr;
 #endif
 
 public:
@@ -203,8 +208,7 @@ public:
         oxidationParameters(passedOxidationParameters) {}
 
   template <class... Args> static auto New(Args &&...args) {
-    return SmartPointer<OxidationDeformation>::New(
-        std::forward<Args>(args)...);
+    return SmartPointer<OxidationDeformation>::New(std::forward<Args>(args)...);
   }
 
   ~OxidationDeformation() {
@@ -216,7 +220,9 @@ public:
   }
 
   void setGpuMode(GpuMode mode) { gpuMode_ = mode; }
-  void setGpuPreconditioner(GpuPreconditioner prec) { gpuPreconditioner_ = prec; }
+  void setGpuPreconditioner(GpuPreconditioner prec) {
+    gpuPreconditioner_ = prec;
+  }
 
   void setReactionInterface(SmartPointer<Domain<T, D>> passedInterface) {
     reactionInterface = passedInterface;
@@ -244,7 +250,8 @@ public:
     solved = false;
   }
 
-  void setMaskVelocityField(SmartPointer<VelocityField<T>> passedVelocityField) {
+  void
+  setMaskVelocityField(SmartPointer<VelocityField<T>> passedVelocityField) {
     maskVelocityField = passedVelocityField;
     solved = false;
   }
@@ -265,8 +272,8 @@ public:
     solved = false;
   }
 
-  void setDeformationParameters(
-      OxidationDeformationParameters<T> passedParameters) {
+  void
+  setDeformationParameters(OxidationDeformationParameters<T> passedParameters) {
     deformationParameters = passedParameters;
     solved = false;
   }
@@ -292,7 +299,10 @@ public:
     solved = false;
   }
 
-  void markGeometryChanged() { nodesDirty_ = true; solved = false; }
+  void markGeometryChanged() {
+    nodesDirty_ = true;
+    solved = false;
+  }
 
   void apply() {
     if (reactionInterface == nullptr || ambientInterface == nullptr ||
@@ -315,17 +325,20 @@ public:
                         "buildNodes(). Verify that the reaction and ambient "
                         "level sets enclose a non-empty oxide band.")
             .print();
-      hasPreviousSolution_ = false; // Geometry changed, invalidate in-memory warm-start
+      hasPreviousSolution_ =
+          false; // Geometry changed, invalidate in-memory warm-start
       // Try restoring velocity, pressure, and stress history from level set
       // pointData (written by writeFieldsToLevelSet() before the previous
       // advection and remapped+filled by lsAdvect + lsInterior).
       seedFromLevelSet();
-    } else if (hasPreviousSolution_ && previousVelocity_.size() == nodes.size() &&
+    } else if (hasPreviousSolution_ &&
+               previousVelocity_.size() == nodes.size() &&
                previousPressure_.size() == nodes.size()) {
       // Warm-start: restore previous solution as initial guess for solver.
-      // Geometry stability check: only warm-start if node count matches (prevents using
-      // stale solutions after grid refinement/coarsening). This typically reduces solver
-      // iterations by 30-50% since the previous step's solution is close to the new one.
+      // Geometry stability check: only warm-start if node count matches
+      // (prevents using stale solutions after grid refinement/coarsening). This
+      // typically reduces solver iterations by 30-50% since the previous step's
+      // solution is close to the new one.
       for (std::size_t i = 0; i < nodes.size(); ++i) {
         nodes[i].velocity = previousVelocity_[i];
         nodes[i].pressure = previousPressure_[i];
@@ -342,10 +355,11 @@ public:
     tMechanics.finish();
     if (Logger::hasTiming())
       Logger::getInstance()
+          .addTiming("      deformation n=" + std::to_string(nn) + " harmonic",
+                     tHarmonic)
           .addTiming("      deformation n=" + std::to_string(nn) +
-                     " harmonic", tHarmonic)
-          .addTiming("      deformation n=" + std::to_string(nn) +
-                     " mechanics-total", tMechanics)
+                         " mechanics-total",
+                     tMechanics)
           .print();
     avgExpansionSpeedComputed = false;
 
@@ -438,9 +452,9 @@ private:
       IndexType lo;
       T frac[D];
       for (unsigned d = 0; d < D; ++d) {
-        const T c     = coordinate[d] / gridDelta;
+        const T c = coordinate[d] / gridDelta;
         const T c_flo = std::floor(c);
-        lo[d]   = static_cast<IdxScalar>(c_flo);
+        lo[d] = static_cast<IdxScalar>(c_flo);
         frac[d] = c - c_flo;
       }
 
@@ -450,12 +464,18 @@ private:
         IndexType idx = lo;
         T w = T(1);
         for (unsigned d = 0; d < D; ++d) {
-          if ((corner >> d) & 1) { idx[d]++; w *= frac[d]; }
-          else                    { w *= T(1) - frac[d]; }
+          if ((corner >> d) & 1) {
+            idx[d]++;
+            w *= frac[d];
+          } else {
+            w *= T(1) - frac[d];
+          }
         }
-        if (w < T(1e-14)) continue;
+        if (w < T(1e-14))
+          continue;
         const std::size_t nodeId = lookupNode(idx);
-        if (nodeId == noNode) continue;
+        if (nodeId == noNode)
+          continue;
         result = result + accessor(nodes[nodeId]) * w;
         totalWeight += w;
       }
@@ -470,11 +490,13 @@ private:
 
 public:
   Vec3D<T> getVelocity(const Vec3D<T> &coordinate) const {
-    return getField(coordinate, Vec3D<T>{0., 0., 0.}, [](const Node &n) { return n.velocity; });
+    return getField(coordinate, Vec3D<T>{0., 0., 0.},
+                    [](const Node &n) { return n.velocity; });
   }
 
   Vec3D<T> getVelocity(const IndexType &index) const {
-    return getField(index, Vec3D<T>{0., 0., 0.}, [](const Node &n) { return n.velocity; });
+    return getField(index, Vec3D<T>{0., 0., 0.},
+                    [](const Node &n) { return n.velocity; });
   }
 
   T getPressure(const Vec3D<T> &coordinate) const {
@@ -486,7 +508,8 @@ public:
   }
 
   T getStrainTrace(const Vec3D<T> &coordinate) const {
-    return getField(coordinate, T(0), [](const Node &n) { return n.strainTrace; });
+    return getField(coordinate, T(0),
+                    [](const Node &n) { return n.strainTrace; });
   }
 
   T getStrainTrace(const IndexType &index) const {
@@ -494,27 +517,33 @@ public:
   }
 
   std::array<T, 9> getStrainRateTensor(const Vec3D<T> &coordinate) const {
-    return getField(coordinate, std::array<T, 9>{}, [](const Node &n) { return n.strainRateTensor; });
+    return getField(coordinate, std::array<T, 9>{},
+                    [](const Node &n) { return n.strainRateTensor; });
   }
 
   std::array<T, 9> getStrainRateTensor(const IndexType &index) const {
-    return getField(index, std::array<T, 9>{}, [](const Node &n) { return n.strainRateTensor; });
+    return getField(index, std::array<T, 9>{},
+                    [](const Node &n) { return n.strainRateTensor; });
   }
 
   std::array<T, 9> getStressTensor(const Vec3D<T> &coordinate) const {
-    return getField(coordinate, std::array<T, 9>{}, [](const Node &n) { return n.stressTensor; });
+    return getField(coordinate, std::array<T, 9>{},
+                    [](const Node &n) { return n.stressTensor; });
   }
 
   std::array<T, 9> getStressTensor(const IndexType &index) const {
-    return getField(index, std::array<T, 9>{}, [](const Node &n) { return n.stressTensor; });
+    return getField(index, std::array<T, 9>{},
+                    [](const Node &n) { return n.stressTensor; });
   }
 
   T getVonMisesStress(const Vec3D<T> &coordinate) const {
-    return getField(coordinate, T(0), [](const Node &n) { return n.vonMisesStress; });
+    return getField(coordinate, T(0),
+                    [](const Node &n) { return n.vonMisesStress; });
   }
 
   T getVonMisesStress(const IndexType &index) const {
-    return getField(index, T(0), [](const Node &n) { return n.vonMisesStress; });
+    return getField(index, T(0),
+                    [](const Node &n) { return n.vonMisesStress; });
   }
 
   unsigned getIterations() const { return iterations; }
@@ -574,8 +603,8 @@ public:
 
       if (nId != noNode) {
         const auto &n = nodes[nId];
-        velocity.push_back(isFiniteVec(n.velocity) ? n.velocity
-                                                   : Vec3D<T>{T(0), T(0), T(0)});
+        velocity.push_back(
+            isFiniteVec(n.velocity) ? n.velocity : Vec3D<T>{T(0), T(0), T(0)});
         const auto sIt = deviatoricStressHistory.find(idx);
         if (sIt != deviatoricStressHistory.end() &&
             isFiniteTensor(sIt->second)) {
@@ -597,10 +626,10 @@ public:
     }
 
     auto &pd = ambientInterface->getPointData();
-    pd.insertReplaceVectorData(std::move(velocity),  "OxVelocity");
-    pd.insertReplaceVectorData(std::move(stressR0),  "OxStressR0");
-    pd.insertReplaceVectorData(std::move(stressR1),  "OxStressR1");
-    pd.insertReplaceVectorData(std::move(stressR2),  "OxStressR2");
+    pd.insertReplaceVectorData(std::move(velocity), "OxVelocity");
+    pd.insertReplaceVectorData(std::move(stressR0), "OxStressR0");
+    pd.insertReplaceVectorData(std::move(stressR1), "OxStressR1");
+    pd.insertReplaceVectorData(std::move(stressR2), "OxStressR2");
   }
 
 private:
@@ -612,24 +641,24 @@ private:
       return;
 
     auto &pd = ambientInterface->getPointData();
-    const int vIdx  = pd.getVectorDataIndex("OxVelocity");
+    const int vIdx = pd.getVectorDataIndex("OxVelocity");
     const int r0Idx = pd.getVectorDataIndex("OxStressR0");
     const int r1Idx = pd.getVectorDataIndex("OxStressR1");
     const int r2Idx = pd.getVectorDataIndex("OxStressR2");
-    const int pIdx  = pd.getScalarDataIndex("OxPressure");
+    const int pIdx = pd.getScalarDataIndex("OxPressure");
 
     const bool hasVelocity = (vIdx != -1);
-    const bool hasStress   = (r0Idx != -1 && r1Idx != -1 && r2Idx != -1);
-    const bool hasPressure = (pIdx  != -1);
+    const bool hasStress = (r0Idx != -1 && r1Idx != -1 && r2Idx != -1);
+    const bool hasPressure = (pIdx != -1);
 
     if (!hasVelocity && !hasStress && !hasPressure)
       return;
 
-    const auto *vd  = hasVelocity ? pd.getVectorData(vIdx)  : nullptr;
-    const auto *r0d = hasStress   ? pd.getVectorData(r0Idx) : nullptr;
-    const auto *r1d = hasStress   ? pd.getVectorData(r1Idx) : nullptr;
-    const auto *r2d = hasStress   ? pd.getVectorData(r2Idx) : nullptr;
-    const auto *ppd = hasPressure ? pd.getScalarData(pIdx)  : nullptr;
+    const auto *vd = hasVelocity ? pd.getVectorData(vIdx) : nullptr;
+    const auto *r0d = hasStress ? pd.getVectorData(r0Idx) : nullptr;
+    const auto *r1d = hasStress ? pd.getVectorData(r1Idx) : nullptr;
+    const auto *r2d = hasStress ? pd.getVectorData(r2Idx) : nullptr;
+    const auto *ppd = hasPressure ? pd.getScalarData(pIdx) : nullptr;
 
     previousVelocity_.assign(nodes.size(), Vec3D<T>{});
     previousPressure_.assign(nodes.size(), T(0));
@@ -643,7 +672,7 @@ private:
       const std::size_t ni = lookupNode(idx);
 
       if (ni != noNode) {
-        if (vd  && ptId < static_cast<decltype(ptId)>(vd->size()) &&
+        if (vd && ptId < static_cast<decltype(ptId)>(vd->size()) &&
             isFiniteVec((*vd)[ptId]))
           previousVelocity_[ni] = (*vd)[ptId];
         if (ppd && ptId < static_cast<decltype(ptId)>(ppd->size()) &&
@@ -651,16 +680,14 @@ private:
           previousPressure_[ni] = (*ppd)[ptId];
       }
 
-      if (hasStress &&
-          ptId < static_cast<decltype(ptId)>(r0d->size()) &&
+      if (hasStress && ptId < static_cast<decltype(ptId)>(r0d->size()) &&
           ptId < static_cast<decltype(ptId)>(r1d->size()) &&
           ptId < static_cast<decltype(ptId)>(r2d->size())) {
         const auto &row0 = (*r0d)[ptId];
         const auto &row1 = (*r1d)[ptId];
         const auto &row2 = (*r2d)[ptId];
-        std::array<T, 9> s{row0[0], row0[1], row0[2],
-                           row1[0], row1[1], row1[2],
-                           row2[0], row2[1], row2[2]};
+        std::array<T, 9> s{row0[0], row0[1], row0[2], row1[0], row1[1],
+                           row1[2], row2[0], row2[1], row2[2]};
         if (isFiniteTensor(s))
           deviatoricStressHistory[idx] = s;
       }
@@ -690,17 +717,25 @@ private:
     actualDiagGpu_.assign(n, 0.0);
 
     for (std::size_t id = 0; id < n; ++id) {
-      if (touchesAmbient_[id]) { actualDiagGpu_[id] = 1.0; continue; }
+      if (touchesAmbient_[id]) {
+        actualDiagGpu_[id] = 1.0;
+        continue;
+      }
       for (unsigned dir = 0; dir < D; ++dir) {
         const unsigned fiNeg = dir * 2u;
         const unsigned fiPos = dir * 2u + 1u;
-        IndexType nbNeg = nodes[id].index;  nbNeg[dir] -= 1;
-        IndexType nbPos = nodes[id].index;  nbPos[dir] += 1;
-        const std::size_t jNeg = inBounds(nbNeg) ? nodeLookupFlat[linearIndex(nbNeg)] : noNode;
-        const std::size_t jPos = inBounds(nbPos) ? nodeLookupFlat[linearIndex(nbPos)] : noNode;
+        IndexType nbNeg = nodes[id].index;
+        nbNeg[dir] -= 1;
+        IndexType nbPos = nodes[id].index;
+        nbPos[dir] += 1;
+        const std::size_t jNeg =
+            inBounds(nbNeg) ? nodeLookupFlat[linearIndex(nbNeg)] : noNode;
+        const std::size_t jPos =
+            inBounds(nbPos) ? nodeLookupFlat[linearIndex(nbPos)] : noNode;
 
         auto effDist = [&](unsigned fi, std::size_t j) -> T {
-          if (j != noNode) return gridDelta;
+          if (j != noNode)
+            return gridDelta;
           const Boundary bt = faceBCTypes_[fi * n + id];
           return (bt != Boundary::NONE) ? faceBCDists_[fi * n + id] : gridDelta;
         };
@@ -708,27 +743,29 @@ private:
         const T dNeg = effDist(fiNeg, jNeg);
         const T dPos = effDist(fiPos, jPos);
         const T dSum = dNeg + dPos;
-        if (dSum <= eps) continue;
+        if (dSum <= eps)
+          continue;
 
         auto processFace = [&](unsigned fi, std::size_t j, T d) {
           const T c = T(2) / (d * dSum);
           if (j != noNode && !touchesAmbient_[j]) {
-            pressCoeffGpu_[fi * n + id]  = static_cast<double>(c);
+            pressCoeffGpu_[fi * n + id] = static_cast<double>(c);
             pressNeighId32_[fi * n + id] = static_cast<uint32_t>(j);
             actualDiagGpu_[id] += c;
           } else if (j != noNode ||
                      faceBCTypes_[fi * n + id] == Boundary::AMBIENT) {
             // j is an ambient-only neighbour (identity-row Dirichlet p=0), OR
-            // this face crosses the free surface directly (AMBIENT Dirichlet p=0
-            // at the sub-grid crossing distance).
-            // REACTION faces are solid-wall Neumann ∂p/∂n=0: no contribution.
+            // this face crosses the free surface directly (AMBIENT Dirichlet
+            // p=0 at the sub-grid crossing distance). REACTION faces are
+            // solid-wall Neumann ∂p/∂n=0: no contribution.
             actualDiagGpu_[id] += c;
           }
         };
         processFace(fiNeg, jNeg, dNeg);
         processFace(fiPos, jPos, dPos);
       }
-      if (actualDiagGpu_[id] <= eps) actualDiagGpu_[id] = 1.0;
+      if (actualDiagGpu_[id] <= eps)
+        actualDiagGpu_[id] = 1.0;
     }
   }
 
@@ -753,38 +790,44 @@ private:
       for (unsigned dir = 0; dir < D; ++dir) {
         const unsigned fiNeg = dir * 2u;
         const unsigned fiPos = dir * 2u + 1u;
-        IndexType nbNeg = nodes[id].index;  nbNeg[dir] -= 1;
-        IndexType nbPos = nodes[id].index;  nbPos[dir] += 1;
+        IndexType nbNeg = nodes[id].index;
+        nbNeg[dir] -= 1;
+        IndexType nbPos = nodes[id].index;
+        nbPos[dir] += 1;
         const bool negInBounds = inBounds(nbNeg);
         const bool posInBounds = inBounds(nbPos);
-        const std::size_t jNeg = negInBounds ? nodeLookupFlat[linearIndex(nbNeg)] : noNode;
-        const std::size_t jPos = posInBounds ? nodeLookupFlat[linearIndex(nbPos)] : noNode;
+        const std::size_t jNeg =
+            negInBounds ? nodeLookupFlat[linearIndex(nbNeg)] : noNode;
+        const std::size_t jPos =
+            posInBounds ? nodeLookupFlat[linearIndex(nbPos)] : noNode;
 
         // Distance matching velocityStencilPoint: gridDelta for OOB/interior,
         // faceBCDists_ for boundary-crossing faces.
         auto stokesFaceDist = [&](unsigned fi, bool inb, std::size_t j) -> T {
-          if (!inb || j != noNode) return gridDelta;
+          if (!inb || j != noNode)
+            return gridDelta;
           const Boundary bt = faceBCTypes_[fi * n + id];
-          return (bt != Boundary::NONE) ? faceBCDists_[fi * n + id]
-                                        : gridDelta;
+          return (bt != Boundary::NONE) ? faceBCDists_[fi * n + id] : gridDelta;
         };
 
         const T dNeg = stokesFaceDist(fiNeg, negInBounds, jNeg);
         const T dPos = stokesFaceDist(fiPos, posInBounds, jPos);
         const T dSum = dNeg + dPos;
-        if (dSum <= eps) continue;
+        if (dSum <= eps)
+          continue;
 
         auto processFace = [&](unsigned fi, bool inb, std::size_t j, T d) {
           const T c = T(2) / (d * dSum);
           if (inb && j != noNode) {
             // Interior neighbor: off-diagonal and diagonal contribution.
-            stokesCoeffGpu_[fi * n + id]  = static_cast<double>(c);
+            stokesCoeffGpu_[fi * n + id] = static_cast<double>(c);
             stokesNeighId32_[fi * n + id] = static_cast<uint32_t>(j);
             addDiag(id, c);
           } else if (inb) {
             // Boundary-crossing face.
             // REACTION / MASK: Dirichlet → adds to diagonal.
-            // AMBIENT / OOB: excluded (self-coupling cancels with vBC correction).
+            // AMBIENT / OOB: excluded (self-coupling cancels with vBC
+            // correction).
             const Boundary bt = faceBCTypes_[fi * n + id];
             if (bt == Boundary::REACTION || bt == Boundary::MASK)
               addDiag(id, c);
@@ -857,12 +900,14 @@ private:
     gpu::freeGpuBuffers(gpuPressBufs_);
     gpuPressBufs_ = nullptr;
     if (tryGpu) {
-      gpuPressBufs_ = gpu::allocGpuBuffers(static_cast<uint32_t>(n), 2 * D, useIlu0);
+      gpuPressBufs_ =
+          gpu::allocGpuBuffers(static_cast<uint32_t>(n), 2 * D, useIlu0);
       if (!gpuPressBufs_) {
         throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
                             "pressure solver CUDA buffers could not be "
                             "allocated or the CUDA context could not be "
-                            "initialized." + gpuErrorDetail());
+                            "initialized." +
+                            gpuErrorDetail());
       }
       if (!gpu::gpuUploadNeighborIds(gpuPressBufs_, pressNeighId32_.data(),
                                      2u * D * n)) {
@@ -872,26 +917,28 @@ private:
                             "uploading pressure GPU neighbor IDs failed." +
                             gpuErrorDetail());
       }
-      if (useIlu0 &&
-          !gpu::gpuSetupCSR(gpuPressBufs_, pressNeighId32_.data(),
-                            static_cast<uint32_t>(n), 2 * D)) {
+      if (useIlu0 && !gpu::gpuSetupCSR(gpuPressBufs_, pressNeighId32_.data(),
+                                       static_cast<uint32_t>(n), 2 * D)) {
         gpu::freeGpuBuffers(gpuPressBufs_);
         gpuPressBufs_ = nullptr;
         throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
                             "CUSPARSE setup for the pressure GPU BiCGSTAB "
-                            "solver failed." + gpuErrorDetail());
+                            "solver failed." +
+                            gpuErrorDetail());
       }
     }
 
     gpu::freeGpuBuffers(gpuStokesBufs_);
     gpuStokesBufs_ = nullptr;
     if (tryGpu) {
-      gpuStokesBufs_ = gpu::allocGpuBuffers(static_cast<uint32_t>(n), 2 * D, useIlu0);
+      gpuStokesBufs_ =
+          gpu::allocGpuBuffers(static_cast<uint32_t>(n), 2 * D, useIlu0);
       if (!gpuStokesBufs_) {
         throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
                             "Stokes solver CUDA buffers could not be "
                             "allocated or the CUDA context could not be "
-                            "initialized." + gpuErrorDetail());
+                            "initialized." +
+                            gpuErrorDetail());
       }
       if (!gpu::gpuUploadNeighborIds(gpuStokesBufs_, stokesNeighId32_.data(),
                                      2u * D * n)) {
@@ -901,14 +948,14 @@ private:
                             "uploading Stokes GPU neighbor IDs failed." +
                             gpuErrorDetail());
       }
-      if (useIlu0 &&
-          !gpu::gpuSetupCSR(gpuStokesBufs_, stokesNeighId32_.data(),
-                            static_cast<uint32_t>(n), 2 * D)) {
+      if (useIlu0 && !gpu::gpuSetupCSR(gpuStokesBufs_, stokesNeighId32_.data(),
+                                       static_cast<uint32_t>(n), 2 * D)) {
         gpu::freeGpuBuffers(gpuStokesBufs_);
         gpuStokesBufs_ = nullptr;
         throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
                             "CUSPARSE setup for the Stokes GPU BiCGSTAB "
-                            "solver failed." + gpuErrorDetail());
+                            "solver failed." +
+                            gpuErrorDetail());
       }
     }
 
@@ -916,11 +963,13 @@ private:
     gpu::freeGpuBuffers(gpuHarmonicBufs_);
     gpuHarmonicBufs_ = nullptr;
     if (tryGpu) {
-      gpuHarmonicBufs_ = gpu::allocGpuBuffers(static_cast<uint32_t>(n), 2 * D, useIlu0);
+      gpuHarmonicBufs_ =
+          gpu::allocGpuBuffers(static_cast<uint32_t>(n), 2 * D, useIlu0);
       if (!gpuHarmonicBufs_) {
         throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
                             "harmonic solver CUDA buffers could not be "
-                            "allocated." + gpuErrorDetail());
+                            "allocated." +
+                            gpuErrorDetail());
       }
       if (!gpu::gpuUploadNeighborIds(gpuHarmonicBufs_, stokesNeighId32_.data(),
                                      2u * D * n)) {
@@ -937,7 +986,8 @@ private:
         gpuHarmonicBufs_ = nullptr;
         throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
                             "CUSPARSE setup for the harmonic GPU BiCGSTAB "
-                            "solver failed." + gpuErrorDetail());
+                            "solver failed." +
+                            gpuErrorDetail());
       }
     }
 
@@ -979,11 +1029,10 @@ private:
 
 public:
   bool initialiseGrid() {
-    return initializeGridFromInterfaces(reactionInterface, ambientInterface,
-                                        maskInterface, useRequestedBounds,
-                                        requestedMinIndex, requestedMaxIndex,
-                                        deformationParameters.maxGridPoints,
-                                        "OxidationDeformation");
+    return initializeGridFromInterfaces(
+        reactionInterface, ambientInterface, maskInterface, useRequestedBounds,
+        requestedMinIndex, requestedMaxIndex,
+        deformationParameters.maxGridPoints, "OxidationDeformation");
   }
 
   void buildNodes() {
@@ -1025,8 +1074,8 @@ public:
           nb[dir] += off;
           if (!inBounds(nb) || lookupNode(nb) != noNode)
             continue; // NONE/1.0 already set
-          const auto bi =
-              boundaryIntersection(reactionIt, ambientIt, maskIt, node.index, nb);
+          const auto bi = boundaryIntersection(reactionIt, ambientIt, maskIt,
+                                               node.index, nb);
           faceBCTypes_[fi * n + id] = bi.boundary;
           faceBCDists_[fi * n + id] = bi.distance;
           if (bi.boundary == Boundary::AMBIENT)
@@ -1056,17 +1105,16 @@ public:
                           "VIENNALS_GPU_BICGSTAB.");
     }
 #endif
-
   }
 
   // Evaluates the harmonic stencil at one node.
-  // sum = sum of neighbor/BC contributions (interior neighbors, reaction/mask BCs,
-  // and self-coupling for OOB/NONE/AMBIENT faces).
-  // count is always 2*D (every face is counted regardless of type).
+  // sum = sum of neighbor/BC contributions (interior neighbors, reaction/mask
+  // BCs, and self-coupling for OOB/NONE/AMBIENT faces). count is always 2*D
+  // (every face is counted regardless of type).
   template <class SolverT>
   void computeHarmonicStencilAt(std::size_t nodeId,
-                                 const std::vector<Vec3D<SolverT>> &v,
-                                 Vec3D<T> &sum) const {
+                                const std::vector<Vec3D<SolverT>> &v,
+                                Vec3D<T> &sum) const {
     const auto &node = nodes[nodeId];
     sum = {T(0), T(0), T(0)};
 
@@ -1095,7 +1143,8 @@ public:
         if (boundary == Boundary::REACTION) {
           detail::vecAddTo(sum, reactionBoundaryVelocity(node.index));
         } else if (boundary == Boundary::MASK) {
-          detail::vecAddTo(sum, maskVelocityBoundary(node.index, toT(v[nodeId])));
+          detail::vecAddTo(sum,
+                           maskVelocityBoundary(node.index, toT(v[nodeId])));
         } else {
           detail::vecAddTo(sum, toT(v[nodeId])); // AMBIENT/NONE: zero-flux
         }
@@ -1134,7 +1183,8 @@ public:
     // BCs survive — correctly isolating the RHS constant vector.
     std::vector<Vec3D<T>> b(n);
     {
-      const std::vector<Vec3D<SolverT>> zeros(n, Vec3D<SolverT>{SolverT(0), SolverT(0), SolverT(0)});
+      const std::vector<Vec3D<SolverT>> zeros(
+          n, Vec3D<SolverT>{SolverT(0), SolverT(0), SolverT(0)});
 #pragma omp parallel for schedule(static)
       for (std::size_t i = 0; i < n; ++i)
         computeHarmonicStencilAt(i, zeros, b[i]);
@@ -1170,14 +1220,12 @@ public:
 
         tUpload.start();
         const bool gpuUploadOk =
-            (c == 0)
-                ? gpu::gpuUploadSolverArrays(gpuHarmonicBufs_,
-                                             harmonicDiagGpu_.data(), bGpu.data(),
-                                             harmonicCoeffGpu_.data(),
-                                             static_cast<uint32_t>(n),
-                                             harmonicCoeffGpu_.size())
-                : gpu::gpuUploadRhs(gpuHarmonicBufs_, bGpu.data(),
-                                    static_cast<uint32_t>(n));
+            (c == 0) ? gpu::gpuUploadSolverArrays(
+                           gpuHarmonicBufs_, harmonicDiagGpu_.data(),
+                           bGpu.data(), harmonicCoeffGpu_.data(),
+                           static_cast<uint32_t>(n), harmonicCoeffGpu_.size())
+                     : gpu::gpuUploadRhs(gpuHarmonicBufs_, bGpu.data(),
+                                         static_cast<uint32_t>(n));
         tUpload.finish();
         if (!gpuUploadOk) {
           throwStrictGpuError("OxidationDeformation: GPU mode was selected, "
@@ -1188,21 +1236,19 @@ public:
         unsigned gpuIterations = 0;
         double gpuResidual = 0.0;
         tSolve.start();
-        const bool gpuConverged =
-            gpu::gpuSolveBiCGSTAB(gpuHarmonicBufs_, xGpu.data(),
-                                  static_cast<double>(
-                                      std::numeric_limits<SolverT>::epsilon()),
-                                  deformationParameters.harmonicIterations,
-                                  static_cast<double>(
-                                      deformationParameters.tolerance),
-                                  gpuIterations, gpuResidual);
+        const bool gpuConverged = gpu::gpuSolveBiCGSTAB(
+            gpuHarmonicBufs_, xGpu.data(),
+            static_cast<double>(std::numeric_limits<SolverT>::epsilon()),
+            deformationParameters.harmonicIterations,
+            static_cast<double>(deformationParameters.tolerance), gpuIterations,
+            gpuResidual);
         tSolve.finish();
 
         if (!gpuConverged || !std::isfinite(gpuResidual)) {
           throwStrictGpuError(
               "OxidationDeformation: harmonic GPU BiCGSTAB failed or produced "
-              "a non-finite residual for component " + std::to_string(c) +
-              " (iters=" + std::to_string(gpuIterations) +
+              "a non-finite residual for component " +
+              std::to_string(c) + " (iters=" + std::to_string(gpuIterations) +
               ", residual=" + std::to_string(gpuResidual) + ").");
         }
 
@@ -1221,15 +1267,15 @@ public:
       if (Logger::hasTiming()) {
         Logger::getInstance()
             .addTiming("harmonic n=" + std::to_string(n) +
-                       " iters=" + std::to_string(iterations) +
-                       " res=" + std::to_string(residual) +
-                       " [GPU] GPU BiCGSTAB", tSolve)
+                           " iters=" + std::to_string(iterations) + " res=" +
+                           std::to_string(residual) + " [GPU] GPU BiCGSTAB",
+                       tSolve)
             .print();
       }
       if (Logger::hasDebug()) {
         Logger::getInstance()
-            .addTiming("harmonic n=" + std::to_string(n) +
-                       " [GPU] GPU upload", tUpload)
+            .addTiming("harmonic n=" + std::to_string(n) + " [GPU] GPU upload",
+                       tUpload)
             .print();
       }
       return;
@@ -1243,12 +1289,13 @@ public:
     std::vector<Vec3D<SolverT>> r(n), r_hat(n);
     for (std::size_t i = 0; i < n; ++i)
       for (unsigned c = 0; c < D; ++c) {
-        r[i][c]     = static_cast<SolverT>(b[i][c] - Ax[i][c]);
+        r[i][c] = static_cast<SolverT>(b[i][c] - Ax[i][c]);
         r_hat[i][c] = r[i][c];
       }
 
     // BiCGSTAB with diagonal preconditioner (diag = 2*D, constant).
-    std::vector<Vec3D<SolverT>> pv(n, zero3), sv(n, zero3), y(n), z(n), s(n), t(n);
+    std::vector<Vec3D<SolverT>> pv(n, zero3), sv(n, zero3), y(n), z(n), s(n),
+        t(n);
     T rho = T(1), alpha = T(1), omega = T(1);
 
     auto vecDot = [&](const std::vector<Vec3D<SolverT>> &a,
@@ -1268,9 +1315,16 @@ public:
       return m;
     };
 
-    const T b_norm = [&]{ T m = T(0); for (std::size_t i = 0; i < n; ++i) for (unsigned c = 0; c < D; ++c) m = std::max(m, std::abs(b[i][c])); return (m < T(1e-100)) ? T(1) : m; }();
+    const T b_norm = [&] {
+      T m = T(0);
+      for (std::size_t i = 0; i < n; ++i)
+        for (unsigned c = 0; c < D; ++c)
+          m = std::max(m, std::abs(b[i][c]));
+      return (m < T(1e-100)) ? T(1) : m;
+    }();
 
-    for (; iterations < deformationParameters.harmonicIterations; ++iterations) {
+    for (; iterations < deformationParameters.harmonicIterations;
+         ++iterations) {
       const T rho_new = vecDot(r_hat, r);
       if (!std::isfinite(rho_new) || std::abs(rho_new) < T(1e-100))
         break;
@@ -1285,7 +1339,8 @@ public:
 
       for (std::size_t i = 0; i < n; ++i)
         for (unsigned c = 0; c < D; ++c)
-          pv[i][c] = static_cast<SolverT>(r[i][c] + beta * (pv[i][c] - omega * sv[i][c]));
+          pv[i][c] = static_cast<SolverT>(r[i][c] +
+                                          beta * (pv[i][c] - omega * sv[i][c]));
 
       // y = M^{-1} p = p / (2*D)
       for (std::size_t i = 0; i < n; ++i)
@@ -1334,8 +1389,9 @@ public:
 
       for (std::size_t i = 0; i < n; ++i)
         for (unsigned c = 0; c < D; ++c) {
-          x[i][c] = static_cast<SolverT>(x[i][c] + alpha * y[i][c] + omega * z[i][c]);
-          r[i][c]  = static_cast<SolverT>(s[i][c] - omega * t[i][c]);
+          x[i][c] =
+              static_cast<SolverT>(x[i][c] + alpha * y[i][c] + omega * z[i][c]);
+          r[i][c] = static_cast<SolverT>(s[i][c] - omega * t[i][c]);
         }
 
       residual = vecMaxAbs(r);
@@ -1362,11 +1418,13 @@ public:
     }
     if (residual > deformationParameters.tolerance * b_norm)
       Logger::getInstance()
-          .addWarning("solveVelocity (harmonic): BiCGSTAB did not converge after " +
-                      std::to_string(iterations) + "/" +
-                      std::to_string(deformationParameters.harmonicIterations) +
-                      " iterations (residual=" + std::to_string(residual / b_norm) +
-                      ", tolerance=" + std::to_string(deformationParameters.tolerance) + ")")
+          .addWarning(
+              "solveVelocity (harmonic): BiCGSTAB did not converge after " +
+              std::to_string(iterations) + "/" +
+              std::to_string(deformationParameters.harmonicIterations) +
+              " iterations (residual=" + std::to_string(residual / b_norm) +
+              ", tolerance=" + std::to_string(deformationParameters.tolerance) +
+              ")")
           .print();
   }
 
@@ -1379,7 +1437,8 @@ public:
   std::vector<Vec3D<T>> computeVelocityDiagonals() const {
     const std::size_t n = nodes.size();
     std::vector<Vec3D<T>> diagV(n, Vec3D<T>{T(0), T(0), T(0)});
-    if (n == 0) return diagV;
+    if (n == 0)
+      return diagV;
     const std::vector<Vec3D<T>> zeros(n, Vec3D<T>{T(0), T(0), T(0)});
     std::vector<Vec3D<T>> tmp(n);
 #pragma omp parallel for schedule(static)
@@ -1412,12 +1471,13 @@ public:
     // Aitken clamp (which can only damp, not stabilise, ρ > 1 iterations),
     // this correction is unconditionally convergent for steady Stokes.
 
-    const std::vector<Vec3D<T>> diagV = computeVelocityDiagonals(); // geometry-fixed within this call
+    const std::vector<Vec3D<T>> diagV =
+        computeVelocityDiagonals(); // geometry-fixed within this call
 
     for (unsigned iteration = 0;
          iteration < deformationParameters.mechanicsIterations; ++iteration) {
-      const auto previousVelocity = collectVelocities();  // v^k
-      const auto previousPressure = collectPressures();   // p^k
+      const auto previousVelocity = collectVelocities(); // v^k
+      const auto previousPressure = collectPressures();  // p^k
 
       computeDiagnostics();
       computeStressTensors();
@@ -1425,7 +1485,7 @@ public:
       // Step 1: momentum predictor uses current p^k (in nodes[i].pressure).
       Timer<> tStokes, tPressure;
       tStokes.start();
-      solveStokesVelocity();   // produces v* in nodes[i].velocity
+      solveStokesVelocity(); // produces v* in nodes[i].velocity
       tStokes.finish();
       if (!std::isfinite(lastStokesResidual_)) {
         mechanicsResidual = std::numeric_limits<T>::infinity();
@@ -1434,7 +1494,7 @@ public:
 
       // Step 2: pressure solve uses divergence of v*.
       tPressure.start();
-      solvePressure();         // produces p^{k+1} in nodes[i].pressure
+      solvePressure(); // produces p^{k+1} in nodes[i].pressure
       tPressure.finish();
       if (!std::isfinite(lastPressureResidual_)) {
         mechanicsResidual = std::numeric_limits<T>::infinity();
@@ -1444,9 +1504,8 @@ public:
       // Step 3: SIMPLE velocity correction: v^{k+1} = v* - ∇δp / (η · a_i).
       applySimpleVelocityCorrection(previousPressure, diagV);
 
-      mechanicsResidual =
-          std::max(maxVelocityChange(previousVelocity),
-                   maxPressureChange(previousPressure));
+      mechanicsResidual = std::max(maxVelocityChange(previousVelocity),
+                                   maxPressureChange(previousPressure));
       if (!std::isfinite(mechanicsResidual)) {
         mechanicsResidual = std::numeric_limits<T>::infinity();
         break;
@@ -1454,15 +1513,21 @@ public:
 
       if (Logger::hasDebug())
         Logger::getInstance()
-            .addTiming("        mechanics[" + std::to_string(iteration) +
-                       "] stokes   iters=" + std::to_string(lastStokesIters_) +
-                       "/" + std::to_string(deformationParameters.stokesIterations) +
-                       " res=" + std::to_string(lastStokesResidual_), tStokes)
-            .addTiming("        mechanics[" + std::to_string(iteration) +
-                       "] pressure iters=" + std::to_string(lastPressureIters_) +
-                       "/" + std::to_string(deformationParameters.pressureIterations) +
-                       " res=" + std::to_string(lastPressureResidual_) +
-                       " coupling=" + std::to_string(mechanicsResidual), tPressure)
+            .addTiming(
+                "        mechanics[" + std::to_string(iteration) +
+                    "] stokes   iters=" + std::to_string(lastStokesIters_) +
+                    "/" +
+                    std::to_string(deformationParameters.stokesIterations) +
+                    " res=" + std::to_string(lastStokesResidual_),
+                tStokes)
+            .addTiming(
+                "        mechanics[" + std::to_string(iteration) +
+                    "] pressure iters=" + std::to_string(lastPressureIters_) +
+                    "/" +
+                    std::to_string(deformationParameters.pressureIterations) +
+                    " res=" + std::to_string(lastPressureResidual_) +
+                    " coupling=" + std::to_string(mechanicsResidual),
+                tPressure)
             .print();
 
       if (mechanicsResidual < deformationParameters.mechanicsTolerance)
@@ -1474,10 +1539,12 @@ public:
     residual = mechanicsResidual;
     if (residual > deformationParameters.mechanicsTolerance)
       Logger::getInstance()
-          .addWarning("solveMechanics: did not converge after " +
-                      std::to_string(deformationParameters.mechanicsIterations) +
-                      " iterations (residual=" + std::to_string(residual) +
-                      ", tolerance=" + std::to_string(deformationParameters.mechanicsTolerance) + ")")
+          .addWarning(
+              "solveMechanics: did not converge after " +
+              std::to_string(deformationParameters.mechanicsIterations) +
+              " iterations (residual=" + std::to_string(residual) +
+              ", tolerance=" +
+              std::to_string(deformationParameters.mechanicsTolerance) + ")")
           .print();
   }
 
@@ -1489,8 +1556,10 @@ public:
   // the converged solution.
   void applySimpleVelocityCorrection(const std::vector<T> &pressureOld,
                                      const std::vector<Vec3D<T>> &diagV) {
-    if (nodes.empty()) return;
-    if (deformationParameters.viscosity <= std::numeric_limits<T>::epsilon()) return;
+    if (nodes.empty())
+      return;
+    if (deformationParameters.viscosity <= std::numeric_limits<T>::epsilon())
+      return;
 
     const std::size_t n = nodes.size();
     const T invEta = T(1) / deformationParameters.viscosity;
@@ -1512,14 +1581,14 @@ public:
             const std::size_t j = nodeLookupFlat[linearIndex(nb)];
             if (j != noNode) {
               dpMinus = nodes[j].pressure - pressureOld[j];
-              dMinus  = gridDelta;
+              dMinus = gridDelta;
             } else {
               dpMinus = T(0);
-              dMinus  = faceBCDists_[fi * n + i];
+              dMinus = faceBCDists_[fi * n + i];
             }
           } else {
             dpMinus = T(0);
-            dMinus  = gridDelta;
+            dMinus = gridDelta;
           }
         }
 
@@ -1533,59 +1602,62 @@ public:
             const std::size_t j = nodeLookupFlat[linearIndex(nb)];
             if (j != noNode) {
               dpPlus = nodes[j].pressure - pressureOld[j];
-              dPlus  = gridDelta;
+              dPlus = gridDelta;
             } else {
               dpPlus = T(0);
-              dPlus  = faceBCDists_[fi * n + i];
+              dPlus = faceBCDists_[fi * n + i];
             }
           } else {
             dpPlus = T(0);
-            dPlus  = gridDelta;
+            dPlus = gridDelta;
           }
         }
 
         const T dpCenter = nodes[i].pressure - pressureOld[i];
-        const T gradDP = firstDerivative(dpMinus, dpCenter, dpPlus, dMinus, dPlus);
-        const T correction = gradDP * invEta / ai * deformationParameters.relaxation;
-        if (std::isfinite(correction) &&
-            std::isfinite(nodes[i].velocity[dir]))
+        const T gradDP =
+            firstDerivative(dpMinus, dpCenter, dpPlus, dMinus, dPlus);
+        const T correction =
+            gradDP * invEta / ai * deformationParameters.relaxation;
+        if (std::isfinite(correction) && std::isfinite(nodes[i].velocity[dir]))
           nodes[i].velocity[dir] -= correction;
       }
     }
   }
 
   // Fills diag = centerCoefficient and rhs = pressureSum for one node.
-  // Dirichlet (ambient) nodes are encoded as identity rows: diag=1, rhs=ambientBP.
+  // Dirichlet (ambient) nodes are encoded as identity rows: diag=1,
+  // rhs=ambientBP.
   template <class SolverT>
   void computePressureStencilAt(std::size_t nodeId,
-                                 const std::vector<SolverT> &p,
-                                 const std::vector<T> &ambientBP,
-                                 T &diag, T &rhs) const {
+                                const std::vector<SolverT> &p,
+                                const std::vector<T> &ambientBP, T &diag,
+                                T &rhs) const {
     if (touchesAmbient_[nodeId]) {
       diag = T(1);
-      rhs  = ambientBP[nodeId];
+      rhs = ambientBP[nodeId];
       return;
     }
     diag = T(0);
-    rhs  = T(0);
+    rhs = T(0);
     for (unsigned direction = 0; direction < D; ++direction) {
-      const auto plus  = pressureStencilPoint(p, ambientBP, nodeId, direction,  1);
-      const auto minus = pressureStencilPoint(p, ambientBP, nodeId, direction, -1);
+      const auto plus =
+          pressureStencilPoint(p, ambientBP, nodeId, direction, 1);
+      const auto minus =
+          pressureStencilPoint(p, ambientBP, nodeId, direction, -1);
       const T dSum = plus.distance + minus.distance;
-      const T plusCoeff  = T(2) / (plus.distance  * dSum);
+      const T plusCoeff = T(2) / (plus.distance * dSum);
       const T minusCoeff = T(2) / (minus.distance * dSum);
-      rhs  += plusCoeff * plus.value + minusCoeff * minus.value;
+      rhs += plusCoeff * plus.value + minusCoeff * minus.value;
       diag += plusCoeff + minusCoeff;
     }
   }
 
   // (Av)[i] = precomputedDiag[i]*v[i] - rhs_at_v[i] + pBC[i]
   template <class SolverT>
-  void pressureMatvec(const std::vector<SolverT> &v,
-                      const std::vector<T> &ambientBP,
-                      const std::vector<T> &precomputedDiag,
-                      const std::vector<T> &pBC,
-                      std::vector<SolverT> &Av) const {
+  void
+  pressureMatvec(const std::vector<SolverT> &v, const std::vector<T> &ambientBP,
+                 const std::vector<T> &precomputedDiag,
+                 const std::vector<T> &pBC, std::vector<SolverT> &Av) const {
 #pragma omp parallel for schedule(static)
     for (std::size_t i = 0; i < nodes.size(); ++i) {
       T diag, rhs;
@@ -1607,37 +1679,31 @@ public:
 #pragma omp parallel for schedule(static)
     for (std::size_t i = 0; i < n; ++i) {
       divergence[i] = divergenceAt(nodes[i].index);
-      ambientBP[i]  = freeSurfacePressureBoundary(nodes[i].index);
+      ambientBP[i] = freeSurfacePressureBoundary(nodes[i].index);
     }
 
     auto warnBadPressureAssembly = [](const std::string &stage,
-                                      std::size_t nodeId,
-                                      const IndexType &idx,
+                                      std::size_t nodeId, const IndexType &idx,
                                       T value) {
       Logger::getInstance()
           .addWarning("solvePressure: non-finite/overflow " + stage +
-                      " at node=" + std::to_string(nodeId) +
-                      " index=(" + std::to_string(idx[0]) + "," +
-                      std::to_string(idx[1]) +
-                      (D == 3 ? "," + std::to_string(idx[2])
-                              : std::string()) +
+                      " at node=" + std::to_string(nodeId) + " index=(" +
+                      std::to_string(idx[0]) + "," + std::to_string(idx[1]) +
+                      (D == 3 ? "," + std::to_string(idx[2]) : std::string()) +
                       ") value=" + std::to_string(value))
           .print();
     };
 
-    const T solverMax =
-        static_cast<T>(std::numeric_limits<SolverT>::max());
+    const T solverMax = static_cast<T>(std::numeric_limits<SolverT>::max());
     for (std::size_t i = 0; i < n; ++i) {
       if (!std::isfinite(divergence[i]) ||
           std::abs(divergence[i]) > solverMax) {
-        warnBadPressureAssembly("divergence", i, nodes[i].index,
-                                divergence[i]);
+        warnBadPressureAssembly("divergence", i, nodes[i].index, divergence[i]);
         break;
       }
-      if (!std::isfinite(ambientBP[i]) ||
-          std::abs(ambientBP[i]) > solverMax) {
-        warnBadPressureAssembly("ambient pressure boundary", i,
-                                nodes[i].index, ambientBP[i]);
+      if (!std::isfinite(ambientBP[i]) || std::abs(ambientBP[i]) > solverMax) {
+        warnBadPressureAssembly("ambient pressure boundary", i, nodes[i].index,
+                                ambientBP[i]);
         break;
       }
     }
@@ -1676,7 +1742,8 @@ public:
         break;
       }
     }
-    if (b_norm < T(1e-100)) b_norm = T(1);
+    if (b_norm < T(1e-100))
+      b_norm = T(1);
 
     std::vector<SolverT> x(n);
     for (std::size_t i = 0; i < n; ++i) {
@@ -1702,28 +1769,26 @@ public:
       }
 
       tUpload.start();
-      const bool gpuUploadOk =
-          gpu::gpuUploadSolverArrays(gpuPressBufs_, actualDiagGpu_.data(),
-                                     bGpu.data(), pressCoeffGpu_.data(),
-                                     static_cast<uint32_t>(n),
-                                     pressCoeffGpu_.size());
+      const bool gpuUploadOk = gpu::gpuUploadSolverArrays(
+          gpuPressBufs_, actualDiagGpu_.data(), bGpu.data(),
+          pressCoeffGpu_.data(), static_cast<uint32_t>(n),
+          pressCoeffGpu_.size());
       tUpload.finish();
       if (!gpuUploadOk) {
         throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
                             "uploading pressure solver arrays or factorizing "
-                            "ILU failed." + gpuErrorDetail());
+                            "ILU failed." +
+                            gpuErrorDetail());
       }
 
       unsigned gpuIterations = 0;
       double gpuResidual = 0.0;
       tSolve.start();
-      const bool gpuConverged =
-          gpu::gpuSolveBiCGSTAB(gpuPressBufs_, xGpu.data(),
-                                static_cast<double>(eps),
-                                deformationParameters.pressureIterations,
-                                static_cast<double>(
-                                    deformationParameters.pressureTolerance),
-                                gpuIterations, gpuResidual);
+      const bool gpuConverged = gpu::gpuSolveBiCGSTAB(
+          gpuPressBufs_, xGpu.data(), static_cast<double>(eps),
+          deformationParameters.pressureIterations,
+          static_cast<double>(deformationParameters.pressureTolerance),
+          gpuIterations, gpuResidual);
       tSolve.finish();
 
       // gpuResidual is the GPU true residual ||b - A*x||_inf recomputed at
@@ -1732,7 +1797,8 @@ public:
       if (!gpuConverged || !std::isfinite(gpuResidual)) {
         throwStrictGpuError(
             "OxidationDeformation: pressure GPU BiCGSTAB failed or produced "
-            "a non-finite residual (iters=" + std::to_string(gpuIterations) +
+            "a non-finite residual (iters=" +
+            std::to_string(gpuIterations) +
             ", residual=" + std::to_string(gpuResidual) + ").");
       }
 
@@ -1740,7 +1806,8 @@ public:
         const T beta = deformationParameters.pressureRelaxation;
         const T oneMinB = T(1) - beta;
         for (std::size_t i = 0; i < n; ++i)
-          nodes[i].pressure = oneMinB * nodes[i].pressure + beta * static_cast<T>(xGpu[i]);
+          nodes[i].pressure =
+              oneMinB * nodes[i].pressure + beta * static_cast<T>(xGpu[i]);
       }
       lastPressureIters_ = gpuIterations;
       lastPressureResidual_ = gpuResidual / b_norm;
@@ -1759,13 +1826,14 @@ public:
     }
 #endif
 
-    // Precompute off-diagonal structure and the CORRECT matrix diagonal for SSOR.
+    // Precompute off-diagonal structure and the CORRECT matrix diagonal for
+    // SSOR.
     //
     // Key insight: diag[i] from computePressureStencilAt includes self-coupling
-    // contributions from REACTION/MASK/OOB faces (those return v[nodeId] itself).
-    // The ACTUAL matrix diagonal A[i,i] = sum of off-diagonal (interior-neighbor)
-    // coefficients only.  Using the wrong diagonal in the SSOR sweeps makes the
-    // preconditioner invalid near boundaries.
+    // contributions from REACTION/MASK/OOB faces (those return v[nodeId]
+    // itself). The ACTUAL matrix diagonal A[i,i] = sum of off-diagonal
+    // (interior-neighbor) coefficients only.  Using the wrong diagonal in the
+    // SSOR sweeps makes the preconditioner invalid near boundaries.
     //
     // Also: NONE-type non-interior faces (OOB or no crossing) use gridDelta in
     // pressureStencilPoint, NOT faceBCDists_ (which defaults to T(1)).
@@ -1773,41 +1841,52 @@ public:
     // Face-major layout: fi = dir*2 + (offset==+1 ? 1 : 0)
     //   Even fi (offset=-1): lower-index neighbor → forward sweep
     //   Odd  fi (offset=+1): higher-index neighbor → backward sweep
-    std::vector<T>           pressCoeff(2 * D * n, T(0));
+    std::vector<T> pressCoeff(2 * D * n, T(0));
     std::vector<std::size_t> pressNeighId(2 * D * n, noNode);
-    std::vector<T>           actualDiag(n, T(0));  // A[i,i] = sum of interior coefficients
+    std::vector<T> actualDiag(n, T(0)); // A[i,i] = sum of interior coefficients
 
     for (std::size_t id = 0; id < n; ++id) {
-      if (touchesAmbient_[id]) { actualDiag[id] = T(1); continue; } // identity row
+      if (touchesAmbient_[id]) {
+        actualDiag[id] = T(1);
+        continue;
+      } // identity row
       for (unsigned dir = 0; dir < D; ++dir) {
         const unsigned fiNeg = dir * 2u;
         const unsigned fiPos = dir * 2u + 1u;
-        IndexType nbNeg = nodes[id].index;  nbNeg[dir] -= 1;
-        IndexType nbPos = nodes[id].index;  nbPos[dir] += 1;
-        const std::size_t jNeg = inBounds(nbNeg) ? nodeLookupFlat[linearIndex(nbNeg)] : noNode;
-        const std::size_t jPos = inBounds(nbPos) ? nodeLookupFlat[linearIndex(nbPos)] : noNode;
+        IndexType nbNeg = nodes[id].index;
+        nbNeg[dir] -= 1;
+        IndexType nbPos = nodes[id].index;
+        nbPos[dir] += 1;
+        const std::size_t jNeg =
+            inBounds(nbNeg) ? nodeLookupFlat[linearIndex(nbNeg)] : noNode;
+        const std::size_t jPos =
+            inBounds(nbPos) ? nodeLookupFlat[linearIndex(nbPos)] : noNode;
 
         // Effective distance matching pressureStencilPoint:
         //   interior neighbour  → gridDelta
-        //   AMBIENT/REACTION/MASK crossing → faceBCDists_ (actual sub-grid distance)
-        //   NONE (OOB or no crossing) → gridDelta  (pressureStencilPoint fallthrough)
+        //   AMBIENT/REACTION/MASK crossing → faceBCDists_ (actual sub-grid
+        //   distance) NONE (OOB or no crossing) → gridDelta
+        //   (pressureStencilPoint fallthrough)
         auto effectiveDist = [&](unsigned fi, std::size_t j) -> T {
-          if (j != noNode)  return gridDelta;
+          if (j != noNode)
+            return gridDelta;
           const Boundary bt = faceBCTypes_[fi * n + id];
-          if (bt != Boundary::NONE) return faceBCDists_[fi * n + id];
+          if (bt != Boundary::NONE)
+            return faceBCDists_[fi * n + id];
           return gridDelta;
         };
 
         const T dNeg = effectiveDist(fiNeg, jNeg);
         const T dPos = effectiveDist(fiPos, jPos);
         const T dSum = dNeg + dPos;
-        if (dSum <= eps) continue;
+        if (dSum <= eps)
+          continue;
 
         if (jNeg != noNode && !touchesAmbient_[jNeg]) {
           const T c = T(2) / (dNeg * dSum);
-          pressCoeff[fiNeg * n + id]   = c;
+          pressCoeff[fiNeg * n + id] = c;
           pressNeighId[fiNeg * n + id] = jNeg;
-          actualDiag[id] += c;            // A[i,i] += interior off-diagonal coefficient
+          actualDiag[id] += c; // A[i,i] += interior off-diagonal coefficient
         } else if (jNeg != noNode ||
                    faceBCTypes_[fiNeg * n + id] == Boundary::AMBIENT) {
           // j is an ambient-only neighbour (identity-row Dirichlet p=0), OR
@@ -1818,7 +1897,7 @@ public:
         }
         if (jPos != noNode && !touchesAmbient_[jPos]) {
           const T c = T(2) / (dPos * dSum);
-          pressCoeff[fiPos * n + id]   = c;
+          pressCoeff[fiPos * n + id] = c;
           pressNeighId[fiPos * n + id] = jPos;
           actualDiag[id] += c;
         } else if (jPos != noNode ||
@@ -1826,8 +1905,10 @@ public:
           actualDiag[id] += T(2) / (dPos * dSum);
         }
       }
-      // Guard against fully-isolated nodes (surrounded by boundaries on every face)
-      if (actualDiag[id] <= eps) actualDiag[id] = T(1);
+      // Guard against fully-isolated nodes (surrounded by boundaries on every
+      // face)
+      if (actualDiag[id] <= eps)
+        actualDiag[id] = T(1);
     }
 
     // ILU(0) preconditioner for the (non-symmetric) pressure matrix.
@@ -1853,25 +1934,33 @@ public:
     //     z[i] = (y[i] + Σ_{j>i} pressCoeff[fi_U*n+i] * z[j]) / ilu_diag[i]
     std::vector<T> ilu_diag(n);
     for (std::size_t id = 0; id < n; ++id) {
-      if (touchesAmbient_[id]) { ilu_diag[id] = T(1); continue; }
+      if (touchesAmbient_[id]) {
+        ilu_diag[id] = T(1);
+        continue;
+      }
       ilu_diag[id] = actualDiag[id];
       for (unsigned dir = 0; dir < D; ++dir) {
-        const unsigned fi_L = dir * 2u;        // lower face (offset=-1)
-        const unsigned fi_U = fi_L + 1u;       // upper face (offset=+1, j's face toward i)
+        const unsigned fi_L = dir * 2u; // lower face (offset=-1)
+        const unsigned fi_U =
+            fi_L + 1u; // upper face (offset=+1, j's face toward i)
         const std::size_t j = pressNeighId[fi_L * n + id];
-        if (j == noNode || ilu_diag[j] <= eps) continue;
+        if (j == noNode || ilu_diag[j] <= eps)
+          continue;
         // L[id,j] = A[id,j] / U[j,j] = (-pressCoeff_L) / ilu_diag[j]
-        // A[j,id] = -pressCoeff[fi_U * n + j]   (j's upper-face coefficient toward id)
-        // ilu_diag[id] -= L[id,j] * A[j,id]
+        // A[j,id] = -pressCoeff[fi_U * n + j]   (j's upper-face coefficient
+        // toward id) ilu_diag[id] -= L[id,j] * A[j,id]
         //              = (-pressCoeff_L / ilu_diag[j]) * (-pressCoeff_fi_U[j])
-        //              = pressCoeff_L * pressCoeff_fi_U[j] / ilu_diag[j]  (positive drop)
-        ilu_diag[id] -= pressCoeff[fi_L * n + id] * pressCoeff[fi_U * n + j] / ilu_diag[j];
+        //              = pressCoeff_L * pressCoeff_fi_U[j] / ilu_diag[j]
+        //              (positive drop)
+        ilu_diag[id] -=
+            pressCoeff[fi_L * n + id] * pressCoeff[fi_U * n + j] / ilu_diag[j];
       }
-      if (ilu_diag[id] <= eps) ilu_diag[id] = actualDiag[id]; // guard non-positive pivot
+      if (ilu_diag[id] <= eps)
+        ilu_diag[id] = actualDiag[id]; // guard non-positive pivot
     }
 
     auto applyIlu = [&](const std::vector<SolverT> &in,
-                        std::vector<SolverT>        &out) {
+                        std::vector<SolverT> &out) {
       std::vector<T> y(n);
       // Forward solve: L * y = in  (L is unit lower triangular)
       for (std::size_t i = 0; i < n; ++i) {
@@ -1880,21 +1969,23 @@ public:
           const unsigned fi_L = dir * 2u;
           const std::size_t j = pressNeighId[fi_L * n + i];
           if (j != noNode)
-            // L[i,j] = -pressCoeff[fi_L*n+i] / ilu_diag[j], subtract A[i,j]*y[j]:
-            // y[i] -= L[i,j] * y[j] = -(-pressCoeff/ilu_diag[j]) * y[j] = +(coeff/ilu) * y[j]
+            // L[i,j] = -pressCoeff[fi_L*n+i] / ilu_diag[j], subtract
+            // A[i,j]*y[j]: y[i] -= L[i,j] * y[j] = -(-pressCoeff/ilu_diag[j]) *
+            // y[j] = +(coeff/ilu) * y[j]
             val += (pressCoeff[fi_L * n + i] / ilu_diag[j]) * y[j];
         }
-        y[i] = val;   // no diagonal divide (unit lower triangular)
+        y[i] = val; // no diagonal divide (unit lower triangular)
       }
       // Backward solve: U * z = y
-      for (std::size_t i = n; i-- > 0; ) {
+      for (std::size_t i = n; i-- > 0;) {
         T val = y[i];
         for (unsigned dir = 0; dir < D; ++dir) {
           const unsigned fi_U = dir * 2u + 1u;
           const std::size_t j = pressNeighId[fi_U * n + i];
           if (j != noNode)
             // U[i,j] = -pressCoeff[fi_U*n+i], subtract U[i,j]*z[j]:
-            // val -= U[i,j] * z[j] = -(-pressCoeff) * z[j] = +(pressCoeff) * z[j]
+            // val -= U[i,j] * z[j] = -(-pressCoeff) * z[j] = +(pressCoeff) *
+            // z[j]
             val += pressCoeff[fi_U * n + i] * static_cast<T>(out[j]);
         }
         out[i] = static_cast<SolverT>(val / ilu_diag[i]);
@@ -1911,9 +2002,10 @@ public:
         break;
       }
     }
-    std::vector<SolverT> r(n), r_hat(n), p(n, SolverT(0)), v(n, SolverT(0)), y(n), z(n), s(n), t(n);
+    std::vector<SolverT> r(n), r_hat(n), p(n, SolverT(0)), v(n, SolverT(0)),
+        y(n), z(n), s(n), t(n);
     for (std::size_t i = 0; i < n; ++i) {
-      r[i]     = static_cast<SolverT>(b[i] - Ax[i]);
+      r[i] = static_cast<SolverT>(b[i] - Ax[i]);
       r_hat[i] = r[i];
     }
 
@@ -1931,7 +2023,8 @@ public:
     }
 
     for (; !pressureBreakdown &&
-           pressureIter < deformationParameters.pressureIterations; ++pressureIter) {
+           pressureIter < deformationParameters.pressureIterations;
+         ++pressureIter) {
       T rho_new = T(0);
       for (std::size_t i = 0; i < n; ++i)
         rho_new += static_cast<T>(r_hat[i]) * static_cast<T>(r[i]);
@@ -1983,7 +2076,8 @@ public:
 
       pressureResidual = T(0);
       for (std::size_t i = 0; i < n; ++i)
-        pressureResidual = std::max(pressureResidual, std::abs(static_cast<T>(s[i])));
+        pressureResidual =
+            std::max(pressureResidual, std::abs(static_cast<T>(s[i])));
       if (!std::isfinite(pressureResidual)) {
         pressureBreakdown = true;
         break;
@@ -2015,12 +2109,13 @@ public:
 
       for (std::size_t i = 0; i < n; ++i) {
         x[i] = static_cast<SolverT>(x[i] + alpha * y[i] + omega * z[i]);
-        r[i]  = static_cast<SolverT>(s[i] - omega * t[i]);
+        r[i] = static_cast<SolverT>(s[i] - omega * t[i]);
       }
 
       pressureResidual = T(0);
       for (std::size_t i = 0; i < n; ++i)
-        pressureResidual = std::max(pressureResidual, std::abs(static_cast<T>(r[i])));
+        pressureResidual =
+            std::max(pressureResidual, std::abs(static_cast<T>(r[i])));
       if (!std::isfinite(pressureResidual)) {
         pressureBreakdown = true;
         break;
@@ -2037,40 +2132,44 @@ public:
       if (!std::isfinite(static_cast<T>(x[i])))
         finiteSolution = false;
 
-    lastPressureIters_    = pressureIter;
+    lastPressureIters_ = pressureIter;
     lastPressureResidual_ = pressureResidual / b_norm;
     if (finiteSolution) {
-      const T beta    = deformationParameters.pressureRelaxation;
+      const T beta = deformationParameters.pressureRelaxation;
       const T oneMinB = T(1) - beta;
       for (std::size_t i = 0; i < n; ++i)
-        nodes[i].pressure = oneMinB * nodes[i].pressure + beta * static_cast<T>(x[i]);
+        nodes[i].pressure =
+            oneMinB * nodes[i].pressure + beta * static_cast<T>(x[i]);
     } else {
       lastPressureResidual_ = std::numeric_limits<T>::infinity();
     }
     if (lastPressureResidual_ > deformationParameters.pressureTolerance)
       Logger::getInstance()
-          .addWarning("solvePressure: BiCGSTAB did not converge after " +
-                      std::to_string(lastPressureIters_) + "/" +
-                      std::to_string(deformationParameters.pressureIterations) +
-                      " iterations (residual=" + std::to_string(lastPressureResidual_) +
-                      ", tolerance=" + std::to_string(deformationParameters.pressureTolerance) + ")")
+          .addWarning(
+              "solvePressure: BiCGSTAB did not converge after " +
+              std::to_string(lastPressureIters_) + "/" +
+              std::to_string(deformationParameters.pressureIterations) +
+              " iterations (residual=" + std::to_string(lastPressureResidual_) +
+              ", tolerance=" +
+              std::to_string(deformationParameters.pressureTolerance) + ")")
           .print();
   }
 
-  // Fills scalar diag = centerCoefficient and Vec3D rhs = velocitySum for one node.
+  // Fills scalar diag = centerCoefficient and Vec3D rhs = velocitySum for one
+  // node.
   template <class SolverT>
   void computeVelocityStencilAt(std::size_t nodeId,
-                                 const std::vector<Vec3D<SolverT>> &v,
-                                 T &diag, Vec3D<T> &rhs) const {
+                                const std::vector<Vec3D<SolverT>> &v, T &diag,
+                                Vec3D<T> &rhs) const {
     diag = T(0);
-    rhs  = {T(0), T(0), T(0)};
+    rhs = {T(0), T(0), T(0)};
     for (unsigned direction = 0; direction < D; ++direction) {
-      const auto plus  = velocityStencilPoint(v, nodeId, direction,  1);
+      const auto plus = velocityStencilPoint(v, nodeId, direction, 1);
       const auto minus = velocityStencilPoint(v, nodeId, direction, -1);
       const T dSum = plus.distance + minus.distance;
-      const T plusCoeff  = T(2) / (plus.distance  * dSum);
+      const T plusCoeff = T(2) / (plus.distance * dSum);
       const T minusCoeff = T(2) / (minus.distance * dSum);
-      detail::vecAddTo(rhs, detail::vecScaled(plus.value,  plusCoeff));
+      detail::vecAddTo(rhs, detail::vecScaled(plus.value, plusCoeff));
       detail::vecAddTo(rhs, detail::vecScaled(minus.value, minusCoeff));
       diag += plusCoeff + minusCoeff;
     }
@@ -2091,7 +2190,8 @@ public:
     std::vector<T> diag(n);
     std::vector<Vec3D<T>> vBC(n), forcing(n);
     {
-      const std::vector<Vec3D<SolverT>> zeros(n, Vec3D<SolverT>{SolverT(0), SolverT(0), SolverT(0)});
+      const std::vector<Vec3D<SolverT>> zeros(
+          n, Vec3D<SolverT>{SolverT(0), SolverT(0), SolverT(0)});
 #pragma omp parallel for schedule(static)
       for (std::size_t i = 0; i < n; ++i) {
         computeVelocityStencilAt(i, zeros, diag[i], vBC[i]);
@@ -2108,9 +2208,11 @@ public:
         b_norm = std::max(b_norm, std::abs(b[i][c]));
       }
     }
-    if (b_norm < T(1e-100)) b_norm = T(1);
+    if (b_norm < T(1e-100))
+      b_norm = T(1);
 
-    // Initial guess from current node velocities (warm-start), converted to SolverT.
+    // Initial guess from current node velocities (warm-start), converted to
+    // SolverT.
     std::vector<Vec3D<SolverT>> x(n);
     {
       const auto vel = collectVelocities();
@@ -2142,12 +2244,10 @@ public:
         }
 
         tUpload.start();
-        const bool gpuUploadOk =
-            gpu::gpuUploadSolverArrays(gpuStokesBufs_,
-                                       stokesDiagGpu_.data() + c * n,
-                                       bGpu.data(), stokesCoeffGpu_.data(),
-                                       static_cast<uint32_t>(n),
-                                       stokesCoeffGpu_.size());
+        const bool gpuUploadOk = gpu::gpuUploadSolverArrays(
+            gpuStokesBufs_, stokesDiagGpu_.data() + c * n, bGpu.data(),
+            stokesCoeffGpu_.data(), static_cast<uint32_t>(n),
+            stokesCoeffGpu_.size());
         tUpload.finish();
         if (!gpuUploadOk) {
           throwStrictGpuError("OxidationDeformation: GPU mode was selected, "
@@ -2158,20 +2258,18 @@ public:
         unsigned gpuIterations = 0;
         double gpuResidual = 0.0;
         tSolve.start();
-        const bool gpuConverged =
-            gpu::gpuSolveBiCGSTAB(gpuStokesBufs_, xGpu.data(),
-                                  static_cast<double>(eps),
-                                  deformationParameters.stokesIterations,
-                                  static_cast<double>(
-                                      deformationParameters.stokesTolerance),
-                                  gpuIterations, gpuResidual);
+        const bool gpuConverged = gpu::gpuSolveBiCGSTAB(
+            gpuStokesBufs_, xGpu.data(), static_cast<double>(eps),
+            deformationParameters.stokesIterations,
+            static_cast<double>(deformationParameters.stokesTolerance),
+            gpuIterations, gpuResidual);
         tSolve.finish();
 
         if (!gpuConverged || !std::isfinite(gpuResidual)) {
           throwStrictGpuError(
               "OxidationDeformation: Stokes GPU BiCGSTAB failed or produced "
-              "a non-finite residual for component " + std::to_string(c) +
-              " (iters=" + std::to_string(gpuIterations) +
+              "a non-finite residual for component " +
+              std::to_string(c) + " (iters=" + std::to_string(gpuIterations) +
               ", residual=" + std::to_string(gpuResidual) + ").");
         }
 
@@ -2189,10 +2287,10 @@ public:
       lastStokesResidual_ = maxGpuResidual / b_norm;
 
       if (Logger::hasDebug()) {
-        const std::string tag =
-            "stokes n=" + std::to_string(n) +
-            " iters=" + std::to_string(lastStokesIters_) +
-            " res=" + std::to_string(lastStokesResidual_) + " [GPU]";
+        const std::string tag = "stokes n=" + std::to_string(n) +
+                                " iters=" + std::to_string(lastStokesIters_) +
+                                " res=" + std::to_string(lastStokesResidual_) +
+                                " [GPU]";
         Logger::getInstance()
             .addTiming(tag + " GPU upload", tUpload)
             .addTiming(tag + " GPU BiCGSTAB", tSolve)
@@ -2202,15 +2300,18 @@ public:
     }
 #endif
 
-    // Stokes SpMV: (Av)[i] = diag[i]*vin[i] - rhs_at_vin[i] + vBC[i], stored as SolverT.
+    // Stokes SpMV: (Av)[i] = diag[i]*vin[i] - rhs_at_vin[i] + vBC[i], stored as
+    // SolverT.
     auto stokesMatvec = [&](const std::vector<Vec3D<SolverT>> &vin,
-                             std::vector<Vec3D<SolverT>> &Av) {
+                            std::vector<Vec3D<SolverT>> &Av) {
 #pragma omp parallel for schedule(static)
       for (std::size_t i = 0; i < n; ++i) {
-        T d; Vec3D<T> rhs;
+        T d;
+        Vec3D<T> rhs;
         computeVelocityStencilAt(i, vin, d, rhs);
         for (unsigned c = 0; c < D; ++c)
-          Av[i][c] = static_cast<SolverT>(diag[i] * vin[i][c] - rhs[c] + vBC[i][c]);
+          Av[i][c] =
+              static_cast<SolverT>(diag[i] * vin[i][c] - rhs[c] + vBC[i][c]);
       }
     };
 
@@ -2244,11 +2345,12 @@ public:
     // r = b - A*x
     const Vec3D<SolverT> zero3{SolverT(0), SolverT(0), SolverT(0)};
     std::vector<Vec3D<SolverT>> Ax(n), r(n), r_hat(n);
-    std::vector<Vec3D<SolverT>> pv(n, zero3), sv(n, zero3), y(n), z(n), s(n), t(n);
+    std::vector<Vec3D<SolverT>> pv(n, zero3), sv(n, zero3), y(n), z(n), s(n),
+        t(n);
     stokesMatvec(x, Ax);
     for (std::size_t i = 0; i < n; ++i)
       for (unsigned c = 0; c < D; ++c) {
-        r[i][c]     = static_cast<SolverT>(b[i][c] - Ax[i][c]);
+        r[i][c] = static_cast<SolverT>(b[i][c] - Ax[i][c]);
         r_hat[i][c] = r[i][c];
       }
 
@@ -2281,7 +2383,8 @@ public:
 
       for (std::size_t i = 0; i < n; ++i)
         for (unsigned c = 0; c < D; ++c)
-          pv[i][c] = static_cast<SolverT>(r[i][c] + beta * (pv[i][c] - omega * sv[i][c]));
+          pv[i][c] = static_cast<SolverT>(r[i][c] +
+                                          beta * (pv[i][c] - omega * sv[i][c]));
 
       for (std::size_t i = 0; i < n; ++i)
         for (unsigned c = 0; c < D; ++c) {
@@ -2345,8 +2448,9 @@ public:
 
       for (std::size_t i = 0; i < n; ++i)
         for (unsigned c = 0; c < D; ++c) {
-          x[i][c] = static_cast<SolverT>(x[i][c] + alpha * y[i][c] + omega * z[i][c]);
-          r[i][c]  = static_cast<SolverT>(s[i][c] - omega * t[i][c]);
+          x[i][c] =
+              static_cast<SolverT>(x[i][c] + alpha * y[i][c] + omega * z[i][c]);
+          r[i][c] = static_cast<SolverT>(s[i][c] - omega * t[i][c]);
         }
 
       velocityResidual = vecMaxAbs(r);
@@ -2373,17 +2477,18 @@ public:
           nodes[i].velocity[c] = static_cast<T>(x[i][c]);
     }
 
-    lastStokesIters_    = stokesIter;
-    lastStokesResidual_ =
-        finiteSolution ? velocityResidual / b_norm
-                       : std::numeric_limits<T>::infinity();
+    lastStokesIters_ = stokesIter;
+    lastStokesResidual_ = finiteSolution ? velocityResidual / b_norm
+                                         : std::numeric_limits<T>::infinity();
     if (lastStokesResidual_ > deformationParameters.stokesTolerance)
       Logger::getInstance()
-          .addWarning("solveStokesVelocity: BiCGSTAB did not converge after " +
-                      std::to_string(lastStokesIters_) + "/" +
-                      std::to_string(deformationParameters.stokesIterations) +
-                      " iterations (residual=" + std::to_string(lastStokesResidual_) +
-                      ", tolerance=" + std::to_string(deformationParameters.stokesTolerance) + ")")
+          .addWarning(
+              "solveStokesVelocity: BiCGSTAB did not converge after " +
+              std::to_string(lastStokesIters_) + "/" +
+              std::to_string(deformationParameters.stokesIterations) +
+              " iterations (residual=" + std::to_string(lastStokesResidual_) +
+              ", tolerance=" +
+              std::to_string(deformationParameters.stokesTolerance) + ")")
           .print();
   }
 
@@ -2404,10 +2509,11 @@ public:
   }
 
   template <class SolverT>
-  StencilPoint<T> pressureStencilPoint(const std::vector<SolverT> &pressure,
-                                       const std::vector<T> &ambientBoundaryPressure,
-                                       std::size_t nodeId, unsigned direction,
-                                       int offset) const {
+  StencilPoint<T>
+  pressureStencilPoint(const std::vector<SolverT> &pressure,
+                       const std::vector<T> &ambientBoundaryPressure,
+                       std::size_t nodeId, unsigned direction,
+                       int offset) const {
     const auto &node = nodes[nodeId];
     IndexType neighbor = node.index;
     neighbor[direction] += offset;
@@ -2425,7 +2531,7 @@ public:
     const unsigned fi = direction * 2u + (offset == 1 ? 1u : 0u);
     const std::size_t nn = nodes.size();
     const Boundary faceType = faceBCTypes_[fi * nn + nodeId];
-    const T faceDist        = faceBCDists_[fi * nn + nodeId];
+    const T faceDist = faceBCDists_[fi * nn + nodeId];
     if (faceType == Boundary::AMBIENT)
       return {ambientBoundaryPressure[nodeId], faceDist};
     // Reaction interface: Neumann ∂p/∂n=0 (solid-wall BC for pressure).
@@ -2444,9 +2550,10 @@ public:
   }
 
   template <class SolverT>
-  StencilPoint<Vec3D<T>> velocityStencilPoint(const std::vector<Vec3D<SolverT>> &velocity,
-                                              std::size_t nodeId, unsigned direction,
-                                              int offset) const {
+  StencilPoint<Vec3D<T>>
+  velocityStencilPoint(const std::vector<Vec3D<SolverT>> &velocity,
+                       std::size_t nodeId, unsigned direction,
+                       int offset) const {
     const auto &node = nodes[nodeId];
     IndexType neighbor = node.index;
     neighbor[direction] += offset;
@@ -2465,7 +2572,7 @@ public:
     const unsigned fi = direction * 2u + (offset == 1 ? 1u : 0u);
     const std::size_t nn = nodes.size();
     const Boundary faceType = faceBCTypes_[fi * nn + nodeId];
-    const T faceDist        = faceBCDists_[fi * nn + nodeId];
+    const T faceDist = faceBCDists_[fi * nn + nodeId];
     if (faceType == Boundary::REACTION)
       return {reactionBoundaryVelocity(node.index), faceDist};
     if (faceType == Boundary::AMBIENT)
@@ -2473,7 +2580,8 @@ public:
                                           faceDist, toT(velocity[nodeId])),
               faceDist};
     if (faceType == Boundary::MASK)
-      return {maskVelocityBoundary(node.index, toT(velocity[nodeId])), faceDist};
+      return {maskVelocityBoundary(node.index, toT(velocity[nodeId])),
+              faceDist};
 
     return {toT(velocity[nodeId]), gridDelta};
   }
@@ -2495,22 +2603,22 @@ public:
     const unsigned fi = direction * 2u + (offset == 1 ? 1u : 0u);
     const std::size_t nn = nodes.size();
     const Boundary faceType = faceBCTypes_[fi * nn + nodeId];
-    const T faceDist        = faceBCDists_[fi * nn + nodeId];
+    const T faceDist = faceBCDists_[fi * nn + nodeId];
     if (faceType == Boundary::AMBIENT)
       return {freeSurfacePressureBoundary(node.index), faceDist};
     if (faceType == Boundary::REACTION)
-      return {node.pressure, faceDist};  // Neumann ∂p/∂n=0
+      return {node.pressure, faceDist}; // Neumann ∂p/∂n=0
     if (faceType == Boundary::MASK)
-      return {maskPressureBoundary(node.index, direction, offset,
-                                   node.pressure),
-              faceDist};
+      return {
+          maskPressureBoundary(node.index, direction, offset, node.pressure),
+          faceDist};
 
     return {node.pressure, gridDelta};
   }
 
-  StencilPoint<Vec3D<T>>
-  currentVelocityStencilPoint(std::size_t nodeId, unsigned direction,
-                              int offset) const {
+  StencilPoint<Vec3D<T>> currentVelocityStencilPoint(std::size_t nodeId,
+                                                     unsigned direction,
+                                                     int offset) const {
     const auto &node = nodes[nodeId];
     IndexType neighbor = node.index;
     neighbor[direction] += offset;
@@ -2525,7 +2633,7 @@ public:
     const unsigned fi = direction * 2u + (offset == 1 ? 1u : 0u);
     const std::size_t nn = nodes.size();
     const Boundary faceType = faceBCTypes_[fi * nn + nodeId];
-    const T faceDist        = faceBCDists_[fi * nn + nodeId];
+    const T faceDist = faceBCDists_[fi * nn + nodeId];
     if (faceType == Boundary::REACTION)
       return {reactionBoundaryVelocity(node.index), faceDist};
     if (faceType == Boundary::AMBIENT)
@@ -2544,8 +2652,8 @@ public:
     const auto count = std::min(previous.size(), nodes.size());
     for (std::size_t i = 0; i < count; ++i) {
       for (unsigned j = 0; j < D; ++j) {
-        maxChange =
-            std::max(maxChange, std::abs(nodes[i].velocity[j] - previous[i][j]));
+        maxChange = std::max(maxChange,
+                             std::abs(nodes[i].velocity[j] - previous[i][j]));
         maxVelocity = std::max(maxVelocity, std::abs(nodes[i].velocity[j]));
       }
     }
@@ -2560,8 +2668,8 @@ public:
     T maxPressure = 0.;
     const auto count = std::min(previous.size(), nodes.size());
     for (std::size_t i = 0; i < count; ++i) {
-      maxChange = std::max(maxChange,
-                           std::abs(nodes[i].pressure - previous[i]));
+      maxChange =
+          std::max(maxChange, std::abs(nodes[i].pressure - previous[i]));
       maxPressure = std::max(maxPressure, std::abs(nodes[i].pressure));
     }
 
@@ -2570,10 +2678,11 @@ public:
     return maxChange / maxPressure;
   }
 
-  std::array<T, 9> currentBoundaryDeviatoricStress(
-      const IndexType &index) const {
+  std::array<T, 9>
+  currentBoundaryDeviatoricStress(const IndexType &index) const {
     const auto strainRate = strainRateTensorAt(index);
-    const auto deviatoricRate = deviatoricTensor(strainRate, divergenceAt(index));
+    const auto deviatoricRate =
+        deviatoricTensor(strainRate, divergenceAt(index));
     const auto previousStress = previousDeviatoricStress(index);
     const T relaxationTime = effectiveStressRelaxationTime();
     const T decay =
@@ -2624,10 +2733,9 @@ public:
     for (unsigned component = 0; component < D; ++component) {
       const T normalTraction =
           pressure * normal[component] - deviatoricTraction[component];
-      const T faceDerivative =
-          normalTraction * normal[direction] /
-          std::max(deformationParameters.viscosity,
-                   std::numeric_limits<T>::epsilon());
+      const T faceDerivative = normalTraction * normal[direction] /
+                               std::max(deformationParameters.viscosity,
+                                        std::numeric_limits<T>::epsilon());
       boundaryVelocity[component] +=
           static_cast<T>(offset) * distance * faceDerivative;
     }
@@ -2641,9 +2749,8 @@ public:
       Vec3D<T> coordinate{0., 0., 0.};
       for (unsigned i = 0; i < D; ++i)
         coordinate[i] = index[i] * gridDelta;
-      return maskVelocityField->getVectorVelocity(coordinate,
-                                                  deformationParameters.material,
-                                                  {0., 0., 0.}, 0);
+      return maskVelocityField->getVectorVelocity(
+          coordinate, deformationParameters.material, {0., 0., 0.}, 0);
     }
     return {0., 0., 0.};
   }
@@ -2877,7 +2984,8 @@ public:
 
     // Per-node computation is independent; collect history keys into a vector
     // to avoid concurrent map writes, then build the map sequentially below.
-    std::vector<std::pair<IndexType, std::array<T, 9>>> historyEntries(nodes.size());
+    std::vector<std::pair<IndexType, std::array<T, 9>>> historyEntries(
+        nodes.size());
 #pragma omp parallel for schedule(static)
     for (std::size_t i = 0; i < nodes.size(); ++i) {
       auto &node = nodes[i];
@@ -2902,7 +3010,8 @@ public:
       historyEntries[i] = {node.index, deviatoricStress};
     }
 
-    std::unordered_map<IndexType, std::array<T, 9>, detail::IndexTypeHasher<D>> nextHistory;
+    std::unordered_map<IndexType, std::array<T, 9>, detail::IndexTypeHasher<D>>
+        nextHistory;
     nextHistory.reserve(nodes.size());
     for (const auto &entry : historyEntries)
       nextHistory[entry.first] = entry.second;
@@ -2913,9 +3022,8 @@ public:
     std::array<T, 9> tensor{};
     for (unsigned i = 0; i < D; ++i) {
       for (unsigned j = 0; j < D; ++j) {
-        tensor[tensorIndex(i, j)] =
-            T(0.5) * (velocityDerivative(index, i, j) +
-                      velocityDerivative(index, j, i));
+        tensor[tensorIndex(i, j)] = T(0.5) * (velocityDerivative(index, i, j) +
+                                              velocityDerivative(index, j, i));
       }
     }
     return tensor;
@@ -2929,10 +3037,9 @@ public:
 
     const auto plus = currentVelocityStencilPoint(nodeId, direction, 1);
     const auto minus = currentVelocityStencilPoint(nodeId, direction, -1);
-    return firstDerivative(minus.value[component],
-                           nodes[nodeId].velocity[component],
-                           plus.value[component], minus.distance,
-                           plus.distance);
+    return firstDerivative(
+        minus.value[component], nodes[nodeId].velocity[component],
+        plus.value[component], minus.distance, plus.distance);
   }
 
   T pressureDerivative(const IndexType &index, unsigned direction) const {
@@ -2942,8 +3049,8 @@ public:
 
     const auto plus = currentPressureStencilPoint(nodeId, direction, 1);
     const auto minus = currentPressureStencilPoint(nodeId, direction, -1);
-    return firstDerivative(minus.value, nodes[nodeId].pressure,
-                           plus.value, minus.distance, plus.distance);
+    return firstDerivative(minus.value, nodes[nodeId].pressure, plus.value,
+                           minus.distance, plus.distance);
   }
 
   std::array<T, 9> deviatoricTensor(const std::array<T, 9> &tensor,
@@ -2956,8 +3063,7 @@ public:
   }
 
   std::array<T, 9> previousDeviatoricStress(const IndexType &index) const {
-    const auto found =
-        deviatoricStressHistory.find(index);
+    const auto found = deviatoricStressHistory.find(index);
     if (found == deviatoricStressHistory.end())
       return {};
     return found->second;
@@ -2967,7 +3073,8 @@ public:
     if (deformationParameters.stressRelaxationTime > T(0))
       return deformationParameters.stressRelaxationTime;
     if (deformationParameters.shearModulus > std::numeric_limits<T>::epsilon())
-      return deformationParameters.viscosity / deformationParameters.shearModulus;
+      return deformationParameters.viscosity /
+             deformationParameters.shearModulus;
     return T(0);
   }
 
@@ -2983,8 +3090,7 @@ public:
     return std::sqrt(T(1.5) * doubleContraction);
   }
 
-  T normalStress(const std::array<T, 9> &tensor,
-                 const Vec3D<T> &normal) const {
+  T normalStress(const std::array<T, 9> &tensor, const Vec3D<T> &normal) const {
     T result = 0.;
     for (unsigned i = 0; i < 3; ++i) {
       for (unsigned j = 0; j < 3; ++j)
@@ -3025,9 +3131,9 @@ public:
       return {Boundary::REACTION,
               crossingDistance(reactionInside, reactionOutside)};
     if (!reactionCrosses && ambientCrosses && !maskCrosses)
-      return ambientCrossingInsideMask(maskInside, maskOutside,
-                                       crossingDistance(ambientInside,
-                                                        ambientOutside));
+      return ambientCrossingInsideMask(
+          maskInside, maskOutside,
+          crossingDistance(ambientInside, ambientOutside));
     if (!reactionCrosses && !ambientCrosses && maskCrosses)
       return {Boundary::MASK, crossingDistance(maskInside, maskOutside)};
 
@@ -3037,9 +3143,9 @@ public:
     const T ambientDistance =
         ambientCrosses ? crossingDistance(ambientInside, ambientOutside)
                        : std::numeric_limits<T>::max();
-    const T maskDistance =
-        maskCrosses ? crossingDistance(maskInside, maskOutside)
-                    : std::numeric_limits<T>::max();
+    const T maskDistance = maskCrosses
+                               ? crossingDistance(maskInside, maskOutside)
+                               : std::numeric_limits<T>::max();
     if (reactionDistance <= ambientDistance && reactionDistance <= maskDistance)
       return {Boundary::REACTION, reactionDistance};
     if (ambientDistance != std::numeric_limits<T>::max()) {
@@ -3082,7 +3188,8 @@ public:
     // tolerance of 1e-9 grid units so that grid points on the surface (phi≈0)
     // are correctly classified as inside the oxide.
     constexpr T eps = T(1e-9);
-    return reactionSign * reactionPhi >= -eps && ambientSign * ambientPhi >= -eps;
+    return reactionSign * reactionPhi >= -eps &&
+           ambientSign * ambientPhi >= -eps;
   }
 
   ConstSparseIterator makeMaskIterator() const {
@@ -3135,8 +3242,8 @@ public:
 
   static T firstDerivative(T minusValue, T centerValue, T plusValue,
                            T minusDistance, T plusDistance) {
-    const T denominator = minusDistance * plusDistance *
-                          (minusDistance + plusDistance);
+    const T denominator =
+        minusDistance * plusDistance * (minusDistance + plusDistance);
     if (denominator <= std::numeric_limits<T>::epsilon())
       return 0.;
 

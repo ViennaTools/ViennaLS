@@ -59,8 +59,7 @@ void testLOCOSInterfaceConvergence() {
   ls::Domain<NumericType, D>::BoundaryType boundaryCons[D];
   boundaryCons[0] =
       ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
-  boundaryCons[1] =
-      ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
+  boundaryCons[1] = ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
   auto siInterface = makePlane(bounds, boundaryCons, gridDelta, 0.);
   auto ambientInterface = ls::Domain<NumericType, D>::New(siInterface);
@@ -76,8 +75,7 @@ void testLOCOSInterfaceConvergence() {
                padOxideThickness - maskContactEpsilon,
                padOxideThickness + maskThickness);
 
-  auto oxParams =
-      ls::OxidationPresets<NumericType>::wet1000CDealGrove100();
+  auto oxParams = ls::OxidationPresets<NumericType>::wet1000CDealGrove100();
   oxParams.velocitySign = -1.;
   oxParams.maskTransferCoefficient = 0.;
   oxParams.maskConcentration = 0.;
@@ -86,16 +84,16 @@ void testLOCOSInterfaceConvergence() {
   auto defParams =
       ls::OxidationPresets<NumericType>::oxideMechanics1000C(advectionTime);
   defParams.mechanicsIterations = 200;
-  defParams.mechanicsTolerance  = 1e-2;
-  defParams.pressureTolerance   = 1e-6;
-  defParams.stokesTolerance     = 1e-6;
-  defParams.pressureIterations  = 200;
-  defParams.stokesIterations    = 60;
+  defParams.mechanicsTolerance = 1e-2;
+  defParams.pressureTolerance = 1e-6;
+  defParams.stokesTolerance = 1e-6;
+  defParams.pressureIterations = 200;
+  defParams.stokesIterations = 60;
 
   ls::OxidationCouplingParameters<NumericType> couplingParams;
   couplingParams.maxIterations = 8;
-  couplingParams.tolerance     = 5e-2;
-  couplingParams.relaxation    = 1.0;
+  couplingParams.tolerance = 5e-2;
+  couplingParams.relaxation = 1.0;
 
   auto maskParams =
       ls::OxidationPresets<NumericType>::siliconNitrideMask1000C();
@@ -111,9 +109,8 @@ void testLOCOSInterfaceConvergence() {
   viennahrle::Index<D> maskMaxIndex{
       toIndex(maskEdge), toIndex(padOxideThickness + maskThickness) + 1};
 
-  auto locos =
-      ls::Oxidation<NumericType, D>::New(siInterface, ambientInterface,
-                                              maskInterface);
+  auto locos = ls::Oxidation<NumericType, D>::New(siInterface, ambientInterface,
+                                                  maskInterface);
   locos->setOxidationParameters(oxParams);
   locos->setDeformationParameters(defParams);
   locos->setCouplingParameters(couplingParams);

@@ -7,8 +7,8 @@
 
 #include <lsDomain.hpp>
 #include <lsGeometricAdvect.hpp>
-#include <lsOxidation.hpp>
 #include <lsMakeGeometry.hpp>
+#include <lsOxidation.hpp>
 #include <lsOxidationPresets.hpp>
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
@@ -56,8 +56,7 @@ LevelSet makeMask(const double *bounds,
 }
 
 void writeDiagnostics(
-    const ls::SmartPointer<ls::OxidationDiffusion<NumericType, D>>
-        &diffusion,
+    const ls::SmartPointer<ls::OxidationDiffusion<NumericType, D>> &diffusion,
     const ls::SmartPointer<ls::OxidationDeformation<NumericType, D>>
         &deformation,
     const viennahrle::Index<D> &minIndex, const viennahrle::Index<D> &maxIndex,
@@ -81,22 +80,21 @@ void writeDiagnostics(
 int main() {
   omp_set_num_threads(4);
 
-  constexpr NumericType gridDelta = 0.05;          // um
-  constexpr NumericType xExtent = 4.;              // um
-  constexpr NumericType yMin = -1.;                // um
-  constexpr NumericType yMax = 2.;                 // um
-  constexpr NumericType padOxideThickness = 0.15;  // um
-  constexpr NumericType maskThickness = 0.2;       // um
-  constexpr NumericType maskEdge = 0.;             // open window is x > 0
-  constexpr NumericType advectionTime = 0.35;      // hr
+  constexpr NumericType gridDelta = 0.05;           // um
+  constexpr NumericType xExtent = 4.;               // um
+  constexpr NumericType yMin = -1.;                 // um
+  constexpr NumericType yMax = 2.;                  // um
+  constexpr NumericType padOxideThickness = 0.15;   // um
+  constexpr NumericType maskThickness = 0.2;        // um
+  constexpr NumericType maskEdge = 0.;              // open window is x > 0
+  constexpr NumericType advectionTime = 0.35;       // hr
   constexpr NumericType maskContactEpsilon = 1.e-6; // um
 
   double bounds[2 * D] = {-xExtent, xExtent, yMin, yMax};
   ls::Domain<NumericType, D>::BoundaryType boundaryCons[D];
   boundaryCons[0] =
       ls::Domain<NumericType, D>::BoundaryType::REFLECTIVE_BOUNDARY;
-  boundaryCons[1] =
-      ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
+  boundaryCons[1] = ls::Domain<NumericType, D>::BoundaryType::INFINITE_BOUNDARY;
 
   auto siInterface = makePlane(bounds, boundaryCons, gridDelta, 0.);
   auto ambientInterface = ls::Domain<NumericType, D>::New(siInterface);
@@ -123,8 +121,7 @@ int main() {
 
   // --- Oxidation parameters ---
 
-  auto oxParams =
-      ls::OxidationPresets<NumericType>::wet1000CDealGrove100();
+  auto oxParams = ls::OxidationPresets<NumericType>::wet1000CDealGrove100();
   oxParams.velocitySign = -1.;
   oxParams.maskTransferCoefficient = 0.; // nitride-like oxidant blocking
   oxParams.maskConcentration = 0.;
@@ -132,8 +129,7 @@ int main() {
   oxParams.tolerance = 1.e-7;
 
   auto defParams =
-      ls::OxidationPresets<NumericType>::oxideMechanics1000C(
-          advectionTime);
+      ls::OxidationPresets<NumericType>::oxideMechanics1000C(advectionTime);
 
   ls::OxidationCouplingParameters<NumericType> couplingParams;
   couplingParams.maxIterations = 8;
@@ -159,12 +155,11 @@ int main() {
   };
   viennahrle::Index<D> maskMinIndex{toIndex(-xExtent),
                                     toIndex(padOxideThickness) - 1};
-  viennahrle::Index<D> maskMaxIndex{toIndex(maskEdge),
-                                    toIndex(padOxideThickness + maskThickness) + 1};
+  viennahrle::Index<D> maskMaxIndex{
+      toIndex(maskEdge), toIndex(padOxideThickness + maskThickness) + 1};
 
-  auto locos =
-      ls::Oxidation<NumericType, D>::New(siInterface, ambientInterface,
-                                              maskInterface);
+  auto locos = ls::Oxidation<NumericType, D>::New(siInterface, ambientInterface,
+                                                  maskInterface);
   locos->setOxidationParameters(oxParams);
   locos->setDeformationParameters(defParams);
   locos->setCouplingParameters(couplingParams);
@@ -187,12 +182,10 @@ int main() {
       diffusion->getConcentration(openReactionPoint);
   const NumericType maskedConcentration =
       diffusion->getConcentration(maskedReactionPoint);
-  const NumericType openSiliconSpeed =
-      std::abs(diffusion->getScalarVelocity(openReactionPoint, 0,
-                                            {0., 1., 0.}, 0));
-  const NumericType maskedSiliconSpeed =
-      std::abs(diffusion->getScalarVelocity(maskedReactionPoint, 0,
-                                            {0., 1., 0.}, 0));
+  const NumericType openSiliconSpeed = std::abs(
+      diffusion->getScalarVelocity(openReactionPoint, 0, {0., 1., 0.}, 0));
+  const NumericType maskedSiliconSpeed = std::abs(
+      diffusion->getScalarVelocity(maskedReactionPoint, 0, {0., 1., 0.}, 0));
 
   std::cout << "Diffusion nodes: " << diffusion->getNumberOfSolutionNodes()
             << ", iterations: " << diffusion->getIterations()
@@ -212,8 +205,7 @@ int main() {
             << '\n';
 
   if (!std::isfinite(openSiliconSpeed) || !std::isfinite(maskedSiliconSpeed) ||
-      openSiliconSpeed <= 0. ||
-      maskedSiliconSpeed / openSiliconSpeed > 0.05) {
+      openSiliconSpeed <= 0. || maskedSiliconSpeed / openSiliconSpeed > 0.05) {
     std::cerr << "LOCOS mask sanity check failed: masked oxidation is not "
                  "sufficiently suppressed.\n";
     return 1;

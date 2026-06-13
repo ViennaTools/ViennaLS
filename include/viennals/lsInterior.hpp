@@ -54,8 +54,7 @@ public:
 
     const int startWidth = levelSet->getLevelSetWidth();
 
-    for (int currentCycle = 0; currentCycle < 100;
-         ++currentCycle) {
+    for (int currentCycle = 0; currentCycle < 100; ++currentCycle) {
       int addedPoints = 0;
 
       const T limit = (startWidth + currentCycle + 1);
@@ -65,8 +64,7 @@ public:
       auto &newDomain = newlsDomain->getDomain();
       auto &domain = levelSet->getDomain();
 
-      newDomain.initialize(domain.getNewSegmentation(),
-                           domain.getAllocation());
+      newDomain.initialize(domain.getNewSegmentation(), domain.getAllocation());
 
       const bool updateData = updatePointData;
       // save how data should be transferred to new level set
@@ -75,7 +73,8 @@ public:
       if (updateData)
         newDataSourceIds.resize(newDomain.getNumberOfSegments());
 
-#pragma omp parallel num_threads(newDomain.getNumberOfSegments()) reduction(+:addedPoints)
+#pragma omp parallel num_threads(newDomain.getNumberOfSegments())              \
+    reduction(+ : addedPoints)
       {
         int p = 0;
 #ifdef _OPENMP
@@ -94,8 +93,8 @@ public:
                 : grid.incrementIndices(grid.getMaxGridPoint());
 
         // Per-thread guide iterator: advances in lock-step with main iterator.
-        using GuideIt = viennahrle::ConstSparseIterator<
-            typename Domain<T, D>::DomainType>;
+        using GuideIt =
+            viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>;
         std::unique_ptr<GuideIt> guideIt;
         if (guide != nullptr)
           guideIt = std::make_unique<GuideIt>(guide->getDomain(), startVector);
@@ -115,41 +114,42 @@ public:
           }
 
           if (centerIt.getValue() == Domain<T, D>::NEG_VALUE) {
-              // Interior/negative side. Track the best *defined* neighbor
-              // separately: undefined sentinels (POS_VALUE / NEG_VALUE) must
-              // not be used as pointData sources — getPointId() on an
-              // undefined run returns an invalid index.
-              T distance = Domain<T, D>::NEG_VALUE;
-              T definedDistance = Domain<T, D>::NEG_VALUE;
-              int definedNeighbor = -1;
-              for (int i = 0; i < 2 * D; i++) {
-                auto &nb = neighborIt.getNeighbor(i);
-                T newValue = nb.getValue() - T(1);
-                if (distance < newValue)
-                  distance = newValue;
-                if (nb.isDefined() && definedDistance < newValue) {
-                  definedDistance = newValue;
-                  definedNeighbor = i;
-                }
+            // Interior/negative side. Track the best *defined* neighbor
+            // separately: undefined sentinels (POS_VALUE / NEG_VALUE) must
+            // not be used as pointData sources — getPointId() on an
+            // undefined run returns an invalid index.
+            T distance = Domain<T, D>::NEG_VALUE;
+            T definedDistance = Domain<T, D>::NEG_VALUE;
+            int definedNeighbor = -1;
+            for (int i = 0; i < 2 * D; i++) {
+              auto &nb = neighborIt.getNeighbor(i);
+              T newValue = nb.getValue() - T(1);
+              if (distance < newValue)
+                distance = newValue;
+              if (nb.isDefined() && definedDistance < newValue) {
+                definedDistance = newValue;
+                definedNeighbor = i;
               }
-              // Only activate when a proper defined neighbor drives the fill
-              // and the point is not inside the guide (e.g. Si substrate).
-              if (!insideGuide && definedDistance >= -limit && definedNeighbor != -1) {
-                addedPoints++;
-                domainSegment.insertNextDefinedPoint(neighborIt.getIndices(),
-                                                     definedDistance);
-                if (updateData)
-                  newDataSourceIds[p].push_back(
-                      neighborIt.getNeighbor(definedNeighbor).getPointId());
-              } else {
-                // insertNextUndefinedRunType
-                domainSegment.insertNextUndefinedPoint(neighborIt.getIndices(),
-                                                       Domain<T, D>::NEG_VALUE);
-              }
-          } else if (centerIt.getValue() == Domain<T, D>::POS_VALUE) {
-              // Ignore positive phi values (exterior region)
+            }
+            // Only activate when a proper defined neighbor drives the fill
+            // and the point is not inside the guide (e.g. Si substrate).
+            if (!insideGuide && definedDistance >= -limit &&
+                definedNeighbor != -1) {
+              addedPoints++;
+              domainSegment.insertNextDefinedPoint(neighborIt.getIndices(),
+                                                   definedDistance);
+              if (updateData)
+                newDataSourceIds[p].push_back(
+                    neighborIt.getNeighbor(definedNeighbor).getPointId());
+            } else {
+              // insertNextUndefinedRunType
               domainSegment.insertNextUndefinedPoint(neighborIt.getIndices(),
-                                                     Domain<T, D>::POS_VALUE);
+                                                     Domain<T, D>::NEG_VALUE);
+            }
+          } else if (centerIt.getValue() == Domain<T, D>::POS_VALUE) {
+            // Ignore positive phi values (exterior region)
+            domainSegment.insertNextUndefinedPoint(neighborIt.getIndices(),
+                                                   Domain<T, D>::POS_VALUE);
           } else {
             domainSegment.insertNextDefinedPoint(neighborIt.getIndices(),
                                                  centerIt.getValue());

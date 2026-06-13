@@ -8,8 +8,8 @@ namespace viennals {
 ///
 /// Each method returns a fully populated parameter struct for a specific,
 /// documented process condition. The names encode the condition deliberately —
-/// a user calibrating for a different temperature or ambient should supply their
-/// own struct rather than modifying these.
+/// a user calibrating for a different temperature or ambient should supply
+/// their own struct rather than modifying these.
 ///
 /// Sources:
 ///   Deal-Grove coefficients — B. E. Deal and A. S. Grove, J. Appl. Phys. 36,
@@ -24,14 +24,15 @@ template <class T> struct OxidationPresets {
   /// Stress-coupling activation volumes from Kao et al. (1987).
   static OxidationParameters<T> wet1000CDealGrove100() {
     OxidationParameters<T> params;
-    params.diffusionCoefficient = T(0.157);      // µm²/hr, B/2 = D_eff
-    params.reactionRate = T(0.74);               // µm/hr, B/A = k_s
-    params.transferCoefficient = T(100.);        // large → surface conc. ≈ C*
+    params.diffusionCoefficient = T(0.157); // µm²/hr, B/2 = D_eff
+    params.reactionRate = T(0.74);          // µm/hr, B/A = k_s
+    params.transferCoefficient = T(100.);   // large → surface conc. ≈ C*
     params.equilibriumConcentration = T(1.);
     params.oxidantMoleculeDensity = T(1.);
-    params.expansionCoefficient = T(2.27);       // SiO2/Si volume ratio
-    params.temperature = T(1273.15);             // 1000 °C in K
-    params.reactionActivationVolume = T(1.76e-35); // m³, stress activation for k_s
+    params.expansionCoefficient = T(2.27); // SiO2/Si volume ratio
+    params.temperature = T(1273.15);       // 1000 °C in K
+    params.reactionActivationVolume =
+        T(1.76e-35); // m³, stress activation for k_s
     params.diffusionActivationVolume = T(0.);
     return params;
   }
@@ -41,9 +42,9 @@ template <class T> struct OxidationPresets {
   /// Pass the advection time step so the viscoelastic relaxation is consistent.
   static OxidationDeformationParameters<T> oxideMechanics1000C(T timeStep) {
     OxidationDeformationParameters<T> params;
-    params.viscosity = T(1.e10);                 // Pa·hr, effective oxide viscosity
-    params.bulkModulus = T(7.5e8);               // Pa
-    params.shearModulus = T(3.e10);              // Pa
+    params.viscosity = T(1.e10);    // Pa·hr, effective oxide viscosity
+    params.bulkModulus = T(7.5e8);  // Pa
+    params.shearModulus = T(3.e10); // Pa
     params.stressTimeStep = timeStep;
     params.mechanicsIterations = 2;
     params.mechanicsTolerance = T(1.e-7);
@@ -64,8 +65,8 @@ template <class T> struct OxidationPresets {
     OxidationMaskParameters<T> params;
     params.temperature = T(1273.15);
     params.referenceTemperature = T(1273.15);
-    params.referenceViscosity = T(5.e11);            // Pa·hr at 1000 °C
-    params.creepActivationEnergy = T(3.86e5);        // J/mol ≈ 4 eV (Senez 1994)
+    params.referenceViscosity = T(5.e11);     // Pa·hr at 1000 °C
+    params.creepActivationEnergy = T(3.86e5); // J/mol ≈ 4 eV (Senez 1994)
     params.poissonRatio = T(0.27);
     params.relaxation = T(0.9);
     params.tolerance = T(5.e-6);

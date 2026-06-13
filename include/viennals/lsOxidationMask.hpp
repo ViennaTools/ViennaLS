@@ -1,7 +1,7 @@
 #pragma once
 
-#include <lsOxidationSolverBase.hpp>
 #include <lsOxidationDeformation.hpp>
+#include <lsOxidationSolverBase.hpp>
 
 #include <hrleSparseStarIterator.hpp>
 
@@ -87,9 +87,8 @@ template <class T> struct OxidationMaskParameters {
 /// resulting vector field moves the entire mask body. Repeated applications use
 /// Aitken relaxation on the contact-interface velocity update.
 template <class T, int D>
-class OxidationMaskBending final
-    : public VelocityField<T>,
-      public OxidationSolverBase<T, D> {
+class OxidationMaskBending final : public VelocityField<T>,
+                                   public OxidationSolverBase<T, D> {
   using IndexType = viennahrle::Index<D>;
   using ConstSparseIterator =
       viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>;
@@ -136,8 +135,7 @@ private:
     SparseMatrix matrix;
   };
 
-  SmartPointer<OxidationDeformation<T, D>> deformationField =
-      nullptr;
+  SmartPointer<OxidationDeformation<T, D>> deformationField = nullptr;
   SmartPointer<Domain<T, D>> maskInterface = nullptr;
   SmartPointer<Domain<T, D>> ambientInterface = nullptr;
   OxidationMaskParameters<T> parameters;
@@ -172,10 +170,10 @@ private:
   IndexType requestedMaxIndex{};
   std::vector<Node> nodes;
   // Face-major flat contact BC arrays: index = faceIdx * n + nodeId.
-  std::vector<uint8_t> contactFaceActive_;      // 1 if contact BC applies
-  std::vector<Vec3D<T>> contactFaceVelocity_;   // Dirichlet velocity at contact
-  std::vector<Vec3D<T>> contactFaceTraction_;   // Oxide traction on mask face
-  std::vector<T> contactFaceDistance_;          // Node-to-interface distance
+  std::vector<uint8_t> contactFaceActive_;    // 1 if contact BC applies
+  std::vector<Vec3D<T>> contactFaceVelocity_; // Dirichlet velocity at contact
+  std::vector<Vec3D<T>> contactFaceTraction_; // Oxide traction on mask face
+  std::vector<T> contactFaceDistance_;        // Node-to-interface distance
   std::unordered_map<std::size_t, T> ambientPhiCache_;
 
   // Cached multigrid hierarchy.  The stiffness matrix depends on the node
@@ -184,8 +182,8 @@ private:
   // contact pattern is unchanged from the previous apply() call, the hierarchy
   // can be reused and the O(n) matrix build and Galerkin coarsening skipped.
   std::vector<MultigridLevel> cachedMultigridLevels_;
-  std::vector<uint8_t>        cachedContactFaceActive_; // snapshot at last build
-  std::size_t                 cachedNodeCount_ = 0;
+  std::vector<uint8_t> cachedContactFaceActive_; // snapshot at last build
+  std::size_t cachedNodeCount_ = 0;
 
 public:
   OxidationMaskBending() = default;
@@ -198,19 +196,17 @@ public:
   OxidationMaskBending(
       SmartPointer<OxidationDeformation<T, D>> passedDeformation,
       SmartPointer<Domain<T, D>> passedMaskInterface,
-      OxidationMaskParameters<T> passedParameters = {},
-      int passedMaskSign = 1)
+      OxidationMaskParameters<T> passedParameters = {}, int passedMaskSign = 1)
       : deformationField(passedDeformation), maskInterface(passedMaskInterface),
-        parameters(passedParameters),
-        maskSign((passedMaskSign < 0) ? -1 : 1) {}
+        parameters(passedParameters), maskSign((passedMaskSign < 0) ? -1 : 1) {}
 
   ~OxidationMaskBending() = default;
 
   static SmartPointer<OxidationMaskBending>
   New(SmartPointer<OxidationDeformation<T, D>> passedDeformation,
       OxidationMaskParameters<T> passedParameters = {}) {
-    return SmartPointer<OxidationMaskBending>::New(
-        passedDeformation, passedParameters);
+    return SmartPointer<OxidationMaskBending>::New(passedDeformation,
+                                                   passedParameters);
   }
 
   static SmartPointer<OxidationMaskBending>
@@ -287,7 +283,8 @@ public:
     const auto previousVelocities = collectVelocitiesByGridPoint();
     if (!initialiseGrid())
       return; // base class already logged the error
-    elasticU_.clear(); // reset before coupling so getVectorVelocity divides by dt
+    elasticU_
+        .clear(); // reset before coupling so getVectorVelocity divides by dt
     buildNodes();
     seedFromLevelSet(); // warm-start velocity from previous substep's pointData
     seedFromPrevious(previousVelocities);
@@ -309,8 +306,7 @@ public:
     validateNodeVelocities("solveElasticVelocity");
     smoothVelocityField();
 
-    const auto fixedPointResidual =
-        contactResidualVector(previousVelocities);
+    const auto fixedPointResidual = contactResidualVector(previousVelocities);
     const T omega = aitkenRelaxation(fixedPointResidual);
     relaxVelocities(previousVelocities, omega);
     validateNodeVelocities("Aitken relaxation");
@@ -328,14 +324,15 @@ public:
           .addDebug("OxidationMaskBending: contact faces active=" +
                     std::to_string(activeContactFaces_) + "/" +
                     std::to_string(candidateContactFaces_) +
-                    ", tensileSkipped=" +
-                    std::to_string(tensileContactFaces_) +
+                    ", tensileSkipped=" + std::to_string(tensileContactFaces_) +
                     ", normalTraction=[" +
-                    std::to_string(candidateContactFaces_ == 0 ? T(0)
-                                                              : minContactNormalTraction_) +
+                    std::to_string(candidateContactFaces_ == 0
+                                       ? T(0)
+                                       : minContactNormalTraction_) +
                     ", " +
-                    std::to_string(candidateContactFaces_ == 0 ? T(0)
-                                                              : maxContactNormalTraction_) +
+                    std::to_string(candidateContactFaces_ == 0
+                                       ? T(0)
+                                       : maxContactNormalTraction_) +
                     "], aitkenOmega=" + std::to_string(omega) +
                     ", contactLoadRelaxation=" +
                     std::to_string(std::clamp(parameters.contactLoadRelaxation,
@@ -447,8 +444,7 @@ public:
     // next substep's solver begins near its expected solution.
     // Before finalization (elasticU_ empty), fall back to nodes[nId].velocity
     // which still equals u_new from the current solve.
-    const bool useElasticU =
-        isElasticContactMode() && !elasticU_.empty();
+    const bool useElasticU = isElasticContactMode() && !elasticU_.empty();
 
     VD velocity;
     ConstSparseIterator it(maskInterface->getDomain());
@@ -459,11 +455,11 @@ public:
       Vec3D<T> v{T(0), T(0), T(0)};
       if (nId != noNode)
         v = (useElasticU && nId < elasticU_.size()) ? elasticU_[nId]
-                                                     : nodes[nId].velocity;
+                                                    : nodes[nId].velocity;
       velocity.push_back(v);
     }
-    maskInterface->getPointData().insertReplaceVectorData(
-        std::move(velocity), "MaskVelocity");
+    maskInterface->getPointData().insertReplaceVectorData(std::move(velocity),
+                                                          "MaskVelocity");
 
     // Cauchy stress tensor in the mask: σ = λ(∇·u)I + 2μ·sym(∇u)
     // In elastic mode use the raw displacement u_new (elasticU_); in viscous
@@ -514,20 +510,19 @@ public:
       stressR1.push_back(row1);
       stressR2.push_back(row2);
     }
-    maskInterface->getPointData().insertReplaceVectorData(
-        std::move(stressR0), "MaskStressR0");
-    maskInterface->getPointData().insertReplaceVectorData(
-        std::move(stressR1), "MaskStressR1");
-    maskInterface->getPointData().insertReplaceVectorData(
-        std::move(stressR2), "MaskStressR2");
+    maskInterface->getPointData().insertReplaceVectorData(std::move(stressR0),
+                                                          "MaskStressR0");
+    maskInterface->getPointData().insertReplaceVectorData(std::move(stressR1),
+                                                          "MaskStressR1");
+    maskInterface->getPointData().insertReplaceVectorData(std::move(stressR2),
+                                                          "MaskStressR2");
   }
 
 private:
   bool initialiseGrid() {
-    return initializeGridFromMask(maskInterface, useRequestedBounds,
-                                  requestedMinIndex, requestedMaxIndex,
-                                  parameters.maxGridPoints,
-                                  "OxidationMaskBending");
+    return initializeGridFromMask(
+        maskInterface, useRequestedBounds, requestedMinIndex, requestedMaxIndex,
+        parameters.maxGridPoints, "OxidationMaskBending");
   }
 
   /// Seed nodes[i].velocity from maskInterface->getPointData()["MaskVelocity"]
@@ -535,7 +530,8 @@ private:
   void seedFromLevelSet() {
     if (maskInterface == nullptr || nodes.empty())
       return;
-    const int vIdx = maskInterface->getPointData().getVectorDataIndex("MaskVelocity");
+    const int vIdx =
+        maskInterface->getPointData().getVectorDataIndex("MaskVelocity");
     if (vIdx == -1)
       return;
     const auto *vd = maskInterface->getPointData().getVectorData(vIdx);
@@ -559,8 +555,8 @@ private:
     }
   }
 
-  void seedFromPrevious(
-      const std::unordered_map<std::size_t, Vec3D<T>> &previous) {
+  void
+  seedFromPrevious(const std::unordered_map<std::size_t, Vec3D<T>> &previous) {
     if (previous.empty())
       return;
     for (auto &node : nodes) {
@@ -572,7 +568,8 @@ private:
     }
   }
 
-  std::unordered_map<std::size_t, Vec3D<T>> collectVelocitiesByGridPoint() const {
+  std::unordered_map<std::size_t, Vec3D<T>>
+  collectVelocitiesByGridPoint() const {
     std::unordered_map<std::size_t, Vec3D<T>> result;
     result.reserve(nodes.size());
     for (const auto &node : nodes)
@@ -662,8 +659,7 @@ private:
 
     if (components == 0)
       return std::numeric_limits<T>::max();
-    const T change =
-        std::sqrt(changeSquaredSum / static_cast<T>(components));
+    const T change = std::sqrt(changeSquaredSum / static_cast<T>(components));
     if (!std::isfinite(change))
       throwNonFinite("mask absolute velocity coupling residual");
     return change;
@@ -730,8 +726,7 @@ private:
           // iterations, and omega > 1 extrapolates through the fixed point
           // for those nodes, producing sign-alternating velocities that
           // appear as zigzag kinks after level-set advection.
-          const T omegaMax =
-              (parameters.contactMode > 0) ? baseOmega : T(1.5);
+          const T omegaMax = (parameters.contactMode > 0) ? baseOmega : T(1.5);
           omega = std::clamp(omega, T(0.05), omegaMax);
         } else {
           throwNonFinite("mask Aitken coefficient");
@@ -789,8 +784,9 @@ private:
       nodes[id].velocity = smoothed[id];
   }
 
-  void relaxVelocities(const std::unordered_map<std::size_t, Vec3D<T>> &previous,
-                       T omega) {
+  void
+  relaxVelocities(const std::unordered_map<std::size_t, Vec3D<T>> &previous,
+                  T omega) {
     if (!std::isfinite(omega))
       throwNonFinite("mask Aitken coefficient");
     if (previous.empty() || omega == T(1))
@@ -898,10 +894,8 @@ private:
 
           if (!isFinite(t) || !std::isfinite(tn))
             throwNonFinite("oxide traction at mask contact");
-          minContactNormalTraction_ =
-              std::min(minContactNormalTraction_, tn);
-          maxContactNormalTraction_ =
-              std::max(maxContactNormalTraction_, tn);
+          minContactNormalTraction_ = std::min(minContactNormalTraction_, tn);
+          maxContactNormalTraction_ = std::max(maxContactNormalTraction_, tn);
 
           Vec3D<T> contactLoad = t;
           if (parameters.unilateralContact && tn >= T(0)) {
@@ -916,9 +910,8 @@ private:
               const T alpha =
                   std::clamp(parameters.contactLoadRelaxation, T(0.02), T(1));
               for (unsigned c = 0; c < D; ++c)
-                contactLoad[c] =
-                    prevIt->second[c] +
-                    alpha * (contactLoad[c] - prevIt->second[c]);
+                contactLoad[c] = prevIt->second[c] +
+                                 alpha * (contactLoad[c] - prevIt->second[c]);
             }
           }
 
@@ -929,9 +922,8 @@ private:
           T releaseThreshold = std::numeric_limits<T>::epsilon();
           T releaseScale = std::max(std::abs(tn), T(1));
           if (parameters.contactMode > 0 && parameters.unilateralContact) {
-            const auto scaleIt =
-                oldContactReleaseScale.find(contactFaceKey(node.index, dir,
-                                                           offset));
+            const auto scaleIt = oldContactReleaseScale.find(
+                contactFaceKey(node.index, dir, offset));
             if (scaleIt != oldContactReleaseScale.end())
               releaseScale = std::max(releaseScale, scaleIt->second);
             releaseThreshold =
@@ -941,8 +933,7 @@ private:
                 std::max(contactReleaseThreshold_, releaseThreshold);
           }
 
-          if (parameters.unilateralContact &&
-              loadNormal >= -releaseThreshold)
+          if (parameters.unilateralContact && loadNormal >= -releaseThreshold)
             continue;
 
           if (!isFinite(contactLoad))
@@ -956,17 +947,17 @@ private:
                   std::max(releaseScale, std::abs(loadNormal));
           }
 
-          contactFaceActive_[faceIdx * n + id]    = uint8_t(1);
+          contactFaceActive_[faceIdx * n + id] = uint8_t(1);
           ++activeContactFaces_;
-          contactFaceTraction_[faceIdx * n + id]  = contactLoad;
-          contactFaceDistance_[faceIdx * n + id]  = faceDistance;
+          contactFaceTraction_[faceIdx * n + id] = contactLoad;
+          contactFaceDistance_[faceIdx * n + id] = faceDistance;
           if (usesKinematicContactBoundary()) {
-            auto oxVel = deformationField->getVectorVelocity(oxidePt,
-                                                             parameters.material,
-                                                             faceNormal, 0);
+            auto oxVel = deformationField->getVectorVelocity(
+                oxidePt, parameters.material, faceNormal, 0);
             if (isElasticContactMode()) {
               // Scale by dt: elastic solver uses dt_ref=1hr so the Dirichlet BC
-              // must be the physical displacement (v_oxide × dt), not the velocity.
+              // must be the physical displacement (v_oxide × dt), not the
+              // velocity.
               oxVel = detail::vecScaled(oxVel, parameters.stressTimeStep);
             }
             contactFaceVelocity_[faceIdx * n + id] = oxVel;
@@ -982,8 +973,8 @@ private:
     std::size_t seed = detail::gridIndexHash<D>(index);
     seed ^= std::hash<unsigned>{}(direction) +
             std::size_t(0x9e3779b97f4a7c15ULL) + (seed << 6) + (seed >> 2);
-    seed ^= std::hash<int>{}(offset) +
-            std::size_t(0x9e3779b97f4a7c15ULL) + (seed << 6) + (seed >> 2);
+    seed ^= std::hash<int>{}(offset) + std::size_t(0x9e3779b97f4a7c15ULL) +
+            (seed << 6) + (seed >> 2);
     return seed;
   }
 
@@ -991,8 +982,8 @@ private:
   // All arithmetic is in T; reads from the SolverT work vector are widened.
   template <class SolverT>
   Vec3D<T> simpleNeighborVelocity(const std::vector<Vec3D<SolverT>> &velocity,
-                                   std::size_t nodeId, unsigned direction,
-                                   int offset) const {
+                                  std::size_t nodeId, unsigned direction,
+                                  int offset) const {
     IndexType neighbor = nodes[nodeId].index;
     neighbor[direction] += offset;
     const auto toT = [](const Vec3D<SolverT> &v) -> Vec3D<T> {
@@ -1012,8 +1003,8 @@ private:
                                const Vec3D<T> &traction) const {
     const T lambda = lameLambda();
     const T mu = lameMu();
-    const T denom = std::max(lambda + T(2) * mu,
-                             std::numeric_limits<T>::epsilon());
+    const T denom =
+        std::max(lambda + T(2) * mu, std::numeric_limits<T>::epsilon());
     const T signedOffset = static_cast<T>(offset);
     Vec3D<T> ghost{static_cast<T>(velocity[nodeId][0]),
                    static_cast<T>(velocity[nodeId][1]),
@@ -1023,8 +1014,10 @@ private:
     for (unsigned tanDir = 0; tanDir < D; ++tanDir) {
       if (tanDir == normalDir)
         continue;
-      const Vec3D<T> vPlus  = simpleNeighborVelocity(velocity, nodeId, tanDir, +1);
-      const Vec3D<T> vMinus = simpleNeighborVelocity(velocity, nodeId, tanDir, -1);
+      const Vec3D<T> vPlus =
+          simpleNeighborVelocity(velocity, nodeId, tanDir, +1);
+      const Vec3D<T> vMinus =
+          simpleNeighborVelocity(velocity, nodeId, tanDir, -1);
       tangentialDivergence +=
           (vPlus[tanDir] - vMinus[tanDir]) / (T(2) * gridDelta);
       normalTangentialDerivative[tanDir] =
@@ -1050,16 +1043,16 @@ private:
 
   template <class SolverT>
   Vec3D<T> tractionFreeGhost(const std::vector<Vec3D<SolverT>> &velocity,
-                              std::size_t nodeId, unsigned normalDir,
-                              int offset) const {
+                             std::size_t nodeId, unsigned normalDir,
+                             int offset) const {
     return stressBoundaryGhost(velocity, nodeId, normalDir, offset, gridDelta,
                                Vec3D<T>{T(0), T(0), T(0)});
   }
 
   template <class SolverT>
   Vec3D<T> neighborVelocity(const std::vector<Vec3D<SolverT>> &velocity,
-                             std::size_t nodeId, unsigned direction,
-                             int offset) const {
+                            std::size_t nodeId, unsigned direction,
+                            int offset) const {
     IndexType neighbor = nodes[nodeId].index;
     neighbor[direction] += offset;
 
@@ -1076,15 +1069,15 @@ private:
     if (contactFaceActive_[faceIdx * nn + nodeId]) {
       if (usesKinematicContactBoundary())
         return detail::vecSubtract(
-            detail::vecScaled(contactFaceVelocity_[faceIdx * nn + nodeId], T(2)),
+            detail::vecScaled(contactFaceVelocity_[faceIdx * nn + nodeId],
+                              T(2)),
             Vec3D<T>{static_cast<T>(velocity[nodeId][0]),
                      static_cast<T>(velocity[nodeId][1]),
                      static_cast<T>(velocity[nodeId][2])});
 
-      return stressBoundaryGhost(
-          velocity, nodeId, direction, offset,
-          contactFaceDistance_[faceIdx * nn + nodeId],
-          contactFaceTraction_[faceIdx * nn + nodeId]);
+      return stressBoundaryGhost(velocity, nodeId, direction, offset,
+                                 contactFaceDistance_[faceIdx * nn + nodeId],
+                                 contactFaceTraction_[faceIdx * nn + nodeId]);
     }
 
     return tractionFreeGhost(velocity, nodeId, direction, offset);
@@ -1092,14 +1085,14 @@ private:
 
   template <class SolverT>
   Vec3D<T> divergenceGradient(const std::vector<Vec3D<SolverT>> &velocity,
-                               const IndexType &index) const {
+                              const IndexType &index) const {
     Vec3D<T> gradient{T(0), T(0), T(0)};
     for (unsigned component = 0; component < D; ++component) {
       IndexType plus = index;
       IndexType minus = index;
-      plus[component]  += 1;
+      plus[component] += 1;
       minus[component] -= 1;
-      const T plusDiv  = divergence(velocity, plus);
+      const T plusDiv = divergence(velocity, plus);
       const T minusDiv = divergence(velocity, minus);
       gradient[component] = (plusDiv - minusDiv) / (T(2) * gridDelta);
     }
@@ -1117,7 +1110,7 @@ private:
 
     T result = T(0);
     for (unsigned direction = 0; direction < D; ++direction) {
-      const Vec3D<T> plus  = neighborVelocity(velocity, nodeId, direction,  1);
+      const Vec3D<T> plus = neighborVelocity(velocity, nodeId, direction, 1);
       const Vec3D<T> minus = neighborVelocity(velocity, nodeId, direction, -1);
       result += (plus[direction] - minus[direction]) / (T(2) * gridDelta);
     }
@@ -1125,15 +1118,17 @@ private:
   }
 
   // Evaluates the elastic stencil F(v)[i] = laplaceAverage + gradDivCorrection.
-  // (A·v)[i] = v[i] - F(v)[i] + b[i],  where b[i] = F(0)[i] (contact BC constants).
+  // (A·v)[i] = v[i] - F(v)[i] + b[i],  where b[i] = F(0)[i] (contact BC
+  // constants).
   template <class SolverT>
   Vec3D<T> computeElasticStencilAt(std::size_t nodeId,
-                                    const std::vector<Vec3D<SolverT>> &v,
-                                    T gradDivWeight) const {
+                                   const std::vector<Vec3D<SolverT>> &v,
+                                   T gradDivWeight) const {
     Vec3D<T> laplaceAverage{T(0), T(0), T(0)};
     for (unsigned direction = 0; direction < D; ++direction)
       for (int offset : {-1, 1})
-        detail::vecAddTo(laplaceAverage, neighborVelocity(v, nodeId, direction, offset));
+        detail::vecAddTo(laplaceAverage,
+                         neighborVelocity(v, nodeId, direction, offset));
 
     const T count = static_cast<T>(2 * D);
     const Vec3D<T> lapAvg = detail::vecScaled(laplaceAverage, T(1) / count);
@@ -1147,8 +1142,7 @@ private:
   // (Av)[i] = v[i] - F(v)[i] + b[i], stored as SolverT.
   template <class SolverT>
   void elasticMatvec(const std::vector<Vec3D<SolverT>> &v,
-                     const std::vector<Vec3D<T>> &b,
-                     T gradDivWeight,
+                     const std::vector<Vec3D<T>> &b, T gradDivWeight,
                      std::vector<Vec3D<SolverT>> &Av) const {
 #pragma omp parallel for schedule(static)
     for (std::size_t i = 0; i < nodes.size(); ++i) {
@@ -1159,7 +1153,8 @@ private:
       }
       const Vec3D<T> Fv = computeElasticStencilAt(i, v, gradDivWeight);
       for (unsigned c = 0; c < D; ++c)
-        Av[i][c] = static_cast<SolverT>(static_cast<T>(v[i][c]) - Fv[c] + b[i][c]);
+        Av[i][c] =
+            static_cast<SolverT>(static_cast<T>(v[i][c]) - Fv[c] + b[i][c]);
     }
   }
 
@@ -1311,9 +1306,9 @@ private:
     out.erase(std::unique(out.begin(), out.end()), out.end());
   }
 
-  SparseMatrix compressSparseRows(
-      std::vector<std::unordered_map<std::size_t, T>> &rows,
-      std::size_t nodeCount) const {
+  SparseMatrix
+  compressSparseRows(std::vector<std::unordered_map<std::size_t, T>> &rows,
+                     std::size_t nodeCount) const {
     SparseMatrix matrix;
     matrix.nodeCount = nodeCount;
     matrix.rowPtr.assign(rows.size() + 1, 0);
@@ -1370,7 +1365,8 @@ private:
       //   A[row, col] = δ(row,col) - (F(e_col)[rowComp] - F(0)[rowComp])
       //               = δ(row,col) - (Fbasis[rowComp] - b[rowNode][rowComp])
       // b is constant with respect to col so it cancels between probes; it
-      // is included here to isolate the linear part of F from its affine offset.
+      // is included here to isolate the linear part of F from its affine
+      // offset.
       collectLocalCandidates(rowNode, candidates);
       for (std::size_t colNode : candidates) {
         for (unsigned colComponent = 0; colComponent < D; ++colComponent) {
@@ -1385,8 +1381,8 @@ private:
             const T identity =
                 (rowNode == colNode && rowComponent == colComponent) ? T(1)
                                                                      : T(0);
-            const T value = identity - (Fbasis[rowComponent] -
-                                        b[rowNode][rowComponent]);
+            const T value =
+                identity - (Fbasis[rowComponent] - b[rowNode][rowComponent]);
             rows[row][col] += value;
           }
         }
@@ -1410,9 +1406,8 @@ private:
         continue;
 
       const T restrictionWeight =
-          T(1) / static_cast<T>(
-                     std::max<std::size_t>(coarseLevel.children[coarseRowNode].size(),
-                                           1));
+          T(1) / static_cast<T>(std::max<std::size_t>(
+                     coarseLevel.children[coarseRowNode].size(), 1));
       const std::size_t coarseRow = coarseRowNode * D + fineRow % D;
 
       for (std::size_t nz = fine.rowPtr[fineRow]; nz < fine.rowPtr[fineRow + 1];
@@ -1432,8 +1427,7 @@ private:
     return compressSparseRows(rows, coarseNodes);
   }
 
-  void sparseMatvec(const SparseMatrix &matrix,
-                    const std::vector<Vec3D<T>> &x,
+  void sparseMatvec(const SparseMatrix &matrix, const std::vector<Vec3D<T>> &x,
                     std::vector<Vec3D<T>> &Ax) const {
     Ax.assign(matrix.nodeCount, zeroVec());
 #pragma omp parallel for schedule(static)
@@ -1462,8 +1456,7 @@ private:
 
   void multigridSmooth(const SparseMatrix &matrix,
                        const std::vector<Vec3D<T>> &rhs,
-                       std::vector<Vec3D<T>> &x,
-                       unsigned sweeps,
+                       std::vector<Vec3D<T>> &x, unsigned sweeps,
                        T omega) const {
     const std::size_t rows = matrix.nodeCount * D;
     auto relaxRow = [&](std::size_t row) {
@@ -1477,7 +1470,8 @@ private:
       }
       const T updated =
           (flatValue(rhs, row) - offDiagonal) * matrix.invDiagonal[row];
-      flatSet(x, row, flatValue(x, row) + omega * (updated - flatValue(x, row)));
+      flatSet(x, row,
+              flatValue(x, row) + omega * (updated - flatValue(x, row)));
     };
 
     for (unsigned sweep = 0; sweep < sweeps; ++sweep) {
@@ -1517,8 +1511,8 @@ private:
   }
 
   void multigridProlongAdd(const std::vector<Vec3D<T>> &coarseCorrection,
-                            const MultigridLevel &coarseLevel,
-                            std::vector<Vec3D<T>> &fineCorrection) const {
+                           const MultigridLevel &coarseLevel,
+                           std::vector<Vec3D<T>> &fineCorrection) const {
     for (std::size_t coarseId = 0; coarseId < coarseLevel.children.size();
          ++coarseId) {
       for (std::size_t fineId : coarseLevel.children[coarseId])
@@ -1528,10 +1522,8 @@ private:
   }
 
   void multigridVCycle(const std::vector<MultigridLevel> &levels,
-                       std::size_t levelId,
-                       const std::vector<Vec3D<T>> &rhs,
-                       std::vector<Vec3D<T>> &x,
-                       T smootherOmega) const {
+                       std::size_t levelId, const std::vector<Vec3D<T>> &rhs,
+                       std::vector<Vec3D<T>> &x, T smootherOmega) const {
     const auto &level = levels[levelId];
     if (levelId + 1 >= levels.size() || level.indices.size() <= 32) {
       multigridSmooth(level.matrix, rhs, x, 40, smootherOmega);
@@ -1580,16 +1572,15 @@ private:
 
   static std::vector<T>
   solveUpperTriangular(const std::vector<std::vector<T>> &h,
-                       const std::vector<T> &g,
-                       unsigned usedColumns) {
+                       const std::vector<T> &g, unsigned usedColumns) {
     std::vector<T> y(usedColumns, T(0));
     for (int row = static_cast<int>(usedColumns) - 1; row >= 0; --row) {
       T sum = g[static_cast<std::size_t>(row)];
-      for (unsigned col = static_cast<unsigned>(row) + 1;
-           col < usedColumns; ++col)
+      for (unsigned col = static_cast<unsigned>(row) + 1; col < usedColumns;
+           ++col)
         sum -= h[static_cast<std::size_t>(row)][col] * y[col];
-      const T diag = h[static_cast<std::size_t>(row)]
-                      [static_cast<std::size_t>(row)];
+      const T diag =
+          h[static_cast<std::size_t>(row)][static_cast<std::size_t>(row)];
       if (std::abs(diag) > std::numeric_limits<T>::epsilon())
         y[static_cast<std::size_t>(row)] = sum / diag;
     }
@@ -1613,8 +1604,8 @@ private:
     const T lambda = lameLambda();
     const T mu = lameMu();
     const T gradDivWeight =
-        (lambda + mu) / std::max(lambda + T(2) * mu,
-                                 std::numeric_limits<T>::epsilon());
+        (lambda + mu) /
+        std::max(lambda + T(2) * mu, std::numeric_limits<T>::epsilon());
     const T smootherOmega =
         std::clamp(parameters.multigridSmootherOmega, T(0.2), T(1.4));
 
@@ -1641,8 +1632,7 @@ private:
     // mask geometry and contact pattern are typically stable after the first
     // call and the matrix can be reused for all subsequent iterations.
     const bool hierarchyDirty =
-        cachedNodeCount_ != n ||
-        cachedContactFaceActive_ != contactFaceActive_;
+        cachedNodeCount_ != n || cachedContactFaceActive_ != contactFaceActive_;
 
     if (hierarchyDirty) {
       cachedMultigridLevels_ = buildMultigridHierarchy();
@@ -1655,8 +1645,8 @@ private:
         cachedMultigridLevels_[level].matrix =
             buildGalerkinMatrix(cachedMultigridLevels_[level - 1].matrix,
                                 cachedMultigridLevels_[level]);
-      cachedNodeCount_          = n;
-      cachedContactFaceActive_  = contactFaceActive_;
+      cachedNodeCount_ = n;
+      cachedContactFaceActive_ = contactFaceActive_;
     }
 
     if (cachedMultigridLevels_.empty())
@@ -1787,10 +1777,12 @@ private:
     if (residual > parameters.tolerance)
       Logger::getInstance()
           .addWarning("solveElasticVelocity: traction multigrid GMRES did not "
-                      "converge after " + std::to_string(iterations) + "/" +
+                      "converge after " +
+                      std::to_string(iterations) + "/" +
                       std::to_string(parameters.maxIterations) +
                       " iterations (residual=" + std::to_string(residual) +
-                      ", tolerance=" + std::to_string(parameters.tolerance) + ")")
+                      ", tolerance=" + std::to_string(parameters.tolerance) +
+                      ")")
           .print();
   }
 
@@ -1803,23 +1795,23 @@ private:
     const T lambda = lameLambda();
     const T mu = lameMu();
     const T gradDivWeight =
-        (lambda + mu) / std::max(lambda + T(2) * mu,
-                                 std::numeric_limits<T>::epsilon());
-    const T relaxation =
-        std::clamp(parameters.relaxation, T(0.01), T(1));
+        (lambda + mu) /
+        std::max(lambda + T(2) * mu, std::numeric_limits<T>::epsilon());
+    const T relaxation = std::clamp(parameters.relaxation, T(0.01), T(1));
 
     std::vector<Vec3D<T>> current(nodes.size());
     std::vector<Vec3D<T>> next(nodes.size());
     for (std::size_t i = 0; i < nodes.size(); ++i)
-      current[i] = nodes[i].fixed ? Vec3D<T>{T(0), T(0), T(0)}
-                                  : nodes[i].velocity;
+      current[i] =
+          nodes[i].fixed ? Vec3D<T>{T(0), T(0), T(0)} : nodes[i].velocity;
 
     for (; iterations < parameters.maxIterations; ++iterations) {
       T maxDelta = T(0);
       T maxMagnitude = std::numeric_limits<T>::epsilon();
       int finiteFlag = 1;
 
-#pragma omp parallel for schedule(static) reduction(max:maxDelta,maxMagnitude) reduction(min:finiteFlag)
+#pragma omp parallel for schedule(static)                                      \
+    reduction(max : maxDelta, maxMagnitude) reduction(min : finiteFlag)
       for (std::size_t i = 0; i < nodes.size(); ++i) {
         Vec3D<T> candidate =
             nodes[i].fixed ? Vec3D<T>{T(0), T(0), T(0)}
@@ -1833,8 +1825,7 @@ private:
           }
           next[i][c] =
               current[i][c] + relaxation * (candidate[c] - current[i][c]);
-          maxDelta =
-              std::max(maxDelta, std::abs(next[i][c] - current[i][c]));
+          maxDelta = std::max(maxDelta, std::abs(next[i][c] - current[i][c]));
           maxMagnitude = std::max(maxMagnitude, std::abs(next[i][c]));
           maxMagnitude = std::max(maxMagnitude, std::abs(current[i][c]));
         }
@@ -1859,10 +1850,12 @@ private:
     if (residual > parameters.tolerance)
       Logger::getInstance()
           .addWarning("solveElasticVelocity: traction relaxation did not "
-                      "converge after " + std::to_string(iterations) + "/" +
+                      "converge after " +
+                      std::to_string(iterations) + "/" +
                       std::to_string(parameters.maxIterations) +
                       " iterations (residual=" + std::to_string(residual) +
-                      ", tolerance=" + std::to_string(parameters.tolerance) + ")")
+                      ", tolerance=" + std::to_string(parameters.tolerance) +
+                      ")")
           .print();
   }
 
@@ -1877,8 +1870,8 @@ private:
     const T lambda = lameLambda();
     const T mu = lameMu();
     const T gradDivWeight =
-        (lambda + mu) / std::max(lambda + T(2) * mu,
-                                 std::numeric_limits<T>::epsilon());
+        (lambda + mu) /
+        std::max(lambda + T(2) * mu, std::numeric_limits<T>::epsilon());
 
     const std::size_t n = nodes.size();
     const Vec3D<SolverT> zero3{SolverT(0), SolverT(0), SolverT(0)};
@@ -1904,14 +1897,16 @@ private:
     std::vector<Vec3D<SolverT>> r(n), r_hat(n);
     for (std::size_t i = 0; i < n; ++i)
       for (unsigned c = 0; c < D; ++c) {
-        r[i][c]     = static_cast<SolverT>(b[i][c]);
+        r[i][c] = static_cast<SolverT>(b[i][c]);
         r_hat[i][c] = r[i][c];
       }
 
     // BiCGSTAB with identity preconditioner.
-    // For most interior nodes the diagonal of A is ≈ 1; the identity preconditioner
-    // is exact there and a reasonable approximation at boundary nodes.
-    std::vector<Vec3D<SolverT>> pv(n, zero3), sv(n, zero3), y(n), z(n), s(n), t(n);
+    // For most interior nodes the diagonal of A is ≈ 1; the identity
+    // preconditioner is exact there and a reasonable approximation at boundary
+    // nodes.
+    std::vector<Vec3D<SolverT>> pv(n, zero3), sv(n, zero3), y(n), z(n), s(n),
+        t(n);
     T rho = T(1), alpha = T(1), omega = T(1);
 
     auto vecDot = [&](const std::vector<Vec3D<SolverT>> &a,
@@ -1940,7 +1935,13 @@ private:
       return m;
     };
 
-    const T b_norm = [&]{ T m = T(0); for (std::size_t i = 0; i < n; ++i) for (unsigned c = 0; c < D; ++c) m = std::max(m, std::abs(b[i][c])); return (m < T(1e-100)) ? T(1) : m; }();
+    const T b_norm = [&] {
+      T m = T(0);
+      for (std::size_t i = 0; i < n; ++i)
+        for (unsigned c = 0; c < D; ++c)
+          m = std::max(m, std::abs(b[i][c]));
+      return (m < T(1e-100)) ? T(1) : m;
+    }();
 
     for (; iterations < parameters.maxIterations; ++iterations) {
       const T rho_new = vecDot(r_hat, r);
@@ -1957,7 +1958,8 @@ private:
 
       for (std::size_t i = 0; i < n; ++i)
         for (unsigned c = 0; c < D; ++c)
-          pv[i][c] = static_cast<SolverT>(r[i][c] + beta * (pv[i][c] - omega * sv[i][c]));
+          pv[i][c] = static_cast<SolverT>(r[i][c] +
+                                          beta * (pv[i][c] - omega * sv[i][c]));
 
       // Identity preconditioner: y = p
       y = pv;
@@ -2000,8 +2002,9 @@ private:
 
       for (std::size_t i = 0; i < n; ++i)
         for (unsigned c = 0; c < D; ++c) {
-          x[i][c] = static_cast<SolverT>(x[i][c] + alpha * y[i][c] + omega * z[i][c]);
-          r[i][c]  = static_cast<SolverT>(s[i][c] - omega * t[i][c]);
+          x[i][c] =
+              static_cast<SolverT>(x[i][c] + alpha * y[i][c] + omega * z[i][c]);
+          r[i][c] = static_cast<SolverT>(s[i][c] - omega * t[i][c]);
         }
 
       residual = vecMaxAbs(r);
@@ -2029,11 +2032,12 @@ private:
     }
     if (residual > parameters.tolerance * b_norm)
       Logger::getInstance()
-          .addWarning("solveElasticVelocity: BiCGSTAB did not converge after " +
-                      std::to_string(iterations) + "/" +
-                      std::to_string(parameters.maxIterations) +
-                      " iterations (residual=" + std::to_string(residual / b_norm) +
-                      ", tolerance=" + std::to_string(parameters.tolerance) + ")")
+          .addWarning(
+              "solveElasticVelocity: BiCGSTAB did not converge after " +
+              std::to_string(iterations) + "/" +
+              std::to_string(parameters.maxIterations) +
+              " iterations (residual=" + std::to_string(residual / b_norm) +
+              ", tolerance=" + std::to_string(parameters.tolerance) + ")")
           .print();
   }
 
@@ -2061,14 +2065,14 @@ private:
     return false;
   }
 
-  bool isContactBoundary(const IndexType &index, unsigned direction,
-                         int offset, ConstSparseIterator &maskIt) const {
+  bool isContactBoundary(const IndexType &index, unsigned direction, int offset,
+                         ConstSparseIterator &maskIt) const {
     const T grad = maskGradientComponent(index, direction, maskIt);
 
     // The face exits the selected bending domain only if it points from an
     // inside node toward the outside of that domain.  Use the signed level-set
-    // gradient instead of a normalized normal so HRLE far-field sentinels cannot
-    // produce a spurious zero normal.
+    // gradient instead of a normalized normal so HRLE far-field sentinels
+    // cannot produce a spurious zero normal.
     if (static_cast<T>(maskSign) * static_cast<T>(offset) * grad >= T(0))
       return false;
 
@@ -2115,7 +2119,8 @@ private:
           .addWarning("OxidationMaskBending: anchorBoundaryDirection=" +
                       std::to_string(parameters.anchorBoundaryDirection) +
                       " points along the oxide-growth axis (direction D-1=" +
-                      std::to_string(D - 1) + ").  The anchor is normally "
+                      std::to_string(D - 1) +
+                      ").  The anchor is normally "
                       "placed at a lateral edge (direction 0) so bending "
                       "degrees of freedom are preserved.  Set "
                       "anchorBoundaryDirection=0 for a LOCOS cross-section.")
@@ -2129,16 +2134,13 @@ private:
       }
     }
 
-    const auto layers =
-        static_cast<viennahrle::IndexType>(
-            std::max(1u, parameters.anchorBoundaryLayers));
+    const auto layers = static_cast<viennahrle::IndexType>(
+        std::max(1u, parameters.anchorBoundaryLayers));
     for (auto &node : nodes) {
-      const bool onLower =
-          parameters.anchorBoundarySide < 0 &&
-          node.index[dir] <= nodeMin[dir] + layers - 1;
-      const bool onUpper =
-          parameters.anchorBoundarySide > 0 &&
-          node.index[dir] >= nodeMax[dir] - layers + 1;
+      const bool onLower = parameters.anchorBoundarySide < 0 &&
+                           node.index[dir] <= nodeMin[dir] + layers - 1;
+      const bool onUpper = parameters.anchorBoundarySide > 0 &&
+                           node.index[dir] >= nodeMax[dir] - layers + 1;
       if (onLower || onUpper) {
         node.fixed = true;
         node.velocity = {T(0), T(0), T(0)};
@@ -2167,9 +2169,7 @@ private:
 
   static constexpr T gasConstant = T(8.31446261815324);
 
-  bool isElasticContactMode() const {
-    return parameters.contactMode == 2;
-  }
+  bool isElasticContactMode() const { return parameters.contactMode == 2; }
 
   bool usesKinematicContactBoundary() const {
     return parameters.contactMode == 0 || isElasticContactMode();
@@ -2203,8 +2203,7 @@ private:
 
   T lameLambda() const {
     const T nu = clampedPoissonRatio();
-    return effectiveMaskViscosity() * nu /
-           ((T(1) + nu) * (T(1) - T(2) * nu));
+    return effectiveMaskViscosity() * nu / ((T(1) + nu) * (T(1) - T(2) * nu));
   }
 
   Vec3D<T> getVelocity(const IndexType &index) const {
@@ -2226,7 +2225,6 @@ private:
     return detail::levelSetCrossingDistance(
         insidePhi, outsidePhi, parameters.minBoundaryDistance, gridDelta);
   }
-
 };
 
 /// Velocity field for the oxide outer interface when part of that interface is
@@ -2239,10 +2237,8 @@ class OxidationConstrainedAmbient final : public VelocityField<T> {
   using ConstSparseIterator =
       viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>;
 
-  SmartPointer<OxidationDeformation<T, D>> deformationField =
-      nullptr;
-  SmartPointer<OxidationMaskBending<T, D>> maskVelocityField =
-      nullptr;
+  SmartPointer<OxidationDeformation<T, D>> deformationField = nullptr;
+  SmartPointer<OxidationMaskBending<T, D>> maskVelocityField = nullptr;
   SmartPointer<Domain<T, D>> maskInterface = nullptr;
   SmartPointer<Domain<T, D>> ambientInterface = nullptr;
   int maskSign = 1;
@@ -2258,7 +2254,8 @@ public:
       SmartPointer<OxidationMaskBending<T, D>> passedMaskVelocity,
       SmartPointer<Domain<T, D>> passedMaskInterface, int passedMaskSign = 1)
       : deformationField(passedDeformation),
-        maskVelocityField(passedMaskVelocity), maskInterface(passedMaskInterface),
+        maskVelocityField(passedMaskVelocity),
+        maskInterface(passedMaskInterface),
         maskSign((passedMaskSign < 0) ? -1 : 1) {
     buildMaskPhiCache();
     buildEffectiveVelocityCache();
@@ -2268,10 +2265,10 @@ public:
       SmartPointer<OxidationDeformation<T, D>> passedDeformation,
       SmartPointer<OxidationMaskBending<T, D>> passedMaskVelocity,
       SmartPointer<Domain<T, D>> passedMaskInterface,
-      SmartPointer<Domain<T, D>> passedAmbientInterface,
-      int passedMaskSign = 1)
+      SmartPointer<Domain<T, D>> passedAmbientInterface, int passedMaskSign = 1)
       : deformationField(passedDeformation),
-        maskVelocityField(passedMaskVelocity), maskInterface(passedMaskInterface),
+        maskVelocityField(passedMaskVelocity),
+        maskInterface(passedMaskInterface),
         ambientInterface(passedAmbientInterface),
         maskSign((passedMaskSign < 0) ? -1 : 1) {
     buildMaskPhiCache();
@@ -2306,15 +2303,14 @@ public:
         auto v_mask = maskVelocityField->getVectorVelocity(
             coordinate, material, normalVector, pointId);
         const T blend =
-            std::max(T(0), std::min(T(1),
-                                    (signedPhi + T(3) * maskGridDelta_) /
-                                        (T(3) * maskGridDelta_)));
+            std::max(T(0), std::min(T(1), (signedPhi + T(3) * maskGridDelta_) /
+                                              (T(3) * maskGridDelta_)));
         for (int k = 0; k < D; ++k)
           v_def[k] = (T(1) - blend) * v_def[k] + blend * v_mask[k];
 
         T def_n = T(0), mask_n = T(0);
         for (int k = 0; k < D; ++k) {
-          def_n  += v_def[k]  * normalVector[k];
+          def_n += v_def[k] * normalVector[k];
           mask_n += v_mask[k] * normalVector[k];
         }
         if (mask_n > def_n) {
@@ -2370,8 +2366,8 @@ private:
     if (maskInterface == nullptr)
       return;
     maskGridDelta_ = maskInterface->getGrid().getGridDelta();
-    for (ConstSparseIterator it(maskInterface->getDomain());
-         !it.isFinished(); ++it) {
+    for (ConstSparseIterator it(maskInterface->getDomain()); !it.isFinished();
+         ++it) {
       if (!it.isDefined())
         continue;
       const auto key = detail::gridIndexHash<D>(it.getStartIndices());
@@ -2384,13 +2380,13 @@ private:
     if (ambientInterface == nullptr) {
       for (unsigned d = 0; d < D; ++d) {
         if (deformationField != nullptr)
-          maxVelocity_[d] = std::max(
-              maxVelocity_[d],
-              deformationField->getDissipationAlpha(d, -1, {}));
+          maxVelocity_[d] =
+              std::max(maxVelocity_[d],
+                       deformationField->getDissipationAlpha(d, -1, {}));
         if (maskVelocityField != nullptr)
-          maxVelocity_[d] = std::max(
-              maxVelocity_[d],
-              maskVelocityField->getDissipationAlpha(d, -1, {}));
+          maxVelocity_[d] =
+              std::max(maxVelocity_[d],
+                       maskVelocityField->getDissipationAlpha(d, -1, {}));
       }
       return;
     }
@@ -2423,10 +2419,8 @@ private:
           normal[d] *= invNorm;
       }
 
-      const auto vectorVelocity =
-          getVectorVelocity(coordinate, -1, normal, 0);
-      const T scalarVelocity =
-          getScalarVelocity(coordinate, -1, normal, 0);
+      const auto vectorVelocity = getVectorVelocity(coordinate, -1, normal, 0);
+      const T scalarVelocity = getScalarVelocity(coordinate, -1, normal, 0);
       for (unsigned d = 0; d < D; ++d) {
         maxVelocity_[d] =
             std::max(maxVelocity_[d],
@@ -2437,17 +2431,16 @@ private:
     if (!foundInterfacePoint) {
       for (unsigned d = 0; d < D; ++d) {
         if (deformationField != nullptr)
-          maxVelocity_[d] = std::max(
-              maxVelocity_[d],
-              deformationField->getDissipationAlpha(d, -1, {}));
+          maxVelocity_[d] =
+              std::max(maxVelocity_[d],
+                       deformationField->getDissipationAlpha(d, -1, {}));
         if (maskVelocityField != nullptr)
-          maxVelocity_[d] = std::max(
-              maxVelocity_[d],
-              maskVelocityField->getDissipationAlpha(d, -1, {}));
+          maxVelocity_[d] =
+              std::max(maxVelocity_[d],
+                       maskVelocityField->getDissipationAlpha(d, -1, {}));
       }
     }
   }
-
 };
 
 } // namespace viennals

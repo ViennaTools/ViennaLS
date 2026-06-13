@@ -155,11 +155,13 @@ private:
       // Previously, fields present only on A (e.g. OxVelocity on the oxide
       // in a RELATIVE_COMPLEMENT with the mask) were silently dropped because
       // the mask has no matching field.  For A-sourced result points we always
-      // use A's value; for B-sourced points without a matching B field we use 0.
+      // use A's value; for B-sourced points without a matching B field we use
+      // 0.
       for (unsigned i = 0; i < AData.getScalarDataSize(); ++i) {
         auto scalarDataLabel = AData.getScalarDataLabel(i);
         auto APointer = AData.getScalarData(i);
-        auto BPointer = BData.getScalarData(scalarDataLabel, true); // may be nullptr
+        auto BPointer =
+            BData.getScalarData(scalarDataLabel, true); // may be nullptr
         typename Domain<T, D>::PointDataType::ScalarDataType scalars;
         scalars.resize(newlsDomain->getNumberOfPoints(), T(0));
         for (unsigned j = 0; j < newlsDomain->getNumberOfPoints(); ++j) {
@@ -176,8 +178,10 @@ private:
       for (unsigned i = 0; i < AData.getVectorDataSize(); ++i) {
         auto vectorDataLabel = AData.getVectorDataLabel(i);
         auto APointer = AData.getVectorData(i);
-        auto BPointer = BData.getVectorData(vectorDataLabel, true); // may be nullptr
-        using Vec = typename Domain<T, D>::PointDataType::VectorDataType::value_type;
+        auto BPointer =
+            BData.getVectorData(vectorDataLabel, true); // may be nullptr
+        using Vec =
+            typename Domain<T, D>::PointDataType::VectorDataType::value_type;
         typename Domain<T, D>::PointDataType::VectorDataType vectors;
         vectors.resize(newlsDomain->getNumberOfPoints(), Vec{});
         for (unsigned j = 0; j < newlsDomain->getNumberOfPoints(); ++j) {
@@ -185,7 +189,8 @@ private:
             vectors[j] = APointer->at(newDataSourceIds[0][j]);
           else if (BPointer != nullptr)
             vectors[j] = BPointer->at(newDataSourceIds[0][j]);
-          // else: B-sourced point with no matching B field → stays zero-initialised
+          // else: B-sourced point with no matching B field → stays
+          // zero-initialised
         }
         newData.insertNextVectorData(vectors, vectorDataLabel);
       }

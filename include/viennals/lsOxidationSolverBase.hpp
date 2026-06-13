@@ -5,8 +5,8 @@
 #include <hrleSparseIterator.hpp>
 
 #include <algorithm>
-#include <cmath>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <functional>
 #include <limits>
@@ -24,7 +24,7 @@ inline std::size_t gridIndexHash(const viennahrle::Index<D> &index) {
   std::size_t seed = 0;
   for (unsigned i = 0; i < static_cast<unsigned>(D); ++i) {
     seed ^= std::hash<long long>{}(static_cast<long long>(index[i])) +
-             std::size_t(0x9e3779b97f4a7c15ULL) + (seed << 6) + (seed >> 2);
+            std::size_t(0x9e3779b97f4a7c15ULL) + (seed << 6) + (seed >> 2);
   }
   return seed;
 }
@@ -37,8 +37,7 @@ template <int D> struct IndexTypeHasher {
   }
 };
 
-template <class T>
-inline Vec3D<T> vecScaled(const Vec3D<T> &source, T factor) {
+template <class T> inline Vec3D<T> vecScaled(const Vec3D<T> &source, T factor) {
   Vec3D<T> result{0., 0., 0.};
   for (unsigned i = 0; i < 3; ++i)
     result[i] = source[i] * factor;
@@ -69,14 +68,13 @@ inline void vecAddTo(Vec3D<T> &target, const Vec3D<T> &source) {
 
 /// Clamp HRLE far-field sentinels (±DBL_MAX) to ±1 before differencing to
 /// prevent DBL_MAX² overflow that silently returns the zero vector.
-template <class T>
-inline T clampLevelSetPhi(T v) {
+template <class T> inline T clampLevelSetPhi(T v) {
   return v > T(1) ? T(1) : (v < T(-1) ? T(-1) : v);
 }
 
 template <class T>
 inline T levelSetCrossingDistance(T insidePhi, T outsidePhi,
-                                   T minBoundaryFraction, T gridDelta) {
+                                  T minBoundaryFraction, T gridDelta) {
   const T denom = std::abs(insidePhi) + std::abs(outsidePhi);
   if (denom <= std::numeric_limits<T>::epsilon())
     return gridDelta;
@@ -89,8 +87,7 @@ inline T levelSetCrossingDistance(T insidePhi, T outsidePhi,
 /// Common Cartesian-grid infrastructure shared by the three oxidation solver
 /// classes (diffusion, deformation, mask bending). Provides the node lookup
 /// table, grid extents, and the core grid utility methods that operate on them.
-template <class T, int D>
-class OxidationSolverBase {
+template <class T, int D> class OxidationSolverBase {
 protected:
   using IndexType = viennahrle::Index<D>;
   using ConstSparseIterator =
@@ -164,7 +161,8 @@ protected:
   }
 
   // Searches with expanding radius shells so that RK2 Stage 2 can find oxide
-  // nodes even after the surface has advanced several grid cells beyond the band.
+  // nodes even after the surface has advanced several grid cells beyond the
+  // band.
   std::size_t findNearbyNode(const IndexType &index) const {
     for (int radius = 1; radius <= 4; ++radius) {
       T bestDistance2 = std::numeric_limits<T>::max();
@@ -369,8 +367,10 @@ private:
       // the extreme index.  Subtracting padding from that sentinel directly
       // overflows, turning the tiny sentinel into a large positive value and
       // making extents[i] enormous.  Clamping first makes the arithmetic safe.
-      minIndex[i] = std::max(gridMin[i], std::max(gridMin[i], minIndex[i]) - padding);
-      maxIndex[i] = std::min(gridMax[i], std::min(gridMax[i], maxIndex[i]) + padding);
+      minIndex[i] =
+          std::max(gridMin[i], std::max(gridMin[i], minIndex[i]) - padding);
+      maxIndex[i] =
+          std::min(gridMax[i], std::min(gridMax[i], maxIndex[i]) + padding);
     }
   }
 };

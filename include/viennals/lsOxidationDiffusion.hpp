@@ -32,10 +32,7 @@ enum class GpuMode {
 /// Jacobi matches the CPU solver's preconditioner and is the default. ILU0 is
 /// experimental because cuSPARSE SpSV value-analysis behavior differs between
 /// CUDA versions and can introduce structured solver error if stale.
-enum class GpuPreconditioner {
-  Jacobi,
-  ILU0
-};
+enum class GpuPreconditioner { Jacobi, ILU0 };
 
 /// Parameters for the steady oxidant diffusion model used by
 /// OxidationDiffusion.
@@ -75,8 +72,9 @@ template <class T> struct OxidationParameters {
   int material = -1;
 };
 
-/// Solves the oxidant diffusion step of the Suvorov et al. (10.1007/s10825-006-0003-z)
-/// oxidation model on the Cartesian grid carrying two level sets.
+/// Solves the oxidant diffusion step of the Suvorov et al.
+/// (10.1007/s10825-006-0003-z) oxidation model on the Cartesian grid carrying
+/// two level sets.
 ///
 /// The oxide is assumed to lie between the Si/SiO2 reaction interface and the
 /// SiO2/O2 ambient interface. Regular Cartesian grid nodes inside this band are
@@ -91,10 +89,11 @@ template <class T> struct OxidationParameters {
 /// interface, i.e. reactionPhi >= 0 and ambientPhi <= 0.
 template <class T, int D>
 class OxidationDiffusion final : public VelocityField<T>,
-                                              public OxidationSolverBase<T, D> {
+                                 public OxidationSolverBase<T, D> {
   using IndexType = viennahrle::Index<D>;
   using ConstSparseIterator =
       viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>;
+
 private:
   static constexpr T boltzmannConstant = T(1.380649e-23);
   static constexpr T minStressFactor = T(1.e-6);
@@ -123,7 +122,8 @@ private:
   struct Node {
     IndexType index;
     T concentration = 0.;
-    Vec3D<T> siNormal = {0., 0., 0.}; // unit outward normal of Si surface (into oxide)
+    Vec3D<T> siNormal = {0., 0.,
+                         0.}; // unit outward normal of Si surface (into oxide)
   };
 
   struct StencilSide {
@@ -147,10 +147,12 @@ private:
   bool lastSolveConverged_ = false;
   T maxScalarVelocity_ = 0.;
   bool solved = false;
-  bool nodesDirty_ = true;  // true → rebuild grid/nodes on next apply()
-  mutable std::string lastLoggedBackend_; // suppresses repeated "using X" messages
+  bool nodesDirty_ = true; // true → rebuild grid/nodes on next apply()
+  mutable std::string
+      lastLoggedBackend_; // suppresses repeated "using X" messages
   bool useRequestedBounds = false;
-  bool warmStartable_ = false; // true when nodes[i].concentration holds a prior solution
+  bool warmStartable_ =
+      false; // true when nodes[i].concentration holds a prior solution
   std::unordered_map<std::size_t, T> pressureLookup;
   std::unordered_map<std::size_t, T> concentrationCache_;
   std::vector<Node> nodes;
@@ -170,7 +172,7 @@ private:
   // Opaque pointer to device-side buffers (GpuBiCGSTABBuffers is defined only
   // in the CUDA translation unit; we hold a raw pointer here so g++ never sees
   // the CUDA internals).
-  gpu::GpuBiCGSTABBuffers* gpuBufs_ = nullptr;
+  gpu::GpuBiCGSTABBuffers *gpuBufs_ = nullptr;
 #endif
 
 public:
@@ -189,10 +191,9 @@ public:
 
   OxidationDiffusion() = default;
 
-  OxidationDiffusion(
-      SmartPointer<Domain<T, D>> passedReactionInterface,
-      SmartPointer<Domain<T, D>> passedAmbientInterface,
-      OxidationParameters<T> passedParameters = {})
+  OxidationDiffusion(SmartPointer<Domain<T, D>> passedReactionInterface,
+                     SmartPointer<Domain<T, D>> passedAmbientInterface,
+                     OxidationParameters<T> passedParameters = {})
       : reactionInterface(passedReactionInterface),
         ambientInterface(passedAmbientInterface), parameters(passedParameters) {
   }
@@ -205,34 +206,40 @@ public:
   }
 
   template <class... Args> static auto New(Args &&...args) {
-    return SmartPointer<OxidationDiffusion>::New(
-        std::forward<Args>(args)...);
+    return SmartPointer<OxidationDiffusion>::New(std::forward<Args>(args)...);
   }
 
   /// Call after any in-place modification of the level sets (e.g. after
   /// ls::Advect) so that the next apply() rebuilds the Cartesian node grid.
-  void markGeometryChanged() { nodesDirty_ = true; solved = false; }
+  void markGeometryChanged() {
+    nodesDirty_ = true;
+    solved = false;
+  }
 
   void setReactionInterface(SmartPointer<Domain<T, D>> passedInterface) {
     reactionInterface = passedInterface;
-    nodesDirty_ = true; solved = false;
+    nodesDirty_ = true;
+    solved = false;
   }
 
   void setAmbientInterface(SmartPointer<Domain<T, D>> passedInterface) {
     ambientInterface = passedInterface;
-    nodesDirty_ = true; solved = false;
+    nodesDirty_ = true;
+    solved = false;
   }
 
   void setMaskInterface(SmartPointer<Domain<T, D>> passedInterface,
                         int passedMaskSign = 1) {
     maskInterface = passedInterface;
     maskSign = (passedMaskSign < 0) ? -1 : 1;
-    nodesDirty_ = true; solved = false;
+    nodesDirty_ = true;
+    solved = false;
   }
 
   void clearMaskInterface() {
     maskInterface = nullptr;
-    nodesDirty_ = true; solved = false;
+    nodesDirty_ = true;
+    solved = false;
   }
 
   void setParameters(OxidationParameters<T> passedParameters) {
@@ -285,12 +292,14 @@ public:
     requestedMinIndex = passedMinIndex;
     requestedMaxIndex = passedMaxIndex;
     useRequestedBounds = true;
-    nodesDirty_ = true; solved = false;
+    nodesDirty_ = true;
+    solved = false;
   }
 
   void clearSolveBounds() {
     useRequestedBounds = false;
-    nodesDirty_ = true; solved = false;
+    nodesDirty_ = true;
+    solved = false;
   }
 
   void apply() {
@@ -318,7 +327,8 @@ public:
 
     concentrationCache_.clear();
     for (const auto &node : nodes)
-      concentrationCache_[detail::gridIndexHash<D>(node.index)] = node.concentration;
+      concentrationCache_[detail::gridIndexHash<D>(node.index)] =
+          node.concentration;
 
     maxScalarVelocity_ = 0.;
     ConstSparseIterator reactionIt(reactionInterface->getDomain());
@@ -352,12 +362,13 @@ public:
     const auto boundarySample = reactionBoundarySample(index);
     const IndexType rateIndex =
         boundarySample.found ? boundarySample.nodeIndex : index;
-    const T concentration =
-        boundarySample.found ? boundarySample.concentration
-                             : getReactionBoundaryConcentration(index);
+    const T concentration = boundarySample.found
+                                ? boundarySample.concentration
+                                : getReactionBoundaryConcentration(index);
     return parameters.velocitySign * getEffectiveReactionRate(rateIndex) *
            concentration /
-           (parameters.oxidantMoleculeDensity * parameters.expansionCoefficient);
+           (parameters.oxidantMoleculeDensity *
+            parameters.expansionCoefficient);
   }
 
   T getDissipationAlpha(int /*direction*/, int material,
@@ -365,10 +376,11 @@ public:
     if (parameters.material >= 0 && material != parameters.material)
       return 0.;
 
-    T bulkVel = std::abs(parameters.velocitySign) * parameters.reactionRate *
-                parameters.equilibriumConcentration /
-                (parameters.oxidantMoleculeDensity * parameters.expansionCoefficient);
-    
+    T bulkVel =
+        std::abs(parameters.velocitySign) * parameters.reactionRate *
+        parameters.equilibriumConcentration /
+        (parameters.oxidantMoleculeDensity * parameters.expansionCoefficient);
+
     return std::max(maxScalarVelocity_, bulkVel);
   }
 
@@ -505,19 +517,17 @@ public:
   T getScalarVelocityFromSample(const ReactionBoundarySample &sample) const {
     if (!sample.found)
       return T(0);
-    return std::abs(getEffectiveReactionRate(sample.nodeIndex) *
-                    sample.concentration /
-                    (parameters.oxidantMoleculeDensity *
-                     parameters.expansionCoefficient));
+    return std::abs(
+        getEffectiveReactionRate(sample.nodeIndex) * sample.concentration /
+        (parameters.oxidantMoleculeDensity * parameters.expansionCoefficient));
   }
 
 private:
   bool initialiseGrid() {
-    return initializeGridFromInterfaces(reactionInterface, ambientInterface,
-                                        maskInterface, useRequestedBounds,
-                                        requestedMinIndex, requestedMaxIndex,
-                                        parameters.maxGridPoints,
-                                        "OxidationDiffusion");
+    return initializeGridFromInterfaces(
+        reactionInterface, ambientInterface, maskInterface, useRequestedBounds,
+        requestedMinIndex, requestedMaxIndex, parameters.maxGridPoints,
+        "OxidationDiffusion");
   }
 
   void buildNodes() {
@@ -532,16 +542,16 @@ private:
     if (!warmStartable_) {
       // Single HRLE pass restores both concentration and pressure from the
       // pointData written by writePersistentFields() before the last advection.
-      const int cIdx =
-          ambientInterface->getPointData().getScalarDataIndex("OxConcentration");
+      const int cIdx = ambientInterface->getPointData().getScalarDataIndex(
+          "OxConcentration");
       const int pIdx =
           ambientInterface->getPointData().getScalarDataIndex("OxPressure");
-      const auto *cd = (cIdx != -1)
-                           ? ambientInterface->getPointData().getScalarData(cIdx)
-                           : nullptr;
-      const auto *pd = (pIdx != -1)
-                           ? ambientInterface->getPointData().getScalarData(pIdx)
-                           : nullptr;
+      const auto *cd =
+          (cIdx != -1) ? ambientInterface->getPointData().getScalarData(cIdx)
+                       : nullptr;
+      const auto *pd =
+          (pIdx != -1) ? ambientInterface->getPointData().getScalarData(pIdx)
+                       : nullptr;
       if (cd != nullptr || pd != nullptr) {
         ConstSparseIterator it(ambientInterface->getDomain());
         for (; !it.isFinished(); ++it) {
@@ -550,12 +560,10 @@ private:
           const auto ptId = it.getPointId();
           const std::size_t key =
               detail::gridIndexHash<D>(it.getStartIndices());
-          if (cd != nullptr &&
-              ptId < static_cast<decltype(ptId)>(cd->size()) &&
+          if (cd != nullptr && ptId < static_cast<decltype(ptId)>(cd->size()) &&
               std::isfinite((*cd)[ptId]))
             concentrationCache_[key] = (*cd)[ptId];
-          if (pd != nullptr &&
-              ptId < static_cast<decltype(ptId)>(pd->size()) &&
+          if (pd != nullptr && ptId < static_cast<decltype(ptId)>(pd->size()) &&
               std::isfinite((*pd)[ptId]))
             pressureLookup[key] = (*pd)[ptId];
         }
@@ -576,7 +584,8 @@ private:
         const std::size_t id = nodes.size();
         nodeLookupFlat[linearIndex(index)] = id;
         T seedConc = parameters.equilibriumConcentration;
-        auto cacheIt = concentrationCache_.find(detail::gridIndexHash<D>(index));
+        auto cacheIt =
+            concentrationCache_.find(detail::gridIndexHash<D>(index));
         if (cacheIt != concentrationCache_.end())
           seedConc = cacheIt->second;
         if (!std::isfinite(seedConc))
@@ -592,7 +601,8 @@ private:
     }
 
     // Precompute per-face boundary intersections into flat face-major arrays.
-    // Level-set positions are fixed during the inner solve; one pass per apply().
+    // Level-set positions are fixed during the inner solve; one pass per
+    // apply().
     const std::size_t n = nodes.size();
     faceBCTypes_.assign(2 * D * n, Boundary::NONE);
     faceBCDists_.assign(2 * D * n, T(1));
@@ -639,10 +649,8 @@ private:
 
     const bool tryGpu = (gpuMode_ == GpuMode::Gpu);
     if (tryGpu) {
-      const bool useIlu0 =
-          gpuPreconditioner_ == GpuPreconditioner::ILU0;
-      gpuBufs_ = gpu::allocGpuBuffers(static_cast<uint32_t>(n), 2 * D,
-                                      useIlu0);
+      const bool useIlu0 = gpuPreconditioner_ == GpuPreconditioner::ILU0;
+      gpuBufs_ = gpu::allocGpuBuffers(static_cast<uint32_t>(n), 2 * D, useIlu0);
 
       if (gpuBufs_) {
         // Convert std::size_t neighbor IDs to uint32_t for the device
@@ -659,25 +667,25 @@ private:
                               "uploading GPU neighbor IDs failed." +
                               gpuErrorDetail());
         }
-        if (useIlu0 &&
-            !gpu::gpuSetupCSR(gpuBufs_, nb32.data(),
-                              static_cast<uint32_t>(n), 2 * D)) {
+        if (useIlu0 && !gpu::gpuSetupCSR(gpuBufs_, nb32.data(),
+                                         static_cast<uint32_t>(n), 2 * D)) {
           gpu::freeGpuBuffers(gpuBufs_);
           gpuBufs_ = nullptr;
           throwStrictGpuError("OxidationDiffusion: GPU mode was selected, but "
                               "CUSPARSE setup for the GPU BiCGSTAB solver "
-                              "failed." + gpuErrorDetail());
+                              "failed." +
+                              gpuErrorDetail());
         }
-        logDiffusionBackend(
-            "GPU BiCGSTAB",
-            "preconditioner=" +
-                std::string(useIlu0 ? "ILU0" : "Jacobi"));
+        logDiffusionBackend("GPU BiCGSTAB",
+                            "preconditioner=" +
+                                std::string(useIlu0 ? "ILU0" : "Jacobi"));
         loggedBackend = true;
       } else {
         throwStrictGpuError("OxidationDiffusion: GPU mode was selected, but "
                             "CUDA buffers could not be "
                             "allocated or the CUDA context could not be "
-                            "initialized." + gpuErrorDetail());
+                            "initialized." +
+                            gpuErrorDetail());
       }
     }
 #endif
@@ -715,11 +723,12 @@ private:
         // Use the exact side construction used by the CPU stencil so the GPU
         // SpMV cannot drift from computeStencilAt() at cut-cell boundaries.
         const auto neg = makeStencilSide(id, zeros, dir, -1, D_eff);
-        const auto pos = makeStencilSide(id, zeros, dir,  1, D_eff);
+        const auto pos = makeStencilSide(id, zeros, dir, 1, D_eff);
         const T distNeg = neg.distance;
         const T distPos = pos.distance;
         const T distSum = distNeg + distPos;
-        if (distSum <= eps) continue;
+        if (distSum <= eps)
+          continue;
 
         if (neighborIds_[fiNeg * n + id] != noNode && distNeg > eps)
           faceCoeffs[fiNeg * n + id] = T(2) * D_eff / (distNeg * distSum);
@@ -736,11 +745,11 @@ private:
   void computeStencilAt(std::size_t nodeId, const std::vector<SolverT> &x,
                         T &diag, T &rhs) const {
     diag = T(0);
-    rhs  = T(0);
+    rhs = T(0);
     const T D_eff = getEffectiveDiffusionCoefficient(nodes[nodeId].index);
     for (unsigned direction = 0; direction < D; ++direction) {
       const auto neg = makeStencilSide(nodeId, x, direction, -1, D_eff);
-      const auto pos = makeStencilSide(nodeId, x, direction,  1, D_eff);
+      const auto pos = makeStencilSide(nodeId, x, direction, 1, D_eff);
       addAxisContribution(rhs, diag, neg, pos, D_eff);
     }
   }
@@ -750,8 +759,7 @@ private:
   // Stencil arithmetic stays in T; only storage uses SolverT.
   template <class SolverT>
   void matvec(const std::vector<SolverT> &v,
-              const std::vector<T> &precomputedDiag,
-              const std::vector<T> &b,
+              const std::vector<T> &precomputedDiag, const std::vector<T> &b,
               std::vector<SolverT> &Av) const {
 #pragma omp parallel for schedule(static)
     for (std::size_t i = 0; i < nodes.size(); ++i) {
@@ -778,7 +786,8 @@ private:
     const std::size_t n = nodes.size();
     const T eps = std::numeric_limits<T>::epsilon();
 
-    // Geometry-fixed diagonal and BC source vector (kept in T for full precision).
+    // Geometry-fixed diagonal and BC source vector (kept in T for full
+    // precision).
     Timer<> tDiag;
     tDiag.start();
     std::vector<T> diag(n), b(n);
@@ -793,8 +802,8 @@ private:
     T b_norm = T(0);
     bool finiteSystem = true;
     for (std::size_t i = 0; i < n; ++i) {
-      finiteSystem = finiteSystem && std::isfinite(diag[i]) &&
-                     std::isfinite(b[i]);
+      finiteSystem =
+          finiteSystem && std::isfinite(diag[i]) && std::isfinite(b[i]);
       b_norm = std::max(b_norm, std::abs(b[i]));
     }
     if (b_norm < T(1e-100))
@@ -822,7 +831,8 @@ private:
 
     std::vector<SolverT> x(n);
     for (std::size_t i = 0; i < n; ++i) {
-      T guess = warmStartable_ ? nodes[i].concentration : fallbackInitialGuess(i);
+      T guess =
+          warmStartable_ ? nodes[i].concentration : fallbackInitialGuess(i);
       if (!std::isfinite(guess))
         guess = fallbackInitialGuess(i);
       x[i] = static_cast<SolverT>(guess);
@@ -844,7 +854,7 @@ private:
       std::vector<double> diagGpu(n), bGpu(n);
       for (std::size_t i = 0; i < n; ++i) {
         diagGpu[i] = static_cast<double>(diag[i]);
-        bGpu[i]    = static_cast<double>(b[i]);
+        bGpu[i] = static_cast<double>(b[i]);
       }
 
       // Face coupling coefficients (pressure-dependent; recomputed each call)
@@ -860,16 +870,14 @@ private:
       tPrep.finish();
 
       tUpload.start();
-      const bool gpuUploadOk =
-          gpu::gpuUploadSolverArrays(gpuBufs_, diagGpu.data(), bGpu.data(),
-                                     coeffGpu.data(),
-                                     static_cast<uint32_t>(n),
-                                     faceCoeffs.size());
+      const bool gpuUploadOk = gpu::gpuUploadSolverArrays(
+          gpuBufs_, diagGpu.data(), bGpu.data(), coeffGpu.data(),
+          static_cast<uint32_t>(n), faceCoeffs.size());
       tUpload.finish();
       if (!gpuUploadOk) {
         if (Logger::hasDebug()) {
-          const std::string tag = "diffusion n=" + std::to_string(n) +
-                                  " [GPU upload failed]";
+          const std::string tag =
+              "diffusion n=" + std::to_string(n) + " [GPU upload failed]";
           Logger::getInstance()
               .addTiming(tag + " diag/b precompute", tDiag)
               .addTiming(tag + " GPU prep+faceCoeffs", tPrep)
@@ -878,17 +886,16 @@ private:
         }
         throwStrictGpuError("OxidationDiffusion: GPU mode was selected, but "
                             "uploading GPU solver arrays or factorizing ILU "
-                            "failed." + gpuErrorDetail());
+                            "failed." +
+                            gpuErrorDetail());
       }
 
       // Solve on GPU; xGpu holds the initial guess and receives the solution.
       tSolve.start();
-      const bool gpuConverged =
-          gpu::gpuSolveBiCGSTAB(gpuBufs_, xGpu.data(),
-                                static_cast<double>(eps),
-                                parameters.maxIterations,
-                                static_cast<double>(parameters.tolerance),
-                                iterations, residual);
+      const bool gpuConverged = gpu::gpuSolveBiCGSTAB(
+          gpuBufs_, xGpu.data(), static_cast<double>(eps),
+          parameters.maxIterations, static_cast<double>(parameters.tolerance),
+          iterations, residual);
       tSolve.finish();
 
       const bool finiteGpuSolution =
@@ -899,7 +906,8 @@ private:
       const T gpuResidual = residual;
 
       if (finiteGpuSolution) {
-        // Write solution back to nodes only after convergence and finite checks.
+        // Write solution back to nodes only after convergence and finite
+        // checks.
         for (std::size_t i = 0; i < n; ++i)
           nodes[i].concentration = static_cast<T>(xGpu[i]);
         normalizedResidual_ = gpuResidual / b_norm;
@@ -909,8 +917,7 @@ private:
         if (Logger::hasTiming()) {
           const std::string tag = "diffusion n=" + std::to_string(n) +
                                   " iters=" + std::to_string(iterations) +
-                                  " res=" + std::to_string(residual) +
-                                  " [GPU]";
+                                  " res=" + std::to_string(residual) + " [GPU]";
           Logger::getInstance()
               .addTiming(tag + " GPU BiCGSTAB", tSolve)
               .print();
@@ -941,7 +948,8 @@ private:
       throwStrictGpuError(
           "OxidationDiffusion: GPU mode was selected, but GPU BiCGSTAB "
           "failed, did not converge, or produced non-finite concentrations "
-          "(iters=" + std::to_string(gpuIterations) +
+          "(iters=" +
+          std::to_string(gpuIterations) +
           ", residual=" + std::to_string(gpuResidual) + ").");
     }
 #else
@@ -957,15 +965,17 @@ private:
     matvec(x, diag, b, Ax);
     std::vector<SolverT> r(n), r_hat(n);
     for (std::size_t i = 0; i < n; ++i) {
-      r[i]     = static_cast<SolverT>(b[i] - Ax[i]);
+      r[i] = static_cast<SolverT>(b[i] - Ax[i]);
       r_hat[i] = r[i];
     }
 
     // BiCGSTAB with diagonal (Jacobi) preconditioner.
-    // Scalars (rho, alpha, omega, beta) and dot products stay in T for stability.
+    // Scalars (rho, alpha, omega, beta) and dot products stay in T for
+    // stability.
     Timer<> tCpuSolve;
     tCpuSolve.start();
-    std::vector<SolverT> p(n, SolverT(0)), v(n, SolverT(0)), y(n), z(n), s(n), t(n);
+    std::vector<SolverT> p(n, SolverT(0)), v(n, SolverT(0)), y(n), z(n), s(n),
+        t(n);
     T rho = T(1), alpha = T(1), omega = T(1);
     bool bicgstabBreakdown = false;
     for (std::size_t i = 0; i < n; ++i) {
@@ -977,8 +987,8 @@ private:
       residual = std::max(residual, std::abs(ri));
     }
 
-    for (; !bicgstabBreakdown &&
-           iterations < parameters.maxIterations; ++iterations) {
+    for (; !bicgstabBreakdown && iterations < parameters.maxIterations;
+         ++iterations) {
       T rho_new = T(0);
       for (std::size_t i = 0; i < n; ++i)
         rho_new += static_cast<T>(r_hat[i]) * static_cast<T>(r[i]);
@@ -1069,7 +1079,7 @@ private:
 
       for (std::size_t i = 0; i < n; ++i) {
         x[i] = static_cast<SolverT>(x[i] + alpha * y[i] + omega * z[i]);
-        r[i]  = static_cast<SolverT>(s[i] - omega * t[i]);
+        r[i] = static_cast<SolverT>(s[i] - omega * t[i]);
       }
 
       residual = T(0);
@@ -1115,24 +1125,24 @@ private:
       const std::string tag = "diffusion n=" + std::to_string(n) +
                               " iters=" + std::to_string(iterations) +
                               " res=" + std::to_string(residual) + path;
-      Logger::getInstance()
-          .addTiming(tag + " CPU BiCGSTAB", tCpuSolve)
-          .print();
+      Logger::getInstance().addTiming(tag + " CPU BiCGSTAB", tCpuSolve).print();
     }
     if (Logger::hasDebug()) {
       const std::string path = " [CPU]";
       Logger::getInstance()
           .addTiming("diffusion n=" + std::to_string(n) + path +
-                     " diag/b precompute", tDiag)
+                         " diag/b precompute",
+                     tDiag)
           .print();
     }
     if (residual > parameters.tolerance * b_norm)
       Logger::getInstance()
-          .addWarning("solveDiffusion: BiCGSTAB did not converge after " +
-                      std::to_string(iterations) + "/" +
-                      std::to_string(parameters.maxIterations) +
-                      " iterations (residual=" + std::to_string(residual / b_norm) +
-                      ", tolerance=" + std::to_string(parameters.tolerance) + ")")
+          .addWarning(
+              "solveDiffusion: BiCGSTAB did not converge after " +
+              std::to_string(iterations) + "/" +
+              std::to_string(parameters.maxIterations) +
+              " iterations (residual=" + std::to_string(residual / b_norm) +
+              ", tolerance=" + std::to_string(parameters.tolerance) + ")")
           .print();
   }
 
@@ -1154,21 +1164,22 @@ private:
                            const std::string &detail) const {
     if (!Logger::hasInfo())
       return;
-    const std::string msg = "OxidationDiffusion: using " + backend +
-                            " for diffusion solve (nodes=" +
-                            std::to_string(nodes.size()) +
-                            (detail.empty() ? std::string() : ", " + detail) +
-                            ").";
+    const std::string msg =
+        "OxidationDiffusion: using " + backend +
+        " for diffusion solve (nodes=" + std::to_string(nodes.size()) +
+        (detail.empty() ? std::string() : ", " + detail) + ").";
     if (msg == lastLoggedBackend_)
       return;
     lastLoggedBackend_ = msg;
     Logger::getInstance().addInfo(msg).print();
   }
 
-  // Uses precomputed flat faceBC arrays — no HRLE access, safe for parallel execution.
+  // Uses precomputed flat faceBC arrays — no HRLE access, safe for parallel
+  // execution.
   template <class SolverT>
-  StencilSide makeStencilSide(std::size_t nodeId, const std::vector<SolverT> &previous,
-                              unsigned direction, int offset, T diffusion) const {
+  StencilSide
+  makeStencilSide(std::size_t nodeId, const std::vector<SolverT> &previous,
+                  unsigned direction, int offset, T diffusion) const {
     const IndexType &nodeIndex = nodes[nodeId].index;
     IndexType neighbor = nodeIndex;
     neighbor[direction] += offset;
@@ -1183,7 +1194,7 @@ private:
     const unsigned fi = direction * 2u + (offset == 1 ? 1u : 0u);
     const std::size_t n = nodes.size();
     const Boundary faceType = faceBCTypes_[fi * n + nodeId];
-    const T faceDist       = faceBCDists_[fi * n + nodeId];
+    const T faceDist = faceBCDists_[fi * n + nodeId];
     if (faceType == Boundary::REACTION)
       return reactionBoundarySide(nodeIndex, faceDist, diffusion);
     if (faceType == Boundary::AMBIENT)
@@ -1200,8 +1211,10 @@ private:
     if (distanceSum <= std::numeric_limits<T>::epsilon())
       return;
 
-    addSideContribution(rightHandSide, diagonal, negativeSide, distanceSum, diffusion);
-    addSideContribution(rightHandSide, diagonal, positiveSide, distanceSum, diffusion);
+    addSideContribution(rightHandSide, diagonal, negativeSide, distanceSum,
+                        diffusion);
+    addSideContribution(rightHandSide, diagonal, positiveSide, distanceSum,
+                        diffusion);
   }
 
   void addSideContribution(T &rightHandSide, T &diagonal,
@@ -1359,13 +1372,14 @@ private:
 
     if (parameters.reactionActivationVolume != T(0)) {
       T pressure = parameters.referencePressure;
-      const auto foundPressure = pressureLookup.find(detail::gridIndexHash<D>(index));
+      const auto foundPressure =
+          pressureLookup.find(detail::gridIndexHash<D>(index));
       if (foundPressure != pressureLookup.end())
         pressure = foundPressure->second;
       if (!std::isfinite(pressure))
         pressure = parameters.referencePressure;
-      const T exponent = stressExponent(pressure,
-                                        parameters.reactionActivationVolume);
+      const T exponent =
+          stressExponent(pressure, parameters.reactionActivationVolume);
       rate *= stressFactor(exponent);
     }
 
@@ -1376,7 +1390,8 @@ private:
         T dot = T(0);
         for (unsigned d = 0; d < D; ++d)
           dot += normal[d] * parameters.crystalAxis[d];
-        rate *= T(1) + (parameters.reactionRateRatio111 - T(1)) * (T(1) - dot * dot);
+        rate *= T(1) +
+                (parameters.reactionRateRatio111 - T(1)) * (T(1) - dot * dot);
       }
     }
 
@@ -1394,8 +1409,8 @@ private:
     if (!std::isfinite(pressure))
       pressure = parameters.referencePressure;
 
-    const T exponent = stressExponent(pressure,
-                                      parameters.diffusionActivationVolume);
+    const T exponent =
+        stressExponent(pressure, parameters.diffusionActivationVolume);
     return parameters.diffusionCoefficient * stressFactor(exponent);
   }
 
@@ -1426,8 +1441,10 @@ private:
       for (unsigned d2 = 0; d2 < D; ++d2) {
         const auto lo = g.getMinGridPoint(d2);
         const auto hi = g.getMaxGridPoint(d2);
-        if (idx[d2] < lo) idx[d2] = 2 * lo - idx[d2];
-        if (idx[d2] > hi) idx[d2] = 2 * hi - idx[d2];
+        if (idx[d2] < lo)
+          idx[d2] = 2 * lo - idx[d2];
+        if (idx[d2] > hi)
+          idx[d2] = 2 * hi - idx[d2];
       }
       return idx;
     };
@@ -1438,7 +1455,8 @@ private:
       minus[d] -= 1;
       gradient[d] =
           (detail::clampLevelSetPhi(valueAt(reactionIt, reflectToGrid(plus))) -
-           detail::clampLevelSetPhi(valueAt(reactionIt, reflectToGrid(minus)))) /
+           detail::clampLevelSetPhi(
+               valueAt(reactionIt, reflectToGrid(minus)))) /
           (T(2) * gridDelta);
     }
     T len = T(0);
@@ -1455,10 +1473,11 @@ private:
     return gradient;
   }
 
-  std::pair<Boundary, T>
-  classifyBoundary(ConstSparseIterator &reactionIt, ConstSparseIterator &ambientIt,
-                   ConstSparseIterator &maskIt,
-                   const IndexType &inside, const IndexType &outside) const {
+  std::pair<Boundary, T> classifyBoundary(ConstSparseIterator &reactionIt,
+                                          ConstSparseIterator &ambientIt,
+                                          ConstSparseIterator &maskIt,
+                                          const IndexType &inside,
+                                          const IndexType &outside) const {
     const T reactionInside = valueAt(reactionIt, inside);
     const T reactionOutside = valueAt(reactionIt, outside);
     const T ambientInside = valueAt(ambientIt, inside);
@@ -1511,7 +1530,8 @@ private:
     // tolerance of 1e-9 grid units so that grid points on the surface (phi≈0)
     // are correctly classified as inside the oxide.
     constexpr T eps = T(1e-9);
-    return reactionSign * reactionPhi >= -eps && ambientSign * ambientPhi >= -eps;
+    return reactionSign * reactionPhi >= -eps &&
+           ambientSign * ambientPhi >= -eps;
   }
 
   ConstSparseIterator makeMaskIterator() const {
@@ -1543,9 +1563,8 @@ private:
   }
 
   T crossingDistance(T insidePhi, T outsidePhi) const {
-    return detail::levelSetCrossingDistance(insidePhi, outsidePhi,
-                                            parameters.minBoundaryDistance,
-                                            gridDelta);
+    return detail::levelSetCrossingDistance(
+        insidePhi, outsidePhi, parameters.minBoundaryDistance, gridDelta);
   }
 };
 
