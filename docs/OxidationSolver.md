@@ -179,10 +179,9 @@ replenishment), which is the classical Deal-Grove assumption. The default transf
 coefficient of 100 µm/hr approximates this well.
 
 The linear system is assembled face-by-face as a sparse matrix in CSR format and solved
-with **BiCGSTAB** with Jacobi preconditioning. An optional GPU back-end
-(`lsOxidationBiCGSTABInterface.hpp`) offloads the solve to CUDA if the node count
-exceeds the threshold (default 20 000 nodes) and a CUDA device is available; the
-CPU path is always available as a fallback.
+with **BiCGSTAB** with Jacobi preconditioning. The default back-end is CPU. An optional
+GPU back-end (`lsOxidationBiCGSTABInterface.hpp`) offloads the solve to CUDA when
+`GpuMode::Gpu` is selected via `setGpuMode()` and a CUDA device is available.
 
 The Si surface velocity driven by diffusion is:
 
@@ -222,8 +221,7 @@ characteristic time τ = η/G.
 
 ### 6.1 Stress Tensor Storage Convention
 
-Throughout the solver — both CPU and GPU — `nodes[i].stressTensor` (CPU) and
-`d_stress[k*n+i]` (GPU) store the **Cauchy stress** σ defined as:
+Throughout the solver `nodes[i].stressTensor` stores the **Cauchy stress** σ defined as:
 
 ```
 σ_{rc} = τ_{rc} − δ_{rc} · p
@@ -235,8 +233,7 @@ diagonal entries include −p.
 
 To recover the true deviatoric τ for traction computations:
 ```
-τ_{rc} = stressTensor[r][c] + δ_{rc} · pressure    (CPU: deviatoricStressAt())
-       = d_stress[(3r+c)*n+i] + (r==c ? pressure : 0)   (GPU inline)
+τ_{rc} = stressTensor[r][c] + δ_{rc} · pressure    (deviatoricStressAt())
 ```
 
 This convention is important for boundary conditions: the free-surface (AMBIENT) ghost
@@ -253,10 +250,9 @@ At each SIMPLE iteration the deviatoric stress τ is updated with Maxwell relaxa
 where τ_r = η/G is the stress relaxation time and ε̇^{dev} is the deviatoric part of
 the strain rate tensor (traceless, symmetric).
 
-The CPU stores τ history in `deviatoricStressHistory` (an `unordered_map<IndexType,
-array<T,9>>`). The GPU stores it in the flat device array `d_stressHist[9*n]`
-(component-major: `(3r+c)*n+i`). Both are updated **every SIMPLE iteration**, so the
-history reflects the most recent velocity field, not just the beginning of each CFL step.
+The history is stored in `deviatoricStressHistory` (an `unordered_map<IndexType,
+array<T,9>>`), updated **every SIMPLE iteration** so the history reflects the most
+recent velocity field, not just the beginning of each CFL step.
 
 ### 6.3 SIMPLE Algorithm
 
@@ -319,7 +315,7 @@ diagV = computeVelocityDiagonals()   // corrDiag, geometry-fixed for all iterati
 previousVelocity = collectVelocities()     // save v^k
 previousPressure = collectPressures()      // save p^k
 computeDiagnostics()                       // div(v^k), vonMises — uses OLD stress
-computeStressTensors()                     // Maxwell update: d_stress = τ−p·I, history updated
+computeStressTensors()                     // Maxwell update: stressTensor = τ−p·I, history updated
 solveStokesVelocity()                      // v* in nodes[i].velocity; uses p^k, τ(v^k)
 solvePressure()                            // p^{k+1}; ambient BC uses τ freshly from v*
 applySimpleVelocityCorrection(p^k, diagV) // v^{k+1} = v* − ∇δp / (η·corrDiag)
@@ -346,143 +342,52 @@ normalTraction[comp] = p · n[comp] − τ_comp · n̂
                      = p · n[comp] − Σ_j τ_{comp,j} · n_j
 ```
 
-### 6.5 GPU SIMPLE Loop
+### 6.5 GPU Acceleration of Linear Solves
 
-The GPU SIMPLE loop (`solveMechanicsGpu()`, ~lines 1523–1716, compiled only under
-`VIENNALS_GPU_BICGSTAB`) offloads the entire outer SIMPLE iteration to the GPU. It is
-activated when `gpuSimpleIsValid(gpuSimpleBufs_)` is true — set up during
-`buildNodes()` when `tryGpu && !useIlu0` (Jacobi preconditioner required; ILU0
-requires per-component re-factorization that is not implemented for the SIMPLE loop).
+GPU support is conditionally compiled under `VIENNALS_GPU_BICGSTAB`. When
+`GpuMode::Gpu` is set the three inner BiCGSTAB linear solves within the SIMPLE
+iteration are offloaded to CUDA; the SIMPLE iteration loop itself and all RHS assembly
+always run on the CPU.
 
-**PCIe traffic**: only 4×8 = 32 bytes cross the bus per SIMPLE iteration (the
-convergence metric). All assembly (RHS, stress, strain, ambient BC) is done entirely
-on-device.
-
-**Pre-SIMPLE setup** (CPU side, before the iteration loop):
-
-1. Pack `nodes[]` into flat device-layout buffers (component-major `[c*n+i]`):
-   - `h_vel[D*n]`, `h_pressure[n]`, `h_stress[9*n]` from `nodes[id]`
-   - `h_stressHist[9*n]` from `deviatoricStressHistory` map (zero for unknown nodes)
-2. Upload state: `gpuSimpleUploadState()`
-3. Compute and upload **solid vBC** — the REACTION + MASK ghost-velocity contribution
-   to the Stokes RHS. This is precomputed CPU-side and held fixed for all iterations
-   because REACTION/MASK velocities do not depend on the current velocity or pressure.
-   AMBIENT face contributions are **omitted** here and recomputed on-device each
-   iteration from the current stress state.
-4. Upload per-node **reaction velocities** (`h_reactionVel[D*n]`) for use in the
-   strain-trace and strain-rate kernels (REACTION ghost velocity = oxidation velocity).
-5. Upload geometry-fixed pressure and Stokes coefficient arrays
-   (`gpuUploadSolverArrays` for both pressure and Stokes BiCGSTAB buffers).
-
-**Per-iteration** (`gpuSimpleRunIterationImpl()` in `lsOxidationSimpleGpu.cuh`):
-
+**Per-SIMPLE-iteration sequence** (CPU drives the loop):
 ```
-Step 1:  simpleSaveStateKernel            d_prevVel[D*n] ← d_vel; d_prevPressure[n] ← d_pressure
-Step 2:  simpleComputeStrainTraceKernel   div(v^k), using OLD d_stress (matches CPU computeDiagnostics)
-Step 3:  simpleComputeStressTensorsKernel Maxwell update → new d_stress = τ−p·I, d_stressHist = τ,
-                                           d_strainRate, d_vonMises
-Step 4:  simpleComputeAmbientBPKernel     d_ambientBP = p_amb + n^T·τ(v^k)·n (uses NEW d_stress)
-Step 5:  simpleAssembleStokesRhsKernel    b_stokes[D*n] = solidVelBC + ambientVelBC − (∇p − ∇·τ)/η
-Step 6:  Stokes BiCGSTAB (per component)  v* in d_vel, using stokesDiag (d_diagV)
-Step 6b: simpleRecomputeAmbientBPFromVStarKernel
-          Recompute d_ambientBP = p_amb + n^T·τ(v*)·n (τ from v*, matching CPU solvePressure)
-          d_stress is NOT updated — still needed for div(v*) ghost vel in step 7
-Step 7:  simpleComputeStrainTraceKernel   div(v*) with updated d_vel — for pressure RHS
-Step 8:  simpleAssemblePressureRhsKernel  b_press = pBC(τ(v*)) + K·div(v*)
-Step 9:  simpleSetPressureGuessKernel     warm-start: touchesAmbient → ambBP, else current p
-         Pressure BiCGSTAB → p^{k+1} in pressBufs->d_x
-Step 10: simpleApplyPressureRelaxationKernel  d_pressure = (1−β)·d_prevPressure + β·p^{k+1}
-Step 11: simpleVelocityCorrectionKernel   d_vel −= ∇δp / (η · d_diagV_corr)  [corrDiag]
-Step 12: simpleMaxChangeKernel + D2H      residual = max(|Δv|/|v|, |Δp|/|p|)
+CPU: save v^k, p^k
+CPU: computeDiagnostics(), computeStressTensors() — stress/strain update
+CPU: freeSurfaceVelocityBoundary() — AMBIENT ghost velocity from current stress
+CPU: assemble Stokes RHS b_stokes[D*n]
+GPU: Stokes BiCGSTAB (gpuStokesBufs_) — solves A_v · v* = b_stokes, per component
+CPU: download v* from GPU
+CPU: freeSurfacePressureBoundary() — pressure RHS ambient BC from τ(v*)
+CPU: assemble pressure RHS b_press[n]
+GPU: Pressure BiCGSTAB (gpuPressBufs_) — solves A_p · p^{k+1} = b_press
+CPU: download p^{k+1}; apply pressure relaxation; apply velocity correction
+CPU: check convergence residual
 ```
 
-**Post-SIMPLE** (CPU side, after the loop):
-- Download final state: `gpuSimpleDownloadState()` → `h_vel`, `h_pressure`, `h_stress`, `h_stressHist`
-- Unpack into `nodes[]` and rebuild `deviatoricStressHistory` map
-- Run `computeDiagnostics()` + `computeStressTensors()` on CPU to refresh derived
-  quantities (`strainTrace`, `vonMisesStress`, etc.) for downstream LOCOS/mask solvers
+The geometry-fixed coefficient arrays (`stokesCoeffGpu_`, `pressCoeffGpu_`,
+`harmonicCoeffGpu_`) and neighbor ID arrays (`stokesNeighId32_`, `pressNeighId32_`)
+are uploaded once per `buildNodes()` call; the RHS (`b_stokes`, `b_press`) is
+re-uploaded and the solution is downloaded on every SIMPLE iteration.
 
-**GpuSimpleBuffers device layout** (all arrays in `viennals::gpu::GpuSimpleBuffers`):
-
-| Array | Size | Content |
-|---|---|---|
-| `d_vel` | D×n doubles | velocity, component-major `[c*n+i]` |
-| `d_pressure` | n doubles | isotropic pressure |
-| `d_stress` | 9×n doubles | Cauchy stress σ = τ−p·I, `[(3r+c)*n+i]` |
-| `d_stressHist` | 9×n doubles | previous deviatoric τ (Maxwell history) |
-| `d_strainRate` | 9×n doubles | strain rate tensor ε̇ |
-| `d_strainTrace` | n doubles | div(v) = tr(ε̇) |
-| `d_vonMises` | n doubles | von Mises stress |
-| `d_prevVel` | D×n doubles | v^k saved at start of each iteration |
-| `d_prevPressure` | n doubles | p^k saved at start of each iteration |
-| `d_ambientBP` | n doubles | free-surface pressure BC value |
-| `d_stokesRhs` | D×n doubles | assembled Stokes RHS |
-| `d_pressRhs` | n doubles | assembled pressure RHS |
-| `d_nb` | 2D×n uint32 | face-major neighbor node IDs (0xFFFFFFFF = boundary) |
-| `d_bcType` | 2D×n uint8 | 0=NONE, 1=REACTION, 2=AMBIENT, 3=MASK |
-| `d_bcDist` | 2D×n doubles | sub-grid interface crossing distances |
-| `d_diagV` | D×n doubles | Stokes diagonal (excl. OOB/AMBIENT) — for BiCGSTAB |
-| `d_diagV_corr` | D×n doubles | full correction diagonal (incl. OOB/AMBIENT) — for velocity correction |
-| `d_ambNormal` | D×n doubles | ambient level-set gradient normal |
-| `d_ambStokesCoeff` | 2D×n doubles | ±2/dSum for AMBIENT face Stokes vBC |
-| `d_ambPressFaceCoeff` | n doubles | Σ 2/(dist·dSum) for AMBIENT pressure faces |
-| `d_ambPressNeighCoeff` | 2D×n doubles | 2/(gδ·dSum) for ambient-touching pressure neighbors |
-| `d_solidVelBC` | D×n doubles | REACTION+MASK Stokes RHS contribution (constant per step) |
-| `d_reactionVel` | D×n doubles | oxidation velocity at each node for strain kernels |
-| `d_touchesAmbient` | n uint8 | 1 if node carries Dirichlet pressure identity row |
-| `d_ull4` | 4 uint64 | IEEE-754 bit-trick accumulators for maxVelChange/Vel/PresChange/Pres |
-
-**Step 6b — why it matters**: The CPU assembles the pressure RHS after calling
-`solvePressure()`, which in turn calls `freeSurfacePressureBoundary()` →
-`currentBoundaryDeviatoricStress(v*)` — computing τ fresh from v* (post-Stokes).
-Step 4 had computed d_ambientBP from τ(v^k) (pre-Stokes). Without step 6b, the GPU's
-pressure RHS ambient BC would lag by one iteration, accumulating a systematic offset
-in `d_stressHist` and eventually causing pressure divergence.
-
-**Ghost velocity at AMBIENT faces** (`gpuSimpleFaceVelBC()`): `d_stress` stores σ = τ−p·I,
-so:
-```
-devTraction = Σ_j σ_{comp,j} · n_j = τ_comp·n − p·n_comp
-normalTraction = p·n_comp − τ_comp·n = −devTraction
-ghostVel[comp] = interiorVel[comp] + offset · dist · normalTraction · n[dir] / η
-```
-Using `-devTraction` directly avoids adding and then subtracting p·n_comp (which
-would introduce a double-pressure error when p ≠ 0).
-
-### 6.6 GPU Activation Logic
-
-GPU support is conditionally compiled under `VIENNALS_GPU_BICGSTAB`. When enabled,
-`setupDeformationGpuBuffers()` is called from `buildNodes()` and allocates/initialises
-the following CUDA handles:
+**GPU handles allocated per `buildNodes()` call** (when `GpuMode::Gpu`):
 
 | Handle | Purpose |
 |---|---|
 | `gpuPressBufs_` | BiCGSTAB buffers for the pressure Poisson solve |
 | `gpuStokesBufs_` | BiCGSTAB buffers for the Stokes velocity solve (per component) |
 | `gpuHarmonicBufs_` | BiCGSTAB buffers for the harmonic extension solve |
-| `gpuSimpleBufs_` | Full GPU SIMPLE loop device state (`GpuSimpleBuffers`) |
 
-**Activation conditions**:
+**Activation**:
 ```
-tryGpu  = (gpuMode_ == GpuMode::Gpu)           // forced
-        || (gpuMode_ == GpuMode::Auto && n >= kGpuThreshold)   // kGpuThreshold = 20000
+tryGpu = (gpuMode_ == GpuMode::Gpu)   // default is GpuMode::Cpu
 
-gpuPressBufs_, gpuStokesBufs_ allocated when: tryGpu
-gpuSimpleBufs_ allocated when:               tryGpu && !useIlu0
-                                              (ILU0 not supported for GPU SIMPLE loop)
+all three handles allocated when: tryGpu
 ```
-
-`GpuMode::Gpu` forces GPU for any node count; `GpuMode::Auto` uses CPU for small
-problems and switches to GPU at ≥ 20 000 nodes. When `gpuSimpleBufs_` is valid, the
-**entire** SIMPLE outer loop runs on-device (zero per-iteration CPU work). When only
-`gpuPressBufs_`/`gpuStokesBufs_` are valid (e.g. when ILU0 is requested), the CPU
-assembles the RHS each iteration and calls the GPU only for the linear solve.
 
 **Preconditioner options** (`GpuPreconditioner`):
-- `Jacobi` (default) — diagonal scaling, supports both individual solves and GPU SIMPLE loop
-- `ILU0` — incomplete LU(0) factorization via CUSPARSE, better convergence for
-  ill-conditioned systems; supported only for individual Stokes/pressure solves,
-  **not** for the GPU SIMPLE loop (per-component re-factorization not implemented)
+- `Jacobi` (default) — diagonal scaling
+- `ILU0` — incomplete LU(0) via cuSPARSE; better convergence for ill-conditioned
+  systems at the cost of a one-time symbolic+numeric factorization per `buildNodes()`
 
 ---
 
@@ -653,7 +558,6 @@ derivatives, forward Euler for time (controllable via `setSpatialScheme` /
 | `lsOxidationSolverBase.hpp` | Cartesian grid: node lookup, bounds, `crosses()`, `isInsideOxide()` |
 | `lsOxidationDiffusion.hpp` | Diffusion PDE, BiCGSTAB solve, Si surface velocity |
 | `lsOxidationDeformation.hpp` | Stokes flow, SIMPLE pressure-velocity coupling, oxide velocity; CPU + GPU dispatch |
-| `lsOxidationSimpleGpu.cuh` | GPU SIMPLE loop: CUDA kernels + `GpuSimpleBuffers`; nvcc-only |
 | `lsOxidationBiCGSTABInterface.hpp` | C++ (g++) interface to GPU BiCGSTAB; safe for .cpp inclusion |
 | `lsOxidationBiCGSTAB.cuh` | GPU BiCGSTAB kernels (`solveBiCGSTABInPlace`); nvcc-only |
 | `lsOxidationMask.hpp` | Mask bending, multigrid, contact mechanics, traction BC |

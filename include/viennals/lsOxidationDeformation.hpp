@@ -156,9 +156,8 @@ private:
   std::vector<uint8_t> touchesAmbient_; // 1 if node touches the ambient (free) surface
 
   // GPU solver selection. Semantics match OxidationDiffusion.
-  GpuMode gpuMode_ = GpuMode::Auto;
+  GpuMode gpuMode_ = GpuMode::Cpu;
   GpuPreconditioner gpuPreconditioner_ = GpuPreconditioner::Jacobi;
-  static constexpr std::size_t kGpuThreshold = 20000;
   mutable std::string lastLoggedBackend_; // suppresses repeated "using X" messages
 
 #ifdef VIENNALS_GPU_BICGSTAB
@@ -852,8 +851,7 @@ private:
       gpuStokesBufs_ = nullptr;
       return;
     }
-    const bool tryGpu = (gpuMode_ == GpuMode::Gpu) ||
-                        (gpuMode_ == GpuMode::Auto && n >= kGpuThreshold);
+    const bool tryGpu = (gpuMode_ == GpuMode::Gpu);
     const bool useIlu0 = (gpuPreconditioner_ == GpuPreconditioner::ILU0);
 
     gpu::freeGpuBuffers(gpuPressBufs_);

@@ -184,7 +184,7 @@ template <class T, int D> class Oxidation {
   SmartPointer<OxidationMaskBending<T, D>> maskBendingField;
   T lastMaxVelocity_ = T(0);
 
-  GpuMode gpuMode_ = GpuMode::Auto;
+  GpuMode gpuMode_ = GpuMode::Cpu;
   GpuPreconditioner gpuPreconditioner_ = GpuPreconditioner::Jacobi;
   std::unordered_map<std::size_t, T> concentrationCache_;
 

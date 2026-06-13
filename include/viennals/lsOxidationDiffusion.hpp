@@ -22,13 +22,10 @@
 namespace viennals {
 
 /// Selects the BiCGSTAB back-end for the diffusion solve.
-/// Cpu always uses CPU. Auto uses CPU below the GPU threshold and GPU above it.
-/// Once GPU is selected or requested, GPU failures are reported instead of
-/// falling back to CPU.
+/// GPU failures are reported and not silently fallen back to CPU.
 enum class GpuMode {
-  Auto, ///< GPU when node count >= kGpuThreshold (default)
-  Gpu,  ///< Always use GPU; fail if unavailable or unsuccessful
-  Cpu   ///< Always use CPU
+  Cpu, ///< Always use CPU (default)
+  Gpu  ///< Always use GPU; fail if unavailable or unsuccessful
 };
 
 /// Selects the preconditioner used by the GPU BiCGSTAB solver.
@@ -166,7 +163,7 @@ private:
   // Entry == noNode for boundary / out-of-bounds faces.
   std::vector<std::size_t> neighborIds_;
 
-  GpuMode gpuMode_ = GpuMode::Auto;
+  GpuMode gpuMode_ = GpuMode::Cpu;
   GpuPreconditioner gpuPreconditioner_ = GpuPreconditioner::Jacobi;
 
 #ifdef VIENNALS_GPU_BICGSTAB
@@ -174,8 +171,6 @@ private:
   // in the CUDA translation unit; we hold a raw pointer here so g++ never sees
   // the CUDA internals).
   gpu::GpuBiCGSTABBuffers* gpuBufs_ = nullptr;
-  // Minimum node count required to engage the GPU solver in Auto mode.
-  static constexpr std::size_t kGpuThreshold = 20000;
 #endif
 
 public:
@@ -427,7 +422,7 @@ public:
     concentrationCache_ = std::move(cache);
   }
 
-  /// Set the GPU solver selection mode.  See GpuMode for the three options.
+  /// Set the GPU solver selection mode.  See GpuMode for the two options.
   /// On CPU-only builds (VIENNALS_GPU_BICGSTAB not defined) this is a no-op.
   void setGpuMode(GpuMode mode) { gpuMode_ = mode; }
   /// Set the GPU BiCGSTAB preconditioner. Jacobi matches the CPU solver.
@@ -642,8 +637,7 @@ private:
     gpu::freeGpuBuffers(gpuBufs_);
     gpuBufs_ = nullptr;
 
-    const bool tryGpu = (gpuMode_ == GpuMode::Gpu) ||
-                        (gpuMode_ == GpuMode::Auto && n >= kGpuThreshold);
+    const bool tryGpu = (gpuMode_ == GpuMode::Gpu);
     if (tryGpu) {
       const bool useIlu0 =
           gpuPreconditioner_ == GpuPreconditioner::ILU0;
@@ -688,18 +682,12 @@ private:
     }
 #endif
     if (!loggedBackend) {
-      std::string reason;
-      if (gpuMode_ == GpuMode::Cpu) {
-        reason = "GPU disabled by configuration";
-      } else {
 #ifdef VIENNALS_GPU_BICGSTAB
-        reason = "node count below GPU threshold " +
-                 std::to_string(kGpuThreshold);
+      logDiffusionBackend("CPU BiCGSTAB", "GPU mode not selected");
 #else
-        reason = "ViennaLS was built without GPU BiCGSTAB support";
+      logDiffusionBackend("CPU BiCGSTAB",
+                          "ViennaLS was built without GPU BiCGSTAB support");
 #endif
-      }
-      logDiffusionBackend("CPU BiCGSTAB", reason);
     }
   }
 
@@ -845,7 +833,7 @@ private:
 
 #ifdef VIENNALS_GPU_BICGSTAB
     // ── GPU BiCGSTAB path ──────────────────────────────────────────────
-    // Engaged when buildNodes() allocated the GPU buffers (n >= kGpuThreshold).
+    // Engaged when GpuMode::Gpu is set and buildNodes() allocated GPU buffers.
     // Uploads diag, b, and face coefficients fresh each call (they are
     // pressure-dependent via D_eff), then runs the full BiCGSTAB loop on
     // the device.  Only dot-product scalars and the max-abs residual are
@@ -1123,14 +1111,7 @@ private:
 
     tCpuSolve.finish();
     if (Logger::hasTiming()) {
-#ifdef VIENNALS_GPU_BICGSTAB
-      const std::string path =
-          gpuMode_ == GpuMode::Cpu
-              ? " [CPU]"
-              : " [CPU n<" + std::to_string(kGpuThreshold) + "]";
-#else
       const std::string path = " [CPU]";
-#endif
       const std::string tag = "diffusion n=" + std::to_string(n) +
                               " iters=" + std::to_string(iterations) +
                               " res=" + std::to_string(residual) + path;
@@ -1139,14 +1120,7 @@ private:
           .print();
     }
     if (Logger::hasDebug()) {
-#ifdef VIENNALS_GPU_BICGSTAB
-      const std::string path =
-          gpuMode_ == GpuMode::Cpu
-              ? " [CPU]"
-              : " [CPU n<" + std::to_string(kGpuThreshold) + "]";
-#else
       const std::string path = " [CPU]";
-#endif
       Logger::getInstance()
           .addTiming("diffusion n=" + std::to_string(n) + path +
                      " diag/b precompute", tDiag)
