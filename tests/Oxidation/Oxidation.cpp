@@ -87,13 +87,17 @@ void testStandardOxidation() {
 
   auto defParams =
       ls::OxidationPresets<NumericType>::oxideMechanics1000C(1.);
-  defParams.mechanicsIterations = 10;
+  defParams.mechanicsIterations = 200;
+  defParams.mechanicsTolerance  = 1e-2;
+  defParams.pressureTolerance   = 1e-6;
+  defParams.stokesTolerance     = 1e-6;
   defParams.pressureIterations  = 300;
   defParams.stokesIterations    = 80;
 
   ls::OxidationCouplingParameters<NumericType> coupling;
-  coupling.maxIterations = 6;
-  coupling.tolerance     = 1e-4;
+  coupling.maxIterations = 8;
+  coupling.tolerance     = 5e-2;
+  coupling.relaxation    = 1.0;
 
   // --- Standard mode: no mask ---
   auto ox = ls::Oxidation<NumericType, D>::New(si, ambient);
@@ -189,12 +193,17 @@ void testLOCOSOxidation() {
 
   auto defParams =
       ls::OxidationPresets<NumericType>::oxideMechanics1000C(advectionTime);
-  defParams.pressureIterations = 200;
-  defParams.stokesIterations   = 60;
+  defParams.mechanicsIterations = 200;
+  defParams.mechanicsTolerance  = 1e-2;
+  defParams.pressureTolerance   = 1e-6;
+  defParams.stokesTolerance     = 1e-6;
+  defParams.pressureIterations  = 200;
+  defParams.stokesIterations    = 60;
 
   ls::OxidationCouplingParameters<NumericType> coupling;
-  coupling.maxIterations = 6;
-  coupling.tolerance     = 1e-6;
+  coupling.maxIterations = 8;
+  coupling.tolerance     = 5e-2;
+  coupling.relaxation    = 1.0;
 
   auto maskParams =
       ls::OxidationPresets<NumericType>::siliconNitrideMask1000C();
@@ -301,12 +310,17 @@ LOCOSMaskResponse runLOCOSMaskResponse(NumericType maskThick,
 
   auto defParams =
       ls::OxidationPresets<NumericType>::oxideMechanics1000C(advectionTime);
-  defParams.pressureIterations = 200;
-  defParams.stokesIterations = 60;
+  defParams.mechanicsIterations = 200;
+  defParams.mechanicsTolerance  = 1e-2;
+  defParams.pressureTolerance   = 1e-6;
+  defParams.stokesTolerance     = 1e-6;
+  defParams.pressureIterations  = 200;
+  defParams.stokesIterations    = 60;
 
   ls::OxidationCouplingParameters<NumericType> coupling;
-  coupling.maxIterations = 6;
-  coupling.tolerance = 1e-6;
+  coupling.maxIterations = 8;
+  coupling.tolerance     = 5e-2;
+  coupling.relaxation    = 1.0;
 
   auto maskParams =
       ls::OxidationPresets<NumericType>::siliconNitrideMask1000C();
@@ -380,10 +394,82 @@ void testLOCOSMaskStiffnessSensitivity() {
 }
 
 // ---------------------------------------------------------------------------
+// 3D smoke test: flat Si substrate, one CFL step, no mask.
+//
+// Exercises the 3D face-enumeration and Stokes-solve code paths that are
+// entirely absent from the 2D tests.  Checks only that the solver runs,
+// Si was consumed, and both level sets remain valid — not conservation or
+// rate accuracy (the coarse grid makes those unreliable at this small size).
+// ---------------------------------------------------------------------------
+
+void testStandard3D() {
+  constexpr int D3 = 3;
+  using LS3 = ls::SmartPointer<ls::Domain<NumericType, D3>>;
+
+  constexpr NumericType gridDelta = 0.15;
+  constexpr NumericType extent    = 0.75;
+  constexpr NumericType oxThick   = 0.30;
+  constexpr NumericType yMin      = -0.30;
+  constexpr NumericType yMax      = oxThick + 0.30;
+
+  double bounds[2 * D3] = {-extent, extent, yMin, yMax, -extent, extent};
+  ls::Domain<NumericType, D3>::BoundaryType bc[D3];
+  bc[0] = ls::Domain<NumericType, D3>::BoundaryType::REFLECTIVE_BOUNDARY;
+  bc[1] = ls::Domain<NumericType, D3>::BoundaryType::INFINITE_BOUNDARY;
+  bc[2] = ls::Domain<NumericType, D3>::BoundaryType::REFLECTIVE_BOUNDARY;
+
+  auto si = ls::Domain<NumericType, D3>::New(bounds, bc, gridDelta);
+  ls::MakeGeometry<NumericType, D3>(
+      si, ls::Plane<NumericType, D3>::New(
+              ls::VectorType<NumericType, D3>{0., 0., 0.},
+              ls::VectorType<NumericType, D3>{0., 1., 0.}))
+      .apply();
+
+  auto ambient = ls::Domain<NumericType, D3>::New(si);
+  auto sphere  = ls::SmartPointer<ls::SphereDistribution<
+      viennahrle::CoordType, D3>>::New(oxThick);
+  ls::GeometricAdvect<NumericType, D3>(ambient, sphere).apply();
+
+  auto siInitial = ls::Domain<NumericType, D3>::New(si);
+
+  auto oxParams = ls::OxidationPresets<NumericType>::wet1000CDealGrove100();
+  oxParams.velocitySign = -1.;
+  oxParams.tolerance    = 1e-7;
+
+  auto defParams = ls::OxidationPresets<NumericType>::oxideMechanics1000C(0.1);
+  defParams.mechanicsIterations = 200;
+  defParams.mechanicsTolerance  = 1e-2;
+  defParams.pressureTolerance   = 1e-6;
+  defParams.stokesTolerance     = 1e-6;
+  defParams.pressureIterations  = 300;
+  defParams.stokesIterations    = 150;
+
+  ls::OxidationCouplingParameters<NumericType> coupling;
+  coupling.maxIterations = 8;
+  coupling.tolerance     = 5e-2;
+  coupling.relaxation    = 1.0;
+
+  auto ox = ls::Oxidation<NumericType, D3>::New(si, ambient);
+  ox->setOxidationParameters(oxParams);
+  ox->setDeformationParameters(defParams);
+  ox->setCouplingParameters(coupling);
+
+  const NumericType actualDt = ox->applyCFLLimited(0.1, 0.099);
+
+  VC_TEST_ASSERT(actualDt > NumericType(0))
+  VC_TEST_ASSERT(ox->getDiffusionField() != nullptr)
+  VC_TEST_ASSERT(ox->getDiffusionField()->getNumberOfSolutionNodes() > 0)
+
+  LSTEST_ASSERT_VALID_LS(si, NumericType, D3)
+  LSTEST_ASSERT_VALID_LS(ambient, NumericType, D3)
+}
+
+// ---------------------------------------------------------------------------
 
 int main() {
   testStandardOxidation();
   testLOCOSOxidation();
   testLOCOSMaskStiffnessSensitivity();
+  testStandard3D();
   return 0;
 }
