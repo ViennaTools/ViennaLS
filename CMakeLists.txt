@@ -35,7 +35,6 @@ if(VIENNALS_VTK_PYTHON_LIBS AND VIENNALS_PACKAGE_PYTHON)
   set(VIENNALS_PACKAGE_PYTHON OFF)
 endif()
 
-
 if(VIENNALS_PACKAGE_PYTHON)
   message(
     STATUS
@@ -110,33 +109,30 @@ if(VIENNALS_USE_GPU)
   find_package(CUDAToolkit REQUIRED)
 
   if(CUDAToolkit_NVCC_EXECUTABLE)
-    get_filename_component(_VIENNALS_CUDATOOLKIT_NVCC_REAL "${CUDAToolkit_NVCC_EXECUTABLE}" REALPATH)
+    get_filename_component(_VIENNALS_CUDATOOLKIT_NVCC_REAL "${CUDAToolkit_NVCC_EXECUTABLE}"
+                           REALPATH)
     if(NOT _VIENNALS_CUDATOOLKIT_NVCC_REAL STREQUAL _VIENNALS_CUDA_COMPILER_REAL)
-      message(FATAL_ERROR
-        "[ViennaLS] CUDA compiler/toolkit mismatch:\n"
-        "  CMAKE_CUDA_COMPILER=${CMAKE_CUDA_COMPILER}\n"
-        "  CUDAToolkit_NVCC_EXECUTABLE=${CUDAToolkit_NVCC_EXECUTABLE}\n"
-        "Use a fresh build directory or pass -DCUDAToolkit_ROOT=${_VIENNALS_CUDA_COMPILER_ROOT} "
-        "so CUDAToolkit matches the selected CUDA compiler.")
+      message(
+        FATAL_ERROR
+          "[ViennaLS] CUDA compiler/toolkit mismatch:\n"
+          "  CMAKE_CUDA_COMPILER=${CMAKE_CUDA_COMPILER}\n"
+          "  CUDAToolkit_NVCC_EXECUTABLE=${CUDAToolkit_NVCC_EXECUTABLE}\n"
+          "Use a fresh build directory or pass -DCUDAToolkit_ROOT=${_VIENNALS_CUDA_COMPILER_ROOT} "
+          "so CUDAToolkit matches the selected CUDA compiler.")
     endif()
   endif()
 
   # Compile the CUDA kernels into a small static library so that consuming
   # .cpp files (compiled by g++) never see __global__ / <<< >>> syntax.
-  add_library(ViennaLS_GPU STATIC
-    ${PROJECT_SOURCE_DIR}/gpu/lsOxidationBiCGSTABKernels.cu)
+  add_library(ViennaLS_GPU STATIC ${PROJECT_SOURCE_DIR}/gpu/lsOxidationBiCGSTABKernels.cu)
 
-  target_compile_definitions(ViennaLS_GPU
-    PRIVATE VIENNALS_GPU_BICGSTAB=1)
+  target_compile_definitions(ViennaLS_GPU PRIVATE VIENNALS_GPU_BICGSTAB=1)
 
-  target_include_directories(ViennaLS_GPU
-    PRIVATE
-      ${PROJECT_SOURCE_DIR}/include/viennals
-      ${CUDAToolkit_INCLUDE_DIRS})
+  target_include_directories(ViennaLS_GPU PRIVATE ${PROJECT_SOURCE_DIR}/include/viennals
+                                                  ${CUDAToolkit_INCLUDE_DIRS})
 
-  set_target_properties(ViennaLS_GPU PROPERTIES
-    CUDA_SEPARABLE_COMPILATION OFF
-    POSITION_INDEPENDENT_CODE  ON)
+  set_target_properties(ViennaLS_GPU PROPERTIES CUDA_SEPARABLE_COMPILATION OFF
+                                                POSITION_INDEPENDENT_CODE ON)
 
   target_link_libraries(ViennaLS_GPU PUBLIC CUDA::cudart CUDA::cusparse)
 
@@ -146,7 +142,7 @@ if(VIENNALS_USE_GPU)
       if(_VIENNALS_CUDA_LIBRARY)
         get_filename_component(_VIENNALS_CUDA_LIBRARY_DIR "${_VIENNALS_CUDA_LIBRARY}" DIRECTORY)
         target_link_options(ViennaLS_GPU INTERFACE
-          "$<BUILD_INTERFACE:LINKER:-rpath,${_VIENNALS_CUDA_LIBRARY_DIR}>")
+                            "$<BUILD_INTERFACE:LINKER:-rpath,${_VIENNALS_CUDA_LIBRARY_DIR}>")
       endif()
     endforeach()
   endif()
@@ -156,8 +152,7 @@ if(VIENNALS_USE_GPU)
   # is never exported to the install tree (avoiding the "not in export set" error
   # from packageProject when ViennaLS_GPU is a non-installed local target).
   target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_GPU_BICGSTAB=1)
-  target_link_libraries(${PROJECT_NAME} INTERFACE
-    $<BUILD_INTERFACE:ViennaLS_GPU>)
+  target_link_libraries(${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:ViennaLS_GPU>)
   target_include_directories(${PROJECT_NAME} INTERFACE ${CUDAToolkit_INCLUDE_DIRS})
 
   message(STATUS "[ViennaLS] GPU BiCGSTAB solver enabled (CUDA ${CUDAToolkit_VERSION})")
@@ -196,10 +191,10 @@ CPMAddPackage(
   EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 
 CPMFindPackage(
-NAME ViennaHRLE
-VERSION 1.1.2
-GIT_REPOSITORY "https://github.com/ViennaTools/ViennaHRLE"
-EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
+  NAME ViennaHRLE
+  VERSION 1.1.2
+  GIT_REPOSITORY "https://github.com/ViennaTools/ViennaHRLE"
+  EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON})
 
 # # Use local ViennaHRLE with interior point support
 # add_subdirectory(../ViennaHRLE ViennaHRLE.build)
