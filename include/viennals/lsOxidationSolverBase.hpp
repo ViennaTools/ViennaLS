@@ -29,6 +29,14 @@ inline std::size_t gridIndexHash(const viennahrle::Index<D> &index) {
   return seed;
 }
 
+// Hash functor for viennahrle::Index<D> — safe to use as unordered_map key
+// because collisions are resolved by operator== on the full index.
+template <int D> struct IndexTypeHasher {
+  std::size_t operator()(const viennahrle::Index<D> &idx) const {
+    return gridIndexHash<D>(idx);
+  }
+};
+
 template <class T>
 inline Vec3D<T> vecScaled(const Vec3D<T> &source, T factor) {
   Vec3D<T> result{0., 0., 0.};

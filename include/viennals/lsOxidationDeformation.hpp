@@ -128,7 +128,8 @@ private:
   bool nodesDirty_ = true;
   std::array<T, D> maxVelocity_{};
   bool useRequestedBounds = false;
-  std::unordered_map<std::size_t, std::array<T, 9>> deviatoricStressHistory;
+  std::unordered_map<IndexType, std::array<T, 9>, detail::IndexTypeHasher<D>>
+      deviatoricStressHistory;
 
   // Warm-start storage: solutions from previous time step used as initial guess
   std::vector<Vec3D<T>> previousVelocity_;
@@ -570,14 +571,13 @@ public:
       if (!it.isDefined())
         continue;
       const IndexType idx = it.getStartIndices();
-      const auto key = detail::gridIndexHash<D>(idx);
       const std::size_t nId = lookupNode(idx);
 
       if (nId != noNode) {
         const auto &n = nodes[nId];
         velocity.push_back(isFiniteVec(n.velocity) ? n.velocity
                                                    : Vec3D<T>{T(0), T(0), T(0)});
-        const auto sIt = deviatoricStressHistory.find(key);
+        const auto sIt = deviatoricStressHistory.find(idx);
         if (sIt != deviatoricStressHistory.end() &&
             isFiniteTensor(sIt->second)) {
           const auto &s = sIt->second;
@@ -641,7 +641,6 @@ private:
         continue;
       const auto ptId = it.getPointId();
       const IndexType idx = it.getStartIndices();
-      const auto key = detail::gridIndexHash<D>(idx);
       const std::size_t ni = lookupNode(idx);
 
       if (ni != noNode) {
@@ -664,7 +663,7 @@ private:
                            row1[0], row1[1], row1[2],
                            row2[0], row2[1], row2[2]};
         if (isFiniteTensor(s))
-          deviatoricStressHistory[key] = s;
+          deviatoricStressHistory[idx] = s;
       }
     }
 
@@ -2880,7 +2879,7 @@ public:
 
     // Per-node computation is independent; collect history keys into a vector
     // to avoid concurrent map writes, then build the map sequentially below.
-    std::vector<std::pair<std::size_t, std::array<T, 9>>> historyEntries(nodes.size());
+    std::vector<std::pair<IndexType, std::array<T, 9>>> historyEntries(nodes.size());
 #pragma omp parallel for schedule(static)
     for (std::size_t i = 0; i < nodes.size(); ++i) {
       auto &node = nodes[i];
@@ -2902,10 +2901,10 @@ public:
         node.stressTensor[tensorIndex(j, j)] -= node.pressure;
 
       node.vonMisesStress = vonMisesFromDeviatoric(deviatoricStress);
-      historyEntries[i] = {detail::gridIndexHash<D>(node.index), deviatoricStress};
+      historyEntries[i] = {node.index, deviatoricStress};
     }
 
-    std::unordered_map<std::size_t, std::array<T, 9>> nextHistory;
+    std::unordered_map<IndexType, std::array<T, 9>, detail::IndexTypeHasher<D>> nextHistory;
     nextHistory.reserve(nodes.size());
     for (const auto &entry : historyEntries)
       nextHistory[entry.first] = entry.second;
@@ -2960,7 +2959,7 @@ public:
 
   std::array<T, 9> previousDeviatoricStress(const IndexType &index) const {
     const auto found =
-        deviatoricStressHistory.find(detail::gridIndexHash<D>(index));
+        deviatoricStressHistory.find(index);
     if (found == deviatoricStressHistory.end())
       return {};
     return found->second;
