@@ -975,8 +975,10 @@ public:
 
     this->scaleMesh(levelSets.front()->getGrid().getGridDelta());
 
-    mesh->cellData.insertNextScalarData(currentMaterials, "MaterialIds");
-    mesh->cellData.insertNextVectorData(currentNormals, "Normals");
+    mesh->cellData.insertNextScalarData(currentMaterials,
+                                        Mesh<NumericType>::materialIdsLabel);
+    mesh->cellData.insertNextVectorData(currentNormals,
+                                        Mesh<NumericType>::normalsLabel);
     mesh->triangles.shrink_to_fit();
     mesh->nodes.shrink_to_fit();
   }

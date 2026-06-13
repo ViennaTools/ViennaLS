@@ -6,8 +6,7 @@
 #include <iostream>
 #include <vector>
 
-#include <lsPointData.hpp>
-
+#include <vcPointData.hpp>
 #include <vcSmartPointer.hpp>
 #include <vcVectorType.hpp>
 
@@ -31,6 +30,9 @@ public:
   PointData<T> cellData;
   Vec3D<T> minimumExtent{};
   Vec3D<T> maximumExtent{};
+
+  constexpr static const char *materialIdsLabel = "MaterialIds";
+  constexpr static const char *normalsLabel = "Normals";
 
 private:
   // iterator typedef
@@ -98,6 +100,16 @@ public:
   PointData<T> &getCellData() { return cellData; }
 
   const PointData<T> &getCellData() const { return cellData; }
+
+  // helper function to get normals
+  std::vector<Vec3D<T>> *getNormals(const char *label = normalsLabel) {
+    return cellData.getVectorData(label);
+  }
+
+  // helper function to get material ids
+  std::vector<T> *getMaterialIds(const char *label = materialIdsLabel) {
+    return cellData.getScalarData(label);
+  }
 
   unsigned insertNextNode(const Vec3D<T> &node) {
     nodes.push_back(node);

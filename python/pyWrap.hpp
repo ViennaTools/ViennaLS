@@ -34,7 +34,6 @@
 #include <lsOxidation.hpp>
 #include <lsOxidationModel.hpp>
 #include <lsOxidationPresets.hpp>
-#include <lsPointData.hpp>
 #include <lsPrune.hpp>
 #include <lsReader.hpp>
 #include <lsReduce.hpp>
