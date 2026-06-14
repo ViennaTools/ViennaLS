@@ -258,8 +258,6 @@ elseif(VIENNALS_USE_VTK)
     VERSION 9.0.0
     GIT_REPOSITORY "https://gitlab.kitware.com/vtk/vtk"
     EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON}
-    PATCH_COMMAND git apply --ignore-whitespace
-                  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/vtk-avoid-stdext.patch" || true
     OPTIONS ${VTK_OPTIONS})
 
   target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_USE_VTK=1)
