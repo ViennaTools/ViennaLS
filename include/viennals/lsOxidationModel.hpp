@@ -99,12 +99,12 @@ public:
     std::vector<T> p_km1, p_k; // Aitken Δ² history
 
     for (; iterations < parameters.maxIterations; ++iterations) {
-      logDebug("OxidationModel: coupling iteration " +
-               std::to_string(iterations + 1) + "/" +
-               std::to_string(parameters.maxIterations) +
-               " starting diffusion solve");
+      VIENNACORE_LOG_DEBUG("OxidationModel: coupling iteration " +
+                           std::to_string(iterations + 1) + "/" +
+                           std::to_string(parameters.maxIterations) +
+                           " starting diffusion solve");
       diffusionField->apply();
-      logDebug(
+      VIENNACORE_LOG_DEBUG(
           "OxidationModel: diffusion solve complete, nodes=" +
           std::to_string(diffusionField->getNumberOfSolutionNodes()) +
           ", iterations=" + std::to_string(diffusionField->getIterations()) +
@@ -123,15 +123,15 @@ public:
         return;
       }
 
-      logDebug("OxidationModel: coupling iteration " +
-               std::to_string(iterations + 1) + "/" +
-               std::to_string(parameters.maxIterations) +
-               " starting deformation solve");
+      VIENNACORE_LOG_DEBUG("OxidationModel: coupling iteration " +
+                           std::to_string(iterations + 1) + "/" +
+                           std::to_string(parameters.maxIterations) +
+                           " starting deformation solve");
       Timer<> tDeform;
       tDeform.start();
       deformationField->apply();
       tDeform.finish();
-      logDebug(
+      VIENNACORE_LOG_DEBUG(
           "OxidationModel: deformation solve complete, nodes=" +
           std::to_string(deformationField->getNumberOfSolutionNodes()) +
           ", iterations=" + std::to_string(deformationField->getIterations()) +
@@ -145,9 +145,7 @@ public:
             std::to_string(deformationField->getLastPressureResidual()) +
             ", stokes=" +
             std::to_string(deformationField->getLastStokesResidual()) + ")";
-        Logger::getInstance()
-            .addWarning("OxidationModel: " + failureReason_ + ".")
-            .print();
+        VIENNACORE_LOG_WARNING("OxidationModel: " + failureReason_ + ".");
         return;
       }
       if (Logger::hasTiming())
@@ -176,9 +174,7 @@ public:
         residual = std::numeric_limits<T>::infinity();
         failureReason_ =
             "deformation pressure feedback produced non-finite values";
-        Logger::getInstance()
-            .addWarning("OxidationModel: " + failureReason_ + ".")
-            .print();
+        VIENNACORE_LOG_WARNING("OxidationModel: " + failureReason_ + ".");
         return;
       }
 
@@ -222,39 +218,33 @@ public:
       p_km1 = p_k.empty() ? std::vector<T>(n, T(0)) : std::move(p_k);
       p_k = p_blended;
 
-      logDebug("OxidationModel: coupling iteration " +
-               std::to_string(iterations + 1) +
-               " pressure-feedback residual=" + std::to_string(residual));
+      VIENNACORE_LOG_DEBUG(
+          "OxidationModel: coupling iteration " +
+          std::to_string(iterations + 1) +
+          " pressure-feedback residual=" + std::to_string(residual));
       if (residual < parameters.tolerance)
         break;
     }
     const unsigned completedIterations =
         std::min(iterations + 1, parameters.maxIterations);
-    logDebug("OxidationModel: coupled solve complete, iterations=" +
-             std::to_string(completedIterations) +
-             ", residual=" + std::to_string(residual));
+    VIENNACORE_LOG_DEBUG("OxidationModel: coupled solve complete, iterations=" +
+                         std::to_string(completedIterations) +
+                         ", residual=" + std::to_string(residual));
     converged_ = std::isfinite(residual) && residual <= parameters.tolerance;
     if (!converged_)
-      Logger::getInstance()
-          .addWarning("OxidationModel: pressure-concentration coupling did not "
-                      "converge after " +
-                      std::to_string(completedIterations) +
-                      " iterations (residual=" + std::to_string(residual) +
-                      ", tolerance=" + std::to_string(parameters.tolerance) +
-                      "). Consider increasing maxIterations or relaxation.")
-          .print();
+      VIENNACORE_LOG_WARNING(
+          "OxidationModel: pressure-concentration coupling did not "
+          "converge after " +
+          std::to_string(completedIterations) +
+          " iterations (residual=" + std::to_string(residual) +
+          ", tolerance=" + std::to_string(parameters.tolerance) +
+          "). Consider increasing maxIterations or relaxation.");
   }
 
   unsigned getIterations() const { return iterations; }
   T getResidual() const { return residual; }
   bool hasConverged() const { return converged_; }
   std::string getFailureReason() const { return failureReason_; }
-
-private:
-  static void logDebug(const std::string &message) {
-    if (Logger::hasDebug())
-      Logger::getInstance().addDebug(message).print();
-  }
 };
 
 } // namespace viennals

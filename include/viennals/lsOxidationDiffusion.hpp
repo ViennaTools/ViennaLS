@@ -663,29 +663,29 @@ private:
         if (!gpu::gpuUploadNeighborIds(gpuBufs_, nb32.data(), nf)) {
           gpu::freeGpuBuffers(gpuBufs_);
           gpuBufs_ = nullptr;
-          throwStrictGpuError("OxidationDiffusion: GPU mode was selected, but "
-                              "uploading GPU neighbor IDs failed." +
-                              gpuErrorDetail());
+          VIENNACORE_LOG_ERROR("OxidationDiffusion: GPU mode was selected, but "
+                               "uploading GPU neighbor IDs failed." +
+                               gpuErrorDetail());
         }
         if (useIlu0 && !gpu::gpuSetupCSR(gpuBufs_, nb32.data(),
                                          static_cast<uint32_t>(n), 2 * D)) {
           gpu::freeGpuBuffers(gpuBufs_);
           gpuBufs_ = nullptr;
-          throwStrictGpuError("OxidationDiffusion: GPU mode was selected, but "
-                              "CUSPARSE setup for the GPU BiCGSTAB solver "
-                              "failed." +
-                              gpuErrorDetail());
+          VIENNACORE_LOG_ERROR("OxidationDiffusion: GPU mode was selected, but "
+                               "CUSPARSE setup for the GPU BiCGSTAB solver "
+                               "failed." +
+                               gpuErrorDetail());
         }
         logDiffusionBackend("GPU BiCGSTAB",
                             "preconditioner=" +
                                 std::string(useIlu0 ? "ILU0" : "Jacobi"));
         loggedBackend = true;
       } else {
-        throwStrictGpuError("OxidationDiffusion: GPU mode was selected, but "
-                            "CUDA buffers could not be "
-                            "allocated or the CUDA context could not be "
-                            "initialized." +
-                            gpuErrorDetail());
+        VIENNACORE_LOG_ERROR("OxidationDiffusion: GPU mode was selected, but "
+                             "CUDA buffers could not be "
+                             "allocated or the CUDA context could not be "
+                             "initialized." +
+                             gpuErrorDetail());
       }
     }
 #endif
@@ -884,10 +884,10 @@ private:
               .addTiming(tag + " GPU upload", tUpload)
               .print();
         }
-        throwStrictGpuError("OxidationDiffusion: GPU mode was selected, but "
-                            "uploading GPU solver arrays or factorizing ILU "
-                            "failed." +
-                            gpuErrorDetail());
+        VIENNACORE_LOG_ERROR("OxidationDiffusion: GPU mode was selected, but "
+                             "uploading GPU solver arrays or factorizing ILU "
+                             "failed." +
+                             gpuErrorDetail());
       }
 
       // Solve on GPU; xGpu holds the initial guess and receives the solution.
@@ -945,7 +945,7 @@ private:
             .addTiming(tag + " GPU BiCGSTAB", tSolve)
             .print();
       }
-      throwStrictGpuError(
+      VIENNACORE_LOG_ERROR(
           "OxidationDiffusion: GPU mode was selected, but GPU BiCGSTAB "
           "failed, did not converge, or produced non-finite concentrations "
           "(iters=" +
@@ -954,9 +954,9 @@ private:
     }
 #else
     if (gpuMode_ == GpuMode::Gpu) {
-      throwStrictGpuError("OxidationDiffusion: explicit GPU mode was "
-                          "requested, but ViennaLS was built without "
-                          "VIENNALS_GPU_BICGSTAB.");
+      VIENNACORE_LOG_ERROR("OxidationDiffusion: explicit GPU mode was "
+                           "requested, but ViennaLS was built without "
+                           "VIENNALS_GPU_BICGSTAB.");
     }
 #endif
 
@@ -1136,19 +1136,12 @@ private:
           .print();
     }
     if (residual > parameters.tolerance * b_norm)
-      Logger::getInstance()
-          .addWarning(
-              "solveDiffusion: BiCGSTAB did not converge after " +
-              std::to_string(iterations) + "/" +
-              std::to_string(parameters.maxIterations) +
-              " iterations (residual=" + std::to_string(residual / b_norm) +
-              ", tolerance=" + std::to_string(parameters.tolerance) + ")")
-          .print();
-  }
-
-  [[noreturn]] static void throwStrictGpuError(const std::string &message) {
-    Logger::getInstance().addError(message).print();
-    throw std::runtime_error(message);
+      VIENNACORE_LOG_WARNING(
+          "solveDiffusion: BiCGSTAB did not converge after " +
+          std::to_string(iterations) + "/" +
+          std::to_string(parameters.maxIterations) +
+          " iterations (residual=" + std::to_string(residual / b_norm) +
+          ", tolerance=" + std::to_string(parameters.tolerance) + ")");
   }
 
 #ifdef VIENNALS_GPU_BICGSTAB

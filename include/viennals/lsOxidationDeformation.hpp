@@ -353,14 +353,13 @@ public:
     tMechanics.start();
     solveMechanics();
     tMechanics.finish();
-    if (Logger::hasTiming())
-      Logger::getInstance()
-          .addTiming("      deformation n=" + std::to_string(nn) + " harmonic",
-                     tHarmonic)
-          .addTiming("      deformation n=" + std::to_string(nn) +
-                         " mechanics-total",
-                     tMechanics)
-          .print();
+    Logger::getInstance()
+        .addTiming("      deformation n=" + std::to_string(nn) + " harmonic",
+                   tHarmonic)
+        .addTiming("      deformation n=" + std::to_string(nn) +
+                       " mechanics-total",
+                   tMechanics)
+        .print();
     avgExpansionSpeedComputed = false;
 
     maxVelocity_.fill(T(0));
@@ -903,28 +902,28 @@ private:
       gpuPressBufs_ =
           gpu::allocGpuBuffers(static_cast<uint32_t>(n), 2 * D, useIlu0);
       if (!gpuPressBufs_) {
-        throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
-                            "pressure solver CUDA buffers could not be "
-                            "allocated or the CUDA context could not be "
-                            "initialized." +
-                            gpuErrorDetail());
+        VIENNACORE_LOG_ERROR("OxidationDeformation: GPU mode was selected, but "
+                             "pressure solver CUDA buffers could not be "
+                             "allocated or the CUDA context could not be "
+                             "initialized." +
+                             gpuErrorDetail());
       }
       if (!gpu::gpuUploadNeighborIds(gpuPressBufs_, pressNeighId32_.data(),
                                      2u * D * n)) {
         gpu::freeGpuBuffers(gpuPressBufs_);
         gpuPressBufs_ = nullptr;
-        throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
-                            "uploading pressure GPU neighbor IDs failed." +
-                            gpuErrorDetail());
+        VIENNACORE_LOG_ERROR("OxidationDeformation: GPU mode was selected, but "
+                             "uploading pressure GPU neighbor IDs failed." +
+                             gpuErrorDetail());
       }
       if (useIlu0 && !gpu::gpuSetupCSR(gpuPressBufs_, pressNeighId32_.data(),
                                        static_cast<uint32_t>(n), 2 * D)) {
         gpu::freeGpuBuffers(gpuPressBufs_);
         gpuPressBufs_ = nullptr;
-        throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
-                            "CUSPARSE setup for the pressure GPU BiCGSTAB "
-                            "solver failed." +
-                            gpuErrorDetail());
+        VIENNACORE_LOG_ERROR("OxidationDeformation: GPU mode was selected, but "
+                             "CUSPARSE setup for the pressure GPU BiCGSTAB "
+                             "solver failed." +
+                             gpuErrorDetail());
       }
     }
 
@@ -934,28 +933,28 @@ private:
       gpuStokesBufs_ =
           gpu::allocGpuBuffers(static_cast<uint32_t>(n), 2 * D, useIlu0);
       if (!gpuStokesBufs_) {
-        throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
-                            "Stokes solver CUDA buffers could not be "
-                            "allocated or the CUDA context could not be "
-                            "initialized." +
-                            gpuErrorDetail());
+        VIENNACORE_LOG_ERROR("OxidationDeformation: GPU mode was selected, but "
+                             "Stokes solver CUDA buffers could not be "
+                             "allocated or the CUDA context could not be "
+                             "initialized." +
+                             gpuErrorDetail());
       }
       if (!gpu::gpuUploadNeighborIds(gpuStokesBufs_, stokesNeighId32_.data(),
                                      2u * D * n)) {
         gpu::freeGpuBuffers(gpuStokesBufs_);
         gpuStokesBufs_ = nullptr;
-        throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
-                            "uploading Stokes GPU neighbor IDs failed." +
-                            gpuErrorDetail());
+        VIENNACORE_LOG_ERROR("OxidationDeformation: GPU mode was selected, but "
+                             "uploading Stokes GPU neighbor IDs failed." +
+                             gpuErrorDetail());
       }
       if (useIlu0 && !gpu::gpuSetupCSR(gpuStokesBufs_, stokesNeighId32_.data(),
                                        static_cast<uint32_t>(n), 2 * D)) {
         gpu::freeGpuBuffers(gpuStokesBufs_);
         gpuStokesBufs_ = nullptr;
-        throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
-                            "CUSPARSE setup for the Stokes GPU BiCGSTAB "
-                            "solver failed." +
-                            gpuErrorDetail());
+        VIENNACORE_LOG_ERROR("OxidationDeformation: GPU mode was selected, but "
+                             "CUSPARSE setup for the Stokes GPU BiCGSTAB "
+                             "solver failed." +
+                             gpuErrorDetail());
       }
     }
 
@@ -966,28 +965,28 @@ private:
       gpuHarmonicBufs_ =
           gpu::allocGpuBuffers(static_cast<uint32_t>(n), 2 * D, useIlu0);
       if (!gpuHarmonicBufs_) {
-        throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
-                            "harmonic solver CUDA buffers could not be "
-                            "allocated." +
-                            gpuErrorDetail());
+        VIENNACORE_LOG_ERROR("OxidationDeformation: GPU mode was selected, but "
+                             "harmonic solver CUDA buffers could not be "
+                             "allocated." +
+                             gpuErrorDetail());
       }
       if (!gpu::gpuUploadNeighborIds(gpuHarmonicBufs_, stokesNeighId32_.data(),
                                      2u * D * n)) {
         gpu::freeGpuBuffers(gpuHarmonicBufs_);
         gpuHarmonicBufs_ = nullptr;
-        throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
-                            "uploading harmonic GPU neighbor IDs failed." +
-                            gpuErrorDetail());
+        VIENNACORE_LOG_ERROR("OxidationDeformation: GPU mode was selected, but "
+                             "uploading harmonic GPU neighbor IDs failed." +
+                             gpuErrorDetail());
       }
       if (useIlu0 &&
           !gpu::gpuSetupCSR(gpuHarmonicBufs_, stokesNeighId32_.data(),
                             static_cast<uint32_t>(n), 2 * D)) {
         gpu::freeGpuBuffers(gpuHarmonicBufs_);
         gpuHarmonicBufs_ = nullptr;
-        throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
-                            "CUSPARSE setup for the harmonic GPU BiCGSTAB "
-                            "solver failed." +
-                            gpuErrorDetail());
+        VIENNACORE_LOG_ERROR("OxidationDeformation: GPU mode was selected, but "
+                             "CUSPARSE setup for the harmonic GPU BiCGSTAB "
+                             "solver failed." +
+                             gpuErrorDetail());
       }
     }
 
@@ -997,11 +996,6 @@ private:
                                 std::string(useIlu0 ? "ILU0" : "Jacobi"));
   }
 #endif // VIENNALS_GPU_BICGSTAB
-
-  [[noreturn]] static void throwStrictGpuError(const std::string &message) {
-    Logger::getInstance().addError(message).print();
-    throw std::runtime_error(message);
-  }
 
 #ifdef VIENNALS_GPU_BICGSTAB
   static std::string gpuErrorDetail() {
@@ -1100,9 +1094,9 @@ public:
     setupDeformationGpuBuffers();
 #else
     if (gpuMode_ == GpuMode::Gpu) {
-      throwStrictGpuError("OxidationDeformation: explicit GPU mode was "
-                          "requested, but ViennaLS was built without "
-                          "VIENNALS_GPU_BICGSTAB.");
+      VIENNACORE_LOG_ERROR("OxidationDeformation: explicit GPU mode was "
+                           "requested, but ViennaLS was built without "
+                           "VIENNALS_GPU_BICGSTAB.");
     }
 #endif
   }
@@ -1202,8 +1196,8 @@ public:
     if (gpu::gpuIsValid(gpuHarmonicBufs_)) {
       const std::size_t nf = 2u * D * n;
       if (harmonicDiagGpu_.size() != n || harmonicCoeffGpu_.size() != nf) {
-        throwStrictGpuError("OxidationDeformation: harmonic GPU geometry has "
-                            "the wrong size for the current node set.");
+        VIENNACORE_LOG_ERROR("OxidationDeformation: harmonic GPU geometry has "
+                             "the wrong size for the current node set.");
       }
 
       Timer<> tUpload, tSolve;
@@ -1228,9 +1222,9 @@ public:
                                          static_cast<uint32_t>(n));
         tUpload.finish();
         if (!gpuUploadOk) {
-          throwStrictGpuError("OxidationDeformation: GPU mode was selected, "
-                              "but uploading harmonic solver arrays failed." +
-                              gpuErrorDetail());
+          VIENNACORE_LOG_ERROR("OxidationDeformation: GPU mode was selected, "
+                               "but uploading harmonic solver arrays failed." +
+                               gpuErrorDetail());
         }
 
         unsigned gpuIterations = 0;
@@ -1245,7 +1239,7 @@ public:
         tSolve.finish();
 
         if (!gpuConverged || !std::isfinite(gpuResidual)) {
-          throwStrictGpuError(
+          VIENNACORE_LOG_ERROR(
               "OxidationDeformation: harmonic GPU BiCGSTAB failed or produced "
               "a non-finite residual for component " +
               std::to_string(c) + " (iters=" + std::to_string(gpuIterations) +
@@ -1417,15 +1411,13 @@ public:
       residual = std::numeric_limits<T>::infinity();
     }
     if (residual > deformationParameters.tolerance * b_norm)
-      Logger::getInstance()
-          .addWarning(
-              "solveVelocity (harmonic): BiCGSTAB did not converge after " +
-              std::to_string(iterations) + "/" +
-              std::to_string(deformationParameters.harmonicIterations) +
-              " iterations (residual=" + std::to_string(residual / b_norm) +
-              ", tolerance=" + std::to_string(deformationParameters.tolerance) +
-              ")")
-          .print();
+      VIENNACORE_LOG_WARNING(
+          "solveVelocity (harmonic): BiCGSTAB did not converge after " +
+          std::to_string(iterations) + "/" +
+          std::to_string(deformationParameters.harmonicIterations) +
+          " iterations (residual=" + std::to_string(residual / b_norm) +
+          ", tolerance=" + std::to_string(deformationParameters.tolerance) +
+          ")");
   }
 
   // Returns component-wise diagonal entries of the Stokes operator A_v.
@@ -1538,14 +1530,11 @@ public:
     computeStressTensors();
     residual = mechanicsResidual;
     if (residual > deformationParameters.mechanicsTolerance)
-      Logger::getInstance()
-          .addWarning(
-              "solveMechanics: did not converge after " +
-              std::to_string(deformationParameters.mechanicsIterations) +
-              " iterations (residual=" + std::to_string(residual) +
-              ", tolerance=" +
-              std::to_string(deformationParameters.mechanicsTolerance) + ")")
-          .print();
+      VIENNACORE_LOG_WARNING(
+          "solveMechanics: did not converge after " +
+          std::to_string(deformationParameters.mechanicsIterations) +
+          " iterations (residual=" + std::to_string(residual) + ", tolerance=" +
+          std::to_string(deformationParameters.mechanicsTolerance) + ")");
   }
 
   // SIMPLE velocity correction: v^{k+1} = v* - ∇(p^{k+1} - p^k) / (η · a_i)
@@ -1685,13 +1674,12 @@ public:
     auto warnBadPressureAssembly = [](const std::string &stage,
                                       std::size_t nodeId, const IndexType &idx,
                                       T value) {
-      Logger::getInstance()
-          .addWarning("solvePressure: non-finite/overflow " + stage +
-                      " at node=" + std::to_string(nodeId) + " index=(" +
-                      std::to_string(idx[0]) + "," + std::to_string(idx[1]) +
-                      (D == 3 ? "," + std::to_string(idx[2]) : std::string()) +
-                      ") value=" + std::to_string(value))
-          .print();
+      VIENNACORE_LOG_WARNING(
+          "solvePressure: non-finite/overflow " + stage +
+          " at node=" + std::to_string(nodeId) + " index=(" +
+          std::to_string(idx[0]) + "," + std::to_string(idx[1]) +
+          (D == 3 ? "," + std::to_string(idx[2]) : std::string()) +
+          ") value=" + std::to_string(value));
     };
 
     const T solverMax = static_cast<T>(std::numeric_limits<SolverT>::max());
@@ -1757,8 +1745,8 @@ public:
     if (gpu::gpuIsValid(gpuPressBufs_)) {
       const std::size_t nf = 2u * D * n;
       if (actualDiagGpu_.size() != n || pressCoeffGpu_.size() != nf) {
-        throwStrictGpuError("OxidationDeformation: pressure GPU geometry has "
-                            "the wrong size for the current node set.");
+        VIENNACORE_LOG_ERROR("OxidationDeformation: pressure GPU geometry has "
+                             "the wrong size for the current node set.");
       }
 
       Timer<> tUpload, tSolve;
@@ -1775,10 +1763,10 @@ public:
           pressCoeffGpu_.size());
       tUpload.finish();
       if (!gpuUploadOk) {
-        throwStrictGpuError("OxidationDeformation: GPU mode was selected, but "
-                            "uploading pressure solver arrays or factorizing "
-                            "ILU failed." +
-                            gpuErrorDetail());
+        VIENNACORE_LOG_ERROR("OxidationDeformation: GPU mode was selected, but "
+                             "uploading pressure solver arrays or factorizing "
+                             "ILU failed." +
+                             gpuErrorDetail());
       }
 
       unsigned gpuIterations = 0;
@@ -1795,7 +1783,7 @@ public:
       // convergence (not the recursive BiCGSTAB residual), so no separate CPU
       // stencil evaluation is needed.
       if (!gpuConverged || !std::isfinite(gpuResidual)) {
-        throwStrictGpuError(
+        VIENNACORE_LOG_ERROR(
             "OxidationDeformation: pressure GPU BiCGSTAB failed or produced "
             "a non-finite residual (iters=" +
             std::to_string(gpuIterations) +
@@ -2144,15 +2132,13 @@ public:
       lastPressureResidual_ = std::numeric_limits<T>::infinity();
     }
     if (lastPressureResidual_ > deformationParameters.pressureTolerance)
-      Logger::getInstance()
-          .addWarning(
-              "solvePressure: BiCGSTAB did not converge after " +
-              std::to_string(lastPressureIters_) + "/" +
-              std::to_string(deformationParameters.pressureIterations) +
-              " iterations (residual=" + std::to_string(lastPressureResidual_) +
-              ", tolerance=" +
-              std::to_string(deformationParameters.pressureTolerance) + ")")
-          .print();
+      VIENNACORE_LOG_WARNING(
+          "solvePressure: BiCGSTAB did not converge after " +
+          std::to_string(lastPressureIters_) + "/" +
+          std::to_string(deformationParameters.pressureIterations) +
+          " iterations (residual=" + std::to_string(lastPressureResidual_) +
+          ", tolerance=" +
+          std::to_string(deformationParameters.pressureTolerance) + ")");
   }
 
   // Fills scalar diag = centerCoefficient and Vec3D rhs = velocitySum for one
@@ -2227,8 +2213,8 @@ public:
     if (gpu::gpuIsValid(gpuStokesBufs_)) {
       const std::size_t nf = 2u * D * n;
       if (stokesDiagGpu_.size() != D * n || stokesCoeffGpu_.size() != nf) {
-        throwStrictGpuError("OxidationDeformation: Stokes GPU geometry has "
-                            "the wrong size for the current node set.");
+        VIENNACORE_LOG_ERROR("OxidationDeformation: Stokes GPU geometry has "
+                             "the wrong size for the current node set.");
       }
 
       Timer<> tUpload, tSolve;
@@ -2250,9 +2236,9 @@ public:
             stokesCoeffGpu_.size());
         tUpload.finish();
         if (!gpuUploadOk) {
-          throwStrictGpuError("OxidationDeformation: GPU mode was selected, "
-                              "but uploading Stokes solver arrays failed." +
-                              gpuErrorDetail());
+          VIENNACORE_LOG_ERROR("OxidationDeformation: GPU mode was selected, "
+                               "but uploading Stokes solver arrays failed." +
+                               gpuErrorDetail());
         }
 
         unsigned gpuIterations = 0;
@@ -2266,7 +2252,7 @@ public:
         tSolve.finish();
 
         if (!gpuConverged || !std::isfinite(gpuResidual)) {
-          throwStrictGpuError(
+          VIENNACORE_LOG_ERROR(
               "OxidationDeformation: Stokes GPU BiCGSTAB failed or produced "
               "a non-finite residual for component " +
               std::to_string(c) + " (iters=" + std::to_string(gpuIterations) +
@@ -2481,15 +2467,13 @@ public:
     lastStokesResidual_ = finiteSolution ? velocityResidual / b_norm
                                          : std::numeric_limits<T>::infinity();
     if (lastStokesResidual_ > deformationParameters.stokesTolerance)
-      Logger::getInstance()
-          .addWarning(
-              "solveStokesVelocity: BiCGSTAB did not converge after " +
-              std::to_string(lastStokesIters_) + "/" +
-              std::to_string(deformationParameters.stokesIterations) +
-              " iterations (residual=" + std::to_string(lastStokesResidual_) +
-              ", tolerance=" +
-              std::to_string(deformationParameters.stokesTolerance) + ")")
-          .print();
+      VIENNACORE_LOG_WARNING(
+          "solveStokesVelocity: BiCGSTAB did not converge after " +
+          std::to_string(lastStokesIters_) + "/" +
+          std::to_string(deformationParameters.stokesIterations) +
+          " iterations (residual=" + std::to_string(lastStokesResidual_) +
+          ", tolerance=" +
+          std::to_string(deformationParameters.stokesTolerance) + ")");
   }
 
   std::vector<Vec3D<T>> collectVelocities() const {

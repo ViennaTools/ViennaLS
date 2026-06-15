@@ -319,31 +319,23 @@ public:
       for (unsigned d = 0; d < D; ++d)
         maxVelocity_[d] = std::max(maxVelocity_[d], std::abs(node.velocity[d]));
     }
-    if (Logger::hasDebug()) {
-      Logger::getInstance()
-          .addDebug("OxidationMaskBending: contact faces active=" +
-                    std::to_string(activeContactFaces_) + "/" +
-                    std::to_string(candidateContactFaces_) +
-                    ", tensileSkipped=" + std::to_string(tensileContactFaces_) +
-                    ", normalTraction=[" +
-                    std::to_string(candidateContactFaces_ == 0
-                                       ? T(0)
-                                       : minContactNormalTraction_) +
-                    ", " +
-                    std::to_string(candidateContactFaces_ == 0
-                                       ? T(0)
-                                       : maxContactNormalTraction_) +
-                    "], aitkenOmega=" + std::to_string(omega) +
-                    ", contactLoadRelaxation=" +
-                    std::to_string(std::clamp(parameters.contactLoadRelaxation,
-                                              T(0.02), T(1))) +
-                    ", contactReleaseThreshold=" +
-                    std::to_string(contactReleaseThreshold_) +
-                    ", residual=" + std::to_string(lastApplyVelocityChange) +
-                    ", absVelocityChange=" +
-                    std::to_string(lastApplyAbsoluteVelocityChange))
-          .print();
-    }
+    VIENNACORE_LOG_DEBUG(
+        "OxidationMaskBending: contact faces active=" +
+        std::to_string(activeContactFaces_) + "/" +
+        std::to_string(candidateContactFaces_) + ", tensileSkipped=" +
+        std::to_string(tensileContactFaces_) + ", normalTraction=[" +
+        std::to_string(
+            candidateContactFaces_ == 0 ? T(0) : minContactNormalTraction_) +
+        ", " +
+        std::to_string(
+            candidateContactFaces_ == 0 ? T(0) : maxContactNormalTraction_) +
+        "], aitkenOmega=" + std::to_string(omega) + ", contactLoadRelaxation=" +
+        std::to_string(
+            std::clamp(parameters.contactLoadRelaxation, T(0.02), T(1))) +
+        ", contactReleaseThreshold=" +
+        std::to_string(contactReleaseThreshold_) + ", residual=" +
+        std::to_string(lastApplyVelocityChange) + ", absVelocityChange=" +
+        std::to_string(lastApplyAbsoluteVelocityChange));
 
     solved = true;
   }
