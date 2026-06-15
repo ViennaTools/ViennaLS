@@ -104,8 +104,8 @@ if((VIENNALS_PACKAGE_PYTHON AND NOT APPLE) OR MSVC)
         add_custom_command(
           TARGET ${MOD}
           POST_BUILD
-          COMMAND ${CMAKE_COMMAND} -E copy_directory
-                  $<TARGET_FILE_DIR:${_CUDA_TARGET}> ${VIENNALS_LIB_FOLDER})
++          COMMAND ${CMAKE_COMMAND} -E copy_directory $<TARGET_FILE_DIR:${_CUDA_TARGET}>
++                  ${VIENNALS_LIB_FOLDER})
       endif()
     endforeach()
   endif()
