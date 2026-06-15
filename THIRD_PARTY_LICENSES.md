@@ -35,5 +35,3 @@ This file lists third-party libraries used by ViennaLS and their respective lice
 **Note:** Used only when building Python bindings.
 
 ---
-
-
