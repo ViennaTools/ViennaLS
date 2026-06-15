@@ -46,12 +46,12 @@ template <class T> struct OxidationPresets {
     params.bulkModulus = T(7.5e8);  // Pa
     params.shearModulus = T(3.e10); // Pa
     params.stressTimeStep = timeStep;
-    params.mechanicsIterations = 2;
-    params.mechanicsTolerance = T(1.e-7);
-    params.pressureIterations = 500;
-    params.stokesIterations = 100;
-    params.pressureTolerance = T(1.e-6);
-    params.stokesTolerance = T(1.e-7);
+    params.mechanicsIterations = 300;
+    params.mechanicsTolerance = T(5.e-3);
+    params.pressureIterations = 2000;
+    params.stokesIterations = 1000;
+    params.pressureTolerance = T(1.e-3);
+    params.stokesTolerance = T(1.e-3);
     params.tolerance = T(1.e-7);
     return params;
   }

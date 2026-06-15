@@ -92,6 +92,16 @@ public:
 };
 
 inline void bindOxidationSharedTypes(py::module &module) {
+  py::enum_<GpuMode>(module, "GpuMode", py::module_local())
+      .value("Cpu", GpuMode::Cpu)
+      .value("Gpu", GpuMode::Gpu)
+      .export_values();
+
+  py::enum_<GpuPreconditioner>(module, "GpuPreconditioner", py::module_local())
+      .value("Jacobi", GpuPreconditioner::Jacobi)
+      .value("ILU0", GpuPreconditioner::ILU0)
+      .export_values();
+
   py::class_<OxidationParameters<T>>(module, "OxidationParameters",
                                      py::module_local())
       .def(py::init<>())
@@ -223,6 +233,21 @@ inline void bindOxidationSharedTypes(py::module &module) {
                      &OxidationCouplingParameters<T>::maxIterations)
       .def_readwrite("tolerance", &OxidationCouplingParameters<T>::tolerance)
       .def_readwrite("relaxation", &OxidationCouplingParameters<T>::relaxation);
+
+  py::class_<LOCOSConservationDiagnostics<T>>(
+      module, "LOCOSConservationDiagnostics", py::module_local())
+      .def(py::init<>())
+      .def_readwrite("siliconRecession",
+                     &LOCOSConservationDiagnostics<T>::siliconRecession)
+      .def_readwrite("ambientLift",
+                     &LOCOSConservationDiagnostics<T>::ambientLift)
+      .def_readwrite("expectedAmbientLift",
+                     &LOCOSConservationDiagnostics<T>::expectedAmbientLift)
+      .def_readwrite("ambientLiftRatio",
+                     &LOCOSConservationDiagnostics<T>::ambientLiftRatio)
+      .def_readwrite("relativeError",
+                     &LOCOSConservationDiagnostics<T>::relativeError)
+      .def_readwrite("samples", &LOCOSConservationDiagnostics<T>::samples);
 }
 
 template <int D> void bindApi(py::module &module) {
@@ -690,6 +715,9 @@ template <int D> void bindApi(py::module &module) {
       .def("setMaskParameters", &Oxidation<T, D>::setMaskParameters)
       .def("setSpatialScheme", &Oxidation<T, D>::setSpatialScheme)
       .def("setTemporalScheme", &Oxidation<T, D>::setTemporalScheme)
+      .def("setGpuMode", &Oxidation<T, D>::setGpuMode, py::arg("mode"))
+      .def("setGpuPreconditioner", &Oxidation<T, D>::setGpuPreconditioner,
+           py::arg("preconditioner"))
       .def("setMaskCouplingIterations",
            &Oxidation<T, D>::setMaskCouplingIterations)
       .def("setMaskCouplingTolerance",
@@ -736,6 +764,24 @@ template <int D> void bindApi(py::module &module) {
            &Oxidation<T, D>::getMaskCouplingIterations)
       .def("getMaskCouplingResidual",
            &Oxidation<T, D>::getMaskCouplingResidual);
+
+  if constexpr (D == 2) {
+    module.def(
+        "computeLOCOSOpenWindowConservation",
+        [](SmartPointer<Domain<T, D>> siInitial,
+           SmartPointer<Domain<T, D>> siAfter,
+           SmartPointer<Domain<T, D>> ambientInitial,
+           SmartPointer<Domain<T, D>> ambientAfter, T xMin, T xMax,
+           viennahrle::IndexType jMin, viennahrle::IndexType jMax,
+           T expansionCoefficient) {
+          return computeLOCOSOpenWindowConservation<T>(
+              siInitial, siAfter, ambientInitial, ambientAfter, xMin, xMax,
+              jMin, jMax, expansionCoefficient);
+        },
+        py::arg("siInitial"), py::arg("siAfter"), py::arg("ambientInitial"),
+        py::arg("ambientAfter"), py::arg("xMin"), py::arg("xMax"),
+        py::arg("jMin"), py::arg("jMax"), py::arg("expansionCoefficient"));
+  }
 
   // BooleanOperation
   py::class_<BooleanOperation<T, D>, SmartPointer<BooleanOperation<T, D>>>(
