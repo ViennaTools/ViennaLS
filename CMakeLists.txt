@@ -259,9 +259,18 @@ elseif(VIENNALS_USE_VTK)
          "VTK_MODULE_USE_EXTERNAL_VTK_zlib ON")
   endif()
 
+  # VTK 9.4.0 fixes stdext::checked_array_iterator removal in MSVC 14.41+.
+  # VTK 9.4.0 introduces libvtktoken which delocate cannot resolve on macOS,
+  # so macOS and Linux keep 9.3.1 (Linux uses find_package anyway).
+  if(WIN32)
+    set(_VIENNALS_VTK_TAG v9.4.0)
+  else()
+    set(_VIENNALS_VTK_TAG v9.3.1)
+  endif()
+
   CPMFindPackage(
     NAME VTK
-    GIT_TAG v9.4.0
+    GIT_TAG ${_VIENNALS_VTK_TAG}
     VERSION 9.0.0
     GIT_REPOSITORY "https://gitlab.kitware.com/vtk/vtk"
     EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON}
