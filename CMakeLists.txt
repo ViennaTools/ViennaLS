@@ -123,7 +123,10 @@ if(VIENNALS_USE_GPU)
   endif()
 
   if(NOT TARGET CUDA::cusparse)
-    message(WARNING "[ViennaLS] cuSPARSE not found in CUDA ${CUDAToolkit_VERSION}; disabling GPU BiCGSTAB solver.")
+    message(
+      WARNING
+        "[ViennaLS] cuSPARSE not found in CUDA ${CUDAToolkit_VERSION}; disabling GPU BiCGSTAB solver."
+    )
   else()
     # Compile the CUDA kernels into a small static library so that consuming
     # .cpp files (compiled by g++) never see __global__ / <<< >>> syntax.
