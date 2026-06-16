@@ -297,10 +297,9 @@ public:
       return;
     }
     if (contactNodes == 0)
-      Logger::getInstance()
-          .addDebug("OxidationMaskBending: mask has no oxide-contact nodes; "
-                    "no traction will be applied this step.")
-          .print();
+      VIENNACORE_LOG_DEBUG(
+          "OxidationMaskBending: mask has no oxide-contact nodes; "
+          "no traction will be applied this step.");
     solveElasticVelocity();
     validateNodeVelocities("solveElasticVelocity");
     smoothVelocityField();
@@ -371,11 +370,9 @@ public:
       for (unsigned d = 0; d < D; ++d)
         nodes[i].velocity[d] = elasticU_[i][d] * invDt;
 
-    Logger::getInstance()
-        .addInfo("ElasticFinalize: dt=" + std::to_string(dt) +
-                 " max|u_new|=" + std::to_string(maxUNew) +
-                 " max|u_new/dt|=" + std::to_string(maxUNew * invDt))
-        .print();
+    VIENNACORE_LOG_INFO("ElasticFinalize: dt=" + std::to_string(dt) +
+                        " max|u_new|=" + std::to_string(maxUNew) +
+                        " max|u_new/dt|=" + std::to_string(maxUNew * invDt));
 
     maxVelocity_.fill(T(0));
     for (const auto &node : nodes)
@@ -466,8 +463,8 @@ public:
                             : nodes[i].velocity;
 
     VD stressR0, stressR1, stressR2;
-    ConstSparseIterator sit(maskInterface->getDomain());
-    for (; !sit.isFinished(); ++sit) {
+    for (ConstSparseIterator sit(maskInterface->getDomain()); !sit.isFinished();
+         ++sit) {
       if (!sit.isDefined())
         continue;
       const std::size_t nId = lookupNode(sit.getStartIndices());

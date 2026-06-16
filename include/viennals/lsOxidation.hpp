@@ -634,8 +634,7 @@ private:
         ambientVelocity = makeAmbientVelocity();
         T maxVelocity = computeMaxVelocity(ambientVelocity);
         if (!std::isfinite(maxVelocity))
-          throw std::runtime_error(prefix +
-                                   ": non-finite CFL velocity estimate.");
+          VIENNACORE_LOG_ERROR(prefix + ": non-finite CFL velocity estimate.");
 
         advectionTime = cflLimitedTime(trialTime, maxVelocity);
         VIENNACORE_LOG_INFO(
@@ -675,8 +674,8 @@ private:
           ambientVelocity = makeAmbientVelocity();
           maxVelocity = computeMaxVelocity(ambientVelocity);
           if (!std::isfinite(maxVelocity))
-            throw std::runtime_error(prefix +
-                                     ": non-finite accepted CFL velocity.");
+            VIENNACORE_LOG_ERROR(prefix +
+                                 ": non-finite accepted CFL velocity.");
 
           const T verifiedTime = cflLimitedTime(advectionTime, maxVelocity);
           if (verifiedTime < advectionTime * (T(1) - T(1e-8))) {
@@ -706,15 +705,14 @@ private:
             diffusionField->hasFiniteConcentrationField() &&
             deformationField->hasFiniteSolution();
         if (hasMask && oxideFinite) {
-          Logger::getInstance()
-              .addWarning(prefix +
-                          ": all CFL attempts exhausted; freezing mask for "
-                          "one step at dt=" +
-                          std::to_string(minTrialTime) +
-                          " hr (last failure: " + lastFieldFailureReason +
-                          "). Consider increasing maskReferenceViscosity or "
-                          "maskCouplingIterations.")
-              .print();
+          VIENNACORE_LOG_WARNING(
+              prefix +
+              ": all CFL attempts exhausted; freezing mask for "
+              "one step at dt=" +
+              std::to_string(minTrialTime) +
+              " hr (last failure: " + lastFieldFailureReason +
+              "). Consider increasing maskReferenceViscosity or "
+              "maskCouplingIterations.");
           maskBendingField = nullptr; // skip mask advection this step
           ambientVelocity = makeAmbientVelocity();
           advectionTime = minTrialTime;
