@@ -138,11 +138,13 @@ if(VIENNALS_USE_GPU)
 
   if(UNIX AND NOT APPLE)
     foreach(_VIENNALS_CUDA_TARGET CUDA::cudart CUDA::cusparse)
-      get_target_property(_VIENNALS_CUDA_LIBRARY ${_VIENNALS_CUDA_TARGET} IMPORTED_LOCATION)
-      if(_VIENNALS_CUDA_LIBRARY)
-        get_filename_component(_VIENNALS_CUDA_LIBRARY_DIR "${_VIENNALS_CUDA_LIBRARY}" DIRECTORY)
-        target_link_options(ViennaLS_GPU INTERFACE
-                            "$<BUILD_INTERFACE:LINKER:-rpath,${_VIENNALS_CUDA_LIBRARY_DIR}>")
+      if(TARGET ${_VIENNALS_CUDA_TARGET})
+        get_target_property(_VIENNALS_CUDA_LIBRARY ${_VIENNALS_CUDA_TARGET} IMPORTED_LOCATION)
+        if(_VIENNALS_CUDA_LIBRARY)
+          get_filename_component(_VIENNALS_CUDA_LIBRARY_DIR "${_VIENNALS_CUDA_LIBRARY}" DIRECTORY)
+          target_link_options(ViennaLS_GPU INTERFACE
+                              "$<BUILD_INTERFACE:LINKER:-rpath,${_VIENNALS_CUDA_LIBRARY_DIR}>")
+        endif()
       endif()
     endforeach()
   endif()
