@@ -142,40 +142,11 @@ jobs:
       - name: 🛞 CIBuildWheel
         run: pip install cibuildwheel==3.4.0 --break-system-packages
 
-      - name: 🖥️ Setup vcpkg (Windows)
-        shell: pwsh
-        if: ${{ matrix.os == 'windows-latest' }}
-        run: |
-          Remove-Item Env:VCPKG_ROOT -ErrorAction SilentlyContinue
-
-          git clone https://github.com/microsoft/vcpkg.git
-          git -C vcpkg checkout $env:VCPKG_COMMIT
-          & .\vcpkg\bootstrap-vcpkg.bat
-
-          "VCPKG_ROOT=$($env:GITHUB_WORKSPACE)\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-          New-Item -ItemType Directory -Force -Path "${{ env.VCPKG_DEFAULT_BINARY_CACHE }}"
-
-      - name: 🦥 Cache vcpkg binary (Windows)
-        if: ${{ matrix.os == 'windows-latest' }}
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: vcpkg-${{ matrix.os }}-Release-${{ env.VCPKG_COMMIT }}
-
-      - name: 🛠️ Build VTK (Windows)
-        if: ${{ matrix.os == 'windows-latest' }}
-        shell: pwsh
-        run: |
-          ./vcpkg/vcpkg install --triplet x64-windows
-
       - name: 🛠️ Package Config (Windows)
         if: ${{ matrix.os == 'windows-latest' }}
         shell: pwsh
         run: |
-          $toolchain = "${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake".Replace('\', '/')
-          sed -i 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_IS_CI=ON"/g' pyproject.toml
-          "CIBW_CONFIG_SETTINGS=cmake.define.CMAKE_TOOLCHAIN_FILE=$toolchain cmake.define.VCPKG_TARGET_TRIPLET=x64-windows" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          sed -i 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_PACKAGE_PYTHON=ON","-DVIENNALS_IS_CI=ON"/g' pyproject.toml
           type pyproject.toml
 
       - name: 🛠️ Package Config (MacOs)
