@@ -75,14 +75,13 @@ void testLOCOSInterfaceConvergence() {
                padOxideThickness - maskContactEpsilon,
                padOxideThickness + maskThickness);
 
-  auto oxParams = ls::OxidationPresets<NumericType>::wet1000CDealGrove100();
+  auto oxParams = ls::OxidationPresets::wet1000CDealGrove100();
   oxParams.velocitySign = -1.;
   oxParams.maskTransferCoefficient = 0.;
   oxParams.maskConcentration = 0.;
   oxParams.tolerance = 1.e-7;
 
-  auto defParams =
-      ls::OxidationPresets<NumericType>::oxideMechanics1000C(advectionTime);
+  auto defParams = ls::OxidationPresets::oxideMechanics1000C(advectionTime);
   defParams.mechanicsIterations = 200;
   defParams.mechanicsTolerance = 1e-2;
   defParams.pressureTolerance = 1e-6;
@@ -90,13 +89,12 @@ void testLOCOSInterfaceConvergence() {
   defParams.pressureIterations = 200;
   defParams.stokesIterations = 60;
 
-  ls::OxidationCouplingParameters<NumericType> couplingParams;
+  ls::OxidationCouplingParameters couplingParams;
   couplingParams.maxIterations = 8;
   couplingParams.tolerance = 5e-2;
   couplingParams.relaxation = 1.0;
 
-  auto maskParams =
-      ls::OxidationPresets<NumericType>::siliconNitrideMask1000C();
+  auto maskParams = ls::OxidationPresets::siliconNitrideMask1000C();
   maskParams.maxIterations = 4000;
 
   const auto toIndex = [](NumericType value) {

@@ -79,11 +79,11 @@ void testStandardOxidation() {
   auto siInitial = ls::Domain<NumericType, D>::New(si);
   auto ambientInitial = ls::Domain<NumericType, D>::New(ambient);
 
-  auto oxParams = ls::OxidationPresets<NumericType>::wet1000CDealGrove100();
+  auto oxParams = ls::OxidationPresets::wet1000CDealGrove100();
   oxParams.velocitySign = -1.;
   oxParams.tolerance = 1e-7;
 
-  auto defParams = ls::OxidationPresets<NumericType>::oxideMechanics1000C(1.);
+  auto defParams = ls::OxidationPresets::oxideMechanics1000C(1.);
   defParams.mechanicsIterations = 200;
   defParams.mechanicsTolerance = 1e-2;
   defParams.pressureTolerance = 1e-6;
@@ -91,7 +91,7 @@ void testStandardOxidation() {
   defParams.pressureIterations = 300;
   defParams.stokesIterations = 80;
 
-  ls::OxidationCouplingParameters<NumericType> coupling;
+  ls::OxidationCouplingParameters coupling;
   coupling.maxIterations = 8;
   coupling.tolerance = 5e-2;
   coupling.relaxation = 1.0;
@@ -182,14 +182,13 @@ void testLOCOSOxidation() {
       makeBox(bounds, bc, gridDelta, {-xExtent, padOx - maskContactEpsilon},
               {maskEdge, padOx + maskThick});
 
-  auto oxParams = ls::OxidationPresets<NumericType>::wet1000CDealGrove100();
+  auto oxParams = ls::OxidationPresets::wet1000CDealGrove100();
   oxParams.velocitySign = -1.;
   oxParams.maskTransferCoefficient = 0.;
   oxParams.maskConcentration = 0.;
   oxParams.tolerance = 1e-7;
 
-  auto defParams =
-      ls::OxidationPresets<NumericType>::oxideMechanics1000C(advectionTime);
+  auto defParams = ls::OxidationPresets::oxideMechanics1000C(advectionTime);
   defParams.mechanicsIterations = 200;
   defParams.mechanicsTolerance = 1e-2;
   defParams.pressureTolerance = 1e-6;
@@ -197,13 +196,12 @@ void testLOCOSOxidation() {
   defParams.pressureIterations = 200;
   defParams.stokesIterations = 60;
 
-  ls::OxidationCouplingParameters<NumericType> coupling;
+  ls::OxidationCouplingParameters coupling;
   coupling.maxIterations = 8;
   coupling.tolerance = 5e-2;
   coupling.relaxation = 1.0;
 
-  auto maskParams =
-      ls::OxidationPresets<NumericType>::siliconNitrideMask1000C();
+  auto maskParams = ls::OxidationPresets::siliconNitrideMask1000C();
   maskParams.maxIterations = 4000;
 
   const auto toIndex = [gridDelta](NumericType v) {
@@ -298,14 +296,13 @@ LOCOSMaskResponse runLOCOSMaskResponse(NumericType maskThick,
       makeBox(bounds, bc, gridDelta, {-xExtent, padOx - maskContactEpsilon},
               {maskEdge, padOx + maskThick});
 
-  auto oxParams = ls::OxidationPresets<NumericType>::wet1000CDealGrove100();
+  auto oxParams = ls::OxidationPresets::wet1000CDealGrove100();
   oxParams.velocitySign = -1.;
   oxParams.maskTransferCoefficient = 0.;
   oxParams.maskConcentration = 0.;
   oxParams.tolerance = 1e-7;
 
-  auto defParams =
-      ls::OxidationPresets<NumericType>::oxideMechanics1000C(advectionTime);
+  auto defParams = ls::OxidationPresets::oxideMechanics1000C(advectionTime);
   defParams.mechanicsIterations = 200;
   defParams.mechanicsTolerance = 1e-2;
   defParams.pressureTolerance = 1e-6;
@@ -313,13 +310,12 @@ LOCOSMaskResponse runLOCOSMaskResponse(NumericType maskThick,
   defParams.pressureIterations = 200;
   defParams.stokesIterations = 60;
 
-  ls::OxidationCouplingParameters<NumericType> coupling;
+  ls::OxidationCouplingParameters coupling;
   coupling.maxIterations = 8;
   coupling.tolerance = 5e-2;
   coupling.relaxation = 1.0;
 
-  auto maskParams =
-      ls::OxidationPresets<NumericType>::siliconNitrideMask1000C();
+  auto maskParams = ls::OxidationPresets::siliconNitrideMask1000C();
   maskParams.contactMode = 1;
   maskParams.referenceViscosity = maskViscosity;
   maskParams.anchorBoundaryDirection = 0;
@@ -426,11 +422,11 @@ void testStandard3D() {
 
   auto siInitial = ls::Domain<NumericType, D3>::New(si);
 
-  auto oxParams = ls::OxidationPresets<NumericType>::wet1000CDealGrove100();
+  auto oxParams = ls::OxidationPresets::wet1000CDealGrove100();
   oxParams.velocitySign = -1.;
   oxParams.tolerance = 1e-7;
 
-  auto defParams = ls::OxidationPresets<NumericType>::oxideMechanics1000C(0.1);
+  auto defParams = ls::OxidationPresets::oxideMechanics1000C(0.1);
   defParams.mechanicsIterations = 200;
   defParams.mechanicsTolerance = 1e-2;
   defParams.pressureTolerance = 1e-6;
@@ -438,7 +434,7 @@ void testStandard3D() {
   defParams.pressureIterations = 300;
   defParams.stokesIterations = 150;
 
-  ls::OxidationCouplingParameters<NumericType> coupling;
+  ls::OxidationCouplingParameters coupling;
   coupling.maxIterations = 8;
   coupling.tolerance = 5e-2;
   coupling.relaxation = 1.0;
