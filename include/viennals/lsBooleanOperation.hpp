@@ -151,40 +151,48 @@ private:
       const auto &BData = levelSetB->getPointData();
       auto &newData = newlsDomain->getPointData();
 
-      // scalars
+      // scalars — preserve A's fields even when B doesn't have them.
+      // Previously, fields present only on A (e.g. OxVelocity on the oxide
+      // in a RELATIVE_COMPLEMENT with the mask) were silently dropped because
+      // the mask has no matching field.  For A-sourced result points we always
+      // use A's value; for B-sourced points without a matching B field we use
+      // 0.
       for (unsigned i = 0; i < AData.getScalarDataSize(); ++i) {
         auto scalarDataLabel = AData.getScalarDataLabel(i);
-        auto BPointer = BData.getScalarData(scalarDataLabel, true);
-        if (BPointer != nullptr) {
-          auto APointer = AData.getScalarData(i);
-          // copy all data into the new scalarData
-          typename Domain<T, D>::PointDataType::ScalarDataType scalars;
-          scalars.resize(newlsDomain->getNumberOfPoints());
-          for (unsigned j = 0; j < newlsDomain->getNumberOfPoints(); ++j) {
-            scalars[j] = (newDataLS[0][j])
-                             ? APointer->at(newDataSourceIds[0][j])
-                             : BPointer->at(newDataSourceIds[0][j]);
-          }
-          newData.insertNextScalarData(scalars, scalarDataLabel);
+        auto APointer = AData.getScalarData(i);
+        auto BPointer =
+            BData.getScalarData(scalarDataLabel, true); // may be nullptr
+        typename Domain<T, D>::PointDataType::ScalarDataType scalars;
+        scalars.resize(newlsDomain->getNumberOfPoints(), T(0));
+        for (unsigned j = 0; j < newlsDomain->getNumberOfPoints(); ++j) {
+          if (newDataLS[0][j])
+            scalars[j] = APointer->at(newDataSourceIds[0][j]);
+          else if (BPointer != nullptr)
+            scalars[j] = BPointer->at(newDataSourceIds[0][j]);
+          // else: B-sourced point with no matching B field → stays 0
         }
+        newData.insertNextScalarData(scalars, scalarDataLabel);
       }
 
-      // vectors
+      // vectors — same asymmetric treatment as scalars above.
       for (unsigned i = 0; i < AData.getVectorDataSize(); ++i) {
         auto vectorDataLabel = AData.getVectorDataLabel(i);
-        auto BPointer = BData.getVectorData(vectorDataLabel, true);
-        if (BPointer != nullptr) {
-          auto APointer = AData.getVectorData(i);
-          // copy all data into the new vectorData
-          typename Domain<T, D>::PointDataType::VectorDataType vectors;
-          vectors.resize(newlsDomain->getNumberOfPoints());
-          for (unsigned j = 0; j < newlsDomain->getNumberOfPoints(); ++j) {
-            vectors[j] = (newDataLS[0][j])
-                             ? APointer->at(newDataSourceIds[0][j])
-                             : BPointer->at(newDataSourceIds[0][j]);
-          }
-          newData.insertNextVectorData(vectors, vectorDataLabel);
+        auto APointer = AData.getVectorData(i);
+        auto BPointer =
+            BData.getVectorData(vectorDataLabel, true); // may be nullptr
+        using Vec =
+            typename Domain<T, D>::PointDataType::VectorDataType::value_type;
+        typename Domain<T, D>::PointDataType::VectorDataType vectors;
+        vectors.resize(newlsDomain->getNumberOfPoints(), Vec{});
+        for (unsigned j = 0; j < newlsDomain->getNumberOfPoints(); ++j) {
+          if (newDataLS[0][j])
+            vectors[j] = APointer->at(newDataSourceIds[0][j]);
+          else if (BPointer != nullptr)
+            vectors[j] = BPointer->at(newDataSourceIds[0][j]);
+          // else: B-sourced point with no matching B field → stays
+          // zero-initialised
         }
+        newData.insertNextVectorData(vectors, vectorDataLabel);
       }
     }
 

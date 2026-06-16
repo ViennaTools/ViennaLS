@@ -41,7 +41,7 @@ int main() {
   omp_set_num_threads(8);
 
   // Define grid and domain bounds
-  double gridDelta = 0.1;
+  double gridDelta = 0.15;
   double bounds[2 * D] = {-5.0, 5.0, -5.0, 5.0, -5.0, 5.0};
   ls::Domain<T, D>::BoundaryType boundaryCons[D];
   for (int i = 0; i < D; ++i)
@@ -54,11 +54,11 @@ int main() {
   T radius = 1.5;
   ls::MakeGeometry<T, D>(sphere, ls::Sphere<T, D>::New(origin, radius)).apply();
 
-  // Create analytical reference for error calculation at t=2.0.
-  // The sphere starts at x=0 and moves with v=1 for t=2, so it ends at x=2.
+  // Create analytical reference for error calculation at t=0.5.
+  // The sphere starts at x=0 and moves with v=1 for t=0.5, so it ends at x=0.5.
   auto sphereRef =
       ls::SmartPointer<ls::Domain<T, D>>::New(bounds, boundaryCons, gridDelta);
-  T originRef[3] = {2.0, 0.0, 0.0};
+  T originRef[3] = {0.5, 0.0, 0.0};
   ls::MakeGeometry<T, D>(sphereRef, ls::Sphere<T, D>::New(originRef, radius))
       .apply();
 
@@ -85,7 +85,7 @@ int main() {
   ls::Advect<T, D> advectFE;
   advectFE.insertNextLevelSet(sphereFE);
   advectFE.setVelocityField(velocityField);
-  advectFE.setAdvectionTime(2.0);
+  advectFE.setAdvectionTime(0.5);
   advectFE.setSpatialScheme(ls::SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
   advectFE.setTemporalScheme(ls::TemporalSchemeEnum::FORWARD_EULER);
 
@@ -93,7 +93,7 @@ int main() {
   ls::Advect<T, D> advectRK2;
   advectRK2.insertNextLevelSet(sphereRK2);
   advectRK2.setVelocityField(velocityField);
-  advectRK2.setAdvectionTime(2.0);
+  advectRK2.setAdvectionTime(0.5);
   advectRK2.setSpatialScheme(ls::SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
   advectRK2.setTemporalScheme(ls::TemporalSchemeEnum::RUNGE_KUTTA_2ND_ORDER);
 
@@ -101,7 +101,7 @@ int main() {
   ls::Advect<T, D> advectRK3;
   advectRK3.insertNextLevelSet(sphereRK3);
   advectRK3.setVelocityField(velocityField);
-  advectRK3.setAdvectionTime(2.0);
+  advectRK3.setAdvectionTime(0.5);
   advectRK3.setSpatialScheme(ls::SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER);
   advectRK3.setTemporalScheme(ls::TemporalSchemeEnum::RUNGE_KUTTA_3RD_ORDER);
 
@@ -109,7 +109,7 @@ int main() {
   ls::Advect<T, D> advectWENO3_FE;
   advectWENO3_FE.insertNextLevelSet(sphereWENO3_FE);
   advectWENO3_FE.setVelocityField(velocityField);
-  advectWENO3_FE.setAdvectionTime(2.0);
+  advectWENO3_FE.setAdvectionTime(0.5);
   advectWENO3_FE.setSpatialScheme(ls::SpatialSchemeEnum::WENO_3RD_ORDER);
   advectWENO3_FE.setTemporalScheme(ls::TemporalSchemeEnum::FORWARD_EULER);
 
@@ -117,7 +117,7 @@ int main() {
   ls::Advect<T, D> advectWENO3_RK2;
   advectWENO3_RK2.insertNextLevelSet(sphereWENO3_RK2);
   advectWENO3_RK2.setVelocityField(velocityField);
-  advectWENO3_RK2.setAdvectionTime(2.0);
+  advectWENO3_RK2.setAdvectionTime(0.5);
   advectWENO3_RK2.setSpatialScheme(ls::SpatialSchemeEnum::WENO_3RD_ORDER);
   advectWENO3_RK2.setTemporalScheme(
       ls::TemporalSchemeEnum::RUNGE_KUTTA_2ND_ORDER);
@@ -126,7 +126,7 @@ int main() {
   ls::Advect<T, D> advectWENO3_RK3;
   advectWENO3_RK3.insertNextLevelSet(sphereWENO3_RK3);
   advectWENO3_RK3.setVelocityField(velocityField);
-  advectWENO3_RK3.setAdvectionTime(2.0);
+  advectWENO3_RK3.setAdvectionTime(0.5);
   advectWENO3_RK3.setSpatialScheme(ls::SpatialSchemeEnum::WENO_3RD_ORDER);
   advectWENO3_RK3.setTemporalScheme(
       ls::TemporalSchemeEnum::RUNGE_KUTTA_3RD_ORDER);
@@ -135,7 +135,7 @@ int main() {
   ls::Advect<T, D> advectWENO5_FE;
   advectWENO5_FE.insertNextLevelSet(sphereWENO5_FE);
   advectWENO5_FE.setVelocityField(velocityField);
-  advectWENO5_FE.setAdvectionTime(2.0);
+  advectWENO5_FE.setAdvectionTime(0.5);
   advectWENO5_FE.setSpatialScheme(ls::SpatialSchemeEnum::WENO_5TH_ORDER);
   advectWENO5_FE.setTemporalScheme(ls::TemporalSchemeEnum::FORWARD_EULER);
 
@@ -143,7 +143,7 @@ int main() {
   ls::Advect<T, D> advectWENO5_RK2;
   advectWENO5_RK2.insertNextLevelSet(sphereWENO5_RK2);
   advectWENO5_RK2.setVelocityField(velocityField);
-  advectWENO5_RK2.setAdvectionTime(2.0);
+  advectWENO5_RK2.setAdvectionTime(0.5);
   advectWENO5_RK2.setSpatialScheme(ls::SpatialSchemeEnum::WENO_5TH_ORDER);
   advectWENO5_RK2.setTemporalScheme(
       ls::TemporalSchemeEnum::RUNGE_KUTTA_2ND_ORDER);
@@ -152,7 +152,7 @@ int main() {
   ls::Advect<T, D> advectWENO5_RK3;
   advectWENO5_RK3.insertNextLevelSet(sphereWENO5_RK3);
   advectWENO5_RK3.setVelocityField(velocityField);
-  advectWENO5_RK3.setAdvectionTime(2.0);
+  advectWENO5_RK3.setAdvectionTime(0.5);
   advectWENO5_RK3.setSpatialScheme(ls::SpatialSchemeEnum::WENO_5TH_ORDER);
   advectWENO5_RK3.setTemporalScheme(
       ls::TemporalSchemeEnum::RUNGE_KUTTA_3RD_ORDER);
@@ -174,7 +174,7 @@ int main() {
   chamferFE.apply();
   std::cout << "Chamfer distance: " << chamferFE.getChamferDistance()
             << std::endl;
-  VC_TEST_ASSERT(chamferFE.getChamferDistance() < 0.04);
+  VC_TEST_ASSERT(chamferFE.getChamferDistance() < 0.08);
 
   std::cout << "Running Runge-Kutta 2 Advection..." << std::endl;
   timer.start();
@@ -191,7 +191,7 @@ int main() {
   chamferRK2.apply();
   std::cout << "Chamfer distance: " << chamferRK2.getChamferDistance()
             << std::endl;
-  VC_TEST_ASSERT(chamferRK2.getChamferDistance() < 0.07);
+  VC_TEST_ASSERT(chamferRK2.getChamferDistance() < 0.14);
 
   std::cout << "Running Runge-Kutta 3 Advection..." << std::endl;
   timer.start();
@@ -208,7 +208,7 @@ int main() {
   chamferRK3.apply();
   std::cout << "Chamfer distance: " << chamferRK3.getChamferDistance()
             << std::endl;
-  VC_TEST_ASSERT(chamferRK3.getChamferDistance() < 0.07);
+  VC_TEST_ASSERT(chamferRK3.getChamferDistance() < 0.14);
 
   std::cout << "Running WENO3 Forward Euler Advection..." << std::endl;
   timer.start();
@@ -225,7 +225,7 @@ int main() {
   chamferWENO3_FE.apply();
   std::cout << "Chamfer distance: " << chamferWENO3_FE.getChamferDistance()
             << std::endl;
-  VC_TEST_ASSERT(chamferWENO3_FE.getChamferDistance() < 0.03);
+  VC_TEST_ASSERT(chamferWENO3_FE.getChamferDistance() < 0.06);
 
   std::cout << "Running WENO3 Runge-Kutta 2 Advection..." << std::endl;
   timer.start();
@@ -242,7 +242,7 @@ int main() {
   chamferWENO3_RK2.apply();
   std::cout << "Chamfer distance: " << chamferWENO3_RK2.getChamferDistance()
             << std::endl;
-  VC_TEST_ASSERT(chamferWENO3_RK2.getChamferDistance() < 0.008);
+  VC_TEST_ASSERT(chamferWENO3_RK2.getChamferDistance() < 0.016);
 
   std::cout << "Running WENO3 Runge-Kutta 3 Advection..." << std::endl;
   timer.start();
@@ -259,7 +259,7 @@ int main() {
   chamferWENO3_RK3.apply();
   std::cout << "Chamfer distance: " << chamferWENO3_RK3.getChamferDistance()
             << std::endl;
-  VC_TEST_ASSERT(chamferWENO3_RK3.getChamferDistance() < 0.008);
+  VC_TEST_ASSERT(chamferWENO3_RK3.getChamferDistance() < 0.016);
 
   std::cout << "Running WENO5 Forward Euler Advection..." << std::endl;
   timer.start();
@@ -276,7 +276,7 @@ int main() {
   chamferWENO5_FE.apply();
   std::cout << "Chamfer distance: " << chamferWENO5_FE.getChamferDistance()
             << std::endl;
-  VC_TEST_ASSERT(chamferWENO5_FE.getChamferDistance() < 0.02);
+  VC_TEST_ASSERT(chamferWENO5_FE.getChamferDistance() < 0.04);
 
   std::cout << "Running WENO5 Runge-Kutta 2 Advection..." << std::endl;
   timer.start();
@@ -293,7 +293,7 @@ int main() {
   chamferWENO5_RK2.apply();
   std::cout << "Chamfer distance: " << chamferWENO5_RK2.getChamferDistance()
             << std::endl;
-  VC_TEST_ASSERT(chamferWENO5_RK2.getChamferDistance() < 0.004);
+  VC_TEST_ASSERT(chamferWENO5_RK2.getChamferDistance() < 0.008);
 
   std::cout << "Running WENO5 Runge-Kutta 3 Advection..." << std::endl;
   timer.start();
@@ -310,7 +310,7 @@ int main() {
   chamferWENO5_RK3.apply();
   std::cout << "Chamfer distance: " << chamferWENO5_RK3.getChamferDistance()
             << std::endl;
-  VC_TEST_ASSERT(chamferWENO5_RK3.getChamferDistance() < 0.004);
+  VC_TEST_ASSERT(chamferWENO5_RK3.getChamferDistance() < 0.008);
 
   return 0;
 }

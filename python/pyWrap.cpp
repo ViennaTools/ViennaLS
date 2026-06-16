@@ -390,6 +390,8 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
            "Return the analytical dissipation alpha value if the "
            "lsLocalLaxFriedrichsAnalytical scheme is used for advection.");
 
+  bindOxidationSharedTypes(module);
+
   // ---------- MAIN API ----------
   // Submodule for 2D
   auto m2 = module.def_submodule("d2", "2D bindings");

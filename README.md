@@ -9,7 +9,15 @@
 
 </div>
 
-ViennaLS is a header-only C++ level set library developed for high performance topography simulations. The main design goals are simplicity and efficiency, tailored towards scientific simulations. ViennaLS can also be used for visualisation applications, although this is not the main design target.
+ViennaLS is a header-only C++ level set library for high-performance topography and semiconductor process simulations. The main design goals are efficiency and simplicity, tailored towards scientific process simulation.
+
+## Capabilities
+
+- **Level-set equation solver**: Solves ∂φ/∂t + v|∇φ| = 0 to advect interfaces under arbitrary velocity fields; spatial schemes: Engquist-Osher (1st/2nd order), Lax-Friedrichs (global/local, 1st/2nd order), WENO (3rd/5th order); temporal schemes: Forward Euler, Runge-Kutta 2nd/3rd order; CFL-limited time stepping
+- **Level-set operations**: Boolean operations, geometric advection, curvature calculation, normal vectors calculation, visibility calculation, feature detection, 2D<->3D extrusion/slicing, mesh export (VTP/VTU via VTK)
+- **Comparison & analysis**: Chamfer distance (bidirectional surface-to-surface, forward/backward/RMS/max), narrow-band SDF difference, sparse-field SDF difference, volume/area difference, critical dimension extraction
+- **Thermal oxidation**: Coupled Deal-Grove diffusion + Stokes flow oxide mechanics (Maxwell viscoelasticity, SIMPLE pressure-velocity coupling); LOCOS mode adds biharmonic Si₃N₄ mask bending with two-way traction coupling. See [`docs/OxidationSolver.md`](docs/OxidationSolver.md)
+- **GPU acceleration**: Optional CUDA BiCGSTAB back-end for the oxidation diffusion and mechanics linear solves (requires `VIENNALS_USE_GPU=ON`)
 
 > [!NOTE]  
 > ViennaLS is under heavy development and improved daily. If you do have suggestions or find bugs, please let us know!
@@ -32,7 +40,7 @@ Bug reports and suggestions should be filed on GitHub.
 
 ## Releases
 
-Releases are tagged on the maser branch and available in the [releases section](https://github.com/ViennaTools/ViennaLS/releases).
+Releases are tagged on the master branch and available in the [releases section](https://github.com/ViennaTools/ViennaLS/releases).
 
 ## Building
 
@@ -107,6 +115,19 @@ cd ViennaLS
 pip install .
 ```
 
+To build the Python package with **GPU** support for the oxidation diffusion and mechanics solvers, use the install script in the `python/scripts` folder:
+
+```bash
+git clone https://github.com/ViennaTools/ViennaLS.git
+cd ViennaLS
+
+python3 -m venv .venv          # create virtual environment (optional, but recommended)
+source .venv/bin/activate      # activate virtual environment
+python python/scripts/install_ViennaLS.py
+```
+
+A CUDA 12+ toolkit and a driver compatible with your GPU must be installed on your system. On Linux, a GCC version compatible with the CUDA toolkit is also required. Pass `--no-gpu` to build without GPU support using the same script and venv workflow.
+
 ## Using the Python package
 
 The ViennaLS Python package can be used by importing it in your Python scripts:
@@ -154,7 +175,7 @@ We recommend using [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) to consum
 
 * Installation with CPM
   ```cmake
-  CPMAddPackage("gh:viennatools/viennals@5.7.3")
+  CPMAddPackage("gh:viennatools/viennals@5.8.0")
   ```
 
 * With a local installation

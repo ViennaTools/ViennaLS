@@ -16,11 +16,19 @@ from viennals._core import CurvatureEnum
 from viennals._core import Extrude
 from viennals._core import FeatureDetectionEnum
 from viennals._core import FileFormatEnum
+from viennals._core import GpuMode
+from viennals._core import GpuPreconditioner
+from viennals._core import LOCOSConservationDiagnostics
 from viennals._core import LogLevel
 from viennals._core import Logger
 from viennals._core import MaterialMap
 from viennals._core import Mesh
 from viennals._core import NormalCalculationMethodEnum
+from viennals._core import OxidationCouplingParameters
+from viennals._core import OxidationDeformationParameters
+from viennals._core import OxidationMaskParameters
+from viennals._core import OxidationParameters
+from viennals._core import OxidationPresets
 from viennals._core import PointData
 from viennals._core import Slice
 from viennals._core import SpatialSchemeEnum
@@ -62,10 +70,17 @@ from viennals.d2 import GeometricAdvect
 from viennals.d2 import GeometricAdvectDistribution
 from viennals.d2 import MakeGeometry
 from viennals.d2 import MarkVoidPoints
+from viennals.d2 import Oxidation
+from viennals.d2 import OxidationConstrainedAmbient
+from viennals.d2 import OxidationDeformation
+from viennals.d2 import OxidationDiffusion
+from viennals.d2 import OxidationMaskBending
+from viennals.d2 import OxidationModel
 from viennals.d2 import Plane
 from viennals.d2 import PointCloud
 from viennals.d2 import PrepareStencilLocalLaxFriedrichs
 from viennals.d2 import Prune
+from viennals.d2 import ReactionBoundarySample
 from viennals.d2 import Reader
 from viennals.d2 import Reduce
 from viennals.d2 import RemoveStrayPoints
@@ -80,11 +95,12 @@ from viennals.d2 import ToSurfaceMesh
 from viennals.d2 import ToVoxelMesh
 from viennals.d2 import WriteVisualizationMesh
 from viennals.d2 import Writer
+from viennals.d2 import computeLOCOSOpenWindowConservation
 from viennals.d2 import hrleGrid
 from . import _core
 from . import d2
 from . import d3
-__all__: list[str] = ['Advect', 'BooleanOperation', 'BooleanOperationEnum', 'BoundaryConditionEnum', 'Box', 'BoxDistribution', 'CalculateCurvatures', 'CalculateNormalVectors', 'CalculateVisibilities', 'Check', 'CompareArea', 'CompareChamfer', 'CompareCriticalDimensions', 'CompareNarrowBand', 'CompareSparseField', 'CompareVolume', 'ConvexHull', 'CurvatureEnum', 'CustomSphereDistribution', 'Cylinder', 'DetectFeatures', 'Domain', 'Expand', 'Extrude', 'FeatureDetectionEnum', 'FileFormatEnum', 'FinalizeStencilLocalLaxFriedrichs', 'FromMesh', 'FromSurfaceMesh', 'FromVolumeMesh', 'GeometricAdvect', 'GeometricAdvectDistribution', 'IntegrationSchemeEnum', 'LogLevel', 'Logger', 'MakeGeometry', 'MarkVoidPoints', 'MaterialMap', 'Mesh', 'NormalCalculationMethodEnum', 'PROXY_DIM', 'Plane', 'PointCloud', 'PointData', 'PrepareStencilLocalLaxFriedrichs', 'Prune', 'Reader', 'Reduce', 'RemoveStrayPoints', 'Slice', 'SpatialSchemeEnum', 'Sphere', 'SphereDistribution', 'StencilLocalLaxFriedrichsScalar', 'TemporalSchemeEnum', 'ToDiskMesh', 'ToHullMesh', 'ToMesh', 'ToMultiSurfaceMesh', 'ToSurfaceMesh', 'ToVoxelMesh', 'TransformEnum', 'TransformMesh', 'VTKReader', 'VTKRenderWindow', 'VTKWriter', 'VelocityField', 'VoidTopSurfaceEnum', 'WriteVisualizationMesh', 'Writer', 'd2', 'd3', 'getDimension', 'hrleGrid', 'setDimension', 'setNumThreads', 'version']
+__all__: list[str] = ['Advect', 'BooleanOperation', 'BooleanOperationEnum', 'BoundaryConditionEnum', 'Box', 'BoxDistribution', 'CalculateCurvatures', 'CalculateNormalVectors', 'CalculateVisibilities', 'Check', 'CompareArea', 'CompareChamfer', 'CompareCriticalDimensions', 'CompareNarrowBand', 'CompareSparseField', 'CompareVolume', 'ConvexHull', 'Cpu', 'CurvatureEnum', 'CustomSphereDistribution', 'Cylinder', 'DetectFeatures', 'Domain', 'Expand', 'Extrude', 'FeatureDetectionEnum', 'FileFormatEnum', 'FinalizeStencilLocalLaxFriedrichs', 'FromMesh', 'FromSurfaceMesh', 'FromVolumeMesh', 'GeometricAdvect', 'GeometricAdvectDistribution', 'Gpu', 'GpuMode', 'GpuPreconditioner', 'ILU0', 'IntegrationSchemeEnum', 'Jacobi', 'LOCOSConservationDiagnostics', 'LogLevel', 'Logger', 'MakeGeometry', 'MarkVoidPoints', 'MaterialMap', 'Mesh', 'NormalCalculationMethodEnum', 'Oxidation', 'OxidationConstrainedAmbient', 'OxidationCouplingParameters', 'OxidationDeformation', 'OxidationDeformationParameters', 'OxidationDiffusion', 'OxidationMaskBending', 'OxidationMaskParameters', 'OxidationModel', 'OxidationParameters', 'OxidationPresets', 'PROXY_DIM', 'Plane', 'PointCloud', 'PointData', 'PrepareStencilLocalLaxFriedrichs', 'Prune', 'ReactionBoundarySample', 'Reader', 'Reduce', 'RemoveStrayPoints', 'Slice', 'SpatialSchemeEnum', 'Sphere', 'SphereDistribution', 'StencilLocalLaxFriedrichsScalar', 'TemporalSchemeEnum', 'ToDiskMesh', 'ToHullMesh', 'ToMesh', 'ToMultiSurfaceMesh', 'ToSurfaceMesh', 'ToVoxelMesh', 'TransformEnum', 'TransformMesh', 'VTKReader', 'VTKRenderWindow', 'VTKWriter', 'VelocityField', 'VoidTopSurfaceEnum', 'WriteVisualizationMesh', 'Writer', 'computeLOCOSOpenWindowConservation', 'd2', 'd3', 'getDimension', 'hrleGrid', 'setDimension', 'setNumThreads', 'version']
 def __dir__():
     ...
 def __getattr__(name):
@@ -111,7 +127,13 @@ def setDimension(d: int):
             Dimension of the simulation (2 or 3).
         
     """
+Cpu: _core.GpuMode  # value = <GpuMode.Cpu: 0>
+Gpu: _core.GpuMode  # value = <GpuMode.Gpu: 1>
+ILU0: _core.GpuPreconditioner  # value = <GpuPreconditioner.ILU0: 1>
+Jacobi: _core.GpuPreconditioner  # value = <GpuPreconditioner.Jacobi: 0>
 PROXY_DIM: int = 2
-__version__: str = '5.7.3'
-version: str = '5.7.3'
+_SHARED_OXIDATION_TYPES: tuple = ('OxidationParameters', 'OxidationPresets', 'OxidationDeformationParameters', 'OxidationMaskParameters', 'OxidationCouplingParameters')
+__version__: str = '5.8.0'
+_name: str = 'OxidationCouplingParameters'
+version: str = '5.8.0'
 _C = _core

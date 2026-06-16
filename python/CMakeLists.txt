@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.14)
 project(ViennaLS_Python LANGUAGES CXX)
 
+option(VIENNALS_USE_GPU "Enable GPU-accelerated BiCGSTAB linear solver via CUDA" OFF)
+
 add_custom_target(${PROJECT_NAME} ALL)
 
 # --------------------------------------------------------------------------------------------------------
@@ -59,6 +61,13 @@ if(VIENNALS_VTK_RENDERING)
   target_compile_definitions(${MOD} PRIVATE VIENNALS_VTK_MODULE_INIT)
 endif()
 
+if(VIENNALS_USE_GPU)
+  message(STATUS "[ViennaLS] Adding GPU support for 'viennals' python package")
+  if(TARGET ViennaLS_GPU)
+    add_dependencies(${MOD} ViennaLS_GPU)
+  endif()
+endif()
+
 # Put the built .so in build/<pkg> for convenience
 set_target_properties(
   ${MOD}
@@ -88,6 +97,18 @@ if((VIENNALS_PACKAGE_PYTHON AND NOT APPLE) OR MSVC)
   # macOS wheels let delocate own dylib vendoring to avoid duplicate VTK copies.
   # Other package builds still need this staged dependency folder.
   viennacore_setup_vtk_env(${MOD} ${VIENNALS_LIB_FOLDER})
+
+  if(VIENNALS_USE_GPU)
+    foreach(_CUDA_TARGET CUDA::cudart CUDA::cusparse)
+      if(TARGET ${_CUDA_TARGET})
+        add_custom_command(
+          TARGET ${MOD}
+          POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_directory $<TARGET_FILE_DIR:${_CUDA_TARGET}>
+                  ${VIENNALS_LIB_FOLDER})
+      endif()
+    endforeach()
+  endif()
 endif()
 
 install(
