@@ -216,6 +216,7 @@ elseif(VIENNALS_USE_VTK)
 
   # Common VTK build options
   set(VTK_OPTIONS
+      "BUILD_SHARED_LIBS OFF"
       "VTK_LEGACY_REMOVE ON"
       "VTK_SMP_IMPLEMENTATION_TYPE OpenMP"
       "VTK_GROUP_ENABLE_Rendering NO"
