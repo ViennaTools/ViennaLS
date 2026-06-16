@@ -102,137 +102,132 @@ inline void bindOxidationSharedTypes(py::module &module) {
       .value("ILU0", GpuPreconditioner::ILU0)
       .export_values();
 
-  py::class_<OxidationParameters<T>>(module, "OxidationParameters",
-                                     py::module_local())
-      .def(py::init<>())
-      .def_readwrite("diffusionCoefficient",
-                     &OxidationParameters<T>::diffusionCoefficient)
-      .def_readwrite("reactionRate", &OxidationParameters<T>::reactionRate)
-      .def_readwrite("transferCoefficient",
-                     &OxidationParameters<T>::transferCoefficient)
-      .def_readwrite("equilibriumConcentration",
-                     &OxidationParameters<T>::equilibriumConcentration)
-      .def_readwrite("oxidantMoleculeDensity",
-                     &OxidationParameters<T>::oxidantMoleculeDensity)
-      .def_readwrite("expansionCoefficient",
-                     &OxidationParameters<T>::expansionCoefficient)
-      .def_readwrite("velocitySign", &OxidationParameters<T>::velocitySign)
-      .def_readwrite("temperature", &OxidationParameters<T>::temperature)
-      .def_readwrite("reactionActivationVolume",
-                     &OxidationParameters<T>::reactionActivationVolume)
-      .def_readwrite("referencePressure",
-                     &OxidationParameters<T>::referencePressure)
-      .def_readwrite("diffusionActivationVolume",
-                     &OxidationParameters<T>::diffusionActivationVolume)
-      .def_readwrite("reactionRateRatio111",
-                     &OxidationParameters<T>::reactionRateRatio111)
-      .def_readwrite("crystalAxis", &OxidationParameters<T>::crystalAxis)
-      .def_readwrite("maskTransferCoefficient",
-                     &OxidationParameters<T>::maskTransferCoefficient)
-      .def_readwrite("maskConcentration",
-                     &OxidationParameters<T>::maskConcentration)
-      .def_readwrite("minBoundaryDistance",
-                     &OxidationParameters<T>::minBoundaryDistance)
-      .def_readwrite("maxIterations", &OxidationParameters<T>::maxIterations)
-      .def_readwrite("tolerance", &OxidationParameters<T>::tolerance)
-      .def_readwrite("relaxation", &OxidationParameters<T>::relaxation)
-      .def_readwrite("maxGridPoints", &OxidationParameters<T>::maxGridPoints)
-      .def_readwrite("material", &OxidationParameters<T>::material);
-
-  py::class_<OxidationPresets<T>>(module, "OxidationPresets",
+  py::class_<OxidationParameters>(module, "OxidationParameters",
                                   py::module_local())
       .def(py::init<>())
-      .def_static("wet1000CDealGrove100",
-                  &OxidationPresets<T>::wet1000CDealGrove100)
-      .def_static("oxideMechanics1000C",
-                  &OxidationPresets<T>::oxideMechanics1000C)
-      .def_static("siliconNitrideMask1000C",
-                  &OxidationPresets<T>::siliconNitrideMask1000C);
+      .def_readwrite("diffusionCoefficient",
+                     &OxidationParameters::diffusionCoefficient)
+      .def_readwrite("reactionRate", &OxidationParameters::reactionRate)
+      .def_readwrite("transferCoefficient",
+                     &OxidationParameters::transferCoefficient)
+      .def_readwrite("equilibriumConcentration",
+                     &OxidationParameters::equilibriumConcentration)
+      .def_readwrite("oxidantMoleculeDensity",
+                     &OxidationParameters::oxidantMoleculeDensity)
+      .def_readwrite("expansionCoefficient",
+                     &OxidationParameters::expansionCoefficient)
+      .def_readwrite("velocitySign", &OxidationParameters::velocitySign)
+      .def_readwrite("temperature", &OxidationParameters::temperature)
+      .def_readwrite("reactionActivationVolume",
+                     &OxidationParameters::reactionActivationVolume)
+      .def_readwrite("referencePressure",
+                     &OxidationParameters::referencePressure)
+      .def_readwrite("diffusionActivationVolume",
+                     &OxidationParameters::diffusionActivationVolume)
+      .def_readwrite("reactionRateRatio111",
+                     &OxidationParameters::reactionRateRatio111)
+      .def_readwrite("crystalAxis", &OxidationParameters::crystalAxis)
+      .def_readwrite("maskTransferCoefficient",
+                     &OxidationParameters::maskTransferCoefficient)
+      .def_readwrite("maskConcentration",
+                     &OxidationParameters::maskConcentration)
+      .def_readwrite("minBoundaryDistance",
+                     &OxidationParameters::minBoundaryDistance)
+      .def_readwrite("maxIterations", &OxidationParameters::maxIterations)
+      .def_readwrite("tolerance", &OxidationParameters::tolerance)
+      .def_readwrite("relaxation", &OxidationParameters::relaxation)
+      .def_readwrite("maxGridPoints", &OxidationParameters::maxGridPoints)
+      .def_readwrite("material", &OxidationParameters::material);
 
-  py::class_<OxidationDeformationParameters<T>>(
+  py::class_<OxidationPresets>(module, "OxidationPresets", py::module_local())
+      .def(py::init<>())
+      .def_static("wet1000CDealGrove100",
+                  &OxidationPresets::wet1000CDealGrove100)
+      .def_static("oxideMechanics1000C", &OxidationPresets::oxideMechanics1000C)
+      .def_static("siliconNitrideMask1000C",
+                  &OxidationPresets::siliconNitrideMask1000C);
+
+  py::class_<OxidationDeformationParameters>(
       module, "OxidationDeformationParameters", py::module_local())
       .def(py::init<>())
-      .def_readwrite("viscosity", &OxidationDeformationParameters<T>::viscosity)
+      .def_readwrite("viscosity", &OxidationDeformationParameters::viscosity)
       .def_readwrite("bulkModulus",
-                     &OxidationDeformationParameters<T>::bulkModulus)
+                     &OxidationDeformationParameters::bulkModulus)
       .def_readwrite("ambientPressure",
-                     &OxidationDeformationParameters<T>::ambientPressure)
+                     &OxidationDeformationParameters::ambientPressure)
       .def_readwrite("pressureRelaxation",
-                     &OxidationDeformationParameters<T>::pressureRelaxation)
+                     &OxidationDeformationParameters::pressureRelaxation)
       .def_readwrite("pressureTolerance",
-                     &OxidationDeformationParameters<T>::pressureTolerance)
+                     &OxidationDeformationParameters::pressureTolerance)
       .def_readwrite(
           "minMechanicsBoundaryDistance",
-          &OxidationDeformationParameters<T>::minMechanicsBoundaryDistance)
+          &OxidationDeformationParameters::minMechanicsBoundaryDistance)
       .def_readwrite("shearModulus",
-                     &OxidationDeformationParameters<T>::shearModulus)
+                     &OxidationDeformationParameters::shearModulus)
       .def_readwrite("stressRelaxationTime",
-                     &OxidationDeformationParameters<T>::stressRelaxationTime)
+                     &OxidationDeformationParameters::stressRelaxationTime)
       .def_readwrite("stressTimeStep",
-                     &OxidationDeformationParameters<T>::stressTimeStep)
+                     &OxidationDeformationParameters::stressTimeStep)
       .def_readwrite("harmonicIterations",
-                     &OxidationDeformationParameters<T>::harmonicIterations)
+                     &OxidationDeformationParameters::harmonicIterations)
       .def_readwrite("mechanicsIterations",
-                     &OxidationDeformationParameters<T>::mechanicsIterations)
+                     &OxidationDeformationParameters::mechanicsIterations)
       .def_readwrite("pressureIterations",
-                     &OxidationDeformationParameters<T>::pressureIterations)
+                     &OxidationDeformationParameters::pressureIterations)
       .def_readwrite("stokesIterations",
-                     &OxidationDeformationParameters<T>::stokesIterations)
+                     &OxidationDeformationParameters::stokesIterations)
       .def_readwrite("mechanicsTolerance",
-                     &OxidationDeformationParameters<T>::mechanicsTolerance)
+                     &OxidationDeformationParameters::mechanicsTolerance)
       .def_readwrite("stokesTolerance",
-                     &OxidationDeformationParameters<T>::stokesTolerance)
-      .def_readwrite("tolerance", &OxidationDeformationParameters<T>::tolerance)
-      .def_readwrite("relaxation",
-                     &OxidationDeformationParameters<T>::relaxation)
+                     &OxidationDeformationParameters::stokesTolerance)
+      .def_readwrite("tolerance", &OxidationDeformationParameters::tolerance)
+      .def_readwrite("relaxation", &OxidationDeformationParameters::relaxation)
       .def_readwrite("maxGridPoints",
-                     &OxidationDeformationParameters<T>::maxGridPoints)
-      .def_readwrite("material", &OxidationDeformationParameters<T>::material);
+                     &OxidationDeformationParameters::maxGridPoints)
+      .def_readwrite("material", &OxidationDeformationParameters::material);
 
-  py::class_<OxidationMaskParameters<T>>(module, "OxidationMaskParameters",
-                                         py::module_local())
+  py::class_<OxidationMaskParameters>(module, "OxidationMaskParameters",
+                                      py::module_local())
       .def(py::init<>())
-      .def_readwrite("contactMode", &OxidationMaskParameters<T>::contactMode)
-      .def_readwrite("temperature", &OxidationMaskParameters<T>::temperature)
+      .def_readwrite("contactMode", &OxidationMaskParameters::contactMode)
+      .def_readwrite("temperature", &OxidationMaskParameters::temperature)
       .def_readwrite("referenceTemperature",
-                     &OxidationMaskParameters<T>::referenceTemperature)
+                     &OxidationMaskParameters::referenceTemperature)
       .def_readwrite("referenceViscosity",
-                     &OxidationMaskParameters<T>::referenceViscosity)
+                     &OxidationMaskParameters::referenceViscosity)
       .def_readwrite("creepActivationEnergy",
-                     &OxidationMaskParameters<T>::creepActivationEnergy)
-      .def_readwrite("poissonRatio", &OxidationMaskParameters<T>::poissonRatio)
-      .def_readwrite("youngModulus", &OxidationMaskParameters<T>::youngModulus)
+                     &OxidationMaskParameters::creepActivationEnergy)
+      .def_readwrite("poissonRatio", &OxidationMaskParameters::poissonRatio)
+      .def_readwrite("youngModulus", &OxidationMaskParameters::youngModulus)
       .def_readwrite("unilateralContact",
-                     &OxidationMaskParameters<T>::unilateralContact)
-      .def_readwrite("relaxation", &OxidationMaskParameters<T>::relaxation)
+                     &OxidationMaskParameters::unilateralContact)
+      .def_readwrite("relaxation", &OxidationMaskParameters::relaxation)
       .def_readwrite("contactLoadRelaxation",
-                     &OxidationMaskParameters<T>::contactLoadRelaxation)
+                     &OxidationMaskParameters::contactLoadRelaxation)
       .def_readwrite("contactReleaseFraction",
-                     &OxidationMaskParameters<T>::contactReleaseFraction)
+                     &OxidationMaskParameters::contactReleaseFraction)
       .def_readwrite("multigridSmootherOmega",
-                     &OxidationMaskParameters<T>::multigridSmootherOmega)
-      .def_readwrite("tolerance", &OxidationMaskParameters<T>::tolerance)
+                     &OxidationMaskParameters::multigridSmootherOmega)
+      .def_readwrite("tolerance", &OxidationMaskParameters::tolerance)
       .def_readwrite("minBoundaryDistance",
-                     &OxidationMaskParameters<T>::minBoundaryDistance)
-      .def_readwrite("maxIterations",
-                     &OxidationMaskParameters<T>::maxIterations)
-      .def_readwrite("maxGridPoints",
-                     &OxidationMaskParameters<T>::maxGridPoints)
-      .def_readwrite("material", &OxidationMaskParameters<T>::material)
+                     &OxidationMaskParameters::minBoundaryDistance)
+      .def_readwrite("maxIterations", &OxidationMaskParameters::maxIterations)
+      .def_readwrite("maxGridPoints", &OxidationMaskParameters::maxGridPoints)
+      .def_readwrite("material", &OxidationMaskParameters::material)
       .def_readwrite("anchorBoundaryDirection",
-                     &OxidationMaskParameters<T>::anchorBoundaryDirection)
+                     &OxidationMaskParameters::anchorBoundaryDirection)
       .def_readwrite("anchorBoundarySide",
-                     &OxidationMaskParameters<T>::anchorBoundarySide)
+                     &OxidationMaskParameters::anchorBoundarySide)
       .def_readwrite("anchorBoundaryLayers",
-                     &OxidationMaskParameters<T>::anchorBoundaryLayers);
+                     &OxidationMaskParameters::anchorBoundaryLayers);
 
-  py::class_<OxidationCouplingParameters<T>>(
-      module, "OxidationCouplingParameters", py::module_local())
+  py::class_<OxidationCouplingParameters>(module, "OxidationCouplingParameters",
+                                          py::module_local())
       .def(py::init<>())
       .def_readwrite("maxIterations",
-                     &OxidationCouplingParameters<T>::maxIterations)
-      .def_readwrite("tolerance", &OxidationCouplingParameters<T>::tolerance)
-      .def_readwrite("relaxation", &OxidationCouplingParameters<T>::relaxation);
+                     &OxidationCouplingParameters::maxIterations)
+      .def_readwrite("tolerance", &OxidationCouplingParameters::tolerance)
+      .def_readwrite("relaxation", &OxidationCouplingParameters::relaxation);
 
   py::class_<LOCOSConservationDiagnostics<T>>(
       module, "LOCOSConservationDiagnostics", py::module_local())
@@ -450,12 +445,12 @@ template <int D> void bindApi(py::module &module) {
                                                      "OxidationDiffusion")
       .def(py::init([](SmartPointer<Domain<T, D>> &reactionInterface,
                        SmartPointer<Domain<T, D>> &ambientInterface,
-                       OxidationParameters<T> parameters) {
+                       OxidationParameters parameters) {
              return OxidationDiffusion<T, D>::New(reactionInterface,
                                                   ambientInterface, parameters);
            }),
            py::arg("reactionInterface"), py::arg("ambientInterface"),
-           py::arg("parameters") = OxidationParameters<T>())
+           py::arg("parameters") = OxidationParameters())
       .def("setReactionInterface",
            &OxidationDiffusion<T, D>::setReactionInterface)
       .def("setAmbientInterface",
@@ -514,20 +509,18 @@ template <int D> void bindApi(py::module &module) {
   py::class_<OxidationDeformation<T, D>, VelocityField<T>,
              SmartPointer<OxidationDeformation<T, D>>>(module,
                                                        "OxidationDeformation")
-      .def(
-          py::init([](SmartPointer<Domain<T, D>> &reactionInterface,
-                      SmartPointer<Domain<T, D>> &ambientInterface,
-                      SmartPointer<OxidationDiffusion<T, D>> &diffusionField,
-                      OxidationParameters<T> oxidationParameters,
-                      OxidationDeformationParameters<T> deformationParameters) {
-            return OxidationDeformation<T, D>::New(
-                reactionInterface, ambientInterface, diffusionField,
-                oxidationParameters, deformationParameters);
-          }),
-          py::arg("reactionInterface"), py::arg("ambientInterface"),
-          py::arg("diffusionField"), py::arg("oxidationParameters"),
-          py::arg("deformationParameters") =
-              OxidationDeformationParameters<T>())
+      .def(py::init([](SmartPointer<Domain<T, D>> &reactionInterface,
+                       SmartPointer<Domain<T, D>> &ambientInterface,
+                       SmartPointer<OxidationDiffusion<T, D>> &diffusionField,
+                       OxidationParameters oxidationParameters,
+                       OxidationDeformationParameters deformationParameters) {
+             return OxidationDeformation<T, D>::New(
+                 reactionInterface, ambientInterface, diffusionField,
+                 oxidationParameters, deformationParameters);
+           }),
+           py::arg("reactionInterface"), py::arg("ambientInterface"),
+           py::arg("diffusionField"), py::arg("oxidationParameters"),
+           py::arg("deformationParameters") = OxidationDeformationParameters())
       .def("setMaskInterface", &OxidationDeformation<T, D>::setMaskInterface,
            py::arg("maskInterface"), py::arg("maskSign") = 1)
       .def("clearMaskInterface",
@@ -596,21 +589,21 @@ template <int D> void bindApi(py::module &module) {
                                                        "OxidationMaskBending")
       .def(py::init(
                [](SmartPointer<OxidationDeformation<T, D>> &deformationField,
-                  OxidationMaskParameters<T> maskParameters) {
+                  OxidationMaskParameters maskParameters) {
                  return OxidationMaskBending<T, D>::New(deformationField,
                                                         maskParameters);
                }),
            py::arg("deformationField"),
-           py::arg("maskParameters") = OxidationMaskParameters<T>())
+           py::arg("maskParameters") = OxidationMaskParameters())
       .def(py::init(
                [](SmartPointer<OxidationDeformation<T, D>> &deformationField,
                   SmartPointer<Domain<T, D>> &maskInterface,
-                  OxidationMaskParameters<T> maskParameters, int maskSign) {
+                  OxidationMaskParameters maskParameters, int maskSign) {
                  return OxidationMaskBending<T, D>::New(
                      deformationField, maskInterface, maskParameters, maskSign);
                }),
            py::arg("deformationField"), py::arg("maskInterface"),
-           py::arg("maskParameters") = OxidationMaskParameters<T>(),
+           py::arg("maskParameters") = OxidationMaskParameters(),
            py::arg("maskSign") = 1)
       .def("setMaskInterface", &OxidationMaskBending<T, D>::setMaskInterface,
            py::arg("maskInterface"), py::arg("maskSign") = 1)
@@ -667,12 +660,12 @@ template <int D> void bindApi(py::module &module) {
       .def(py::init(
                [](SmartPointer<OxidationDiffusion<T, D>> &diffusionField,
                   SmartPointer<OxidationDeformation<T, D>> &deformationField,
-                  OxidationCouplingParameters<T> couplingParameters) {
+                  OxidationCouplingParameters couplingParameters) {
                  return OxidationModel<T, D>::New(
                      diffusionField, deformationField, couplingParameters);
                }),
            py::arg("diffusionField"), py::arg("deformationField"),
-           py::arg("couplingParameters") = OxidationCouplingParameters<T>())
+           py::arg("couplingParameters") = OxidationCouplingParameters())
       .def("setDiffusionField", &OxidationModel<T, D>::setDiffusionField)
       .def("setDeformationField", &OxidationModel<T, D>::setDeformationField)
       .def("setParameters", &OxidationModel<T, D>::setParameters)

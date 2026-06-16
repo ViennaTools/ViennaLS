@@ -36,38 +36,38 @@ enum class GpuPreconditioner { Jacobi, ILU0 };
 
 /// Parameters for the steady oxidant diffusion model used by
 /// OxidationDiffusion.
-template <class T> struct OxidationParameters {
-  T diffusionCoefficient = 1.;
-  T reactionRate = 1.;
-  T transferCoefficient = 1.;
-  T equilibriumConcentration = 1.;
-  T oxidantMoleculeDensity = 1.;
-  T expansionCoefficient = 1.;
-  T velocitySign = 1.;
+struct OxidationParameters {
+  double diffusionCoefficient = 1.;
+  double reactionRate = 1.;
+  double transferCoefficient = 1.;
+  double equilibriumConcentration = 1.;
+  double oxidantMoleculeDensity = 1.;
+  double expansionCoefficient = 1.;
+  double velocitySign = 1.;
 
   // Stress coupling for reaction rate:
   // k_eff = k * exp(-(p - p_ref) * V_k / (k_B * T)).
   // Activation volumes are in m^3, pressure is in Pa, temperature is in K.
-  T temperature = 1273.15;
-  T reactionActivationVolume = 0.;
-  T referencePressure = 0.;
+  double temperature = 1273.15;
+  double reactionActivationVolume = 0.;
+  double referencePressure = 0.;
 
   // Stress coupling for diffusion coefficient:
   // D_eff = D * exp(-(p - p_ref) * V_D / (k_B * T)).
-  T diffusionActivationVolume = 0.;
+  double diffusionActivationVolume = 0.;
 
   // Crystal orientation factor on reaction rate.
   // k(n) = k * [1 + (reactionRateRatio111 - 1) * (1 - (n . crystalAxis)^2)]
   // reactionRateRatio111 = 1 disables the correction (isotropic).
-  T reactionRateRatio111 = 1.;
-  Vec3D<T> crystalAxis = {0., 1., 0.};
+  double reactionRateRatio111 = 1.;
+  Vec3D<double> crystalAxis = {0., 1., 0.};
 
-  T maskTransferCoefficient = 0.;
-  T maskConcentration = 0.;
-  T minBoundaryDistance = 1e-6;
+  double maskTransferCoefficient = 0.;
+  double maskConcentration = 0.;
+  double minBoundaryDistance = 1e-6;
   unsigned maxIterations = 10000;
-  T tolerance = 1e-8;
-  T relaxation = 1.;
+  double tolerance = 1e-8;
+  double relaxation = 1.;
   std::size_t maxGridPoints = 5000000;
   int material = -1;
 };
@@ -135,7 +135,7 @@ private:
   SmartPointer<Domain<T, D>> reactionInterface = nullptr;
   SmartPointer<Domain<T, D>> ambientInterface = nullptr;
   SmartPointer<Domain<T, D>> maskInterface = nullptr;
-  OxidationParameters<T> parameters;
+  OxidationParameters parameters;
   int reactionSign = 1;
   int ambientSign = -1;
   int maskSign = 1;
@@ -193,7 +193,7 @@ public:
 
   OxidationDiffusion(SmartPointer<Domain<T, D>> passedReactionInterface,
                      SmartPointer<Domain<T, D>> passedAmbientInterface,
-                     OxidationParameters<T> passedParameters = {})
+                     OxidationParameters passedParameters = {})
       : reactionInterface(passedReactionInterface),
         ambientInterface(passedAmbientInterface), parameters(passedParameters) {
   }
@@ -242,12 +242,12 @@ public:
     solved = false;
   }
 
-  void setParameters(OxidationParameters<T> passedParameters) {
+  void setParameters(OxidationParameters passedParameters) {
     parameters = passedParameters;
     solved = false;
   }
 
-  OxidationParameters<T> getParameters() const { return parameters; }
+  OxidationParameters getParameters() const { return parameters; }
 
   T getEffectiveReactionRate(const Vec3D<T> &coordinate) const {
     IndexType index;

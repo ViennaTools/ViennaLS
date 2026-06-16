@@ -155,10 +155,10 @@ template <class T, int D> class Oxidation {
   SmartPointer<Domain<T, D>> ambientInterface = nullptr;
   SmartPointer<Domain<T, D>> maskInterface = nullptr;
 
-  OxidationParameters<T> oxidationParams;
-  OxidationDeformationParameters<T> deformationParams;
-  OxidationCouplingParameters<T> couplingParams;
-  OxidationMaskParameters<T> maskParams;
+  OxidationParameters oxidationParams;
+  OxidationDeformationParameters deformationParams;
+  OxidationCouplingParameters couplingParams;
+  OxidationMaskParameters maskParams;
 
   SpatialSchemeEnum spatialScheme = SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER;
   TemporalSchemeEnum temporalScheme = TemporalSchemeEnum::FORWARD_EULER;
@@ -220,16 +220,16 @@ public:
     maskInterface = mask;
   }
 
-  void setOxidationParameters(OxidationParameters<T> params) {
+  void setOxidationParameters(OxidationParameters params) {
     oxidationParams = params;
   }
-  void setDeformationParameters(OxidationDeformationParameters<T> params) {
+  void setDeformationParameters(OxidationDeformationParameters params) {
     deformationParams = params;
   }
-  void setCouplingParameters(OxidationCouplingParameters<T> params) {
+  void setCouplingParameters(OxidationCouplingParameters params) {
     couplingParams = params;
   }
-  void setMaskParameters(OxidationMaskParameters<T> params) {
+  void setMaskParameters(OxidationMaskParameters params) {
     maskParams = params;
   }
 

@@ -135,24 +135,22 @@ int main(int argc, char *argv[]) {
 
   // ── Oxidation parameters ──────────────────────────────────────────────────
 
-  auto oxParams = ls::OxidationPresets<NumericType>::wet1000CDealGrove100();
+  auto oxParams = ls::OxidationPresets::wet1000CDealGrove100();
   oxParams.velocitySign = -1.;
   oxParams.maskTransferCoefficient = 0.; // nitride is a perfect oxidant block
   oxParams.maskConcentration = 0.;
   oxParams.maxIterations = 10000;
   oxParams.tolerance = 1.e-7;
 
-  auto defParams =
-      ls::OxidationPresets<NumericType>::oxideMechanics1000C(timeStep);
+  auto defParams = ls::OxidationPresets::oxideMechanics1000C(timeStep);
 
   // Coupling parameters — match ViennaPS locosOxidation config.
-  ls::OxidationCouplingParameters<NumericType> couplingParams;
+  ls::OxidationCouplingParameters couplingParams;
   couplingParams.maxIterations = 100;
   couplingParams.tolerance = 2.e-2;
   couplingParams.relaxation = 1.;
 
-  auto maskParams =
-      ls::OxidationPresets<NumericType>::siliconNitrideMask1000C();
+  auto maskParams = ls::OxidationPresets::siliconNitrideMask1000C();
 
   // ── Solve bounds ──────────────────────────────────────────────────────────
 

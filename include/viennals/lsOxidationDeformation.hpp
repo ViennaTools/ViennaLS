@@ -15,24 +15,25 @@
 namespace viennals {
 
 /// Parameters for the Cartesian-grid oxide deformation model.
-template <class T> struct OxidationDeformationParameters {
-  T viscosity = 1.;
-  T bulkModulus = 1.;
-  T ambientPressure = 0.;
-  T pressureTolerance = 1e-8;
-  T minMechanicsBoundaryDistance = 0.05;
-  T shearModulus = 0.;
-  T stressRelaxationTime = 0.;
-  T stressTimeStep = 1.;
+struct OxidationDeformationParameters {
+  double viscosity = 1.;
+  double bulkModulus = 1.;
+  double ambientPressure = 0.;
+  double pressureTolerance = 1e-8;
+  double minMechanicsBoundaryDistance = 0.05;
+  double shearModulus = 0.;
+  double stressRelaxationTime = 0.;
+  double stressTimeStep = 1.;
   unsigned harmonicIterations = 500;
   unsigned mechanicsIterations = 5;
   unsigned pressureIterations = 10000;
   unsigned stokesIterations = 200;
-  T mechanicsTolerance = 1e-8;
-  T stokesTolerance = 1e-8;
-  T tolerance = 1e-8;
-  T relaxation = 0.7;         // SIMPLE velocity under-relaxation (0 < α ≤ 1)
-  T pressureRelaxation = 0.5; // SIMPLE pressure under-relaxation (0 < β ≤ 1)
+  double mechanicsTolerance = 1e-8;
+  double stokesTolerance = 1e-8;
+  double tolerance = 1e-8;
+  double relaxation = 0.7; // SIMPLE velocity under-relaxation (0 < α ≤ 1)
+  double pressureRelaxation =
+      0.5; // SIMPLE pressure under-relaxation (0 < β ≤ 1)
   std::size_t maxGridPoints = 5000000;
   int material = -1;
 };
@@ -107,8 +108,8 @@ private:
   SmartPointer<Domain<T, D>> maskInterface = nullptr;
   SmartPointer<OxidationDiffusion<T, D>> diffusionField = nullptr;
   SmartPointer<VelocityField<T>> maskVelocityField = nullptr;
-  OxidationDeformationParameters<T> deformationParameters;
-  OxidationParameters<T> oxidationParameters;
+  OxidationDeformationParameters deformationParameters;
+  OxidationParameters oxidationParameters;
   int reactionSign = 1;
   int ambientSign = -1;
   int maskSign = 1;
@@ -199,8 +200,8 @@ public:
       SmartPointer<Domain<T, D>> passedReactionInterface,
       SmartPointer<Domain<T, D>> passedAmbientInterface,
       SmartPointer<OxidationDiffusion<T, D>> passedDiffusionField,
-      OxidationParameters<T> passedOxidationParameters,
-      OxidationDeformationParameters<T> passedDeformationParameters = {})
+      OxidationParameters passedOxidationParameters,
+      OxidationDeformationParameters passedDeformationParameters = {})
       : reactionInterface(passedReactionInterface),
         ambientInterface(passedAmbientInterface),
         diffusionField(passedDiffusionField),
@@ -267,13 +268,13 @@ public:
     solved = false;
   }
 
-  void setOxidationParameters(OxidationParameters<T> passedParameters) {
+  void setOxidationParameters(OxidationParameters passedParameters) {
     oxidationParameters = passedParameters;
     solved = false;
   }
 
   void
-  setDeformationParameters(OxidationDeformationParameters<T> passedParameters) {
+  setDeformationParameters(OxidationDeformationParameters passedParameters) {
     deformationParameters = passedParameters;
     solved = false;
   }

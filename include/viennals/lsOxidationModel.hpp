@@ -10,10 +10,10 @@
 
 namespace viennals {
 
-template <class T> struct OxidationCouplingParameters {
+struct OxidationCouplingParameters {
   unsigned maxIterations = 10;
-  T tolerance = 1e-6;
-  T relaxation = 1.;
+  double tolerance = 1e-6;
+  double relaxation = 1.;
 };
 
 /// Iterates diffusion, oxide deformation, and pressure-dependent reaction-rate
@@ -23,7 +23,7 @@ template <class T, int D> class OxidationModel {
 
   SmartPointer<OxidationDiffusion<T, D>> diffusionField = nullptr;
   SmartPointer<OxidationDeformation<T, D>> deformationField = nullptr;
-  OxidationCouplingParameters<T> parameters;
+  OxidationCouplingParameters parameters;
   IndexType minIndex{};
   IndexType maxIndex{};
   bool useRequestedBounds = false;
@@ -38,7 +38,7 @@ public:
   OxidationModel(
       SmartPointer<OxidationDiffusion<T, D>> passedDiffusionField,
       SmartPointer<OxidationDeformation<T, D>> passedDeformationField,
-      OxidationCouplingParameters<T> passedParameters = {})
+      OxidationCouplingParameters passedParameters = {})
       : diffusionField(passedDiffusionField),
         deformationField(passedDeformationField), parameters(passedParameters) {
   }
@@ -57,7 +57,7 @@ public:
     deformationField = passedDeformationField;
   }
 
-  void setParameters(OxidationCouplingParameters<T> passedParameters) {
+  void setParameters(OxidationCouplingParameters passedParameters) {
     parameters = passedParameters;
   }
 

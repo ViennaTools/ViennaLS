@@ -14,7 +14,7 @@
 
 namespace viennals {
 
-template <class T> struct OxidationMaskParameters {
+struct OxidationMaskParameters {
   // Contact mode:
   //   0 = kinematic: mask velocity at oxide-contact faces equals the solved
   //       oxide velocity (legacy Dirichlet BC). No traction computation.
@@ -31,44 +31,44 @@ template <class T> struct OxidationMaskParameters {
   // Arrhenius creep viscosity law:
   // eta(T) = eta_ref * exp(E/R * (1/T - 1/T_ref)).
   // Viscosity is in Pa·hr, activation energy in J/mol, temperature in K.
-  T temperature = 1273.15;
-  T referenceTemperature = 1273.15;
-  T referenceViscosity = 5e8;
-  T creepActivationEnergy = 0.;
+  double temperature = 1273.15;
+  double referenceTemperature = 1273.15;
+  double referenceViscosity = 5e8;
+  double creepActivationEnergy = 0.;
   // Young's modulus for elastic contact mode (2), in Pa.
   // Si₃N₄ at 1000 °C: ~250–270 GPa.
-  T youngModulus = T(270e9);
+  double youngModulus = 270e9;
   // Current solve timestep in hours; set by lsOxidation before each apply().
   // Elastic modes use it to scale oxide velocity to contact displacement
   // (v * dt) and to convert the solved displacement back to advection velocity.
-  T stressTimeStep = T(1);
-  T poissonRatio = 0.27;
+  double stressTimeStep = 1;
+  double poissonRatio = 0.27;
   // false = bonded mask/oxide interface (traction continuity in compression
   // and tension); true = optional unilateral contact/release model.
   bool unilateralContact = true;
   // Outer Aitken relaxation factor applied to the mask/oxide coupling residual.
   // Independent of the multigrid smoother below.
-  T relaxation = 1.;
+  double relaxation = 1.;
   // Under-relaxation for the unilateral contact load active set.  A hard
   // compressive/tensile switch makes the mask/oxide fixed point oscillate when
   // contact faces release; relaxing the load keeps the complementarity limit
   // but makes the iteration continuous.
-  T contactLoadRelaxation = 0.25;
+  double contactLoadRelaxation = 0.25;
   // Relative pressure floor for releasing a relaxed contact face.  Machine
   // epsilon is far too small for Pa-scale contact stresses: a tensile face with
   // a decaying old compressive load would otherwise remain "active" for many
   // nonlinear iterations.  The scale is the previous/current normal traction.
-  T contactReleaseFraction = 5e-3;
+  double contactReleaseFraction = 5e-3;
   // SOR omega for the multigrid V-cycle smoother (both forward and backward
   // sweeps).  1.0 is standard Gauss-Seidel; values in (1, 1.4] add over-
   // relaxation.  Do not share this with the Aitken relaxation above.
-  T multigridSmootherOmega = 1.0;
-  T tolerance = 1e-8;
+  double multigridSmootherOmega = 1.0;
+  double tolerance = 1e-8;
   // Minimum sub-grid boundary distance as a fraction of gridDelta. This is a
   // mechanical derivative length scale, so keep it comparable to the oxide
   // deformation solver; near-zero distances make elastic contact stresses blow
   // up as E * u / d.
-  T minBoundaryDistance = 0.05;
+  double minBoundaryDistance = 0.05;
   unsigned maxIterations = 10000;
   std::size_t maxGridPoints = 5000000;
   int material = -1;
@@ -138,7 +138,7 @@ private:
   SmartPointer<OxidationDeformation<T, D>> deformationField = nullptr;
   SmartPointer<Domain<T, D>> maskInterface = nullptr;
   SmartPointer<Domain<T, D>> ambientInterface = nullptr;
-  OxidationMaskParameters<T> parameters;
+  OxidationMaskParameters parameters;
   int maskSign = 1;
   int ambientSign = -1;
 
@@ -190,13 +190,13 @@ public:
 
   OxidationMaskBending(
       SmartPointer<OxidationDeformation<T, D>> passedDeformation,
-      OxidationMaskParameters<T> passedParameters = {})
+      OxidationMaskParameters passedParameters = {})
       : deformationField(passedDeformation), parameters(passedParameters) {}
 
   OxidationMaskBending(
       SmartPointer<OxidationDeformation<T, D>> passedDeformation,
       SmartPointer<Domain<T, D>> passedMaskInterface,
-      OxidationMaskParameters<T> passedParameters = {}, int passedMaskSign = 1)
+      OxidationMaskParameters passedParameters = {}, int passedMaskSign = 1)
       : deformationField(passedDeformation), maskInterface(passedMaskInterface),
         parameters(passedParameters), maskSign((passedMaskSign < 0) ? -1 : 1) {}
 
@@ -204,7 +204,7 @@ public:
 
   static SmartPointer<OxidationMaskBending>
   New(SmartPointer<OxidationDeformation<T, D>> passedDeformation,
-      OxidationMaskParameters<T> passedParameters = {}) {
+      OxidationMaskParameters passedParameters = {}) {
     return SmartPointer<OxidationMaskBending>::New(passedDeformation,
                                                    passedParameters);
   }
@@ -212,8 +212,7 @@ public:
   static SmartPointer<OxidationMaskBending>
   New(SmartPointer<OxidationDeformation<T, D>> passedDeformation,
       SmartPointer<Domain<T, D>> passedMaskInterface,
-      OxidationMaskParameters<T> passedParameters = {},
-      int passedMaskSign = 1) {
+      OxidationMaskParameters passedParameters = {}, int passedMaskSign = 1) {
     return SmartPointer<OxidationMaskBending>::New(
         passedDeformation, passedMaskInterface, passedParameters,
         passedMaskSign);
@@ -237,7 +236,7 @@ public:
     solved = false;
   }
 
-  void setParameters(OxidationMaskParameters<T> passedParameters) {
+  void setParameters(OxidationMaskParameters passedParameters) {
     parameters = passedParameters;
     solved = false;
   }
@@ -255,7 +254,7 @@ public:
     solved = false;
   }
 
-  OxidationMaskParameters<T> getParameters() const { return parameters; }
+  OxidationMaskParameters getParameters() const { return parameters; }
   unsigned getIterations() const { return iterations; }
   T getResidual() const { return residual; }
   std::size_t getNumberOfSolutionNodes() const { return nodes.size(); }
