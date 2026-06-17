@@ -142,6 +142,10 @@ jobs:
         env:
           CIBW_SKIP: ${{ matrix.skip }}
           CIBW_MANYLINUX_X86_64_IMAGE: ghcr.io/viennatools/vienna-builder:cuda-python-nocuda
+          CIBW_CONFIG_SETTINGS: >-
+            cmake.define.VIENNALS_PACKAGE_PYTHON=ON
+            cmake.define.VIENNALS_IS_CI=ON
+            cmake.define.VIENNALS_VTK_RENDERING=OFF
 
       - name: 🏗️ Build Wheels (Other)
         if: ${{ matrix.os != 'ubuntu-latest' }}
@@ -149,6 +153,10 @@ jobs:
         env:
           CIBW_SKIP: ${{ matrix.skip }}
           CIBW_ARCHS_WINDOWS: auto64
+          CIBW_CONFIG_SETTINGS: >-
+            cmake.define.VIENNALS_PACKAGE_PYTHON=ON
+            cmake.define.VIENNALS_IS_CI=ON
+            cmake.define.VIENNALS_VTK_RENDERING=OFF
 
       - name: 🔎 Inspect wheel contents
         shell: bash

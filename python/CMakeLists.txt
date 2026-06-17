@@ -120,8 +120,9 @@ endif()
 # When pyproject.toml sets `install.components = ["python"]`, this runtime
 # component is intentionally skipped; this prevents VTK static archives / SDK
 # files from being copied into the wheel.
-install(
-  DIRECTORY ${VIENNALS_LIB_FOLDER}
-  DESTINATION .
-  OPTIONAL
-  COMPONENT runtime)
+if(NOT VIENNALS_PACKAGE_PYTHON)
+  install(
+    DIRECTORY ${VIENNALS_LIB_FOLDER}
+    DESTINATION .
+    OPTIONAL)
+endif()

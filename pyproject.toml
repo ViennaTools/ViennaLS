@@ -20,13 +20,10 @@ Issues = "https://github.com/ViennaTools/ViennaLS/issues"
 
 [tool.scikit-build]
 build-dir = "build"
-
 cmake.args = [
     "-DVIENNALS_BUILD_PYTHON=ON",
     "-DVIENNALS_PACKAGE_PYTHON=ON",
     "-DVIENNALS_IS_CI=ON",
     "-DVIENNALS_VTK_RENDERING=OFF",
 ]
-
 wheel.packages = ["python/viennals"]
-install.components = ["python"]
