@@ -80,12 +80,12 @@ install(
   TARGETS ${MOD}
   LIBRARY DESTINATION ${PKG}
   RUNTIME DESTINATION ${PKG}
-  ARCHIVE DESTINATION ${PKG}
+  ARCHIVE DESTINATION ${PKG})
 
 # Package files
 install(
   FILES ${CMAKE_SOURCE_DIR}/python/__init__.py
-  DESTINATION ${PKG}
+  DESTINATION ${PKG})
 
 add_dependencies(${PROJECT_NAME} ${MOD})
 
