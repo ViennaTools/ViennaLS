@@ -247,10 +247,13 @@ elseif(VIENNALS_USE_VTK)
       "VTK_ENABLE_REMOTE_MODULES OFF"
       "VTK_LEGACY_REMOVE ON"
 
-      # VTK threading backend.
-      "VTK_SMP_IMPLEMENTATION_TYPE OpenMP"
-      "VTK_SMP_ENABLE_STDTHREAD OFF"
-      "VTK_SMP_ENABLE_OPENMP ON"
+      # VTK threading backend: STDThread gives full parallelism (large file I/O)
+      # without OpenMP. MSVC's /openmp reports version 2.0; VTK requires 3.1 for
+      # atomics and silently force-resets TYPE to Sequential when that check
+      # fails, so OpenMP ends up single-threaded anyway.
+      "VTK_SMP_IMPLEMENTATION_TYPE STDThread"
+      "VTK_SMP_ENABLE_STDTHREAD ON"
+      "VTK_SMP_ENABLE_OPENMP OFF"
       "VTK_SMP_ENABLE_TBB OFF"
 
       # Keep the build small, but do not hard-forbid dependency resolution.
@@ -307,16 +310,6 @@ elseif(VIENNALS_USE_VTK)
          "VTK_MODULE_USE_EXTERNAL_VTK_zlib ON")
   endif()
   
-  if(VIENNALS_PACKAGE_PYTHON)
-    set(VTK_SMP_IMPLEMENTATION_TYPE "OpenMP" CACHE STRING "" FORCE)
-    set(VTK_SMP_ENABLE_OPENMP ON CACHE BOOL "" FORCE)
-    set(VTK_SMP_ENABLE_STDTHREAD OFF CACHE BOOL "" FORCE)
-    set(VTK_SMP_ENABLE_TBB OFF CACHE BOOL "" FORCE)
-
-    message(STATUS "[ViennaLS] Requested VTK_SMP_IMPLEMENTATION_TYPE=${VTK_SMP_IMPLEMENTATION_TYPE}")
-    message(STATUS "[ViennaLS] Requested VTK_SMP_ENABLE_OPENMP=${VTK_SMP_ENABLE_OPENMP}")
-  endif()
-
   CPMFindPackage(
     NAME VTK
     GIT_TAG v9.3.1
