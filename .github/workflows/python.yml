@@ -75,12 +75,6 @@ jobs:
         run: |
           ./vcpkg/vcpkg install --triplet x64-windows
 
-      - name: 🛠️ Disable IPO
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: |
-          sed -i 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DUSE_IPO=off"/g' pyproject.toml
-          cat pyproject.toml
-
       - name: 🐍 Build and check Python Module (Windows)
         if: ${{ matrix.os == 'windows-latest' }}
         shell: pwsh
@@ -142,25 +136,6 @@ jobs:
       - name: 🛞 CIBuildWheel
         run: pip install cibuildwheel==3.4.0 --break-system-packages
 
-      - name: 🛠️ Package Config (Windows)
-        if: ${{ matrix.os == 'windows-latest' }}
-        shell: pwsh
-        run: |
-          sed -i 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_PACKAGE_PYTHON=ON","-DVIENNALS_IS_CI=ON","-DVIENNALS_VTK_RENDERING=OFF"/g' pyproject.toml
-          type pyproject.toml
-
-      - name: 🛠️ Package Config (MacOs)
-        if: ${{ matrix.os == 'macos-latest' }}
-        run: |
-          sed -i .bak 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_PACKAGE_PYTHON=ON","-DVIENNALS_IS_CI=ON","-DVIENNALS_VTK_RENDERING=OFF"/g' pyproject.toml
-          cat pyproject.toml
-
-      - name: 🛠️ Package Config (Linux)
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: |
-          sed -i 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_PACKAGE_PYTHON=ON","-DVIENNALS_IS_CI=ON","-DVIENNALS_VTK_RENDERING=OFF"/g' pyproject.toml
-          cat pyproject.toml
-
       - name: 🏗️ Build Wheels (Linux)
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: python -m cibuildwheel --output-dir wheelhouse
@@ -174,6 +149,22 @@ jobs:
         env:
           CIBW_SKIP: ${{ matrix.skip }}
           CIBW_ARCHS_WINDOWS: auto64
+
+      - name: 🔎 Inspect wheel contents
+        shell: bash
+        run: |
+          python - <<'PY'
+          import glob
+          import zipfile
+
+          for wheel in glob.glob("wheelhouse/*.whl"):
+              print("\n" + wheel)
+              with zipfile.ZipFile(wheel) as zf:
+                  entries = sorted(zf.infolist(), key=lambda item: item.file_size, reverse=True)
+                  for entry in entries[:40]:
+                      size_mb = entry.file_size / 1024 / 1024
+                      print(f"{size_mb:8.2f} MB  {entry.filename}")
+          PY
 
       - name: 📦 Upload Artifact
         uses: actions/upload-artifact@v4

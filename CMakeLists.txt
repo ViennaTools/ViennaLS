@@ -58,6 +58,29 @@ if(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -openmp:llvm /bigobj")
 endif()
 
+# Reduce wheel size when packaging Python wheels.
+# These flags are set before dependencies are added, so VTK is built with them too.
+if(MSVC AND VIENNALS_PACKAGE_PYTHON)
+  string(APPEND CMAKE_C_FLAGS_RELEASE " /O1 /Gy /Gw")
+  string(APPEND CMAKE_CXX_FLAGS_RELEASE " /O1 /Gy /Gw")
+  string(APPEND CMAKE_MODULE_LINKER_FLAGS_RELEASE " /OPT:REF /OPT:ICF")
+  string(APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE " /OPT:REF /OPT:ICF")
+  string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " /OPT:REF /OPT:ICF")
+endif()
+
+if((CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang") AND VIENNALS_PACKAGE_PYTHON)
+  string(APPEND CMAKE_C_FLAGS_RELEASE " -ffunction-sections -fdata-sections")
+  string(APPEND CMAKE_CXX_FLAGS_RELEASE " -ffunction-sections -fdata-sections")
+
+  if(APPLE)
+    string(APPEND CMAKE_MODULE_LINKER_FLAGS_RELEASE " -Wl,-dead_strip")
+    string(APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE " -Wl,-dead_strip")
+  else()
+    string(APPEND CMAKE_MODULE_LINKER_FLAGS_RELEASE " -Wl,--gc-sections")
+    string(APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE " -Wl,--gc-sections")
+  endif()
+endif()
+
 # --------------------------------------------------------------------------------------------------------
 # Configuration
 # --------------------------------------------------------------------------------------------------------
@@ -217,6 +240,11 @@ elseif(VIENNALS_USE_VTK)
   # Common VTK build options
   set(VTK_OPTIONS
       "BUILD_SHARED_LIBS OFF"
+      "VTK_INSTALL_SDK OFF"
+      "VTK_BUILD_TESTING OFF"
+      "BUILD_TESTING OFF"
+      "VTK_BUILD_ALL_MODULES OFF"
+      "VTK_ENABLE_REMOTE_MODULES OFF"
       "VTK_LEGACY_REMOVE ON"
       "VTK_SMP_IMPLEMENTATION_TYPE Sequential"
       "VTK_SMP_ENABLE_STDTHREAD OFF"
@@ -246,12 +274,12 @@ elseif(VIENNALS_USE_VTK)
       "VTK_MODULE_ENABLE_VTK_FiltersCore YES"
       "VTK_MODULE_ENABLE_VTK_FiltersGeneral YES"
       "VTK_MODULE_ENABLE_VTK_FiltersGeometry YES"
-      "VTK_MODULE_ENABLE_VTK_RenderingCore YES"
       "CMAKE_PROJECT_NAME VTK")
   if(VIENNALS_VTK_RENDERING)
     list(
       APPEND
       VTK_OPTIONS
+      "VTK_MODULE_ENABLE_VTK_RenderingCore YES"
       "VTK_MODULE_ENABLE_VTK_RenderingOpenGL2 YES"
       "VTK_MODULE_ENABLE_VTK_RenderingUI YES"
       "VTK_MODULE_ENABLE_VTK_InteractionStyle YES"
