@@ -61,8 +61,8 @@ endif()
 # Reduce wheel size when packaging Python wheels.
 # These flags are set before dependencies are added, so VTK is built with them too.
 if(MSVC AND VIENNALS_PACKAGE_PYTHON)
-  string(APPEND CMAKE_C_FLAGS_RELEASE " /O1 /Gy /Gw")
-  string(APPEND CMAKE_CXX_FLAGS_RELEASE " /O1 /Gy /Gw")
+  string(APPEND CMAKE_C_FLAGS_RELEASE " /O2 /Gy /Gw")
+  string(APPEND CMAKE_CXX_FLAGS_RELEASE " /O2 /Gy /Gw")
   string(APPEND CMAKE_MODULE_LINKER_FLAGS_RELEASE " /OPT:REF /OPT:ICF")
   string(APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE " /OPT:REF /OPT:ICF")
   string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " /OPT:REF /OPT:ICF")
