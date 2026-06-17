@@ -3,7 +3,7 @@ ViennaLS
 ========
 
 ViennaLS is a level set library developed for high performance
-topography simulations. The main design goals are simplicity and efficiency,
+topography and semiconductor process simulations. The main design goals are simplicity and efficiency,
 tailored towards scientific simulations. ViennaLS can also be used for
 visualisation applications, although this is not the main design target.
 """
