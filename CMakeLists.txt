@@ -69,9 +69,9 @@ if(MSVC AND VIENNALS_PACKAGE_PYTHON)
 endif()
 
 if((CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang") AND VIENNALS_PACKAGE_PYTHON)
-  string(APPEND CMAKE_C_FLAGS_RELEASE " -ffunction-sections -fdata-sections")
-  string(APPEND CMAKE_CXX_FLAGS_RELEASE " -ffunction-sections -fdata-sections")
-
+  string(APPEND CMAKE_C_FLAGS_RELEASE " -O3 -DNDEBUG -ffunction-sections -fdata-sections")
+  string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O3 -DNDEBUG -ffunction-sections -fdata-sections")
+  
   if(APPLE)
     string(APPEND CMAKE_MODULE_LINKER_FLAGS_RELEASE " -Wl,-dead_strip")
     string(APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE " -Wl,-dead_strip")
@@ -246,9 +246,9 @@ elseif(VIENNALS_USE_VTK)
       "VTK_BUILD_ALL_MODULES OFF"
       "VTK_ENABLE_REMOTE_MODULES OFF"
       "VTK_LEGACY_REMOVE ON"
-      "VTK_SMP_IMPLEMENTATION_TYPE Sequential"
+      "VTK_SMP_IMPLEMENTATION_TYPE OpenMP"
       "VTK_SMP_ENABLE_STDTHREAD OFF"
-      "VTK_SMP_ENABLE_OPENMP OFF"
+      "VTK_SMP_ENABLE_OPENMP ON"
       "VTK_SMP_ENABLE_TBB OFF"
       "VTK_GROUP_ENABLE_Rendering NO"
       "VTK_GROUP_ENABLE_Imaging NO"
