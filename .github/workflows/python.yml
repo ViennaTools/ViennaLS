@@ -141,7 +141,6 @@ jobs:
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
           CIBW_SKIP: ${{ matrix.skip }}
-          CIBW_MANYLINUX_X86_64_IMAGE: ghcr.io/viennatools/vienna-builder:cuda-python-nocuda
           CIBW_CONFIG_SETTINGS: >-
             cmake.define.VIENNALS_PACKAGE_PYTHON=ON
             cmake.define.VIENNALS_IS_CI=ON

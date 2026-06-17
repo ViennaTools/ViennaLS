@@ -247,13 +247,20 @@ elseif(VIENNALS_USE_VTK)
       "VTK_ENABLE_REMOTE_MODULES OFF"
       "VTK_LEGACY_REMOVE ON"
 
-      # VTK threading backend: STDThread gives full parallelism (large file I/O)
-      # without OpenMP. MSVC's /openmp reports version 2.0; VTK requires 3.1 for
-      # atomics and silently force-resets TYPE to Sequential when that check
-      # fails, so OpenMP ends up single-threaded anyway.
-      "VTK_SMP_IMPLEMENTATION_TYPE STDThread"
-      "VTK_SMP_ENABLE_STDTHREAD ON"
-      "VTK_SMP_ENABLE_OPENMP OFF"
+      # VTK threading backend.
+      # OpenMP gives full parallelism on all platforms.  On MSVC the detected
+      # spec-date is 2.0 (from /openmp), but ViennaLS passes /openmp:llvm which
+      # makes LLVM OpenMP 5.0 the actual runtime — the cmake atomics warning is
+      # cosmetic only.
+      #
+      # STDThread is intentionally kept OFF.  vtkSMPToolsImpl.txx declares the
+      # explicit specialisation of IsParallelScope() for STDThread, but
+      # vtkSMPToolsAPI.cxx only includes vtkSMPToolsImpl.h — it never sees that
+      # declaration.  GCC/Clang resolve this via COMDAT weak/strong symbols;
+      # MSVC emits an import reference that the linker cannot satisfy, producing
+      # LNK2001 for vtkSMPToolsImpl<1>::IsParallelScope.
+      "VTK_SMP_IMPLEMENTATION_TYPE OpenMP"
+      "VTK_SMP_ENABLE_STDTHREAD OFF"
       "VTK_SMP_ENABLE_TBB OFF"
 
       # Keep the build small, but do not hard-forbid dependency resolution.
@@ -310,6 +317,11 @@ elseif(VIENNALS_USE_VTK)
          "VTK_MODULE_USE_EXTERNAL_VTK_zlib ON")
   endif()
   
+  # Guarantee STDTHREAD stays OFF even if VTK's option() fires before CPM's
+  # cache entry is written.  See comment in VTK_OPTIONS above for why this
+  # matters on MSVC.
+  set(VTK_SMP_ENABLE_STDTHREAD OFF CACHE BOOL "" FORCE)
+
   CPMFindPackage(
     NAME VTK
     GIT_TAG v9.3.1
