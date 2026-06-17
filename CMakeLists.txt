@@ -246,21 +246,35 @@ elseif(VIENNALS_USE_VTK)
       "VTK_BUILD_ALL_MODULES OFF"
       "VTK_ENABLE_REMOTE_MODULES OFF"
       "VTK_LEGACY_REMOVE ON"
+
+      # VTK threading backend.
       "VTK_SMP_IMPLEMENTATION_TYPE OpenMP"
       "VTK_SMP_ENABLE_STDTHREAD OFF"
       "VTK_SMP_ENABLE_OPENMP ON"
       "VTK_SMP_ENABLE_TBB OFF"
-      "VTK_GROUP_ENABLE_Rendering NO"
-      "VTK_GROUP_ENABLE_Imaging NO"
-      "VTK_GROUP_ENABLE_Views NO"
-      "VTK_GROUP_ENABLE_Web NO"
+
+      # Keep the build small, but do not hard-forbid dependency resolution.
+      "VTK_GROUP_ENABLE_Rendering DONT_WANT"
+      "VTK_GROUP_ENABLE_Imaging DONT_WANT"
+      "VTK_GROUP_ENABLE_Views DONT_WANT"
+      "VTK_GROUP_ENABLE_Web DONT_WANT"
+
+      # These should stay hard-disabled for wheels.
       "VTK_GROUP_ENABLE_Qt NO"
       "VTK_GROUP_ENABLE_MPI NO"
-      "VTK_GROUP_ENABLE_Parallel NO"
+
+      # Safer than hard NO unless you are certain no selected module can need it.
+      "VTK_GROUP_ENABLE_Parallel DONT_WANT"
       "VTK_MODULE_ENABLE_VTK_ParallelDIY NO"
-      "VTK_MODULE_ENABLE_VTK_ParallelCore NO"
+      "VTK_MODULE_ENABLE_VTK_ParallelCore DONT_WANT"
+
+      # No VTK Python wrapping; ViennaLS uses pybind11.
       "VTK_ENABLE_WRAPPING NO"
+
+      # Avoid optional geospatial/projection dependency.
       "VTK_MODULE_ENABLE_VTK_libproj NO"
+
+      # Required VTK core/IO/filter modules.
       "VTK_MODULE_ENABLE_VTK_CommonExecutionModel YES"
       "VTK_MODULE_ENABLE_VTK_CommonMisc YES"
       "VTK_MODULE_ENABLE_VTK_CommonSystem YES"
@@ -273,25 +287,34 @@ elseif(VIENNALS_USE_VTK)
       "VTK_MODULE_ENABLE_VTK_IOXML YES"
       "VTK_MODULE_ENABLE_VTK_FiltersCore YES"
       "VTK_MODULE_ENABLE_VTK_FiltersGeneral YES"
-      "VTK_MODULE_ENABLE_VTK_FiltersGeometry YES"
-      "CMAKE_PROJECT_NAME VTK")
+      "VTK_MODULE_ENABLE_VTK_FiltersGeometry YES")
   if(VIENNALS_VTK_RENDERING)
     list(
       APPEND
       VTK_OPTIONS
-      "VTK_MODULE_ENABLE_VTK_RenderingCore YES"
-      "VTK_MODULE_ENABLE_VTK_RenderingOpenGL2 YES"
-      "VTK_MODULE_ENABLE_VTK_RenderingUI YES"
-      "VTK_MODULE_ENABLE_VTK_InteractionStyle YES"
-      "VTK_MODULE_ENABLE_VTK_RenderingFreeType YES"
-      "VTK_MODULE_ENABLE_VTK_IOImage YES"
-      "VTK_MODULE_ENABLE_VTK_RenderingAnnotation YES")
+      "VTK_MODULE_ENABLE_VTK_RenderingCore WANT"
+      "VTK_MODULE_ENABLE_VTK_RenderingOpenGL2 WANT"
+      "VTK_MODULE_ENABLE_VTK_RenderingUI WANT"
+      "VTK_MODULE_ENABLE_VTK_InteractionStyle WANT"
+      "VTK_MODULE_ENABLE_VTK_RenderingFreeType WANT"
+      "VTK_MODULE_ENABLE_VTK_IOImage WANT"
+      "VTK_MODULE_ENABLE_VTK_RenderingAnnotation WANT")
   endif()
 
   # macOS-specific adds
   if(APPLE)
     list(APPEND VTK_OPTIONS "VTK_MODULE_USE_EXTERNAL_VTK_png ON"
          "VTK_MODULE_USE_EXTERNAL_VTK_zlib ON")
+  endif()
+  
+  if(VIENNALS_PACKAGE_PYTHON)
+    set(VTK_SMP_IMPLEMENTATION_TYPE "OpenMP" CACHE STRING "" FORCE)
+    set(VTK_SMP_ENABLE_OPENMP ON CACHE BOOL "" FORCE)
+    set(VTK_SMP_ENABLE_STDTHREAD OFF CACHE BOOL "" FORCE)
+    set(VTK_SMP_ENABLE_TBB OFF CACHE BOOL "" FORCE)
+
+    message(STATUS "[ViennaLS] Requested VTK_SMP_IMPLEMENTATION_TYPE=${VTK_SMP_IMPLEMENTATION_TYPE}")
+    message(STATUS "[ViennaLS] Requested VTK_SMP_ENABLE_OPENMP=${VTK_SMP_ENABLE_OPENMP}")
   endif()
 
   CPMFindPackage(
