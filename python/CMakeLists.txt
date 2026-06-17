@@ -51,7 +51,6 @@ CPMFindPackage(
 
 set(PKG viennals)
 set(MOD _core)
-set(PYTHON_INSTALL_COMPONENT python)
 
 pybind11_add_module(${MOD} pyWrap.cpp)
 target_link_libraries(${MOD} PRIVATE ViennaLS)
@@ -82,13 +81,11 @@ install(
   LIBRARY DESTINATION ${PKG}
   RUNTIME DESTINATION ${PKG}
   ARCHIVE DESTINATION ${PKG}
-  COMPONENT ${PYTHON_INSTALL_COMPONENT})
 
 # Package files
 install(
   FILES ${CMAKE_SOURCE_DIR}/python/__init__.py
   DESTINATION ${PKG}
-  COMPONENT ${PYTHON_INSTALL_COMPONENT})
 
 add_dependencies(${PROJECT_NAME} ${MOD})
 
@@ -116,10 +113,6 @@ if((VIENNALS_PACKAGE_PYTHON AND NOT APPLE) OR MSVC)
   endif()
 endif()
 
-# Keep staged dependency folders out of the Python-only wheel component.
-# When pyproject.toml sets `install.components = ["python"]`, this runtime
-# component is intentionally skipped; this prevents VTK static archives / SDK
-# files from being copied into the wheel.
 if(NOT VIENNALS_PACKAGE_PYTHON)
   install(
     DIRECTORY ${VIENNALS_LIB_FOLDER}
