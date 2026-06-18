@@ -353,6 +353,7 @@ elseif(VIENNALS_USE_VTK)
 
     if(VTK_ADDED)
       viennals_patch_vtk_msvc_stdext("${VTK_SOURCE_DIR}")
+      viennals_patch_vtk_openmp_nested("${VTK_SOURCE_DIR}")
 
       if(VIENNALS_BUILD_PYTHON)
         add_subdirectory("${VTK_SOURCE_DIR}" "${VTK_BINARY_DIR}" EXCLUDE_FROM_ALL)
@@ -382,7 +383,8 @@ elseif(VIENNALS_USE_VTK)
       VTK::IOXML
       VTK::FiltersCore
       VTK::FiltersGeneral
-      VTK::FiltersGeometry)
+      VTK::FiltersGeometry
+      CACHE INTERNAL "VTK Libraries")
   if(VIENNALS_VTK_RENDERING)
     list(
       APPEND

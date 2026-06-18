@@ -24,6 +24,7 @@ jobs:
           - os: ubuntu-latest
             container: ghcr.io/viennatools/vienna-builder:cuda-suite-python-nocuda
           - os: windows-latest
+          - os: macos-15-intel
           - os: macos-latest
 
     runs-on: ${{ matrix.os }}
@@ -59,7 +60,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path "${{ env.VCPKG_DEFAULT_BINARY_CACHE }}"
 
       - name: 📋 Install MacOS Dependencies
-        if: ${{ matrix.os == 'macos-latest' }}
+        if: ${{ startsWith(matrix.os, 'macos-') }}
         run: brew install vtk
 
       - name: 🦥 Cache vcpkg binary
@@ -113,7 +114,12 @@ jobs:
           - os: windows-latest
             skip: "cp36-* cp37-* cp38-* cp39-* pp37-* pp38-* pp39-*"
 
+          - os: macos-15-intel
+            archs: x86_64
+            skip: "cp36-* cp37-* cp38-* cp39-* cp310-* pp37-* pp38-* pp39-*"
+
           - os: macos-latest
+            archs: arm64
             skip: "cp36-* cp37-* cp38-* cp39-* cp310-* pp37-* pp38-* pp39-*"
 
     runs-on: ${{ matrix.os }}
@@ -141,10 +147,16 @@ jobs:
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
           CIBW_SKIP: ${{ matrix.skip }}
+          CIBW_TEST_COMMAND: >-
+            python -c "import viennals;
+            print(viennals.__file__);
+            print(viennals.d2);
+            print(viennals.d3)"
           CIBW_CONFIG_SETTINGS: >-
             cmake.define.VIENNALS_PACKAGE_PYTHON=ON
             cmake.define.VIENNALS_IS_CI=ON
             cmake.define.VIENNALS_VTK_RENDERING=ON
+            cmake.define.USE_IPO=OFF
 
       - name: 🏗️ Build Wheels (Other)
         if: ${{ matrix.os != 'ubuntu-latest' }}
@@ -152,6 +164,12 @@ jobs:
         env:
           CIBW_SKIP: ${{ matrix.skip }}
           CIBW_ARCHS_WINDOWS: auto64
+          CIBW_ARCHS_MACOS: ${{ matrix.archs }}
+          CIBW_TEST_COMMAND: >-
+            python -c "import viennals;
+            print(viennals.__file__);
+            print(viennals.d2);
+            print(viennals.d3)"
           CIBW_CONFIG_SETTINGS: >-
             cmake.define.VIENNALS_PACKAGE_PYTHON=ON
             cmake.define.VIENNALS_IS_CI=ON

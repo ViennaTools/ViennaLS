@@ -109,3 +109,62 @@ function(viennals_patch_vtk_msvc_stdext VTK_SOURCE_DIR)
 
   message(STATUS "[ViennaLS] Applied VTK MSVC stdext patch")
 endfunction()
+
+function(viennals_patch_vtk_openmp_nested VTK_SOURCE_DIR)
+  set(_vtk_smp_openmp
+      "${VTK_SOURCE_DIR}/Common/Core/SMP/OpenMP/vtkSMPTools.cxx")
+
+  if(NOT EXISTS "${_vtk_smp_openmp}")
+    message(
+      WARNING
+        "[ViennaLS] Could not find VTK OpenMP SMP source for omp_set_nested patch: ${_vtk_smp_openmp}"
+    )
+    return()
+  endif()
+
+  file(READ "${_vtk_smp_openmp}" _vtk_smp_contents)
+
+  string(FIND "${_vtk_smp_contents}" "VIENNALS_PATCH_OMP_SET_NESTED" _already_patched)
+
+  if(NOT _already_patched EQUAL -1)
+    message(STATUS "[ViennaLS] VTK OpenMP nested-parallelism patch already applied")
+    return()
+  endif()
+
+  string(FIND "${_vtk_smp_contents}" "omp_set_nested(" _has_set_nested)
+
+  if(_has_set_nested EQUAL -1)
+    message(STATUS "[ViennaLS] VTK OpenMP nested-parallelism patch not needed")
+    return()
+  endif()
+
+  # Replace:
+  #   omp_set_nested(isNested);
+  #
+  # with the modern OpenMP 5.0 equivalent when available.
+  #
+  # OpenMP semantics:
+  #   omp_set_nested(true)  -> max-active-levels = supported active levels
+  #   omp_set_nested(false) -> max-active-levels = 1
+  string(REGEX REPLACE
+         "omp_set_nested\\(([^\\)]*)\\);"
+         "#if defined(_OPENMP) && _OPENMP >= 201811\n"
+         "  /* VIENNALS_PATCH_OMP_SET_NESTED */\n"
+         "  omp_set_max_active_levels((\\1) ? omp_get_supported_active_levels() : 1);\n"
+         "#else\n"
+         "  omp_set_nested(\\1);\n"
+         "#endif"
+         _vtk_smp_contents
+         "${_vtk_smp_contents}")
+
+  # Also avoid the matching deprecated query routine if VTK uses it.
+  string(REGEX REPLACE
+         "omp_get_nested\\(\\)"
+         "/* VIENNALS_PATCH_OMP_GET_NESTED */ (omp_get_max_active_levels() > 1)"
+         _vtk_smp_contents
+         "${_vtk_smp_contents}")
+
+  file(WRITE "${_vtk_smp_openmp}" "${_vtk_smp_contents}")
+
+  message(STATUS "[ViennaLS] Applied VTK OpenMP nested-parallelism patch")
+endfunction()
