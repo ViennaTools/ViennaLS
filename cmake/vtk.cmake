@@ -141,16 +141,23 @@ function(viennals_patch_vtk_openmp_nested VTK_SOURCE_DIR)
   # Replace:
   #   omp_set_nested(isNested);
   #
-  # with the modern OpenMP 5.0 equivalent when available.
+  # with the modern max-active-levels control.
+  #
+  # Apple Clang/Homebrew libomp can expose omp_set_max_active_levels() while
+  # still advertising an older _OPENMP value, so gating on the 201811 macro
+  # leaves the deprecated API call in place on macOS.
   #
   # OpenMP semantics:
-  #   omp_set_nested(true)  -> max-active-levels = supported active levels
+  #   omp_set_nested(true)  -> enable nested parallelism
   #   omp_set_nested(false) -> max-active-levels = 1
+  #
+  # Setting a large max-active-levels value is clamped by the runtime to the
+  # supported limit, so it is a practical substitute for the "true" case.
   string(REGEX REPLACE
          "omp_set_nested\\(([^\\)]*)\\);"
-         "#if defined(_OPENMP) && _OPENMP >= 201811\n"
+         "#if defined(_OPENMP) && _OPENMP >= 200805\n"
          "  /* VIENNALS_PATCH_OMP_SET_NESTED */\n"
-         "  omp_set_max_active_levels((\\1) ? omp_get_supported_active_levels() : 1);\n"
+         "  omp_set_max_active_levels((\\1) ? 1024 : 1);\n"
          "#else\n"
          "  omp_set_nested(\\1);\n"
          "#endif"
