@@ -167,9 +167,21 @@ if((VIENNALS_PACKAGE_PYTHON AND NOT APPLE) OR MSVC)
   endif()
 endif()
 
-if((VIENNALS_PACKAGE_PYTHON AND NOT APPLE) OR MSVC)
+if(NOT VIENNALS_PACKAGE_PYTHON)
+  # Dev/test builds: install the whole lib folder (VTK DLLs from vcpkg on
+  # Windows, VTK .so on Linux, etc.) so the module can be imported in-place.
   install(
     DIRECTORY ${VIENNALS_LIB_FOLDER}
     DESTINATION .
+    OPTIONAL)
+elseif(MSVC)
+  # Package build on Windows: static VTK is already compiled into _core.pyd.
+  # Only DLLs are needed at runtime (libomp140.x86_64.dll etc.).
+  # Installing the full VIENNALS_LIB_FOLDER would add hundreds of MBs of .lib
+  # files; restrict to *.dll only.
+  install(
+    DIRECTORY ${VIENNALS_LIB_FOLDER}
+    DESTINATION .
+    FILES_MATCHING PATTERN "*.dll"
     OPTIONAL)
 endif()
