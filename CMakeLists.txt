@@ -274,11 +274,6 @@ elseif(VIENNALS_USE_VTK)
       "VTK_GROUP_ENABLE_Qt NO"
       "VTK_GROUP_ENABLE_MPI NO"
 
-      # Safer than hard NO unless you are certain no selected module can need it.
-      "VTK_GROUP_ENABLE_Parallel DONT_WANT"
-      "VTK_MODULE_ENABLE_VTK_ParallelDIY DONT_WANT"
-      "VTK_MODULE_ENABLE_VTK_ParallelCore DONT_WANT"
-
       # No VTK Python wrapping; ViennaLS uses pybind11.
       "VTK_ENABLE_WRAPPING NO"
 
@@ -299,17 +294,47 @@ elseif(VIENNALS_USE_VTK)
       "VTK_MODULE_ENABLE_VTK_FiltersCore YES"
       "VTK_MODULE_ENABLE_VTK_FiltersGeneral YES"
       "VTK_MODULE_ENABLE_VTK_FiltersGeometry YES")
+
+  if(MSVC)
+    list(
+      APPEND
+      VTK_OPTIONS
+      "VTK_GROUP_ENABLE_Parallel DONT_WANT"
+      "VTK_MODULE_ENABLE_VTK_ParallelDIY NO"
+      "VTK_MODULE_ENABLE_VTK_ParallelCore DONT_WANT")
+  else()
+    list(
+      APPEND
+      VTK_OPTIONS
+      "VTK_GROUP_ENABLE_Parallel DONT_WANT"
+      "VTK_MODULE_ENABLE_VTK_ParallelDIY DONT_WANT"
+      "VTK_MODULE_ENABLE_VTK_ParallelCore DONT_WANT")
+  endif()
+
   if(VIENNALS_VTK_RENDERING)
     list(
       APPEND
       VTK_OPTIONS
       "VTK_MODULE_ENABLE_VTK_RenderingCore YES"
       "VTK_MODULE_ENABLE_VTK_RenderingOpenGL2 YES"
-      "VTK_MODULE_ENABLE_VTK_RenderingUI YES"
-      "VTK_MODULE_ENABLE_VTK_InteractionStyle YES"
       "VTK_MODULE_ENABLE_VTK_RenderingFreeType YES"
       "VTK_MODULE_ENABLE_VTK_IOImage YES"
       "VTK_MODULE_ENABLE_VTK_RenderingAnnotation YES")
+
+    if(NOT MSVC)
+      list(
+        APPEND
+        VTK_OPTIONS
+        "VTK_MODULE_ENABLE_VTK_RenderingUI YES"
+        "VTK_MODULE_ENABLE_VTK_InteractionStyle YES")
+    else()
+      message(STATUS "[ViennaLS] Disabling VTK RenderingUI/InteractionStyle on MSVC to avoid VTK ParallelDIY/stdext build failure")
+      list(
+        APPEND
+        VTK_OPTIONS
+        "VTK_MODULE_ENABLE_VTK_RenderingUI NO"
+        "VTK_MODULE_ENABLE_VTK_InteractionStyle NO")
+    endif()
   endif()
 
   # macOS-specific adds
@@ -326,6 +351,12 @@ elseif(VIENNALS_USE_VTK)
   set(VTK_SMP_ENABLE_STDTHREAD OFF CACHE BOOL "" FORCE)
   set(VTK_SMP_ENABLE_OPENMP ON CACHE BOOL "" FORCE)
   set(VTK_SMP_ENABLE_TBB OFF CACHE BOOL "" FORCE)
+
+  if(MSVC)
+    set(VTK_MODULE_ENABLE_VTK_ParallelDIY "NO" CACHE STRING "" FORCE)
+    set(VTK_MODULE_ENABLE_VTK_RenderingUI "NO" CACHE STRING "" FORCE)
+    set(VTK_MODULE_ENABLE_VTK_InteractionStyle "NO" CACHE STRING "" FORCE)
+  endif()
 
   CPMFindPackage(
     NAME VTK
@@ -363,11 +394,18 @@ elseif(VIENNALS_USE_VTK)
       VTK_LIBRARIES
       VTK::RenderingCore
       VTK::RenderingOpenGL2
-      VTK::RenderingUI
-      VTK::InteractionStyle
       VTK::RenderingFreeType
       VTK::RenderingAnnotation
       VTK::IOImage)
+
+    if(NOT MSVC)
+      list(
+        APPEND
+        VTK_LIBRARIES
+        VTK::RenderingUI
+        VTK::InteractionStyle)
+    endif()
+
     target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_VTK_RENDERING=1)
   endif()
   target_link_libraries(${PROJECT_NAME} INTERFACE ${VTK_LIBRARIES})
