@@ -293,23 +293,11 @@ elseif(VIENNALS_USE_VTK)
       "VTK_MODULE_ENABLE_VTK_IOXML YES"
       "VTK_MODULE_ENABLE_VTK_FiltersCore YES"
       "VTK_MODULE_ENABLE_VTK_FiltersGeneral YES"
-      "VTK_MODULE_ENABLE_VTK_FiltersGeometry YES")
-
-  if(MSVC)
-    list(
-      APPEND
-      VTK_OPTIONS
-      "VTK_GROUP_ENABLE_Parallel DONT_WANT"
-      "VTK_MODULE_ENABLE_VTK_ParallelDIY NO"
-      "VTK_MODULE_ENABLE_VTK_ParallelCore DONT_WANT")
-  else()
-    list(
-      APPEND
-      VTK_OPTIONS
+      "VTK_MODULE_ENABLE_VTK_FiltersGeometry YES"
+      
       "VTK_GROUP_ENABLE_Parallel DONT_WANT"
       "VTK_MODULE_ENABLE_VTK_ParallelDIY DONT_WANT"
       "VTK_MODULE_ENABLE_VTK_ParallelCore DONT_WANT")
-  endif()
 
   if(VIENNALS_VTK_RENDERING)
     list(
@@ -318,22 +306,10 @@ elseif(VIENNALS_USE_VTK)
       "VTK_MODULE_ENABLE_VTK_RenderingCore YES"
       "VTK_MODULE_ENABLE_VTK_RenderingOpenGL2 YES"
       "VTK_MODULE_ENABLE_VTK_RenderingUI YES"
+      "VTK_MODULE_ENABLE_VTK_InteractionStyle YES"
       "VTK_MODULE_ENABLE_VTK_RenderingFreeType YES"
       "VTK_MODULE_ENABLE_VTK_IOImage YES"
       "VTK_MODULE_ENABLE_VTK_RenderingAnnotation YES")
-
-    if(NOT MSVC)
-      list(
-        APPEND
-        VTK_OPTIONS
-        "VTK_MODULE_ENABLE_VTK_InteractionStyle YES")
-    else()
-      message(STATUS "[ViennaLS] Disabling VTK InteractionStyle on MSVC to avoid VTK ParallelDIY/stdext build failure")
-      list(
-        APPEND
-        VTK_OPTIONS
-        "VTK_MODULE_ENABLE_VTK_InteractionStyle NO")
-    endif()
   endif()
 
   # macOS-specific adds
@@ -351,18 +327,40 @@ elseif(VIENNALS_USE_VTK)
   set(VTK_SMP_ENABLE_OPENMP ON CACHE BOOL "" FORCE)
   set(VTK_SMP_ENABLE_TBB OFF CACHE BOOL "" FORCE)
 
-  if(MSVC)
-    set(VTK_MODULE_ENABLE_VTK_ParallelDIY "NO" CACHE STRING "" FORCE)
-    set(VTK_MODULE_ENABLE_VTK_InteractionStyle "NO" CACHE STRING "" FORCE)
+  if(NOT VIENNALS_PACKAGE_PYTHON)
+    find_package(VTK 9.0.0 QUIET)
   endif()
 
-  CPMFindPackage(
-    NAME VTK
-    GIT_TAG v9.3.1
-    VERSION 9.0.0
-    GIT_REPOSITORY "https://gitlab.kitware.com/vtk/vtk"
-    EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON}
-    OPTIONS ${VTK_OPTIONS})
+  if(VTK_FOUND)
+    message(STATUS "[ViennaLS] Using system VTK ${VTK_VERSION}")
+  else()
+    message(STATUS "[ViennaLS] Using bundled VTK v9.3.1")
+
+    # Apply CPM-style options manually because DOWNLOAD_ONLY does not configure VTK.
+    foreach(_vtk_option IN LISTS VTK_OPTIONS)
+      if(_vtk_option MATCHES "^([^ ]+) +(.*)$")
+        set("${CMAKE_MATCH_1}" "${CMAKE_MATCH_2}" CACHE STRING "" FORCE)
+      else()
+        message(FATAL_ERROR "[ViennaLS] Invalid VTK option: ${_vtk_option}")
+      endif()
+    endforeach()
+
+    CPMAddPackage(
+      NAME VTK
+      GIT_TAG v9.3.1
+      GIT_REPOSITORY "https://gitlab.kitware.com/vtk/vtk"
+      DOWNLOAD_ONLY YES)
+
+    if(VTK_ADDED)
+      viennals_patch_vtk_msvc_stdext("${VTK_SOURCE_DIR}")
+
+      if(VIENNALS_BUILD_PYTHON)
+        add_subdirectory("${VTK_SOURCE_DIR}" "${VTK_BINARY_DIR}" EXCLUDE_FROM_ALL)
+      else()
+        add_subdirectory("${VTK_SOURCE_DIR}" "${VTK_BINARY_DIR}")
+      endif()
+    endif()
+  endif()
 
   message(STATUS "[ViennaLS] VTK_SMP_IMPLEMENTATION_TYPE=${VTK_SMP_IMPLEMENTATION_TYPE}")
   message(STATUS "[ViennaLS] VTK_SMP_ENABLE_OPENMP=${VTK_SMP_ENABLE_OPENMP}")
@@ -384,26 +382,18 @@ elseif(VIENNALS_USE_VTK)
       VTK::IOXML
       VTK::FiltersCore
       VTK::FiltersGeneral
-      VTK::FiltersGeometry
-      CACHE INTERNAL "VTK Libraries")
+      VTK::FiltersGeometry)
   if(VIENNALS_VTK_RENDERING)
     list(
       APPEND
       VTK_LIBRARIES
       VTK::RenderingCore
       VTK::RenderingOpenGL2
+      VTK::InteractionStyle
       VTK::RenderingUI
       VTK::RenderingFreeType
       VTK::RenderingAnnotation
       VTK::IOImage)
-
-    if(NOT MSVC)
-      list(
-        APPEND
-        VTK_LIBRARIES
-        VTK::InteractionStyle)
-    endif()
-
     target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_VTK_RENDERING=1)
   endif()
   target_link_libraries(${PROJECT_NAME} INTERFACE ${VTK_LIBRARIES})

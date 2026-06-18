@@ -58,3 +58,54 @@ macro(import_vtk_python)
 
   message(STATUS "[ViennaLS] Successfully created VTK::PythonLibs target")
 endmacro()
+
+function(viennals_patch_vtk_msvc_stdext VTK_SOURCE_DIR)
+  if(NOT MSVC)
+    return()
+  endif()
+
+  set(_vtk_fmt_header
+      "${VTK_SOURCE_DIR}/ThirdParty/diy2/vtkdiy2/include/vtkdiy2/fmt/format.h")
+
+  if(NOT EXISTS "${_vtk_fmt_header}")
+    message(
+      WARNING
+        "[ViennaLS] Could not find VTK diy2/fmt header for MSVC stdext patch: ${_vtk_fmt_header}"
+    )
+    return()
+  endif()
+
+  file(READ "${_vtk_fmt_header}" _vtk_fmt_contents)
+
+  set(_patched_guard
+      "#if defined(_SECURE_SCL) && (!defined(_MSC_VER) || _MSC_VER < 1951)")
+
+  string(FIND "${_vtk_fmt_contents}" "${_patched_guard}" _already_patched)
+
+  if(NOT _already_patched EQUAL -1)
+    message(STATUS "[ViennaLS] VTK MSVC stdext patch already applied")
+    return()
+  endif()
+
+  set(_old_guard "#ifdef _SECURE_SCL")
+
+  string(FIND "${_vtk_fmt_contents}" "${_old_guard}" _old_guard_pos)
+
+  if(_old_guard_pos EQUAL -1)
+    message(
+      WARNING
+        "[ViennaLS] VTK MSVC stdext patch was not applied; expected guard not found in ${_vtk_fmt_header}"
+    )
+    return()
+  endif()
+
+  string(REPLACE
+         "${_old_guard}"
+         "${_patched_guard}"
+         _vtk_fmt_contents
+         "${_vtk_fmt_contents}")
+
+  file(WRITE "${_vtk_fmt_header}" "${_vtk_fmt_contents}")
+
+  message(STATUS "[ViennaLS] Applied VTK MSVC stdext patch")
+endfunction()
