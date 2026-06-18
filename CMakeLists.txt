@@ -317,6 +317,7 @@ elseif(VIENNALS_USE_VTK)
       VTK_OPTIONS
       "VTK_MODULE_ENABLE_VTK_RenderingCore YES"
       "VTK_MODULE_ENABLE_VTK_RenderingOpenGL2 YES"
+      "VTK_MODULE_ENABLE_VTK_RenderingUI YES"
       "VTK_MODULE_ENABLE_VTK_RenderingFreeType YES"
       "VTK_MODULE_ENABLE_VTK_IOImage YES"
       "VTK_MODULE_ENABLE_VTK_RenderingAnnotation YES")
@@ -325,14 +326,12 @@ elseif(VIENNALS_USE_VTK)
       list(
         APPEND
         VTK_OPTIONS
-        "VTK_MODULE_ENABLE_VTK_RenderingUI YES"
         "VTK_MODULE_ENABLE_VTK_InteractionStyle YES")
     else()
-      message(STATUS "[ViennaLS] Disabling VTK RenderingUI/InteractionStyle on MSVC to avoid VTK ParallelDIY/stdext build failure")
+      message(STATUS "[ViennaLS] Disabling VTK InteractionStyle on MSVC to avoid VTK ParallelDIY/stdext build failure")
       list(
         APPEND
         VTK_OPTIONS
-        "VTK_MODULE_ENABLE_VTK_RenderingUI NO"
         "VTK_MODULE_ENABLE_VTK_InteractionStyle NO")
     endif()
   endif()
@@ -354,7 +353,6 @@ elseif(VIENNALS_USE_VTK)
 
   if(MSVC)
     set(VTK_MODULE_ENABLE_VTK_ParallelDIY "NO" CACHE STRING "" FORCE)
-    set(VTK_MODULE_ENABLE_VTK_RenderingUI "NO" CACHE STRING "" FORCE)
     set(VTK_MODULE_ENABLE_VTK_InteractionStyle "NO" CACHE STRING "" FORCE)
   endif()
 
@@ -394,6 +392,7 @@ elseif(VIENNALS_USE_VTK)
       VTK_LIBRARIES
       VTK::RenderingCore
       VTK::RenderingOpenGL2
+      VTK::RenderingUI
       VTK::RenderingFreeType
       VTK::RenderingAnnotation
       VTK::IOImage)
@@ -402,7 +401,6 @@ elseif(VIENNALS_USE_VTK)
       list(
         APPEND
         VTK_LIBRARIES
-        VTK::RenderingUI
         VTK::InteractionStyle)
     endif()
 
