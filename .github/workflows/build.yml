@@ -18,6 +18,7 @@ jobs:
           - Debug
 
         os:
+          - macos-15-intel
           - macos-latest
           - windows-latest
 
