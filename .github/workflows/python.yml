@@ -144,7 +144,7 @@ jobs:
           CIBW_CONFIG_SETTINGS: >-
             cmake.define.VIENNALS_PACKAGE_PYTHON=ON
             cmake.define.VIENNALS_IS_CI=ON
-            cmake.define.VIENNALS_VTK_RENDERING=OFF
+            cmake.define.VIENNALS_VTK_RENDERING=ON
 
       - name: 🏗️ Build Wheels (Other)
         if: ${{ matrix.os != 'ubuntu-latest' }}
@@ -155,7 +155,7 @@ jobs:
           CIBW_CONFIG_SETTINGS: >-
             cmake.define.VIENNALS_PACKAGE_PYTHON=ON
             cmake.define.VIENNALS_IS_CI=ON
-            cmake.define.VIENNALS_VTK_RENDERING=OFF
+            cmake.define.VIENNALS_VTK_RENDERING=ON
 
       - name: 🔎 Inspect wheel contents
         shell: bash

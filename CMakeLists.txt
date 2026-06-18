@@ -261,6 +261,7 @@ elseif(VIENNALS_USE_VTK)
       # LNK2001 for vtkSMPToolsImpl<1>::IsParallelScope.
       "VTK_SMP_IMPLEMENTATION_TYPE OpenMP"
       "VTK_SMP_ENABLE_STDTHREAD OFF"
+      "VTK_SMP_ENABLE_OPENMP ON"
       "VTK_SMP_ENABLE_TBB OFF"
 
       # Keep the build small, but do not hard-forbid dependency resolution.
@@ -302,13 +303,13 @@ elseif(VIENNALS_USE_VTK)
     list(
       APPEND
       VTK_OPTIONS
-      "VTK_MODULE_ENABLE_VTK_RenderingCore WANT"
-      "VTK_MODULE_ENABLE_VTK_RenderingOpenGL2 WANT"
-      "VTK_MODULE_ENABLE_VTK_RenderingUI WANT"
-      "VTK_MODULE_ENABLE_VTK_InteractionStyle WANT"
-      "VTK_MODULE_ENABLE_VTK_RenderingFreeType WANT"
-      "VTK_MODULE_ENABLE_VTK_IOImage WANT"
-      "VTK_MODULE_ENABLE_VTK_RenderingAnnotation WANT")
+      "VTK_MODULE_ENABLE_VTK_RenderingCore YES"
+      "VTK_MODULE_ENABLE_VTK_RenderingOpenGL2 YES"
+      "VTK_MODULE_ENABLE_VTK_RenderingUI YES"
+      "VTK_MODULE_ENABLE_VTK_InteractionStyle YES"
+      "VTK_MODULE_ENABLE_VTK_RenderingFreeType YES"
+      "VTK_MODULE_ENABLE_VTK_IOImage YES"
+      "VTK_MODULE_ENABLE_VTK_RenderingAnnotation YES")
   endif()
 
   # macOS-specific adds
@@ -320,7 +321,11 @@ elseif(VIENNALS_USE_VTK)
   # Guarantee STDTHREAD stays OFF even if VTK's option() fires before CPM's
   # cache entry is written.  See comment in VTK_OPTIONS above for why this
   # matters on MSVC.
+  # Guarantee VTK uses OpenMP SMP for package builds.
+  set(VTK_SMP_IMPLEMENTATION_TYPE "OpenMP" CACHE STRING "" FORCE)
   set(VTK_SMP_ENABLE_STDTHREAD OFF CACHE BOOL "" FORCE)
+  set(VTK_SMP_ENABLE_OPENMP ON CACHE BOOL "" FORCE)
+  set(VTK_SMP_ENABLE_TBB OFF CACHE BOOL "" FORCE)
 
   CPMFindPackage(
     NAME VTK
@@ -329,6 +334,11 @@ elseif(VIENNALS_USE_VTK)
     GIT_REPOSITORY "https://gitlab.kitware.com/vtk/vtk"
     EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON}
     OPTIONS ${VTK_OPTIONS})
+
+  message(STATUS "[ViennaLS] VTK_SMP_IMPLEMENTATION_TYPE=${VTK_SMP_IMPLEMENTATION_TYPE}")
+  message(STATUS "[ViennaLS] VTK_SMP_ENABLE_OPENMP=${VTK_SMP_ENABLE_OPENMP}")
+  message(STATUS "[ViennaLS] VTK_SMP_ENABLE_STDTHREAD=${VTK_SMP_ENABLE_STDTHREAD}")
+  message(STATUS "[ViennaLS] VTK_SMP_ENABLE_TBB=${VTK_SMP_ENABLE_TBB}")
 
   target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_USE_VTK=1)
 
