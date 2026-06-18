@@ -182,6 +182,6 @@ elseif(MSVC)
   install(
     DIRECTORY ${VIENNALS_LIB_FOLDER}
     DESTINATION .
-    FILES_MATCHING PATTERN "*.dll"
-    OPTIONAL)
+    OPTIONAL
+    FILES_MATCHING PATTERN "*.dll")
 endif()
