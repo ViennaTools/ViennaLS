@@ -48,7 +48,7 @@ jobs:
           os: ${{ matrix.os }}
 
       - name: 📋 Install MacOS Dependencies
-        if: ${{ matrix.os == 'macos-latest' }}
+        if: ${{ startsWith(matrix.os, 'macos-') }}
         run: brew install vtk
 
       - name: 🖥️ Setup vcpkg (Windows)
