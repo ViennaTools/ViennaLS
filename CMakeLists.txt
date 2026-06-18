@@ -383,8 +383,7 @@ elseif(VIENNALS_USE_VTK)
       VTK::IOXML
       VTK::FiltersCore
       VTK::FiltersGeneral
-      VTK::FiltersGeometry
-      CACHE INTERNAL "VTK Libraries")
+      VTK::FiltersGeometry)
   if(VIENNALS_VTK_RENDERING)
     list(
       APPEND

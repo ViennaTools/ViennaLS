@@ -156,6 +156,7 @@ jobs:
             cmake.define.VIENNALS_PACKAGE_PYTHON=ON
             cmake.define.VIENNALS_IS_CI=ON
             cmake.define.VIENNALS_VTK_RENDERING=ON
+            cmake.define.USE_IPO=OFF
 
       - name: 🏗️ Build Wheels (Other)
         if: ${{ matrix.os != 'ubuntu-latest' }}
