@@ -276,7 +276,7 @@ elseif(VIENNALS_USE_VTK)
 
       # Safer than hard NO unless you are certain no selected module can need it.
       "VTK_GROUP_ENABLE_Parallel DONT_WANT"
-      "VTK_MODULE_ENABLE_VTK_ParallelDIY NO"
+      "VTK_MODULE_ENABLE_VTK_ParallelDIY DONT_WANT"
       "VTK_MODULE_ENABLE_VTK_ParallelCore DONT_WANT"
 
       # No VTK Python wrapping; ViennaLS uses pybind11.
