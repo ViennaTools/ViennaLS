@@ -38,7 +38,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: 🖥️ Setup Environment
         uses: ./.github/actions/setup
@@ -98,7 +98,7 @@ jobs:
           ./venv/bin/python -c "import viennals; print(viennals.__doc__)"
 
       - name: 📦 Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Pre-Built (${{ matrix.os }})
           path: venv
@@ -110,18 +110,18 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            skip: "cp36-* cp37-* cp38-* cp39-* pp37-* pp38-* pp39-* *-manylinux_i686 *-musllinux_*"
+            skip: "cp38-* cp39-* *-manylinux_i686 *-musllinux_*"
 
           - os: windows-latest
-            skip: "cp36-* cp37-* cp38-* cp39-* pp37-* pp38-* pp39-*"
+            skip: "cp38-* cp39-*"
 
           - os: macos-15-intel
             archs: x86_64
-            skip: "cp36-* cp37-* cp38-* cp39-* cp310-* pp37-* pp38-* pp39-*"
+            skip: "cp38-* cp39-* cp310-*"
 
           - os: macos-latest
             archs: arm64
-            skip: "cp36-* cp37-* cp38-* cp39-* cp310-* pp37-* pp38-* pp39-*"
+            skip: "cp38-* cp39-* cp310-*"
 
     runs-on: ${{ matrix.os }}
 
@@ -133,7 +133,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: 🖥️ Setup Environment
         uses: ./.github/actions/setup
@@ -206,7 +206,10 @@ jobs:
         run: |
           python - <<'PY'
           import glob
+          import sys
           import zipfile
+
+          missing = []
 
           for wheel in glob.glob("wheelhouse/*.whl"):
               print("\n" + wheel)
@@ -215,10 +218,34 @@ jobs:
                   for entry in entries[:40]:
                       size_mb = entry.file_size / 1024 / 1024
                       print(f"{size_mb:8.2f} MB  {entry.filename}")
+
+                  names = [entry.filename for entry in entries]
+                  if "win_amd64" in wheel:
+                      libs = [name for name in names if name.startswith("viennals.libs/")]
+                      openmp = [
+                          name
+                          for name in libs
+                          if name.lower() == "viennals.libs/libomp140.x86_64.dll"
+                      ]
+
+                      print("\nWindows runtime libraries:")
+                      for name in libs:
+                          print(f"  {name}")
+
+                      if not libs:
+                          missing.append(f"{wheel}: missing viennals.libs/")
+                      if not openmp:
+                          missing.append(f"{wheel}: missing viennals.libs/libomp140.x86_64.dll")
+
+          if missing:
+              print("\nWheel runtime checks failed:", file=sys.stderr)
+              for item in missing:
+                  print(f"  {item}", file=sys.stderr)
+              raise SystemExit(1)
           PY
 
       - name: 📦 Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: wheels-${{ matrix.os }}
           path: ./wheelhouse/*.whl
