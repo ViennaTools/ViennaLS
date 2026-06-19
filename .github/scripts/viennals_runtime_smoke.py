@@ -13,6 +13,7 @@ import tempfile
 
 import viennals as vls
 
+print("ViennaLS runtime smoke: imported viennals")
 print(vls.__file__)
 print(vls.d2)
 print(vls.d3)
@@ -20,6 +21,7 @@ print(vls.d3)
 tmp = Path(tempfile.mkdtemp(prefix="viennals-runtime-smoke-"))
 
 # Exercise direct VTK mesh writing from the installed wheel.
+print("ViennaLS runtime smoke: writing hand-built mesh with VTKWriter")
 mesh = vls.Mesh()
 mesh.insertNextNode([0.0, 0.0, 0.0])
 mesh.insertNextNode([1.0, 0.0, 0.0])
@@ -30,9 +32,11 @@ vls.VTKWriter(mesh, str(mesh_file)).apply()
 
 if not mesh_file.exists() or mesh_file.stat().st_size == 0:
     raise RuntimeError(f"VTKWriter did not create {mesh_file}")
+print(f"ViennaLS runtime smoke: wrote {mesh_file}")
 
 # Exercise a small level-set-to-surface path before writing. This hits more of
 # the bundled VTK runtime than importing the module or writing a hand-built mesh.
+print("ViennaLS runtime smoke: writing level-set surface with VTKWriter")
 d2 = vls.d2
 bounds = [-1.0, 1.0, -1.0, 1.0]
 bcs = [
@@ -49,16 +53,23 @@ vls.VTKWriter(surface, str(surface_file)).apply()
 
 if not surface_file.exists() or surface_file.stat().st_size == 0:
     raise RuntimeError(f"VTKWriter did not create {surface_file}")
+print(f"ViennaLS runtime smoke: wrote {surface_file}")
 
 # Exercise the higher-level VTK visualization writer when the wheel was built
 # with VTK support.
 d3 = vls.d3
 if hasattr(d3, "WriteVisualizationMesh"):
+    print("ViennaLS runtime smoke: writing visualization mesh")
     vis_domain = d3.Domain(0.25)
     d3.MakeGeometry(vis_domain, d3.Sphere([0.0, 0.0, 0.0], 1.0)).apply()
     vis_writer = d3.WriteVisualizationMesh(vis_domain)
     vis_writer.setFileName(str(tmp / "visualization"))
     vis_writer.apply()
+    print("ViennaLS runtime smoke: wrote visualization mesh")
+else:
+    print("ViennaLS runtime smoke: WriteVisualizationMesh unavailable")
+
+print("ViennaLS runtime smoke: completed")
 """
 
 
