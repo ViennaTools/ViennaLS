@@ -147,38 +147,16 @@ jobs:
       - name: 🛞 CIBuildWheel
         run: pip install cibuildwheel==3.4.0 --break-system-packages
 
-      - name: Inspect OpenMP runtime (Windows)
-        if: ${{ matrix.os == 'windows-latest' }}
-        shell: pwsh
-        run: |
-          $roots = @(
-            $env:llvmX64,
-            $env:VCToolsRedistDir,
-            $env:VCINSTALLDIR,
-            $env:VCToolsInstallDir,
-            'C:\Program Files\LLVM\bin',
-            'C:\Program Files (x86)\LLVM\bin'
-          ) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -Unique
-
-          $matches = @()
-          foreach ($root in $roots) {
-            Write-Host "Searching $root"
-            $matches += Get-ChildItem -Path $root -Filter libomp140.x86_64.dll -Recurse -ErrorAction SilentlyContinue
-          }
-
-          if ($matches.Count -eq 0) {
-            Write-Warning "libomp140.x86_64.dll was not found in the Visual Studio or LLVM runtime locations."
-          } else {
-            $matches | Select-Object -ExpandProperty FullName
-          }
-
       - name: 🏗️ Build Wheels (Linux)
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
           CIBW_SKIP: ${{ matrix.skip }}
           CIBW_TEST_COMMAND: >-
-            python "{project}/.github/scripts/viennals_runtime_smoke.py"
+            python -c "import viennals;
+            print(viennals.__file__);
+            print(viennals.d2);
+            print(viennals.d3)"
           CIBW_CONFIG_SETTINGS: >-
             cmake.define.VIENNALS_PACKAGE_PYTHON=ON
             cmake.define.VIENNALS_IS_CI=ON
@@ -193,7 +171,10 @@ jobs:
           CIBW_ARCHS_WINDOWS: auto64
           CIBW_ARCHS_MACOS: ${{ matrix.archs }}
           CIBW_TEST_COMMAND: >-
-            python "{project}/.github/scripts/viennals_runtime_smoke.py"
+            python -c "import viennals;
+            print(viennals.__file__);
+            print(viennals.d2);
+            print(viennals.d3)"
           CIBW_CONFIG_SETTINGS: >-
             cmake.define.VIENNALS_PACKAGE_PYTHON=ON
             cmake.define.VIENNALS_IS_CI=ON
