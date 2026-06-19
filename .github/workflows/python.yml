@@ -66,7 +66,7 @@ jobs:
       - name: 🦥 Cache vcpkg installed
         if: ${{ matrix.os == 'windows-latest' }}
         id: vcpkg-installed-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ github.workspace }}/vcpkg_installed
           key: vcpkg-installed-${{ matrix.os }}-${{ env.VCPKG_COMMIT }}-${{ hashFiles('vcpkg.json') }}
@@ -85,9 +85,13 @@ jobs:
           $toolchain = "${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake".Replace('\', '/')
 
           .\venv\Scripts\python -m pip install --upgrade pip
+          $vcpkgInstalled = "${{ github.workspace }}/vcpkg_installed".Replace('\', '/')
+
           .\venv\Scripts\python -m pip install . `
             --config-settings=cmake.define.CMAKE_TOOLCHAIN_FILE="$toolchain" `
-            --config-settings=cmake.define.VCPKG_TARGET_TRIPLET="x64-windows"
+            --config-settings=cmake.define.VCPKG_TARGET_TRIPLET="x64-windows" `
+            --config-settings=cmake.define.VCPKG_INSTALLED_DIR="$vcpkgInstalled" `
+            --config-settings=cmake.define.VCPKG_MANIFEST_INSTALL=OFF
           .\venv\Scripts\python -c "import viennals; print(viennals.__doc__)"
 
       - name: 🐍 Build and check Python Module (Other)
