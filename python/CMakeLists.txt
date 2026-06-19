@@ -103,8 +103,19 @@ if((VIENNALS_PACKAGE_PYTHON AND NOT APPLE) OR MSVC)
   if(MSVC)
     # /openmp:llvm links against the LLVM OpenMP runtime, which is usually
     # available on GitHub runners but not on end-user Windows machines.
-    get_filename_component(_VIENNALS_CLANG_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
+    set(CMAKE_INSTALL_OPENMP_LIBRARIES TRUE)
+    set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
+    include(InstallRequiredSystemLibraries)
+
+    get_filename_component(_VIENNALS_COMPILER_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
     set(_VIENNALS_OPENMP_DLL_CANDIDATES)
+
+    foreach(_VIENNALS_SYSTEM_RUNTIME IN LISTS CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS)
+      get_filename_component(_VIENNALS_SYSTEM_RUNTIME_NAME "${_VIENNALS_SYSTEM_RUNTIME}" NAME)
+      if(_VIENNALS_SYSTEM_RUNTIME_NAME MATCHES "^libomp.*\\.dll$")
+        list(APPEND _VIENNALS_OPENMP_DLL_CANDIDATES "${_VIENNALS_SYSTEM_RUNTIME}")
+      endif()
+    endforeach()
 
     if(DEFINED ENV{VCINSTALLDIR})
       list(
@@ -125,8 +136,13 @@ if((VIENNALS_PACKAGE_PYTHON AND NOT APPLE) OR MSVC)
     list(
       APPEND
       _VIENNALS_OPENMP_DLL_CANDIDATES
-      "${_VIENNALS_CLANG_BIN_DIR}/../../../../../../Tools/Llvm/bin/libomp140.x86_64.dll"
-      "${_VIENNALS_CLANG_BIN_DIR}/../../../../../../Tools/Llvm/x64/bin/libomp140.x86_64.dll")
+      "${_VIENNALS_COMPILER_BIN_DIR}/libomp140.x86_64.dll"
+      "${_VIENNALS_COMPILER_BIN_DIR}/../libomp140.x86_64.dll"
+      "${_VIENNALS_COMPILER_BIN_DIR}/../../bin/libomp140.x86_64.dll"
+      "${_VIENNALS_COMPILER_BIN_DIR}/../../../../../Llvm/bin/libomp140.x86_64.dll"
+      "${_VIENNALS_COMPILER_BIN_DIR}/../../../../../Llvm/x64/bin/libomp140.x86_64.dll"
+      "${_VIENNALS_COMPILER_BIN_DIR}/../../../../../../Tools/Llvm/bin/libomp140.x86_64.dll"
+      "${_VIENNALS_COMPILER_BIN_DIR}/../../../../../../Tools/Llvm/x64/bin/libomp140.x86_64.dll")
 
     unset(_VIENNALS_OPENMP_DLL)
     foreach(_VIENNALS_OPENMP_DLL_CANDIDATE IN LISTS _VIENNALS_OPENMP_DLL_CANDIDATES)
@@ -139,12 +155,26 @@ if((VIENNALS_PACKAGE_PYTHON AND NOT APPLE) OR MSVC)
     endforeach()
 
     if(_VIENNALS_OPENMP_DLL)
+      message(STATUS "[ViennaLS] Bundling LLVM OpenMP runtime: ${_VIENNALS_OPENMP_DLL}")
       add_custom_command(
         TARGET ${MOD}
         POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "${VIENNALS_LIB_FOLDER}"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_VIENNALS_OPENMP_DLL}"
-                "${VIENNALS_LIB_FOLDER}/")
+                "${VIENNALS_LIB_FOLDER}/"
+        VERBATIM)
+
+      if(VIENNALS_PACKAGE_PYTHON)
+        install(
+          PROGRAMS "${_VIENNALS_OPENMP_DLL}"
+          DESTINATION ${PKG}.libs)
+      endif()
+    elseif(VIENNALS_PACKAGE_PYTHON)
+      message(
+        FATAL_ERROR
+          "[ViennaLS] Could not locate libomp140.x86_64.dll for a Windows wheel build. "
+          "The produced wheel would fail to import on machines without the LLVM OpenMP runtime."
+      )
     else()
       message(
         WARNING
