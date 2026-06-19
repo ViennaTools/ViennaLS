@@ -111,67 +111,57 @@ function(viennals_patch_vtk_msvc_stdext VTK_SOURCE_DIR)
 endfunction()
 
 function(viennals_patch_vtk_openmp_nested VTK_SOURCE_DIR)
-  set(_vtk_smp_openmp
-      "${VTK_SOURCE_DIR}/Common/Core/SMP/OpenMP/vtkSMPTools.cxx")
+  file(
+    GLOB_RECURSE _vtk_smp_openmp_sources
+    "${VTK_SOURCE_DIR}/Common/Core/SMP/OpenMP/*.cxx"
+    "${VTK_SOURCE_DIR}/Common/Core/SMP/OpenMP/*.txx"
+    "${VTK_SOURCE_DIR}/Common/Core/SMP/OpenMP/*.h")
 
-  if(NOT EXISTS "${_vtk_smp_openmp}")
-    message(
-      WARNING
-        "[ViennaLS] Could not find VTK OpenMP SMP source for omp_set_nested patch: ${_vtk_smp_openmp}"
-    )
+  if(NOT _vtk_smp_openmp_sources)
+    message(WARNING "[ViennaLS] Could not find VTK OpenMP SMP sources for omp_set_nested patch")
     return()
   endif()
 
-  file(READ "${_vtk_smp_openmp}" _vtk_smp_contents)
+  set(_vtk_smp_openmp_patch_count 0)
 
-  string(FIND "${_vtk_smp_contents}" "VIENNALS_PATCH_OMP_SET_NESTED" _already_patched)
+  foreach(_vtk_smp_openmp IN LISTS _vtk_smp_openmp_sources)
+    file(READ "${_vtk_smp_openmp}" _vtk_smp_contents)
 
-  if(NOT _already_patched EQUAL -1)
-    message(STATUS "[ViennaLS] VTK OpenMP nested-parallelism patch already applied")
-    return()
-  endif()
+    string(FIND "${_vtk_smp_contents}" "omp_set_nested(" _has_set_nested)
+    string(FIND "${_vtk_smp_contents}" "omp_get_nested()" _has_get_nested)
 
-  string(FIND "${_vtk_smp_contents}" "omp_set_nested(" _has_set_nested)
+    if(_has_set_nested EQUAL -1 AND _has_get_nested EQUAL -1)
+      continue()
+    endif()
 
-  if(_has_set_nested EQUAL -1)
+    if(NOT _has_set_nested EQUAL -1)
+      # omp_set_nested is deprecated. Use max-active-levels directly so the
+      # deprecated call is removed even when a compiler reports an old _OPENMP
+      # macro while linking against a modern runtime.
+      string(REGEX REPLACE
+             "omp_set_nested\\(([^\\)]*)\\);"
+             "/* VIENNALS_PATCH_OMP_SET_NESTED */\n"
+             "  omp_set_max_active_levels((\\1) ? 1024 : 1);"
+             _vtk_smp_contents
+             "${_vtk_smp_contents}")
+    endif()
+
+    if(NOT _has_get_nested EQUAL -1)
+      string(REGEX REPLACE
+             "omp_get_nested\\(\\)"
+             "/* VIENNALS_PATCH_OMP_GET_NESTED */ (omp_get_max_active_levels() > 1)"
+             _vtk_smp_contents
+             "${_vtk_smp_contents}")
+    endif()
+
+    file(WRITE "${_vtk_smp_openmp}" "${_vtk_smp_contents}")
+    math(EXPR _vtk_smp_openmp_patch_count "${_vtk_smp_openmp_patch_count} + 1")
+    message(STATUS "[ViennaLS] Patched VTK OpenMP nested-parallelism source: ${_vtk_smp_openmp}")
+  endforeach()
+
+  if(_vtk_smp_openmp_patch_count EQUAL 0)
     message(STATUS "[ViennaLS] VTK OpenMP nested-parallelism patch not needed")
-    return()
+  else()
+    message(STATUS "[ViennaLS] Applied VTK OpenMP nested-parallelism patch")
   endif()
-
-  # Replace:
-  #   omp_set_nested(isNested);
-  #
-  # with the modern max-active-levels control.
-  #
-  # Apple Clang/Homebrew libomp can expose omp_set_max_active_levels() while
-  # still advertising an older _OPENMP value, so gating on the 201811 macro
-  # leaves the deprecated API call in place on macOS.
-  #
-  # OpenMP semantics:
-  #   omp_set_nested(true)  -> enable nested parallelism
-  #   omp_set_nested(false) -> max-active-levels = 1
-  #
-  # Setting a large max-active-levels value is clamped by the runtime to the
-  # supported limit, so it is a practical substitute for the "true" case.
-  string(REGEX REPLACE
-         "omp_set_nested\\(([^\\)]*)\\);"
-         "#if defined(_OPENMP) && _OPENMP >= 200805\n"
-         "  /* VIENNALS_PATCH_OMP_SET_NESTED */\n"
-         "  omp_set_max_active_levels((\\1) ? 1024 : 1);\n"
-         "#else\n"
-         "  omp_set_nested(\\1);\n"
-         "#endif"
-         _vtk_smp_contents
-         "${_vtk_smp_contents}")
-
-  # Also avoid the matching deprecated query routine if VTK uses it.
-  string(REGEX REPLACE
-         "omp_get_nested\\(\\)"
-         "/* VIENNALS_PATCH_OMP_GET_NESTED */ (omp_get_max_active_levels() > 1)"
-         _vtk_smp_contents
-         "${_vtk_smp_contents}")
-
-  file(WRITE "${_vtk_smp_openmp}" "${_vtk_smp_contents}")
-
-  message(STATUS "[ViennaLS] Applied VTK OpenMP nested-parallelism patch")
 endfunction()
