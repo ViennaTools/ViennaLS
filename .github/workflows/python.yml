@@ -63,15 +63,16 @@ jobs:
         if: ${{ startsWith(matrix.os, 'macos-') }}
         run: brew install vtk
 
-      - name: 🦥 Cache vcpkg binary
+      - name: 🦥 Cache vcpkg installed
         if: ${{ matrix.os == 'windows-latest' }}
+        id: vcpkg-installed-cache
         uses: actions/cache@v4
         with:
-          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: vcpkg-${{ matrix.os }}-Release-${{ env.VCPKG_COMMIT }}
+          path: ${{ github.workspace }}/vcpkg_installed
+          key: vcpkg-installed-${{ matrix.os }}-${{ env.VCPKG_COMMIT }}-${{ hashFiles('vcpkg.json') }}
 
       - name: 🛠️ Build VTK (Windows)
-        if: ${{ matrix.os == 'windows-latest' }}
+        if: ${{ matrix.os == 'windows-latest' && steps.vcpkg-installed-cache.outputs.cache-hit != 'true' }}
         shell: pwsh
         run: |
           ./vcpkg/vcpkg install --triplet x64-windows
