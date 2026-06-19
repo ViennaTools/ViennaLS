@@ -139,9 +139,9 @@ function(viennals_patch_vtk_openmp_nested VTK_SOURCE_DIR)
       # deprecated call is removed even when a compiler reports an old _OPENMP
       # macro while linking against a modern runtime.
       string(REGEX REPLACE
-             "omp_set_nested\\(([^\\)]*)\\);"
-             "/* VIENNALS_PATCH_OMP_SET_NESTED */\n"
-             "  omp_set_max_active_levels((\\1) ? 1024 : 1);"
+             [[omp_set_nested\(([^)]*)\);]]
+             [[/* VIENNALS_PATCH_OMP_SET_NESTED */
+  omp_set_max_active_levels((\1) ? 1024 : 1);]]
              _vtk_smp_contents
              "${_vtk_smp_contents}")
     endif()
@@ -152,6 +152,14 @@ function(viennals_patch_vtk_openmp_nested VTK_SOURCE_DIR)
              "/* VIENNALS_PATCH_OMP_GET_NESTED */ (omp_get_max_active_levels() > 1)"
              _vtk_smp_contents
              "${_vtk_smp_contents}")
+    endif()
+
+    string(FIND "${_vtk_smp_contents}" "omp_set_nested(" _still_has_set_nested)
+    if(NOT _still_has_set_nested EQUAL -1)
+      message(
+        FATAL_ERROR
+          "[ViennaLS] VTK OpenMP nested-parallelism patch did not remove omp_set_nested from ${_vtk_smp_openmp}"
+      )
     endif()
 
     file(WRITE "${_vtk_smp_openmp}" "${_vtk_smp_contents}")

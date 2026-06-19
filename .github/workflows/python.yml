@@ -227,6 +227,8 @@ jobs:
                           for name in libs
                           if name.lower() == "viennals.libs/libomp140.x86_64.dll"
                       ]
+                      core = next(name for name in names if name.startswith("viennals/_core") and name.endswith(".pyd"))
+                      core_bytes = zf.read(core)
 
                       print("\nWindows runtime libraries:")
                       for name in libs:
@@ -236,6 +238,8 @@ jobs:
                           missing.append(f"{wheel}: missing viennals.libs/")
                       if not openmp:
                           missing.append(f"{wheel}: missing viennals.libs/libomp140.x86_64.dll")
+                      if b"omp_set_nested" in core_bytes:
+                          missing.append(f"{wheel}: _core.pyd still references deprecated omp_set_nested")
 
           if missing:
               print("\nWheel runtime checks failed:", file=sys.stderr)
