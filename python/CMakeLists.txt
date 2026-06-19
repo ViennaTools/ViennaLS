@@ -117,14 +117,14 @@ if((VIENNALS_PACKAGE_PYTHON AND NOT APPLE) OR MSVC)
 
     if(DEFINED ENV{VCINSTALLDIR})
       list(APPEND _VIENNALS_OPENMP_DLL_CANDIDATES
-        "$ENV{VCINSTALLDIR}/Tools/Llvm/bin/libomp140.x86_64.dll"
-        "$ENV{VCINSTALLDIR}/Tools/Llvm/x64/bin/libomp140.x86_64.dll")
+           "$ENV{VCINSTALLDIR}/Tools/Llvm/bin/libomp140.x86_64.dll"
+           "$ENV{VCINSTALLDIR}/Tools/Llvm/x64/bin/libomp140.x86_64.dll")
     endif()
 
     if(DEFINED ENV{VCToolsInstallDir})
       list(APPEND _VIENNALS_OPENMP_DLL_CANDIDATES
-        "$ENV{VCToolsInstallDir}/../../Llvm/bin/libomp140.x86_64.dll"
-        "$ENV{VCToolsInstallDir}/../../Llvm/x64/bin/libomp140.x86_64.dll")
+           "$ENV{VCToolsInstallDir}/../../Llvm/bin/libomp140.x86_64.dll"
+           "$ENV{VCToolsInstallDir}/../../Llvm/x64/bin/libomp140.x86_64.dll")
     endif()
 
     if(DEFINED ENV{llvmX64})
@@ -137,7 +137,8 @@ if((VIENNALS_PACKAGE_PYTHON AND NOT APPLE) OR MSVC)
     endif()
 
     if(DEFINED ENV{VCINSTALLDIR})
-      file(GLOB_RECURSE _VIENNALS_OPENMP_VC_REDIST_DLLS "$ENV{VCINSTALLDIR}/Redist/MSVC/*libomp140.x86_64.dll")
+      file(GLOB_RECURSE _VIENNALS_OPENMP_VC_REDIST_DLLS
+           "$ENV{VCINSTALLDIR}/Redist/MSVC/*libomp140.x86_64.dll")
       list(APPEND _VIENNALS_OPENMP_DLL_CANDIDATES ${_VIENNALS_OPENMP_VC_REDIST_DLLS})
     endif()
 
@@ -166,7 +167,7 @@ if((VIENNALS_PACKAGE_PYTHON AND NOT APPLE) OR MSVC)
     unset(_VIENNALS_OPENMP_DLL)
     set(_VIENNALS_OPENMP_DLL_SEARCH_LOG)
     foreach(_VIENNALS_OPENMP_DLL_CANDIDATE IN LISTS _VIENNALS_OPENMP_DLL_CANDIDATES)
-      get_filename_component(_VIENNALS_OPENMP_DLL_CANDIDATE_REAL 
+      get_filename_component(_VIENNALS_OPENMP_DLL_CANDIDATE_REAL
                              "${_VIENNALS_OPENMP_DLL_CANDIDATE}" ABSOLUTE)
       list(APPEND _VIENNALS_OPENMP_DLL_SEARCH_LOG "${_VIENNALS_OPENMP_DLL_CANDIDATE_REAL}")
       if(EXISTS "${_VIENNALS_OPENMP_DLL_CANDIDATE_REAL}")
@@ -199,7 +200,7 @@ if((VIENNALS_PACKAGE_PYTHON AND NOT APPLE) OR MSVC)
     else()
       message(
         WARNING "[ViennaLS] Could not locate libomp140.x86_64.dll. Windows wheels built "
-          "with /openmp:llvm may fail to import on machines without the LLVM OpenMP runtime.")
+                "with /openmp:llvm may fail to import on machines without the LLVM OpenMP runtime.")
     endif()
   endif()
 
@@ -231,6 +232,6 @@ elseif(MSVC)
   install(
     DIRECTORY ${VIENNALS_LIB_FOLDER}
     DESTINATION .
-    OPTIONAL FILES_MATCHING 
+    OPTIONAL FILES_MATCHING
     PATTERN "*.dll")
 endif()

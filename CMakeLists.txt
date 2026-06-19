@@ -320,17 +320,17 @@ elseif(VIENNALS_USE_VTK)
   # cache entry is written.  See comment in VTK_OPTIONS above for why this
   # matters on MSVC.
   # Guarantee VTK uses OpenMP SMP for package builds.
-  set(VTK_SMP_IMPLEMENTATION_TYPE 
-      "OpenMP" 
+  set(VTK_SMP_IMPLEMENTATION_TYPE
+      "OpenMP"
       CACHE STRING "" FORCE)
-  set(VTK_SMP_ENABLE_STDTHREAD 
-      OFF 
+  set(VTK_SMP_ENABLE_STDTHREAD
+      OFF
       CACHE BOOL "" FORCE)
-  set(VTK_SMP_ENABLE_OPENMP 
-      ON 
+  set(VTK_SMP_ENABLE_OPENMP
+      ON
       CACHE BOOL "" FORCE)
-  set(VTK_SMP_ENABLE_TBB 
-      OFF 
+  set(VTK_SMP_ENABLE_TBB
+      OFF
       CACHE BOOL "" FORCE)
 
   if(NOT VIENNALS_PACKAGE_PYTHON)
@@ -345,8 +345,8 @@ elseif(VIENNALS_USE_VTK)
     # Apply CPM-style options manually because DOWNLOAD_ONLY does not configure VTK.
     foreach(_vtk_option IN LISTS VTK_OPTIONS)
       if(_vtk_option MATCHES "^([^ ]+) +(.*)$")
-        set("${CMAKE_MATCH_1}" 
-            "${CMAKE_MATCH_2}" 
+        set("${CMAKE_MATCH_1}"
+            "${CMAKE_MATCH_2}"
             CACHE STRING "" FORCE)
       else()
         message(FATAL_ERROR "[ViennaLS] Invalid VTK option: ${_vtk_option}")
