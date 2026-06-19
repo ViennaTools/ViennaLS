@@ -14,6 +14,7 @@ runs:
       shell: bash
       if: ${{ startsWith(inputs.os, 'macos-') }}
       run: |
+        brew uninstall --formula azure/bicep/bicep || true
         brew untap aws/tap azure/bicep || true
 
     - name: 🩹 Enable Long Paths

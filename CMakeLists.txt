@@ -55,7 +55,15 @@ if(VIENNALS_BUILD_PYTHON)
 endif()
 
 if(MSVC)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -openmp:llvm /bigobj")
+  if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.30)
+    set(OpenMP_RUNTIME_MSVC
+        "llvm"
+        CACHE STRING "MSVC OpenMP runtime selected for FindOpenMP" FORCE)
+  else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -openmp:llvm")
+  endif()
+
+  add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:/bigobj>")
 endif()
 
 # Reduce wheel size when packaging Python wheels.
@@ -248,10 +256,9 @@ elseif(VIENNALS_USE_VTK)
       "VTK_LEGACY_REMOVE ON"
 
       # VTK threading backend.
-      # OpenMP gives full parallelism on all platforms.  On MSVC the detected
-      # spec-date is 2.0 (from /openmp), but ViennaLS passes /openmp:llvm which
+      # OpenMP gives full parallelism on all platforms. On MSVC, CMake may still
+      # report an old OpenMP spec date, but OpenMP_RUNTIME_MSVC=llvm selects the LLVM runtime.
       # makes LLVM OpenMP 5.0 the actual runtime — the cmake atomics warning is
-      # cosmetic only.
       #
       # STDThread is intentionally kept OFF.  vtkSMPToolsImpl.txx declares the
       # explicit specialisation of IsParallelScope() for STDThread, but

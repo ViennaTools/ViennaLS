@@ -179,11 +179,11 @@ public:
       if (it != newNodes.end()) {
         adjusted = true;
         // if duplicate point, save it to be replaced
-        unsigned nodeId = std::distance(newNodes.begin(), it);
+        unsigned nodeId = static_cast<unsigned>(std::distance(newNodes.begin(), it));
         duplicates.emplace_back(i, nodeId);
       } else {
         if (adjusted)
-          duplicates.push_back(std::make_pair(i, newNodes.size()));
+          duplicates.emplace_back(i, static_cast<unsigned>(newNodes.size()));
         newNodes.push_back(nodes[i]);
       }
     }
