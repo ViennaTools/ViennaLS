@@ -178,10 +178,7 @@ jobs:
         env:
           CIBW_SKIP: ${{ matrix.skip }}
           CIBW_TEST_COMMAND: >-
-            python -c "import viennals;
-            print(viennals.__file__);
-            print(viennals.d2);
-            print(viennals.d3)"
+            python "{project}/.github/scripts/viennals_runtime_smoke.py"
           CIBW_CONFIG_SETTINGS: >-
             cmake.define.VIENNALS_PACKAGE_PYTHON=ON
             cmake.define.VIENNALS_IS_CI=ON
@@ -196,10 +193,7 @@ jobs:
           CIBW_ARCHS_WINDOWS: auto64
           CIBW_ARCHS_MACOS: ${{ matrix.archs }}
           CIBW_TEST_COMMAND: >-
-            python -c "import viennals;
-            print(viennals.__file__);
-            print(viennals.d2);
-            print(viennals.d3)"
+            python "{project}/.github/scripts/viennals_runtime_smoke.py"
           CIBW_CONFIG_SETTINGS: >-
             cmake.define.VIENNALS_PACKAGE_PYTHON=ON
             cmake.define.VIENNALS_IS_CI=ON
