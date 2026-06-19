@@ -79,7 +79,6 @@ endif()
 if((CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang") AND VIENNALS_PACKAGE_PYTHON)
   string(APPEND CMAKE_C_FLAGS_RELEASE " -O3 -DNDEBUG -ffunction-sections -fdata-sections")
   string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O3 -DNDEBUG -ffunction-sections -fdata-sections")
-  
   if(APPLE)
     string(APPEND CMAKE_MODULE_LINKER_FLAGS_RELEASE " -Wl,-dead_strip")
     string(APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE " -Wl,-dead_strip")
@@ -254,7 +253,6 @@ elseif(VIENNALS_USE_VTK)
       "VTK_BUILD_ALL_MODULES OFF"
       "VTK_ENABLE_REMOTE_MODULES OFF"
       "VTK_LEGACY_REMOVE ON"
-
       # VTK threading backend.
       # OpenMP gives full parallelism on all platforms. On MSVC, CMake may still
       # report an old OpenMP spec date, but OpenMP_RUNTIME_MSVC=llvm selects the LLVM runtime.
@@ -270,23 +268,18 @@ elseif(VIENNALS_USE_VTK)
       "VTK_SMP_ENABLE_STDTHREAD OFF"
       "VTK_SMP_ENABLE_OPENMP ON"
       "VTK_SMP_ENABLE_TBB OFF"
-
       # Keep the build small, but do not hard-forbid dependency resolution.
       "VTK_GROUP_ENABLE_Rendering DONT_WANT"
       "VTK_GROUP_ENABLE_Imaging DONT_WANT"
       "VTK_GROUP_ENABLE_Views DONT_WANT"
       "VTK_GROUP_ENABLE_Web DONT_WANT"
-
       # These should stay hard-disabled for wheels.
       "VTK_GROUP_ENABLE_Qt NO"
       "VTK_GROUP_ENABLE_MPI NO"
-
       # No VTK Python wrapping; ViennaLS uses pybind11.
       "VTK_ENABLE_WRAPPING NO"
-
       # Avoid optional geospatial/projection dependency.
       "VTK_MODULE_ENABLE_VTK_libproj NO"
-
       # Required VTK core/IO/filter modules.
       "VTK_MODULE_ENABLE_VTK_CommonExecutionModel YES"
       "VTK_MODULE_ENABLE_VTK_CommonMisc YES"
@@ -301,7 +294,6 @@ elseif(VIENNALS_USE_VTK)
       "VTK_MODULE_ENABLE_VTK_FiltersCore YES"
       "VTK_MODULE_ENABLE_VTK_FiltersGeneral YES"
       "VTK_MODULE_ENABLE_VTK_FiltersGeometry YES"
-      
       "VTK_GROUP_ENABLE_Parallel DONT_WANT"
       "VTK_MODULE_ENABLE_VTK_ParallelDIY DONT_WANT"
       "VTK_MODULE_ENABLE_VTK_ParallelCore DONT_WANT")
@@ -324,15 +316,22 @@ elseif(VIENNALS_USE_VTK)
     list(APPEND VTK_OPTIONS "VTK_MODULE_USE_EXTERNAL_VTK_png ON"
          "VTK_MODULE_USE_EXTERNAL_VTK_zlib ON")
   endif()
-  
   # Guarantee STDTHREAD stays OFF even if VTK's option() fires before CPM's
   # cache entry is written.  See comment in VTK_OPTIONS above for why this
   # matters on MSVC.
   # Guarantee VTK uses OpenMP SMP for package builds.
-  set(VTK_SMP_IMPLEMENTATION_TYPE "OpenMP" CACHE STRING "" FORCE)
-  set(VTK_SMP_ENABLE_STDTHREAD OFF CACHE BOOL "" FORCE)
-  set(VTK_SMP_ENABLE_OPENMP ON CACHE BOOL "" FORCE)
-  set(VTK_SMP_ENABLE_TBB OFF CACHE BOOL "" FORCE)
+  set(VTK_SMP_IMPLEMENTATION_TYPE 
+      "OpenMP" 
+      CACHE STRING "" FORCE)
+  set(VTK_SMP_ENABLE_STDTHREAD 
+      OFF 
+      CACHE BOOL "" FORCE)
+  set(VTK_SMP_ENABLE_OPENMP 
+      ON 
+      CACHE BOOL "" FORCE)
+  set(VTK_SMP_ENABLE_TBB 
+      OFF 
+      CACHE BOOL "" FORCE)
 
   if(NOT VIENNALS_PACKAGE_PYTHON)
     find_package(VTK 9.0.0 QUIET)
@@ -346,7 +345,9 @@ elseif(VIENNALS_USE_VTK)
     # Apply CPM-style options manually because DOWNLOAD_ONLY does not configure VTK.
     foreach(_vtk_option IN LISTS VTK_OPTIONS)
       if(_vtk_option MATCHES "^([^ ]+) +(.*)$")
-        set("${CMAKE_MATCH_1}" "${CMAKE_MATCH_2}" CACHE STRING "" FORCE)
+        set("${CMAKE_MATCH_1}" 
+            "${CMAKE_MATCH_2}" 
+            CACHE STRING "" FORCE)
       else()
         message(FATAL_ERROR "[ViennaLS] Invalid VTK option: ${_vtk_option}")
       endif()

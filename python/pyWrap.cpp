@@ -39,10 +39,10 @@ public:
 PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
   module.doc() =
       "ViennaLS is a header-only C++ level set library developed for high "
-      "performance topography and semiconductor process simulations. The main design goals are "
-      "simplicity and efficiency, tailored towards scientific simulations. "
-      "ViennaLS can also be used for visualization applications, although this "
-      "is not the main design target.";
+      "performance topography and semiconductor process simulations. The main "
+      "design goals are simplicity and efficiency, tailored towards scientific "
+      "simulations. ViennaLS can also be used for visualization applications, "
+      "although this is not the main design target.";
 
   // set version string of python module
   module.attr("__version__") = versionString();

@@ -64,21 +64,18 @@ function(viennals_patch_vtk_msvc_stdext VTK_SOURCE_DIR)
     return()
   endif()
 
-  set(_vtk_fmt_header
-      "${VTK_SOURCE_DIR}/ThirdParty/diy2/vtkdiy2/include/vtkdiy2/fmt/format.h")
+  set(_vtk_fmt_header "${VTK_SOURCE_DIR}/ThirdParty/diy2/vtkdiy2/include/vtkdiy2/fmt/format.h")
 
   if(NOT EXISTS "${_vtk_fmt_header}")
     message(
       WARNING
-        "[ViennaLS] Could not find VTK diy2/fmt header for MSVC stdext patch: ${_vtk_fmt_header}"
-    )
+        "[ViennaLS] Could not find VTK diy2/fmt header for MSVC stdext patch: ${_vtk_fmt_header}")
     return()
   endif()
 
   file(READ "${_vtk_fmt_header}" _vtk_fmt_contents)
 
-  set(_patched_guard
-      "#if defined(_SECURE_SCL) && (!defined(_MSC_VER) || _MSC_VER < 1951)")
+  set(_patched_guard "#if defined(_SECURE_SCL) && (!defined(_MSC_VER) || _MSC_VER < 1951)")
 
   string(FIND "${_vtk_fmt_contents}" "${_patched_guard}" _already_patched)
 
@@ -99,11 +96,7 @@ function(viennals_patch_vtk_msvc_stdext VTK_SOURCE_DIR)
     return()
   endif()
 
-  string(REPLACE
-         "${_old_guard}"
-         "${_patched_guard}"
-         _vtk_fmt_contents
-         "${_vtk_fmt_contents}")
+  string(REPLACE "${_old_guard}" "${_patched_guard}" _vtk_fmt_contents "${_vtk_fmt_contents}")
 
   file(WRITE "${_vtk_fmt_header}" "${_vtk_fmt_contents}")
 
@@ -111,11 +104,9 @@ function(viennals_patch_vtk_msvc_stdext VTK_SOURCE_DIR)
 endfunction()
 
 function(viennals_patch_vtk_openmp_nested VTK_SOURCE_DIR)
-  file(
-    GLOB_RECURSE _vtk_smp_openmp_sources
-    "${VTK_SOURCE_DIR}/Common/Core/SMP/OpenMP/*.cxx"
-    "${VTK_SOURCE_DIR}/Common/Core/SMP/OpenMP/*.txx"
-    "${VTK_SOURCE_DIR}/Common/Core/SMP/OpenMP/*.h")
+  file(GLOB_RECURSE _vtk_smp_openmp_sources "${VTK_SOURCE_DIR}/Common/Core/SMP/OpenMP/*.cxx"
+       "${VTK_SOURCE_DIR}/Common/Core/SMP/OpenMP/*.txx"
+       "${VTK_SOURCE_DIR}/Common/Core/SMP/OpenMP/*.h")
 
   if(NOT _vtk_smp_openmp_sources)
     message(WARNING "[ViennaLS] Could not find VTK OpenMP SMP sources for omp_set_nested patch")
@@ -138,20 +129,18 @@ function(viennals_patch_vtk_openmp_nested VTK_SOURCE_DIR)
       # omp_set_nested is deprecated. Use max-active-levels directly so the
       # deprecated call is removed even when a compiler reports an old _OPENMP
       # macro while linking against a modern runtime.
-      string(REGEX REPLACE
-             [[omp_set_nested\(([^)]*)\);]]
-             [[/* VIENNALS_PATCH_OMP_SET_NESTED */
-  omp_set_max_active_levels((\1) ? 1024 : 1);]]
-             _vtk_smp_contents
-             "${_vtk_smp_contents}")
+      string(REGEX REPLACE [[omp_set_nested\(([^)]*)\);]] [[/* VIENNALS_PATCH_OMP_SET_NESTED */
+    omp_set_max_active_levels((\1) ? 1024 : 1);]] _vtk_smp_contents "${_vtk_smp_contents}")
+
     endif()
 
     if(NOT _has_get_nested EQUAL -1)
-      string(REGEX REPLACE
-             "omp_get_nested\\(\\)"
-             "/* VIENNALS_PATCH_OMP_GET_NESTED */ (omp_get_max_active_levels() > 1)"
-             _vtk_smp_contents
-             "${_vtk_smp_contents}")
+      string(
+        REGEX
+        REPLACE "omp_get_nested\\(\\)"
+                "/* VIENNALS_PATCH_OMP_GET_NESTED */ (omp_get_max_active_levels() > 1)"
+                _vtk_smp_contents "${_vtk_smp_contents}")
+
     endif()
 
     string(FIND "${_vtk_smp_contents}" "omp_set_nested(" _still_has_set_nested)
