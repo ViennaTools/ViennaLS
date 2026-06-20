@@ -18,6 +18,7 @@ jobs:
           - Debug
 
         os:
+          - macos-15-intel
           - macos-latest
           - windows-latest
 
@@ -40,7 +41,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: 🖥️ Setup Environment
         uses: ./.github/actions/setup
@@ -48,7 +49,7 @@ jobs:
           os: ${{ matrix.os }}
 
       - name: 📋 Install MacOS Dependencies
-        if: ${{ matrix.os == 'macos-latest' }}
+        if: ${{ startsWith(matrix.os, 'macos-') }}
         run: brew install vtk
 
       - name: 🖥️ Setup vcpkg (Windows)
@@ -65,15 +66,16 @@ jobs:
 
           New-Item -ItemType Directory -Force -Path "${{ env.VCPKG_DEFAULT_BINARY_CACHE }}"
 
-      - name: 🦥 Cache vcpkg binary (Windows)
+      - name: 🦥 Cache vcpkg installed
         if: ${{ matrix.os == 'windows-latest' }}
-        uses: actions/cache@v4
+        id: vcpkg-installed-cache
+        uses: actions/cache@v5
         with:
-          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: vcpkg-${{ matrix.os }}-${{ matrix.config }}-${{ env.VCPKG_COMMIT }}
+          path: ${{ github.workspace }}/vcpkg_installed
+          key: vcpkg-installed-${{ matrix.os }}-${{ env.VCPKG_COMMIT }}-${{ hashFiles('vcpkg.json') }}
 
       - name: 🛠️ Build Dependencies (Windows)
-        if: ${{ matrix.os == 'windows-latest' }}
+        if: ${{ matrix.os == 'windows-latest' && steps.vcpkg-installed-cache.outputs.cache-hit != 'true' }}
         shell: pwsh
         run: |
           ./vcpkg/vcpkg install --triplet x64-windows
@@ -81,7 +83,7 @@ jobs:
       - name: 🏗️ Compile (Windows)
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
-          cmake -DVIENNALS_BUILD_TESTS=ON -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows -B build
+          cmake -DVIENNALS_BUILD_TESTS=ON -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows -DVCPKG_INSTALLED_DIR=${{ github.workspace }}/vcpkg_installed -DVCPKG_MANIFEST_INSTALL=OFF -B build
           cmake --build build --config ${{ matrix.config }}
 
       - name: 🏗️ Compile (other)

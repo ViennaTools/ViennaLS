@@ -24,6 +24,7 @@ jobs:
           - os: ubuntu-latest
             container: ghcr.io/viennatools/vienna-builder:cuda-suite-python-nocuda
           - os: windows-latest
+          - os: macos-15-intel
           - os: macos-latest
 
     runs-on: ${{ matrix.os }}
@@ -37,7 +38,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: 🖥️ Setup Environment
         uses: ./.github/actions/setup
@@ -59,27 +60,22 @@ jobs:
           New-Item -ItemType Directory -Force -Path "${{ env.VCPKG_DEFAULT_BINARY_CACHE }}"
 
       - name: 📋 Install MacOS Dependencies
-        if: ${{ matrix.os == 'macos-latest' }}
+        if: ${{ startsWith(matrix.os, 'macos-') }}
         run: brew install vtk
 
-      - name: 🦥 Cache vcpkg binary
+      - name: 🦥 Cache vcpkg installed
         if: ${{ matrix.os == 'windows-latest' }}
-        uses: actions/cache@v4
+        id: vcpkg-installed-cache
+        uses: actions/cache@v5
         with:
-          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: vcpkg-${{ matrix.os }}-Release-${{ env.VCPKG_COMMIT }}
+          path: ${{ github.workspace }}/vcpkg_installed
+          key: vcpkg-installed-${{ matrix.os }}-${{ env.VCPKG_COMMIT }}-${{ hashFiles('vcpkg.json') }}
 
       - name: 🛠️ Build VTK (Windows)
-        if: ${{ matrix.os == 'windows-latest' }}
+        if: ${{ matrix.os == 'windows-latest' && steps.vcpkg-installed-cache.outputs.cache-hit != 'true' }}
         shell: pwsh
         run: |
           ./vcpkg/vcpkg install --triplet x64-windows
-
-      - name: 🛠️ Disable IPO
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: |
-          sed -i 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DUSE_IPO=off"/g' pyproject.toml
-          cat pyproject.toml
 
       - name: 🐍 Build and check Python Module (Windows)
         if: ${{ matrix.os == 'windows-latest' }}
@@ -89,9 +85,13 @@ jobs:
           $toolchain = "${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake".Replace('\', '/')
 
           .\venv\Scripts\python -m pip install --upgrade pip
+          $vcpkgInstalled = "${{ github.workspace }}/vcpkg_installed".Replace('\', '/')
+
           .\venv\Scripts\python -m pip install . `
             --config-settings=cmake.define.CMAKE_TOOLCHAIN_FILE="$toolchain" `
-            --config-settings=cmake.define.VCPKG_TARGET_TRIPLET="x64-windows"
+            --config-settings=cmake.define.VCPKG_TARGET_TRIPLET="x64-windows" `
+            --config-settings=cmake.define.VCPKG_INSTALLED_DIR="$vcpkgInstalled" `
+            --config-settings=cmake.define.VCPKG_MANIFEST_INSTALL=OFF
           .\venv\Scripts\python -c "import viennals; print(viennals.__doc__)"
 
       - name: 🐍 Build and check Python Module (Other)
@@ -102,7 +102,7 @@ jobs:
           ./venv/bin/python -c "import viennals; print(viennals.__doc__)"
 
       - name: 📦 Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Pre-Built (${{ matrix.os }})
           path: venv
@@ -114,13 +114,18 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            skip: "cp36-* cp37-* cp38-* cp39-* pp37-* pp38-* pp39-* *-manylinux_i686 *-musllinux_*"
+            skip: "cp38-* cp39-* *-manylinux_i686 *-musllinux_*"
 
           - os: windows-latest
-            skip: "cp36-* cp37-* cp38-* cp39-* pp37-* pp38-* pp39-*"
+            skip: "cp38-* cp39-*"
+
+          - os: macos-15-intel
+            archs: x86_64
+            skip: "cp38-* cp39-* cp310-*"
 
           - os: macos-latest
-            skip: "cp36-* cp37-* cp38-* cp39-* cp310-* pp37-* pp38-* pp39-*"
+            archs: arm64
+            skip: "cp38-* cp39-* cp310-*"
 
     runs-on: ${{ matrix.os }}
 
@@ -132,7 +137,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: 🖥️ Setup Environment
         uses: ./.github/actions/setup
@@ -142,31 +147,21 @@ jobs:
       - name: 🛞 CIBuildWheel
         run: pip install cibuildwheel==3.4.0 --break-system-packages
 
-      - name: 🛠️ Package Config (Windows)
-        if: ${{ matrix.os == 'windows-latest' }}
-        shell: pwsh
-        run: |
-          sed -i 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_PACKAGE_PYTHON=ON","-DVIENNALS_IS_CI=ON","-DVIENNALS_VTK_RENDERING=OFF"/g' pyproject.toml
-          type pyproject.toml
-
-      - name: 🛠️ Package Config (MacOs)
-        if: ${{ matrix.os == 'macos-latest' }}
-        run: |
-          sed -i .bak 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_PACKAGE_PYTHON=ON","-DVIENNALS_IS_CI=ON","-DVIENNALS_VTK_RENDERING=OFF"/g' pyproject.toml
-          cat pyproject.toml
-
-      - name: 🛠️ Package Config (Linux)
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: |
-          sed -i 's/\(DVIENNALS_BUILD_PYTHON=ON"\)/\1,"-DVIENNALS_PACKAGE_PYTHON=ON","-DVIENNALS_IS_CI=ON","-DVIENNALS_VTK_RENDERING=OFF"/g' pyproject.toml
-          cat pyproject.toml
-
       - name: 🏗️ Build Wheels (Linux)
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
           CIBW_SKIP: ${{ matrix.skip }}
-          CIBW_MANYLINUX_X86_64_IMAGE: ghcr.io/viennatools/vienna-builder:cuda-python-nocuda
+          CIBW_TEST_COMMAND: >-
+            python -c "import viennals;
+            print(viennals.__file__);
+            print(viennals.d2);
+            print(viennals.d3)"
+          CIBW_CONFIG_SETTINGS: >-
+            cmake.define.VIENNALS_PACKAGE_PYTHON=ON
+            cmake.define.VIENNALS_IS_CI=ON
+            cmake.define.VIENNALS_VTK_RENDERING=ON
+            cmake.define.USE_IPO=OFF
 
       - name: 🏗️ Build Wheels (Other)
         if: ${{ matrix.os != 'ubuntu-latest' }}
@@ -174,9 +169,66 @@ jobs:
         env:
           CIBW_SKIP: ${{ matrix.skip }}
           CIBW_ARCHS_WINDOWS: auto64
+          CIBW_ARCHS_MACOS: ${{ matrix.archs }}
+          CIBW_TEST_COMMAND: >-
+            python -c "import viennals;
+            print(viennals.__file__);
+            print(viennals.d2);
+            print(viennals.d3)"
+          CIBW_CONFIG_SETTINGS: >-
+            cmake.define.VIENNALS_PACKAGE_PYTHON=ON
+            cmake.define.VIENNALS_IS_CI=ON
+            cmake.define.VIENNALS_VTK_RENDERING=ON
+
+      - name: 🔎 Inspect wheel contents
+        shell: bash
+        run: |
+          python - <<'PY'
+          import glob
+          import sys
+          import zipfile
+
+          missing = []
+
+          for wheel in glob.glob("wheelhouse/*.whl"):
+              print("\n" + wheel)
+              with zipfile.ZipFile(wheel) as zf:
+                  entries = sorted(zf.infolist(), key=lambda item: item.file_size, reverse=True)
+                  for entry in entries[:40]:
+                      size_mb = entry.file_size / 1024 / 1024
+                      print(f"{size_mb:8.2f} MB  {entry.filename}")
+
+                  names = [entry.filename for entry in entries]
+                  if "win_amd64" in wheel:
+                      libs = [name for name in names if name.startswith("viennals.libs/")]
+                      openmp = [
+                          name
+                          for name in libs
+                          if name.lower() == "viennals.libs/libomp140.x86_64.dll"
+                      ]
+                      core = next(name for name in names if name.startswith("viennals/_core") and name.endswith(".pyd"))
+                      core_bytes = zf.read(core)
+
+                      print("\nWindows runtime libraries:")
+                      for name in libs:
+                          print(f"  {name}")
+
+                      if not libs:
+                          missing.append(f"{wheel}: missing viennals.libs/")
+                      if not openmp:
+                          missing.append(f"{wheel}: missing viennals.libs/libomp140.x86_64.dll")
+                      if b"omp_set_nested" in core_bytes:
+                          missing.append(f"{wheel}: _core.pyd still references deprecated omp_set_nested")
+
+          if missing:
+              print("\nWheel runtime checks failed:", file=sys.stderr)
+              for item in missing:
+                  print(f"  {item}", file=sys.stderr)
+              raise SystemExit(1)
+          PY
 
       - name: 📦 Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: wheels-${{ matrix.os }}
           path: ./wheelhouse/*.whl

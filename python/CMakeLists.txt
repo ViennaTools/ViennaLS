@@ -98,6 +98,112 @@ if((VIENNALS_PACKAGE_PYTHON AND NOT APPLE) OR MSVC)
   # Other package builds still need this staged dependency folder.
   viennacore_setup_vtk_env(${MOD} ${VIENNALS_LIB_FOLDER})
 
+  if(MSVC)
+    # /openmp:llvm links against the LLVM OpenMP runtime, which is usually
+    # available on GitHub runners but not on end-user Windows machines.
+    set(CMAKE_INSTALL_OPENMP_LIBRARIES TRUE)
+    set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
+    include(InstallRequiredSystemLibraries)
+
+    get_filename_component(_VIENNALS_COMPILER_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
+    set(_VIENNALS_OPENMP_DLL_CANDIDATES)
+
+    foreach(_VIENNALS_SYSTEM_RUNTIME IN LISTS CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS)
+      get_filename_component(_VIENNALS_SYSTEM_RUNTIME_NAME "${_VIENNALS_SYSTEM_RUNTIME}" NAME)
+      if(_VIENNALS_SYSTEM_RUNTIME_NAME MATCHES "^libomp.*\\.dll$")
+        list(APPEND _VIENNALS_OPENMP_DLL_CANDIDATES "${_VIENNALS_SYSTEM_RUNTIME}")
+      endif()
+    endforeach()
+
+    if(DEFINED ENV{VCINSTALLDIR})
+      list(APPEND _VIENNALS_OPENMP_DLL_CANDIDATES
+           "$ENV{VCINSTALLDIR}/Tools/Llvm/bin/libomp140.x86_64.dll"
+           "$ENV{VCINSTALLDIR}/Tools/Llvm/x64/bin/libomp140.x86_64.dll")
+    endif()
+
+    if(DEFINED ENV{VCToolsInstallDir})
+      list(APPEND _VIENNALS_OPENMP_DLL_CANDIDATES
+           "$ENV{VCToolsInstallDir}/../../Llvm/bin/libomp140.x86_64.dll"
+           "$ENV{VCToolsInstallDir}/../../Llvm/x64/bin/libomp140.x86_64.dll")
+    endif()
+
+    if(DEFINED ENV{llvmX64})
+      list(APPEND _VIENNALS_OPENMP_DLL_CANDIDATES "$ENV{llvmX64}/libomp140.x86_64.dll")
+    endif()
+
+    if(DEFINED ENV{VCToolsRedistDir})
+      file(GLOB_RECURSE _VIENNALS_OPENMP_REDIST_DLLS "$ENV{VCToolsRedistDir}/*libomp140.x86_64.dll")
+      list(APPEND _VIENNALS_OPENMP_DLL_CANDIDATES ${_VIENNALS_OPENMP_REDIST_DLLS})
+    endif()
+
+    if(DEFINED ENV{VCINSTALLDIR})
+      file(GLOB_RECURSE _VIENNALS_OPENMP_VC_REDIST_DLLS
+           "$ENV{VCINSTALLDIR}/Redist/MSVC/*libomp140.x86_64.dll")
+      list(APPEND _VIENNALS_OPENMP_DLL_CANDIDATES ${_VIENNALS_OPENMP_VC_REDIST_DLLS})
+    endif()
+
+    find_file(
+      _VIENNALS_OPENMP_DLL_FROM_PATH
+      NAMES libomp140.x86_64.dll
+      PATHS ENV PATH
+      NO_DEFAULT_PATH)
+    if(_VIENNALS_OPENMP_DLL_FROM_PATH)
+      list(APPEND _VIENNALS_OPENMP_DLL_CANDIDATES "${_VIENNALS_OPENMP_DLL_FROM_PATH}")
+    endif()
+
+    list(
+      APPEND
+      _VIENNALS_OPENMP_DLL_CANDIDATES
+      "${_VIENNALS_COMPILER_BIN_DIR}/libomp140.x86_64.dll"
+      "${_VIENNALS_COMPILER_BIN_DIR}/../libomp140.x86_64.dll"
+      "${_VIENNALS_COMPILER_BIN_DIR}/../../bin/libomp140.x86_64.dll"
+      "${_VIENNALS_COMPILER_BIN_DIR}/../../../../../Llvm/bin/libomp140.x86_64.dll"
+      "${_VIENNALS_COMPILER_BIN_DIR}/../../../../../Llvm/x64/bin/libomp140.x86_64.dll"
+      "${_VIENNALS_COMPILER_BIN_DIR}/../../../../../../Tools/Llvm/bin/libomp140.x86_64.dll"
+      "${_VIENNALS_COMPILER_BIN_DIR}/../../../../../../Tools/Llvm/x64/bin/libomp140.x86_64.dll")
+
+    list(REMOVE_DUPLICATES _VIENNALS_OPENMP_DLL_CANDIDATES)
+
+    unset(_VIENNALS_OPENMP_DLL)
+    set(_VIENNALS_OPENMP_DLL_SEARCH_LOG)
+    foreach(_VIENNALS_OPENMP_DLL_CANDIDATE IN LISTS _VIENNALS_OPENMP_DLL_CANDIDATES)
+      get_filename_component(_VIENNALS_OPENMP_DLL_CANDIDATE_REAL
+                             "${_VIENNALS_OPENMP_DLL_CANDIDATE}" ABSOLUTE)
+      list(APPEND _VIENNALS_OPENMP_DLL_SEARCH_LOG "${_VIENNALS_OPENMP_DLL_CANDIDATE_REAL}")
+      if(EXISTS "${_VIENNALS_OPENMP_DLL_CANDIDATE_REAL}")
+        set(_VIENNALS_OPENMP_DLL "${_VIENNALS_OPENMP_DLL_CANDIDATE_REAL}")
+        break()
+      endif()
+    endforeach()
+
+    if(_VIENNALS_OPENMP_DLL)
+      message(STATUS "[ViennaLS] Bundling LLVM OpenMP runtime: ${_VIENNALS_OPENMP_DLL}")
+      add_custom_command(
+        TARGET ${MOD}
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${VIENNALS_LIB_FOLDER}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_VIENNALS_OPENMP_DLL}"
+                "${VIENNALS_LIB_FOLDER}/"
+        VERBATIM)
+
+      if(VIENNALS_PACKAGE_PYTHON)
+        install(PROGRAMS "${_VIENNALS_OPENMP_DLL}" DESTINATION ${PKG}.libs)
+      endif()
+    elseif(VIENNALS_PACKAGE_PYTHON)
+      string(REPLACE ";" "\n  " _VIENNALS_OPENMP_DLL_SEARCH_LOG_TEXT
+                     "${_VIENNALS_OPENMP_DLL_SEARCH_LOG}")
+      message(
+        FATAL_ERROR
+          "[ViennaLS] Could not locate libomp140.x86_64.dll for a Windows wheel build. "
+          "The produced wheel would fail to import on machines without the LLVM OpenMP runtime. "
+          "Searched:\n  ${_VIENNALS_OPENMP_DLL_SEARCH_LOG_TEXT}")
+    else()
+      message(
+        WARNING "[ViennaLS] Could not locate libomp140.x86_64.dll. Windows wheels built "
+                "with /openmp:llvm may fail to import on machines without the LLVM OpenMP runtime.")
+    endif()
+  endif()
+
   if(VIENNALS_USE_GPU)
     foreach(_CUDA_TARGET CUDA::cudart CUDA::cusparse)
       if(TARGET ${_CUDA_TARGET})
@@ -111,7 +217,21 @@ if((VIENNALS_PACKAGE_PYTHON AND NOT APPLE) OR MSVC)
   endif()
 endif()
 
-install(
-  DIRECTORY ${VIENNALS_LIB_FOLDER}
-  DESTINATION .
-  OPTIONAL)
+if(NOT VIENNALS_PACKAGE_PYTHON)
+  # Dev/test builds: install the whole lib folder (VTK DLLs from vcpkg on
+  # Windows, VTK .so on Linux, etc.) so the module can be imported in-place.
+  install(
+    DIRECTORY ${VIENNALS_LIB_FOLDER}
+    DESTINATION .
+    OPTIONAL)
+elseif(MSVC)
+  # Package build on Windows: static VTK is already compiled into _core.pyd.
+  # Only DLLs are needed at runtime (libomp140.x86_64.dll etc.).
+  # Installing the full VIENNALS_LIB_FOLDER would add hundreds of MBs of .lib
+  # files; restrict to *.dll only.
+  install(
+    DIRECTORY ${VIENNALS_LIB_FOLDER}
+    DESTINATION .
+    OPTIONAL FILES_MATCHING
+    PATTERN "*.dll")
+endif()

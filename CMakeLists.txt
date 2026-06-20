@@ -55,7 +55,37 @@ if(VIENNALS_BUILD_PYTHON)
 endif()
 
 if(MSVC)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -openmp:llvm /bigobj")
+  if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.30)
+    set(OpenMP_RUNTIME_MSVC
+        "llvm"
+        CACHE STRING "MSVC OpenMP runtime selected for FindOpenMP" FORCE)
+  else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -openmp:llvm")
+  endif()
+
+  add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:/bigobj>")
+endif()
+
+# Reduce wheel size when packaging Python wheels.
+# These flags are set before dependencies are added, so VTK is built with them too.
+if(MSVC AND VIENNALS_PACKAGE_PYTHON)
+  string(APPEND CMAKE_C_FLAGS_RELEASE " /O2 /Gy /Gw")
+  string(APPEND CMAKE_CXX_FLAGS_RELEASE " /O2 /Gy /Gw")
+  string(APPEND CMAKE_MODULE_LINKER_FLAGS_RELEASE " /OPT:REF /OPT:ICF")
+  string(APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE " /OPT:REF /OPT:ICF")
+  string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " /OPT:REF /OPT:ICF")
+endif()
+
+if((CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang") AND VIENNALS_PACKAGE_PYTHON)
+  string(APPEND CMAKE_C_FLAGS_RELEASE " -O3 -DNDEBUG -ffunction-sections -fdata-sections")
+  string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O3 -DNDEBUG -ffunction-sections -fdata-sections")
+  if(APPLE)
+    string(APPEND CMAKE_MODULE_LINKER_FLAGS_RELEASE " -Wl,-dead_strip")
+    string(APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE " -Wl,-dead_strip")
+  else()
+    string(APPEND CMAKE_MODULE_LINKER_FLAGS_RELEASE " -Wl,--gc-sections")
+    string(APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE " -Wl,--gc-sections")
+  endif()
 endif()
 
 # --------------------------------------------------------------------------------------------------------
@@ -217,22 +247,40 @@ elseif(VIENNALS_USE_VTK)
   # Common VTK build options
   set(VTK_OPTIONS
       "BUILD_SHARED_LIBS OFF"
+      "VTK_INSTALL_SDK OFF"
+      "VTK_BUILD_TESTING OFF"
+      "BUILD_TESTING OFF"
+      "VTK_BUILD_ALL_MODULES OFF"
+      "VTK_ENABLE_REMOTE_MODULES OFF"
       "VTK_LEGACY_REMOVE ON"
-      "VTK_SMP_IMPLEMENTATION_TYPE Sequential"
+      # VTK threading backend.
+      # OpenMP gives full parallelism on all platforms. On MSVC, CMake may still
+      # report an old OpenMP spec date, but OpenMP_RUNTIME_MSVC=llvm selects the LLVM runtime.
+      # makes LLVM OpenMP 5.0 the actual runtime — the cmake atomics warning is
+      #
+      # STDThread is intentionally kept OFF.  vtkSMPToolsImpl.txx declares the
+      # explicit specialisation of IsParallelScope() for STDThread, but
+      # vtkSMPToolsAPI.cxx only includes vtkSMPToolsImpl.h — it never sees that
+      # declaration.  GCC/Clang resolve this via COMDAT weak/strong symbols;
+      # MSVC emits an import reference that the linker cannot satisfy, producing
+      # LNK2001 for vtkSMPToolsImpl<1>::IsParallelScope.
+      "VTK_SMP_IMPLEMENTATION_TYPE OpenMP"
       "VTK_SMP_ENABLE_STDTHREAD OFF"
-      "VTK_SMP_ENABLE_OPENMP OFF"
+      "VTK_SMP_ENABLE_OPENMP ON"
       "VTK_SMP_ENABLE_TBB OFF"
-      "VTK_GROUP_ENABLE_Rendering NO"
-      "VTK_GROUP_ENABLE_Imaging NO"
-      "VTK_GROUP_ENABLE_Views NO"
-      "VTK_GROUP_ENABLE_Web NO"
+      # Keep the build small, but do not hard-forbid dependency resolution.
+      "VTK_GROUP_ENABLE_Rendering DONT_WANT"
+      "VTK_GROUP_ENABLE_Imaging DONT_WANT"
+      "VTK_GROUP_ENABLE_Views DONT_WANT"
+      "VTK_GROUP_ENABLE_Web DONT_WANT"
+      # These should stay hard-disabled for wheels.
       "VTK_GROUP_ENABLE_Qt NO"
       "VTK_GROUP_ENABLE_MPI NO"
-      "VTK_GROUP_ENABLE_Parallel NO"
-      "VTK_MODULE_ENABLE_VTK_ParallelDIY NO"
-      "VTK_MODULE_ENABLE_VTK_ParallelCore NO"
+      # No VTK Python wrapping; ViennaLS uses pybind11.
       "VTK_ENABLE_WRAPPING NO"
+      # Avoid optional geospatial/projection dependency.
       "VTK_MODULE_ENABLE_VTK_libproj NO"
+      # Required VTK core/IO/filter modules.
       "VTK_MODULE_ENABLE_VTK_CommonExecutionModel YES"
       "VTK_MODULE_ENABLE_VTK_CommonMisc YES"
       "VTK_MODULE_ENABLE_VTK_CommonSystem YES"
@@ -246,12 +294,15 @@ elseif(VIENNALS_USE_VTK)
       "VTK_MODULE_ENABLE_VTK_FiltersCore YES"
       "VTK_MODULE_ENABLE_VTK_FiltersGeneral YES"
       "VTK_MODULE_ENABLE_VTK_FiltersGeometry YES"
-      "VTK_MODULE_ENABLE_VTK_RenderingCore YES"
-      "CMAKE_PROJECT_NAME VTK")
+      "VTK_GROUP_ENABLE_Parallel DONT_WANT"
+      "VTK_MODULE_ENABLE_VTK_ParallelDIY DONT_WANT"
+      "VTK_MODULE_ENABLE_VTK_ParallelCore DONT_WANT")
+
   if(VIENNALS_VTK_RENDERING)
     list(
       APPEND
       VTK_OPTIONS
+      "VTK_MODULE_ENABLE_VTK_RenderingCore YES"
       "VTK_MODULE_ENABLE_VTK_RenderingOpenGL2 YES"
       "VTK_MODULE_ENABLE_VTK_RenderingUI YES"
       "VTK_MODULE_ENABLE_VTK_InteractionStyle YES"
@@ -265,14 +316,65 @@ elseif(VIENNALS_USE_VTK)
     list(APPEND VTK_OPTIONS "VTK_MODULE_USE_EXTERNAL_VTK_png ON"
          "VTK_MODULE_USE_EXTERNAL_VTK_zlib ON")
   endif()
+  # Guarantee STDTHREAD stays OFF even if VTK's option() fires before CPM's
+  # cache entry is written.  See comment in VTK_OPTIONS above for why this
+  # matters on MSVC.
+  # Guarantee VTK uses OpenMP SMP for package builds.
+  set(VTK_SMP_IMPLEMENTATION_TYPE
+      "OpenMP"
+      CACHE STRING "" FORCE)
+  set(VTK_SMP_ENABLE_STDTHREAD
+      OFF
+      CACHE BOOL "" FORCE)
+  set(VTK_SMP_ENABLE_OPENMP
+      ON
+      CACHE BOOL "" FORCE)
+  set(VTK_SMP_ENABLE_TBB
+      OFF
+      CACHE BOOL "" FORCE)
 
-  CPMFindPackage(
-    NAME VTK
-    GIT_TAG v9.3.1
-    VERSION 9.0.0
-    GIT_REPOSITORY "https://gitlab.kitware.com/vtk/vtk"
-    EXCLUDE_FROM_ALL ${VIENNALS_BUILD_PYTHON}
-    OPTIONS ${VTK_OPTIONS})
+  if(NOT VIENNALS_PACKAGE_PYTHON)
+    find_package(VTK 9.0.0 QUIET)
+  endif()
+
+  if(VTK_FOUND)
+    message(STATUS "[ViennaLS] Using system VTK ${VTK_VERSION}")
+  else()
+    message(STATUS "[ViennaLS] Using bundled VTK v9.3.1")
+
+    # Apply CPM-style options manually because DOWNLOAD_ONLY does not configure VTK.
+    foreach(_vtk_option IN LISTS VTK_OPTIONS)
+      if(_vtk_option MATCHES "^([^ ]+) +(.*)$")
+        set("${CMAKE_MATCH_1}"
+            "${CMAKE_MATCH_2}"
+            CACHE STRING "" FORCE)
+      else()
+        message(FATAL_ERROR "[ViennaLS] Invalid VTK option: ${_vtk_option}")
+      endif()
+    endforeach()
+
+    CPMAddPackage(
+      NAME VTK
+      GIT_TAG v9.3.1
+      GIT_REPOSITORY "https://gitlab.kitware.com/vtk/vtk"
+      DOWNLOAD_ONLY YES)
+
+    if(VTK_ADDED)
+      viennals_patch_vtk_msvc_stdext("${VTK_SOURCE_DIR}")
+      viennals_patch_vtk_openmp_nested("${VTK_SOURCE_DIR}")
+
+      if(VIENNALS_BUILD_PYTHON)
+        add_subdirectory("${VTK_SOURCE_DIR}" "${VTK_BINARY_DIR}" EXCLUDE_FROM_ALL)
+      else()
+        add_subdirectory("${VTK_SOURCE_DIR}" "${VTK_BINARY_DIR}")
+      endif()
+    endif()
+  endif()
+
+  message(STATUS "[ViennaLS] VTK_SMP_IMPLEMENTATION_TYPE=${VTK_SMP_IMPLEMENTATION_TYPE}")
+  message(STATUS "[ViennaLS] VTK_SMP_ENABLE_OPENMP=${VTK_SMP_ENABLE_OPENMP}")
+  message(STATUS "[ViennaLS] VTK_SMP_ENABLE_STDTHREAD=${VTK_SMP_ENABLE_STDTHREAD}")
+  message(STATUS "[ViennaLS] VTK_SMP_ENABLE_TBB=${VTK_SMP_ENABLE_TBB}")
 
   target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_USE_VTK=1)
 
@@ -289,16 +391,15 @@ elseif(VIENNALS_USE_VTK)
       VTK::IOXML
       VTK::FiltersCore
       VTK::FiltersGeneral
-      VTK::FiltersGeometry
-      CACHE INTERNAL "VTK Libraries")
+      VTK::FiltersGeometry)
   if(VIENNALS_VTK_RENDERING)
     list(
       APPEND
       VTK_LIBRARIES
       VTK::RenderingCore
       VTK::RenderingOpenGL2
-      VTK::RenderingUI
       VTK::InteractionStyle
+      VTK::RenderingUI
       VTK::RenderingFreeType
       VTK::RenderingAnnotation
       VTK::IOImage)
