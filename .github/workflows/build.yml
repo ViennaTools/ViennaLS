@@ -89,7 +89,7 @@ jobs:
       - name: 🏗️ Compile (other)
         if: ${{ matrix.os != 'windows-latest' }}
         run: |
-          cmake -DVIENNALS_BUILD_TESTS=ON -B build
+          cmake -DVIENNALS_BUILD_TESTS=ON -DVIENNALS_ENABLE_SANITIZER=ON -B build
           cmake --build build --config ${{ matrix.config }}
 
       - name: 🧪 Test
