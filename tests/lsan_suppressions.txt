@@ -1,2 +1,4 @@
 # VTK 9.1 internal leak in geometry filter characterization (unfixed upstream)
 leak:vtkGeometryFilterHelper::CharacterizeUnstructuredGrid
+# OpenMP thread pool initialization — false positive under musl libc
+leak:libgomp
