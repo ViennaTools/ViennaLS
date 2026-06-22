@@ -153,6 +153,13 @@ jobs:
         env:
           CIBW_SKIP: ${{ matrix.skip }}
           CIBW_MANYLINUX_X86_64_IMAGE: ghcr.io/viennatools/vienna-builder:cuda-python
+          CIBW_REPAIR_WHEEL_COMMAND_LINUX: >-
+            auditwheel repair
+            --exclude libcuda.so.1
+            --exclude libcudart.so.12
+            --exclude libcusparse.so.12
+            --exclude libnvJitLink.so.12
+            -w {dest_dir} {wheel}
           CIBW_TEST_COMMAND: >-
             python -c "import viennals;
             print(viennals.__file__);
