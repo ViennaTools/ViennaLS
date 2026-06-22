@@ -197,9 +197,10 @@ public:
   Oxidation() = default;
 
   ~Oxidation() {
-    // Break the shared_ptr cycle between OxidationDeformation::maskVelocityField
-    // and OxidationMaskBending::deformationField so both reach ref-count 0 when
-    // the SmartPointer members are destroyed in reverse declaration order.
+    // Break the shared_ptr cycle between
+    // OxidationDeformation::maskVelocityField and
+    // OxidationMaskBending::deformationField so both reach ref-count 0 when the
+    // SmartPointer members are destroyed in reverse declaration order.
     if (deformationField)
       deformationField->clearMaskVelocityField();
   }
@@ -389,9 +390,10 @@ private:
       auto stepDeformationParams = deformationParams;
       stepDeformationParams.stressTimeStep = stressTimeStep;
 
-      // Break the shared_ptr cycle (OxidationDeformation ↔ OxidationMaskBending)
-      // left by the previous solveFields call so the old objects are freed when
-      // deformationField and maskBendingField are replaced below.
+      // Break the shared_ptr cycle (OxidationDeformation ↔
+      // OxidationMaskBending) left by the previous solveFields call so the old
+      // objects are freed when deformationField and maskBendingField are
+      // replaced below.
       if (deformationField)
         deformationField->clearMaskVelocityField();
 
