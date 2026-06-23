@@ -5,3 +5,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ViennaLS)
 
 add_dependencies(ViennaLS_Tests ${PROJECT_NAME})
 add_test(NAME ${PROJECT_NAME} COMMAND $<TARGET_FILE:${PROJECT_NAME}>)
+if(VIENNALS_ENABLE_SANITIZER)
+  set_tests_properties(
+    ${PROJECT_NAME}
+    PROPERTIES ENVIRONMENT
+               "LSAN_OPTIONS=suppressions=${CMAKE_SOURCE_DIR}/tests/lsan_suppressions.txt")
+endif()

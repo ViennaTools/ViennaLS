@@ -98,7 +98,7 @@ template <class T, int D> class WriteVisualizationMesh {
     vtkSmartPointer<vtkCellArray> newCells =
         vtkSmartPointer<vtkCellArray>::New();
 
-    vtkSmartPointer<vtkIdList> cellPoints = vtkIdList::New();
+    vtkSmartPointer<vtkIdList> cellPoints = vtkSmartPointer<vtkIdList>::New();
     oldCells->InitTraversal();
     while (oldCells->GetNextCell(cellPoints)) {
       for (vtkIdType pointId = 0; pointId < cellPoints->GetNumberOfIds();
