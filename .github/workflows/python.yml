@@ -123,7 +123,7 @@ jobs:
             archs: x86_64
             skip: "cp38-* cp39-* cp310-*"
 
-          - os: macos-latest
+          - os: macos-15
             archs: arm64
             skip: "cp38-* cp39-* cp310-*"
 
