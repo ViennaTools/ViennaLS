@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaLS
   LANGUAGES CXX
-  VERSION 5.8.2)
+  VERSION 5.8.3)
 
 # --------------------------------------------------------------------------------------------------------
 # Library options
@@ -333,11 +333,21 @@ elseif(VIENNALS_USE_VTK)
       OFF
       CACHE BOOL "" FORCE)
 
-  if(NOT VIENNALS_PACKAGE_PYTHON)
+  set(_VIENNALS_REUSE_EXISTING_VTK FALSE)
+  if(TARGET VTK::CommonCore)
+    set(_VIENNALS_REUSE_EXISTING_VTK TRUE)
+    set(VTK_FOUND TRUE)
+  elseif(NOT VIENNALS_PACKAGE_PYTHON)
     find_package(VTK 9.0.0 QUIET)
   endif()
 
-  if(VTK_FOUND)
+  if(_VIENNALS_REUSE_EXISTING_VTK)
+    if(DEFINED VTK_VERSION)
+      message(STATUS "[ViennaLS] Reusing existing VTK targets ${VTK_VERSION}")
+    else()
+      message(STATUS "[ViennaLS] Reusing existing VTK targets")
+    endif()
+  elseif(VTK_FOUND)
     message(STATUS "[ViennaLS] Using system VTK ${VTK_VERSION}")
   else()
     message(STATUS "[ViennaLS] Using bundled VTK v9.3.1")
