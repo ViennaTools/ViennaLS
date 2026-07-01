@@ -33,6 +33,12 @@ template <class T = double> class VTKReader {
   std::string fileName;
   std::unordered_map<std::string, std::vector<double>> metaData;
 
+#ifdef VIENNALS_USE_VTK
+  // For memory-based reading
+  vtkPolyData *inputPolyData = nullptr;
+  vtkUnstructuredGrid *inputUnstructuredGrid = nullptr;
+#endif
+
   unsigned vtk_nodes_for_cell_type[15] = {0, 1, 0, 2, 0, 3, 0, 0,
                                           4, 4, 4, 8, 8, 6, 5};
 
@@ -81,6 +87,21 @@ public:
       : mesh(passedMesh), fileFormat(passedFormat),
         fileName(std::move(passedFileName)) {}
 
+#ifdef VIENNALS_USE_VTK
+  /// Constructor for reading from vtkPolyData in memory
+  VTKReader(SmartPointer<Mesh<T>> passedMesh, vtkPolyData *polyData)
+      : mesh(passedMesh), inputPolyData(polyData) {
+    fileFormat = FileFormatEnum::VTP;
+  }
+
+  /// Constructor for reading from vtkUnstructuredGrid in memory
+  VTKReader(SmartPointer<Mesh<T>> passedMesh,
+            vtkUnstructuredGrid *unstructuredGrid)
+      : mesh(passedMesh), inputUnstructuredGrid(unstructuredGrid) {
+    fileFormat = FileFormatEnum::VTU;
+  }
+#endif
+
   /// set the mesh the file should be read into
   void setMesh(SmartPointer<Mesh<>> passedMesh) { mesh = passedMesh; }
 
@@ -92,6 +113,24 @@ public:
     fileName = std::move(passedFileName);
   }
 
+#ifdef VIENNALS_USE_VTK
+  /// Set vtkPolyData to read from memory instead of file
+  void setPolyData(vtkPolyData *polyData) {
+    inputPolyData = polyData;
+    inputUnstructuredGrid = nullptr;
+    fileFormat = FileFormatEnum::VTP;
+    fileName.clear();
+  }
+
+  /// Set vtkUnstructuredGrid to read from memory instead of file
+  void setUnstructuredGrid(vtkUnstructuredGrid *unstructuredGrid) {
+    inputUnstructuredGrid = unstructuredGrid;
+    inputPolyData = nullptr;
+    fileFormat = FileFormatEnum::VTU;
+    fileName.clear();
+  }
+#endif
+
   auto &getMetaData() { return metaData; }
 
   void apply() {
@@ -102,6 +141,20 @@ public:
           .print();
       return;
     }
+
+#ifdef VIENNALS_USE_VTK
+    // Check if we're reading from memory
+    if (inputPolyData != nullptr) {
+      buildFromPolyData(inputPolyData);
+      return;
+    }
+
+    if (inputUnstructuredGrid != nullptr) {
+      buildFromUnstructuredGrid(inputUnstructuredGrid);
+      return;
+    }
+#endif
+
     // check filename
     if (fileName.empty()) {
       Logger::getInstance()
@@ -164,16 +217,16 @@ public:
 
 private:
 #ifdef VIENNALS_USE_VTK
-  void readVTP(const std::string &filename) {
+  /// Build mesh from vtkPolyData
+  void buildFromPolyData(vtkPolyData *polyData) {
+    if (!polyData) {
+      Logger::getInstance()
+          .addError("Null vtkPolyData passed to VTKReader.")
+          .print();
+      return;
+    }
 
     mesh->clear();
-    vtkSmartPointer<vtkXMLPolyDataReader> pReader =
-        vtkSmartPointer<vtkXMLPolyDataReader>::New();
-    pReader->SetFileName(filename.c_str());
-    pReader->Update();
-
-    vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
-    polyData = pReader->GetOutput();
 
     mesh->nodes.resize(polyData->GetNumberOfPoints());
     for (unsigned i = 0; i < mesh->nodes.size(); ++i) {
@@ -290,18 +343,28 @@ private:
     extractFieldData(polyData);
   }
 
-  void readVTU(const std::string &filename) {
+  void readVTP(const std::string &filename) {
 
     mesh->clear();
+    vtkSmartPointer<vtkXMLPolyDataReader> pReader =
+        vtkSmartPointer<vtkXMLPolyDataReader>::New();
+    pReader->SetFileName(filename.c_str());
+    pReader->Update();
 
-    vtkSmartPointer<vtkXMLUnstructuredGridReader> greader =
-        vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
-    greader->SetFileName(filename.c_str());
-    greader->Update();
+    vtkSmartPointer<vtkPolyData> polyData = pReader->GetOutput();
+    buildFromPolyData(polyData);
+  }
 
-    vtkSmartPointer<vtkUnstructuredGrid> ugrid =
-        vtkSmartPointer<vtkUnstructuredGrid>::New();
-    ugrid = greader->GetOutput();
+  /// Build mesh from vtkUnstructuredGrid
+  void buildFromUnstructuredGrid(vtkUnstructuredGrid *ugrid) {
+    if (!ugrid) {
+      Logger::getInstance()
+          .addError("Null vtkUnstructuredGrid passed to VTKReader.")
+          .print();
+      return;
+    }
+
+    mesh->clear();
 
     // get all points
     mesh->nodes.resize(ugrid->GetNumberOfPoints());
@@ -419,6 +482,19 @@ private:
 
     // read meta data
     extractFieldData(ugrid);
+  }
+
+  void readVTU(const std::string &filename) {
+
+    mesh->clear();
+
+    vtkSmartPointer<vtkXMLUnstructuredGridReader> greader =
+        vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
+    greader->SetFileName(filename.c_str());
+    greader->Update();
+
+    vtkSmartPointer<vtkUnstructuredGrid> ugrid = greader->GetOutput();
+    buildFromUnstructuredGrid(ugrid);
   }
 
 #endif // VIENNALS_USE_VTK
