@@ -911,9 +911,8 @@ private:
                              "pressure solver CUDA buffers could not be "
                              "allocated or the CUDA context could not be "
                              "initialized.");
-      } else if (!gpu::gpuUploadNeighborIds(gpuPressBufs_,
-                                            pressNeighId32_.data(),
-                                            2u * D * n)) {
+      } else if (!gpu::gpuUploadNeighborIds(
+                     gpuPressBufs_, pressNeighId32_.data(), 2u * D * n)) {
         gpu::freeGpuBuffers(gpuPressBufs_);
         gpuPressBufs_ = nullptr;
         reportGpuUnavailable("OxidationDeformation: GPU mode was selected, but "
@@ -939,9 +938,8 @@ private:
                              "Stokes solver CUDA buffers could not be "
                              "allocated or the CUDA context could not be "
                              "initialized.");
-      } else if (!gpu::gpuUploadNeighborIds(gpuStokesBufs_,
-                                            stokesNeighId32_.data(),
-                                            2u * D * n)) {
+      } else if (!gpu::gpuUploadNeighborIds(
+                     gpuStokesBufs_, stokesNeighId32_.data(), 2u * D * n)) {
         gpu::freeGpuBuffers(gpuStokesBufs_);
         gpuStokesBufs_ = nullptr;
         reportGpuUnavailable("OxidationDeformation: GPU mode was selected, but "
@@ -967,9 +965,8 @@ private:
         reportGpuUnavailable("OxidationDeformation: GPU mode was selected, but "
                              "harmonic solver CUDA buffers could not be "
                              "allocated.");
-      } else if (!gpu::gpuUploadNeighborIds(gpuHarmonicBufs_,
-                                            stokesNeighId32_.data(),
-                                            2u * D * n)) {
+      } else if (!gpu::gpuUploadNeighborIds(
+                     gpuHarmonicBufs_, stokesNeighId32_.data(), 2u * D * n)) {
         gpu::freeGpuBuffers(gpuHarmonicBufs_);
         gpuHarmonicBufs_ = nullptr;
         reportGpuUnavailable("OxidationDeformation: GPU mode was selected, but "

@@ -679,9 +679,9 @@ private:
           gpuBufs_ = nullptr;
           reportGpuUnavailable("OxidationDiffusion: GPU mode was selected, but "
                                "uploading GPU neighbor IDs failed.");
-        } else if (useIlu0 && !gpu::gpuSetupCSR(gpuBufs_, nb32.data(),
-                                                static_cast<uint32_t>(n),
-                                                2 * D)) {
+        } else if (useIlu0 &&
+                   !gpu::gpuSetupCSR(gpuBufs_, nb32.data(),
+                                     static_cast<uint32_t>(n), 2 * D)) {
           gpu::freeGpuBuffers(gpuBufs_);
           gpuBufs_ = nullptr;
           reportGpuUnavailable("OxidationDiffusion: GPU mode was selected, but "

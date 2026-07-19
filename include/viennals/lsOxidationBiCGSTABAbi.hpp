@@ -36,7 +36,8 @@ VIENNALS_GPU_ABI int viennalsGpuAbiVersion(void);
 
 /// Allocate GPU buffers for `n` nodes and `nFaces` (2*D) faces.
 /// Returns nullptr if no usable CUDA device or context is available.
-VIENNALS_GPU_ABI void *viennalsGpuAllocBuffers(uint32_t n, int nFaces, int useIlu0Preconditioner);
+VIENNALS_GPU_ABI void *viennalsGpuAllocBuffers(uint32_t n, int nFaces,
+                                               int useIlu0Preconditioner);
 
 /// Free previously allocated buffers. Safe to call with nullptr.
 VIENNALS_GPU_ABI void viennalsGpuFreeBuffers(void *handle);
@@ -48,25 +49,30 @@ VIENNALS_GPU_ABI int viennalsGpuIsValid(const void *handle);
 VIENNALS_GPU_ABI const char *viennalsGpuGetLastErrorMessage(void);
 
 /// Upload the geometry-fixed neighbor-ID array; `count` must equal nFaces*n.
-VIENNALS_GPU_ABI int viennalsGpuUploadNeighborIds(void *handle, const uint32_t *nb,
-                                 std::size_t count);
+VIENNALS_GPU_ABI int viennalsGpuUploadNeighborIds(void *handle,
+                                                  const uint32_t *nb,
+                                                  std::size_t count);
 
 /// Build the CSR sparsity pattern and run the cuSPARSE symbolic analysis.
-VIENNALS_GPU_ABI int viennalsGpuSetupCSR(void *handle, const uint32_t *hNb, uint32_t n,
-                        int nFaces);
+VIENNALS_GPU_ABI int viennalsGpuSetupCSR(void *handle, const uint32_t *hNb,
+                                         uint32_t n, int nFaces);
 
 /// Upload per-solve arrays (diag, b, faceCoeffs) and re-factorize ILU(0).
-VIENNALS_GPU_ABI int viennalsGpuUploadSolverArrays(void *handle, const double *diag,
-                                  const double *b, const double *coeff,
-                                  uint32_t diagLen, std::size_t coeffLen);
+VIENNALS_GPU_ABI int
+viennalsGpuUploadSolverArrays(void *handle, const double *diag, const double *b,
+                              const double *coeff, uint32_t diagLen,
+                              std::size_t coeffLen);
 
 /// Upload only the RHS vector, when the matrix geometry is already resident.
-VIENNALS_GPU_ABI int viennalsGpuUploadRhs(void *handle, const double *b, uint32_t n);
+VIENNALS_GPU_ABI int viennalsGpuUploadRhs(void *handle, const double *b,
+                                          uint32_t n);
 
 /// Run GPU BiCGSTAB. `x` is the initial guess on entry, the solution on exit.
 /// Non-zero only when the solve converged and produced finite values.
-VIENNALS_GPU_ABI int viennalsGpuSolveBiCGSTAB(void *handle, double *x, double diagEps,
-                             unsigned maxIter, double tolerance,
-                             unsigned *outIterations, double *outResidual);
+VIENNALS_GPU_ABI int viennalsGpuSolveBiCGSTAB(void *handle, double *x,
+                                              double diagEps, unsigned maxIter,
+                                              double tolerance,
+                                              unsigned *outIterations,
+                                              double *outResidual);
 
 } // extern "C"

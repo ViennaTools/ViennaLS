@@ -53,7 +53,9 @@ namespace detail {
 
 #if defined(_WIN32)
 using LibraryHandle = HMODULE;
-inline LibraryHandle openLibrary(const char *path) { return LoadLibraryA(path); }
+inline LibraryHandle openLibrary(const char *path) {
+  return LoadLibraryA(path);
+}
 inline void *findSymbol(LibraryHandle lib, const char *name) {
   return reinterpret_cast<void *>(GetProcAddress(lib, name));
 }

@@ -183,7 +183,9 @@ if(VIENNALS_USE_GPU)
     # outside the default loader search path (e.g. /usr/local/cuda/lib64).
     # Wheel builds skip this: auditwheel rewrites RPATHs, and a build-machine
     # path baked into a redistributable wheel would be meaningless anyway.
-    if(UNIX AND NOT APPLE AND NOT VIENNALS_PACKAGE_PYTHON)
+    if(UNIX
+       AND NOT APPLE
+       AND NOT VIENNALS_PACKAGE_PYTHON)
       set(_VIENNALS_CUDA_RPATHS)
       foreach(_VIENNALS_CUDA_TARGET CUDA::cudart CUDA::cusparse)
         get_target_property(_VIENNALS_CUDA_LIBRARY ${_VIENNALS_CUDA_TARGET} IMPORTED_LOCATION)
@@ -193,9 +195,8 @@ if(VIENNALS_USE_GPU)
         endif()
       endforeach()
       list(REMOVE_DUPLICATES _VIENNALS_CUDA_RPATHS)
-      set_target_properties(
-        ViennaLS_GPU PROPERTIES BUILD_RPATH "${_VIENNALS_CUDA_RPATHS}" INSTALL_RPATH
-                                "${_VIENNALS_CUDA_RPATHS}")
+      set_target_properties(ViennaLS_GPU PROPERTIES BUILD_RPATH "${_VIENNALS_CUDA_RPATHS}"
+                                                    INSTALL_RPATH "${_VIENNALS_CUDA_RPATHS}")
     endif()
 
     # Expose only the define to downstream targets — never the GPU library and
