@@ -64,7 +64,18 @@ endif()
 if(VIENNALS_USE_GPU)
   message(STATUS "[ViennaLS] Adding GPU support for 'viennals' python package")
   if(TARGET ViennaLS_GPU)
+    # Built alongside the extension but never linked into it: _core must stay
+    # importable on machines without a CUDA runtime. It is placed next to
+    # _core so the dlopen() search in lsOxidationBiCGSTABInterface.hpp finds it
+    # via the calling module's own directory.
     add_dependencies(${MOD} ViennaLS_GPU)
+    set_target_properties(
+      ViennaLS_GPU PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PKG}"
+                              RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PKG}")
+    install(
+      TARGETS ViennaLS_GPU
+      LIBRARY DESTINATION ${PKG}
+      RUNTIME DESTINATION ${PKG})
   endif()
 endif()
 
@@ -204,17 +215,6 @@ if((VIENNALS_PACKAGE_PYTHON AND NOT APPLE) OR MSVC)
     endif()
   endif()
 
-  if(VIENNALS_USE_GPU)
-    foreach(_CUDA_TARGET CUDA::cudart CUDA::cusparse)
-      if(TARGET ${_CUDA_TARGET})
-        add_custom_command(
-          TARGET ${MOD}
-          POST_BUILD
-          COMMAND ${CMAKE_COMMAND} -E copy_directory $<TARGET_FILE_DIR:${_CUDA_TARGET}>
-                  ${VIENNALS_LIB_FOLDER})
-      endif()
-    endforeach()
-  endif()
 endif()
 
 if(NOT VIENNALS_PACKAGE_PYTHON)

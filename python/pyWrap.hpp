@@ -95,6 +95,7 @@ inline void bindOxidationSharedTypes(py::module &module) {
   py::enum_<GpuMode>(module, "GpuMode", py::module_local())
       .value("Cpu", GpuMode::Cpu)
       .value("Gpu", GpuMode::Gpu)
+      .value("Auto", GpuMode::Auto)
       .export_values();
 
   py::enum_<GpuPreconditioner>(module, "GpuPreconditioner", py::module_local())

@@ -25,7 +25,13 @@ namespace viennals {
 /// GPU failures are reported and not silently fallen back to CPU.
 enum class GpuMode {
   Cpu, ///< Always use CPU (default)
-  Gpu  ///< Always use GPU; fail if unavailable or unsuccessful
+  Gpu, ///< Always use GPU; fail if unavailable or unsuccessful
+  /// Use the GPU when it is usable, otherwise warn and fall back to the CPU.
+  /// This covers the GPU being *unavailable*: no CUDA runtime installed, no
+  /// device, or device setup failing. A GPU that is present and initialises
+  /// but then fails mid-solve is still reported as an error, because that
+  /// indicates a malfunction rather than an absent GPU.
+  Auto
 };
 
 /// Selects the preconditioner used by the GPU BiCGSTAB solver.
@@ -647,12 +653,20 @@ private:
     gpu::freeGpuBuffers(gpuBufs_);
     gpuBufs_ = nullptr;
 
-    const bool tryGpu = (gpuMode_ == GpuMode::Gpu);
+    const bool tryGpu = (gpuMode_ == GpuMode::Gpu || gpuMode_ == GpuMode::Auto);
     if (tryGpu) {
       const bool useIlu0 = gpuPreconditioner_ == GpuPreconditioner::ILU0;
       gpuBufs_ = gpu::allocGpuBuffers(static_cast<uint32_t>(n), 2 * D, useIlu0);
 
-      if (gpuBufs_) {
+      // Each setup step is chained with else-if: once one fails the handle is
+      // released and set to null, and every later step must be skipped rather
+      // than called with a null handle. (In GpuMode::Gpu reportGpuUnavailable
+      // throws, but in GpuMode::Auto it returns and execution continues here.)
+      if (!gpuBufs_) {
+        reportGpuUnavailable("OxidationDiffusion: GPU mode was selected, but "
+                             "CUDA buffers could not be allocated or the CUDA "
+                             "context could not be initialized.");
+      } else {
         // Convert std::size_t neighbor IDs to uint32_t for the device
         const std::size_t nf = 2u * D * n;
         std::vector<uint32_t> nb32(nf);
@@ -663,35 +677,32 @@ private:
         if (!gpu::gpuUploadNeighborIds(gpuBufs_, nb32.data(), nf)) {
           gpu::freeGpuBuffers(gpuBufs_);
           gpuBufs_ = nullptr;
-          VIENNACORE_LOG_ERROR("OxidationDiffusion: GPU mode was selected, but "
-                               "uploading GPU neighbor IDs failed." +
-                               gpuErrorDetail());
-        }
-        if (useIlu0 && !gpu::gpuSetupCSR(gpuBufs_, nb32.data(),
-                                         static_cast<uint32_t>(n), 2 * D)) {
+          reportGpuUnavailable("OxidationDiffusion: GPU mode was selected, but "
+                               "uploading GPU neighbor IDs failed.");
+        } else if (useIlu0 && !gpu::gpuSetupCSR(gpuBufs_, nb32.data(),
+                                                static_cast<uint32_t>(n),
+                                                2 * D)) {
           gpu::freeGpuBuffers(gpuBufs_);
           gpuBufs_ = nullptr;
-          VIENNACORE_LOG_ERROR("OxidationDiffusion: GPU mode was selected, but "
+          reportGpuUnavailable("OxidationDiffusion: GPU mode was selected, but "
                                "CUSPARSE setup for the GPU BiCGSTAB solver "
-                               "failed." +
-                               gpuErrorDetail());
+                               "failed.");
+        } else {
+          // Only claim the GPU backend once every setup step has succeeded.
+          logDiffusionBackend("GPU BiCGSTAB",
+                              "preconditioner=" +
+                                  std::string(useIlu0 ? "ILU0" : "Jacobi"));
+          loggedBackend = true;
         }
-        logDiffusionBackend("GPU BiCGSTAB",
-                            "preconditioner=" +
-                                std::string(useIlu0 ? "ILU0" : "Jacobi"));
-        loggedBackend = true;
-      } else {
-        VIENNACORE_LOG_ERROR("OxidationDiffusion: GPU mode was selected, but "
-                             "CUDA buffers could not be "
-                             "allocated or the CUDA context could not be "
-                             "initialized." +
-                             gpuErrorDetail());
       }
     }
 #endif
     if (!loggedBackend) {
 #ifdef VIENNALS_GPU_BICGSTAB
-      logDiffusionBackend("CPU BiCGSTAB", "GPU mode not selected");
+      logDiffusionBackend("CPU BiCGSTAB",
+                          gpuMode_ == GpuMode::Cpu
+                              ? "GPU mode not selected"
+                              : "GPU requested but unavailable");
 #else
       logDiffusionBackend("CPU BiCGSTAB",
                           "ViennaLS was built without GPU BiCGSTAB support");
@@ -945,7 +956,9 @@ private:
             .addTiming(tag + " GPU BiCGSTAB", tSolve)
             .print();
       }
-      VIENNACORE_LOG_ERROR(
+      // Under GpuMode::Auto this warns and execution continues into the CPU
+      // BiCGSTAB below, which recomputes the solution from the initial guess.
+      reportGpuUnavailable(
           "OxidationDiffusion: GPU mode was selected, but GPU BiCGSTAB "
           "failed, did not converge, or produced non-finite concentrations "
           "(iters=" +
@@ -957,6 +970,10 @@ private:
       VIENNACORE_LOG_ERROR("OxidationDiffusion: explicit GPU mode was "
                            "requested, but ViennaLS was built without "
                            "VIENNALS_GPU_BICGSTAB.");
+    } else if (gpuMode_ == GpuMode::Auto) {
+      VIENNACORE_LOG_WARNING("OxidationDiffusion: GPU mode Auto was requested, "
+                             "but ViennaLS was built without "
+                             "VIENNALS_GPU_BICGSTAB. Using the CPU solver.");
     }
 #endif
 
@@ -1150,6 +1167,19 @@ private:
     if (detail && detail[0] != '\0')
       return std::string(" Detail: ") + detail;
     return {};
+  }
+
+  /// Reports that the GPU solver cannot be used.
+  /// GpuMode::Gpu means "GPU or nothing", so this raises an error (which
+  /// aborts). GpuMode::Auto asked for the GPU only if it happens to work, so
+  /// it warns and lets the caller continue on to the CPU solver.
+  void reportGpuUnavailable(const std::string &message) const {
+    if (gpuMode_ == GpuMode::Auto) {
+      VIENNACORE_LOG_WARNING(message + gpuErrorDetail() +
+                             " Falling back to the CPU solver.");
+    } else {
+      VIENNACORE_LOG_ERROR(message + gpuErrorDetail());
+    }
   }
 #endif
 

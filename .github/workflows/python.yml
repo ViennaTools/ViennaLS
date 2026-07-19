@@ -157,21 +157,30 @@ jobs:
         env:
           CIBW_SKIP: ${{ matrix.skip }}
           CIBW_MANYLINUX_X86_64_IMAGE: ghcr.io/viennatools/vienna-builder:cuda-python
+          # The CUDA libraries are far too large to vendor (libcusparse alone is
+          # >160 MB, over the PyPI file limit), so they are left unbundled.
+          # That is safe here only because _core.so does not link them: they are
+          # needed solely by libViennaLS_GPU.so, which ViennaLS dlopen()s on
+          # demand and does without when it cannot be loaded. Keep it that way —
+          # linking CUDA into _core.so is what broke the 5.8.3 wheel.
+          CIBW_REPAIR_WHEEL_COMMAND_LINUX: >-
+            auditwheel repair
+            --exclude libcuda.so.1
+            --exclude libcudart.so.12
+            --exclude libcusparse.so.12
+            --exclude libnvJitLink.so.12
+            -w {dest_dir} {wheel}
           CIBW_TEST_COMMAND: >-
             python -c "import viennals;
             print(viennals.__file__);
             print(viennals.d2);
             print(viennals.d3)"
-          # VIENNALS_USE_GPU is deliberately OFF for wheels: it puts hard
-          # DT_NEEDED entries for libcudart/libcusparse on _core.so, and those
-          # are far too large to vendor (libcusparse alone is >160 MB, over the
-          # PyPI file limit). The wheel would then fail to import on any machine
-          # without a CUDA toolkit. GPU users build from source with
-          # -DVIENNALS_USE_GPU=ON.
           CIBW_CONFIG_SETTINGS: >-
             cmake.define.VIENNALS_PACKAGE_PYTHON=ON
             cmake.define.VIENNALS_IS_CI=ON
             cmake.define.VIENNALS_VTK_RENDERING=ON
+            cmake.define.VIENNALS_USE_GPU=ON
+            cmake.define.VIENNACORE_LINK_CUDA_DRIVER=OFF
             cmake.define.USE_IPO=OFF
 
       - name: 🏗️ Build Wheels (Other)
