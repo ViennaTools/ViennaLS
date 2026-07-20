@@ -206,6 +206,16 @@ if(VIENNALS_USE_GPU)
     target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_GPU_BICGSTAB=1)
     target_link_libraries(${PROJECT_NAME} INTERFACE ${CMAKE_DL_LIBS})
 
+    # Nothing links it, so it needs an explicit install rule. Not exported:
+    # that would put it back on consumers' link lines. Python builds install
+    # it into the package directory instead (python/CMakeLists.txt).
+    if(NOT VIENNALS_BUILD_PYTHON)
+      install(
+        TARGETS ViennaLS_GPU
+        LIBRARY DESTINATION lib
+        RUNTIME DESTINATION bin)
+    endif()
+
     message(STATUS "[ViennaLS] GPU BiCGSTAB solver enabled (CUDA ${CUDAToolkit_VERSION}, "
                    "loaded at runtime)")
   endif()

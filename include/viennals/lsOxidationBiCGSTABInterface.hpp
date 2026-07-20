@@ -130,16 +130,21 @@ struct GpuRuntime {
   void load() {
     // Search order: explicit override, next to the calling binary, the
     // wheel's bundled library folder, then the default loader search path.
-    std::string candidates[4];
+    std::string candidates[5];
     int count = 0;
     if (const char *override = std::getenv("VIENNALS_GPU_LIBRARY"))
       candidates[count++] = override;
     const std::string moduleDir = currentModuleDirectory();
     if (!moduleDir.empty()) {
+      // Next to the caller (Python package layout), then the wheel's bundled
+      // library folder, then ../lib for a bin/ + lib/ install prefix.
       candidates[count++] = moduleDir + pathSeparator() + gpuLibraryName();
       candidates[count++] = moduleDir + pathSeparator() + ".." +
                             pathSeparator() + "viennals.libs" +
                             pathSeparator() + gpuLibraryName();
+      candidates[count++] = moduleDir + pathSeparator() + ".." +
+                            pathSeparator() + "lib" + pathSeparator() +
+                            gpuLibraryName();
     }
     candidates[count++] = gpuLibraryName();
 

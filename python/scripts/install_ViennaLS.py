@@ -128,20 +128,24 @@ def ensure_compilers():
             if shutil.which(f"gcc-{v}") and shutil.which(f"g++-{v}"):
                 found = v
                 break
-        if found is None:
-            default = get_default_gcc_version()
-            if default and str(default[0]) in REQUIRED_GCC:
-                found = str(default[0])
-                print(f"Using default GCC-{found} (compatible with CUDA)")
-            else:
-                sys.exit(
-                    f"ERROR: None of the required GCC versions {REQUIRED_GCC} found.\n"
-                    "Please install one of: "
-                    + ", ".join(f"gcc-{v}/g++-{v}" for v in REQUIRED_GCC)
-                )
-        else:
+        if found is not None:
             print(f"Using GCC-{found}")
-        REQUIRED_GCC = found
+            REQUIRED_GCC = found
+            return
+
+        default = get_default_gcc_version()
+        if default and str(default[0]) in REQUIRED_GCC:
+            # Compatible, but there may be no gcc-N binary to point CC at.
+            # Leave CC/CXX unset so the default compiler is used as-is.
+            print(f"Using default GCC {default[0]}.{default[1]} (compatible with CUDA)")
+            REQUIRED_GCC = None
+            return
+
+        sys.exit(
+            f"ERROR: None of the required GCC versions {REQUIRED_GCC} found.\n"
+            "Please install one of: "
+            + ", ".join(f"gcc-{v}/g++-{v}" for v in REQUIRED_GCC)
+        )
 
 
 # ── venv ─────────────────────────────────────────────────────────────────────
