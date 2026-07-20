@@ -75,11 +75,7 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' && steps.vcpkg-installed-cache.outputs.cache-hit != 'true' }}
         shell: pwsh
         run: |
-          # The libaec overlay sources that port from GitHub instead of
-          # gitlab.dkrz.de, whose archive endpoint returns 429 to everyone.
-          # See .github/vcpkg-overlays/libaec/portfile.cmake.
-          ./vcpkg/vcpkg install --triplet x64-windows `
-            --overlay-ports="${{ github.workspace }}/.github/vcpkg-overlays"
+          ./vcpkg/vcpkg install --triplet x64-windows
 
       - name: 🐍 Build and check Python Module (Windows)
         if: ${{ matrix.os == 'windows-latest' }}
