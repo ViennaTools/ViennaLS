@@ -894,37 +894,37 @@ private:
       gpuStokesBufs_ = nullptr;
       return;
     }
-    const bool tryGpu = (gpuMode_ == GpuMode::Gpu);
+    const bool tryGpu = (gpuMode_ == GpuMode::Gpu || gpuMode_ == GpuMode::Auto);
     const bool useIlu0 = (gpuPreconditioner_ == GpuPreconditioner::ILU0);
 
+    // Each setup step is chained with else-if: once one fails the handle is
+    // released and set to null, and every later step must be skipped rather
+    // than called with a null handle. (In GpuMode::Gpu reportGpuUnavailable
+    // throws, but in GpuMode::Auto it returns and execution continues here.)
     gpu::freeGpuBuffers(gpuPressBufs_);
     gpuPressBufs_ = nullptr;
     if (tryGpu) {
       gpuPressBufs_ =
           gpu::allocGpuBuffers(static_cast<uint32_t>(n), 2 * D, useIlu0);
       if (!gpuPressBufs_) {
-        VIENNACORE_LOG_ERROR("OxidationDeformation: GPU mode was selected, but "
+        reportGpuUnavailable("OxidationDeformation: GPU mode was selected, but "
                              "pressure solver CUDA buffers could not be "
                              "allocated or the CUDA context could not be "
-                             "initialized." +
-                             gpuErrorDetail());
-      }
-      if (!gpu::gpuUploadNeighborIds(gpuPressBufs_, pressNeighId32_.data(),
-                                     2u * D * n)) {
+                             "initialized.");
+      } else if (!gpu::gpuUploadNeighborIds(
+                     gpuPressBufs_, pressNeighId32_.data(), 2u * D * n)) {
         gpu::freeGpuBuffers(gpuPressBufs_);
         gpuPressBufs_ = nullptr;
-        VIENNACORE_LOG_ERROR("OxidationDeformation: GPU mode was selected, but "
-                             "uploading pressure GPU neighbor IDs failed." +
-                             gpuErrorDetail());
-      }
-      if (useIlu0 && !gpu::gpuSetupCSR(gpuPressBufs_, pressNeighId32_.data(),
-                                       static_cast<uint32_t>(n), 2 * D)) {
+        reportGpuUnavailable("OxidationDeformation: GPU mode was selected, but "
+                             "uploading pressure GPU neighbor IDs failed.");
+      } else if (useIlu0 &&
+                 !gpu::gpuSetupCSR(gpuPressBufs_, pressNeighId32_.data(),
+                                   static_cast<uint32_t>(n), 2 * D)) {
         gpu::freeGpuBuffers(gpuPressBufs_);
         gpuPressBufs_ = nullptr;
-        VIENNACORE_LOG_ERROR("OxidationDeformation: GPU mode was selected, but "
+        reportGpuUnavailable("OxidationDeformation: GPU mode was selected, but "
                              "CUSPARSE setup for the pressure GPU BiCGSTAB "
-                             "solver failed." +
-                             gpuErrorDetail());
+                             "solver failed.");
       }
     }
 
@@ -934,28 +934,24 @@ private:
       gpuStokesBufs_ =
           gpu::allocGpuBuffers(static_cast<uint32_t>(n), 2 * D, useIlu0);
       if (!gpuStokesBufs_) {
-        VIENNACORE_LOG_ERROR("OxidationDeformation: GPU mode was selected, but "
+        reportGpuUnavailable("OxidationDeformation: GPU mode was selected, but "
                              "Stokes solver CUDA buffers could not be "
                              "allocated or the CUDA context could not be "
-                             "initialized." +
-                             gpuErrorDetail());
-      }
-      if (!gpu::gpuUploadNeighborIds(gpuStokesBufs_, stokesNeighId32_.data(),
-                                     2u * D * n)) {
+                             "initialized.");
+      } else if (!gpu::gpuUploadNeighborIds(
+                     gpuStokesBufs_, stokesNeighId32_.data(), 2u * D * n)) {
         gpu::freeGpuBuffers(gpuStokesBufs_);
         gpuStokesBufs_ = nullptr;
-        VIENNACORE_LOG_ERROR("OxidationDeformation: GPU mode was selected, but "
-                             "uploading Stokes GPU neighbor IDs failed." +
-                             gpuErrorDetail());
-      }
-      if (useIlu0 && !gpu::gpuSetupCSR(gpuStokesBufs_, stokesNeighId32_.data(),
-                                       static_cast<uint32_t>(n), 2 * D)) {
+        reportGpuUnavailable("OxidationDeformation: GPU mode was selected, but "
+                             "uploading Stokes GPU neighbor IDs failed.");
+      } else if (useIlu0 &&
+                 !gpu::gpuSetupCSR(gpuStokesBufs_, stokesNeighId32_.data(),
+                                   static_cast<uint32_t>(n), 2 * D)) {
         gpu::freeGpuBuffers(gpuStokesBufs_);
         gpuStokesBufs_ = nullptr;
-        VIENNACORE_LOG_ERROR("OxidationDeformation: GPU mode was selected, but "
+        reportGpuUnavailable("OxidationDeformation: GPU mode was selected, but "
                              "CUSPARSE setup for the Stokes GPU BiCGSTAB "
-                             "solver failed." +
-                             gpuErrorDetail());
+                             "solver failed.");
       }
     }
 
@@ -966,32 +962,29 @@ private:
       gpuHarmonicBufs_ =
           gpu::allocGpuBuffers(static_cast<uint32_t>(n), 2 * D, useIlu0);
       if (!gpuHarmonicBufs_) {
-        VIENNACORE_LOG_ERROR("OxidationDeformation: GPU mode was selected, but "
+        reportGpuUnavailable("OxidationDeformation: GPU mode was selected, but "
                              "harmonic solver CUDA buffers could not be "
-                             "allocated." +
-                             gpuErrorDetail());
-      }
-      if (!gpu::gpuUploadNeighborIds(gpuHarmonicBufs_, stokesNeighId32_.data(),
-                                     2u * D * n)) {
+                             "allocated.");
+      } else if (!gpu::gpuUploadNeighborIds(
+                     gpuHarmonicBufs_, stokesNeighId32_.data(), 2u * D * n)) {
         gpu::freeGpuBuffers(gpuHarmonicBufs_);
         gpuHarmonicBufs_ = nullptr;
-        VIENNACORE_LOG_ERROR("OxidationDeformation: GPU mode was selected, but "
-                             "uploading harmonic GPU neighbor IDs failed." +
-                             gpuErrorDetail());
-      }
-      if (useIlu0 &&
-          !gpu::gpuSetupCSR(gpuHarmonicBufs_, stokesNeighId32_.data(),
-                            static_cast<uint32_t>(n), 2 * D)) {
+        reportGpuUnavailable("OxidationDeformation: GPU mode was selected, but "
+                             "uploading harmonic GPU neighbor IDs failed.");
+      } else if (useIlu0 &&
+                 !gpu::gpuSetupCSR(gpuHarmonicBufs_, stokesNeighId32_.data(),
+                                   static_cast<uint32_t>(n), 2 * D)) {
         gpu::freeGpuBuffers(gpuHarmonicBufs_);
         gpuHarmonicBufs_ = nullptr;
-        VIENNACORE_LOG_ERROR("OxidationDeformation: GPU mode was selected, but "
+        reportGpuUnavailable("OxidationDeformation: GPU mode was selected, but "
                              "CUSPARSE setup for the harmonic GPU BiCGSTAB "
-                             "solver failed." +
-                             gpuErrorDetail());
+                             "solver failed.");
       }
     }
 
-    if (tryGpu)
+    // Only claim the GPU backend when every solver actually has usable
+    // buffers; under GpuMode::Auto any of them may have degraded to the CPU.
+    if (tryGpu && gpuPressBufs_ && gpuStokesBufs_ && gpuHarmonicBufs_)
       logDeformationBackend("GPU BiCGSTAB",
                             "pressure/Stokes/harmonic, preconditioner=" +
                                 std::string(useIlu0 ? "ILU0" : "Jacobi"));
@@ -1004,6 +997,19 @@ private:
     if (detail && detail[0] != '\0')
       return std::string(" Detail: ") + detail;
     return {};
+  }
+
+  /// Reports that the GPU solver cannot be used.
+  /// GpuMode::Gpu means "GPU or nothing", so this raises an error (which
+  /// aborts). GpuMode::Auto asked for the GPU only if it happens to work, so
+  /// it warns and lets the caller continue on to the CPU solver.
+  void reportGpuUnavailable(const std::string &message) const {
+    if (gpuMode_ == GpuMode::Auto) {
+      VIENNACORE_LOG_WARNING(message + gpuErrorDetail() +
+                             " Falling back to the CPU solver.");
+    } else {
+      VIENNACORE_LOG_ERROR(message + gpuErrorDetail());
+    }
   }
 #endif
 
@@ -1098,6 +1104,10 @@ public:
       VIENNACORE_LOG_ERROR("OxidationDeformation: explicit GPU mode was "
                            "requested, but ViennaLS was built without "
                            "VIENNALS_GPU_BICGSTAB.");
+    } else if (gpuMode_ == GpuMode::Auto) {
+      VIENNACORE_LOG_WARNING("OxidationDeformation: GPU mode Auto was "
+                             "requested, but ViennaLS was built without "
+                             "VIENNALS_GPU_BICGSTAB. Using the CPU solver.");
     }
 #endif
   }

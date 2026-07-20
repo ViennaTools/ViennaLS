@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaLS
   LANGUAGES CXX
-  VERSION 5.8.4)
+  VERSION 5.8.5)
 
 # --------------------------------------------------------------------------------------------------------
 # Library options
@@ -158,9 +158,16 @@ if(VIENNALS_USE_GPU)
         "[ViennaLS] cuSPARSE not found in CUDA ${CUDAToolkit_VERSION}; disabling GPU BiCGSTAB solver."
     )
   else()
-    # Compile the CUDA kernels into a small static library so that consuming
-    # .cpp files (compiled by g++) never see __global__ / <<< >>> syntax.
-    add_library(ViennaLS_GPU STATIC ${PROJECT_SOURCE_DIR}/gpu/lsOxidationBiCGSTABKernels.cu)
+    # Compile the CUDA kernels into a SHARED library so that consuming .cpp
+    # files (compiled by g++) never see __global__ / <<< >>> syntax, and — just
+    # as importantly — so that this is the *only* binary linking CUDA.
+    #
+    # It is deliberately not linked into ViennaLS. ViennaLS opens it lazily with
+    # dlopen() at first use (see lsOxidationBiCGSTABInterface.hpp). Linking it
+    # would put DT_NEEDED entries for libcudart/libcusparse onto every consumer,
+    # and the dynamic loader would then refuse to load ViennaLS at all on a
+    # machine with no CUDA runtime — which is what broke the 5.8.3 PyPI wheel.
+    add_library(ViennaLS_GPU SHARED ${PROJECT_SOURCE_DIR}/gpu/lsOxidationBiCGSTABKernels.cu)
 
     target_compile_definitions(ViennaLS_GPU PRIVATE VIENNALS_GPU_BICGSTAB=1)
 
@@ -170,28 +177,37 @@ if(VIENNALS_USE_GPU)
     set_target_properties(ViennaLS_GPU PROPERTIES CUDA_SEPARABLE_COMPILATION OFF
                                                   POSITION_INDEPENDENT_CODE ON)
 
-    target_link_libraries(ViennaLS_GPU PUBLIC CUDA::cudart CUDA::cusparse)
+    target_link_libraries(ViennaLS_GPU PRIVATE CUDA::cudart CUDA::cusparse)
 
-    if(UNIX AND NOT APPLE)
+    # A locally built library has to find the CUDA runtime, which often lives
+    # outside the default loader search path (e.g. /usr/local/cuda/lib64).
+    # Wheel builds skip this: auditwheel rewrites RPATHs, and a build-machine
+    # path baked into a redistributable wheel would be meaningless anyway.
+    if(UNIX
+       AND NOT APPLE
+       AND NOT VIENNALS_PACKAGE_PYTHON)
+      set(_VIENNALS_CUDA_RPATHS)
       foreach(_VIENNALS_CUDA_TARGET CUDA::cudart CUDA::cusparse)
         get_target_property(_VIENNALS_CUDA_LIBRARY ${_VIENNALS_CUDA_TARGET} IMPORTED_LOCATION)
         if(_VIENNALS_CUDA_LIBRARY)
           get_filename_component(_VIENNALS_CUDA_LIBRARY_DIR "${_VIENNALS_CUDA_LIBRARY}" DIRECTORY)
-          target_link_options(ViennaLS_GPU INTERFACE
-                              "$<BUILD_INTERFACE:LINKER:-rpath,${_VIENNALS_CUDA_LIBRARY_DIR}>")
+          list(APPEND _VIENNALS_CUDA_RPATHS "${_VIENNALS_CUDA_LIBRARY_DIR}")
         endif()
       endforeach()
+      list(REMOVE_DUPLICATES _VIENNALS_CUDA_RPATHS)
+      set_target_properties(ViennaLS_GPU PROPERTIES BUILD_RPATH "${_VIENNALS_CUDA_RPATHS}"
+                                                    INSTALL_RPATH "${_VIENNALS_CUDA_RPATHS}")
     endif()
 
-    # Expose the define and the GPU library to downstream targets.
-    # BUILD_INTERFACE limits the ViennaLS_GPU dependency to the build tree so it
-    # is never exported to the install tree (avoiding the "not in export set" error
-    # from packageProject when ViennaLS_GPU is a non-installed local target).
+    # Expose only the define to downstream targets — never the GPU library and
+    # never the CUDA include dirs. The dispatch layer needs nothing from the
+    # CUDA headers; it talks to ViennaLS_GPU through the plain C ABI in
+    # lsOxidationBiCGSTABAbi.hpp. Consumers do need the dl functions.
     target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_GPU_BICGSTAB=1)
-    target_link_libraries(${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:ViennaLS_GPU>)
-    target_include_directories(${PROJECT_NAME} INTERFACE ${CUDAToolkit_INCLUDE_DIRS})
+    target_link_libraries(${PROJECT_NAME} INTERFACE ${CMAKE_DL_LIBS})
 
-    message(STATUS "[ViennaLS] GPU BiCGSTAB solver enabled (CUDA ${CUDAToolkit_VERSION})")
+    message(STATUS "[ViennaLS] GPU BiCGSTAB solver enabled (CUDA ${CUDAToolkit_VERSION}, "
+                   "loaded at runtime)")
   endif()
 endif()
 
