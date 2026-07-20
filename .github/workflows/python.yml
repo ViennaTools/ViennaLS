@@ -201,10 +201,20 @@ jobs:
         run: |
           python - <<'PY'
           import glob
+          import re
+          import subprocess
           import sys
+          import tempfile
           import zipfile
 
           missing = []
+
+          # Matched by prefix so a CUDA major-version bump cannot slip past.
+          CUDA_RE = re.compile(r"^lib(cuda|cudart|cusparse|cublas|nvJitLink|nvrtc)", re.I)
+
+          def dt_needed(path):
+              out = subprocess.run(["readelf", "-d", path], capture_output=True, text=True).stdout
+              return re.findall(r"\(NEEDED\).*?\[([^\]]+)\]", out)
 
           for wheel in glob.glob("wheelhouse/*.whl"):
               print("\n" + wheel)
@@ -235,6 +245,43 @@ jobs:
                           missing.append(f"{wheel}: missing viennals.libs/libomp140.x86_64.dll")
                       if b"omp_set_nested" in core_bytes:
                           missing.append(f"{wheel}: _core.pyd still references deprecated omp_set_nested")
+
+                  if "manylinux" in wheel:
+                      # The GPU solver lives in a separate library that ViennaLS
+                      # dlopen()s on demand. Two things must hold, and CI cannot
+                      # detect either by importing: CIBW_TEST_COMMAND runs inside
+                      # the CUDA build image, where a CUDA-linked wheel imports
+                      # happily. That is exactly how 5.8.3 shipped broken.
+                      core = next(n for n in names if n.startswith("viennals/_core") and n.endswith(".so"))
+                      gpu = [n for n in names if n.endswith("libViennaLS_GPU.so")]
+
+                      with tempfile.TemporaryDirectory() as tmp:
+                          # 1. _core must not hard-link CUDA, or the wheel fails
+                          #    to import on any machine without a CUDA runtime.
+                          cuda = [x for x in dt_needed(zf.extract(core, tmp)) if CUDA_RE.match(x)]
+                          print(f"\n{core} CUDA dependencies: {cuda or 'none'}")
+                          if cuda:
+                              missing.append(
+                                  f"{wheel}: _core links CUDA directly ({', '.join(cuda)}); "
+                                  "it will not import without a CUDA runtime")
+
+                          # 2. If GPU support was built, the library has to
+                          #    survive auditwheel, else GPU users silently lose it.
+                          #    Linux wheels are built with VIENNALS_USE_GPU=ON, so
+                          #    absence means it was dropped, not never built. If
+                          #    GPU is ever turned off here, this must be updated
+                          #    rather than left to pass silently.
+                          if not gpu:
+                              missing.append(
+                                  f"{wheel}: libViennaLS_GPU.so is missing; GPU support "
+                                  "was built but did not survive into the wheel")
+                          else:
+                              gpu_cuda = [x for x in dt_needed(zf.extract(gpu[0], tmp)) if CUDA_RE.match(x)]
+                              print(f"{gpu[0]} CUDA dependencies: {gpu_cuda or 'none'}")
+                              if not gpu_cuda:
+                                  missing.append(
+                                      f"{wheel}: {gpu[0]} has no CUDA dependencies; "
+                                      "auditwheel may have rewritten it")
 
           if missing:
               print("\nWheel runtime checks failed:", file=sys.stderr)
