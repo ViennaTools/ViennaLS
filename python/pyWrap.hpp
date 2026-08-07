@@ -220,7 +220,9 @@ inline void bindOxidationSharedTypes(py::module &module) {
       .def_readwrite("anchorBoundarySide",
                      &OxidationMaskParameters::anchorBoundarySide)
       .def_readwrite("anchorBoundaryLayers",
-                     &OxidationMaskParameters::anchorBoundaryLayers);
+                     &OxidationMaskParameters::anchorBoundaryLayers)
+      .def_readwrite("anchorNormalOnly",
+                     &OxidationMaskParameters::anchorNormalOnly);
 
   py::class_<OxidationCouplingParameters>(module, "OxidationCouplingParameters",
                                           py::module_local())

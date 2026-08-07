@@ -276,6 +276,11 @@ private:
     vtkSmartPointer<vtkXMLPolyDataWriter> pwriter =
         vtkSmartPointer<vtkXMLPolyDataWriter>::New();
     pwriter->SetFileName(filename.c_str());
+    // Inline binary rather than VTK's default appended mode: VTK 9.1's reader
+    // cannot parse appended data once an array spans more than one 32 kB
+    // compression block, so larger meshes are written unreadably by its own
+    // reader.  Inline binary round-trips at identical file size.
+    pwriter->SetDataModeToBinary();
     pwriter->SetInputData(cachedPolyData);
     pwriter->Write();
   }
@@ -397,6 +402,9 @@ private:
     vtkSmartPointer<vtkXMLUnstructuredGridWriter> owriter =
         vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
     owriter->SetFileName(filename.c_str());
+    // See buildVTP's writer: VTK 9.1 cannot read back its own appended-mode
+    // output for multi-block arrays.
+    owriter->SetDataModeToBinary();
     owriter->SetInputData(cachedUnstructuredGrid);
     owriter->Write();
   }

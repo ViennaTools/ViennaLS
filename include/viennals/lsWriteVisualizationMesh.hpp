@@ -22,6 +22,7 @@
 
 #include <hrleDenseIterator.hpp>
 
+#include <lsBooleanOperation.hpp>
 #include <lsDomain.hpp>
 #include <lsMaterialMap.hpp>
 #include <lsPreCompileMacros.hpp>
@@ -509,6 +510,35 @@ public:
       }
     }
 
+    // This algorithm peels material regions inward: it starts from the region
+    // inside levelSets.back() and repeatedly subdivides that with the earlier
+    // level sets.  It therefore requires a NESTED stack, where the last level
+    // set encloses every earlier one.
+    //
+    // A domain may legitimately hold a top level set that does not wrap the
+    // others — a LOCOS mask inserted with wrapLowerLevelSet=false, which has to
+    // stay a separate body for the mask mechanics.  Passing that in unchanged
+    // clips the entire mesh to the mask's own extent, so the substrate and most
+    // of the oxide silently vanish from the output.
+    //
+    // Repair it here with cumulative unions.  This is a no-op on an already
+    // nested stack (the union of a set with a subset is that set), so it only
+    // affects inputs that would otherwise be rendered wrongly.  The unions are
+    // built on deep copies, leaving the caller's level sets untouched.
+    if (levelSets.size() > 1) {
+      LevelSetsType nested;
+      nested.reserve(levelSets.size());
+      for (auto &ls : levelSets) {
+        auto merged = SmartPointer<Domain<T, D>>::New(ls);
+        if (!nested.empty())
+          BooleanOperation<T, D>(merged, nested.back(),
+                                 BooleanOperationEnum::UNION)
+              .apply();
+        nested.push_back(merged);
+      }
+      levelSets = std::move(nested);
+    }
+
     const double gridDelta = levelSets[0]->getGrid().getGridDelta();
 
     // store volume for each material
@@ -755,6 +785,14 @@ public:
       if (writeToFile) {
         auto writer = vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
         writer->SetFileName((fileName + "_volume.vtu").c_str());
+        // Inline binary rather than VTK's default appended mode: VTK 9.1's
+        // reader cannot parse appended data once an array spans more than one
+        // 32 kB compression block, so meshes above a few thousand cells are
+        // written unreadably by its own reader (and by anything else linking
+        // 9.1).  Verified across every appended variant — base64 or raw,
+        // compressed or not — all fail to round-trip, while inline binary
+        // succeeds at identical file size.
+        writer->SetDataModeToBinary();
         writer->SetInputData(volumeVTK);
         writer->Write();
       }
@@ -780,6 +818,9 @@ public:
       if (writeToFile) {
         auto writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
         writer->SetFileName((fileName + "_hull.vtp").c_str());
+        // See the volume writer above: VTK 9.1 cannot read back its own
+        // appended-mode output for multi-block arrays.
+        writer->SetDataModeToBinary();
         writer->SetInputData(hullVTK);
         writer->Write();
       } else {

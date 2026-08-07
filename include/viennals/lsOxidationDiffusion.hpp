@@ -70,6 +70,14 @@ struct OxidationParameters {
 
   double maskTransferCoefficient = 0.;
   double maskConcentration = 0.;
+  /// Meshed mask diffusion: gamma = D_SiO2 / D_mask.  When > 0 the mask BODY
+  /// becomes part of the diffusion domain — oxidant enters its outer surface
+  /// through the ambient Robin BC, diffuses through the film with D/gamma,
+  /// crosses into the oxide, and reacts at the Si interface.  The film's
+  /// resistance then comes from its actual geometry (a thinned or stretched
+  /// mask leaks more), not from a lumped coefficient.  0 keeps the mask
+  /// impermeable (or lumped via maskTransferCoefficient, if that is set).
+  double maskPermeabilityRatio = 0.;
   double minBoundaryDistance = 1e-6;
   unsigned maxIterations = 10000;
   double tolerance = 1e-8;
@@ -130,6 +138,9 @@ private:
     T concentration = 0.;
     Vec3D<T> siNormal = {0., 0.,
                          0.}; // unit outward normal of Si surface (into oxide)
+    // Node lies inside the mask body (meshed mask diffusion): its diffusion
+    // coefficient is D / maskPermeabilityRatio instead of D.
+    bool inMask = false;
   };
 
   struct StencilSide {
@@ -350,6 +361,24 @@ public:
     }
 
     solved = true;
+
+    // TEST INSTRUMENTATION (env-gated): dump one vertical column of node
+    // concentrations — including meshed-mask nodes — so the steady profile
+    // through the film is observable.  Locates where a resistance error sits:
+    // a linear drop across the film means D_mask itself is off; a jump at one
+    // face means that face's coefficient or BC is wrong.
+    if (std::getenv("OX_DUMP_CONC") != nullptr && !nodes.empty()) {
+      const auto column = nodes[nodes.size() / 2].index[0];
+      if (FILE *dump = std::fopen("/tmp/ox_conc_dump.txt", "w")) {
+        for (const auto &node : nodes)
+          if (node.index[0] == column)
+            std::fprintf(dump, "%.6f %d %.8f\n",
+                         static_cast<double>(node.index[D - 1]) * gridDelta,
+                         node.inMask ? 1 : 0,
+                         static_cast<double>(node.concentration));
+        std::fclose(dump);
+      }
+    }
   }
 
   T getScalarVelocity(const Vec3D<T> &coordinate, int material,
@@ -364,6 +393,19 @@ public:
     IndexType index;
     for (unsigned i = 0; i < D; ++i)
       index[i] = std::llround(coordinate[i] / gridDelta);
+
+    // Meshed mask: mask nodes carry oxidant concentration but DO NOT react.
+    // A reaction speed queried at or nearest to a mask point is zero — never
+    // k*C from the film's near-C_eq concentration.  Without this, velocity
+    // fallbacks that sample the reaction speed at mask coordinates invent a
+    // full oxidation rate inside the mask body.
+    {
+      std::size_t nodeId = lookupNode(index);
+      if (nodeId == noNode)
+        nodeId = findNearbyNode(index);
+      if (nodeId != noNode && nodes[nodeId].inMask)
+        return 0.;
+    }
 
     const auto boundarySample = reactionBoundarySample(index);
     const IndexType rateIndex =
@@ -581,12 +623,24 @@ private:
     ConstSparseIterator ambientIt(ambientInterface->getDomain());
     auto maskIt = makeMaskIterator();
 
+    // Meshed mask diffusion: with gamma > 0 the mask body joins the diffusion
+    // domain as nodes of their own (D/gamma), so the oxidant concentration is
+    // solved THROUGH the film instead of being lumped into a boundary
+    // coefficient.
+    const bool meshMask =
+        maskInterface != nullptr && parameters.maskPermeabilityRatio > 0.;
+
     IndexType index = minIndex;
     while (true) {
       const T reactionPhi = valueAt(reactionIt, index);
       const T ambientPhi = valueAt(ambientIt, index);
-      if (isInsideOxide(reactionPhi, ambientPhi) &&
-          !isInsideMask(maskIt, index)) {
+      const bool insideMask = isInsideMask(maskIt, index);
+      constexpr T eps = T(1e-9);
+      const bool oxideNode =
+          isInsideOxide(reactionPhi, ambientPhi) && !insideMask;
+      const bool maskNode =
+          meshMask && insideMask && reactionSign * reactionPhi >= -eps;
+      if (oxideNode || maskNode) {
         const std::size_t id = nodes.size();
         nodeLookupFlat[linearIndex(index)] = id;
         T seedConc = parameters.equilibriumConcentration;
@@ -597,7 +651,8 @@ private:
         if (!std::isfinite(seedConc))
           seedConc = parameters.equilibriumConcentration;
         Node newNode{index, seedConc};
-        if (parameters.reactionRateRatio111 != T(1))
+        newNode.inMask = maskNode;
+        if (!maskNode && parameters.reactionRateRatio111 != T(1))
           newNode.siNormal = computeSiNormal(index, reactionIt);
         nodes.push_back(newNode);
       }
@@ -624,8 +679,18 @@ private:
           nb[dir] += off;
           if (!inBounds(nb) || lookupNode(nb) != noNode)
             continue; // NONE/1.0 already set by assign()
-          const auto bc = classifyBoundary(faceReactionIt, faceAmbientIt,
-                                           faceMaskIt, node.index, nb);
+          auto bc = classifyBoundary(faceReactionIt, faceAmbientIt,
+                                     faceMaskIt, node.index, nb);
+          if (node.inMask) {
+            // Faces of a meshed mask node.  Crossing the mask level set here
+            // is the film's OUTER surface — the gas inlet — so it takes the
+            // ambient Robin BC.  Crossing the Si level set is mask resting on
+            // silicon: the mask does not react with Si, so zero flux.
+            if (bc.first == Boundary::MASK)
+              bc.first = Boundary::AMBIENT;
+            else if (bc.first == Boundary::REACTION)
+              bc.first = Boundary::NONE;
+          }
           faceBCTypes_[fi * n + id] = bc.first;
           faceBCDists_[fi * n + id] = bc.second;
         }
@@ -726,7 +791,7 @@ private:
     const std::vector<T> zeros(n, T(0));
 
     for (std::size_t id = 0; id < n; ++id) {
-      const T D_eff = getEffectiveDiffusionCoefficient(nodes[id].index);
+      const T D_eff = nodeDiffusionCoefficient(id);
       for (unsigned dir = 0; dir < D; ++dir) {
         const unsigned fiNeg = dir * 2u;
         const unsigned fiPos = dir * 2u + 1u;
@@ -741,10 +806,16 @@ private:
         if (distSum <= eps)
           continue;
 
+        // Per-face diffusion, matching computeStencilAt: harmonic mean on
+        // mask/oxide faces, the node's own D elsewhere.
         if (neighborIds_[fiNeg * n + id] != noNode && distNeg > eps)
-          faceCoeffs[fiNeg * n + id] = T(2) * D_eff / (distNeg * distSum);
+          faceCoeffs[fiNeg * n + id] =
+              T(2) * faceDiffusionCoefficient(id, dir, -1, D_eff) /
+              (distNeg * distSum);
         if (neighborIds_[fiPos * n + id] != noNode && distPos > eps)
-          faceCoeffs[fiPos * n + id] = T(2) * D_eff / (distPos * distSum);
+          faceCoeffs[fiPos * n + id] =
+              T(2) * faceDiffusionCoefficient(id, dir, 1, D_eff) /
+              (distPos * distSum);
       }
     }
   }
@@ -757,11 +828,21 @@ private:
                         T &diag, T &rhs) const {
     diag = T(0);
     rhs = T(0);
-    const T D_eff = getEffectiveDiffusionCoefficient(nodes[nodeId].index);
+    const T D_eff = nodeDiffusionCoefficient(nodeId);
     for (unsigned direction = 0; direction < D; ++direction) {
       const auto neg = makeStencilSide(nodeId, x, direction, -1, D_eff);
       const auto pos = makeStencilSide(nodeId, x, direction, 1, D_eff);
-      addAxisContribution(rhs, diag, neg, pos, D_eff);
+      // Each side carries its own face diffusion: the node's D inside one
+      // material, the harmonic mean on a mask/oxide face.
+      const T distSum = neg.distance + pos.distance;
+      if (distSum <= std::numeric_limits<T>::epsilon())
+        continue;
+      addSideContribution(rhs, diag, neg, distSum,
+                          faceDiffusionCoefficient(nodeId, direction, -1,
+                                                   D_eff));
+      addSideContribution(rhs, diag, pos, distSum,
+                          faceDiffusionCoefficient(nodeId, direction, 1,
+                                                   D_eff));
     }
   }
 
@@ -1331,6 +1412,10 @@ private:
   reactionBoundarySampleFromNode(ConstSparseIterator &reactionIt,
                                  const Node &node) const {
     ReactionBoundarySample best;
+    // A meshed mask node never reacts with silicon: its reaction faces are
+    // zero-flux, so it must not supply a reaction-boundary sample either.
+    if (node.inMask)
+      return best;
     best.nodeIndex = node.index;
     T bestDistance = std::numeric_limits<T>::max();
     const T insidePhi = valueAt(reactionIt, node.index);
@@ -1419,6 +1504,36 @@ private:
     }
 
     return rate;
+  }
+
+  /// Diffusion coefficient of a node's own material: D in the oxide,
+  /// D / gamma inside a meshed mask.
+  T nodeDiffusionCoefficient(std::size_t nodeId) const {
+    T value = getEffectiveDiffusionCoefficient(nodes[nodeId].index);
+    if (nodes[nodeId].inMask)
+      value /= static_cast<T>(parameters.maskPermeabilityRatio);
+    return value;
+  }
+
+  /// Diffusion coefficient on the face between a node and its neighbour.
+  /// Faces inside one material use the node's own D (the upstream behaviour).
+  /// A face straddling the mask/oxide interface takes the HARMONIC mean, which
+  /// is the value that makes the flux continuous across the material jump.
+  T faceDiffusionCoefficient(std::size_t nodeId, unsigned direction, int offset,
+                             T ownDiffusion) const {
+    IndexType neighbor = nodes[nodeId].index;
+    neighbor[direction] += offset;
+    if (!inBounds(neighbor))
+      return ownDiffusion;
+    const std::size_t neighborId = lookupNode(neighbor);
+    if (neighborId == noNode ||
+        nodes[neighborId].inMask == nodes[nodeId].inMask)
+      return ownDiffusion;
+    const T neighborDiffusion = nodeDiffusionCoefficient(neighborId);
+    const T sum = ownDiffusion + neighborDiffusion;
+    if (sum <= std::numeric_limits<T>::epsilon())
+      return T(0);
+    return T(2) * ownDiffusion * neighborDiffusion / sum;
   }
 
   T getEffectiveDiffusionCoefficient(const IndexType &index) const {

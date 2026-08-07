@@ -1,5 +1,6 @@
 #pragma once
 
+#include <lsInterior.hpp>
 #include <lsOxidationDeformation.hpp>
 #include <lsOxidationSolverBase.hpp>
 
@@ -79,6 +80,12 @@ struct OxidationMaskParameters {
   int anchorBoundaryDirection = 0;
   int anchorBoundarySide = -1;
   unsigned anchorBoundaryLayers = 1;
+  /// Roller anchor: clamp ONLY the anchor-direction component at the boundary
+  /// layer, so the mask can glide along the mirror plane (translate vertically
+  /// as oxide grows beneath it) instead of being welded to the domain edge.
+  /// A full clamp builds a cantilever root there and manufactures a bend
+  /// hinged at the domain edge instead of at the mask edge.
+  bool anchorNormalOnly = false;
 };
 
 /// Vector velocity field for a compliant oxidation mask driven by solved oxide
@@ -116,8 +123,23 @@ private:
     IndexType index;
     Vec3D<T> velocity{0., 0., 0.};
     bool contact = false;
+    /// True when any component is Dirichlet-constrained.  Kept as a fast
+    /// "is this node anchored at all" test; use clampMask for per-component
+    /// decisions, since a roller support constrains only one component.
     bool fixed = false;
+    /// Bit d set => velocity component d is Dirichlet-zero at this node.
+    unsigned char clampMask = 0;
   };
+
+  static constexpr unsigned char fullClampMask() {
+    return static_cast<unsigned char>((1u << D) - 1u);
+  }
+  static bool isClamped(const Node &node, unsigned component) {
+    return ((node.clampMask >> component) & 1u) != 0u;
+  }
+  static bool isFullyClamped(const Node &node) {
+    return node.clampMask == fullClampMask();
+  }
 
   struct SparseMatrix {
     std::size_t nodeCount = 0;
@@ -551,8 +573,9 @@ private:
       const auto found = previous.find(linearIndex(node.index));
       if (found != previous.end() && isFinite(found->second))
         node.velocity = found->second;
-      if (node.fixed)
-        node.velocity = {T(0), T(0), T(0)};
+      for (unsigned d = 0; d < D; ++d)
+        if (isClamped(node, d))
+          node.velocity[d] = T(0);
     }
   }
 
@@ -743,7 +766,7 @@ private:
 
     std::vector<Vec3D<T>> smoothed(n);
     for (std::size_t id = 0; id < n; ++id) {
-      if (nodes[id].fixed) {
+      if (isFullyClamped(nodes[id])) {
         smoothed[id] = {T(0), T(0), T(0)};
         continue;
       }
@@ -765,7 +788,7 @@ private:
       }
       const T w = T(1) / static_cast<T>(count);
       for (unsigned c = 0; c < D; ++c)
-        smoothed[id][c] = sum[c] * w;
+        smoothed[id][c] = isClamped(nodes[id], c) ? T(0) : sum[c] * w;
     }
 
     for (std::size_t id = 0; id < n; ++id)
@@ -1134,15 +1157,17 @@ private:
                      std::vector<Vec3D<SolverT>> &Av) const {
 #pragma omp parallel for schedule(static)
     for (std::size_t i = 0; i < nodes.size(); ++i) {
-      if (nodes[i].fixed) {
+      if (isFullyClamped(nodes[i])) {
         for (unsigned c = 0; c < D; ++c)
           Av[i][c] = v[i][c];
         continue;
       }
       const Vec3D<T> Fv = computeElasticStencilAt(i, v, gradDivWeight);
       for (unsigned c = 0; c < D; ++c)
-        Av[i][c] =
-            static_cast<SolverT>(static_cast<T>(v[i][c]) - Fv[c] + b[i][c]);
+        Av[i][c] = isClamped(nodes[i], c)
+                       ? v[i][c]
+                       : static_cast<SolverT>(static_cast<T>(v[i][c]) - Fv[c] +
+                                              b[i][c]);
     }
   }
 
@@ -1338,13 +1363,20 @@ private:
     std::vector<std::size_t> candidates;
 
     for (std::size_t rowNode = 0; rowNode < n; ++rowNode) {
-      if (nodes[rowNode].fixed) {
+      if (isFullyClamped(nodes[rowNode])) {
         for (unsigned rowComponent = 0; rowComponent < D; ++rowComponent) {
           const std::size_t row = rowNode * D + rowComponent;
           rows[row][row] = T(1);
         }
         continue;
       }
+      // Partially clamped (roller) node: identity rows for the clamped
+      // components only; free components get probed like any other row.
+      for (unsigned rowComponent = 0; rowComponent < D; ++rowComponent)
+        if (isClamped(nodes[rowNode], rowComponent)) {
+          const std::size_t row = rowNode * D + rowComponent;
+          rows[row][row] = T(1);
+        }
 
       // Build A column-by-column via probing.  The operator is (A·v)[i][c] =
       // v[i][c] - F(v)[i][c], where F is affine: F(v) = F_linear(v) + F(0).
@@ -1364,6 +1396,8 @@ private:
           basis[colNode][colComponent] = T(0);
 
           for (unsigned rowComponent = 0; rowComponent < D; ++rowComponent) {
+            if (isClamped(nodes[rowNode], rowComponent))
+              continue;
             const std::size_t row = rowNode * D + rowComponent;
             const std::size_t col = colNode * D + colComponent;
             const T identity =
@@ -1602,15 +1636,20 @@ private:
     std::vector<Vec3D<T>> b(n, zeroVec());
 #pragma omp parallel for schedule(static)
     for (std::size_t i = 0; i < n; ++i) {
-      if (nodes[i].fixed)
+      if (isFullyClamped(nodes[i])) {
         b[i] = zeroVec();
-      else
+      } else {
         b[i] = computeElasticStencilAt(i, zeros, gradDivWeight);
+        for (unsigned c = 0; c < D; ++c)
+          if (isClamped(nodes[i], c))
+            b[i][c] = T(0);
+      }
     }
 
     std::vector<Vec3D<T>> x(n, zeroVec());
     for (std::size_t i = 0; i < n; ++i)
-      x[i] = nodes[i].fixed ? zeroVec() : nodes[i].velocity;
+      for (unsigned c = 0; c < D; ++c)
+        x[i][c] = isClamped(nodes[i], c) ? T(0) : nodes[i].velocity[c];
 
     // Rebuild the multigrid hierarchy only when the node count or the contact
     // face classification changes.  The stiffness matrix depends only on node
@@ -1790,8 +1829,8 @@ private:
     std::vector<Vec3D<T>> current(nodes.size());
     std::vector<Vec3D<T>> next(nodes.size());
     for (std::size_t i = 0; i < nodes.size(); ++i)
-      current[i] =
-          nodes[i].fixed ? Vec3D<T>{T(0), T(0), T(0)} : nodes[i].velocity;
+      for (unsigned c = 0; c < D; ++c)
+        current[i][c] = isClamped(nodes[i], c) ? T(0) : nodes[i].velocity[c];
 
     for (; iterations < parameters.maxIterations; ++iterations) {
       T maxDelta = T(0);
@@ -1802,8 +1841,12 @@ private:
     reduction(max : maxDelta, maxMagnitude) reduction(min : finiteFlag)
       for (std::size_t i = 0; i < nodes.size(); ++i) {
         Vec3D<T> candidate =
-            nodes[i].fixed ? Vec3D<T>{T(0), T(0), T(0)}
-                           : computeElasticStencilAt(i, current, gradDivWeight);
+            isFullyClamped(nodes[i])
+                ? Vec3D<T>{T(0), T(0), T(0)}
+                : computeElasticStencilAt(i, current, gradDivWeight);
+        for (unsigned c = 0; c < D; ++c)
+          if (isClamped(nodes[i], c))
+            candidate[c] = T(0);
 
         for (unsigned c = 0; c < D; ++c) {
           if (!std::isfinite(candidate[c]) || !std::isfinite(current[i][c])) {
@@ -1871,10 +1914,14 @@ private:
       const std::vector<Vec3D<SolverT>> zeros(n, zero3);
 #pragma omp parallel for schedule(static)
       for (std::size_t i = 0; i < n; ++i) {
-        if (nodes[i].fixed)
+        if (isFullyClamped(nodes[i])) {
           b[i] = Vec3D<T>{T(0), T(0), T(0)};
-        else
+        } else {
           b[i] = computeElasticStencilAt(i, zeros, gradDivWeight);
+          for (unsigned c = 0; c < D; ++c)
+            if (isClamped(nodes[i], c))
+              b[i][c] = T(0);
+        }
       }
     }
 
@@ -2130,8 +2177,14 @@ private:
       const bool onUpper = parameters.anchorBoundarySide > 0 &&
                            node.index[dir] >= nodeMax[dir] - layers + 1;
       if (onLower || onUpper) {
+        node.clampMask =
+            parameters.anchorNormalOnly
+                ? static_cast<unsigned char>(1u << dir)
+                : fullClampMask();
         node.fixed = true;
-        node.velocity = {T(0), T(0), T(0)};
+        for (unsigned d = 0; d < D; ++d)
+          if (isClamped(node, d))
+            node.velocity[d] = T(0);
         ++fixedNodes;
       }
     }
@@ -2428,6 +2481,165 @@ private:
                        maskVelocityField->getDissipationAlpha(d, -1, {}));
       }
     }
+  }
+};
+
+/// Carries a mechanically transparent (barrier-only) mask along with the oxide
+/// it rests on.
+///
+/// The mask's contact face already gets the right velocity by sampling the
+/// oxide field at its own coordinates — that face lies on the oxide.  The rest
+/// of the mask does not: those points sit off the oxide entirely, where the
+/// field is undefined and evaluates to zero.  Advecting with the raw field
+/// therefore moves the contact face and leaves the rest behind, deforming the
+/// mask.
+///
+/// The contact velocity is extended through the mask by relaxation over the
+/// mask's OWN points.  Interior fills the mask body first, so every point the
+/// sweep touches is guaranteed to be defined — no value is ever read from
+/// another level set outside its narrow band, which is what made isolated grid
+/// columns fall back to a wrong velocity and gouge the oxide.
+///
+/// Each sweep is synchronous and averages over ALL known neighbours, so the
+/// result does not depend on visit order and cannot shear where the contact
+/// velocity varies laterally.  Direction never appears: propagation follows the
+/// mask's own connectivity, so this is equally valid for a mask lying flat, one
+/// standing against a sidewall, and general 3-D geometry.
+template <class T, int D>
+class OxidationMaskCarry final : public VelocityField<T> {
+  using IndexType = viennahrle::Index<D>;
+  using ConstSparseIterator =
+      viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>;
+
+  std::unordered_map<std::size_t, Vec3D<T>> velocity_;
+  // The oxide MECHANICS field.  The carry reads only its resolved Stokes
+  // velocity (getResolvedVectorVelocity) — never the generic VelocityField
+  // interface, whose fallback derives a speed from oxidant concentration,
+  // which has nothing to do with mask motion.
+  SmartPointer<OxidationDeformation<T, D>> oxideMechanics_ = nullptr;
+  T gridDelta_ = 1.;
+
+public:
+  OxidationMaskCarry() = default;
+
+  OxidationMaskCarry(SmartPointer<OxidationDeformation<T, D>> oxideMechanics,
+                     SmartPointer<Domain<T, D>> maskInterface)
+      : oxideMechanics_(oxideMechanics) {
+    if (oxideMechanics == nullptr || maskInterface == nullptr)
+      return;
+    gridDelta_ = maskInterface->getGrid().getGridDelta();
+
+    // Own Interior-filled copy: the caller's mask may be a bare narrow band at
+    // this point, and the sweep needs the whole body defined.
+    auto body = Domain<T, D>::New(maskInterface);
+    Interior<T, D>(body).apply();
+
+    std::vector<IndexType> index;
+    std::vector<Vec3D<T>> value;
+    std::vector<uint8_t> known;
+    std::unordered_map<std::size_t, std::size_t> lookup;
+    const T eps = std::numeric_limits<T>::epsilon();
+
+    // Seed: a mask point that sees a non-zero RESOLVED Stokes velocity is on
+    // (or within extension range of) the oxide contact.
+    for (ConstSparseIterator it(body->getDomain()); !it.isFinished(); ++it) {
+      if (!it.isDefined())
+        continue;
+      const auto idx = it.getStartIndices();
+      Vec3D<T> coordinate{};
+      for (unsigned d = 0; d < D; ++d)
+        coordinate[d] = static_cast<T>(idx[d]) * gridDelta_;
+      auto sampled =
+          oxideMechanics->getResolvedVectorVelocity(coordinate);
+      T magnitude = T(0);
+      for (unsigned d = 0; d < D; ++d)
+        magnitude += sampled[d] * sampled[d];
+      const bool onOxide = magnitude > eps;
+      lookup[detail::gridIndexHash<D>(idx)] = index.size();
+      index.push_back(idx);
+      value.push_back(onOxide ? sampled : Vec3D<T>{T(0), T(0), T(0)});
+      known.push_back(onOxide ? uint8_t(1) : uint8_t(0));
+    }
+
+    // Relaxation sweeps until the whole body has a velocity.
+    for (bool changed = true; changed;) {
+      changed = false;
+      auto nextValue = value;
+      auto nextKnown = known;
+      for (std::size_t i = 0; i < index.size(); ++i) {
+        if (known[i])
+          continue;
+        Vec3D<T> sum{T(0), T(0), T(0)};
+        unsigned count = 0;
+        for (unsigned d = 0; d < D; ++d) {
+          for (int offset = -1; offset <= 1; offset += 2) {
+            auto neighbor = index[i];
+            neighbor[d] += offset;
+            const auto found = lookup.find(detail::gridIndexHash<D>(neighbor));
+            if (found == lookup.end() || !known[found->second])
+              continue;
+            for (unsigned k = 0; k < D; ++k)
+              sum[k] += value[found->second][k];
+            ++count;
+          }
+        }
+        if (count == 0)
+          continue;
+        for (unsigned k = 0; k < D; ++k)
+          nextValue[i][k] = sum[k] / static_cast<T>(count);
+        nextKnown[i] = 1;
+        changed = true;
+      }
+      value.swap(nextValue);
+      known.swap(nextKnown);
+    }
+
+    for (std::size_t i = 0; i < index.size(); ++i)
+      if (known[i])
+        velocity_[detail::gridIndexHash<D>(index[i])] = value[i];
+  }
+
+  template <class... Args> static auto New(Args &&...args) {
+    return SmartPointer<OxidationMaskCarry>::New(std::forward<Args>(args)...);
+  }
+
+  Vec3D<T> getVectorVelocity(const Vec3D<T> &coordinate, int material,
+                             const Vec3D<T> &normalVector,
+                             unsigned long pointId) final {
+    // On the contact, return EXACTLY what the oxide's own free surface gets.
+    //
+    // This is the kinematic tie that keeps the two surfaces together, and it
+    // is the same principle OxidationConstrainedAmbient uses in the
+    // mechanically-coupled path — there the oxide is handed the mask's
+    // velocity, here the mask is handed the oxide's, but either way the shared
+    // surface advects on a single value.  Returning the grid-snapped cached
+    // value here instead would advect the mask with a slightly different
+    // velocity than the oxide at the same place; the contact then slips by a
+    // fraction of a cell every substep and the mask peels away.
+    if (oxideMechanics_ != nullptr) {
+      const auto onOxide =
+          oxideMechanics_->getResolvedVectorVelocity(coordinate);
+      T magnitude = T(0);
+      for (unsigned d = 0; d < D; ++d)
+        magnitude += onOxide[d] * onOxide[d];
+      if (magnitude > std::numeric_limits<T>::epsilon())
+        return onOxide;
+    }
+
+    // Off the oxide (mask interior and outer surface): use the extended value.
+    IndexType index;
+    for (unsigned d = 0; d < D; ++d)
+      index[d] = std::llround(coordinate[d] / gridDelta_);
+    const auto found = velocity_.find(detail::gridIndexHash<D>(index));
+    if (found == velocity_.end())
+      return {0., 0., 0.};
+    return found->second;
+  }
+
+  T getScalarVelocity(const Vec3D<T> &, int, const Vec3D<T> &,
+                      unsigned long) final {
+    // Carried, not grown: a normal growth term would change mask thickness.
+    return 0.;
   }
 };
 

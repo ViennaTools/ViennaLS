@@ -157,6 +157,11 @@ private:
   std::vector<T> faceBCDists_;
   std::vector<uint8_t>
       touchesAmbient_; // 1 if node touches the ambient (free) surface
+  // True when node 0 was designated as the pressure gauge because no node
+  // touches the ambient surface (fully covered oxide).  Its Dirichlet value
+  // is then the reference ambient pressure, not the free-surface expression,
+  // which is undefined for an interior node.
+  bool pressureGaugePinned_ = false;
 
   // GPU solver selection. Semantics match OxidationDiffusion.
   GpuMode gpuMode_ = GpuMode::Cpu;
@@ -394,14 +399,45 @@ public:
         material != deformationParameters.material)
       return {0., 0., 0.};
 
-    const auto velocity = getVelocity(coordinate);
+    auto velocity = getVelocity(coordinate);
     T norm2 = 0.;
     for (unsigned d = 0; d < D; ++d)
       norm2 += velocity[d] * velocity[d];
-    if (norm2 > std::numeric_limits<T>::epsilon())
-      return velocity;
+    bool resolved = norm2 > std::numeric_limits<T>::epsilon();
 
-    return unresolvedAmbientVelocity(coordinate);
+    // Gas-side advection queries land on grid points with no solver node at
+    // any interpolation corner, so the D-linear lookup above comes back
+    // empty.  Extend the solved velocity from the nearest oxide node instead
+    // of dropping to the expansion-speed heuristic: that heuristic evaluates
+    // the reaction speed from the LOCAL concentration, which at the oxide TOP
+    // is ~C_eq — overestimating the true interface speed by C_eq/C_si.  Fed
+    // into the upwind stencil, that inflated gas-side value advects the free
+    // surface faster than the flow field and fabricates oxide volume — the
+    // error grows with thickness as C_si drops (measured: expansion 2.35 at
+    // 10 nm, 2.68 at 100 nm, target 2.27).
+    if (!resolved) {
+      IndexType index;
+      for (unsigned d = 0; d < D; ++d)
+        index[d] = std::llround(coordinate[d] / gridDelta);
+      const auto nearby = findNearbyNode(index);
+      if (nearby != noNode) {
+        velocity = nodes[nearby].velocity;
+        resolved = true;
+      }
+    }
+
+    const auto result =
+        resolved ? velocity : unresolvedAmbientVelocity(coordinate);
+
+    // TEST INSTRUMENTATION (env-gated): dump every query the advection makes
+    // so the velocity actually FED to lsAdvect is observable.
+    if (std::getenv("OX_DUMP_VEL") != nullptr) {
+      static FILE *dump = std::fopen("/tmp/ox_vel_dump.txt", "w");
+      if (dump)
+        std::fprintf(dump, "%.6f %.6f %.6f %d\n", coordinate[0], coordinate[1],
+                     result[1], resolved ? 1 : 0);
+    }
+    return result;
   }
 
   T getScalarVelocity(const Vec3D<T> &coordinate, int material,
@@ -492,6 +528,28 @@ public:
   Vec3D<T> getVelocity(const Vec3D<T> &coordinate) const {
     return getField(coordinate, Vec3D<T>{0., 0., 0.},
                     [](const Node &n) { return n.velocity; });
+  }
+
+  /// Purely mechanical velocity: the interpolated Stokes solution, extended
+  /// from the nearest solved node when the interpolation stencil has no node,
+  /// and ZERO when nothing solved is nearby.  NEVER falls back to the
+  /// concentration-derived expansion heuristic — consumers that move a
+  /// carried mask must see only mechanics, since oxidant concentration has
+  /// nothing to do with mask motion.
+  Vec3D<T> getResolvedVectorVelocity(const Vec3D<T> &coordinate) const {
+    auto velocity = getVelocity(coordinate);
+    T norm2 = 0.;
+    for (unsigned d = 0; d < D; ++d)
+      norm2 += velocity[d] * velocity[d];
+    if (norm2 > std::numeric_limits<T>::epsilon())
+      return velocity;
+    IndexType index;
+    for (unsigned d = 0; d < D; ++d)
+      index[d] = std::llround(coordinate[d] / gridDelta);
+    const auto nearby = findNearbyNode(index);
+    if (nearby != noNode)
+      return nodes[nearby].velocity;
+    return {0., 0., 0.};
   }
 
   Vec3D<T> getVelocity(const IndexType &index) const {
@@ -1094,6 +1152,24 @@ public:
           (touchesAmbient && !touchesSolidBoundary) ? uint8_t(1) : uint8_t(0);
     }
 
+    // Pressure gauge for a fully-covered oxide.  The pressure Poisson system
+    // is anchored only by the p = 0 identity rows of ambient-touching nodes.
+    // Under a full-width mask no oxide face is AMBIENT, the operator becomes
+    // pure Neumann, and the constant mode makes it singular.  The pressure is
+    // then only defined up to a constant — physically irrelevant, since only
+    // grad(p) drives the flow — so pinning a single node's pressure to zero
+    // restores well-posedness exactly, with no approximation.
+    pressureGaugePinned_ = false;
+    if (n > 0 &&
+        std::none_of(touchesAmbient_.begin(), touchesAmbient_.end(),
+                     [](uint8_t v) { return v != 0; })) {
+      touchesAmbient_[0] = uint8_t(1);
+      pressureGaugePinned_ = true;
+      VIENNACORE_LOG_INFO(
+          "OxidationDeformation: no ambient-touching oxide node (fully "
+          "covered surface); pinning the pressure gauge at one node.");
+    }
+
 #ifdef VIENNALS_GPU_BICGSTAB
     buildPressureGpuGeometry();
     buildStokesGpuGeometry();
@@ -1249,12 +1325,40 @@ public:
             gpuResidual);
         tSolve.finish();
 
-        if (!gpuConverged || !std::isfinite(gpuResidual)) {
+        // Mirror the CPU path: a stagnated-but-finite solve is a WARNING and
+        // the solution is used; only a non-finite result is fatal.  (The
+        // kernel normalises its tolerance by ||b|| internally and returns the
+        // absolute residual, so the flag alone decides between the two.)
+        if (!std::isfinite(gpuResidual)) {
           VIENNACORE_LOG_ERROR(
               "OxidationDeformation: harmonic GPU BiCGSTAB failed or produced "
               "a non-finite residual for component " +
               std::to_string(c) + " (iters=" + std::to_string(gpuIterations) +
               ", residual=" + std::to_string(gpuResidual) + ").");
+        } else if (!gpuConverged) {
+          // Quality gate on stagnation: a stalled solve is only usable if its
+          // residual is physically negligible.  Relative to ||b||inf (the
+          // kernel's own normalisation), 1e-4 means the field is accurate to
+          // 0.01% — harmless.  Beyond that the "solution" may be garbage (at
+          // >60k nodes Jacobi stagnation left near-zero velocities, silently
+          // freezing the free surface); that must be fatal, not a warning.
+          double bNormInf = 0.0;
+          for (std::size_t bi = 0; bi < n; ++bi)
+            bNormInf = std::max(bNormInf, std::abs(static_cast<double>(bGpu[bi])));
+          const double relResidual =
+              bNormInf > 0.0 ? gpuResidual / bNormInf : gpuResidual;
+          if (relResidual > 1e-4) {
+            VIENNACORE_LOG_ERROR(
+                "OxidationDeformation: harmonic GPU BiCGSTAB stagnated with an "
+                "unusable residual (iters=" + std::to_string(gpuIterations) +
+                ", relative residual=" + std::to_string(relResidual) + ").");
+          } else {
+            VIENNACORE_LOG_WARNING(
+                "OxidationDeformation: harmonic GPU BiCGSTAB stagnated ("
+                "iters=" + std::to_string(gpuIterations) +
+                ", relative residual=" + std::to_string(relResidual) +
+                "); residual negligible, using the finite solution.");
+          }
         }
 
         maxGpuIterations = std::max(maxGpuIterations, gpuIterations);
@@ -1681,6 +1785,8 @@ public:
       divergence[i] = divergenceAt(nodes[i].index);
       ambientBP[i] = freeSurfacePressureBoundary(nodes[i].index);
     }
+    if (pressureGaugePinned_)
+      ambientBP[0] = deformationParameters.ambientPressure;
 
     auto warnBadPressureAssembly = [](const std::string &stage,
                                       std::size_t nodeId, const IndexType &idx,
@@ -1793,12 +1899,37 @@ public:
       // gpuResidual is the GPU true residual ||b - A*x||_inf recomputed at
       // convergence (not the recursive BiCGSTAB residual), so no separate CPU
       // stencil evaluation is needed.
-      if (!gpuConverged || !std::isfinite(gpuResidual)) {
+      // Mirror the CPU path: stagnation warns, only non-finite is fatal.
+      if (!std::isfinite(gpuResidual)) {
         VIENNACORE_LOG_ERROR(
             "OxidationDeformation: pressure GPU BiCGSTAB failed or produced "
             "a non-finite residual (iters=" +
             std::to_string(gpuIterations) +
             ", residual=" + std::to_string(gpuResidual) + ").");
+      } else if (!gpuConverged) {
+        // Quality gate on stagnation: a stalled solve is only usable if its
+        // residual is physically negligible.  Relative to ||b||inf (the
+        // kernel's own normalisation), 1e-4 means the field is accurate to
+        // 0.01% — harmless.  Beyond that the "solution" may be garbage (at
+        // >60k nodes Jacobi stagnation left near-zero velocities, silently
+        // freezing the free surface); that must be fatal, not a warning.
+        double bNormInf = 0.0;
+        for (std::size_t bi = 0; bi < n; ++bi)
+          bNormInf = std::max(bNormInf, std::abs(static_cast<double>(bGpu[bi])));
+        const double relResidual =
+            bNormInf > 0.0 ? gpuResidual / bNormInf : gpuResidual;
+        if (relResidual > 1e-4) {
+          VIENNACORE_LOG_ERROR(
+              "OxidationDeformation: pressure GPU BiCGSTAB stagnated with an "
+              "unusable residual (iters=" + std::to_string(gpuIterations) +
+              ", relative residual=" + std::to_string(relResidual) + ").");
+        } else {
+          VIENNACORE_LOG_WARNING(
+              "OxidationDeformation: pressure GPU BiCGSTAB stagnated ("
+              "iters=" + std::to_string(gpuIterations) +
+              ", relative residual=" + std::to_string(relResidual) +
+              "); residual negligible, using the finite solution.");
+        }
       }
 
       {
@@ -2262,12 +2393,40 @@ public:
             gpuIterations, gpuResidual);
         tSolve.finish();
 
-        if (!gpuConverged || !std::isfinite(gpuResidual)) {
+        // Mirror the CPU path: a stagnated-but-finite solve is a WARNING and
+        // the solution is used; only a non-finite result is fatal.  (The
+        // kernel normalises its tolerance by ||b|| internally and returns the
+        // absolute residual, so the flag alone decides between the two.)
+        if (!std::isfinite(gpuResidual)) {
           VIENNACORE_LOG_ERROR(
               "OxidationDeformation: Stokes GPU BiCGSTAB failed or produced "
               "a non-finite residual for component " +
               std::to_string(c) + " (iters=" + std::to_string(gpuIterations) +
               ", residual=" + std::to_string(gpuResidual) + ").");
+        } else if (!gpuConverged) {
+          // Quality gate on stagnation: a stalled solve is only usable if its
+          // residual is physically negligible.  Relative to ||b||inf (the
+          // kernel's own normalisation), 1e-4 means the field is accurate to
+          // 0.01% — harmless.  Beyond that the "solution" may be garbage (at
+          // >60k nodes Jacobi stagnation left near-zero velocities, silently
+          // freezing the free surface); that must be fatal, not a warning.
+          double bNormInf = 0.0;
+          for (std::size_t bi = 0; bi < n; ++bi)
+            bNormInf = std::max(bNormInf, std::abs(static_cast<double>(bGpu[bi])));
+          const double relResidual =
+              bNormInf > 0.0 ? gpuResidual / bNormInf : gpuResidual;
+          if (relResidual > 1e-4) {
+            VIENNACORE_LOG_ERROR(
+                "OxidationDeformation: Stokes GPU BiCGSTAB stagnated with an "
+                "unusable residual (iters=" + std::to_string(gpuIterations) +
+                ", relative residual=" + std::to_string(relResidual) + ").");
+          } else {
+            VIENNACORE_LOG_WARNING(
+                "OxidationDeformation: Stokes GPU BiCGSTAB stagnated ("
+                "iters=" + std::to_string(gpuIterations) +
+                ", relative residual=" + std::to_string(relResidual) +
+                "); residual negligible, using the finite solution.");
+          }
         }
 
         maxGpuIterations = std::max(maxGpuIterations, gpuIterations);

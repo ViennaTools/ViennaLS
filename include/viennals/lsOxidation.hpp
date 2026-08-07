@@ -163,6 +163,12 @@ template <class T, int D> class Oxidation {
   SpatialSchemeEnum spatialScheme = SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER;
   TemporalSchemeEnum temporalScheme = TemporalSchemeEnum::FORWARD_EULER;
   static constexpr int maskInteriorSign = -1;
+  /// Treat the mask as a DIFFUSION BARRIER ONLY: it reduces the oxidant
+  /// reaching the silicon but is mechanically transparent — the oxide expands
+  /// as if at a free surface and carries the mask along on top.  Exact for a
+  /// full-width mask (uniform growth = pure translation); the mode for flat
+  /// Fig. 4-style validation.
+  bool maskBarrierOnly_ = false;
   unsigned maskCouplingIterations = 8;
   T maskCouplingTolerance = 2.e-2;
   unsigned lastMaskCouplingIterations = 0;
@@ -244,6 +250,8 @@ public:
 
   /// Set the spatial integration scheme for all advections.
   void setSpatialScheme(SpatialSchemeEnum scheme) { spatialScheme = scheme; }
+
+  void setMaskBarrierOnly(bool enable) { maskBarrierOnly_ = enable; }
 
   /// Set the temporal integration scheme for all advections.
   void setTemporalScheme(TemporalSchemeEnum scheme) { temporalScheme = scheme; }
@@ -412,7 +420,9 @@ private:
           stepDeformationParams);
       deformationField->setGpuMode(gpuMode_);
       deformationField->setGpuPreconditioner(gpuPreconditioner_);
-      if (hasMask)
+      // Barrier-only: the mask is withheld from the mechanics so the oxide
+      // sees a free surface and expands outward.
+      if (hasMask && !maskBarrierOnly_)
         deformationField->setMaskInterface(maskInterface, maskInteriorSign);
 
       auto coupledModel = OxidationModel<T, D>::New(
@@ -433,7 +443,9 @@ private:
       if (!validateCoupledModel(coupledModel))
         return false;
 
-      if (hasMask) {
+      // Barrier-only skips the elastic solve: no load to bend under, no
+      // contact to react against.
+      if (hasMask && !maskBarrierOnly_) {
         // --- Mask bending solve ---
         auto stepMaskParams = maskParams;
         stepMaskParams.stressTimeStep = stressTimeStep;
@@ -582,7 +594,9 @@ private:
     };
 
     auto makeAmbientVelocity = [&]() -> SmartPointer<VelocityField<T>> {
-      if (hasMask) {
+      // Barrier-only: the oxide's free surface must NOT be constrained by
+      // the mask -- it expands freely and carries the mask along.
+      if (hasMask && !maskBarrierOnly_) {
         return OxidationConstrainedAmbient<T, D>::New(
             deformationField, maskBendingField, maskInterface, ambientInterface,
             maskInteriorSign);
@@ -600,7 +614,10 @@ private:
             maxVelocity =
                 std::max(maxVelocity,
                          passedAmbientVelocity->getDissipationAlpha(d, -1, {}));
-            if (hasMask)
+            // maskBendingField is null in barrier-only mode (and after a
+            // freeze) — the mask is carried by the ambient velocity, which is
+            // already accounted for above.
+            if (hasMask && maskBendingField)
               maxVelocity =
                   std::max(maxVelocity,
                            maskBendingField->getDissipationAlpha(d, -1, {}));
@@ -786,7 +803,13 @@ private:
     tAdvect.start();
     advect(ambientInterface, ambientVelocity);
     advect(siInterface, diffusionField);
-    if (hasMask && maskBendingField)
+    if (hasMask && maskBarrierOnly_)
+      // Carried by the oxide: the contact face samples the oxide velocity in
+      // place; OxidationMaskCarry extends that same velocity through the mask
+      // body so the whole slab translates together.
+      advect(maskInterface,
+             OxidationMaskCarry<T, D>::New(deformationField, maskInterface));
+    else if (hasMask && maskBendingField)
       advect(maskInterface, maskBendingField);
     tAdvect.finish();
     VIENNACORE_LOG_TIMING(std::string("  advection(") + (hasMask ? "3" : "2") +
