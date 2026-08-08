@@ -50,6 +50,18 @@ struct OxidationMaskParameters {
   // Outer Aitken relaxation factor applied to the mask/oxide coupling residual.
   // Independent of the multigrid smoother below.
   double relaxation = 1.;
+  /// Upper bound for the Aitken over-relaxation factor in traction-contact
+  /// coupling.  The mask<->oxide alternation contracts slowly (rho ~ 0.96
+  /// measured), so omega must exceed 1 to accelerate: optimal is ~1/(1-rho).
+  /// Safeguards against the historic zigzag failure remain: the residual-
+  /// growth brake halves omega, and the velocity smoothing pass damps
+  /// grid-scale oscillation.  1.0 restores the old fully-capped behaviour.
+  /// 2.5 was tried and destabilised the traction contact (film thickness
+  /// range exploded 0.3 -> 9 nm; the barrier broke): the active set
+  /// alternates and omega > 1 extrapolates through the fixed point, exactly
+  /// as the original cap's comment warned.  Left as a parameter for future
+  /// acceleration work; 1.0 = the historic safe behaviour.
+  double aitkenOmegaMax = 1.0;
   // Under-relaxation for the unilateral contact load active set.  A hard
   // compressive/tensile switch makes the mask/oxide fixed point oscillate when
   // contact faces release; relaxing the load keeps the complementarity limit
@@ -737,7 +749,11 @@ private:
           // iterations, and omega > 1 extrapolates through the fixed point
           // for those nodes, producing sign-alternating velocities that
           // appear as zigzag kinks after level-set advection.
-          const T omegaMax = (parameters.contactMode > 0) ? baseOmega : T(1.5);
+          const T omegaMax =
+              (parameters.contactMode > 0)
+                  ? std::max(baseOmega,
+                             static_cast<T>(parameters.aitkenOmegaMax))
+                  : T(1.5);
           omega = std::clamp(omega, T(0.05), omegaMax);
         } else {
           throwNonFinite("mask Aitken coefficient");

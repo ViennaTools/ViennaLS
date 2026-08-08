@@ -173,6 +173,7 @@ template <class T, int D> class Oxidation {
   T maskCouplingTolerance = 2.e-2;
   unsigned lastMaskCouplingIterations = 0;
   T lastMaskCouplingResidual = std::numeric_limits<T>::max();
+  T previousMaskCouplingResidual_ = std::numeric_limits<T>::max();
 
   IndexType diffusionMinIndex{};
   IndexType diffusionMaxIndex{};
@@ -483,6 +484,7 @@ private:
                  : std::to_string(initialRes)));
 
         lastMaskCouplingIterations = 1;
+        previousMaskCouplingResidual_ = std::numeric_limits<T>::max();
         lastMaskCouplingResidual =
             maskBendingField->getLastApplyVelocityChange();
         deformationField->setMaskVelocityField(maskBendingField);
@@ -522,12 +524,37 @@ private:
                     tIterMask)
                 .print();
           lastMaskCouplingIterations = iteration + 1;
+          const T olderResidual = previousMaskCouplingResidual_;
+          previousMaskCouplingResidual_ = lastMaskCouplingResidual;
           lastMaskCouplingResidual =
               maskBendingField->getLastApplyVelocityChange();
+          // Honest convergence test.  The residual is the STEP between
+          // successive iterates; for a linearly contracting iteration with
+          // rate rho the true distance to the fixed point is
+          // step * rho/(1-rho) (~25x the step at the measured rho ~ 0.96), so
+          // testing the raw step silently accepted ~25% mask-lift errors.
+          //
+          // rho must be estimated conservatively: the first ratio reflects
+          // the cold-start drop, not the asymptotic rate, and trusting it
+          // collapses the whole loop to 2 iterations.  Use the MAX of the two
+          // most recent consecutive ratios, require at least 3 iterations,
+          // and never accept unless the raw step ALSO meets the tolerance —
+          // the estimate may only tighten the old test.
+          T errorEstimate = std::numeric_limits<T>::max();
+          const T r2 = lastMaskCouplingResidual;
+          const T r1 = previousMaskCouplingResidual_;
+          const T r0 = olderResidual;
+          if (iteration >= 2 && std::isfinite(r0) && std::isfinite(r1) &&
+              r0 > T(0) && r1 > T(0) && r2 < r1 && r1 < r0) {
+            const T rho = std::min(std::max(r2 / r1, r1 / r0), T(0.99));
+            errorEstimate = r2 * rho / (T(1) - rho);
+          }
           VIENNACORE_LOG_DEBUG(
               prefix + ": coupling iteration " + std::to_string(iteration + 1) +
-              " residual=" + std::to_string(lastMaskCouplingResidual));
-          if (lastMaskCouplingResidual <= maskCouplingTolerance)
+              " step=" + std::to_string(r2) +
+              " errorEstimate=" + std::to_string(errorEstimate));
+          if (r2 <= maskCouplingTolerance &&
+              errorEstimate <= maskCouplingTolerance)
             break;
         }
         const T maskAbsoluteDisplacement =
