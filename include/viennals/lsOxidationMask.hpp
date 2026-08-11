@@ -193,6 +193,9 @@ private:
   T maxContactNormalTraction_ = std::numeric_limits<T>::lowest();
   T contactReleaseThreshold_ = 0.;
   std::unordered_map<std::size_t, Vec3D<T>> previousContactTraction_;
+  // Velocities at entry to the most recent apply(); base for the coupling
+  // fixed-point extrapolation (v_n - v_{n-1} per node).
+  std::unordered_map<std::size_t, Vec3D<T>> extrapolationBase_;
   std::unordered_map<std::size_t, T> previousContactReleaseScale_;
   std::vector<T> previousAitkenResidual;
   // Elastic mode (contactMode==2): snapshot of u_new (elastic equilibrium
@@ -369,7 +372,36 @@ public:
         std::to_string(lastApplyVelocityChange) + ", absVelocityChange=" +
         std::to_string(lastApplyAbsoluteVelocityChange));
 
+    extrapolationBase_ = previousVelocities;
     solved = true;
+  }
+
+  /// Fixed-point extrapolation of the outer coupling: v_inf ~= v_n +
+  /// factor*(v_n - v_{n-1}), factor = rho/(1-rho) with the coupling loop's
+  /// conservative rho.  Turns the honest error ESTIMATE into a CORRECTION so
+  /// a loose (cheap) coupling tolerance yields a tight accepted lift.
+  /// Call once, after the coupling loop has accepted.
+  void extrapolateVelocityFixedPoint(T factor) {
+    if (factor <= T(0) || extrapolationBase_.empty())
+      return;
+    unsigned applied = 0;
+    for (auto &node : nodes) {
+      const auto found = extrapolationBase_.find(linearIndex(node.index));
+      if (found == extrapolationBase_.end())
+        continue;
+      for (unsigned d = 0; d < D; ++d)
+        node.velocity[d] += factor * (node.velocity[d] - found->second[d]);
+      ++applied;
+    }
+    validateNodeVelocities("fixed-point extrapolation");
+    maxVelocity_.fill(T(0));
+    for (const auto &node : nodes)
+      for (unsigned d = 0; d < D; ++d)
+        maxVelocity_[d] = std::max(maxVelocity_[d], std::abs(node.velocity[d]));
+    VIENNACORE_LOG_DEBUG(
+        "OxidationMaskBending: fixed-point extrapolation factor=" +
+        std::to_string(factor) + " applied to " + std::to_string(applied) +
+        " node(s)");
   }
 
   // Called from lsOxidation after writeFieldsToLevelSet() and before advect().
@@ -2352,19 +2384,19 @@ public:
     auto v_def = deformationField->getVectorVelocity(coordinate, material,
                                                      normalVector, pointId);
 
-    // Near-contact gap zone: smoothly approach the mask velocity instead of
-    // letting stress spikes just outside the mask edge advect the ambient level
-    // set with the full oxide deformation velocity.
+    // Near-contact gap zone.  The gap face is FREE until true contact
+    // (signedPhi >= 0): the oxide must advect with its own deformation
+    // velocity there.  The former symmetric blend toward the mask velocity
+    // capped legitimate growth-driven motion at the mask speed across a
+    // 3-cell zone, silently suppressing expansion at the near-contact —
+    // measured as the K-independent part of the under-mask volume deficit.
+    // Only the one-sided anti-overtake boost remains: when the mask face
+    // approaches FASTER than the oxide face moves, lift the oxide to the
+    // mask speed so the surfaces meet without interpenetration.
     if (maskVelocityField != nullptr) {
       if (signedPhi > -T(3) * maskGridDelta_) {
         auto v_mask = maskVelocityField->getVectorVelocity(
             coordinate, material, normalVector, pointId);
-        const T blend =
-            std::max(T(0), std::min(T(1), (signedPhi + T(3) * maskGridDelta_) /
-                                              (T(3) * maskGridDelta_)));
-        for (int k = 0; k < D; ++k)
-          v_def[k] = (T(1) - blend) * v_def[k] + blend * v_mask[k];
-
         T def_n = T(0), mask_n = T(0);
         for (int k = 0; k < D; ++k) {
           def_n += v_def[k] * normalVector[k];

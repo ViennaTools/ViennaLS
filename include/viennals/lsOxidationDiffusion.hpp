@@ -1488,7 +1488,15 @@ private:
         pressure = parameters.referencePressure;
       const T exponent =
           stressExponent(pressure, parameters.reactionActivationVolume);
-      rate *= stressFactor(exponent);
+      // Reaction floor 0.1 (vs the generic 1e-6 clamp): the source term
+      // scales with this factor, and single-cell pressure spikes (e.g.
+      // -15 GPa at a contact corner vs -2 GPa a cell away) otherwise make
+      // the volume source orders-of-magnitude rough on the grid scale,
+      // stalling the SIMPLE mechanics solve (2026-08-10: residual plateau
+      // 0.03-0.10 vs 5e-3, dt collapse).  The physical operating range at
+      // audited pressures is 0.26-0.55, so the floor only truncates the
+      // response to spike artifacts, not the regulator.
+      rate *= std::max(stressFactor(exponent), T(0.1));
     }
 
     if (parameters.reactionRateRatio111 != T(1)) {
@@ -1555,7 +1563,15 @@ private:
   T stressExponent(T pressure, T activationVolume) const {
     const T thermalEnergy =
         boltzmannConstant * std::max(parameters.temperature, T(1.));
-    return -(pressure - parameters.referencePressure) * activationVolume /
+    // SIGN CONVENTION: the pressure field stores COMPRESSION AS NEGATIVE
+    // (deformation-solver convention; verified against OxPressure output:
+    // squeeze-film region under a bending mask is at p ~ -3 GPa, free
+    // surface ~0).  Kao suppression therefore needs the POSITIVE sign:
+    // compressive p < 0 gives a negative exponent (rate suppressed);
+    // tensile p > 0 enhances.  The former negative sign turned the
+    // regulator into a runaway amplifier (2026-08-10 KAO run: mechanics
+    // non-convergence from substep 1, CFL collapse).
+    return (pressure - parameters.referencePressure) * activationVolume /
            thermalEnergy;
   }
 

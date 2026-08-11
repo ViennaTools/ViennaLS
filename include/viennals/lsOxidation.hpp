@@ -487,6 +487,7 @@ private:
         previousMaskCouplingResidual_ = std::numeric_limits<T>::max();
         lastMaskCouplingResidual =
             maskBendingField->getLastApplyVelocityChange();
+        T acceptedRho = std::numeric_limits<T>::quiet_NaN();
         deformationField->setMaskVelocityField(maskBendingField);
         for (unsigned iteration = 1; iteration < maskCouplingIterations;
              ++iteration) {
@@ -548,6 +549,7 @@ private:
               r0 > T(0) && r1 > T(0) && r2 < r1 && r1 < r0) {
             const T rho = std::min(std::max(r2 / r1, r1 / r0), T(0.99));
             errorEstimate = r2 * rho / (T(1) - rho);
+            acceptedRho = rho;
           }
           VIENNACORE_LOG_DEBUG(
               prefix + ": coupling iteration " + std::to_string(iteration + 1) +
@@ -581,6 +583,15 @@ private:
             (std::isfinite(maskMaxDisplacement) &&
              maskMaxDisplacement <= maskDisplacementTolerance);
         if (maskCouplingConverged) {
+          // NOTE: fixed-point extrapolation of the accepted mask velocity
+          // (v_inf ~= v_n + (v_n - v_{n-1})*rho/(1-rho)) was tried here and
+          // REJECTED by A/B validation (2026-08-10, EX run): at the high-rho
+          // substeps that actually need correction (rho 0.83-0.97, factor
+          // up to 30x) the per-node last step is dominated by noise, not the
+          // error mode — deep-mask conversion DEGRADED 2.241 -> 2.162 vs the
+          // uncorrected run.  Cheap tight coupling needs Anderson-type
+          // acceleration with stability safeguards instead (see TODO).
+          (void)acceptedRho;
           VIENNACORE_LOG_INFO(
               prefix + ": mask/oxide coupling converged in " +
               std::to_string(lastMaskCouplingIterations) +
@@ -801,11 +812,39 @@ private:
 
     diffusionField->markSolved();
 
+    // VOLTRACE: per-stage ambient-volume audit for the under-mask volume
+    // leak.  Smoothed-Heaviside sum over the HRLE: band cells contribute
+    // clamp(0.5 - phi, 0, 1), negative background runs contribute fully.
+    // Only DIFFERENCES between stages are meaningful.
+    auto ambientVolume = [&]() -> T {
+      const T delta = ambientInterface->getGrid().getGridDelta();
+      T cellVol = T(1);
+      for (unsigned d = 0; d < D; ++d)
+        cellVol *= delta;
+      T vol = T(0);
+      for (viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>
+               it(ambientInterface->getDomain());
+           !it.isFinished(); it.next()) {
+        T cells = T(1);
+        for (unsigned d = 0; d < D; ++d)
+          cells *= T(it.getEndIndices(static_cast<int>(d)) -
+                     it.getStartIndices(static_cast<int>(d)) + 1);
+        if (it.isDefined())
+          vol += std::min(std::max(T(0.5) - it.getValue(), T(0)), T(1)) *
+                 cellVol * cells;
+        else if (it.getValue() < T(0))
+          vol += cellVol * cells;
+      }
+      return vol;
+    };
+    const T volBefore = ambientVolume();
+
     // Pre-advection clip: keep oxide outside the mask body (LOCOS only).
     if (hasMask)
       BooleanOperation<T, D>(ambientInterface, maskInterface,
                              BooleanOperationEnum::RELATIVE_COMPLEMENT)
           .apply();
+    const T volAfterPreclip = ambientVolume();
 
     diffusionField->writePersistentFields();
     deformationField->writeFieldsToLevelSet();
@@ -842,6 +881,7 @@ private:
     VIENNACORE_LOG_TIMING(std::string("  advection(") + (hasMask ? "3" : "2") +
                               " surfaces)",
                           tAdvect);
+    const T volAfterAdvect = ambientVolume();
 
     // Post-advection clip: remove oxide that grew into the mask (LOCOS only).
     // Mask gets Interior fill first so the BooleanOp has accurate φ_mask values
@@ -857,10 +897,27 @@ private:
       if (maskBendingField)
         maskBendingField->writeFieldsToLevelSet();
     }
+    const T volAfterPostclip = ambientVolume();
     {
       Interior<T, D> fill(ambientInterface);
       fill.setGuide(siInterface); // stop fill at Si surface
       fill.apply();
+    }
+    {
+      const T volAfterFill = ambientVolume();
+      const T toNm = std::pow(T(1000), static_cast<int>(D));
+      // vol_start/vol_end are ABSOLUTE (nm^D): vol_start(N+1) != vol_end(N)
+      // exposes volume changes between substeps (outside this pipeline).
+      VIENNACORE_LOG_INFO(
+          prefix + ": VOLTRACE dV_preclip=" +
+          std::to_string((volAfterPreclip - volBefore) * toNm) +
+          " dV_advect=" +
+          std::to_string((volAfterAdvect - volAfterPreclip) * toNm) +
+          " dV_postclip=" +
+          std::to_string((volAfterPostclip - volAfterAdvect) * toNm) +
+          " dV_fill=" + std::to_string((volAfterFill - volAfterPostclip) * toNm) +
+          " vol_start=" + std::to_string(volBefore * toNm) +
+          " vol_end=" + std::to_string(volAfterFill * toNm) + " nm^D");
     }
 
     // Re-write persistent fields (concentration, pressure) now that the HRLE
