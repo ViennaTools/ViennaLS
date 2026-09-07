@@ -522,7 +522,7 @@ endif()
 # --------------------------------------------------------------------------------------------------------
 
 set(VIENNALS_DEPENDENCIES "ViennaHRLE;ViennaCore")
-if (VIENNALS_USE_VTK)
+if(VIENNALS_USE_VTK)
   list(APPEND VIENNALS_DEPENDENCIES "VTK")
 endif()
 
@@ -533,5 +533,4 @@ packageProject(
   INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include/viennals
   INCLUDE_DESTINATION include/viennals-${PROJECT_VERSION}
   COMPATIBILITY SameMajorVersion
-  DEPENDENCIES ${VIENNALS_DEPENDENCIES}
-)
+  DEPENDENCIES ${VIENNALS_DEPENDENCIES})
