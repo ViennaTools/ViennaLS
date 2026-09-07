@@ -521,6 +521,11 @@ endif()
 # Install Target
 # --------------------------------------------------------------------------------------------------------
 
+set(VIENNALS_DEPENDENCIES "ViennaHRLE;ViennaCore")
+if (VIENNALS_USE_VTK)
+  list(APPEND VIENNALS_DEPENDENCIES "VTK")
+endif()
+
 packageProject(
   NAME ${PROJECT_NAME} NAMESPACE ViennaTools
   VERSION ${PROJECT_VERSION}
@@ -528,4 +533,5 @@ packageProject(
   INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include/viennals
   INCLUDE_DESTINATION include/viennals-${PROJECT_VERSION}
   COMPATIBILITY SameMajorVersion
-  DEPENDENCIES "VTK;ViennaHRLE;ViennaCore")
+  DEPENDENCIES ${VIENNALS_DEPENDENCIES}
+)

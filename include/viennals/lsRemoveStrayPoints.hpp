@@ -73,12 +73,8 @@ public:
     std::vector<typename Domain<T, D>::PointValueVectorType> newPoints;
     newPoints.resize(newDomain.getNumberOfSegments());
 
-#pragma omp parallel num_threads(newDomain.getNumberOfSegments())
-    {
-      int p = 0;
-#ifdef _OPENMP
-      p = omp_get_thread_num();
-#endif
+#pragma omp parallel for
+    for (unsigned p = 0; p < newDomain.getNumberOfSegments(); ++p) {
 
       auto &domainSegment = newDomain.getDomainSegment(p);
 

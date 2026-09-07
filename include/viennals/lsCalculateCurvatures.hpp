@@ -89,12 +89,8 @@ public:
         (type == CurvatureEnum::MEAN_AND_GAUSSIAN_CURVATURE);
 
     //! Calculate Curvatures
-#pragma omp parallel num_threads(levelSet->getNumberOfSegments())
-    {
-      int p = 0;
-#ifdef _OPENMP
-      p = omp_get_thread_num();
-#endif
+#pragma omp parallel for
+    for (unsigned p = 0; p < levelSet->getNumberOfSegments(); ++p) {
 
       auto &meanCurvatures = meanCurvaturesVector[p];
       auto &gaussCurvatures = gaussCurvaturesVector[p];

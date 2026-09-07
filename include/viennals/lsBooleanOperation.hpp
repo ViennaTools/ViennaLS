@@ -74,12 +74,8 @@ private:
       newDataLS.resize(newDataSourceIds.size());
     }
 
-#pragma omp parallel num_threads(newDomain.getNumberOfSegments())
-    {
-      int p = 0;
-#ifdef _OPENMP
-      p = omp_get_thread_num();
-#endif
+#pragma omp parallel for
+    for (unsigned p = 0; p < newDomain.getNumberOfSegments(); ++p) {
 
       auto &domainSegment = newDomain.getDomainSegment(p);
 
@@ -214,12 +210,8 @@ private:
 
   void invert() {
     auto &hrleDomain = levelSetA->getDomain();
-#pragma omp parallel num_threads(hrleDomain.getNumberOfSegments())
-    {
-      int p = 0;
-#ifdef _OPENMP
-      p = omp_get_thread_num();
-#endif
+#pragma omp parallel for
+    for (unsigned p = 0; p < hrleDomain.getNumberOfSegments(); ++p) {
       auto &domainSegment = hrleDomain.getDomainSegment(p);
 
       // change all defined values

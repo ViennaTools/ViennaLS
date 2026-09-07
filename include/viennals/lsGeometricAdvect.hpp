@@ -297,12 +297,8 @@ public:
     }
 #endif
 // set up multithreading
-#pragma omp parallel num_threads(domain.getNumberOfSegments())
-    {
-      int p = 0;
-#ifdef _OPENMP
-      p = omp_get_thread_num();
-#endif
+#pragma omp parallel for
+    for (unsigned p = 0; p < domain.getNumberOfSegments(); ++p) {
 
       viennahrle::Index<D> startVector;
       if (p == 0) {
