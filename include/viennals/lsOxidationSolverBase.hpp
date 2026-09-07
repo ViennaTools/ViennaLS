@@ -19,53 +19,6 @@ using namespace viennacore;
 
 namespace detail {
 
-template <int D>
-inline std::size_t gridIndexHash(const viennahrle::Index<D> &index) {
-  std::size_t seed = 0;
-  for (unsigned i = 0; i < static_cast<unsigned>(D); ++i) {
-    seed ^= std::hash<long long>{}(static_cast<long long>(index[i])) +
-            std::size_t(0x9e3779b97f4a7c15ULL) + (seed << 6) + (seed >> 2);
-  }
-  return seed;
-}
-
-// Hash functor for viennahrle::Index<D> — safe to use as unordered_map key
-// because collisions are resolved by operator== on the full index.
-template <int D> struct IndexTypeHasher {
-  std::size_t operator()(const viennahrle::Index<D> &idx) const {
-    return gridIndexHash<D>(idx);
-  }
-};
-
-template <class T> inline Vec3D<T> vecScaled(const Vec3D<T> &source, T factor) {
-  Vec3D<T> result{0., 0., 0.};
-  for (unsigned i = 0; i < 3; ++i)
-    result[i] = source[i] * factor;
-  return result;
-}
-
-template <class T>
-inline Vec3D<T> vecAdd(const Vec3D<T> &a, const Vec3D<T> &b) {
-  Vec3D<T> result{0., 0., 0.};
-  for (unsigned i = 0; i < 3; ++i)
-    result[i] = a[i] + b[i];
-  return result;
-}
-
-template <class T>
-inline Vec3D<T> vecSubtract(const Vec3D<T> &a, const Vec3D<T> &b) {
-  Vec3D<T> result{0., 0., 0.};
-  for (unsigned i = 0; i < 3; ++i)
-    result[i] = a[i] - b[i];
-  return result;
-}
-
-template <class T>
-inline void vecAddTo(Vec3D<T> &target, const Vec3D<T> &source) {
-  for (unsigned i = 0; i < 3; ++i)
-    target[i] += source[i];
-}
-
 /// Clamp HRLE far-field sentinels (±DBL_MAX) to ±1 before differencing to
 /// prevent DBL_MAX² overflow that silently returns the zero vector.
 template <class T> inline T clampLevelSetPhi(T v) {

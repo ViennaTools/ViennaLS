@@ -130,7 +130,7 @@ private:
   bool nodesDirty_ = true;
   std::array<T, D> maxVelocity_{};
   bool useRequestedBounds = false;
-  std::unordered_map<IndexType, std::array<T, 9>, detail::IndexTypeHasher<D>>
+  std::unordered_map<IndexType, std::array<T, 9>, typename IndexType::hash>
       deviatoricStressHistory;
 
   // Warm-start storage: solutions from previous time step used as initial guess
@@ -1133,25 +1133,24 @@ public:
         neighbor[direction] += offset;
 
         if (!inBounds(neighbor)) {
-          detail::vecAddTo(sum, toT(v[nodeId])); // zero-flux: ghost = self
+          sum = sum + toT(v[nodeId]); // zero-flux: ghost = self
           continue;
         }
 
         const std::size_t neighborId = lookupNode(neighbor);
         if (neighborId != noNode) {
-          detail::vecAddTo(sum, toT(v[neighborId]));
+          sum = sum + toT(v[neighborId]);
           continue;
         }
 
         const unsigned fi = direction * 2u + (offset == 1 ? 1u : 0u);
         const Boundary boundary = faceBCTypes_[fi * nodes.size() + nodeId];
         if (boundary == Boundary::REACTION) {
-          detail::vecAddTo(sum, reactionBoundaryVelocity(node.index));
+          sum = sum + reactionBoundaryVelocity(node.index);
         } else if (boundary == Boundary::MASK) {
-          detail::vecAddTo(sum,
-                           maskVelocityBoundary(node.index, toT(v[nodeId])));
+          sum = sum + maskVelocityBoundary(node.index, toT(v[nodeId]));
         } else {
-          detail::vecAddTo(sum, toT(v[nodeId])); // AMBIENT/NONE: zero-flux
+          sum = sum + toT(v[nodeId]); // AMBIENT/NONE: zero-flux
         }
       }
     }
@@ -2166,8 +2165,7 @@ public:
       const T dSum = plus.distance + minus.distance;
       const T plusCoeff = T(2) / (plus.distance * dSum);
       const T minusCoeff = T(2) / (minus.distance * dSum);
-      detail::vecAddTo(rhs, detail::vecScaled(plus.value, plusCoeff));
-      detail::vecAddTo(rhs, detail::vecScaled(minus.value, minusCoeff));
+      rhs = rhs + plusCoeff * plus.value + minusCoeff * minus.value;
       diag += plusCoeff + minusCoeff;
     }
   }
@@ -2803,8 +2801,7 @@ public:
     for (unsigned i = 0; i < D; ++i)
       coordinate[i] = index[i] * gridDelta;
     const T expansionVelocity = localExpansionSpeed(coordinate);
-    return detail::vecScaled(reactionNormal(index),
-                             reactionSign * expansionVelocity);
+    return reactionNormal(index) * (reactionSign * expansionVelocity);
   }
 
   Vec3D<T> unresolvedAmbientVelocity(const Vec3D<T> &coordinate) const {
@@ -2817,7 +2814,7 @@ public:
 
     ConstSparseIterator ambientIt(ambientInterface->getDomain());
     const auto normal = levelSetNormal(ambientIt, index);
-    return detail::vecScaled(normal, localExpansionSpeed(coordinate));
+    return normal * localExpansionSpeed(coordinate);
   }
 
   Vec3D<T> estimateMaxUnresolvedAmbientVelocity() const {
@@ -3005,7 +3002,7 @@ public:
       historyEntries[i] = {node.index, deviatoricStress};
     }
 
-    std::unordered_map<IndexType, std::array<T, 9>, detail::IndexTypeHasher<D>>
+    std::unordered_map<IndexType, std::array<T, 9>, typename IndexType::hash>
         nextHistory;
     nextHistory.reserve(nodes.size());
     for (const auto &entry : historyEntries)

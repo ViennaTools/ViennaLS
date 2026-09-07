@@ -9,7 +9,7 @@ from viennals import d2
 import viennals.d2
 from viennals import d3
 import viennals.d3
-__all__: list[str] = ['BooleanOperationEnum', 'BoundaryConditionEnum', 'Cpu', 'CurvatureEnum', 'Extrude', 'FeatureDetectionEnum', 'FileFormatEnum', 'Gpu', 'GpuMode', 'GpuPreconditioner', 'ILU0', 'IntegrationSchemeEnum', 'Jacobi', 'LOCOSConservationDiagnostics', 'LogLevel', 'Logger', 'MaterialMap', 'Mesh', 'NormalCalculationMethodEnum', 'OxidationCouplingParameters', 'OxidationDeformationParameters', 'OxidationMaskParameters', 'OxidationParameters', 'OxidationPresets', 'PointData', 'Slice', 'SpatialSchemeEnum', 'TemporalSchemeEnum', 'TransformEnum', 'TransformMesh', 'VTKReader', 'VTKRenderWindow', 'VTKWriter', 'VelocityField', 'VoidTopSurfaceEnum', 'd2', 'd3', 'setNumThreads', 'version']
+__all__: list[str] = ['Auto', 'BooleanOperationEnum', 'BoundaryConditionEnum', 'Cpu', 'CurvatureEnum', 'Extrude', 'FeatureDetectionEnum', 'FileFormatEnum', 'Gpu', 'GpuMode', 'GpuPreconditioner', 'ILU0', 'IntegrationSchemeEnum', 'Jacobi', 'LOCOSConservationDiagnostics', 'LogLevel', 'Logger', 'MaterialMap', 'Mesh', 'NormalCalculationMethodEnum', 'OxidationCouplingParameters', 'OxidationDeformationParameters', 'OxidationMaskParameters', 'OxidationParameters', 'OxidationPresets', 'PointData', 'Slice', 'SpatialSchemeEnum', 'TemporalSchemeEnum', 'TransformEnum', 'TransformMesh', 'VTKReader', 'VTKRenderWindow', 'VTKWriter', 'VelocityField', 'VoidTopSurfaceEnum', 'd2', 'd3', 'setNumThreads', 'version']
 class BooleanOperationEnum(enum.IntEnum):
     INTERSECT: typing.ClassVar[BooleanOperationEnum]  # value = <BooleanOperationEnum.INTERSECT: 0>
     INVERT: typing.ClassVar[BooleanOperationEnum]  # value = <BooleanOperationEnum.INVERT: 3>
@@ -111,10 +111,17 @@ class GpuMode:
       Cpu
     
       Gpu
+    
+      Auto
     """
+    Auto: typing.ClassVar[GpuMode]  # value = <GpuMode.Auto: 2>
     Cpu: typing.ClassVar[GpuMode]  # value = <GpuMode.Cpu: 0>
     Gpu: typing.ClassVar[GpuMode]  # value = <GpuMode.Gpu: 1>
-    __members__: typing.ClassVar[dict[str, GpuMode]]  # value = {'Cpu': <GpuMode.Cpu: 0>, 'Gpu': <GpuMode.Gpu: 1>}
+    __members__: typing.ClassVar[dict[str, GpuMode]]  # value = {'Cpu': <GpuMode.Cpu: 0>, 'Gpu': <GpuMode.Gpu: 1>, 'Auto': <GpuMode.Auto: 2>}
+    @typing.overload
+    def __eq__(self, other: GpuMode) -> bool:
+        ...
+    @typing.overload
     def __eq__(self, other: typing.Any) -> bool:
         ...
     def __getstate__(self) -> int:
@@ -127,6 +134,10 @@ class GpuMode:
         ...
     def __int__(self) -> int:
         ...
+    @typing.overload
+    def __ne__(self, other: GpuMode) -> bool:
+        ...
+    @typing.overload
     def __ne__(self, other: typing.Any) -> bool:
         ...
     def __repr__(self) -> str:
@@ -152,6 +163,10 @@ class GpuPreconditioner:
     ILU0: typing.ClassVar[GpuPreconditioner]  # value = <GpuPreconditioner.ILU0: 1>
     Jacobi: typing.ClassVar[GpuPreconditioner]  # value = <GpuPreconditioner.Jacobi: 0>
     __members__: typing.ClassVar[dict[str, GpuPreconditioner]]  # value = {'Jacobi': <GpuPreconditioner.Jacobi: 0>, 'ILU0': <GpuPreconditioner.ILU0: 1>}
+    @typing.overload
+    def __eq__(self, other: GpuPreconditioner) -> bool:
+        ...
+    @typing.overload
     def __eq__(self, other: typing.Any) -> bool:
         ...
     def __getstate__(self) -> int:
@@ -164,6 +179,10 @@ class GpuPreconditioner:
         ...
     def __int__(self) -> int:
         ...
+    @typing.overload
+    def __ne__(self, other: GpuPreconditioner) -> bool:
+        ...
+    @typing.overload
     def __ne__(self, other: typing.Any) -> bool:
         ...
     def __repr__(self) -> str:
@@ -240,6 +259,10 @@ class LogLevel:
     TIMING: typing.ClassVar[LogLevel]  # value = <LogLevel.TIMING: 4>
     WARNING: typing.ClassVar[LogLevel]  # value = <LogLevel.WARNING: 1>
     __members__: typing.ClassVar[dict[str, LogLevel]]  # value = {'ERROR': <LogLevel.ERROR: 0>, 'WARNING': <LogLevel.WARNING: 1>, 'INFO': <LogLevel.INFO: 2>, 'INTERMEDIATE': <LogLevel.INTERMEDIATE: 3>, 'TIMING': <LogLevel.TIMING: 4>, 'DEBUG': <LogLevel.DEBUG: 5>}
+    @typing.overload
+    def __eq__(self, other: LogLevel) -> bool:
+        ...
+    @typing.overload
     def __eq__(self, other: typing.Any) -> bool:
         ...
     def __getstate__(self) -> int:
@@ -252,6 +275,10 @@ class LogLevel:
         ...
     def __int__(self) -> int:
         ...
+    @typing.overload
+    def __ne__(self, other: LogLevel) -> bool:
+        ...
+    @typing.overload
     def __ne__(self, other: typing.Any) -> bool:
         ...
     def __repr__(self) -> str:
@@ -407,7 +434,7 @@ class Mesh:
         """
     def removeDuplicateNodes(self) -> None:
         """
-        Remove nodes which occur twice in the mesh, and replace their IDs in the mesh elements.
+        Remove exactly equal nodes and remap mesh elements, preserving first-occurrence order and the first node's point data. Nodes containing NaNs remain distinct. Cell data is unchanged.
         """
 class NormalCalculationMethodEnum(enum.IntEnum):
     CENTRAL_DIFFERENCES: typing.ClassVar[NormalCalculationMethodEnum]  # value = <NormalCalculationMethodEnum.CENTRAL_DIFFERENCES: 0>
@@ -1059,10 +1086,11 @@ class VoidTopSurfaceEnum(enum.IntEnum):
         """
 def setNumThreads(arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
     ...
+Auto: GpuMode  # value = <GpuMode.Auto: 2>
 Cpu: GpuMode  # value = <GpuMode.Cpu: 0>
 Gpu: GpuMode  # value = <GpuMode.Gpu: 1>
 ILU0: GpuPreconditioner  # value = <GpuPreconditioner.ILU0: 1>
 Jacobi: GpuPreconditioner  # value = <GpuPreconditioner.Jacobi: 0>
-__version__: str = '5.8.5'
-version: str = '5.8.5'
+__version__: str = '5.9.0'
+version: str = '5.9.0'
 IntegrationSchemeEnum = SpatialSchemeEnum

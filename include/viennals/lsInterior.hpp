@@ -73,14 +73,8 @@ public:
       if (updateData)
         newDataSourceIds.resize(newDomain.getNumberOfSegments());
 
-#pragma omp parallel num_threads(newDomain.getNumberOfSegments())              \
-    reduction(+ : addedPoints)
-      {
-        int p = 0;
-#ifdef _OPENMP
-        p = omp_get_thread_num();
-#endif
-
+#pragma omp parallel for reduction(+ : addedPoints)
+      for (unsigned p = 0; p < newDomain.getNumberOfSegments(); ++p) {
         auto &domainSegment = newDomain.getDomainSegment(p);
 
         viennahrle::Index<D> const startVector =
