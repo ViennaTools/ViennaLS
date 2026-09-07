@@ -213,6 +213,10 @@ public:
 #endif
   }
 
+  // Disable copy and assignment to avoid double-free of GPU buffers
+  OxidationDiffusion(const OxidationDiffusion &) = delete;
+  OxidationDiffusion &operator=(const OxidationDiffusion &) = delete;
+
   template <class... Args> static auto New(Args &&...args) {
     return SmartPointer<OxidationDiffusion>::New(std::forward<Args>(args)...);
   }
