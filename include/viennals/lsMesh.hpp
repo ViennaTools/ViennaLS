@@ -3,7 +3,11 @@
 #include <lsPreCompileMacros.hpp>
 
 #include <array>
+#include <cmath>
+#include <functional>
 #include <iostream>
+#include <stdexcept>
+#include <unordered_map>
 #include <vector>
 
 #include <vcPointData.hpp>
@@ -34,33 +38,6 @@ public:
   constexpr static const char *materialIdsLabel = "MaterialIds";
   constexpr static const char *normalsLabel = "Normals";
 
-private:
-  // iterator typedef
-  using VectorIt = typename PointData<T>::VectorDataType::iterator;
-  // find function to avoid including the whole algorithm header
-  static VectorIt find(VectorIt first, VectorIt last, const Vec3D<T> &value) {
-    for (; first != last; ++first) {
-      if (*first == value) {
-        return first;
-      }
-    }
-    return last;
-  }
-
-  // helper function for duplicate removal
-  template <class ElementType>
-  static void replaceNode(ElementType &elements,
-                          std::pair<unsigned, unsigned> node) {
-    for (unsigned i = 0; i < elements.size(); ++i) {
-      for (unsigned j = 0; j < elements[i].size(); ++j) {
-        if (elements[i][j] == node.first) {
-          elements[i][j] = node.second;
-        }
-      }
-    }
-  };
-
-public:
   // Convenience function to create a new mesh smart pointer.
   static auto New() { return SmartPointer<Mesh>::New(); }
 
@@ -166,42 +143,88 @@ public:
     return hexas.size() - 1;
   }
 
+  /// Remove exactly equal nodes, preserving first-occurrence order and the
+  /// first node's scalar/vector point data. Remap all element node IDs;
+  /// elements and cell data are retained, including degenerate elements.
+  /// Nodes containing NaNs remain distinct. Expected linear time in the number
+  /// of nodes, connectivity entries, and point-data values, with linear scratch
+  /// storage. When nodes are merged, point-data arrays must contain one value
+  /// per input node; otherwise throws std::invalid_argument without changing
+  /// the mesh.
   void removeDuplicateNodes() {
     if (nodes.size() < 2)
       return;
 
-    std::vector<Vec3D<T>> newNodes;
-    // can just push first point since it cannot be duplicate
-    newNodes.push_back(nodes[0]);
-    // now check for duplicates
-    // pair of oldId <-> newId
-    std::vector<std::pair<unsigned, unsigned>> duplicates;
-    bool adjusted = false;
-    for (unsigned i = 1; i < nodes.size(); ++i) {
-      auto it = find(newNodes.begin(), newNodes.end(), nodes[i]);
-      if (it != newNodes.end()) {
-        adjusted = true;
-        // if duplicate point, save it to be replaced
-        unsigned nodeId =
-            static_cast<unsigned>(std::distance(newNodes.begin(), it));
-        duplicates.emplace_back(i, nodeId);
-      } else {
-        if (adjusted)
-          duplicates.emplace_back(i, static_cast<unsigned>(newNodes.size()));
-        newNodes.push_back(nodes[i]);
+    struct NodeHash {
+      std::size_t operator()(const Vec3D<T> &node) const {
+        std::size_t seed = 0;
+        for (const T coordinate : node) {
+          seed ^= std::hash<T>{}(coordinate) + std::size_t(0x9e3779b9) +
+                  (seed << 6) + (seed >> 2);
+        }
+        return seed;
       }
-    }
-    nodes = std::move(newNodes);
+    };
 
-    // now replace in vertices
-    // TODO also need to shift down all other nodes
-    for (auto &duplicate : duplicates) {
-      replaceNode(vertices, duplicate);
-      replaceNode(lines, duplicate);
-      replaceNode(triangles, duplicate);
-      replaceNode(tetras, duplicate);
-      replaceNode(hexas, duplicate);
+    // Keep full coordinates as keys so hash collisions cannot merge nodes.
+    // std::hash<T> also gives equal hashes for +0 and -0, which compare equal.
+    std::unordered_map<Vec3D<T>, unsigned, NodeHash> uniqueNodes;
+    uniqueNodes.reserve(nodes.size());
+    std::vector<Vec3D<T>> newNodes;
+    newNodes.reserve(nodes.size());
+    std::vector<unsigned> oldToNew(nodes.size());
+    std::vector<unsigned> retainedIndices;
+    retainedIndices.reserve(nodes.size());
+
+    for (std::size_t i = 0; i < nodes.size(); ++i) {
+      const auto &node = nodes[i];
+      const auto newId = static_cast<unsigned>(newNodes.size());
+      // NaNs are not equal to themselves and cannot serve as hash-table keys.
+      if (!std::isnan(node[0]) && !std::isnan(node[1]) &&
+          !std::isnan(node[2])) {
+        const auto result = uniqueNodes.try_emplace(node, newId);
+        oldToNew[i] = result.first->second;
+        if (!result.second)
+          continue;
+      } else {
+        oldToNew[i] = newId;
+      }
+      newNodes.push_back(node);
+      retainedIndices.push_back(static_cast<unsigned>(i));
     }
+
+    if (newNodes.size() == nodes.size())
+      return;
+
+    // Validate before translating data or changing any mesh connectivity.
+    const auto validateData = [this](const auto &arrays) {
+      for (const auto &data : arrays) {
+        if (data.size() != nodes.size()) {
+          throw std::invalid_argument(
+              "Mesh::removeDuplicateNodes: point-data size must match the "
+              "number of nodes.");
+        }
+      }
+    };
+    validateData(pointData.getScalarData());
+    validateData(pointData.getVectorData());
+    PointData<T> newPointData;
+    newPointData.translateFromData(pointData, retainedIndices);
+
+    const auto remapElements = [&oldToNew](auto &elements) {
+      for (auto &element : elements) {
+        for (auto &nodeId : element)
+          nodeId = oldToNew[nodeId];
+      }
+    };
+    remapElements(vertices);
+    remapElements(lines);
+    remapElements(triangles);
+    remapElements(tetras);
+    remapElements(hexas);
+
+    nodes = std::move(newNodes);
+    pointData = std::move(newPointData);
   }
 
   void append(const Mesh<T> &passedMesh) {

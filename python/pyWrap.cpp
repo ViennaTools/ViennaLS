@@ -259,8 +259,9 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .def("insertNextHexa", &Mesh<T>::insertNextHexa,
            "Insert a hexahedron in the mesh.")
       .def("removeDuplicateNodes", &Mesh<T>::removeDuplicateNodes,
-           "Remove nodes which occur twice in the mesh, and replace their IDs "
-           "in the mesh elements.")
+           "Remove exactly equal nodes and remap mesh elements, preserving "
+           "first-occurrence order and the first node's point data. Nodes "
+           "containing NaNs remain distinct. Cell data is unchanged.")
       .def("append", &Mesh<T>::append, "Append another mesh to this mesh.")
       .def("print", &Mesh<T>::print, "Print basic information about the mesh.")
       .def("clear", &Mesh<T>::clear, "Clear all data in the mesh.");
