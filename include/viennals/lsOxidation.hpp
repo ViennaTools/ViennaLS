@@ -150,6 +150,8 @@ LOCOSConservationDiagnostics<T> computeLOCOSOpenWindowConservation(
 /// @endcode
 template <class T, int D> class Oxidation {
   using IndexType = viennahrle::Index<D>;
+  using IndexCacheMap =
+      std::unordered_map<IndexType, T, typename IndexType::hash>;
 
   SmartPointer<Domain<T, D>> siInterface = nullptr;
   SmartPointer<Domain<T, D>> ambientInterface = nullptr;
@@ -184,13 +186,13 @@ template <class T, int D> class Oxidation {
 
   GpuMode gpuMode_ = GpuMode::Cpu;
   GpuPreconditioner gpuPreconditioner_ = GpuPreconditioner::Jacobi;
-  std::unordered_map<std::size_t, T> concentrationCache_;
+  IndexCacheMap concentrationCache_;
 
 public:
-  const std::unordered_map<std::size_t, T> &getConcentrationCache() const {
+  const IndexCacheMap &getConcentrationCache() const {
     return concentrationCache_;
   }
-  void setConcentrationCache(std::unordered_map<std::size_t, T> cache) {
+  void setConcentrationCache(IndexCacheMap cache) {
     concentrationCache_ = std::move(cache);
   }
 

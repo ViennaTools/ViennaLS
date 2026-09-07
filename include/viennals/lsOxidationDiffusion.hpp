@@ -99,6 +99,8 @@ class OxidationDiffusion final : public VelocityField<T>,
   using IndexType = viennahrle::Index<D>;
   using ConstSparseIterator =
       viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>;
+  using IndexCacheMap =
+      std::unordered_map<IndexType, T, typename IndexType::hash>;
 
 private:
   static constexpr T boltzmannConstant = T(1.380649e-23);
@@ -159,8 +161,8 @@ private:
   bool useRequestedBounds = false;
   bool warmStartable_ =
       false; // true when nodes[i].concentration holds a prior solution
-  std::unordered_map<std::size_t, T> pressureLookup;
-  std::unordered_map<std::size_t, T> concentrationCache_;
+  IndexCacheMap pressureLookup;
+  IndexCacheMap concentrationCache_;
   std::vector<Node> nodes;
   // Face-major flat BC arrays: index = fi * n + nodeId, where fi in [0, 2*D).
   // Face-major layout gives coalesced GPU reads when all warp threads access
@@ -268,11 +270,10 @@ public:
   }
 
   void setPressure(const IndexType &index, T pressure) {
-    const auto key = detail::gridIndexHash<D>(index);
     if (std::isfinite(pressure))
-      pressureLookup[key] = pressure;
+      pressureLookup[index] = pressure;
     else
-      pressureLookup.erase(key);
+      pressureLookup.erase(index);
     solved = false;
   }
 
@@ -333,8 +334,7 @@ public:
 
     concentrationCache_.clear();
     for (const auto &node : nodes)
-      concentrationCache_[detail::gridIndexHash<D>(node.index)] =
-          node.concentration;
+      concentrationCache_[node.index] = node.concentration;
 
     maxScalarVelocity_ = 0.;
     ConstSparseIterator reactionIt(reactionInterface->getDomain());
@@ -432,11 +432,11 @@ public:
     return true;
   }
 
-  const std::unordered_map<std::size_t, T> &getConcentrationCache() const {
+  const IndexCacheMap &getConcentrationCache() const {
     return concentrationCache_;
   }
 
-  void setConcentrationCache(std::unordered_map<std::size_t, T> cache) {
+  void setConcentrationCache(IndexCacheMap cache) {
     concentrationCache_ = std::move(cache);
   }
 
@@ -493,7 +493,7 @@ public:
       if (!it.isDefined())
         continue;
       const IndexType idx = it.getStartIndices();
-      const auto pIt = pressureLookup.find(detail::gridIndexHash<D>(idx));
+      const auto pIt = pressureLookup.find(idx);
       const T value = pIt != pressureLookup.end() ? pIt->second : T(0);
       pressures.push_back(std::isfinite(value) ? value : T(0));
     }
@@ -564,8 +564,7 @@ private:
           if (!it.isDefined())
             continue;
           const auto ptId = it.getPointId();
-          const std::size_t key =
-              detail::gridIndexHash<D>(it.getStartIndices());
+          const auto key = it.getStartIndices();
           if (cd != nullptr && ptId < static_cast<decltype(ptId)>(cd->size()) &&
               std::isfinite((*cd)[ptId]))
             concentrationCache_[key] = (*cd)[ptId];
@@ -590,8 +589,7 @@ private:
         const std::size_t id = nodes.size();
         nodeLookupFlat[linearIndex(index)] = id;
         T seedConc = parameters.equilibriumConcentration;
-        auto cacheIt =
-            concentrationCache_.find(detail::gridIndexHash<D>(index));
+        auto cacheIt = concentrationCache_.find(index);
         if (cacheIt != concentrationCache_.end())
           seedConc = cacheIt->second;
         if (!std::isfinite(seedConc))
@@ -1395,8 +1393,7 @@ private:
 
     if (parameters.reactionActivationVolume != T(0)) {
       T pressure = parameters.referencePressure;
-      const auto foundPressure =
-          pressureLookup.find(detail::gridIndexHash<D>(index));
+      const auto foundPressure = pressureLookup.find(index);
       if (foundPressure != pressureLookup.end())
         pressure = foundPressure->second;
       if (!std::isfinite(pressure))
@@ -1426,7 +1423,7 @@ private:
       return parameters.diffusionCoefficient;
 
     T pressure = parameters.referencePressure;
-    const auto found = pressureLookup.find(detail::gridIndexHash<D>(index));
+    const auto found = pressureLookup.find(index);
     if (found != pressureLookup.end())
       pressure = found->second;
     if (!std::isfinite(pressure))

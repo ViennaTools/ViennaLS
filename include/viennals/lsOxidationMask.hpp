@@ -174,7 +174,7 @@ private:
   std::vector<Vec3D<T>> contactFaceVelocity_; // Dirichlet velocity at contact
   std::vector<Vec3D<T>> contactFaceTraction_; // Oxide traction on mask face
   std::vector<T> contactFaceDistance_;        // Node-to-interface distance
-  std::unordered_map<std::size_t, T> ambientPhiCache_;
+  std::unordered_map<IndexType, T, typename IndexType::hash> ambientPhiCache_;
 
   // Cached multigrid hierarchy.  The stiffness matrix depends on the node
   // geometry and the contact face classification (active/inactive) but NOT on
@@ -408,7 +408,7 @@ public:
       const T dt = parameters.stressTimeStep;
       if (dt <= T(0))
         return {T(0), T(0), T(0)};
-      return detail::vecScaled(getVelocity(index), T(1) / dt);
+      return getVelocity(index) / dt;
     }
 
     return getVelocity(index);
@@ -802,7 +802,7 @@ private:
          !it.isFinished(); ++it) {
       if (!it.isDefined())
         continue;
-      ambientPhiCache_[detail::gridIndexHash<D>(it.getStartIndices())] =
+      ambientPhiCache_[it.getStartIndices()] =
           static_cast<T>(ambientSign) * it.getValue();
     }
   }
@@ -946,7 +946,7 @@ private:
               // Scale by dt: elastic solver uses dt_ref=1hr so the Dirichlet BC
               // must be the physical displacement (v_oxide × dt), not the
               // velocity.
-              oxVel = detail::vecScaled(oxVel, parameters.stressTimeStep);
+              oxVel = oxVel * parameters.stressTimeStep;
             }
             contactFaceVelocity_[faceIdx * n + id] = oxVel;
           }
@@ -958,7 +958,7 @@ private:
 
   std::size_t contactFaceKey(const IndexType &index, unsigned direction,
                              int offset) const {
-    std::size_t seed = detail::gridIndexHash<D>(index);
+    std::size_t seed = typename IndexType::hash{}(index);
     seed ^= std::hash<unsigned>{}(direction) +
             std::size_t(0x9e3779b97f4a7c15ULL) + (seed << 6) + (seed >> 2);
     seed ^= std::hash<int>{}(offset) + std::size_t(0x9e3779b97f4a7c15ULL) +
@@ -1056,12 +1056,10 @@ private:
     const std::size_t nn = nodes.size();
     if (contactFaceActive_[faceIdx * nn + nodeId]) {
       if (usesKinematicContactBoundary())
-        return detail::vecSubtract(
-            detail::vecScaled(contactFaceVelocity_[faceIdx * nn + nodeId],
-                              T(2)),
-            Vec3D<T>{static_cast<T>(velocity[nodeId][0]),
-                     static_cast<T>(velocity[nodeId][1]),
-                     static_cast<T>(velocity[nodeId][2])});
+        return contactFaceVelocity_[faceIdx * nn + nodeId] * T(2) -
+               Vec3D<T>{static_cast<T>(velocity[nodeId][0]),
+                        static_cast<T>(velocity[nodeId][1]),
+                        static_cast<T>(velocity[nodeId][2])};
 
       return stressBoundaryGhost(velocity, nodeId, direction, offset,
                                  contactFaceDistance_[faceIdx * nn + nodeId],
@@ -1115,16 +1113,16 @@ private:
     Vec3D<T> laplaceAverage{T(0), T(0), T(0)};
     for (unsigned direction = 0; direction < D; ++direction)
       for (int offset : {-1, 1})
-        detail::vecAddTo(laplaceAverage,
-                         neighborVelocity(v, nodeId, direction, offset));
+        laplaceAverage =
+            laplaceAverage + neighborVelocity(v, nodeId, direction, offset);
 
     const T count = static_cast<T>(2 * D);
-    const Vec3D<T> lapAvg = detail::vecScaled(laplaceAverage, T(1) / count);
-    const Vec3D<T> gradDivCorr = detail::vecScaled(
-        divergenceGradient(v, nodes[nodeId].index),
-        gradDivWeight * gridDelta * gridDelta / (T(2) * static_cast<T>(D)));
+    const Vec3D<T> lapAvg = laplaceAverage / count;
+    const Vec3D<T> gradDivCorr =
+        divergenceGradient(v, nodes[nodeId].index) *
+        (gradDivWeight * gridDelta * gridDelta / (T(2) * static_cast<T>(D)));
 
-    return detail::vecAdd(lapAvg, gradDivCorr);
+    return lapAvg + gradDivCorr;
   }
 
   // (Av)[i] = v[i] - F(v)[i] + b[i], stored as SolverT.
@@ -1178,18 +1176,18 @@ private:
       coarse.children.reserve(previous.indices.size() / 2 + 1);
       coarse.fineToCoarse.assign(previous.indices.size(), mgNoNode);
 
-      std::unordered_map<std::size_t, std::size_t> coarseLookup;
+      std::unordered_map<IndexType, std::size_t, typename IndexType::hash>
+          coarseLookup;
       coarseLookup.reserve(previous.indices.size());
       for (std::size_t fineId = 0; fineId < previous.indices.size(); ++fineId) {
         const IndexType coarseIndex = coarsenIndex(previous.indices[fineId]);
-        const std::size_t key = detail::gridIndexHash<D>(coarseIndex);
-        auto found = coarseLookup.find(key);
+        auto found = coarseLookup.find(coarseIndex);
         if (found == coarseLookup.end()) {
           const std::size_t coarseId = coarse.indices.size();
-          coarseLookup.emplace(key, coarseId);
+          coarseLookup.emplace(coarseIndex, coarseId);
           coarse.indices.push_back(coarseIndex);
           coarse.children.emplace_back();
-          found = coarseLookup.find(key);
+          found = coarseLookup.find(coarseIndex);
         }
 
         const std::size_t coarseId = found->second;
@@ -2075,7 +2073,7 @@ private:
   bool isInsideOxide(const IndexType &index) const {
     if (ambientInterface == nullptr)
       return false;
-    const auto it = ambientPhiCache_.find(detail::gridIndexHash<D>(index));
+    const auto it = ambientPhiCache_.find(index);
     return it != ambientPhiCache_.end() && it->second >= T(0);
   }
 
@@ -2230,7 +2228,7 @@ class OxidationConstrainedAmbient final : public VelocityField<T> {
   SmartPointer<Domain<T, D>> maskInterface = nullptr;
   SmartPointer<Domain<T, D>> ambientInterface = nullptr;
   int maskSign = 1;
-  std::unordered_map<std::size_t, T> maskPhiCache_;
+  std::unordered_map<IndexType, T, typename IndexType::hash> maskPhiCache_;
   T maskGridDelta_ = 1.;
   std::array<T, D> maxVelocity_{};
 
@@ -2344,7 +2342,7 @@ private:
     IndexType index;
     for (unsigned i = 0; i < D; ++i)
       index[i] = std::llround(coordinate[i] / maskGridDelta_);
-    const auto it = maskPhiCache_.find(detail::gridIndexHash<D>(index));
+    const auto it = maskPhiCache_.find(index);
     return (it != maskPhiCache_.end()) ? it->second
                                        : std::numeric_limits<T>::lowest();
   }
@@ -2358,7 +2356,7 @@ private:
          ++it) {
       if (!it.isDefined())
         continue;
-      const auto key = detail::gridIndexHash<D>(it.getStartIndices());
+      const auto key = it.getStartIndices();
       maskPhiCache_[key] = static_cast<T>(maskSign) * it.getValue();
     }
   }

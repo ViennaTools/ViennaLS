@@ -167,6 +167,9 @@ public:
   }
 
   void removeDuplicateNodes() {
+    if (nodes.size() < 2)
+      return;
+
     std::vector<Vec3D<T>> newNodes;
     // can just push first point since it cannot be duplicate
     newNodes.push_back(nodes[0]);
@@ -188,7 +191,7 @@ public:
         newNodes.push_back(nodes[i]);
       }
     }
-    nodes = newNodes;
+    nodes = std::move(newNodes);
 
     // now replace in vertices
     // TODO also need to shift down all other nodes
