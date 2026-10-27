@@ -8,6 +8,7 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <limits>
 #include <string>
@@ -19,18 +20,28 @@ using namespace viennacore;
 
 namespace detail {
 
+// Key of a grid index.  The per-node maps (pressure, stress and
+// concentration of the oxidation solvers, the mask carry velocity) are keyed
+// by this value alone, so it must be injective: the coordinates are packed
+// into 64 bits, 32 per axis in 2-D and 21 in 3-D (|index| < 2^20).  The
+// hash_combine it replaces collided for 9 in 10 indices of a 5 nm trench
+// domain ((x, y) with (x - 1, y + 67)), and nodes read each other's stress.
 template <int D>
 inline std::size_t gridIndexHash(const viennahrle::Index<D> &index) {
-  std::size_t seed = 0;
-  for (unsigned i = 0; i < static_cast<unsigned>(D); ++i) {
-    seed ^= std::hash<long long>{}(static_cast<long long>(index[i])) +
-            std::size_t(0x9e3779b97f4a7c15ULL) + (seed << 6) + (seed >> 2);
-  }
-  return seed;
+  static_assert(D == 2 || D == 3);
+  constexpr unsigned bits = D == 3 ? 21 : 32;
+  constexpr std::uint64_t mask = (std::uint64_t(1) << bits) - 1;
+  constexpr std::int64_t offset = std::int64_t(1) << (bits - 1);
+  std::uint64_t key = 0;
+  for (unsigned i = 0; i < static_cast<unsigned>(D); ++i)
+    key = (key << bits) |
+          (static_cast<std::uint64_t>(static_cast<std::int64_t>(index[i]) +
+                                      offset) &
+           mask);
+  return static_cast<std::size_t>(key);
 }
 
-// Hash functor for viennahrle::Index<D> — safe to use as unordered_map key
-// because collisions are resolved by operator== on the full index.
+// Hash functor for viennahrle::Index<D> (the key above).
 template <int D> struct IndexTypeHasher {
   std::size_t operator()(const viennahrle::Index<D> &idx) const {
     return gridIndexHash<D>(idx);
@@ -84,8 +95,8 @@ inline T levelSetCrossingDistance(T insidePhi, T outsidePhi,
 
 } // namespace detail
 
-/// Common Cartesian-grid infrastructure shared by the three oxidation solver
-/// classes (diffusion, deformation, mask bending). Provides the node lookup
+/// Common Cartesian-grid infrastructure shared by the oxidation solver
+/// classes (diffusion, deformation). Provides the node lookup
 /// table, grid extents, and the core grid utility methods that operate on them.
 template <class T, int D> class OxidationSolverBase {
 protected:
@@ -100,6 +111,33 @@ protected:
   std::array<std::size_t, D> extents{};
   std::array<std::size_t, D> strides{};
   T gridDelta = 1.;
+  // Box sides on a reflective domain boundary: the mirror plane through the
+  // outermost grid points.
+  std::array<bool, D> mirrorLow_{}, mirrorHigh_{};
+
+  template <class GridType> void setMirrorSides(const GridType &grid) {
+    for (unsigned i = 0; i < D; ++i) {
+      const bool reflective = grid.getBoundaryConditions(i) ==
+                              viennahrle::BoundaryType::REFLECTIVE_BOUNDARY;
+      mirrorLow_[i] = reflective && minIndex[i] == grid.getMinGridPoint(i);
+      mirrorHigh_[i] = reflective && maxIndex[i] == grid.getMaxGridPoint(i);
+    }
+  }
+
+  // The stencil side (direction, offset) of the grid point at index: beyond
+  // a mirror side the neighbour is the mirror image of the opposite one, so
+  // the side is -offset; else offset.
+  int stencilOffset(const IndexType &index, unsigned direction,
+                    int offset) const {
+    IndexType neighbor = index;
+    neighbor[direction] += offset;
+    if (inBounds(neighbor) ||
+        !(offset < 0 ? mirrorLow_[direction] : mirrorHigh_[direction]))
+      return offset;
+    IndexType opposite = index;
+    opposite[direction] -= offset;
+    return inBounds(opposite) ? -offset : offset;
+  }
 
   struct GridBounds {
     IndexType min{};
@@ -118,6 +156,50 @@ protected:
   T valueAt(ConstSparseIterator &it, const IndexType &index) const {
     it.goToIndices(index);
     return it.getValue();
+  }
+
+  // Gradient direction of a level set at a grid point.  Per axis the central
+  // difference where both neighbours are defined, one-sided (with the point
+  // itself) where one is.  Clamping phi to one grid unit before differencing
+  // -- the earlier form, kept only where the point itself is outside the
+  // narrow band -- clipped the steeper component next to the interface and
+  // turned the normals of tilted fronts towards the diagonal: a 30-degree
+  // front by 2.6 degrees at phi = 0.3 and 5.4 at 0.6, at any grid spacing.
+  // onGrid(idx, ok) maps a neighbour onto the grid (e.g. a reflection) and
+  // clears ok if it is off the grid.  Zero if degenerate.
+  template <class OnGrid>
+  Vec3D<T> definedLevelSetGradient(ConstSparseIterator &it,
+                                   const IndexType &index,
+                                   OnGrid onGrid) const {
+    // value at idx (the point itself if idx is off the grid), and whether
+    // it is a defined value
+    auto sample = [&](const IndexType &idx, T &value) {
+      bool ok = true;
+      const IndexType q = onGrid(idx, ok);
+      it.goToIndices(ok ? q : index);
+      value = it.getValue();
+      return ok && it.isDefined() && std::isfinite(value);
+    };
+    T centre = T(0);
+    const bool centreDefined = sample(index, centre);
+    Vec3D<T> gradient{T(0), T(0), T(0)};
+    for (unsigned d = 0; d < D; ++d) {
+      IndexType plus = index, minus = index;
+      plus[d] += 1;
+      minus[d] -= 1;
+      T vp = T(0), vm = T(0);
+      const bool okP = sample(plus, vp), okM = sample(minus, vm);
+      if (okP && okM)
+        gradient[d] = T(0.5) * (vp - vm);
+      else if (centreDefined && okP)
+        gradient[d] = vp - centre;
+      else if (centreDefined && okM)
+        gradient[d] = centre - vm;
+      else
+        gradient[d] = T(0.5) * (detail::clampLevelSetPhi(vp) -
+                                detail::clampLevelSetPhi(vm));
+    }
+    return gradient;
   }
 
   bool inBounds(const IndexType &index) const {
@@ -204,6 +286,52 @@ protected:
     return std::numeric_limits<std::size_t>::max();
   }
 
+  // All nodes at the smallest distance from index (the first shell, up to 4
+  // cells, holding a node that passes accept(j)).  Averaging them instead of
+  // taking the first one found keeps a result free of the scan order (-y
+  // first, then -x), which moved the free surface of a stress-free oxide
+  // cylinder by up to 4 nm in y in 0.3 hr.
+  template <class Accept>
+  std::vector<std::size_t> findNearbyNodes(const IndexType &index,
+                                           Accept accept) const {
+    std::vector<std::size_t> best;
+    for (int radius = 1; radius <= 4 && best.empty(); ++radius) {
+      long bestDistance2 = std::numeric_limits<long>::max();
+      IndexType offset{};
+      offset.fill(-radius);
+      while (true) {
+        IndexType candidate = index;
+        long distance2 = 0;
+        for (unsigned i = 0; i < D; ++i) {
+          candidate[i] += offset[i];
+          distance2 += static_cast<long>(offset[i]) * offset[i];
+        }
+        if (distance2 > 0 && distance2 <= bestDistance2 &&
+            inBounds(candidate)) {
+          const std::size_t foundId = nodeLookupFlat[linearIndex(candidate)];
+          if (foundId != noNode && accept(foundId)) {
+            if (distance2 < bestDistance2) {
+              best.clear();
+              bestDistance2 = distance2;
+            }
+            best.push_back(foundId);
+          }
+        }
+        unsigned dim = 0;
+        for (; dim < D; ++dim) {
+          if (offset[dim] < radius) {
+            ++offset[dim];
+            break;
+          }
+          offset[dim] = -radius;
+        }
+        if (dim == D)
+          break;
+      }
+    }
+    return best;
+  }
+
   bool initializeGridFromInterfaces(
       SmartPointer<Domain<T, D>> reactionInterface,
       SmartPointer<Domain<T, D>> ambientInterface,
@@ -271,6 +399,7 @@ protected:
           .print();
       return false;
     }
+    setMirrorSides(reactionGrid);
     return true;
   }
 
@@ -313,6 +442,7 @@ protected:
           .print();
       return false;
     }
+    setMirrorSides(grid);
     return true;
   }
 

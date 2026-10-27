@@ -337,13 +337,20 @@ public:
           maxNode = Max(maxNode, nodes[i]);
         }
 
-        // find indices which describe the triangle
+        // find indices which describe the triangle.  A node on a grid line
+        // can come out one ulp off it (-0.2975 / 0.0025 = -118.99999999999999)
+        // while the grid places the intersection exactly on it; rounding
+        // with distanceEps keeps that grid line in the element's bounds.
+        // Otherwise the clamp of the band below drops the neighbour on one
+        // side, the on-face point (value 0) is the first defined point of
+        // its rows, and the rows' undefined runs take the wrong sign: a box
+        // with its face on a grid line came out hollow.
         viennahrle::Index<D> minIndex, maxIndex;
         for (int q = 0; q < D; q++) {
-          minIndex[q] =
-              static_cast<hrleIndexType>(std::ceil(minNode[q] / gridDelta));
-          maxIndex[q] =
-              static_cast<hrleIndexType>(std::floor(maxNode[q] / gridDelta));
+          minIndex[q] = static_cast<hrleIndexType>(
+              std::ceil(minNode[q] / gridDelta - distanceEps));
+          maxIndex[q] = static_cast<hrleIndexType>(
+              std::floor(maxNode[q] / gridDelta + distanceEps));
         }
 
         // Only iterate over indices which are actually inside the domain

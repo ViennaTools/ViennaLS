@@ -6,6 +6,8 @@
 #include <hrleSparseStarIterator.hpp>
 #include <lsDomain.hpp>
 
+#include <limits>
+
 #include <vcVectorType.hpp>
 
 namespace viennals {
@@ -54,13 +56,26 @@ public:
 
     const int startWidth = levelSet->getLevelSetWidth();
 
-    for (int currentCycle = 0; currentCycle < 100; ++currentCycle) {
+    // One layer per cycle.  Without a guide the fill stops after 100 layers:
+    // the interior of an open surface (a half-space with an INFINITE
+    // boundary) never ends.  With a guide it runs until no point is added:
+    // the guide closes the region, and a film thicker than 100 cells must be
+    // filled down to it (the oxide next to the Si front otherwise stored no
+    // stress history and no warm start).
+    const int maxCycles = guide ? std::numeric_limits<int>::max() : 100;
+    for (int currentCycle = 0; currentCycle < maxCycles; ++currentCycle) {
       int addedPoints = 0;
 
       const T limit = (startWidth + currentCycle + 1);
 
       auto &grid = levelSet->getGrid();
       auto newlsDomain = SmartPointer<Domain<T, D>>::New(grid);
+      // The fill adds points inside only: the band around the surface, and
+      // so the width, are unchanged.  The new domain's default width of 1
+      // (copied by deepCopy below) made a filled level set report one layer,
+      // and ToSurfaceMesh / Expand then rebuilt it as a narrow band, dropping
+      // the filled points and the oxide stress history stored on them.
+      newlsDomain->setLevelSetWidth(startWidth);
       auto &newDomain = newlsDomain->getDomain();
       auto &domain = levelSet->getDomain();
 

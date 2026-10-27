@@ -264,6 +264,27 @@ CPMFindPackage(
 
 target_link_libraries(${PROJECT_NAME} INTERFACE ViennaHRLE ViennaCore)
 
+# Eigen and AMGCL (header-only): the coupled velocity-pressure system of the
+# oxidation mechanics (lsOxidationDeformation.hpp) is solved with a sparse LU
+# (Eigen) in 2-D and with AMGCL in 3-D; the oxidant diffusion system
+# (lsOxidationDiffusion.hpp) with AMGCL on the CPU.
+CPMAddPackage(
+  NAME Eigen3
+  VERSION 3.4.0
+  URL "https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz"
+  DOWNLOAD_ONLY YES)
+
+CPMAddPackage(
+  NAME amgcl
+  VERSION 1.4.4
+  URL "https://github.com/ddemidov/amgcl/archive/refs/tags/1.4.4.tar.gz"
+  DOWNLOAD_ONLY YES)
+
+target_include_directories(
+  ${PROJECT_NAME} SYSTEM
+  INTERFACE $<BUILD_INTERFACE:${Eigen3_SOURCE_DIR}> $<BUILD_INTERFACE:${amgcl_SOURCE_DIR}>
+            $<INSTALL_INTERFACE:include/viennals-${PROJECT_VERSION}/external>)
+
 if(VIENNALS_USE_VTK AND VIENNALS_VTK_PYTHON_LIBS)
   import_vtk_python()
   target_link_libraries(${PROJECT_NAME} INTERFACE VTK::PythonLibs)
@@ -520,6 +541,9 @@ endif()
 # --------------------------------------------------------------------------------------------------------
 # Install Target
 # --------------------------------------------------------------------------------------------------------
+
+install(DIRECTORY "${Eigen3_SOURCE_DIR}/Eigen" "${amgcl_SOURCE_DIR}/amgcl"
+        DESTINATION include/viennals-${PROJECT_VERSION}/external)
 
 packageProject(
   NAME ${PROJECT_NAME} NAMESPACE ViennaTools
