@@ -217,6 +217,18 @@ private:
   std::vector<Vec3D<T>> faceCrossingNormal_;
   std::vector<T> faceReactionRate_;
   std::vector<T> faceFrontSpeed_;
+  // The REACTION crossings node by node (faces in order) with what
+  // frontVelocityAt sums over them, rebuilt with the front speeds: a query
+  // reads one short contiguous list per nearby node instead of 2D
+  // face-major arrays at stride n (every mechanics ghost asks for it).
+  struct FrontCrossing {
+    Vec3D<T> point; // index units
+    T areaWeight;   // faceReactionNormal_
+    T speed;        // faceFrontSpeed_
+    Vec3D<T> normal;
+  };
+  std::vector<std::size_t> frontStart_; // per node, n + 1 entries
+  std::vector<FrontCrossing> frontCrossings_;
   // Point on the front (index units) a reaction node's law stress is sampled
   // at: the node moved back along its normal by its front distance.
   std::vector<Vec3D<T>> interfaceAnchor_;
@@ -586,9 +598,10 @@ public:
     const auto boundarySample = reactionBoundarySample(index);
     const IndexType rateIndex =
         boundarySample.found ? boundarySample.nodeIndex : index;
+    // (getReactionBoundaryConcentration would repeat the search that failed)
     const T concentration = boundarySample.found
                                 ? boundarySample.concentration
-                                : getReactionBoundaryConcentration(index);
+                                : getConcentration(index);
     return parameters.velocitySign * getEffectiveReactionRate(rateIndex) *
            concentration /
            (parameters.oxidantMoleculeDensity *
@@ -608,7 +621,7 @@ public:
   FrontVelocity frontVelocityAt(const Vec3D<T> &coordinate) const {
     FrontVelocity result;
     const std::size_t n = nodes.size();
-    if (faceFrontSpeed_.size() != 2 * D * n)
+    if (frontStart_.size() != n + 1)
       return result;
     Vec3D<T> p{T(0), T(0), T(0)};
     for (unsigned d = 0; d < D; ++d)
@@ -617,23 +630,21 @@ public:
     T weightSum = T(0), speed = T(0);
     Vec3D<T> normal{T(0), T(0), T(0)};
     forEachNodeNear(p, 2, [&](std::size_t j) {
-      for (unsigned fi = 0; fi < 2 * D; ++fi) {
-        if (faceBCTypes_[fi * n + j] != Boundary::REACTION)
-          continue;
-        const auto c = crossingPoint(j, fi);
+      for (std::size_t k = frontStart_[j]; k < frontStart_[j + 1]; ++k) {
+        const auto &crossing = frontCrossings_[k];
         T r2 = T(0);
         for (unsigned d = 0; d < D; ++d)
-          r2 += (c[d] - p[d]) * (c[d] - p[d]);
+          r2 += (crossing.point[d] - p[d]) * (crossing.point[d] - p[d]);
         // weighted by the crossing's share of the front area, |n_axis|
         // (the factor its oxidant sink carries): an area average, so the
         // extra crossings at stair steps do not count twice, and grazing
         // arms -- the least accurate interface concentration -- hardly count
         const T w = std::exp(-r2 / (T(2) * width * width)) *
-                    faceReactionNormal_[fi * n + j];
+                    crossing.areaWeight;
         weightSum += w;
-        speed += w * faceFrontSpeed_[fi * n + j];
+        speed += w * crossing.speed;
         for (unsigned d = 0; d < D; ++d)
-          normal[d] += w * faceCrossingNormal_[fi * n + j][d];
+          normal[d] += w * crossing.normal[d];
       }
     });
     if (weightSum <= T(1e-12))
@@ -808,6 +819,7 @@ private:
 
   void buildNodes() {
     nodes.clear();
+    frontStart_.clear(); // rebuilt with the front speeds
     initNodeLookup();
 
     // On the first substep after an outer-step boundary the in-memory cache is
@@ -1733,6 +1745,23 @@ private:
             (parameters.oxidantMoleculeDensity *
              parameters.expansionCoefficient);
       }
+    frontStart_.assign(n + 1, 0);
+    for (std::size_t i = 0; i < n; ++i) {
+      std::size_t count = 0;
+      for (unsigned fi = 0; fi < 2 * D; ++fi)
+        count += faceBCTypes_[fi * n + i] == Boundary::REACTION;
+      frontStart_[i + 1] = frontStart_[i] + count;
+    }
+    frontCrossings_.resize(frontStart_[n]);
+    for (std::size_t i = 0; i < n; ++i) {
+      std::size_t k = frontStart_[i];
+      for (unsigned fi = 0; fi < 2 * D; ++fi)
+        if (faceBCTypes_[fi * n + i] == Boundary::REACTION)
+          frontCrossings_[k++] = {crossingPoint(i, fi),
+                                  faceReactionNormal_[fi * n + i],
+                                  faceFrontSpeed_[fi * n + i],
+                                  faceCrossingNormal_[fi * n + i]};
+    }
   }
 
   T getEffectiveReactionRate(const IndexType &index) const {

@@ -4,6 +4,7 @@
 #include <lsOxidationSolverBase.hpp>
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -1389,6 +1390,16 @@ public:
       macCornerEndMap_;
   bool macCornerAdvectedValid_ = false;
   std::vector<T> macX_; // last solution
+  // Front velocity of the Si ghost faces during one solveMechanics, per
+  // (partner face unknown, axis and side of the ghost): it depends only on
+  // the geometry and the diffusion solution, which the solve does not
+  // change, but each ghost enters several stencils in every assembly, rate
+  // and write-back pass.  The first evaluation is kept (state 0 empty,
+  // 1 being written, 2 ready); the parallel passes read it without locks.
+  mutable std::vector<T> macGhostV_;
+  std::unique_ptr<std::atomic<std::uint8_t>[]> macGhostState_;
+  std::size_t macGhostSlots_ = 0;
+  bool macGhostOn_ = false;
 
 
   // Reflect a grid point into the solve box (reflective boundary through the
@@ -1542,6 +1553,7 @@ public:
   // unknowns.  partner: the adjacent face (same d, one step along another
   // or the same direction) that a ghost is built from.
   MacLin macFace(unsigned d, IndexType a, const IndexType *partner) const {
+    const IndexType unreflected = a;
     const T sign = macFaceReflect(d, a);
     MacLin r;
     const std::int64_t id = macFaceId(d, a);
@@ -1555,6 +1567,9 @@ public:
       return r; // zero
     IndexType pa = *partner;
     const T psign = macFaceReflect(d, pa);
+    bool inBox = true;
+    for (unsigned e = 0; e < D; ++e)
+      inBox = inBox && a[e] == unreflected[e] && pa[e] == (*partner)[e];
     const std::int64_t pid = macFaceId(d, pa);
     MacLin pe;
     if (pid >= 0)
@@ -1569,10 +1584,61 @@ public:
         T(deformationParameters.minMechanicsBoundaryDistance), T(0), T(1));
     theta = std::clamp(theta, thMin, T(1));
     // ghost = (1 - 1/theta) partner + v_front / theta (true orientation)
-    const T vf = macFrontVelocity(d, pa, a, theta) * psign;
+    const T vf = macGhostFrontVelocity(d, pa, a, theta, inBox ? pid : -1) * psign;
     MacLin g = pe.scaled(T(1) - T(1) / theta);
     g.c += vf / theta;
     return g;
+  }
+
+  // macFrontVelocity(d, pa, a, theta) of a ghost face a next to the
+  // unknown pid = (d, pa), kept during solveMechanics (see macGhostV_).
+  // pid < 0 (a reflected face or no unknown partner): not kept.
+  T macGhostFrontVelocity(unsigned d, const IndexType &pa, const IndexType &a,
+                          T theta, std::int64_t pid) const {
+    std::size_t slot = macGhostSlots_;
+    if (macGhostOn_ && pid >= 0) {
+      int axis = -1, step = 0;
+      for (unsigned e = 0; e < D; ++e) {
+        const auto delta = a[e] - pa[e];
+        if (delta == 0)
+          continue;
+        if (axis != -1 || (delta != 1 && delta != -1)) {
+          axis = -2;
+          break;
+        }
+        axis = static_cast<int>(e);
+        step = static_cast<int>(delta);
+      }
+      if (axis >= 0)
+        slot = static_cast<std::size_t>(pid) * 2 * D +
+               2 * static_cast<std::size_t>(axis) + (step > 0 ? 1 : 0);
+    }
+    if (slot >= macGhostSlots_)
+      return macFrontVelocity(d, pa, a, theta);
+    auto &state = macGhostState_[slot];
+    if (state.load(std::memory_order_acquire) == 2)
+      return macGhostV_[slot];
+    const T v = macFrontVelocity(d, pa, a, theta);
+    std::uint8_t empty = 0;
+    if (state.compare_exchange_strong(empty, 1, std::memory_order_acq_rel)) {
+      macGhostV_[slot] = v;
+      state.store(2, std::memory_order_release);
+    }
+    return v;
+  }
+
+  // Empty ghost front velocities for this solve's node set and boundary
+  // values; on until the solve ends (macGhostOn_).
+  void macGhostReset() {
+    const std::size_t slots = static_cast<std::size_t>(macNVel_) * 2 * D;
+    if (slots != macGhostSlots_) {
+      macGhostV_.assign(slots, T(0));
+      macGhostState_ = std::make_unique<std::atomic<std::uint8_t>[]>(slots);
+      macGhostSlots_ = slots;
+    }
+    for (std::size_t k = 0; k < slots; ++k)
+      macGhostState_[k].store(0, std::memory_order_relaxed);
+    macGhostOn_ = true;
   }
 
   // dv_d/dx_d at grid point q (faces (d, q - e_d), (d, q)).
@@ -2195,7 +2261,7 @@ public:
         }
     }
     if constexpr (D == 3)
-      return macAmgSolve(rows, backward);
+      return macAmgSolve(rows, backward); // consumes the rows
     else
       return macDirectSolve(rows, backward);
   }
@@ -2203,17 +2269,20 @@ public:
   // AMGCL: FGMRES, block-triangular velocity-pressure preconditioner (one
   // smoothed-aggregation V-cycle with ILU0 for the velocities, SPAI0 on
   // B diag(A)^-1 G for the pressure), row/column-equilibrated system,
-  // warm-started from the previous iterate.
+  // warm-started from the previous iterate. The preconditioner works in
+  // single precision (half the memory traffic of its V-cycles); FGMRES and
+  // its residual stay double, so the solve meets the same tolerance.
   typedef amgcl::backend::builtin<double> MacAmgBackend;
+  typedef amgcl::backend::builtin<float> MacAmgPrecondBackend;
   typedef amgcl::make_solver<
-      amgcl::amg<MacAmgBackend, amgcl::coarsening::smoothed_aggregation,
+      amgcl::amg<MacAmgPrecondBackend, amgcl::coarsening::smoothed_aggregation,
                  amgcl::relaxation::ilu0>,
-      amgcl::solver::preonly<MacAmgBackend>>
+      amgcl::solver::preonly<MacAmgPrecondBackend>>
       MacAmgUSolver;
   typedef amgcl::make_solver<
-      amgcl::relaxation::as_preconditioner<MacAmgBackend,
+      amgcl::relaxation::as_preconditioner<MacAmgPrecondBackend,
                                            amgcl::relaxation::spai0>,
-      amgcl::solver::preonly<MacAmgBackend>>
+      amgcl::solver::preonly<MacAmgPrecondBackend>>
       MacAmgPSolver;
   typedef amgcl::preconditioner::schur_pressure_correction<MacAmgUSolver,
                                                            MacAmgPSolver>
@@ -2241,30 +2310,60 @@ public:
   std::size_t macAmgVersion_ = std::numeric_limits<std::size_t>::max();
   std::vector<double> macAmgRs_, macAmgCs_;
   std::size_t macAmgSetupIters_ = 0;
+  // The CSR system and its equilibrated copy, kept between solves: on one
+  // node set their sizes do not change, so a solve neither reallocates nor
+  // zero-fills ~10^7 entries.
+  std::vector<ptrdiff_t> macCsrPtr_, macCsrCol_;
+  std::vector<double> macCsrVal_, macCsrRhs_, macSval_, macSrhs_, macY_;
 
-  bool macAmgSolve(const std::vector<MacLin> &rows, T &backward) {
+  bool macAmgSolve(std::vector<MacLin> &rows, T &backward) {
+    // CSR, per row the columns sorted and duplicates summed, in two parallel
+    // passes: sort each row in place and count its entries, then sum them
+    // again into place (and free the row) -- the matrix of a serial build.
     const std::size_t N = rows.size();
-    std::vector<ptrdiff_t> ptr(N + 1, 0), col;
-    std::vector<double> val, rhs(N);
-    col.reserve(N * 16);
-    val.reserve(N * 16);
-    std::vector<std::pair<std::int64_t, T>> tmp;
+    auto &ptr = macCsrPtr_, &col = macCsrCol_;
+    auto &val = macCsrVal_, &rhs = macCsrRhs_;
+    ptr.resize(N + 1);
+    rhs.resize(N);
+    ptr[0] = 0;
+    const auto byColumn = [](const auto &a, const auto &b) {
+      return a.first < b.first;
+    };
+#pragma omp parallel for schedule(dynamic, 256)
     for (std::size_t i = 0; i < N; ++i) {
-      tmp = rows[i].t;
-      std::sort(tmp.begin(), tmp.end(),
-                [](const auto &a, const auto &b) { return a.first < b.first; });
-      for (std::size_t q = 0; q < tmp.size();) {
-        const std::int64_t c = tmp[q].first;
+      auto &t = rows[i].t;
+      std::sort(t.begin(), t.end(), byColumn);
+      ptrdiff_t count = 0;
+      for (std::size_t q = 0; q < t.size();) {
+        const std::int64_t c = t[q].first;
         double v = 0.;
-        for (; q < tmp.size() && tmp[q].first == c; ++q)
-          v += static_cast<double>(tmp[q].second);
+        for (; q < t.size() && t[q].first == c; ++q)
+          v += static_cast<double>(t[q].second);
+        if (v != 0.)
+          ++count;
+      }
+      ptr[i + 1] = count;
+      rhs[i] = -static_cast<double>(rows[i].c);
+    }
+    for (std::size_t i = 0; i < N; ++i)
+      ptr[i + 1] += ptr[i];
+    col.resize(static_cast<std::size_t>(ptr[N]));
+    val.resize(static_cast<std::size_t>(ptr[N]));
+#pragma omp parallel for schedule(dynamic, 256)
+    for (std::size_t i = 0; i < N; ++i) {
+      auto &t = rows[i].t;
+      auto k = static_cast<std::size_t>(ptr[i]);
+      for (std::size_t q = 0; q < t.size();) {
+        const std::int64_t c = t[q].first;
+        double v = 0.;
+        for (; q < t.size() && t[q].first == c; ++q)
+          v += static_cast<double>(t[q].second);
         if (v != 0.) {
-          col.push_back(static_cast<ptrdiff_t>(c));
-          val.push_back(v);
+          col[k] = static_cast<ptrdiff_t>(c);
+          val[k++] = v;
         }
       }
-      ptr[i + 1] = static_cast<ptrdiff_t>(col.size());
-      rhs[i] = -static_cast<double>(rows[i].c);
+      std::vector<std::pair<std::int64_t, T>>().swap(t);
     }
     if ((macAmgP_ || macGpu_) && macAmgVersion_ == macNodesVersion_ &&
         macAmgRs_.size() == N &&
@@ -2272,6 +2371,16 @@ public:
       return true;
     return macAmgSolveWith(ptr, col, val, rhs, true, backward);
   }
+
+  // FGMRES target (relative residual of the equilibrated system): 1e-9 for
+  // the velocities the interfaces move with; 1e-7 for the solves inside the
+  // stress-coupling iteration, whose pressure and stress only feed the
+  // coupling test (couplingTolerance, 2e-2..5e-2). 1e-7 is 10x below the
+  // acceptance (stokesTolerance) and saves 40 % of their iterations; on a
+  // 3-D LOCOS corner it changed the result ~400x less than tightening the
+  // coupling test from 2e-2 to 2e-3 does.
+  static constexpr double macTolerance = 1e-9;
+  static constexpr double macCouplingTolerance = 1e-7;
 
   // One solve of the assembled system, with a fresh setup or with the kept
   // preconditioner and equilibration.
@@ -2298,13 +2407,18 @@ public:
         v = v > 0. ? 1. / v : 1.;
     }
     const auto &rs = macAmgRs_, &cs = macAmgCs_;
-    std::vector<double> sval(val.size()), srhs(N), y(N, 0.);
+    auto &sval = macSval_, &srhs = macSrhs_, &y = macY_;
+    sval.resize(val.size());
+    srhs.resize(N);
+    y.resize(N);
+#pragma omp parallel for schedule(static)
     for (std::size_t i = 0; i < N; ++i) {
       for (ptrdiff_t q = ptr[i]; q < ptr[i + 1]; ++q)
         sval[q] = rs[i] * val[q] * cs[col[q]];
       srhs[i] = rs[i] * rhs[i];
-      if (i < macX_.size() && std::isfinite(macX_[i]))
-        y[i] = static_cast<double>(macX_[i]) / cs[i];
+      y[i] = i < macX_.size() && std::isfinite(macX_[i])
+                 ? static_cast<double>(macX_[i]) / cs[i]
+                 : 0.;
     }
     const ptrdiff_t n = static_cast<ptrdiff_t>(N);
     auto A = std::tie(n, ptr, col, sval);
@@ -2312,6 +2426,8 @@ public:
     double err = 0.;
     const unsigned maxIterations =
         fresh ? 3000u : static_cast<unsigned>(2 * macAmgSetupIters_ + 20);
+    const double target =
+        couplingIterate_ ? macCouplingTolerance : macTolerance;
     if (fresh) {
       if (!macAmgSetup(ptr, col, sval, cs))
         return false;
@@ -2325,7 +2441,7 @@ public:
                             reinterpret_cast<const std::int64_t *>(ptr.data()),
                             reinterpret_cast<const std::int64_t *>(col.data()),
                             sval.data(), srhs.data(), y.data(), maxIterations,
-                            1e-9, gpuIters, err)) {
+                            target, gpuIters, err)) {
         // a GPU that set up and then fails is a malfunction, not an absence
         VIENNACORE_LOG_ERROR(
             std::string("OxidationDeformation: the GPU mechanics solve failed: ") +
@@ -2338,6 +2454,7 @@ public:
     {
       try {
         macAmgS_->prm.maxiter = maxIterations;
+        macAmgS_->prm.tol = target;
         std::tie(iters, err) = (*macAmgS_)(A, *macAmgP_, srhs, y);
       } catch (const std::exception &e) {
         macAmgReset();
@@ -2430,8 +2547,7 @@ public:
       nullspace.B = std::move(B);
       const ptrdiff_t n = static_cast<ptrdiff_t>(N);
       macAmgP_ = std::make_unique<MacAmgPrecond>(std::tie(n, ptr, col, sval), prm);
-      typename MacAmgKrylov::params sprm;
-      sprm.tol = 1e-9;
+      typename MacAmgKrylov::params sprm; // tol: set per solve
       sprm.M = 80;
       macAmgS_ = std::make_unique<MacAmgKrylov>(N, sprm);
     } catch (const std::exception &e) {
@@ -2767,7 +2883,8 @@ public:
     const std::size_t n = nodes.size();
     std::vector<T> locNode(n, T(0)), locCorner(macCorners_.size(), T(0)),
         locCornerN(macCorners_.size(), T(0));
-#pragma omp parallel for schedule(static)
+    // dynamic: the bisection is costly only where the stress is high
+#pragma omp parallel for schedule(dynamic, 64)
     for (std::size_t i = 0; i < n; ++i) {
       if (nodes[i].nitride ? !nitride : !oxide)
         continue;
@@ -2844,7 +2961,7 @@ public:
       return ofNitride ? localNitrideViscosity(start, rate)
                        : localViscosity(start, rate);
     };
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(dynamic, 64)
     for (std::size_t k = 0; k < macCorners_.size(); ++k) {
       if (macCornerGas_[k])
         continue;
@@ -2925,8 +3042,9 @@ public:
     if (oxideStressEnd_.size() != n)
       oxideStressEnd_.assign(n, std::array<T, 9>{});
     oxideStressAdvectedValid_ = false;
-    // corner end stresses (the stress the momentum used)
-#pragma omp parallel for schedule(static)
+    // corner end stresses (the stress the momentum used); dynamic: the
+    // costly surface corners are clustered
+#pragma omp parallel for schedule(dynamic, 64)
     for (std::size_t k = 0; k < macCorners_.size(); ++k) {
       unsigned c, e;
       macPairDirs(macCorners_[k].first, c, e);
@@ -2936,7 +3054,7 @@ public:
                     etaRef
               : (macCornerMod_[k] * cornerRate[k] + macCornerMem_[k]) * etaRef;
     }
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(dynamic, 64)
     for (std::size_t i = 0; i < n; ++i) {
       auto &node = nodes[i];
       for (unsigned d = 0; d < D; ++d) {
@@ -3019,6 +3137,11 @@ public:
     // node set version: rebuild the numbering when the nodes changed
     if (macNodesVersion_ != nodesVersion_ || macPid_.size() != nodes.size())
       macBuild();
+    macGhostReset();
+    struct GhostOff { // the kept front velocities end with this solve
+      bool &on;
+      ~GhostOff() { on = false; }
+    } ghostOff{macGhostOn_};
     nitrideStartNode_.clear();
     if (monolithicNitride()) {
       nitrideStartNode_.assign(nodes.size(), std::array<T, 9>{});
@@ -3465,19 +3588,35 @@ public:
     if (ambientInterface == nullptr || diffusionField == nullptr)
       return maxVelocity;
 
-    ConstSparseIterator ambientIt(ambientInterface->getDomain());
-    for (; !ambientIt.isFinished(); ++ambientIt) {
-      if (!ambientIt.isDefined())
-        continue;
+    // Every defined point of the ambient interface, in parallel as in
+    // cacheBoundaryValues (each query uses its own iterators; the max does
+    // not depend on the order).  Far from the Si front a query searches
+    // ~10^3 nodes: on one thread this walk took 1/4 of a 3-D LOCOS run.
+    std::vector<IndexType> points;
+    for (ConstSparseIterator ambientIt(ambientInterface->getDomain());
+         !ambientIt.isFinished(); ++ambientIt)
+      if (ambientIt.isDefined())
+        points.push_back(ambientIt.getStartIndices());
+    if (points.empty())
+      return maxVelocity;
+    diffusionField->getScalarVelocity({T(0), T(0), T(0)}, 0, // a pending
+                                      {T(0), T(0), T(0)}, 0); // solve runs here
+#pragma omp parallel
+    {
+      Vec3D<T> local{0., 0., 0.};
+#pragma omp for schedule(dynamic, 64) nowait
+      for (std::size_t k = 0; k < points.size(); ++k) {
+        Vec3D<T> coordinate{0., 0., 0.};
+        for (unsigned d = 0; d < D; ++d)
+          coordinate[d] = points[k][d] * gridDelta;
 
-      Vec3D<T> coordinate{0., 0., 0.};
-      const auto &index = ambientIt.getStartIndices();
+        const auto velocity = unresolvedAmbientVelocity(coordinate);
+        for (unsigned d = 0; d < D; ++d)
+          local[d] = std::max(local[d], std::abs(velocity[d]));
+      }
+#pragma omp critical
       for (unsigned d = 0; d < D; ++d)
-        coordinate[d] = index[d] * gridDelta;
-
-      const auto velocity = unresolvedAmbientVelocity(coordinate);
-      for (unsigned d = 0; d < D; ++d)
-        maxVelocity[d] = std::max(maxVelocity[d], std::abs(velocity[d]));
+        maxVelocity[d] = std::max(maxVelocity[d], local[d]);
     }
     return maxVelocity;
   }
@@ -3653,17 +3792,79 @@ public:
                                         deviatoricRate[k];
       return logEta - std::log(eta0 * eyringFactor(end, volume));
     };
-    T hi = std::log(eta0);
-    if (residual(hi) <= T(0))
+    const T hi = std::log(eta0);
+    const T rHi = residual(hi);
+    if (rHi <= T(0))
       return eta0; // below the critical stress at eta0
-    T lo = hi + std::log(T(1e-6));
-    if (residual(lo) >= T(0))
+    const T lo = hi + std::log(T(1e-6));
+    const T rLo = residual(lo);
+    if (rLo >= T(0))
       return std::exp(lo);
-    for (int k = 0; k < 60 && hi - lo > T(1e-10); ++k) {
-      const T mid = T(0.5) * (lo + hi);
-      (residual(mid) > T(0) ? hi : lo) = mid;
+    // within 0.5e-10 of a root, as the midpoint of the bisection this
+    // replaced (~40 evaluations; ~8 here)
+    return std::exp(bracketedRoot(residual, lo, rLo, hi, rHi, T(0.5e-10)));
+  }
+
+  // A root of f in [a, b], f(a) and f(b) of opposite signs, within tolerance
+  // (Brent: inverse quadratic and secant steps, a bisection step whenever
+  // they would not shrink the bracket fast enough; the bracket always
+  // holds a sign change).
+  template <class Function>
+  static T bracketedRoot(const Function &f, T a, T fa, T b, T fb,
+                         T tolerance) {
+    T c = b, fc = fb, d = b - a, e = d;
+    for (int iteration = 0; iteration < 100; ++iteration) {
+      if ((fb > T(0) && fc > T(0)) || (fb < T(0) && fc < T(0))) {
+        c = a;
+        fc = fa;
+        d = e = b - a;
+      }
+      if (std::abs(fc) < std::abs(fb)) {
+        a = b;
+        b = c;
+        c = a;
+        fa = fb;
+        fb = fc;
+        fc = fa;
+      }
+      const T tol = T(2) * std::numeric_limits<T>::epsilon() * std::abs(b) +
+                    T(0.5) * tolerance;
+      const T m = T(0.5) * (c - b);
+      if (std::abs(m) <= tol || fb == T(0))
+        return b;
+      if (std::abs(e) >= tol && std::abs(fa) > std::abs(fb)) {
+        const T s = fb / fa;
+        T p, q;
+        if (a == c) {
+          p = T(2) * m * s;
+          q = T(1) - s;
+        } else {
+          const T qa = fa / fc, r = fb / fc;
+          p = s * (T(2) * m * qa * (qa - r) - (b - a) * (r - T(1)));
+          q = (qa - T(1)) * (r - T(1)) * (s - T(1));
+        }
+        if (p > T(0))
+          q = -q;
+        else
+          p = -p;
+        if (T(2) * p <
+            std::min(T(3) * m * q - std::abs(tol * q), std::abs(e * q))) {
+          e = d;
+          d = p / q;
+        } else {
+          d = m;
+          e = m;
+        }
+      } else {
+        d = m;
+        e = m;
+      }
+      a = b;
+      fa = fb;
+      b += std::abs(d) > tol ? d : (m > T(0) ? tol : -tol);
+      fb = f(b);
     }
-    return std::exp(T(0.5) * (lo + hi));
+    return b;
   }
 
   T effectiveStressRelaxationTime() const {

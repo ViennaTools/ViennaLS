@@ -39,7 +39,9 @@
 #include <cmath>
 #include <cstdio>
 #include <exception>
+#include <algorithm>
 #include <memory>
+#include <type_traits>
 #include <new>
 #include <stdexcept>
 #include <string>
@@ -129,13 +131,108 @@ typedef amgcl::preconditioner::schur_pressure_correction<USolver, PSolver>
     MacPrecond;
 typedef amgcl::solver::fgmres<Backend> MacKrylov;
 
+// The system matrix of the 3-D solve on the device, kept between solves. On
+// one node set its pattern rarely changes, and then only the values are
+// copied (AMGCL's copy_matrix built a host CRS and allocated and converted
+// ~10^7 entries on every solve). The product is AMGCL's cuda_matrix one.
+struct MacDeviceMatrix {
+  typedef double value_type;
+  std::size_t nrows = 0, nnz = 0;
+  cusparseHandle_t handle = nullptr;
+  thrust::device_vector<int> ptr, col;
+  thrust::device_vector<double> val;
+  std::shared_ptr<std::remove_pointer<cusparseSpMatDescr_t>::type> desc;
+  mutable thrust::device_vector<char> buf;
+  std::vector<int64_t> hostPtr, hostCol; // the pattern on the device
+
+  void set(int64_t n, const int64_t *p, const int64_t *c, const double *v,
+           cusparseHandle_t h) {
+    const auto rows = static_cast<std::size_t>(n);
+    const auto entries = static_cast<std::size_t>(p[n]);
+    if (desc && rows == nrows && entries == nnz && handle == h &&
+        std::equal(p, p + n + 1, hostPtr.begin()) &&
+        std::equal(c, c + entries, hostCol.begin())) {
+      thrust::copy(v, v + entries, val.begin());
+      return;
+    }
+    desc.reset(); // it points into the arrays replaced below
+    hostPtr.assign(p, p + n + 1);
+    hostCol.assign(c, c + entries);
+    const std::vector<int> ptr32(p, p + n + 1), col32(c, c + entries);
+    ptr.assign(ptr32.begin(), ptr32.end());
+    col.assign(col32.begin(), col32.end());
+    val.assign(v, v + entries);
+    nrows = rows;
+    nnz = entries;
+    handle = h;
+    desc.reset(amgcl::backend::detail::cuda_matrix_description(
+                   nrows, nrows, nnz, ptr, col, val),
+               amgcl::backend::detail::cuda_deleter());
+  }
+
+  void spmv(double alpha, const thrust::device_vector<double> &x, double beta,
+            thrust::device_vector<double> &y) const {
+    using namespace amgcl::backend::detail;
+    std::shared_ptr<std::remove_pointer<cusparseDnVecDescr_t>::type> xdesc(
+        cuda_vector_description(const_cast<thrust::device_vector<double> &>(x)),
+        cuda_deleter());
+    std::shared_ptr<std::remove_pointer<cusparseDnVecDescr_t>::type> ydesc(
+        cuda_vector_description(y), cuda_deleter());
+    std::size_t bufSize = 0;
+    AMGCL_CALL_CUDA(cusparseSpMV_bufferSize(
+        handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, desc.get(),
+        xdesc.get(), &beta, ydesc.get(), cuda_datatype<double>(),
+        CUSPARSE_SPMV_CSR_ALG1, &bufSize));
+    if (buf.size() < bufSize)
+      buf.resize(bufSize);
+    AMGCL_CALL_CUDA(cusparseSpMV(
+        handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, desc.get(),
+        xdesc.get(), &beta, ydesc.get(), cuda_datatype<double>(),
+        CUSPARSE_SPMV_CSR_ALG1, thrust::raw_pointer_cast(buf.data())));
+  }
+};
+
+} // namespace
+
+// AMGCL's iterative solvers apply the system matrix through these two hooks
+// (the same as for its cuda_matrix).
+namespace amgcl {
+namespace backend {
+template <typename Alpha, typename Beta>
+struct spmv_impl<Alpha, MacDeviceMatrix, thrust::device_vector<double>, Beta,
+                 thrust::device_vector<double>> {
+  static void apply(Alpha alpha, const MacDeviceMatrix &A,
+                    const thrust::device_vector<double> &x, Beta beta,
+                    thrust::device_vector<double> &y) {
+    A.spmv(alpha, x, beta, y);
+  }
+};
+template <>
+struct residual_impl<MacDeviceMatrix, thrust::device_vector<double>,
+                     thrust::device_vector<double>,
+                     thrust::device_vector<double>> {
+  static void apply(const thrust::device_vector<double> &rhs,
+                    const MacDeviceMatrix &A,
+                    const thrust::device_vector<double> &x,
+                    thrust::device_vector<double> &r) {
+    thrust::copy(rhs.begin(), rhs.end(), r.begin());
+    A.spmv(-1, x, 1, r);
+  }
+};
+} // namespace backend
+} // namespace amgcl
+
+namespace {
+
 struct MacAmgGpu {
   Backend::params bprm;
   std::unique_ptr<MacPrecond> precond;
   std::unique_ptr<MacKrylov> krylov;
+  MacDeviceMatrix matrix;
   ~MacAmgGpu() {
     krylov.reset();
     precond.reset();
+    matrix.desc.reset();
     if (bprm.cusparse_handle)
       cusparseDestroy(bprm.cusparse_handle);
   }
@@ -237,16 +334,14 @@ int viennalsGpuMacSolve(void *handle, int64_t n, const int64_t *ptr,
     return 0;
   }
   try {
-    auto A = Backend::copy_matrix(
-        std::make_shared<amgcl::backend::crs<double>>(
-            hostMatrix(n, ptr, col, val)),
-        h->bprm);
+    h->matrix.set(n, ptr, col, val, h->bprm.cusparse_handle);
     thrust::device_vector<double> f(rhs, rhs + n), u(x, x + n);
     h->krylov->prm.maxiter = maxIterations;
     h->krylov->prm.tol = tolerance;
     std::size_t iterations = 0;
     double residual = 0.;
-    std::tie(iterations, residual) = (*h->krylov)(*A, *h->precond, f, u);
+    std::tie(iterations, residual) =
+        (*h->krylov)(h->matrix, *h->precond, f, u);
     thrust::copy(u.begin(), u.end(), x);
     *outIterations = static_cast<unsigned>(iterations);
     *outResidual = residual;

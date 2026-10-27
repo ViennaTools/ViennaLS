@@ -345,8 +345,9 @@ linear viscous incompressible oxide has a pressure singularity at sharp concave
 corners that grows as the grid is refined; the stress-dependent viscosity
 bounds it. The viscosity lives where the stress is evaluated: at the grid
 points (normal stress) and on the corners of the staggered grid (shear stress).
-Each solves η = η₀ f(|s_end(η)|) for its current strain rate (bisection in
-log η; unique root), and the viscosity iteration repeats the velocity–pressure
+Each solves η = η₀ f(|s_end(η)|) for its current strain rate (Brent's method in
+log η on [η₀ 10⁻⁶, η₀], to 0.5·10⁻¹⁰; unique root), and the viscosity iteration
+repeats the velocity–pressure
 solve until viscosities and flow agree. The momentum equation carries the full
 ∇·(2ηε̇') with the local viscosity. The viscosity factor η/η₀ is written as
 `OxViscosity`, the pressure (Pa, compression positive) as
@@ -433,7 +434,11 @@ The coupled velocity–pressure system is solved exactly:
 - **2-D**: sparse LU (Eigen `SparseLU`, COLAMD ordering) of the row- and
   column-equilibrated system, with two refinement passes. Ordering and symbolic
   analysis are reused while the node set is unchanged.
-- **3-D**: AMGCL FGMRES(80) to 10⁻⁹, preconditioned by a block-triangular
+- **3-D**: AMGCL FGMRES(80) to 10⁻⁹ (10⁻⁷ inside the stress-coupling
+  iteration of §7, whose pressure and stress only feed the coupling test: 10×
+  below the acceptance, 40 % fewer iterations; on a 3-D LOCOS corner the
+  result moved ~400× less than when the coupling tolerance goes from 2·10⁻² to
+  2·10⁻³), preconditioned by a block-triangular
   Schur-complement pressure correction (one smoothed-aggregation V-cycle with
   ILU0 for the velocities, SPAI0 for the approximate Schur complement),
   warm-started from the previous iterate. The aggregation's near nullspace is
@@ -446,7 +451,9 @@ The coupled velocity–pressure system is solved exactly:
   which changes only the viscosities and the right-hand side: the setup was
   ~15 % of a 3-D LOCOS solve, and the kept preconditioner needs the same
   iterations. A fresh setup follows when a reused solve fails or needs more
-  than twice the iterations of the solve after the last setup (+20).
+  than twice the iterations of the solve after the last setup (+20). On the
+  CPU the preconditioner works in single precision (FGMRES and its residual
+  stay double): the same iterations, 13 % less time on a 3-D LOCOS corner.
   With `GpuMode::Gpu` or `Auto` (`setGpuMode()`) a system of at least 20 000
   unknowns is solved on the GPU: the same solver with AMGCL's CUDA backend
   (ViennaLS_GPU, `gpu/lsOxidationGpu.cu`). AMGCL builds the hierarchy on
