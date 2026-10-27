@@ -17,7 +17,7 @@ ViennaLS is a header-only C++ level set library for high-performance topography 
 - **Level-set operations**: Boolean operations, geometric advection, curvature calculation, normal vectors calculation, visibility calculation, feature detection, 2D<->3D extrusion/slicing, mesh export (VTP/VTU via VTK)
 - **Comparison & analysis**: Chamfer distance (bidirectional surface-to-surface, forward/backward/RMS/max), narrow-band SDF difference, sparse-field SDF difference, volume/area difference, critical dimension extraction
 - **Thermal oxidation**: Coupled Deal-Grove diffusion + incompressible Stokes flow oxide mechanics (Maxwell viscoelasticity, stress-dependent viscosity) on a staggered grid, solved coupled in velocity and pressure (sparse LU in 2D, AMGCL in 3D); in LOCOS mode the Si₃N₄ mask joins the same mechanics solve as a linear-elastic body. See [`docs/OxidationSolver.md`](docs/OxidationSolver.md)
-- **GPU acceleration**: Optional CUDA BiCGSTAB back-end for the oxidation diffusion solve (requires `VIENNALS_USE_GPU=ON`)
+- **GPU acceleration**: Optional CUDA back-end for the oxidation diffusion solve and the 3-D oxidation mechanics solve (requires `VIENNALS_USE_GPU=ON`)
 
 > [!NOTE]  
 > ViennaLS is under heavy development and improved daily. If you do have suggestions or find bugs, please let us know!
@@ -115,7 +115,7 @@ cd ViennaLS
 pip install .
 ```
 
-To build the Python package with **GPU** support for the oxidation diffusion solver, use the install script in the `python/scripts` folder:
+To build the Python package with **GPU** support for the oxidation diffusion and 3-D mechanics solvers, use the install script in the `python/scripts` folder:
 
 ```bash
 git clone https://github.com/ViennaTools/ViennaLS.git

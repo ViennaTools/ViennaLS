@@ -229,6 +229,9 @@ public:
   std::vector<Node> nodes;
 
   OxidationDeformation() = default;
+#ifdef VIENNALS_GPU_BICGSTAB
+  ~OxidationDeformation() { gpu::gpuMacFree(macGpu_); }
+#endif
 
   OxidationDeformation(
       SmartPointer<Domain<T, D>> passedReactionInterface,
@@ -296,6 +299,11 @@ public:
   /// the stress feedback instead of inside every coupling iteration.  The
   /// solve after the coupling has converged runs the full iteration.
   void setCouplingIterate(bool iterate) { couplingIterate_ = iterate; }
+
+  /// GPU for the 3-D velocity-pressure solve (systems of at least
+  /// macGpuMinUnknowns unknowns): Cpu (default), Gpu, or Auto (the CPU when
+  /// the GPU is unavailable). The 2-D sparse LU stays on the CPU.
+  void setGpuMode(GpuMode mode) { gpuMode_ = mode; }
 
   void setOxideSigns(int passedReactionSign, int passedAmbientSign) {
     reactionSign = (passedReactionSign < 0) ? -1 : 1;
@@ -2196,6 +2204,44 @@ public:
   // smoothed-aggregation V-cycle with ILU0 for the velocities, SPAI0 on
   // B diag(A)^-1 G for the pressure), row/column-equilibrated system,
   // warm-started from the previous iterate.
+  typedef amgcl::backend::builtin<double> MacAmgBackend;
+  typedef amgcl::make_solver<
+      amgcl::amg<MacAmgBackend, amgcl::coarsening::smoothed_aggregation,
+                 amgcl::relaxation::ilu0>,
+      amgcl::solver::preonly<MacAmgBackend>>
+      MacAmgUSolver;
+  typedef amgcl::make_solver<
+      amgcl::relaxation::as_preconditioner<MacAmgBackend,
+                                           amgcl::relaxation::spai0>,
+      amgcl::solver::preonly<MacAmgBackend>>
+      MacAmgPSolver;
+  typedef amgcl::preconditioner::schur_pressure_correction<MacAmgUSolver,
+                                                           MacAmgPSolver>
+      MacAmgPrecond;
+  typedef amgcl::solver::fgmres<MacAmgBackend> MacAmgKrylov;
+
+  // The 3-D solve runs on the GPU from this many unknowns (with the GPU
+  // mode). Per solve on a 3-D LOCOS corner, CPU (10 threads) / GPU: 15.6k
+  // unknowns 0.11 / 0.11 s, 59k 0.47 / 0.17 s, 360k 3.9 / 0.40 s; the
+  // setup stays on the host.
+  static constexpr std::size_t macGpuMinUnknowns = 20000;
+  GpuMode gpuMode_ = GpuMode::Cpu;
+  bool macGpuOff_ = false; // Auto mode after the GPU was unavailable
+  void *macGpu_ = nullptr; // GPU setup (ViennaLS_GPU), owned
+
+  // The preconditioner of the last setup and the equilibration it was built
+  // for. The next solve on the same node set (a stress-coupling iteration,
+  // the converged solve, a CFL re-solve) changes only the viscosities and
+  // the right-hand side: it reuses them, which saves the setup (~15 % of a
+  // 3-D LOCOS solve) at the same iterations. A reused solve may take twice
+  // the iterations of the solve after the setup (+20); beyond that, or when
+  // it fails, a fresh setup solves it.
+  std::unique_ptr<MacAmgPrecond> macAmgP_;
+  std::unique_ptr<MacAmgKrylov> macAmgS_;
+  std::size_t macAmgVersion_ = std::numeric_limits<std::size_t>::max();
+  std::vector<double> macAmgRs_, macAmgCs_;
+  std::size_t macAmgSetupIters_ = 0;
+
   bool macAmgSolve(const std::vector<MacLin> &rows, T &backward) {
     const std::size_t N = rows.size();
     std::vector<ptrdiff_t> ptr(N + 1, 0), col;
@@ -2220,17 +2266,38 @@ public:
       ptr[i + 1] = static_cast<ptrdiff_t>(col.size());
       rhs[i] = -static_cast<double>(rows[i].c);
     }
-    std::vector<double> rs(N, 0.), cs(N, 0.);
-    for (std::size_t i = 0; i < N; ++i)
-      for (ptrdiff_t q = ptr[i]; q < ptr[i + 1]; ++q)
-        rs[i] = std::max(rs[i], std::abs(val[q]));
-    for (auto &v : rs)
-      v = v > 0. ? 1. / v : 1.;
-    for (std::size_t i = 0; i < N; ++i)
-      for (ptrdiff_t q = ptr[i]; q < ptr[i + 1]; ++q)
-        cs[col[q]] = std::max(cs[col[q]], std::abs(rs[i] * val[q]));
-    for (auto &v : cs)
-      v = v > 0. ? 1. / v : 1.;
+    if ((macAmgP_ || macGpu_) && macAmgVersion_ == macNodesVersion_ &&
+        macAmgRs_.size() == N &&
+        macAmgSolveWith(ptr, col, val, rhs, false, backward))
+      return true;
+    return macAmgSolveWith(ptr, col, val, rhs, true, backward);
+  }
+
+  // One solve of the assembled system, with a fresh setup or with the kept
+  // preconditioner and equilibration.
+  bool macAmgSolveWith(const std::vector<ptrdiff_t> &ptr,
+                       const std::vector<ptrdiff_t> &col,
+                       const std::vector<double> &val,
+                       const std::vector<double> &rhs, bool fresh,
+                       T &backward) {
+    const std::size_t N = rhs.size();
+    if (fresh) {
+      macAmgReset(); // the old hierarchy goes before the new one is built
+      macAmgRs_.assign(N, 0.);
+      macAmgCs_.assign(N, 0.);
+      auto &rs = macAmgRs_, &cs = macAmgCs_;
+      for (std::size_t i = 0; i < N; ++i)
+        for (ptrdiff_t q = ptr[i]; q < ptr[i + 1]; ++q)
+          rs[i] = std::max(rs[i], std::abs(val[q]));
+      for (auto &v : rs)
+        v = v > 0. ? 1. / v : 1.;
+      for (std::size_t i = 0; i < N; ++i)
+        for (ptrdiff_t q = ptr[i]; q < ptr[i + 1]; ++q)
+          cs[col[q]] = std::max(cs[col[q]], std::abs(rs[i] * val[q]));
+      for (auto &v : cs)
+        v = v > 0. ? 1. / v : 1.;
+    }
+    const auto &rs = macAmgRs_, &cs = macAmgCs_;
     std::vector<double> sval(val.size()), srhs(N), y(N, 0.);
     for (std::size_t i = 0; i < N; ++i) {
       for (ptrdiff_t q = ptr[i]; q < ptr[i + 1]; ++q)
@@ -2239,53 +2306,47 @@ public:
       if (i < macX_.size() && std::isfinite(macX_[i]))
         y[i] = static_cast<double>(macX_[i]) / cs[i];
     }
-    typedef amgcl::backend::builtin<double> Backend;
-    typedef amgcl::make_solver<
-        amgcl::amg<Backend, amgcl::coarsening::smoothed_aggregation,
-                   amgcl::relaxation::ilu0>,
-        amgcl::solver::preonly<Backend>>
-        USolver;
-    typedef amgcl::make_solver<
-        amgcl::relaxation::as_preconditioner<Backend, amgcl::relaxation::spai0>,
-        amgcl::solver::preonly<Backend>>
-        PSolver;
-    typedef amgcl::make_solver<
-        amgcl::preconditioner::schur_pressure_correction<USolver, PSolver>,
-        amgcl::solver::fgmres<Backend>>
-        Solver;
-    typename Solver::params prm;
-    prm.precond.pmask.assign(N, 0);
-    for (std::size_t i = static_cast<std::size_t>(macNVel_); i < N; ++i)
-      prm.precond.pmask[i] = 1;
-    prm.precond.type = 2;
-    prm.precond.approx_schur = true;
-    prm.precond.adjust_p = 2;
-    // Near nullspace of the velocity block: one translation per component
-    // (in the equilibrated unknowns). AMGCL's default, the constant vector,
-    // moves all components of an aggregate together, and the aggregates mix
-    // components: 8x the iterations on 3-D LOCOS.
-    auto &nullspace = prm.precond.usolver.precond.coarsening.nullspace;
-    nullspace.cols = static_cast<int>(D);
-    nullspace.B.assign(static_cast<std::size_t>(macNVel_) * D, 0.);
-    for (std::size_t i = 0; i < nodes.size(); ++i)
-      for (unsigned d = 0; d < D; ++d)
-        for (const std::int64_t id : {macMinusFace_[d][i], macPlusFace_[d][i]})
-          if (id >= 0)
-            nullspace.B[static_cast<std::size_t>(id) * D + d] = 1. / cs[id];
-    prm.solver.tol = 1e-9;
-    prm.solver.maxiter = 3000;
-    prm.solver.M = 80;
     const ptrdiff_t n = static_cast<ptrdiff_t>(N);
     auto A = std::tie(n, ptr, col, sval);
     std::size_t iters = 0;
     double err = 0.;
-    try {
-      Solver solve(A, prm);
-      std::tie(iters, err) = solve(A, srhs, y);
-    } catch (const std::exception &e) {
-      VIENNACORE_LOG_WARNING(std::string("OxidationDeformation: AMGCL failed: ") + e.what());
-      return false;
+    const unsigned maxIterations =
+        fresh ? 3000u : static_cast<unsigned>(2 * macAmgSetupIters_ + 20);
+    if (fresh) {
+      if (!macAmgSetup(ptr, col, sval, cs))
+        return false;
+      macAmgVersion_ = macNodesVersion_;
     }
+#ifdef VIENNALS_GPU_BICGSTAB
+    if (macGpu_) {
+      static_assert(sizeof(ptrdiff_t) == sizeof(std::int64_t));
+      unsigned gpuIters = 0;
+      if (!gpu::gpuMacSolve(macGpu_, n,
+                            reinterpret_cast<const std::int64_t *>(ptr.data()),
+                            reinterpret_cast<const std::int64_t *>(col.data()),
+                            sval.data(), srhs.data(), y.data(), maxIterations,
+                            1e-9, gpuIters, err)) {
+        // a GPU that set up and then fails is a malfunction, not an absence
+        VIENNACORE_LOG_ERROR(
+            std::string("OxidationDeformation: the GPU mechanics solve failed: ") +
+            gpu::gpuGetLastErrorMessage());
+        return false;
+      }
+      iters = gpuIters;
+    } else
+#endif
+    {
+      try {
+        macAmgS_->prm.maxiter = maxIterations;
+        std::tie(iters, err) = (*macAmgS_)(A, *macAmgP_, srhs, y);
+      } catch (const std::exception &e) {
+        macAmgReset();
+        VIENNACORE_LOG_WARNING(std::string("OxidationDeformation: AMGCL failed: ") + e.what());
+        return false;
+      }
+    }
+    if (fresh)
+      macAmgSetupIters_ = iters;
     lastAmgIters_ = static_cast<unsigned>(iters);
     std::vector<double> x(N);
     for (std::size_t i = 0; i < N; ++i)
@@ -2297,8 +2358,9 @@ public:
     // whose data is zero, however good the iterative solution
     backward = static_cast<T>(err);
     if (!(err < 1e-6)) {
-      VIENNACORE_LOG_WARNING("OxidationDeformation: AMGCL did not converge (iters=" +
-                             std::to_string(iters) + ", residual=" + std::to_string(err) + ")");
+      if (fresh)
+        VIENNACORE_LOG_WARNING("OxidationDeformation: AMGCL did not converge (iters=" +
+                               std::to_string(iters) + ", residual=" + std::to_string(err) + ")");
       return false;
     }
     macX_.assign(N, T(0));
@@ -2307,6 +2369,78 @@ public:
     return true;
   }
   unsigned lastAmgIters_ = 0;
+
+  void macAmgReset() {
+    macAmgP_.reset();
+    macAmgS_.reset();
+#ifdef VIENNALS_GPU_BICGSTAB
+    gpu::gpuMacFree(macGpu_);
+#endif
+    macGpu_ = nullptr;
+  }
+
+  // A fresh preconditioner for the equilibrated system: on the GPU with the
+  // GPU mode and at least macGpuMinUnknowns unknowns, else on the CPU.
+  bool macAmgSetup(const std::vector<ptrdiff_t> &ptr,
+                   const std::vector<ptrdiff_t> &col,
+                   const std::vector<double> &sval,
+                   const std::vector<double> &cs) {
+    const std::size_t N = cs.size();
+    // Near nullspace of the velocity block: one translation per component
+    // (in the equilibrated unknowns). AMGCL's default, the constant vector,
+    // moves all components of an aggregate together, and the aggregates mix
+    // components: 8x the iterations on 3-D LOCOS.
+    std::vector<double> B(static_cast<std::size_t>(macNVel_) * D, 0.);
+    for (std::size_t i = 0; i < nodes.size(); ++i)
+      for (unsigned d = 0; d < D; ++d)
+        for (const std::int64_t id : {macMinusFace_[d][i], macPlusFace_[d][i]})
+          if (id >= 0)
+            B[static_cast<std::size_t>(id) * D + d] = 1. / cs[id];
+#ifdef VIENNALS_GPU_BICGSTAB
+    if (gpuMode_ != GpuMode::Cpu && !macGpuOff_ && N >= macGpuMinUnknowns) {
+      macGpu_ = gpu::gpuMacSetup(
+          static_cast<std::int64_t>(N),
+          reinterpret_cast<const std::int64_t *>(ptr.data()),
+          reinterpret_cast<const std::int64_t *>(col.data()), sval.data(),
+          static_cast<std::int64_t>(macNVel_), static_cast<int>(D), B.data());
+      if (macGpu_)
+        return true;
+      const std::string message =
+          std::string("OxidationDeformation: GPU mode was selected, but the GPU "
+                      "mechanics setup failed: ") +
+          gpu::gpuGetLastErrorMessage();
+      if (gpuMode_ == GpuMode::Gpu) {
+        VIENNACORE_LOG_ERROR(message);
+        return false;
+      }
+      VIENNACORE_LOG_WARNING(message + " Falling back to the CPU solver.");
+      macGpuOff_ = true;
+    }
+#endif
+    try {
+      typename MacAmgPrecond::params prm;
+      prm.pmask.assign(N, 0);
+      for (std::size_t i = static_cast<std::size_t>(macNVel_); i < N; ++i)
+        prm.pmask[i] = 1;
+      prm.type = 2;
+      prm.approx_schur = true;
+      prm.adjust_p = 2;
+      auto &nullspace = prm.usolver.precond.coarsening.nullspace;
+      nullspace.cols = static_cast<int>(D);
+      nullspace.B = std::move(B);
+      const ptrdiff_t n = static_cast<ptrdiff_t>(N);
+      macAmgP_ = std::make_unique<MacAmgPrecond>(std::tie(n, ptr, col, sval), prm);
+      typename MacAmgKrylov::params sprm;
+      sprm.tol = 1e-9;
+      sprm.M = 80;
+      macAmgS_ = std::make_unique<MacAmgKrylov>(N, sprm);
+    } catch (const std::exception &e) {
+      macAmgReset();
+      VIENNACORE_LOG_WARNING(std::string("OxidationDeformation: AMGCL failed: ") + e.what());
+      return false;
+    }
+    return true;
+  }
 
   std::unique_ptr<Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>> macLU_;
   std::size_t macLUVersion_ = std::numeric_limits<std::size_t>::max();

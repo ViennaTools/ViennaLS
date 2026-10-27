@@ -9,7 +9,7 @@ from viennals import d2
 import viennals.d2
 from viennals import d3
 import viennals.d3
-__all__: list[str] = ['BooleanOperationEnum', 'BoundaryConditionEnum', 'Cpu', 'CurvatureEnum', 'Extrude', 'FeatureDetectionEnum', 'FileFormatEnum', 'Gpu', 'GpuMode', 'GpuPreconditioner', 'ILU0', 'IntegrationSchemeEnum', 'Jacobi', 'LOCOSConservationDiagnostics', 'LogLevel', 'Logger', 'MaterialMap', 'Mesh', 'NormalCalculationMethodEnum', 'OxidationCouplingParameters', 'OxidationDeformationParameters', 'OxidationMaskParameters', 'OxidationParameters', 'OxidationPresets', 'PointData', 'Slice', 'SpatialSchemeEnum', 'TemporalSchemeEnum', 'TransformEnum', 'TransformMesh', 'VTKReader', 'VTKRenderWindow', 'VTKWriter', 'VelocityField', 'VoidTopSurfaceEnum', 'd2', 'd3', 'setNumThreads', 'version']
+__all__: list[str] = ['BooleanOperationEnum', 'BoundaryConditionEnum', 'Cpu', 'CurvatureEnum', 'Extrude', 'FeatureDetectionEnum', 'FileFormatEnum', 'Gpu', 'GpuMode', 'IntegrationSchemeEnum', 'LOCOSConservationDiagnostics', 'LogLevel', 'Logger', 'MaterialMap', 'Mesh', 'NormalCalculationMethodEnum', 'OxidationCouplingParameters', 'OxidationDeformationParameters', 'OxidationMaskParameters', 'OxidationParameters', 'OxidationPresets', 'PointData', 'Slice', 'SpatialSchemeEnum', 'TemporalSchemeEnum', 'TransformEnum', 'TransformMesh', 'VTKReader', 'VTKRenderWindow', 'VTKWriter', 'VelocityField', 'VoidTopSurfaceEnum', 'd2', 'd3', 'setNumThreads', 'version']
 class BooleanOperationEnum(enum.IntEnum):
     INTERSECT: typing.ClassVar[BooleanOperationEnum]  # value = <BooleanOperationEnum.INTERSECT: 0>
     INVERT: typing.ClassVar[BooleanOperationEnum]  # value = <BooleanOperationEnum.INVERT: 3>
@@ -115,43 +115,6 @@ class GpuMode:
     Cpu: typing.ClassVar[GpuMode]  # value = <GpuMode.Cpu: 0>
     Gpu: typing.ClassVar[GpuMode]  # value = <GpuMode.Gpu: 1>
     __members__: typing.ClassVar[dict[str, GpuMode]]  # value = {'Cpu': <GpuMode.Cpu: 0>, 'Gpu': <GpuMode.Gpu: 1>}
-    def __eq__(self, other: typing.Any) -> bool:
-        ...
-    def __getstate__(self) -> int:
-        ...
-    def __hash__(self) -> int:
-        ...
-    def __index__(self) -> int:
-        ...
-    def __init__(self, value: typing.SupportsInt | typing.SupportsIndex) -> None:
-        ...
-    def __int__(self) -> int:
-        ...
-    def __ne__(self, other: typing.Any) -> bool:
-        ...
-    def __repr__(self) -> str:
-        ...
-    def __setstate__(self, state: typing.SupportsInt | typing.SupportsIndex) -> None:
-        ...
-    def __str__(self) -> str:
-        ...
-    @property
-    def name(self) -> str:
-        ...
-    @property
-    def value(self) -> int:
-        ...
-class GpuPreconditioner:
-    """
-    Members:
-    
-      Jacobi
-    
-      ILU0
-    """
-    ILU0: typing.ClassVar[GpuPreconditioner]  # value = <GpuPreconditioner.ILU0: 1>
-    Jacobi: typing.ClassVar[GpuPreconditioner]  # value = <GpuPreconditioner.Jacobi: 0>
-    __members__: typing.ClassVar[dict[str, GpuPreconditioner]]  # value = {'Jacobi': <GpuPreconditioner.Jacobi: 0>, 'ILU0': <GpuPreconditioner.ILU0: 1>}
     def __eq__(self, other: typing.Any) -> bool:
         ...
     def __getstate__(self) -> int:
@@ -925,8 +888,6 @@ def setNumThreads(arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
     ...
 Cpu: GpuMode  # value = <GpuMode.Cpu: 0>
 Gpu: GpuMode  # value = <GpuMode.Gpu: 1>
-ILU0: GpuPreconditioner  # value = <GpuPreconditioner.ILU0: 1>
-Jacobi: GpuPreconditioner  # value = <GpuPreconditioner.Jacobi: 0>
 __version__: str = '5.8.5'
 version: str = '5.8.5'
 IntegrationSchemeEnum = SpatialSchemeEnum

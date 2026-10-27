@@ -98,11 +98,6 @@ inline void bindOxidationSharedTypes(py::module &module) {
       .value("Auto", GpuMode::Auto)
       .export_values();
 
-  py::enum_<GpuPreconditioner>(module, "GpuPreconditioner", py::module_local())
-      .value("Jacobi", GpuPreconditioner::Jacobi)
-      .value("ILU0", GpuPreconditioner::ILU0)
-      .export_values();
-
   py::class_<OxidationParameters>(module, "OxidationParameters",
                                   py::module_local())
       .def(py::init<>())
@@ -606,8 +601,6 @@ template <int D> void bindApi(py::module &module) {
       .def("setSpatialScheme", &Oxidation<T, D>::setSpatialScheme)
       .def("setTemporalScheme", &Oxidation<T, D>::setTemporalScheme)
       .def("setGpuMode", &Oxidation<T, D>::setGpuMode, py::arg("mode"))
-      .def("setGpuPreconditioner", &Oxidation<T, D>::setGpuPreconditioner,
-           py::arg("preconditioner"))
       .def(
           "setSolveBounds",
           [](Oxidation<T, D> &model,

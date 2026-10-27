@@ -17,7 +17,6 @@ from viennals._core import Extrude
 from viennals._core import FeatureDetectionEnum
 from viennals._core import FileFormatEnum
 from viennals._core import GpuMode
-from viennals._core import GpuPreconditioner
 from viennals._core import LOCOSConservationDiagnostics
 from viennals._core import LogLevel
 from viennals._core import Logger
@@ -98,7 +97,7 @@ from viennals.d2 import hrleGrid
 from . import _core
 from . import d2
 from . import d3
-__all__: list[str] = ['Advect', 'BooleanOperation', 'BooleanOperationEnum', 'BoundaryConditionEnum', 'Box', 'BoxDistribution', 'CalculateCurvatures', 'CalculateNormalVectors', 'CalculateVisibilities', 'Check', 'CompareArea', 'CompareChamfer', 'CompareCriticalDimensions', 'CompareNarrowBand', 'CompareSparseField', 'CompareVolume', 'ConvexHull', 'Cpu', 'CurvatureEnum', 'CustomSphereDistribution', 'Cylinder', 'DetectFeatures', 'Domain', 'Expand', 'Extrude', 'FeatureDetectionEnum', 'FileFormatEnum', 'FinalizeStencilLocalLaxFriedrichs', 'FromMesh', 'FromSurfaceMesh', 'FromVolumeMesh', 'GeometricAdvect', 'GeometricAdvectDistribution', 'Gpu', 'GpuMode', 'GpuPreconditioner', 'ILU0', 'IntegrationSchemeEnum', 'Jacobi', 'LOCOSConservationDiagnostics', 'LogLevel', 'Logger', 'MakeGeometry', 'MarkVoidPoints', 'MaterialMap', 'Mesh', 'NormalCalculationMethodEnum', 'Oxidation', 'OxidationCouplingParameters', 'OxidationDeformation', 'OxidationDeformationParameters', 'OxidationDiffusion', 'OxidationMaskParameters', 'OxidationModel', 'OxidationParameters', 'OxidationPresets', 'PROXY_DIM', 'Plane', 'PointCloud', 'PointData', 'PrepareStencilLocalLaxFriedrichs', 'Prune', 'ReactionBoundarySample', 'Reader', 'Reduce', 'RemoveStrayPoints', 'Slice', 'SpatialSchemeEnum', 'Sphere', 'SphereDistribution', 'StencilLocalLaxFriedrichsScalar', 'TemporalSchemeEnum', 'ToDiskMesh', 'ToHullMesh', 'ToMesh', 'ToMultiSurfaceMesh', 'ToSurfaceMesh', 'ToVoxelMesh', 'TransformEnum', 'TransformMesh', 'VTKReader', 'VTKRenderWindow', 'VTKWriter', 'VelocityField', 'VoidTopSurfaceEnum', 'WriteVisualizationMesh', 'Writer', 'computeLOCOSOpenWindowConservation', 'd2', 'd3', 'getDimension', 'hrleGrid', 'setDimension', 'setNumThreads', 'version']
+__all__: list[str] = ['Advect', 'BooleanOperation', 'BooleanOperationEnum', 'BoundaryConditionEnum', 'Box', 'BoxDistribution', 'CalculateCurvatures', 'CalculateNormalVectors', 'CalculateVisibilities', 'Check', 'CompareArea', 'CompareChamfer', 'CompareCriticalDimensions', 'CompareNarrowBand', 'CompareSparseField', 'CompareVolume', 'ConvexHull', 'Cpu', 'CurvatureEnum', 'CustomSphereDistribution', 'Cylinder', 'DetectFeatures', 'Domain', 'Expand', 'Extrude', 'FeatureDetectionEnum', 'FileFormatEnum', 'FinalizeStencilLocalLaxFriedrichs', 'FromMesh', 'FromSurfaceMesh', 'FromVolumeMesh', 'GeometricAdvect', 'GeometricAdvectDistribution', 'Gpu', 'GpuMode', 'IntegrationSchemeEnum', 'LOCOSConservationDiagnostics', 'LogLevel', 'Logger', 'MakeGeometry', 'MarkVoidPoints', 'MaterialMap', 'Mesh', 'NormalCalculationMethodEnum', 'Oxidation', 'OxidationCouplingParameters', 'OxidationDeformation', 'OxidationDeformationParameters', 'OxidationDiffusion', 'OxidationMaskParameters', 'OxidationModel', 'OxidationParameters', 'OxidationPresets', 'PROXY_DIM', 'Plane', 'PointCloud', 'PointData', 'PrepareStencilLocalLaxFriedrichs', 'Prune', 'ReactionBoundarySample', 'Reader', 'Reduce', 'RemoveStrayPoints', 'Slice', 'SpatialSchemeEnum', 'Sphere', 'SphereDistribution', 'StencilLocalLaxFriedrichsScalar', 'TemporalSchemeEnum', 'ToDiskMesh', 'ToHullMesh', 'ToMesh', 'ToMultiSurfaceMesh', 'ToSurfaceMesh', 'ToVoxelMesh', 'TransformEnum', 'TransformMesh', 'VTKReader', 'VTKRenderWindow', 'VTKWriter', 'VelocityField', 'VoidTopSurfaceEnum', 'WriteVisualizationMesh', 'Writer', 'computeLOCOSOpenWindowConservation', 'd2', 'd3', 'getDimension', 'hrleGrid', 'setDimension', 'setNumThreads', 'version']
 def __dir__():
     ...
 def __getattr__(name):
@@ -127,8 +126,6 @@ def setDimension(d: int):
     """
 Cpu: _core.GpuMode  # value = <GpuMode.Cpu: 0>
 Gpu: _core.GpuMode  # value = <GpuMode.Gpu: 1>
-ILU0: _core.GpuPreconditioner  # value = <GpuPreconditioner.ILU0: 1>
-Jacobi: _core.GpuPreconditioner  # value = <GpuPreconditioner.Jacobi: 0>
 PROXY_DIM: int = 2
 _SHARED_OXIDATION_TYPES: tuple = ('OxidationParameters', 'OxidationPresets', 'OxidationDeformationParameters', 'OxidationMaskParameters', 'OxidationCouplingParameters')
 __version__: str = '5.8.5'

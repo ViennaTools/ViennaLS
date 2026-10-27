@@ -246,10 +246,13 @@ on it), and a dry Kao pillar whose surface passed through grid points stopped at
 initial guess (no oxidant in the oxide). The former Jacobi-preconditioned BiCGSTAB broke
 down on LOCOS bird's beaks (the pressure-dependent D spans five decades there and the
 cut-cell rows make the matrix strongly non-symmetric) after thousands of iterations;
-AMG takes 3–4 on those systems. An optional GPU back-end
-(`lsOxidationBiCGSTABInterface.hpp`, BiCGSTAB with a Jacobi or ILU0 preconditioner)
-offloads the solve to CUDA when `GpuMode::Gpu` is selected via `setGpuMode()` and a CUDA
-device is available.
+AMG takes 3–4 on those systems. With `GpuMode::Gpu` or `Auto` (`setGpuMode()`) a system
+of at least 20 000 nodes is solved on the GPU by the same solver with AMGCL's CUDA backend
+(ViennaLS_GPU, `gpu/lsOxidationGpu.cu`): the same CSR system, parameters, stopping test and
+acceptance. The hierarchy is built on the host, so the gain is modest (3-D LOCOS corner,
+69k nodes: 46 vs 66 ms per solve, 5 iterations on both; break-even near 10k nodes). The
+former GPU solver, a Jacobi- or ILU0-preconditioned BiCGSTAB, was the method that broke
+down on the CPU.
 
 The Si surface velocity driven by diffusion is:
 
@@ -437,7 +440,21 @@ The coupled velocity–pressure system is solved exactly:
   one translation per velocity component: with AMGCL's default, the constant
   vector, an aggregate's components move together, and 3-D LOCOS needed about
   8× the iterations. A direct solve does not scale in 3-D; in 2-D the LU is
-  about 2× faster than AMGCL on the stiff-nitride LOCOS stack.
+  about 2× faster than AMGCL on the stiff-nitride LOCOS stack. The
+  preconditioner is kept for the next solve on the same node set (a
+  stress-coupling iteration of §7, the converged solve, a CFL re-solve),
+  which changes only the viscosities and the right-hand side: the setup was
+  ~15 % of a 3-D LOCOS solve, and the kept preconditioner needs the same
+  iterations. A fresh setup follows when a reused solve fails or needs more
+  than twice the iterations of the solve after the last setup (+20).
+  With `GpuMode::Gpu` or `Auto` (`setGpuMode()`) a system of at least 20 000
+  unknowns is solved on the GPU: the same solver with AMGCL's CUDA backend
+  (ViennaLS_GPU, `gpu/lsOxidationGpu.cu`). AMGCL builds the hierarchy on
+  the host and moves it to the device, where the iterations run about 10x
+  faster on a 3-D LOCOS corner of 360k unknowns (0.40 vs 3.9 s per solve,
+  10 CPU threads; break-even near 15k unknowns). ILU0 is needed on the GPU
+  too: SPAI0, damped Jacobi and Chebyshev velocity smoothers do not
+  converge on the LOCOS stack.
 
 A closed oxide (no gas contact and no nitride) pins the pressure to
 `ambientPressure` at its first grid point.
@@ -459,8 +476,8 @@ iterations, the continuity residual (Σ|∇·v| h^D over the oxide grid points,
 relative to the oxide volume created per unit time at the Si/SiO₂ interface),
 |∇·v|, the net volume rate and the pressure range.
 
-The mechanics runs on the CPU (OpenMP assembly); `GpuMode` applies to the
-diffusion solve (§5).
+The mechanics assembly runs on the CPU (OpenMP); `GpuMode` applies to the
+diffusion solve (§5) and to the 3-D linear solve (§6.4).
 
 ---
 
@@ -686,8 +703,9 @@ derivatives, forward Euler for time (controllable via `setSpatialScheme` /
 | `lsOxidationSolverBase.hpp` | Cartesian grid: node lookup, bounds, `crosses()`, `isInsideOxide()` |
 | `lsOxidationDiffusion.hpp` | Diffusion PDE, AMG-preconditioned BiCGSTAB solve (AMGCL), Si surface velocity |
 | `lsOxidationDeformation.hpp` | Maxwell Stokes flow on a staggered grid, coupled velocity–pressure solve (Eigen sparse LU in 2-D, AMGCL in 3-D), monolithic nitride, oxide/nitride velocities |
-| `lsOxidationBiCGSTABInterface.hpp` | C++ (g++) interface to GPU BiCGSTAB (diffusion); safe for .cpp inclusion |
-| `lsOxidationBiCGSTAB.cuh` | GPU BiCGSTAB kernels (`solveBiCGSTABInPlace`); nvcc-only |
+| `lsOxidationGpuInterface.hpp` | C++ (g++) interface to ViennaLS_GPU (diffusion and 3-D mechanics solves); safe for .cpp inclusion |
+| `lsOxidationGpuAbi.hpp` | C ABI of ViennaLS_GPU |
+| `gpu/lsOxidationGpu.cu` | The GPU solves with AMGCL's CUDA backend; nvcc-only |
 | `lsOxidationMask.hpp` | Nitride parameters; barrier-only mask carry |
 | `lsOxidationModel.hpp` | Pressure–concentration coupling loop (Aitken Δ²) |
 | `lsOxidation.hpp` | Per-step orchestrator: CFL stepping, advection, interior fill |

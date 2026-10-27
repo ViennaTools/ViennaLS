@@ -412,7 +412,6 @@ template <class T, int D> class Oxidation {
   T lastMaxVelocity_ = T(0);
 
   GpuMode gpuMode_ = GpuMode::Cpu;
-  GpuPreconditioner gpuPreconditioner_ = GpuPreconditioner::Jacobi;
   std::unordered_map<std::size_t, T> concentrationCache_;
   // Stress feedback carried between solves (see
   // OxidationDiffusion::setFeedbackCache).
@@ -442,9 +441,6 @@ public:
   }
 
   void setGpuMode(GpuMode mode) { gpuMode_ = mode; }
-  void setGpuPreconditioner(GpuPreconditioner preconditioner) {
-    gpuPreconditioner_ = preconditioner;
-  }
 
   void setSiInterface(SmartPointer<Domain<T, D>> si) { siInterface = si; }
   void setAmbientInterface(SmartPointer<Domain<T, D>> ambient) {
@@ -590,13 +586,13 @@ private:
       diffusionField->setConcentrationCache(baseConcentrationCache);
       diffusionField->setFeedbackCache(basePressureCache, baseStressCache);
       diffusionField->setGpuMode(gpuMode_);
-      diffusionField->setGpuPreconditioner(gpuPreconditioner_);
       if (hasMask)
         diffusionField->setMaskInterface(maskInterface, maskInteriorSign);
 
       deformationField = OxidationDeformation<T, D>::New(
           siInterface, ambientInterface, diffusionField, oxidationParams,
           stepDeformationParams);
+      deformationField->setGpuMode(gpuMode_);
       // Barrier-only: the mask is withheld from the mechanics so the oxide
       // sees a free surface and expands outward.
       if (hasMask && !maskBarrierOnly_)

@@ -11,7 +11,7 @@ project(
 option(VIENNALS_USE_VTK "Build with VTK file support" ON)
 option(VIENNALS_VTK_RENDERING "Build with VTK rendering support" ON)
 
-option(VIENNALS_USE_GPU "Enable GPU-accelerated BiCGSTAB linear solver via CUDA" OFF)
+option(VIENNALS_USE_GPU "Enable the CUDA linear solves of the oxidation solvers" OFF)
 
 option(VIENNALS_PRECOMPILE_HEADERS "Build template specialisations for shorter compile times" OFF)
 option(VIENNALS_STATIC_BUILD "Build dependencies as static libraries" OFF)
@@ -155,19 +155,19 @@ if(VIENNALS_USE_GPU)
   if(NOT TARGET CUDA::cusparse)
     message(
       WARNING
-        "[ViennaLS] cuSPARSE not found in CUDA ${CUDAToolkit_VERSION}; disabling GPU BiCGSTAB solver."
+        "[ViennaLS] cuSPARSE not found in CUDA ${CUDAToolkit_VERSION}; disabling the GPU solvers."
     )
   else()
-    # Compile the CUDA kernels into a SHARED library so that consuming .cpp
-    # files (compiled by g++) never see __global__ / <<< >>> syntax, and — just
-    # as importantly — so that this is the *only* binary linking CUDA.
+    # Compile the CUDA code into a SHARED library so that consuming .cpp files
+    # (compiled by g++) never see it, and — just as importantly — so that this
+    # is the *only* binary linking CUDA.
     #
     # It is deliberately not linked into ViennaLS. ViennaLS opens it lazily with
-    # dlopen() at first use (see lsOxidationBiCGSTABInterface.hpp). Linking it
+    # dlopen() at first use (see lsOxidationGpuInterface.hpp). Linking it
     # would put DT_NEEDED entries for libcudart/libcusparse onto every consumer,
     # and the dynamic loader would then refuse to load ViennaLS at all on a
     # machine with no CUDA runtime — which is what broke the 5.8.3 PyPI wheel.
-    add_library(ViennaLS_GPU SHARED ${PROJECT_SOURCE_DIR}/gpu/lsOxidationBiCGSTABKernels.cu)
+    add_library(ViennaLS_GPU SHARED ${PROJECT_SOURCE_DIR}/gpu/lsOxidationGpu.cu)
 
     target_compile_definitions(ViennaLS_GPU PRIVATE VIENNALS_GPU_BICGSTAB=1)
 
@@ -202,7 +202,7 @@ if(VIENNALS_USE_GPU)
     # Expose only the define to downstream targets — never the GPU library and
     # never the CUDA include dirs. The dispatch layer needs nothing from the
     # CUDA headers; it talks to ViennaLS_GPU through the plain C ABI in
-    # lsOxidationBiCGSTABAbi.hpp. Consumers do need the dl functions.
+    # lsOxidationGpuAbi.hpp. Consumers do need the dl functions.
     target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNALS_GPU_BICGSTAB=1)
     target_link_libraries(${PROJECT_NAME} INTERFACE ${CMAKE_DL_LIBS})
 
@@ -216,7 +216,7 @@ if(VIENNALS_USE_GPU)
         RUNTIME DESTINATION bin)
     endif()
 
-    message(STATUS "[ViennaLS] GPU BiCGSTAB solver enabled (CUDA ${CUDAToolkit_VERSION}, "
+    message(STATUS "[ViennaLS] GPU solvers enabled (CUDA ${CUDAToolkit_VERSION}, "
                    "loaded at runtime)")
   endif()
 endif()
@@ -284,6 +284,23 @@ target_include_directories(
   ${PROJECT_NAME} SYSTEM
   INTERFACE $<BUILD_INTERFACE:${Eigen3_SOURCE_DIR}> $<BUILD_INTERFACE:${amgcl_SOURCE_DIR}>
             $<INSTALL_INTERFACE:include/viennals-${PROJECT_VERSION}/external>)
+
+# The GPU library (gpu/lsOxidationGpu.cu) uses AMGCL's CUDA backend, which
+# builds the AMG hierarchies on the host: OpenMP. The flag goes to nvcc's host
+# compiler, which need not be CMAKE_CXX_COMPILER (clang's -fopenmp=libomp
+# breaks a gcc host).
+if(TARGET ViennaLS_GPU)
+  find_package(OpenMP REQUIRED)
+  if(MSVC)
+    set(_VIENNALS_GPU_OPENMP_FLAG /openmp)
+  else()
+    set(_VIENNALS_GPU_OPENMP_FLAG -fopenmp)
+  endif()
+  target_include_directories(ViennaLS_GPU SYSTEM PRIVATE ${amgcl_SOURCE_DIR})
+  target_compile_options(
+    ViennaLS_GPU PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=${_VIENNALS_GPU_OPENMP_FLAG}>)
+  target_link_libraries(ViennaLS_GPU PRIVATE OpenMP::OpenMP_CXX)
+endif()
 
 if(VIENNALS_USE_VTK AND VIENNALS_VTK_PYTHON_LIBS)
   import_vtk_python()
