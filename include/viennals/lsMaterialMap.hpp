@@ -45,6 +45,9 @@ public:
   void setMaterialId(const std::size_t index, const int materialId) {
     if (index >= materialMap.size()) {
       materialMap.resize(index + 1, -1); // Initialize new elements with -1
+    } else {
+      auto oldMaterialId = materialMap[index];
+      materials.erase(oldMaterialId); // Remove old material ID if it exists
     }
     materialMap[index] = materialId;
     materials.insert(materialId);

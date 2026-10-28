@@ -90,9 +90,6 @@ This will install the necessary headers and CMake files to the specified path. I
 
 In order to install ViennaLS without VTK, run:
 ```bash
-git clone https://github.com/ViennaTools/ViennaLS.git
-cd ViennaLS
-
 cmake -B build -D CMAKE_INSTALL_PREFIX=/path/to/your/custom/install/ -D VIENNALS_USE_VTK=OFF
 cmake --install build
 ```
@@ -152,9 +149,6 @@ ViennaLS uses CTest to run its tests.
 In order to check whether ViennaLS runs without issues on your system, you can run:
 
 ```bash
-git clone https://github.com/ViennaTools/ViennaLS.git
-cd ViennaLS
-
 cmake -B build -DVIENNALS_BUILD_TESTS=ON
 cmake --build build
 ctest -E "Benchmark|Performance" --test-dir build
@@ -175,7 +169,9 @@ We recommend using [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) to consum
 
 * Installation with CPM
   ```cmake
-  CPMAddPackage("gh:viennatools/viennals@5.8.5")
+  CPMAddPackage("gh:viennatools/viennals@5.9.0")
+
+  target_link_libraries(${PROJECT_NAME} PUBLIC ViennaTools::ViennaLS)
   ```
 
 * With a local installation
@@ -215,10 +211,6 @@ cmake --build build --target format
 ```
 
 ## Authors
-
-Current contributors: Tobias Reiter, Roman Kostal, Lado Filipovic
-
-Founder and initial developer: Otmar Ertl
 
 Contact us via: viennatools@iue.tuwien.ac.at
 

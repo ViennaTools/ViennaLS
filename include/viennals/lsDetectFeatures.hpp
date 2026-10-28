@@ -94,12 +94,8 @@ private:
     typename Domain<T, D>::DomainType &domain = levelSet->getDomain();
     std::vector<std::vector<T>> flagsReserve(levelSet->getNumberOfSegments());
 
-#pragma omp parallel num_threads((levelSet)->getNumberOfSegments())
-    {
-      int p = 0;
-#ifdef _OPENMP
-      p = omp_get_thread_num();
-#endif
+#pragma omp parallel for
+    for (unsigned p = 0; p < levelSet->getNumberOfSegments(); ++p) {
 
       auto &flagsSegment = flagsReserve[p];
       flagsSegment.reserve(
@@ -169,12 +165,8 @@ private:
     std::vector<std::vector<T>> flagsReserve(levelSet->getNumberOfSegments());
 
     // Compare angles between normal vectors
-#pragma omp parallel num_threads((levelSet)->getNumberOfSegments())
-    {
-      int p = 0;
-#ifdef _OPENMP
-      p = omp_get_thread_num();
-#endif
+#pragma omp parallel for
+    for (unsigned p = 0; p < levelSet->getNumberOfSegments(); ++p) {
 
       Vec3D<T> zeroVector{};
 

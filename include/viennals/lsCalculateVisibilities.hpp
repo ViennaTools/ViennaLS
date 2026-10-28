@@ -65,12 +65,8 @@ public:
       }
       //****************************
 
-#pragma omp parallel num_threads(levelSet->getNumberOfSegments())
-      {
-        int p = 0;
-#ifdef _OPENMP
-        p = omp_get_thread_num();
-#endif
+#pragma omp parallel for
+      for (unsigned p = 0; p < domain.getNumberOfSegments(); ++p) {
 
         const viennahrle::Index<D> startVector =
             (p == 0) ? grid.getMinGridPoint() : domain.getSegmentation()[p - 1];

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaLS
   LANGUAGES CXX
-  VERSION 5.8.5)
+  VERSION 5.9.0)
 
 # --------------------------------------------------------------------------------------------------------
 # Library options
@@ -562,6 +562,11 @@ endif()
 install(DIRECTORY "${Eigen3_SOURCE_DIR}/Eigen" "${amgcl_SOURCE_DIR}/amgcl"
         DESTINATION include/viennals-${PROJECT_VERSION}/external)
 
+set(VIENNALS_DEPENDENCIES "ViennaHRLE;ViennaCore")
+if(VIENNALS_USE_VTK)
+  list(APPEND VIENNALS_DEPENDENCIES "VTK")
+endif()
+
 packageProject(
   NAME ${PROJECT_NAME} NAMESPACE ViennaTools
   VERSION ${PROJECT_VERSION}
@@ -569,4 +574,4 @@ packageProject(
   INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include/viennals
   INCLUDE_DESTINATION include/viennals-${PROJECT_VERSION}
   COMPATIBILITY SameMajorVersion
-  DEPENDENCIES "VTK;ViennaHRLE;ViennaCore")
+  DEPENDENCIES ${VIENNALS_DEPENDENCIES})

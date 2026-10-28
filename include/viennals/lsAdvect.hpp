@@ -98,13 +98,10 @@ template <class T, int D> class Advect {
 
     VectorType<T, D> finalAlphas{};
 
-#pragma omp parallel num_threads((levelSets.back())->getNumberOfSegments())
-    {
+#pragma omp parallel for
+    for (unsigned p = 0; p < levelSets.back()->getNumberOfSegments(); ++p) {
       VectorType<T, D> localAlphas{};
-      int p = 0;
-#ifdef _OPENMP
-      p = omp_get_thread_num();
-#endif
+
       viennahrle::Index<D> startVector =
           (p == 0) ? grid.getMinGridPoint()
                    : topDomain.getSegmentation()[p - 1];
@@ -274,12 +271,8 @@ template <class T, int D> class Advect {
     }
 #endif
 
-#pragma omp parallel num_threads(newDomain.getNumberOfSegments())
-    {
-      int p = 0;
-#ifdef _OPENMP
-      p = omp_get_thread_num();
-#endif
+#pragma omp parallel for
+    for (unsigned p = 0; p < newDomain.getNumberOfSegments(); ++p) {
       auto &domainSegment = newDomain.getDomainSegment(p);
 
       viennahrle::Index<D> startVector =
@@ -287,7 +280,7 @@ template <class T, int D> class Advect {
                    : newDomain.getSegmentation()[p - 1];
 
       viennahrle::Index<D> endVector =
-          (p != static_cast<int>(newDomain.getNumberOfSegments() - 1))
+          (p != newDomain.getNumberOfSegments() - 1)
               ? newDomain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
@@ -461,18 +454,15 @@ template <class T, int D> class Advect {
 
     storedRates.resize(topDomain.getNumberOfSegments());
 
-#pragma omp parallel num_threads(topDomain.getNumberOfSegments())
-    {
-      int p = 0;
-#ifdef _OPENMP
-      p = omp_get_thread_num();
-#endif
+#pragma omp parallel for
+    for (unsigned p = 0; p < topDomain.getNumberOfSegments(); ++p) {
+
       viennahrle::Index<D> startVector =
           (p == 0) ? grid.getMinGridPoint()
                    : topDomain.getSegmentation()[p - 1];
 
       viennahrle::Index<D> endVector =
-          (p != static_cast<int>(topDomain.getNumberOfSegments() - 1))
+          (p != topDomain.getNumberOfSegments() - 1)
               ? topDomain.getSegmentation()[p]
               : grid.incrementIndices(grid.getMaxGridPoint());
 
@@ -707,12 +697,9 @@ template <class T, int D> class Advect {
 
     const bool checkDiss = checkDissipation;
 
-#pragma omp parallel num_threads(topDomain.getNumberOfSegments())
-    {
-      int p = 0;
-#ifdef _OPENMP
-      p = omp_get_thread_num();
-#endif
+#pragma omp parallel for
+    for (unsigned p = 0; p < topDomain.getNumberOfSegments(); ++p) {
+
       auto itRS = storedRates[p].cbegin();
       auto &segment = topDomain.getDomainSegment(p);
       const unsigned maxId = segment.getNumberOfPoints();
@@ -738,8 +725,8 @@ template <class T, int D> class Advect {
         T velocity = gradient - dissipation;
         // check if dissipation is too high and would cause a change in
         // direction of the velocity
-        if (checkDiss && (gradient < 0 && velocity > 0) ||
-            (gradient > 0 && velocity < 0)) {
+        if (checkDiss && ((gradient < 0 && velocity > 0) ||
+                          (gradient > 0 && velocity < 0))) {
           velocity = 0;
         }
 
@@ -751,8 +738,8 @@ template <class T, int D> class Advect {
 
           // recalculate velocity and rate
           velocity = itRS->first.first - itRS->first.second;
-          if (checkDiss && (itRS->first.first < 0 && velocity > 0) ||
-              (itRS->first.first > 0 && velocity < 0)) {
+          if (checkDiss && ((itRS->first.first < 0 && velocity > 0) ||
+                            (itRS->first.first > 0 && velocity < 0))) {
             velocity = 0;
           }
           rate = time * velocity;

@@ -131,12 +131,8 @@ private:
     auto grid = levelSet->getGrid();
 
     // Calculate Normalvectors
-#pragma omp parallel num_threads(levelSet->getNumberOfSegments())
-    {
-      int p = 0;
-#ifdef _OPENMP
-      p = omp_get_thread_num();
-#endif
+#pragma omp parallel for
+    for (unsigned p = 0; p < levelSet->getNumberOfSegments(); ++p) {
 
       auto &normalVectors = normalVectorsVector[p];
       normalVectors.reserve(pointsPerSegment);
@@ -209,12 +205,8 @@ private:
     // points.
     std::vector<Vec3D<T>> normalVectors(levelSet->getNumberOfPoints());
 
-#pragma omp parallel num_threads(levelSet->getNumberOfSegments())
-    {
-      int p = 0;
-#ifdef _OPENMP
-      p = omp_get_thread_num();
-#endif
+#pragma omp parallel for
+    for (unsigned p = 0; p < levelSet->getNumberOfSegments(); ++p) {
 
       viennahrle::Index<D> startVector =
           (p == 0) ? grid.getMinGridPoint()
