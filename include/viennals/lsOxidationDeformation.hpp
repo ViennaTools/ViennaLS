@@ -787,8 +787,8 @@ public:
       IndexType index;
       for (unsigned d = 0; d < D; ++d)
         index[d] = std::llround(coordinate[d] / gridDelta);
-      resolved =
-          nearbyMeanVelocity(index, [](std::size_t) { return true; }, velocity);
+      resolved = nearbyMeanVelocity(
+          index, [](std::size_t) { return true; }, velocity);
     }
 
     const auto result =
@@ -903,7 +903,8 @@ public:
     IndexType index;
     for (unsigned d = 0; d < D; ++d)
       index[d] = std::llround(coordinate[d] / gridDelta);
-    if (nearbyMeanVelocity(index, [](std::size_t) { return true; }, velocity))
+    if (nearbyMeanVelocity(
+            index, [](std::size_t) { return true; }, velocity))
       return velocity;
     return {0., 0., 0.};
   }
