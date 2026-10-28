@@ -108,9 +108,9 @@ void testTiltedFilm(T slope) {
   double bounds[2 * D] = {-halfWidth, halfWidth, -halfWidth * slope - 0.2,
                           halfWidth * slope + 0.3};
   auto si = makePlane(bounds, gridDelta, {0., 0.}, normal);
-  auto ambient = makePlane(bounds, gridDelta,
-                           {normal[0] * thickness, normal[1] * thickness},
-                           normal);
+  auto ambient =
+      makePlane(bounds, gridDelta,
+                {normal[0] * thickness, normal[1] * thickness}, normal);
   // deviatoric pre-stress s0 (t t - n n)
   std::array<T, 9> stress{};
   for (unsigned i = 0; i < D; ++i)
@@ -128,8 +128,8 @@ void testTiltedFilm(T slope) {
   mechanics.stressTimeStep = 0.01;
   auto diffusion = ls::OxidationDiffusion<T, D>::New(si, ambient, oxidation);
   diffusion->apply();
-  auto deformation = ls::OxidationDeformation<T, D>::New(
-      si, ambient, diffusion, oxidation, mechanics);
+  auto deformation = ls::OxidationDeformation<T, D>::New(si, ambient, diffusion,
+                                                         oxidation, mechanics);
   deformation->apply();
   VC_TEST_ASSERT(deformation->lastSolveConverged())
 
@@ -138,16 +138,15 @@ void testTiltedFilm(T slope) {
   const T implicitViscosity = (1. - decay) * mechanics.viscosity;
   const T velocityScale = s0 * gridDelta / (2. * implicitViscosity);
   T maxVelocity = 0., maxPressureError = 0.;
-  deformation->forEachSolutionNode(
-      [&](const viennahrle::Index<D> &index, T pressure,
-          const std::array<T, 9> &) {
-        if (std::abs(index[0] * gridDelta) > 0.3) // away from the mirrors
-          return;
-        const auto v = deformation->getVelocity(index);
-        maxVelocity = std::max(maxVelocity, std::hypot(v[0], v[1]));
-        maxPressureError =
-            std::max(maxPressureError, std::abs(pressure + decay * s0));
-      });
+  deformation->forEachSolutionNode([&](const viennahrle::Index<D> &index,
+                                       T pressure, const std::array<T, 9> &) {
+    if (std::abs(index[0] * gridDelta) > 0.3) // away from the mirrors
+      return;
+    const auto v = deformation->getVelocity(index);
+    maxVelocity = std::max(maxVelocity, std::hypot(v[0], v[1]));
+    maxPressureError =
+        std::max(maxPressureError, std::abs(pressure + decay * s0));
+  });
   std::printf("tilted film, slope %.2f: max|v| %.2e of the release scale, "
               "max pressure error %.2e of s0\n",
               slope, maxVelocity / velocityScale, maxPressureError / s0);
@@ -161,8 +160,9 @@ void testCornerSeed() {
   double bounds[2 * D] = {0., 1., -1., 2.};
   auto si = makePlane(bounds, gridDelta, {0., 0.}, {0., 1.});
   auto fin = LevelSet::New(bounds, boundaries, gridDelta);
-  ls::MakeGeometry<T, D>(fin, ls::Box<T, D>::New(ls::VectorType<T, D>{-0.25, -0.1},
-                                                 ls::VectorType<T, D>{0.25, 1.}))
+  ls::MakeGeometry<T, D>(fin,
+                         ls::Box<T, D>::New(ls::VectorType<T, D>{-0.25, -0.1},
+                                            ls::VectorType<T, D>{0.25, 1.}))
       .apply();
   ls::BooleanOperation<T, D>(si, fin, ls::BooleanOperationEnum::UNION).apply();
   auto ambient = LevelSet::New(si);
@@ -176,8 +176,8 @@ void testCornerSeed() {
   auto mechanics = ls::OxidationPresets::oxideMechanics1000C(0.004);
   auto diffusion = ls::OxidationDiffusion<T, D>::New(si, ambient, parameters);
   diffusion->apply();
-  auto deformation = ls::OxidationDeformation<T, D>::New(
-      si, ambient, diffusion, parameters, mechanics);
+  auto deformation = ls::OxidationDeformation<T, D>::New(si, ambient, diffusion,
+                                                         parameters, mechanics);
   deformation->apply();
   VC_TEST_ASSERT(deformation->lastSolveConverged())
 }
@@ -185,7 +185,7 @@ void testCornerSeed() {
 // Dry 1000 C oxidation (Drob's Deal-Grove fit), isotropic, no stress
 // kinetics, linear Maxwell oxide, run to tEnd with CFL-limited steps.
 ls::SmartPointer<ls::Oxidation<T, D>> growDryFilm(LevelSet si, LevelSet ambient,
-                                                 T gridDelta, T tEnd) {
+                                                  T gridDelta, T tEnd) {
   ls::OxidationParameters ox;
   ox.diffusionCoefficient = 0.064 / 2;
   ox.reactionRate = 0.0564;
@@ -234,15 +234,15 @@ void testTiltedFrontGrowth() {
   double bounds[2 * D] = {-halfWidth, halfWidth, -halfWidth * slope - 0.1,
                           halfWidth * slope + 0.15};
   auto si = makePlane(bounds, gridDelta, {0., 0.}, normal);
-  auto ambient = makePlane(
-      bounds, gridDelta, {normal[0] * thickness, normal[1] * thickness},
-      normal);
+  auto ambient =
+      makePlane(bounds, gridDelta,
+                {normal[0] * thickness, normal[1] * thickness}, normal);
   auto model = growDryFilm(si, ambient, gridDelta, 0.05);
   auto field = model->getDeformationField();
   T maxPressure = 0., maxShear = 0., meanNormal = 0., meanTangential = 0.;
   int count = 0;
-  field->forEachSolutionNode([&](const viennahrle::Index<D> &index,
-                                 T pressure, const std::array<T, 9> &s) {
+  field->forEachSolutionNode([&](const viennahrle::Index<D> &index, T pressure,
+                                 const std::array<T, 9> &s) {
     if (std::abs(index[0] * gridDelta) > window)
       return;
     maxPressure = std::max(maxPressure, std::abs(pressure));
@@ -266,8 +266,8 @@ void testTiltedFrontGrowth() {
 }
 
 void testStressFreeBirth() {
-  constexpr T gridDelta = 0.001, halfWidth = 0.05, thickness = 0.02,
-              s0 = 1e9, tEnd = 0.2;
+  constexpr T gridDelta = 0.001, halfWidth = 0.05, thickness = 0.02, s0 = 1e9,
+              tEnd = 0.2;
   double bounds[2 * D] = {-halfWidth, halfWidth, -0.02, thickness + 0.02};
   auto si = makePlane(bounds, gridDelta, {0., 0.}, {0., 1.});
   auto ambient = makePlane(bounds, gridDelta, {0., thickness}, {0., 1.});
@@ -291,8 +291,7 @@ void testStressFreeBirth() {
   T maxNew = 0., minOld = std::numeric_limits<T>::max(), maxOld = 0.;
   int countNew = 0;
   model->getDeformationField()->forEachSolutionNode(
-      [&](const viennahrle::Index<D> &index, T,
-          const std::array<T, 9> &s) {
+      [&](const viennahrle::Index<D> &index, T, const std::array<T, 9> &s) {
         const T y = index[1] * gridDelta, magnitude = deviatoricMagnitude(s);
         if (y < interface - 4 * gridDelta) {
           maxNew = std::max(maxNew, magnitude);
@@ -389,8 +388,8 @@ void testDiffusionMirror() {
   auto full = solveStrip(false);
   for (int offset : {0, 1, 2, 5, 10, 20, 30, 31, 40}) {
     const T y = 0.015;
-    const T cm = mirrored->getConcentration(
-        ls::Vec3D<T>{-0.6 + offset * 0.01, y, 0.});
+    const T cm =
+        mirrored->getConcentration(ls::Vec3D<T>{-0.6 + offset * 0.01, y, 0.});
     const T cf = full->getConcentration(ls::Vec3D<T>{offset * 0.01, y, 0.});
     VC_TEST_ASSERT(cf > 0.)
     VC_TEST_ASSERT(std::abs(cm - cf) < 1e-4 * cf)
@@ -402,12 +401,12 @@ void testSurfaceThroughGridPoints() {
   constexpr T gridDelta = 0.01, a = 0.36, b = 0.39;
   double bounds[2 * D] = {-0.6, 0.6, -0.6, 0.6};
   auto si = LevelSet::New(bounds, boundaries, gridDelta);
-  ls::MakeGeometry<T, D>(
-      si, ls::Sphere<T, D>::New(ls::VectorType<T, D>{0., 0.}, a))
+  ls::MakeGeometry<T, D>(si,
+                         ls::Sphere<T, D>::New(ls::VectorType<T, D>{0., 0.}, a))
       .apply();
   auto ambient = LevelSet::New(bounds, boundaries, gridDelta);
-  ls::MakeGeometry<T, D>(
-      ambient, ls::Sphere<T, D>::New(ls::VectorType<T, D>{0., 0.}, b))
+  ls::MakeGeometry<T, D>(ambient,
+                         ls::Sphere<T, D>::New(ls::VectorType<T, D>{0., 0.}, b))
       .apply();
   ls::OxidationParameters parameters;
   parameters.diffusionCoefficient = 0.00521938;

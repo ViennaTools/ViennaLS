@@ -66,17 +66,15 @@ void storeNitrideStress(
         rows[r].push_back({s[3 * r], s[3 * r + 1], s[3 * r + 2]});
     }
   for (unsigned r = 0; r < 3; ++r)
-    mask->getPointData().insertReplaceVectorData(std::move(rows[r]),
-                                                 "NitStressR" +
-                                                     std::to_string(r));
+    mask->getPointData().insertReplaceVectorData(
+        std::move(rows[r]), "NitStressR" + std::to_string(r));
 }
 
 // One mechanics solve over dt of the Si / pad oxide / nitride stack with the
 // given nitride pre-stress and creep (viscosity 0 = elastic).
-ls::SmartPointer<ls::OxidationDeformation<T, D>>
-solveStack(const std::function<std::array<T, 9>(const viennahrle::Index<D> &)>
-               &stress,
-           T viscosity, T activationVolume, T dt) {
+ls::SmartPointer<ls::OxidationDeformation<T, D>> solveStack(
+    const std::function<std::array<T, 9>(const viennahrle::Index<D> &)> &stress,
+    T viscosity, T activationVolume, T dt) {
   auto si = makePlane(0.);
   auto ambient = makePlane(nitrideTop);
   auto mask = LevelSet::New(bounds, boundaries, gridDelta);
@@ -100,8 +98,8 @@ solveStack(const std::function<std::array<T, 9>(const viennahrle::Index<D> &)>
   auto diffusion = ls::OxidationDiffusion<T, D>::New(si, ambient, oxidation);
   diffusion->setMaskInterface(mask, -1);
   diffusion->apply();
-  auto deformation = ls::OxidationDeformation<T, D>::New(
-      si, ambient, diffusion, oxidation, mechanics);
+  auto deformation = ls::OxidationDeformation<T, D>::New(si, ambient, diffusion,
+                                                         oxidation, mechanics);
   deformation->setMaskInterface(mask, -1);
   deformation->apply();
   VC_TEST_ASSERT(deformation->lastSolveConverged())
@@ -121,16 +119,16 @@ void measure(ls::SmartPointer<ls::OxidationDeformation<T, D>> deformation,
   minXX = std::numeric_limits<T>::max();
   maxXX = -minXX;
   maxSpeed = 0.;
-  deformation->forEachSolutionNode([&](const viennahrle::Index<D> &index, T,
-                                       const std::array<T, 9> &s) {
-    const auto v = deformation->getVelocity(index);
-    maxSpeed = std::max(maxSpeed, std::hypot(v[0], v[1]));
-    const T y = index[1] * gridDelta;
-    if (y > padTop + 1.5 * gridDelta && y < nitrideTop - 1.5 * gridDelta) {
-      minXX = std::min(minXX, s[0]);
-      maxXX = std::max(maxXX, s[0]);
-    }
-  });
+  deformation->forEachSolutionNode(
+      [&](const viennahrle::Index<D> &index, T, const std::array<T, 9> &s) {
+        const auto v = deformation->getVelocity(index);
+        maxSpeed = std::max(maxSpeed, std::hypot(v[0], v[1]));
+        const T y = index[1] * gridDelta;
+        if (y > padTop + 1.5 * gridDelta && y < nitrideTop - 1.5 * gridDelta) {
+          minXX = std::min(minXX, s[0]);
+          maxXX = std::max(maxXX, s[0]);
+        }
+      });
 }
 
 void testRelaxation() {
@@ -151,9 +149,9 @@ void testRelaxation() {
   VC_TEST_ASSERT(maxSpeed < 1e-9)
 
   T minE, maxE, speedE;
-  measure(solveStack(uniform, nitride.viscosity, nitride.shearActivationVolume,
-                     dt),
-          minE, maxE, speedE);
+  measure(
+      solveStack(uniform, nitride.viscosity, nitride.shearActivationVolume, dt),
+      minE, maxE, speedE);
   std::printf("Eyring nitride (V_N %.0f A^3): sigma_xx %.4f..%.4f s0\n",
               nitride.shearActivationVolume * 1e30, minE / s0, maxE / s0);
   VC_TEST_ASSERT(maxE < 0.9 * exact && minE > 0.)

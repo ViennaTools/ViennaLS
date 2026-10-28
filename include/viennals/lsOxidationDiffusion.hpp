@@ -342,8 +342,8 @@ public:
                    std::array<T, 9> &stress) const {
     const auto key = detail::gridIndexHash<D>(index);
     const auto p = pressureLookup.find(key);
-    pressure = p != pressureLookup.end() ? p->second
-                                         : T(parameters.referencePressure);
+    pressure =
+        p != pressureLookup.end() ? p->second : T(parameters.referencePressure);
     const auto s = stressLookup.find(key);
     if (s != stressLookup.end())
       stress = s->second;
@@ -599,9 +599,8 @@ public:
     const IndexType rateIndex =
         boundarySample.found ? boundarySample.nodeIndex : index;
     // (getReactionBoundaryConcentration would repeat the search that failed)
-    const T concentration = boundarySample.found
-                                ? boundarySample.concentration
-                                : getConcentration(index);
+    const T concentration = boundarySample.found ? boundarySample.concentration
+                                                 : getConcentration(index);
     return parameters.velocitySign * getEffectiveReactionRate(rateIndex) *
            concentration /
            (parameters.oxidantMoleculeDensity *
@@ -639,8 +638,8 @@ public:
         // (the factor its oxidant sink carries): an area average, so the
         // extra crossings at stair steps do not count twice, and grazing
         // arms -- the least accurate interface concentration -- hardly count
-        const T w = std::exp(-r2 / (T(2) * width * width)) *
-                    crossing.areaWeight;
+        const T w =
+            std::exp(-r2 / (T(2) * width * width)) * crossing.areaWeight;
         weightSum += w;
         speed += w * crossing.speed;
         for (unsigned d = 0; d < D; ++d)
@@ -952,8 +951,8 @@ private:
           nb[dir] += off;
           if (!inBounds(nb) || lookupNode(nb) != noNode)
             continue; // NONE/1.0 already set by assign()
-          auto bc = classifyBoundary(faceReactionIt, faceAmbientIt,
-                                     faceMaskIt, node.index, nb);
+          auto bc = classifyBoundary(faceReactionIt, faceAmbientIt, faceMaskIt,
+                                     node.index, nb);
           if (node.inMask) {
             // Faces of a meshed mask node.  Crossing the mask level set here
             // is the film's OUTER surface — the gas inlet — so it takes the
@@ -1102,12 +1101,12 @@ private:
       const T distSum = neg.distance + pos.distance;
       if (distSum <= std::numeric_limits<T>::epsilon())
         continue;
-      addSideContribution(rhs, diag, neg, distSum,
-                          faceDiffusionCoefficient(nodeId, direction, -1,
-                                                   D_eff));
-      addSideContribution(rhs, diag, pos, distSum,
-                          faceDiffusionCoefficient(nodeId, direction, 1,
-                                                   D_eff));
+      addSideContribution(
+          rhs, diag, neg, distSum,
+          faceDiffusionCoefficient(nodeId, direction, -1, D_eff));
+      addSideContribution(
+          rhs, diag, pos, distSum,
+          faceDiffusionCoefficient(nodeId, direction, 1, D_eff));
     }
   }
 
@@ -1242,8 +1241,8 @@ private:
       const int status = gpu::gpuDiffusionSolve(
           static_cast<std::int64_t>(n),
           reinterpret_cast<const std::int64_t *>(rowPtr.data()),
-          reinterpret_cast<const std::int64_t *>(cols.data()),
-          valuesGpu.data(), bGpu.data(), xGpu.data(), parameters.maxIterations,
+          reinterpret_cast<const std::int64_t *>(cols.data()), valuesGpu.data(),
+          bGpu.data(), xGpu.data(), parameters.maxIterations,
           static_cast<double>(absTolerance), gpuIterations);
       if (status > 0) {
         for (std::size_t i = 0; i < n; ++i)
@@ -1299,8 +1298,8 @@ private:
         iterations = static_cast<unsigned>(count);
       } catch (const std::exception &e) {
         solverFailed = true;
-        VIENNACORE_LOG_WARNING(
-            std::string("solveDiffusion: AMGCL failed: ") + e.what());
+        VIENNACORE_LOG_WARNING(std::string("solveDiffusion: AMGCL failed: ") +
+                               e.what());
       }
     }
 
@@ -1353,8 +1352,8 @@ private:
       VIENNACORE_LOG_WARNING(
           "solveDiffusion: AMG-BiCGSTAB did not converge after " +
           std::to_string(iterations) + "/" +
-          std::to_string(parameters.maxIterations) + " iterations (" +
-          numbers + ")");
+          std::to_string(parameters.maxIterations) + " iterations (" + numbers +
+          ")");
     }
   }
 
@@ -1625,15 +1624,15 @@ private:
     Vec3D<T> c{T(0), T(0), T(0)};
     for (unsigned d = 0; d < D; ++d)
       c[d] = static_cast<T>(nodes[i].index[d]);
-    c[fi / 2] += (fi % 2 == 1 ? T(1) : T(-1)) * faceBCDists_[fi * n + i] /
-                 gridDelta;
+    c[fi / 2] +=
+        (fi % 2 == 1 ? T(1) : T(-1)) * faceBCDists_[fi * n + i] / gridDelta;
     return c;
   }
 
   // Calls f(j) for every node j in the box of half-width `radius` cells
   // around p (index units).
-  template <class F> void forEachNodeNear(const Vec3D<T> &p, int radius,
-                                          F f) const {
+  template <class F>
+  void forEachNodeNear(const Vec3D<T> &p, int radius, F f) const {
     IndexType centre, offset;
     for (unsigned d = 0; d < D; ++d)
       centre[d] = static_cast<viennahrle::IndexType>(std::llround(p[d]));
@@ -1700,8 +1699,8 @@ private:
       T dot = T(0);
       for (unsigned d = 0; d < D; ++d)
         dot += normal[d] * parameters.crystalAxis[d];
-      rate *= T(1) +
-              (parameters.reactionRateRatio111 - T(1)) * (T(1) - dot * dot);
+      rate *=
+          T(1) + (parameters.reactionRateRatio111 - T(1)) * (T(1) - dot * dot);
     }
     return rate;
   }
@@ -1735,15 +1734,15 @@ private:
         if (faceBCTypes_[fi * n + i] != Boundary::REACTION)
           continue;
         const T rate = faceRate(i, fi);
-        const auto side = reactionBoundarySide(
-            rate, faceBCDists_[fi * n + i], nodeDiffusionCoefficient(i),
-            faceReactionNormal_[fi * n + i]);
+        const auto side = reactionBoundarySide(rate, faceBCDists_[fi * n + i],
+                                               nodeDiffusionCoefficient(i),
+                                               faceReactionNormal_[fi * n + i]);
         const T concentration =
             side.nodeCoefficient * nodes[i].concentration + side.constant;
-        faceFrontSpeed_[fi * n + i] =
-            std::abs(parameters.velocitySign) * rate * concentration /
-            (parameters.oxidantMoleculeDensity *
-             parameters.expansionCoefficient);
+        faceFrontSpeed_[fi * n + i] = std::abs(parameters.velocitySign) * rate *
+                                      concentration /
+                                      (parameters.oxidantMoleculeDensity *
+                                       parameters.expansionCoefficient);
       }
     frontStart_.assign(n + 1, 0);
     for (std::size_t i = 0; i < n; ++i) {
@@ -1757,10 +1756,9 @@ private:
       std::size_t k = frontStart_[i];
       for (unsigned fi = 0; fi < 2 * D; ++fi)
         if (faceBCTypes_[fi * n + i] == Boundary::REACTION)
-          frontCrossings_[k++] = {crossingPoint(i, fi),
-                                  faceReactionNormal_[fi * n + i],
-                                  faceFrontSpeed_[fi * n + i],
-                                  faceCrossingNormal_[fi * n + i]};
+          frontCrossings_[k++] = {
+              crossingPoint(i, fi), faceReactionNormal_[fi * n + i],
+              faceFrontSpeed_[fi * n + i], faceCrossingNormal_[fi * n + i]};
     }
   }
 
@@ -1885,8 +1883,8 @@ private:
   T frontDistance(const IndexType &index) const {
     ConstSparseIterator it(reactionInterface->getDomain());
     it.goToIndices(index);
-    const T v = it.isDefined() ? static_cast<T>(reactionSign) * it.getValue()
-                               : T(0);
+    const T v =
+        it.isDefined() ? static_cast<T>(reactionSign) * it.getValue() : T(0);
     return std::isfinite(v) ? std::clamp(v, T(0), T(1.5)) : T(0);
   }
 

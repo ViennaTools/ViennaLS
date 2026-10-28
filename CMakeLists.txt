@@ -155,8 +155,7 @@ if(VIENNALS_USE_GPU)
   if(NOT TARGET CUDA::cusparse)
     message(
       WARNING
-        "[ViennaLS] cuSPARSE not found in CUDA ${CUDAToolkit_VERSION}; disabling the GPU solvers."
-    )
+        "[ViennaLS] cuSPARSE not found in CUDA ${CUDAToolkit_VERSION}; disabling the GPU solvers.")
   else()
     # Compile the CUDA code into a SHARED library so that consuming .cpp files
     # (compiled by g++) never see it, and — just as importantly — so that this

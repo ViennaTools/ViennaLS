@@ -255,8 +255,8 @@ inline bool gpuMacSolve(void *handle, std::int64_t n, const std::int64_t *ptr,
                         double &outResidual) {
   const auto &rt = detail::runtime();
   return rt.available &&
-         rt.macSolve(handle, n, ptr, col, val, rhs, x, maxIterations,
-                     tolerance, &outIterations, &outResidual) != 0;
+         rt.macSolve(handle, n, ptr, col, val, rhs, x, maxIterations, tolerance,
+                     &outIterations, &outResidual) != 0;
 }
 
 // Free a setup. Safe to call with nullptr.

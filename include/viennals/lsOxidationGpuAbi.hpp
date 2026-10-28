@@ -44,13 +44,11 @@ VIENNALS_GPU_ABI const char *viennalsGpuGetLastErrorMessage(void);
 /// on entry, the solution on exit.  Returns 1 when the solve ran and gave
 /// finite values (whatever the residual), 0 when no CUDA device is usable
 /// (`x` untouched), -1 when it failed.
-VIENNALS_GPU_ABI int viennalsGpuDiffusionSolve(int64_t n, const int64_t *ptr,
-                                               const int64_t *col,
-                                               const double *val,
-                                               const double *rhs, double *x,
-                                               unsigned maxIterations,
-                                               double absTolerance,
-                                               unsigned *outIterations);
+VIENNALS_GPU_ABI int
+viennalsGpuDiffusionSolve(int64_t n, const int64_t *ptr, const int64_t *col,
+                          const double *val, const double *rhs, double *x,
+                          unsigned maxIterations, double absTolerance,
+                          unsigned *outIterations);
 
 /// 3-D velocity-pressure solve of OxidationDeformation: set up the
 /// preconditioner for the CSR system (ptr, col, val) of `n` unknowns, the
@@ -65,13 +63,11 @@ VIENNALS_GPU_ABI void *viennalsGpuMacSetup(int64_t n, const int64_t *ptr,
 /// the matrix of the setup (same unknowns).  `x` is the initial guess on
 /// entry, the solution on exit.  Non-zero when the solve ran and gave finite
 /// values, whatever the residual; iterations and relative residual returned.
-VIENNALS_GPU_ABI int viennalsGpuMacSolve(void *handle, int64_t n,
-                                         const int64_t *ptr, const int64_t *col,
-                                         const double *val, const double *rhs,
-                                         double *x, unsigned maxIterations,
-                                         double tolerance,
-                                         unsigned *outIterations,
-                                         double *outResidual);
+VIENNALS_GPU_ABI int
+viennalsGpuMacSolve(void *handle, int64_t n, const int64_t *ptr,
+                    const int64_t *col, const double *val, const double *rhs,
+                    double *x, unsigned maxIterations, double tolerance,
+                    unsigned *outIterations, double *outResidual);
 
 /// Free a setup.  Safe to call with nullptr.
 VIENNALS_GPU_ABI void viennalsGpuMacFree(void *handle);

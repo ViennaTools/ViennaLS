@@ -25,9 +25,9 @@ LevelSet plane(T extent, T height, T slope) {
       ls::Domain<T, D>::BoundaryType::REFLECTIVE_BOUNDARY,
       ls::Domain<T, D>::BoundaryType::INFINITE_BOUNDARY};
   auto levelSet = LevelSet::New(bounds, boundaries, oldDelta);
-  ls::MakeGeometry<T, D>(
-      levelSet, ls::Plane<T, D>::New(ls::VectorType<T, D>{0., height},
-                                     ls::VectorType<T, D>{-slope, 1.}))
+  ls::MakeGeometry<T, D>(levelSet,
+                         ls::Plane<T, D>::New(ls::VectorType<T, D>{0., height},
+                                              ls::VectorType<T, D>{-slope, 1.}))
       .apply();
   return levelSet;
 }

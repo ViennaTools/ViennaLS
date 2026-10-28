@@ -91,8 +91,7 @@ public:
       Vec3D<T> coordinate{};
       for (unsigned d = 0; d < D; ++d)
         coordinate[d] = static_cast<T>(idx[d]) * gridDelta_;
-      auto sampled =
-          oxideMechanics->getResolvedVectorVelocity(coordinate);
+      auto sampled = oxideMechanics->getResolvedVectorVelocity(coordinate);
       T magnitude = T(0);
       for (unsigned d = 0; d < D; ++d)
         magnitude += sampled[d] * sampled[d];

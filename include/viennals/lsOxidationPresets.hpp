@@ -44,8 +44,8 @@ struct OxidationPresets {
   /// Pass the advection time step so the viscoelastic relaxation is consistent.
   static OxidationDeformationParameters oxideMechanics1000C(double timeStep) {
     OxidationDeformationParameters params;
-    params.viscosity = 1.e10;    // Pa·hr, effective oxide viscosity
-    params.shearModulus = 3.e10; // Pa
+    params.viscosity = 1.e10;              // Pa·hr, effective oxide viscosity
+    params.shearModulus = 3.e10;           // Pa
     params.shearActivationVolume = 3.e-28; // m^3 (300 A^3)
     params.stressTimeStep = timeStep;
     return params;

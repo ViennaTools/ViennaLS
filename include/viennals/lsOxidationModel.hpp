@@ -101,8 +101,7 @@ public:
     const auto oxParams = diffusionField->getParameters();
     const bool stressFeedback = oxParams.reactionActivationVolume != 0.;
     const bool pressureFeedback = oxParams.diffusionActivationVolume != 0.;
-    const T thermal =
-        T(1.380649e-23) * std::max(T(oxParams.temperature), T(1));
+    const T thermal = T(1.380649e-23) * std::max(T(oxParams.temperature), T(1));
     const std::size_t stride = stressFeedback ? 10 : 1;
     std::vector<IndexType> nodeIndices;
     std::vector<T> p_raw;
@@ -259,9 +258,10 @@ public:
       }
       residual = T(0);
       if (pressureFeedback)
-        residual = maxChange /
-                   std::max(maxPressure,
-                            thermal / std::abs(T(oxParams.diffusionActivationVolume)));
+        residual =
+            maxChange /
+            std::max(maxPressure,
+                     thermal / std::abs(T(oxParams.diffusionActivationVolume)));
       if (stressFeedback) {
         typename OxidationDiffusion<T, D>::StressLookup candidate;
         candidate.reserve(nodeIndices.size());
@@ -285,8 +285,9 @@ public:
         residual = std::max(
             residual,
             maxStressChange /
-                std::max(maxStress, thermal / std::abs(T(
-                                        oxParams.reactionActivationVolume))));
+                std::max(maxStress,
+                         thermal /
+                             std::abs(T(oxParams.reactionActivationVolume))));
       }
 
       // Converged: keep the feedback the last solves used.  lsOxidation marks

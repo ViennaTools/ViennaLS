@@ -442,10 +442,9 @@ template <int D> void bindApi(py::module &module) {
            (T(OxidationDiffusion<T, D>::*)(const Vec3D<T> &) const) &
                OxidationDiffusion<T, D>::getEffectiveReactionRate)
       .def("clearPressureField", &OxidationDiffusion<T, D>::clearPressureField)
-      .def("setStress",
-           (void(OxidationDiffusion<T, D>::*)(const Vec3D<T> &,
-                                              const std::array<T, 9> &)) &
-               OxidationDiffusion<T, D>::setStress)
+      .def("setStress", (void(OxidationDiffusion<T, D>::*)(
+                            const Vec3D<T> &, const std::array<T, 9> &)) &
+                            OxidationDiffusion<T, D>::setStress)
       .def("setPressure",
            (void(OxidationDiffusion<T, D>::*)(const Vec3D<T> &, T)) &
                OxidationDiffusion<T, D>::setPressure)

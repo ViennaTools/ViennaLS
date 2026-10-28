@@ -5,8 +5,8 @@
 #include <lsBooleanOperation.hpp>
 #include <lsExpand.hpp>
 #include <lsInterior.hpp>
-#include <lsReduce.hpp>
 #include <lsOxidationModel.hpp>
+#include <lsReduce.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -189,8 +189,7 @@ template <class T, int D> class OxidationMaskTracker {
 
 public:
   explicit OxidationMaskTracker(SmartPointer<Domain<T, D>> mask)
-      : mask_(mask.get()),
-        reference_(SmartPointer<Domain<T, D>>::New(mask)),
+      : mask_(mask.get()), reference_(SmartPointer<Domain<T, D>>::New(mask)),
         gridDelta_(mask->getGrid().getGridDelta()) {
     Expand<T, D>(reference_, referenceWidth).apply();
   }
@@ -837,12 +836,12 @@ private:
       // exposes volume changes between substeps (outside this pipeline).
       VIENNACORE_LOG_INFO(
           prefix + ": VOLTRACE dV_preclip=" +
-          std::to_string((volAfterPreclip - volBefore) * toNm) +
-          " dV_advect=" +
+          std::to_string((volAfterPreclip - volBefore) * toNm) + " dV_advect=" +
           std::to_string((volAfterAdvect - volAfterPreclip) * toNm) +
           " dV_postclip=" +
           std::to_string((volAfterPostclip - volAfterAdvect) * toNm) +
-          " dV_fill=" + std::to_string((volAfterFill - volAfterPostclip) * toNm) +
+          " dV_fill=" +
+          std::to_string((volAfterFill - volAfterPostclip) * toNm) +
           " vol_start=" + std::to_string(volBefore * toNm) +
           " vol_end=" + std::to_string(volAfterFill * toNm) + " nm^D");
     }

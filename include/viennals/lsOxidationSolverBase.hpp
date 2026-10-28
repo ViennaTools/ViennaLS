@@ -34,10 +34,9 @@ inline std::size_t gridIndexHash(const viennahrle::Index<D> &index) {
   constexpr std::int64_t offset = std::int64_t(1) << (bits - 1);
   std::uint64_t key = 0;
   for (unsigned i = 0; i < static_cast<unsigned>(D); ++i)
-    key = (key << bits) |
-          (static_cast<std::uint64_t>(static_cast<std::int64_t>(index[i]) +
-                                      offset) &
-           mask);
+    key = (key << bits) | (static_cast<std::uint64_t>(
+                               static_cast<std::int64_t>(index[i]) + offset) &
+                           mask);
   return static_cast<std::size_t>(key);
 }
 
