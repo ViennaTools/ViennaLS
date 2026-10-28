@@ -908,6 +908,6 @@ def setNumThreads(arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
 Auto: GpuMode  # value = <GpuMode.Auto: 2>
 Cpu: GpuMode  # value = <GpuMode.Cpu: 0>
 Gpu: GpuMode  # value = <GpuMode.Gpu: 1>
-__version__: str = '5.9.0'
-version: str = '5.9.0'
+__version__: str = '5.10.0'
+version: str = '5.10.0'
 IntegrationSchemeEnum = SpatialSchemeEnum
