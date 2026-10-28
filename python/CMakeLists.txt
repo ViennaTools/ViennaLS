@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 project(ViennaLS_Python LANGUAGES CXX)
 
-option(VIENNALS_USE_GPU "Enable GPU-accelerated BiCGSTAB linear solver via CUDA" OFF)
+option(VIENNALS_USE_GPU "Enable the CUDA linear solves of the oxidation solvers" OFF)
 
 add_custom_target(${PROJECT_NAME} ALL)
 
@@ -66,7 +66,7 @@ if(VIENNALS_USE_GPU)
   if(TARGET ViennaLS_GPU)
     # Built alongside the extension but never linked into it: _core must stay
     # importable on machines without a CUDA runtime. It is placed next to
-    # _core so the dlopen() search in lsOxidationBiCGSTABInterface.hpp finds it
+    # _core so the dlopen() search in lsOxidationGpuInterface.hpp finds it
     # via the calling module's own directory.
     add_dependencies(${MOD} ViennaLS_GPU)
     set_target_properties(

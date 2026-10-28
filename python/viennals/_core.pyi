@@ -7,9 +7,9 @@ import enum
 import typing
 from viennals import d2
 import viennals.d2
-from viennals import d3
 import viennals.d3
-__all__: list[str] = ['Auto', 'BooleanOperationEnum', 'BoundaryConditionEnum', 'Cpu', 'CurvatureEnum', 'Extrude', 'FeatureDetectionEnum', 'FileFormatEnum', 'Gpu', 'GpuMode', 'GpuPreconditioner', 'ILU0', 'IntegrationSchemeEnum', 'Jacobi', 'LOCOSConservationDiagnostics', 'LogLevel', 'Logger', 'MaterialMap', 'Mesh', 'NormalCalculationMethodEnum', 'OxidationCouplingParameters', 'OxidationDeformationParameters', 'OxidationMaskParameters', 'OxidationParameters', 'OxidationPresets', 'PointData', 'Slice', 'SpatialSchemeEnum', 'TemporalSchemeEnum', 'TransformEnum', 'TransformMesh', 'VTKReader', 'VTKRenderWindow', 'VTKWriter', 'VelocityField', 'VoidTopSurfaceEnum', 'd2', 'd3', 'setNumThreads', 'version']
+from viennals import d3
+__all__: list[str] = ['Auto', 'BooleanOperationEnum', 'BoundaryConditionEnum', 'Cpu', 'CurvatureEnum', 'Extrude', 'FeatureDetectionEnum', 'FileFormatEnum', 'Gpu', 'GpuMode', 'IntegrationSchemeEnum', 'LOCOSConservationDiagnostics', 'LogLevel', 'Logger', 'MaterialMap', 'Mesh', 'NormalCalculationMethodEnum', 'OxidationCouplingParameters', 'OxidationDeformationParameters', 'OxidationMaskParameters', 'OxidationParameters', 'OxidationPresets', 'PointData', 'Slice', 'SpatialSchemeEnum', 'TemporalSchemeEnum', 'TransformEnum', 'TransformMesh', 'VTKReader', 'VTKRenderWindow', 'VTKWriter', 'VelocityField', 'VoidTopSurfaceEnum', 'd2', 'd3', 'setNumThreads', 'version']
 class BooleanOperationEnum(enum.IntEnum):
     INTERSECT: typing.ClassVar[BooleanOperationEnum]  # value = <BooleanOperationEnum.INTERSECT: 0>
     INVERT: typing.ClassVar[BooleanOperationEnum]  # value = <BooleanOperationEnum.INVERT: 3>
@@ -136,51 +136,6 @@ class GpuMode:
         ...
     @typing.overload
     def __ne__(self, other: GpuMode) -> bool:
-        ...
-    @typing.overload
-    def __ne__(self, other: typing.Any) -> bool:
-        ...
-    def __repr__(self) -> str:
-        ...
-    def __setstate__(self, state: typing.SupportsInt | typing.SupportsIndex) -> None:
-        ...
-    def __str__(self) -> str:
-        ...
-    @property
-    def name(self) -> str:
-        ...
-    @property
-    def value(self) -> int:
-        ...
-class GpuPreconditioner:
-    """
-    Members:
-    
-      Jacobi
-    
-      ILU0
-    """
-    ILU0: typing.ClassVar[GpuPreconditioner]  # value = <GpuPreconditioner.ILU0: 1>
-    Jacobi: typing.ClassVar[GpuPreconditioner]  # value = <GpuPreconditioner.Jacobi: 0>
-    __members__: typing.ClassVar[dict[str, GpuPreconditioner]]  # value = {'Jacobi': <GpuPreconditioner.Jacobi: 0>, 'ILU0': <GpuPreconditioner.ILU0: 1>}
-    @typing.overload
-    def __eq__(self, other: GpuPreconditioner) -> bool:
-        ...
-    @typing.overload
-    def __eq__(self, other: typing.Any) -> bool:
-        ...
-    def __getstate__(self) -> int:
-        ...
-    def __hash__(self) -> int:
-        ...
-    def __index__(self) -> int:
-        ...
-    def __init__(self, value: typing.SupportsInt | typing.SupportsIndex) -> None:
-        ...
-    def __int__(self) -> int:
-        ...
-    @typing.overload
-    def __ne__(self, other: GpuPreconditioner) -> bool:
         ...
     @typing.overload
     def __ne__(self, other: typing.Any) -> bool:
@@ -477,18 +432,6 @@ class OxidationDeformationParameters:
     def ambientPressure(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
-    def bulkModulus(self) -> float:
-        ...
-    @bulkModulus.setter
-    def bulkModulus(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def harmonicIterations(self) -> int:
-        ...
-    @harmonicIterations.setter
-    def harmonicIterations(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
-        ...
-    @property
     def material(self) -> int:
         ...
     @material.setter
@@ -519,46 +462,16 @@ class OxidationDeformationParameters:
     def minMechanicsBoundaryDistance(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
-    def pressureIterations(self) -> int:
+    def shearActivationVolume(self) -> float:
         ...
-    @pressureIterations.setter
-    def pressureIterations(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def pressureRelaxation(self) -> float:
-        ...
-    @pressureRelaxation.setter
-    def pressureRelaxation(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def pressureTolerance(self) -> float:
-        ...
-    @pressureTolerance.setter
-    def pressureTolerance(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def relaxation(self) -> float:
-        ...
-    @relaxation.setter
-    def relaxation(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+    @shearActivationVolume.setter
+    def shearActivationVolume(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
     def shearModulus(self) -> float:
         ...
     @shearModulus.setter
     def shearModulus(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def stokesIterations(self) -> int:
-        ...
-    @stokesIterations.setter
-    def stokesIterations(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def stokesTolerance(self) -> float:
-        ...
-    @stokesTolerance.setter
-    def stokesTolerance(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
     def stressRelaxationTime(self) -> float:
@@ -573,92 +486,13 @@ class OxidationDeformationParameters:
     def stressTimeStep(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
-    def tolerance(self) -> float:
-        ...
-    @tolerance.setter
-    def tolerance(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
-        ...
-    @property
     def viscosity(self) -> float:
         ...
     @viscosity.setter
     def viscosity(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
 class OxidationMaskParameters:
-    unilateralContact: bool
     def __init__(self) -> None:
-        ...
-    @property
-    def anchorBoundaryDirection(self) -> int:
-        ...
-    @anchorBoundaryDirection.setter
-    def anchorBoundaryDirection(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def anchorBoundaryLayers(self) -> int:
-        ...
-    @anchorBoundaryLayers.setter
-    def anchorBoundaryLayers(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def anchorBoundarySide(self) -> int:
-        ...
-    @anchorBoundarySide.setter
-    def anchorBoundarySide(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def contactLoadRelaxation(self) -> float:
-        ...
-    @contactLoadRelaxation.setter
-    def contactLoadRelaxation(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def contactMode(self) -> int:
-        ...
-    @contactMode.setter
-    def contactMode(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def contactReleaseFraction(self) -> float:
-        ...
-    @contactReleaseFraction.setter
-    def contactReleaseFraction(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def creepActivationEnergy(self) -> float:
-        ...
-    @creepActivationEnergy.setter
-    def creepActivationEnergy(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def material(self) -> int:
-        ...
-    @material.setter
-    def material(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def maxGridPoints(self) -> int:
-        ...
-    @maxGridPoints.setter
-    def maxGridPoints(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def maxIterations(self) -> int:
-        ...
-    @maxIterations.setter
-    def maxIterations(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def minBoundaryDistance(self) -> float:
-        ...
-    @minBoundaryDistance.setter
-    def minBoundaryDistance(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def multigridSmootherOmega(self) -> float:
-        ...
-    @multigridSmootherOmega.setter
-    def multigridSmootherOmega(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
     def poissonRatio(self) -> float:
@@ -667,34 +501,16 @@ class OxidationMaskParameters:
     def poissonRatio(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
-    def referenceTemperature(self) -> float:
+    def shearActivationVolume(self) -> float:
         ...
-    @referenceTemperature.setter
-    def referenceTemperature(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def referenceViscosity(self) -> float:
-        ...
-    @referenceViscosity.setter
-    def referenceViscosity(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+    @shearActivationVolume.setter
+    def shearActivationVolume(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
-    def relaxation(self) -> float:
+    def viscosity(self) -> float:
         ...
-    @relaxation.setter
-    def relaxation(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def temperature(self) -> float:
-        ...
-    @temperature.setter
-    def temperature(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def tolerance(self) -> float:
-        ...
-    @tolerance.setter
-    def tolerance(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+    @viscosity.setter
+    def viscosity(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
     def youngModulus(self) -> float:
@@ -834,6 +650,9 @@ class OxidationParameters:
 class OxidationPresets:
     @staticmethod
     def oxideMechanics1000C(arg0: typing.SupportsFloat | typing.SupportsIndex) -> ...:
+        ...
+    @staticmethod
+    def siliconNitrideMask(temperatureCelsius: typing.SupportsFloat | typing.SupportsIndex) -> ...:
         ...
     @staticmethod
     def siliconNitrideMask1000C() -> ...:
@@ -1089,8 +908,6 @@ def setNumThreads(arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
 Auto: GpuMode  # value = <GpuMode.Auto: 2>
 Cpu: GpuMode  # value = <GpuMode.Cpu: 0>
 Gpu: GpuMode  # value = <GpuMode.Gpu: 1>
-ILU0: GpuPreconditioner  # value = <GpuPreconditioner.ILU0: 1>
-Jacobi: GpuPreconditioner  # value = <GpuPreconditioner.Jacobi: 0>
-__version__: str = '5.9.0'
-version: str = '5.9.0'
+__version__: str = '5.10.0'
+version: str = '5.10.0'
 IntegrationSchemeEnum = SpatialSchemeEnum

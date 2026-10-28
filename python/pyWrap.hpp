@@ -98,11 +98,6 @@ inline void bindOxidationSharedTypes(py::module &module) {
       .value("Auto", GpuMode::Auto)
       .export_values();
 
-  py::enum_<GpuPreconditioner>(module, "GpuPreconditioner", py::module_local())
-      .value("Jacobi", GpuPreconditioner::Jacobi)
-      .value("ILU0", GpuPreconditioner::ILU0)
-      .export_values();
-
   py::class_<OxidationParameters>(module, "OxidationParameters",
                                   py::module_local())
       .def(py::init<>())
@@ -146,20 +141,16 @@ inline void bindOxidationSharedTypes(py::module &module) {
                   &OxidationPresets::wet1000CDealGrove100)
       .def_static("oxideMechanics1000C", &OxidationPresets::oxideMechanics1000C)
       .def_static("siliconNitrideMask1000C",
-                  &OxidationPresets::siliconNitrideMask1000C);
+                  &OxidationPresets::siliconNitrideMask1000C)
+      .def_static("siliconNitrideMask", &OxidationPresets::siliconNitrideMask,
+                  py::arg("temperatureCelsius"));
 
   py::class_<OxidationDeformationParameters>(
       module, "OxidationDeformationParameters", py::module_local())
       .def(py::init<>())
       .def_readwrite("viscosity", &OxidationDeformationParameters::viscosity)
-      .def_readwrite("bulkModulus",
-                     &OxidationDeformationParameters::bulkModulus)
       .def_readwrite("ambientPressure",
                      &OxidationDeformationParameters::ambientPressure)
-      .def_readwrite("pressureRelaxation",
-                     &OxidationDeformationParameters::pressureRelaxation)
-      .def_readwrite("pressureTolerance",
-                     &OxidationDeformationParameters::pressureTolerance)
       .def_readwrite(
           "minMechanicsBoundaryDistance",
           &OxidationDeformationParameters::minMechanicsBoundaryDistance)
@@ -167,22 +158,14 @@ inline void bindOxidationSharedTypes(py::module &module) {
                      &OxidationDeformationParameters::shearModulus)
       .def_readwrite("stressRelaxationTime",
                      &OxidationDeformationParameters::stressRelaxationTime)
+      .def_readwrite("shearActivationVolume",
+                     &OxidationDeformationParameters::shearActivationVolume)
       .def_readwrite("stressTimeStep",
                      &OxidationDeformationParameters::stressTimeStep)
-      .def_readwrite("harmonicIterations",
-                     &OxidationDeformationParameters::harmonicIterations)
       .def_readwrite("mechanicsIterations",
                      &OxidationDeformationParameters::mechanicsIterations)
-      .def_readwrite("pressureIterations",
-                     &OxidationDeformationParameters::pressureIterations)
-      .def_readwrite("stokesIterations",
-                     &OxidationDeformationParameters::stokesIterations)
       .def_readwrite("mechanicsTolerance",
                      &OxidationDeformationParameters::mechanicsTolerance)
-      .def_readwrite("stokesTolerance",
-                     &OxidationDeformationParameters::stokesTolerance)
-      .def_readwrite("tolerance", &OxidationDeformationParameters::tolerance)
-      .def_readwrite("relaxation", &OxidationDeformationParameters::relaxation)
       .def_readwrite("maxGridPoints",
                      &OxidationDeformationParameters::maxGridPoints)
       .def_readwrite("material", &OxidationDeformationParameters::material);
@@ -190,37 +173,11 @@ inline void bindOxidationSharedTypes(py::module &module) {
   py::class_<OxidationMaskParameters>(module, "OxidationMaskParameters",
                                       py::module_local())
       .def(py::init<>())
-      .def_readwrite("contactMode", &OxidationMaskParameters::contactMode)
-      .def_readwrite("temperature", &OxidationMaskParameters::temperature)
-      .def_readwrite("referenceTemperature",
-                     &OxidationMaskParameters::referenceTemperature)
-      .def_readwrite("referenceViscosity",
-                     &OxidationMaskParameters::referenceViscosity)
-      .def_readwrite("creepActivationEnergy",
-                     &OxidationMaskParameters::creepActivationEnergy)
-      .def_readwrite("poissonRatio", &OxidationMaskParameters::poissonRatio)
       .def_readwrite("youngModulus", &OxidationMaskParameters::youngModulus)
-      .def_readwrite("unilateralContact",
-                     &OxidationMaskParameters::unilateralContact)
-      .def_readwrite("relaxation", &OxidationMaskParameters::relaxation)
-      .def_readwrite("contactLoadRelaxation",
-                     &OxidationMaskParameters::contactLoadRelaxation)
-      .def_readwrite("contactReleaseFraction",
-                     &OxidationMaskParameters::contactReleaseFraction)
-      .def_readwrite("multigridSmootherOmega",
-                     &OxidationMaskParameters::multigridSmootherOmega)
-      .def_readwrite("tolerance", &OxidationMaskParameters::tolerance)
-      .def_readwrite("minBoundaryDistance",
-                     &OxidationMaskParameters::minBoundaryDistance)
-      .def_readwrite("maxIterations", &OxidationMaskParameters::maxIterations)
-      .def_readwrite("maxGridPoints", &OxidationMaskParameters::maxGridPoints)
-      .def_readwrite("material", &OxidationMaskParameters::material)
-      .def_readwrite("anchorBoundaryDirection",
-                     &OxidationMaskParameters::anchorBoundaryDirection)
-      .def_readwrite("anchorBoundarySide",
-                     &OxidationMaskParameters::anchorBoundarySide)
-      .def_readwrite("anchorBoundaryLayers",
-                     &OxidationMaskParameters::anchorBoundaryLayers);
+      .def_readwrite("poissonRatio", &OxidationMaskParameters::poissonRatio)
+      .def_readwrite("viscosity", &OxidationMaskParameters::viscosity)
+      .def_readwrite("shearActivationVolume",
+                     &OxidationMaskParameters::shearActivationVolume);
 
   py::class_<OxidationCouplingParameters>(module, "OxidationCouplingParameters",
                                           py::module_local())
@@ -485,6 +442,9 @@ template <int D> void bindApi(py::module &module) {
            (T(OxidationDiffusion<T, D>::*)(const Vec3D<T> &) const) &
                OxidationDiffusion<T, D>::getEffectiveReactionRate)
       .def("clearPressureField", &OxidationDiffusion<T, D>::clearPressureField)
+      .def("setStress", (void(OxidationDiffusion<T, D>::*)(
+                            const Vec3D<T> &, const std::array<T, 9> &)) &
+                            OxidationDiffusion<T, D>::setStress)
       .def("setPressure",
            (void(OxidationDiffusion<T, D>::*)(const Vec3D<T> &, T)) &
                OxidationDiffusion<T, D>::setPressure)
@@ -545,6 +505,11 @@ template <int D> void bindApi(py::module &module) {
       .def("getVelocity",
            (Vec3D<T>(OxidationDeformation<T, D>::*)(const Vec3D<T> &) const) &
                OxidationDeformation<T, D>::getVelocity)
+      .def("getMaterialVelocity",
+           &OxidationDeformation<T, D>::getMaterialVelocity,
+           py::arg("coordinate"), py::arg("nitride"),
+           "Velocity of one material (oxide, or the nitride mask) for "
+           "advecting its surface.")
       .def("getPressure",
            (T(OxidationDeformation<T, D>::*)(const Vec3D<T> &) const) &
                OxidationDeformation<T, D>::getPressure)
@@ -576,85 +541,10 @@ template <int D> void bindApi(py::module &module) {
       .def("setReactionInterface",
            &OxidationDeformation<T, D>::setReactionInterface)
       .def("setDiffusionField", &OxidationDeformation<T, D>::setDiffusionField)
-      .def("setMaskVelocityField",
-           &OxidationDeformation<T, D>::setMaskVelocityField)
-      .def("clearMaskVelocityField",
-           &OxidationDeformation<T, D>::clearMaskVelocityField)
       .def("markGeometryChanged",
            &OxidationDeformation<T, D>::markGeometryChanged)
       .def("writeFieldsToLevelSet",
            &OxidationDeformation<T, D>::writeFieldsToLevelSet);
-
-  py::class_<OxidationMaskBending<T, D>, VelocityField<T>,
-             SmartPointer<OxidationMaskBending<T, D>>>(module,
-                                                       "OxidationMaskBending")
-      .def(py::init(
-               [](SmartPointer<OxidationDeformation<T, D>> &deformationField,
-                  OxidationMaskParameters maskParameters) {
-                 return OxidationMaskBending<T, D>::New(deformationField,
-                                                        maskParameters);
-               }),
-           py::arg("deformationField"),
-           py::arg("maskParameters") = OxidationMaskParameters())
-      .def(py::init(
-               [](SmartPointer<OxidationDeformation<T, D>> &deformationField,
-                  SmartPointer<Domain<T, D>> &maskInterface,
-                  OxidationMaskParameters maskParameters, int maskSign) {
-                 return OxidationMaskBending<T, D>::New(
-                     deformationField, maskInterface, maskParameters, maskSign);
-               }),
-           py::arg("deformationField"), py::arg("maskInterface"),
-           py::arg("maskParameters") = OxidationMaskParameters(),
-           py::arg("maskSign") = 1)
-      .def("setMaskInterface", &OxidationMaskBending<T, D>::setMaskInterface,
-           py::arg("maskInterface"), py::arg("maskSign") = 1)
-      .def("setAmbientInterface",
-           &OxidationMaskBending<T, D>::setAmbientInterface,
-           py::arg("ambientInterface"), py::arg("ambientSign") = -1)
-      .def(
-          "setSolveBounds",
-          [](OxidationMaskBending<T, D> &model,
-             std::array<viennahrle::IndexType, D> passedMinIndex,
-             std::array<viennahrle::IndexType, D> passedMaxIndex) {
-            viennahrle::Index<D> minIndex{};
-            viennahrle::Index<D> maxIndex{};
-            for (unsigned i = 0; i < D; ++i) {
-              minIndex[i] = passedMinIndex[i];
-              maxIndex[i] = passedMaxIndex[i];
-            }
-            model.setSolveBounds(minIndex, maxIndex);
-          },
-          py::arg("minIndex"), py::arg("maxIndex"))
-      .def("clearSolveBounds", &OxidationMaskBending<T, D>::clearSolveBounds)
-      .def("apply", &OxidationMaskBending<T, D>::apply)
-      .def("setParameters", &OxidationMaskBending<T, D>::setParameters)
-      .def("getParameters", &OxidationMaskBending<T, D>::getParameters)
-      .def("getIterations", &OxidationMaskBending<T, D>::getIterations)
-      .def("getResidual", &OxidationMaskBending<T, D>::getResidual)
-      .def("getLastApplyVelocityChange",
-           &OxidationMaskBending<T, D>::getLastApplyVelocityChange)
-      .def("getNumberOfSolutionNodes",
-           &OxidationMaskBending<T, D>::getNumberOfSolutionNodes)
-      .def("getNumberOfContactNodes",
-           &OxidationMaskBending<T, D>::getNumberOfContactNodes)
-      .def("getNumberOfFixedNodes",
-           &OxidationMaskBending<T, D>::getNumberOfFixedNodes)
-      .def("writeFieldsToLevelSet",
-           &OxidationMaskBending<T, D>::writeFieldsToLevelSet);
-
-  py::class_<OxidationConstrainedAmbient<T, D>, VelocityField<T>,
-             SmartPointer<OxidationConstrainedAmbient<T, D>>>(
-      module, "OxidationConstrainedAmbient")
-      .def(py::init(
-               [](SmartPointer<OxidationDeformation<T, D>> &deformationField,
-                  SmartPointer<OxidationMaskBending<T, D>> &maskVelocityField,
-                  SmartPointer<Domain<T, D>> &maskInterface, int maskSign) {
-                 return OxidationConstrainedAmbient<T, D>::New(
-                     deformationField, maskVelocityField, maskInterface,
-                     maskSign);
-               }),
-           py::arg("deformationField"), py::arg("maskVelocityField"),
-           py::arg("maskInterface"), py::arg("maskSign") = 1);
 
   py::class_<OxidationModel<T, D>, SmartPointer<OxidationModel<T, D>>>(
       module, "OxidationModel")
@@ -710,12 +600,6 @@ template <int D> void bindApi(py::module &module) {
       .def("setSpatialScheme", &Oxidation<T, D>::setSpatialScheme)
       .def("setTemporalScheme", &Oxidation<T, D>::setTemporalScheme)
       .def("setGpuMode", &Oxidation<T, D>::setGpuMode, py::arg("mode"))
-      .def("setGpuPreconditioner", &Oxidation<T, D>::setGpuPreconditioner,
-           py::arg("preconditioner"))
-      .def("setMaskCouplingIterations",
-           &Oxidation<T, D>::setMaskCouplingIterations)
-      .def("setMaskCouplingTolerance",
-           &Oxidation<T, D>::setMaskCouplingTolerance)
       .def(
           "setSolveBounds",
           [](Oxidation<T, D> &model,
@@ -730,20 +614,6 @@ template <int D> void bindApi(py::module &module) {
             model.setSolveBounds(minIndex, maxIndex);
           },
           py::arg("minIndex"), py::arg("maxIndex"))
-      .def(
-          "setMaskBendingBounds",
-          [](Oxidation<T, D> &model,
-             std::array<viennahrle::IndexType, D> passedMinIndex,
-             std::array<viennahrle::IndexType, D> passedMaxIndex) {
-            viennahrle::Index<D> minIndex{};
-            viennahrle::Index<D> maxIndex{};
-            for (unsigned i = 0; i < D; ++i) {
-              minIndex[i] = passedMinIndex[i];
-              maxIndex[i] = passedMaxIndex[i];
-            }
-            model.setMaskBendingBounds(minIndex, maxIndex);
-          },
-          py::arg("minIndex"), py::arg("maxIndex"))
       .def("apply", &Oxidation<T, D>::apply, py::arg("advectionTime"))
       .def("applyCFLLimited", &Oxidation<T, D>::applyCFLLimited,
            py::arg("requestedTime"), py::arg("cflFactor"),
@@ -752,12 +622,7 @@ template <int D> void bindApi(py::module &module) {
       .def("getLastMaxVelocity", &Oxidation<T, D>::getLastMaxVelocity,
            "Maximum interface velocity (µm/hr) from the most recent CFL step.")
       .def("getDiffusionField", &Oxidation<T, D>::getDiffusionField)
-      .def("getDeformationField", &Oxidation<T, D>::getDeformationField)
-      .def("getMaskBendingField", &Oxidation<T, D>::getMaskBendingField)
-      .def("getMaskCouplingIterations",
-           &Oxidation<T, D>::getMaskCouplingIterations)
-      .def("getMaskCouplingResidual",
-           &Oxidation<T, D>::getMaskCouplingResidual);
+      .def("getDeformationField", &Oxidation<T, D>::getDeformationField);
 
   if constexpr (D == 2) {
     module.def(

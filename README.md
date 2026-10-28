@@ -16,8 +16,8 @@ ViennaLS is a header-only C++ level set library for high-performance topography 
 - **Level-set equation solver**: Solves ∂φ/∂t + v|∇φ| = 0 to advect interfaces under arbitrary velocity fields; spatial schemes: Engquist-Osher (1st/2nd order), Lax-Friedrichs (global/local, 1st/2nd order), WENO (3rd/5th order); temporal schemes: Forward Euler, Runge-Kutta 2nd/3rd order; CFL-limited time stepping
 - **Level-set operations**: Boolean operations, geometric advection, curvature calculation, normal vectors calculation, visibility calculation, feature detection, 2D<->3D extrusion/slicing, mesh export (VTP/VTU via VTK)
 - **Comparison & analysis**: Chamfer distance (bidirectional surface-to-surface, forward/backward/RMS/max), narrow-band SDF difference, sparse-field SDF difference, volume/area difference, critical dimension extraction
-- **Thermal oxidation**: Coupled Deal-Grove diffusion + Stokes flow oxide mechanics (Maxwell viscoelasticity, SIMPLE pressure-velocity coupling); LOCOS mode adds biharmonic Si₃N₄ mask bending with two-way traction coupling. See [`docs/OxidationSolver.md`](docs/OxidationSolver.md)
-- **GPU acceleration**: Optional CUDA BiCGSTAB back-end for the oxidation diffusion and mechanics linear solves (requires `VIENNALS_USE_GPU=ON`)
+- **Thermal oxidation**: Coupled Deal-Grove diffusion + incompressible Stokes flow oxide mechanics (Maxwell viscoelasticity, stress-dependent viscosity) on a staggered grid, solved coupled in velocity and pressure (sparse LU in 2D, AMGCL in 3D); in LOCOS mode the Si₃N₄ mask joins the same mechanics solve as an elastic body with Maxwell creep. See [`docs/OxidationSolver.md`](docs/OxidationSolver.md)
+- **GPU acceleration**: Optional CUDA back-end for the oxidation diffusion solve and the 3-D oxidation mechanics solve (requires `VIENNALS_USE_GPU=ON`)
 
 > [!NOTE]  
 > ViennaLS is under heavy development and improved daily. If you do have suggestions or find bugs, please let us know!
@@ -112,7 +112,7 @@ cd ViennaLS
 pip install .
 ```
 
-To build the Python package with **GPU** support for the oxidation diffusion and mechanics solvers, use the install script in the `python/scripts` folder:
+To build the Python package with **GPU** support for the oxidation diffusion and 3-D mechanics solvers, use the install script in the `python/scripts` folder:
 
 ```bash
 git clone https://github.com/ViennaTools/ViennaLS.git
@@ -169,7 +169,7 @@ We recommend using [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) to consum
 
 * Installation with CPM
   ```cmake
-  CPMAddPackage("gh:viennatools/viennals@5.9.0")
+  CPMAddPackage("gh:viennatools/viennals@5.10.0")
 
   target_link_libraries(${PROJECT_NAME} PUBLIC ViennaTools::ViennaLS)
   ```

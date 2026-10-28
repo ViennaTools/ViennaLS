@@ -4,7 +4,10 @@
 #include <lsVelocityField.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <cstdio>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -13,16 +16,30 @@
 
 #include <vcTimer.hpp>
 
+// AMGCL's solver parameters as plain structs (no Boost property trees).
+#ifndef AMGCL_NO_BOOST
+#define AMGCL_NO_BOOST
+#endif
+#include <amgcl/adapter/crs_tuple.hpp>
+#include <amgcl/amg.hpp>
+#include <amgcl/backend/builtin.hpp>
+#include <amgcl/coarsening/smoothed_aggregation.hpp>
+#include <amgcl/make_solver.hpp>
+#include <amgcl/relaxation/ilu0.hpp>
+#include <amgcl/solver/bicgstab.hpp>
+
 #include <omp.h>
 
 #ifdef VIENNALS_GPU_BICGSTAB
-#include <lsOxidationBiCGSTABInterface.hpp>
+#include <lsOxidationGpuInterface.hpp>
 #endif
 
 namespace viennals {
 
-/// Selects the BiCGSTAB back-end for the diffusion solve.
-/// GPU failures are reported and not silently fallen back to CPU.
+/// Where the large linear solves of the oxidation solvers run: the diffusion
+/// solve and the 3-D mechanics solve (smaller systems stay on the CPU, where
+/// they are as fast).  GPU failures are reported and not silently fallen back
+/// to CPU.
 enum class GpuMode {
   Cpu, ///< Always use CPU (default)
   Gpu, ///< Always use GPU; fail if unavailable or unsuccessful
@@ -33,12 +50,6 @@ enum class GpuMode {
   /// indicates a malfunction rather than an absent GPU.
   Auto
 };
-
-/// Selects the preconditioner used by the GPU BiCGSTAB solver.
-/// Jacobi matches the CPU solver's preconditioner and is the default. ILU0 is
-/// experimental because cuSPARSE SpSV value-analysis behavior differs between
-/// CUDA versions and can introduce structured solver error if stale.
-enum class GpuPreconditioner { Jacobi, ILU0 };
 
 /// Parameters for the steady oxidant diffusion model used by
 /// OxidationDiffusion.
@@ -51,9 +62,15 @@ struct OxidationParameters {
   double expansionCoefficient = 1.;
   double velocitySign = 1.;
 
-  // Stress coupling for reaction rate:
-  // k_eff = k * exp(-(p - p_ref) * V_k / (k_B * T)).
-  // Activation volumes are in m^3, pressure is in Pa, temperature is in K.
+  // Stress coupling for reaction rate (Kao et al., IEEE TED 35, 25 (1988);
+  // the "Vr" of SUPREM-IV and TCAD): the new oxide expands against the
+  // stress NORMAL to the Si/SiO2 interface,
+  // k_eff = k * exp((sigma_nn + p_ref) * V_k / (k_B * T)),
+  // with sigma_nn = n.sigma.n the oxide's Cauchy stress (tension positive) at
+  // the interface, so normal compression suppresses the rate.  This is not
+  // the pressure: at a convex surface the interface is in normal compression
+  // while the oxide pressure there can be tensile.
+  // Activation volumes are in m^3, stresses in Pa, temperature in K.
   double temperature = 1273.15;
   double reactionActivationVolume = 0.;
   double referencePressure = 0.;
@@ -65,11 +82,22 @@ struct OxidationParameters {
   // Crystal orientation factor on reaction rate.
   // k(n) = k * [1 + (reactionRateRatio111 - 1) * (1 - (n . crystalAxis)^2)]
   // reactionRateRatio111 = 1 disables the correction (isotropic).
+  // crystalAxis is the wafer normal: the default is the 2-D convention (y
+  // up); a 3-D domain with z up needs (0, 0, 1) (ViennaPS sets the last
+  // axis).
   double reactionRateRatio111 = 1.;
   Vec3D<double> crystalAxis = {0., 1., 0.};
 
   double maskTransferCoefficient = 0.;
   double maskConcentration = 0.;
+  /// Meshed mask diffusion: gamma = D_SiO2 / D_mask.  When > 0 the mask BODY
+  /// becomes part of the diffusion domain — oxidant enters its outer surface
+  /// through the ambient Robin BC, diffuses through the film with D/gamma,
+  /// crosses into the oxide, and reacts at the Si interface.  The film's
+  /// resistance then comes from its actual geometry (a thinned or stretched
+  /// mask leaks more), not from a lumped coefficient.  0 keeps the mask
+  /// impermeable (or lumped via maskTransferCoefficient, if that is set).
+  double maskPermeabilityRatio = 0.;
   double minBoundaryDistance = 1e-6;
   unsigned maxIterations = 10000;
   double tolerance = 1e-8;
@@ -99,8 +127,6 @@ class OxidationDiffusion final : public VelocityField<T>,
   using IndexType = viennahrle::Index<D>;
   using ConstSparseIterator =
       viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>;
-  using IndexCacheMap =
-      std::unordered_map<IndexType, T, typename IndexType::hash>;
 
 private:
   static constexpr T boltzmannConstant = T(1.380649e-23);
@@ -120,6 +146,7 @@ private:
   using OxidationSolverBase<T, D>::crosses;
   using OxidationSolverBase<T, D>::valueAt;
   using OxidationSolverBase<T, D>::inBounds;
+  using OxidationSolverBase<T, D>::stencilOffset;
   using OxidationSolverBase<T, D>::linearIndex;
   using OxidationSolverBase<T, D>::increment;
   using OxidationSolverBase<T, D>::findNearbyNode;
@@ -132,6 +159,9 @@ private:
     T concentration = 0.;
     Vec3D<T> siNormal = {0., 0.,
                          0.}; // unit outward normal of Si surface (into oxide)
+    // Node lies inside the mask body (meshed mask diffusion): its diffusion
+    // coefficient is D / maskPermeabilityRatio instead of D.
+    bool inMask = false;
   };
 
   struct StencilSide {
@@ -161,27 +191,62 @@ private:
   bool useRequestedBounds = false;
   bool warmStartable_ =
       false; // true when nodes[i].concentration holds a prior solution
-  IndexCacheMap pressureLookup;
-  IndexCacheMap concentrationCache_;
+  std::unordered_map<std::size_t, T> pressureLookup;
+  // Oxide Cauchy stress per node (row-major 3x3), fed back by OxidationModel
+  // for the normal-stress reaction law.
+  std::unordered_map<std::size_t, std::array<T, 9>> stressLookup;
+  // Interface normal stress per node for the reaction law (NaN = none);
+  // see updateInterfaceNormalStress.
+  std::vector<T> interfaceNormalStress_;
+  std::vector<T> lawPressure_;
+  std::unordered_map<std::size_t, T> concentrationCache_;
   std::vector<Node> nodes;
   // Face-major flat BC arrays: index = fi * n + nodeId, where fi in [0, 2*D).
-  // Face-major layout gives coalesced GPU reads when all warp threads access
-  // the same face of consecutive nodes.
   std::vector<Boundary> faceBCTypes_;
   std::vector<T> faceBCDists_;
+  // |n_axis| of the Si interface normal on REACTION faces (see
+  // reactionBoundarySide); 1 elsewhere.
+  std::vector<T> faceReactionNormal_;
+  // The Si front's interface points are the crossings of the REACTION faces
+  // (node + faceBCDists_ along the face's axis).  Everything the front does
+  // is evaluated there, never per node: the normal (the level-set gradient
+  // interpolated to the crossing), the reaction rate k (stress and
+  // orientation laws), and the front speed k C_i / (N alpha) with the
+  // crossing's own interface concentration C_i.  The oxidant sink, the
+  // advection speed of every level-set point and the expansion velocity of
+  // every mechanics ghost interpolate these along the front.  Per-node values
+  // copied to nearby points (the earlier form) made the speed depend on where
+  // the front sat in its cell, and the stress feedback grew that stair-step
+  // pattern into a corrugated front.
+  std::vector<Vec3D<T>> faceCrossingNormal_;
+  std::vector<T> faceReactionRate_;
+  std::vector<T> faceFrontSpeed_;
+  // The REACTION crossings node by node (faces in order) with what
+  // frontVelocityAt sums over them, rebuilt with the front speeds: a query
+  // reads one short contiguous list per nearby node instead of 2D
+  // face-major arrays at stride n (every mechanics ghost asks for it).
+  struct FrontCrossing {
+    Vec3D<T> point; // index units
+    T areaWeight;   // faceReactionNormal_
+    T speed;        // faceFrontSpeed_
+    Vec3D<T> normal;
+  };
+  std::vector<std::size_t> frontStart_; // per node, n + 1 entries
+  std::vector<FrontCrossing> frontCrossings_;
+  // Point on the front (index units) a reaction node's law stress is sampled
+  // at: the node moved back along its normal by its front distance.
+  std::vector<Vec3D<T>> interfaceAnchor_;
   // Neighbor node IDs for every face (geometry-only, rebuilt with nodes).
   // Entry == noNode for boundary / out-of-bounds faces.
   std::vector<std::size_t> neighborIds_;
 
+  // The solve runs on the GPU from this many nodes (with the GPU mode). Per
+  // solve on 3-D LOCOS corners, CPU (10 threads) / GPU: 7.3k nodes 11.5 /
+  // 12.7 ms, 25k 22.6 / 19.0 ms, 69k 66 / 46 ms (the AMG setup stays on the
+  // host).
+  static constexpr std::size_t gpuMinNodes = 20000;
   GpuMode gpuMode_ = GpuMode::Cpu;
-  GpuPreconditioner gpuPreconditioner_ = GpuPreconditioner::Jacobi;
-
-#ifdef VIENNALS_GPU_BICGSTAB
-  // Opaque pointer to device-side buffers (GpuBiCGSTABBuffers is defined only
-  // in the CUDA translation unit; we hold a raw pointer here so g++ never sees
-  // the CUDA internals).
-  gpu::GpuBiCGSTABBuffers *gpuBufs_ = nullptr;
-#endif
+  bool gpuOff_ = false; // Auto mode after the GPU was unavailable
 
 public:
   /// Sub-grid accurate sample of the reaction boundary crossing closest to a
@@ -205,17 +270,6 @@ public:
       : reactionInterface(passedReactionInterface),
         ambientInterface(passedAmbientInterface), parameters(passedParameters) {
   }
-
-  ~OxidationDiffusion() {
-#ifdef VIENNALS_GPU_BICGSTAB
-    gpu::freeGpuBuffers(gpuBufs_);
-    gpuBufs_ = nullptr;
-#endif
-  }
-
-  // Disable copy and assignment to avoid double-free of GPU buffers
-  OxidationDiffusion(const OxidationDiffusion &) = delete;
-  OxidationDiffusion &operator=(const OxidationDiffusion &) = delete;
 
   template <class... Args> static auto New(Args &&...args) {
     return SmartPointer<OxidationDiffusion>::New(std::forward<Args>(args)...);
@@ -270,14 +324,145 @@ public:
 
   void clearPressureField() {
     pressureLookup.clear();
+    stressLookup.clear();
     solved = false;
   }
 
-  void setPressure(const IndexType &index, T pressure) {
-    if (std::isfinite(pressure))
-      pressureLookup[index] = pressure;
+  /// Oxide Cauchy stress (Pa, tension positive, row-major 3x3) at a node,
+  /// for the normal-stress reaction law.
+  void setStress(const IndexType &index, const std::array<T, 9> &stress) {
+    const auto key = detail::gridIndexHash<D>(index);
+    if (std::all_of(stress.begin(), stress.end(),
+                    [](T value) { return std::isfinite(value); }))
+      stressLookup[key] = stress;
     else
-      pressureLookup.erase(index);
+      stressLookup.erase(key);
+    solved = false;
+  }
+
+  /// The pressure and stress the last solve used at a node (reference
+  /// pressure / zero stress where nothing was fed back).
+  void getFeedback(const IndexType &index, T &pressure,
+                   std::array<T, 9> &stress) const {
+    const auto key = detail::gridIndexHash<D>(index);
+    const auto p = pressureLookup.find(key);
+    pressure =
+        p != pressureLookup.end() ? p->second : T(parameters.referencePressure);
+    const auto s = stressLookup.find(key);
+    if (s != stressLookup.end())
+      stress = s->second;
+    else
+      stress.fill(T(0));
+  }
+
+  using StressLookup = std::unordered_map<std::size_t, std::array<T, 9>>;
+
+  using PressureLookup = std::unordered_map<std::size_t, T>;
+
+  /// Pressure and stress feedback carried from one solve to the next, like
+  /// the concentration cache: lsOxidation builds a new OxidationDiffusion
+  /// for every coupled solve, and without the carry-over every solve began
+  /// its stress coupling from zero stress (~7 coupling iterations per solve
+  /// on a Kao cylinder, residual 1.0 at the first).
+  const PressureLookup &getPressureCache() const { return pressureLookup; }
+  const StressLookup &getStressCache() const { return stressLookup; }
+  void setFeedbackCache(PressureLookup pressures, StressLookup stresses) {
+    pressureLookup = std::move(pressures);
+    stressLookup = std::move(stresses);
+    solved = false;
+  }
+
+  /// The interface normal stress the reaction law used in the last solve
+  /// (per node; NaN where the law falls back to the unstressed rate).
+  const std::vector<T> &getInterfaceNormalStress() const {
+    return interfaceNormalStress_;
+  }
+
+  /// The interface normal stress the reaction law would use with `lookup`:
+  /// the median sample at every node with a REACTION face, smoothed along the
+  /// interface (see updateInterfaceNormalStress for why).  Non-mutating, so
+  /// the coupling loop can measure convergence without changing the state.
+  std::vector<T> interfaceNormalStressFor(const StressLookup &lookup) const {
+    const std::size_t n = nodes.size();
+    constexpr T nan = std::numeric_limits<T>::quiet_NaN();
+    std::vector<T> value(n, nan);
+    if (faceBCTypes_.size() != 2 * D * n)
+      return value;
+    for (std::size_t i = 0; i < n; ++i) {
+      if (nodes[i].inMask || !reactionNode(i))
+        continue;
+      const auto &normal = nodes[i].siNormal;
+      Vec3D<T> into = normal; // into the oxide
+      for (unsigned d = 0; d < D; ++d)
+        into[d] *= static_cast<T>(reactionSign);
+      const auto normalStress = [&](std::size_t j) {
+        const auto found =
+            lookup.find(detail::gridIndexHash<D>(nodes[j].index));
+        if (found == lookup.end())
+          return std::numeric_limits<T>::quiet_NaN();
+        T v = T(0);
+        for (unsigned r = 0; r < D; ++r)
+          for (unsigned c = 0; c < D; ++c)
+            v += normal[r] * found->second[3 * r + c] * normal[c];
+        return v;
+      };
+      T sample;
+      if (frontStressAt(i, into, frontDistance(nodes[i].index), T(0),
+                        normalStress, sample) ||
+          medianNormalStress(nodes[i].index, lookup, sample))
+        value[i] = sample;
+    }
+    std::vector<T> next(n);
+    for (unsigned pass = 0; pass < 6; ++pass) {
+      for (std::size_t i = 0; i < n; ++i) {
+        next[i] = value[i];
+        if (!std::isfinite(value[i]))
+          continue;
+        T sum = value[i];
+        unsigned count = 1;
+        IndexType offset;
+        offset.fill(-1);
+        while (true) {
+          bool centre = true;
+          IndexType neighbor = nodes[i].index;
+          for (unsigned d = 0; d < D; ++d) {
+            neighbor[d] += offset[d];
+            centre = centre && offset[d] == 0;
+          }
+          if (!centre && inBounds(neighbor)) {
+            const std::size_t j = lookupNode(neighbor);
+            if (j != noNode && std::isfinite(value[j])) {
+              sum += value[j];
+              ++count;
+            }
+          }
+          unsigned d = 0;
+          while (d < D && offset[d] == 1)
+            offset[d++] = -1;
+          if (d == D)
+            break;
+          ++offset[d];
+        }
+        next[i] = sum / static_cast<T>(count);
+      }
+      value.swap(next);
+    }
+    return value;
+  }
+
+  void setStress(const Vec3D<T> &coordinate, const std::array<T, 9> &stress) {
+    IndexType index;
+    for (unsigned i = 0; i < D; ++i)
+      index[i] = std::llround(coordinate[i] / gridDelta);
+    setStress(index, stress);
+  }
+
+  void setPressure(const IndexType &index, T pressure) {
+    const auto key = detail::gridIndexHash<D>(index);
+    if (std::isfinite(pressure))
+      pressureLookup[key] = pressure;
+    else
+      pressureLookup.erase(key);
     solved = false;
   }
 
@@ -334,24 +519,22 @@ public:
                         "level sets enclose a non-empty oxide band.")
             .print();
     }
+    if (parameters.reactionActivationVolume != T(0))
+      updateInterfaceNormalStress();
+    if (parameters.diffusionActivationVolume != T(0))
+      updateLawPressure();
+    updateFaceRates();
     solveDiffusion();
 
     concentrationCache_.clear();
     for (const auto &node : nodes)
-      concentrationCache_[node.index] = node.concentration;
+      concentrationCache_[detail::gridIndexHash<D>(node.index)] =
+          node.concentration;
 
+    updateFaceSpeeds();
     maxScalarVelocity_ = 0.;
-    ConstSparseIterator reactionIt(reactionInterface->getDomain());
-    for (const auto &node : nodes) {
-      const auto sample = reactionBoundarySampleFromNode(reactionIt, node);
-      if (!sample.found)
-        continue;
-      const T rate = getEffectiveReactionRate(node.index);
-      const T vel =
-          std::abs(parameters.velocitySign) * rate * sample.concentration /
-          (parameters.oxidantMoleculeDensity * parameters.expansionCoefficient);
-      maxScalarVelocity_ = std::max(maxScalarVelocity_, vel);
-    }
+    for (const T speed : faceFrontSpeed_)
+      maxScalarVelocity_ = std::max(maxScalarVelocity_, speed);
 
     solved = true;
   }
@@ -369,16 +552,99 @@ public:
     for (unsigned i = 0; i < D; ++i)
       index[i] = std::llround(coordinate[i] / gridDelta);
 
+    // Meshed mask: mask nodes carry oxidant concentration but DO NOT react.
+    // A reaction speed queried at or nearest to a mask point is zero — never
+    // k*C from the film's near-C_eq concentration.  Without this, velocity
+    // fallbacks that sample the reaction speed at mask coordinates invent a
+    // full oxidation rate inside the mask body.
+    {
+      std::size_t nodeId = lookupNode(index);
+      if (nodeId == noNode)
+        nodeId = findNearbyNode(index);
+      if (nodeId != noNode && nodes[nodeId].inMask)
+        return 0.;
+    }
+
+    // The front speed at the point of the front closest to this one,
+    // x - phi grad(phi) / |grad(phi)|.
+    {
+      ConstSparseIterator reactionIt(reactionInterface->getDomain());
+      const T phi = valueAt(reactionIt, index);
+      if (std::isfinite(phi) && std::abs(phi) <= T(2)) {
+        const auto g = computeSiNormal(index, reactionIt);
+        Vec3D<T> p{T(0), T(0), T(0)};
+        for (unsigned d = 0; d < D; ++d)
+          p[d] = (static_cast<T>(index[d]) - phi * g[d]) * gridDelta;
+        const auto front = frontVelocityAt(p);
+        if (front.found)
+          return parameters.velocitySign * front.speed;
+      }
+    }
+
     const auto boundarySample = reactionBoundarySample(index);
     const IndexType rateIndex =
         boundarySample.found ? boundarySample.nodeIndex : index;
-    const T concentration = boundarySample.found
-                                ? boundarySample.concentration
-                                : getReactionBoundaryConcentration(index);
+    // (getReactionBoundaryConcentration would repeat the search that failed)
+    const T concentration = boundarySample.found ? boundarySample.concentration
+                                                 : getConcentration(index);
     return parameters.velocitySign * getEffectiveReactionRate(rateIndex) *
            concentration /
            (parameters.oxidantMoleculeDensity *
             parameters.expansionCoefficient);
+  }
+
+  /// Si front speed (k C_i / (N alpha), >= 0) and normal (level-set gradient
+  /// direction) at a point on the front: the area-weighted average over the
+  /// face crossings within two cells (Gaussian weights, 0.75 cells wide).
+  /// Not found before the first solve or away from the front.
+  struct FrontVelocity {
+    bool found = false;
+    T speed = 0.;
+    Vec3D<T> normal{0., 0., 0.};
+  };
+
+  FrontVelocity frontVelocityAt(const Vec3D<T> &coordinate) const {
+    FrontVelocity result;
+    const std::size_t n = nodes.size();
+    if (frontStart_.size() != n + 1)
+      return result;
+    Vec3D<T> p{T(0), T(0), T(0)};
+    for (unsigned d = 0; d < D; ++d)
+      p[d] = coordinate[d] / gridDelta;
+    constexpr T width = T(0.75);
+    T weightSum = T(0), speed = T(0);
+    Vec3D<T> normal{T(0), T(0), T(0)};
+    forEachNodeNear(p, 2, [&](std::size_t j) {
+      for (std::size_t k = frontStart_[j]; k < frontStart_[j + 1]; ++k) {
+        const auto &crossing = frontCrossings_[k];
+        T r2 = T(0);
+        for (unsigned d = 0; d < D; ++d)
+          r2 += (crossing.point[d] - p[d]) * (crossing.point[d] - p[d]);
+        // weighted by the crossing's share of the front area, |n_axis|
+        // (the factor its oxidant sink carries): an area average, so the
+        // extra crossings at stair steps do not count twice, and grazing
+        // arms -- the least accurate interface concentration -- hardly count
+        const T w =
+            std::exp(-r2 / (T(2) * width * width)) * crossing.areaWeight;
+        weightSum += w;
+        speed += w * crossing.speed;
+        for (unsigned d = 0; d < D; ++d)
+          normal[d] += w * crossing.normal[d];
+      }
+    });
+    if (weightSum <= T(1e-12))
+      return result;
+    T len = T(0);
+    for (unsigned d = 0; d < D; ++d)
+      len += normal[d] * normal[d];
+    len = std::sqrt(len);
+    if (len <= std::numeric_limits<T>::epsilon())
+      return result;
+    result.found = true;
+    result.speed = speed / weightSum;
+    for (unsigned d = 0; d < D; ++d)
+      result.normal[d] = normal[d] / len;
+    return result;
   }
 
   T getDissipationAlpha(int /*direction*/, int material,
@@ -436,21 +702,17 @@ public:
     return true;
   }
 
-  const IndexCacheMap &getConcentrationCache() const {
+  const std::unordered_map<std::size_t, T> &getConcentrationCache() const {
     return concentrationCache_;
   }
 
-  void setConcentrationCache(IndexCacheMap cache) {
+  void setConcentrationCache(std::unordered_map<std::size_t, T> cache) {
     concentrationCache_ = std::move(cache);
   }
 
-  /// Set the GPU solver selection mode.  See GpuMode for the two options.
-  /// On CPU-only builds (VIENNALS_GPU_BICGSTAB not defined) this is a no-op.
+  /// Set the GPU solver selection mode (see GpuMode).  On CPU-only builds
+  /// (VIENNALS_GPU_BICGSTAB not defined) Gpu is an error and Auto the CPU.
   void setGpuMode(GpuMode mode) { gpuMode_ = mode; }
-  /// Set the GPU BiCGSTAB preconditioner. Jacobi matches the CPU solver.
-  void setGpuPreconditioner(GpuPreconditioner preconditioner) {
-    gpuPreconditioner_ = preconditioner;
-  }
 
   /// Mark the current solution as valid without re-solving. Call this before
   /// any parallel advection (lsAdvect) that uses this field as a velocity
@@ -497,7 +759,7 @@ public:
       if (!it.isDefined())
         continue;
       const IndexType idx = it.getStartIndices();
-      const auto pIt = pressureLookup.find(idx);
+      const auto pIt = pressureLookup.find(detail::gridIndexHash<D>(idx));
       const T value = pIt != pressureLookup.end() ? pIt->second : T(0);
       pressures.push_back(std::isfinite(value) ? value : T(0));
     }
@@ -542,6 +804,7 @@ private:
 
   void buildNodes() {
     nodes.clear();
+    frontStart_.clear(); // rebuilt with the front speeds
     initNodeLookup();
 
     // On the first substep after an outer-step boundary the in-memory cache is
@@ -562,19 +825,48 @@ private:
       const auto *pd =
           (pIdx != -1) ? ambientInterface->getPointData().getScalarData(pIdx)
                        : nullptr;
+      // The normal-stress reaction law starts from the previous step's oxide
+      // stress: the deviatoric end-of-step stress the deformation solver
+      // carries with the flow (OxStressR0..2) minus the pressure.
+      const auto &pointData = ambientInterface->getPointData();
+      const std::array<int, 3> sIdx = {
+          pointData.getVectorDataIndex("OxStressR0"),
+          pointData.getVectorDataIndex("OxStressR1"),
+          pointData.getVectorDataIndex("OxStressR2")};
+      const bool stressWarmStart = parameters.reactionActivationVolume != 0. &&
+                                   pd != nullptr && sIdx[0] != -1 &&
+                                   sIdx[1] != -1 && sIdx[2] != -1;
       if (cd != nullptr || pd != nullptr) {
         ConstSparseIterator it(ambientInterface->getDomain());
         for (; !it.isFinished(); ++it) {
           if (!it.isDefined())
             continue;
           const auto ptId = it.getPointId();
-          const auto key = it.getStartIndices();
+          const std::size_t key =
+              detail::gridIndexHash<D>(it.getStartIndices());
           if (cd != nullptr && ptId < static_cast<decltype(ptId)>(cd->size()) &&
               std::isfinite((*cd)[ptId]))
             concentrationCache_[key] = (*cd)[ptId];
           if (pd != nullptr && ptId < static_cast<decltype(ptId)>(pd->size()) &&
               std::isfinite((*pd)[ptId]))
             pressureLookup[key] = (*pd)[ptId];
+          if (stressWarmStart &&
+              ptId < static_cast<decltype(ptId)>(pd->size())) {
+            std::array<T, 9> stress{};
+            bool valid = std::isfinite((*pd)[ptId]);
+            for (unsigned r = 0; r < 3 && valid; ++r) {
+              const auto *rows = pointData.getVectorData(sIdx[r]);
+              valid = rows != nullptr &&
+                      ptId < static_cast<decltype(ptId)>(rows->size());
+              for (unsigned c = 0; c < 3 && valid; ++c)
+                stress[3 * r + c] = T((*rows)[ptId][c]);
+            }
+            if (valid) {
+              for (unsigned d = 0; d < 3; ++d)
+                stress[4 * d] -= T((*pd)[ptId]);
+              stressLookup[key] = stress;
+            }
+          }
         }
         warmStartable_ = !concentrationCache_.empty();
       }
@@ -584,22 +876,39 @@ private:
     ConstSparseIterator ambientIt(ambientInterface->getDomain());
     auto maskIt = makeMaskIterator();
 
+    // Meshed mask diffusion: with gamma > 0 the mask body joins the diffusion
+    // domain as nodes of their own (D/gamma), so the oxidant concentration is
+    // solved THROUGH the film instead of being lumped into a boundary
+    // coefficient.
+    const bool meshMask =
+        maskInterface != nullptr && parameters.maskPermeabilityRatio > 0.;
+
     IndexType index = minIndex;
     while (true) {
       const T reactionPhi = valueAt(reactionIt, index);
       const T ambientPhi = valueAt(ambientIt, index);
-      if (isInsideOxide(reactionPhi, ambientPhi) &&
-          !isInsideMask(maskIt, index)) {
+      const bool insideMask = isInsideMask(maskIt, index);
+      constexpr T eps = T(1e-9);
+      const bool oxideNode =
+          isInsideOxide(reactionPhi, ambientPhi) && !insideMask;
+      const bool maskNode =
+          meshMask && insideMask && reactionSign * reactionPhi >= -eps;
+      if (oxideNode || maskNode) {
         const std::size_t id = nodes.size();
         nodeLookupFlat[linearIndex(index)] = id;
         T seedConc = parameters.equilibriumConcentration;
-        auto cacheIt = concentrationCache_.find(index);
+        auto cacheIt =
+            concentrationCache_.find(detail::gridIndexHash<D>(index));
         if (cacheIt != concentrationCache_.end())
           seedConc = cacheIt->second;
         if (!std::isfinite(seedConc))
           seedConc = parameters.equilibriumConcentration;
         Node newNode{index, seedConc};
-        if (parameters.reactionRateRatio111 != T(1))
+        newNode.inMask = maskNode;
+        // The orientation factor and the normal-stress reaction law both
+        // need the interface normal.
+        if (!maskNode && (parameters.reactionRateRatio111 != T(1) ||
+                          parameters.reactionActivationVolume != T(0)))
           newNode.siNormal = computeSiNormal(index, reactionIt);
         nodes.push_back(newNode);
       }
@@ -614,6 +923,8 @@ private:
     const std::size_t n = nodes.size();
     faceBCTypes_.assign(2 * D * n, Boundary::NONE);
     faceBCDists_.assign(2 * D * n, T(1));
+    faceReactionNormal_.assign(2 * D * n, T(1));
+    faceCrossingNormal_.assign(2 * D * n, Vec3D<T>{T(0), T(0), T(0)});
     ConstSparseIterator faceReactionIt(reactionInterface->getDomain());
     ConstSparseIterator faceAmbientIt(ambientInterface->getDomain());
     auto faceMaskIt = makeMaskIterator();
@@ -626,16 +937,59 @@ private:
           nb[dir] += off;
           if (!inBounds(nb) || lookupNode(nb) != noNode)
             continue; // NONE/1.0 already set by assign()
-          const auto bc = classifyBoundary(faceReactionIt, faceAmbientIt,
-                                           faceMaskIt, node.index, nb);
+          auto bc = classifyBoundary(faceReactionIt, faceAmbientIt, faceMaskIt,
+                                     node.index, nb);
+          if (node.inMask) {
+            // Faces of a meshed mask node.  Crossing the mask level set here
+            // is the film's OUTER surface — the gas inlet — so it takes the
+            // ambient Robin BC.  Crossing the Si level set is mask resting on
+            // silicon: the mask does not react with Si, so zero flux.
+            if (bc.first == Boundary::MASK)
+              bc.first = Boundary::AMBIENT;
+            else if (bc.first == Boundary::REACTION)
+              bc.first = Boundary::NONE;
+          }
           faceBCTypes_[fi * n + id] = bc.first;
           faceBCDists_[fi * n + id] = bc.second;
+          if (bc.first == Boundary::REACTION) {
+            // the normal at the crossing: the node's and the neighbour's
+            // level-set gradients, interpolated to the crossing point
+            const auto a = computeSiNormal(node.index, faceReactionIt);
+            const auto b = computeSiNormal(nb, faceReactionIt);
+            const T t = std::clamp(bc.second / gridDelta, T(0), T(1));
+            Vec3D<T> m{T(0), T(0), T(0)};
+            T len = T(0);
+            for (unsigned e = 0; e < D; ++e) {
+              m[e] = (T(1) - t) * a[e] + t * b[e];
+              len += m[e] * m[e];
+            }
+            len = std::sqrt(len);
+            if (len > std::numeric_limits<T>::epsilon())
+              for (unsigned e = 0; e < D; ++e)
+                m[e] /= len;
+            else
+              m = a;
+            faceCrossingNormal_[fi * n + id] = m;
+            faceReactionNormal_[fi * n + id] = std::abs(m[dir]);
+          }
         }
       }
     }
 
+    interfaceAnchor_.assign(n, Vec3D<T>{T(0), T(0), T(0)});
+    if (parameters.reactionActivationVolume != T(0))
+      for (std::size_t id = 0; id < n; ++id) {
+        if (nodes[id].inMask || !reactionNode(id))
+          continue;
+        const T phi = frontDistance(nodes[id].index);
+        for (unsigned d = 0; d < D; ++d)
+          interfaceAnchor_[id][d] =
+              static_cast<T>(nodes[id].index[d]) -
+              static_cast<T>(reactionSign) * nodes[id].siNormal[d] * phi;
+      }
+
     // Precompute per-face neighbor node IDs (geometry-only).
-    // Used by computeFaceCoeffs() and uploaded once to GPU.
+    // Used by computeFaceCoeffs().
     neighborIds_.assign(2 * D * n, noNode);
     for (std::size_t id = 0; id < n; ++id) {
       for (unsigned dir = 0; dir < D; ++dir) {
@@ -649,70 +1003,24 @@ private:
       }
     }
 
-    bool loggedBackend = false;
 #ifdef VIENNALS_GPU_BICGSTAB
-    // Free any stale allocation from a previous buildNodes() call.
-    gpu::freeGpuBuffers(gpuBufs_);
-    gpuBufs_ = nullptr;
-
-    const bool tryGpu = (gpuMode_ == GpuMode::Gpu || gpuMode_ == GpuMode::Auto);
-    if (tryGpu) {
-      const bool useIlu0 = gpuPreconditioner_ == GpuPreconditioner::ILU0;
-      gpuBufs_ = gpu::allocGpuBuffers(static_cast<uint32_t>(n), 2 * D, useIlu0);
-
-      // Each setup step is chained with else-if: once one fails the handle is
-      // released and set to null, and every later step must be skipped rather
-      // than called with a null handle. (In GpuMode::Gpu reportGpuUnavailable
-      // throws, but in GpuMode::Auto it returns and execution continues here.)
-      if (!gpuBufs_) {
-        reportGpuUnavailable("OxidationDiffusion: GPU mode was selected, but "
-                             "CUDA buffers could not be allocated or the CUDA "
-                             "context could not be initialized.");
-      } else {
-        // Convert std::size_t neighbor IDs to uint32_t for the device
-        const std::size_t nf = 2u * D * n;
-        std::vector<uint32_t> nb32(nf);
-        for (std::size_t k = 0; k < nf; ++k)
-          nb32[k] = (neighborIds_[k] == noNode)
-                        ? gpu::kNoNode
-                        : static_cast<uint32_t>(neighborIds_[k]);
-        if (!gpu::gpuUploadNeighborIds(gpuBufs_, nb32.data(), nf)) {
-          gpu::freeGpuBuffers(gpuBufs_);
-          gpuBufs_ = nullptr;
-          reportGpuUnavailable("OxidationDiffusion: GPU mode was selected, but "
-                               "uploading GPU neighbor IDs failed.");
-        } else if (useIlu0 &&
-                   !gpu::gpuSetupCSR(gpuBufs_, nb32.data(),
-                                     static_cast<uint32_t>(n), 2 * D)) {
-          gpu::freeGpuBuffers(gpuBufs_);
-          gpuBufs_ = nullptr;
-          reportGpuUnavailable("OxidationDiffusion: GPU mode was selected, but "
-                               "CUSPARSE setup for the GPU BiCGSTAB solver "
-                               "failed.");
-        } else {
-          // Only claim the GPU backend once every setup step has succeeded.
-          logDiffusionBackend("GPU BiCGSTAB",
-                              "preconditioner=" +
-                                  std::string(useIlu0 ? "ILU0" : "Jacobi"));
-          loggedBackend = true;
-        }
-      }
-    }
-#endif
-    if (!loggedBackend) {
-#ifdef VIENNALS_GPU_BICGSTAB
-      logDiffusionBackend("CPU BiCGSTAB",
-                          gpuMode_ == GpuMode::Cpu
-                              ? "GPU mode not selected"
-                              : "GPU requested but unavailable");
+    if (gpuMode_ == GpuMode::Cpu)
+      logDiffusionBackend("CPU AMG-BiCGSTAB", "GPU mode not selected");
+    else if (n < gpuMinNodes)
+      logDiffusionBackend("CPU AMG-BiCGSTAB",
+                          "below " + std::to_string(gpuMinNodes) + " nodes");
+    else if (gpuOff_ || !gpu::gpuRuntimeAvailable())
+      logDiffusionBackend("CPU AMG-BiCGSTAB", "GPU unavailable");
+    else
+      logDiffusionBackend("GPU AMG-BiCGSTAB", "AMGCL CUDA backend");
 #else
-      logDiffusionBackend("CPU BiCGSTAB",
-                          "ViennaLS was built without GPU BiCGSTAB support");
+    logDiffusionBackend("CPU AMG-BiCGSTAB",
+                        "ViennaLS was built without GPU support");
 #endif
-    }
   }
 
-  // Precompute per-face coupling coefficients for the GPU SpMV.
+  // Per-face coupling coefficients: the off-diagonal entries of the
+  // diffusion matrix.
   //
   //   faceCoeffs[fi * n + id] = 2*D_eff / (dist_fi * distSum_axis)
   //
@@ -728,7 +1036,7 @@ private:
     const std::vector<T> zeros(n, T(0));
 
     for (std::size_t id = 0; id < n; ++id) {
-      const T D_eff = getEffectiveDiffusionCoefficient(nodes[id].index);
+      const T D_eff = nodeDiffusionCoefficient(id);
       for (unsigned dir = 0; dir < D; ++dir) {
         const unsigned fiNeg = dir * 2u;
         const unsigned fiPos = dir * 2u + 1u;
@@ -743,10 +1051,21 @@ private:
         if (distSum <= eps)
           continue;
 
-        if (neighborIds_[fiNeg * n + id] != noNode && distNeg > eps)
-          faceCoeffs[fiNeg * n + id] = T(2) * D_eff / (distNeg * distSum);
-        if (neighborIds_[fiPos * n + id] != noNode && distPos > eps)
-          faceCoeffs[fiPos * n + id] = T(2) * D_eff / (distPos * distSum);
+        // Per-face diffusion, matching computeStencilAt: the harmonic mean
+        // of the two nodes' D.  A mirror side couples to the opposite
+        // neighbour: its coefficient goes there.
+        const unsigned fiNegEff =
+            stencilOffset(nodes[id].index, dir, -1) == 1 ? fiPos : fiNeg;
+        const unsigned fiPosEff =
+            stencilOffset(nodes[id].index, dir, 1) == -1 ? fiNeg : fiPos;
+        if (neighborIds_[fiNegEff * n + id] != noNode && distNeg > eps)
+          faceCoeffs[fiNegEff * n + id] +=
+              T(2) * faceDiffusionCoefficient(id, dir, -1, D_eff) /
+              (distNeg * distSum);
+        if (neighborIds_[fiPosEff * n + id] != noNode && distPos > eps)
+          faceCoeffs[fiPosEff * n + id] +=
+              T(2) * faceDiffusionCoefficient(id, dir, 1, D_eff) /
+              (distPos * distSum);
       }
     }
   }
@@ -759,26 +1078,21 @@ private:
                         T &diag, T &rhs) const {
     diag = T(0);
     rhs = T(0);
-    const T D_eff = getEffectiveDiffusionCoefficient(nodes[nodeId].index);
+    const T D_eff = nodeDiffusionCoefficient(nodeId);
     for (unsigned direction = 0; direction < D; ++direction) {
       const auto neg = makeStencilSide(nodeId, x, direction, -1, D_eff);
       const auto pos = makeStencilSide(nodeId, x, direction, 1, D_eff);
-      addAxisContribution(rhs, diag, neg, pos, D_eff);
-    }
-  }
-
-  // Computes Av = A * v using precomputed diagonal and b (RHS constants).
-  // (Av)[i] = precomputedDiag[i]*v[i] - rhs_at_v[i] + b[i]
-  // Stencil arithmetic stays in T; only storage uses SolverT.
-  template <class SolverT>
-  void matvec(const std::vector<SolverT> &v,
-              const std::vector<T> &precomputedDiag, const std::vector<T> &b,
-              std::vector<SolverT> &Av) const {
-#pragma omp parallel for schedule(static)
-    for (std::size_t i = 0; i < nodes.size(); ++i) {
-      T diag, rhs;
-      computeStencilAt(i, v, diag, rhs);
-      Av[i] = static_cast<SolverT>(precomputedDiag[i] * v[i] - rhs + b[i]);
+      // Each side carries its own face diffusion, the harmonic mean of the
+      // two nodes' D.
+      const T distSum = neg.distance + pos.distance;
+      if (distSum <= std::numeric_limits<T>::epsilon())
+        continue;
+      addSideContribution(
+          rhs, diag, neg, distSum,
+          faceDiffusionCoefficient(nodeId, direction, -1, D_eff));
+      addSideContribution(
+          rhs, diag, pos, distSum,
+          faceDiffusionCoefficient(nodeId, direction, 1, D_eff));
     }
   }
 
@@ -792,10 +1106,6 @@ private:
       return;
     }
 
-    // Work vectors use float to halve memory bandwidth in the SpMV hot path.
-    // Stencil arithmetic and dot-product accumulation remain in T (double).
-    using SolverT = float;
-
     const std::size_t n = nodes.size();
     const T eps = std::numeric_limits<T>::epsilon();
 
@@ -805,22 +1115,17 @@ private:
     tDiag.start();
     std::vector<T> diag(n), b(n);
     {
-      const std::vector<SolverT> zeros(n, SolverT(0));
+      const std::vector<T> zeros(n, T(0));
 #pragma omp parallel for schedule(static)
       for (std::size_t i = 0; i < n; ++i)
         computeStencilAt(i, zeros, diag[i], b[i]);
     }
     tDiag.finish();
 
-    T b_norm = T(0);
     bool finiteSystem = true;
-    for (std::size_t i = 0; i < n; ++i) {
+    for (std::size_t i = 0; i < n; ++i)
       finiteSystem =
           finiteSystem && std::isfinite(diag[i]) && std::isfinite(b[i]);
-      b_norm = std::max(b_norm, std::abs(b[i]));
-    }
-    if (b_norm < T(1e-100))
-      b_norm = T(1);
     if (!finiteSystem) {
       residual = std::numeric_limits<T>::infinity();
       normalizedResidual_ = residual;
@@ -830,6 +1135,28 @@ private:
           .print();
       return;
     }
+
+    // Scale of the residual test: a typical row (the median diagonal) times
+    // the concentration scale (max |b_i / diag_i|).  Not max|b|: a node on
+    // the ambient surface with the ambient on both sides along one axis has
+    // a row of 1 / distance (2e10 for a node exactly on it), and the solve
+    // then accepted its initial guess, C = 0 in the oxide (a dry Kao pillar
+    // whose surface passed through grid points did not oxidise).
+    T b_norm = T(0);
+    {
+      std::vector<T> sorted(diag);
+      const auto median = sorted.begin() + n / 2;
+      std::nth_element(sorted.begin(), median, sorted.end());
+      T concentrationScale = T(0);
+      for (std::size_t i = 0; i < n; ++i) {
+        if (diag[i] > eps)
+          concentrationScale =
+              std::max(concentrationScale, std::abs(b[i] / diag[i]));
+      }
+      b_norm = *median * concentrationScale;
+    }
+    if (b_norm < T(1e-100))
+      b_norm = T(1);
 
     // Initial guess: warm-start or diagonal-preconditioned b.  Sanitize the
     // warm start so a previous failed solve cannot seed NaNs into the next one.
@@ -842,286 +1169,137 @@ private:
       return T(0);
     };
 
-    std::vector<SolverT> x(n);
+    std::vector<T> x(n);
     for (std::size_t i = 0; i < n; ++i) {
-      T guess =
-          warmStartable_ ? nodes[i].concentration : fallbackInitialGuess(i);
-      if (!std::isfinite(guess))
-        guess = fallbackInitialGuess(i);
-      x[i] = static_cast<SolverT>(guess);
+      x[i] = warmStartable_ ? nodes[i].concentration : fallbackInitialGuess(i);
       if (!std::isfinite(x[i]))
-        x[i] = SolverT(0);
+        x[i] = fallbackInitialGuess(i);
     }
     const auto initialGuess = x;
 
+    // BiCGSTAB preconditioned by smoothed-aggregation AMG with an ILU0
+    // smoother (AMGCL) on the system as CSR (diag plus computeFaceCoeffs): on
+    // the CPU or, with the GPU mode and at least gpuMinNodes nodes, the same
+    // solver on AMGCL's CUDA backend, with the same stopping test and the
+    // same acceptance below.  A Jacobi-preconditioned BiCGSTAB (the former
+    // solver on both) stagnated for thousands of iterations and broke down
+    // (omega -> 0) on LOCOS bird's beaks, where the pressure-dependent D spans
+    // five decades and the cut-cell rows make the matrix strongly
+    // non-symmetric; the breakdown repeated on every CFL retry (the
+    // quasi-steady system has no dt in it) until the run aborted.  On those
+    // systems this solver takes 3-4 iterations.
+    Timer<> tSolve;
+    tSolve.start();
+    std::vector<T> faceCoeffs;
+    computeFaceCoeffs(faceCoeffs);
+    std::vector<std::ptrdiff_t> rowPtr(n + 1, 0), cols;
+    std::vector<T> values;
+    cols.reserve((2 * D + 1) * n);
+    values.reserve((2 * D + 1) * n);
+    std::vector<std::pair<std::ptrdiff_t, T>> row;
+    for (std::size_t i = 0; i < n; ++i) {
+      row.assign(1, {static_cast<std::ptrdiff_t>(i), diag[i]});
+      for (unsigned f = 0; f < 2 * D; ++f) {
+        const std::size_t j = neighborIds_[f * n + i];
+        if (j != noNode && faceCoeffs[f * n + i] != T(0))
+          row.emplace_back(static_cast<std::ptrdiff_t>(j),
+                           -faceCoeffs[f * n + i]);
+      }
+      std::sort(row.begin(), row.end());
+      for (const auto &entry : row) {
+        cols.push_back(entry.first);
+        values.push_back(entry.second);
+      }
+      rowPtr[i + 1] = static_cast<std::ptrdiff_t>(cols.size());
+    }
+
+    // ||r||_2 <= tolerance b_norm bounds the max-norm residual tested below
+    const T absTolerance = parameters.tolerance * b_norm;
+    bool solverFailed = false;
+    bool onCpu = true;
+    std::string path = " [CPU]";
 #ifdef VIENNALS_GPU_BICGSTAB
-    // ── GPU BiCGSTAB path ──────────────────────────────────────────────
-    // Engaged when GpuMode::Gpu is set and buildNodes() allocated GPU buffers.
-    // Uploads diag, b, and face coefficients fresh each call (they are
-    // pressure-dependent via D_eff), then runs the full BiCGSTAB loop on
-    // the device.  Only dot-product scalars and the max-abs residual are
-    // downloaded; work vectors stay on the GPU between iterations.
-    if (gpu::gpuIsValid(gpuBufs_)) {
-      Timer<> tPrep, tUpload, tSolve;
-      tPrep.start();
-      std::vector<double> diagGpu(n), bGpu(n);
-      for (std::size_t i = 0; i < n; ++i) {
-        diagGpu[i] = static_cast<double>(diag[i]);
-        bGpu[i] = static_cast<double>(b[i]);
-      }
-
-      // Face coupling coefficients (pressure-dependent; recomputed each call)
-      std::vector<T> faceCoeffs;
-      computeFaceCoeffs(faceCoeffs);
-      std::vector<double> coeffGpu(faceCoeffs.size());
-      for (std::size_t k = 0; k < faceCoeffs.size(); ++k)
-        coeffGpu[k] = static_cast<double>(faceCoeffs[k]);
-
-      std::vector<double> xGpu(n);
-      for (std::size_t i = 0; i < n; ++i)
-        xGpu[i] = static_cast<double>(x[i]);
-      tPrep.finish();
-
-      tUpload.start();
-      const bool gpuUploadOk = gpu::gpuUploadSolverArrays(
-          gpuBufs_, diagGpu.data(), bGpu.data(), coeffGpu.data(),
-          static_cast<uint32_t>(n), faceCoeffs.size());
-      tUpload.finish();
-      if (!gpuUploadOk) {
-        if (Logger::hasDebug()) {
-          const std::string tag =
-              "diffusion n=" + std::to_string(n) + " [GPU upload failed]";
-          Logger::getInstance()
-              .addTiming(tag + " diag/b precompute", tDiag)
-              .addTiming(tag + " GPU prep+faceCoeffs", tPrep)
-              .addTiming(tag + " GPU upload", tUpload)
-              .print();
-        }
-        VIENNACORE_LOG_ERROR("OxidationDiffusion: GPU mode was selected, but "
-                             "uploading GPU solver arrays or factorizing ILU "
-                             "failed." +
-                             gpuErrorDetail());
-      }
-
-      // Solve on GPU; xGpu holds the initial guess and receives the solution.
-      tSolve.start();
-      const bool gpuConverged = gpu::gpuSolveBiCGSTAB(
-          gpuBufs_, xGpu.data(), static_cast<double>(eps),
-          parameters.maxIterations, static_cast<double>(parameters.tolerance),
-          iterations, residual);
-      tSolve.finish();
-
-      const bool finiteGpuSolution =
-          gpuConverged &&
-          std::all_of(xGpu.begin(), xGpu.end(),
-                      [](double value) { return std::isfinite(value); });
-      const unsigned gpuIterations = iterations;
-      const T gpuResidual = residual;
-
-      if (finiteGpuSolution) {
-        // Write solution back to nodes only after convergence and finite
-        // checks.
+    if (gpuMode_ != GpuMode::Cpu && !gpuOff_ && n >= gpuMinNodes) {
+      static_assert(sizeof(std::ptrdiff_t) == sizeof(std::int64_t));
+      std::vector<double> valuesGpu(values.begin(), values.end()),
+          bGpu(b.begin(), b.end()), xGpu(x.begin(), x.end());
+      unsigned gpuIterations = 0;
+      const int status = gpu::gpuDiffusionSolve(
+          static_cast<std::int64_t>(n),
+          reinterpret_cast<const std::int64_t *>(rowPtr.data()),
+          reinterpret_cast<const std::int64_t *>(cols.data()), valuesGpu.data(),
+          bGpu.data(), xGpu.data(), parameters.maxIterations,
+          static_cast<double>(absTolerance), gpuIterations);
+      if (status > 0) {
         for (std::size_t i = 0; i < n; ++i)
-          nodes[i].concentration = static_cast<T>(xGpu[i]);
-        normalizedResidual_ = gpuResidual / b_norm;
-        lastSolveConverged_ = std::isfinite(normalizedResidual_) &&
-                              normalizedResidual_ <= parameters.tolerance;
-
-        if (Logger::hasTiming()) {
-          const std::string tag = "diffusion n=" + std::to_string(n) +
-                                  " iters=" + std::to_string(iterations) +
-                                  " res=" + std::to_string(residual) + " [GPU]";
-          Logger::getInstance()
-              .addTiming(tag + " GPU BiCGSTAB", tSolve)
-              .print();
-        }
-        if (Logger::hasDebug()) {
-          const std::string tag = "diffusion n=" + std::to_string(n) + " [GPU]";
-          Logger::getInstance()
-              .addTiming(tag + " diag/b precompute", tDiag)
-              .addTiming(tag + " GPU prep+faceCoeffs", tPrep)
-              .addTiming(tag + " GPU upload", tUpload)
-              .print();
-        }
-        return;
+          x[i] = static_cast<T>(xGpu[i]);
+        iterations = gpuIterations;
+        onCpu = false;
+        path = " [GPU]";
+      } else if (status == 0) {
+        // Gpu mode stops here; Auto warns once and stays on the CPU
+        reportGpuUnavailable("OxidationDiffusion: GPU mode was selected, but "
+                             "the GPU is unavailable.");
+        gpuOff_ = true;
+      } else {
+        // a GPU that is present and fails is a malfunction, not an absence
+        VIENNACORE_LOG_ERROR(
+            "OxidationDiffusion: the GPU diffusion solve failed." +
+            gpuErrorDetail());
+        solverFailed = true;
+        onCpu = false;
+        path = " [GPU]";
       }
-
-      if (Logger::hasDebug()) {
-        const std::string tag = "diffusion n=" + std::to_string(n) +
-                                " iters=" + std::to_string(gpuIterations) +
-                                " res=" + std::to_string(gpuResidual) +
-                                " [GPU failed]";
-        Logger::getInstance()
-            .addTiming(tag + " diag/b precompute", tDiag)
-            .addTiming(tag + " GPU prep+faceCoeffs", tPrep)
-            .addTiming(tag + " GPU upload", tUpload)
-            .addTiming(tag + " GPU BiCGSTAB", tSolve)
-            .print();
-      }
-      // Under GpuMode::Auto this warns and execution continues into the CPU
-      // BiCGSTAB below, which recomputes the solution from the initial guess.
-      reportGpuUnavailable(
-          "OxidationDiffusion: GPU mode was selected, but GPU BiCGSTAB "
-          "failed, did not converge, or produced non-finite concentrations "
-          "(iters=" +
-          std::to_string(gpuIterations) +
-          ", residual=" + std::to_string(gpuResidual) + ").");
     }
 #else
     if (gpuMode_ == GpuMode::Gpu) {
       VIENNACORE_LOG_ERROR("OxidationDiffusion: explicit GPU mode was "
                            "requested, but ViennaLS was built without "
                            "VIENNALS_GPU_BICGSTAB.");
-    } else if (gpuMode_ == GpuMode::Auto) {
+    } else if (gpuMode_ == GpuMode::Auto && !gpuOff_) {
       VIENNACORE_LOG_WARNING("OxidationDiffusion: GPU mode Auto was requested, "
                              "but ViennaLS was built without "
                              "VIENNALS_GPU_BICGSTAB. Using the CPU solver.");
+      gpuOff_ = true;
     }
 #endif
-
-    // r = b - A*x
-    std::vector<SolverT> Ax(n);
-    matvec(x, diag, b, Ax);
-    std::vector<SolverT> r(n), r_hat(n);
-    for (std::size_t i = 0; i < n; ++i) {
-      r[i] = static_cast<SolverT>(b[i] - Ax[i]);
-      r_hat[i] = r[i];
-    }
-
-    // BiCGSTAB with diagonal (Jacobi) preconditioner.
-    // Scalars (rho, alpha, omega, beta) and dot products stay in T for
-    // stability.
-    Timer<> tCpuSolve;
-    tCpuSolve.start();
-    std::vector<SolverT> p(n, SolverT(0)), v(n, SolverT(0)), y(n), z(n), s(n),
-        t(n);
-    T rho = T(1), alpha = T(1), omega = T(1);
-    bool bicgstabBreakdown = false;
-    for (std::size_t i = 0; i < n; ++i) {
-      const T ri = static_cast<T>(r[i]);
-      if (!std::isfinite(ri)) {
-        bicgstabBreakdown = true;
-        break;
-      }
-      residual = std::max(residual, std::abs(ri));
-    }
-
-    for (; !bicgstabBreakdown && iterations < parameters.maxIterations;
-         ++iterations) {
-      T rho_new = T(0);
-      for (std::size_t i = 0; i < n; ++i)
-        rho_new += static_cast<T>(r_hat[i]) * static_cast<T>(r[i]);
-
-      if (!std::isfinite(rho_new)) {
-        bicgstabBreakdown = true;
-        break;
-      }
-      if (std::abs(rho_new) < T(1e-100))
-        break;
-      if (!std::isfinite(rho) || !std::isfinite(alpha) ||
-          !std::isfinite(omega) || std::abs(omega) < T(1e-100)) {
-        bicgstabBreakdown = true;
-        break;
-      }
-
-      const T beta = (rho_new / rho) * (alpha / omega);
-      if (!std::isfinite(beta)) {
-        bicgstabBreakdown = true;
-        break;
-      }
-      rho = rho_new;
-
-      for (std::size_t i = 0; i < n; ++i)
-        p[i] = static_cast<SolverT>(r[i] + beta * (p[i] - omega * v[i]));
-
-      for (std::size_t i = 0; i < n; ++i) {
-        const T pi = p[i];
-        y[i] = static_cast<SolverT>((diag[i] > eps) ? pi / diag[i] : pi);
-      }
-
-      matvec(y, diag, b, v);
-
-      T r_hat_v = T(0);
-      for (std::size_t i = 0; i < n; ++i)
-        r_hat_v += static_cast<T>(r_hat[i]) * static_cast<T>(v[i]);
-      if (!std::isfinite(r_hat_v)) {
-        bicgstabBreakdown = true;
-        break;
-      }
-      if (std::abs(r_hat_v) < T(1e-100))
-        break;
-
-      alpha = rho_new / r_hat_v;
-      if (!std::isfinite(alpha)) {
-        bicgstabBreakdown = true;
-        break;
-      }
-
-      for (std::size_t i = 0; i < n; ++i)
-        s[i] = static_cast<SolverT>(r[i] - alpha * v[i]);
-
-      residual = T(0);
-      for (std::size_t i = 0; i < n; ++i)
-        residual = std::max(residual, std::abs(static_cast<T>(s[i])));
-      if (!std::isfinite(residual)) {
-        bicgstabBreakdown = true;
-        break;
-      }
-      if (residual < parameters.tolerance * b_norm) {
-        for (std::size_t i = 0; i < n; ++i)
-          x[i] = static_cast<SolverT>(x[i] + alpha * y[i]);
-        ++iterations;
-        break;
-      }
-
-      for (std::size_t i = 0; i < n; ++i) {
-        const T si = s[i];
-        z[i] = static_cast<SolverT>((diag[i] > eps) ? si / diag[i] : si);
-      }
-
-      matvec(z, diag, b, t);
-
-      T t_s = T(0), t_t = T(0);
-      for (std::size_t i = 0; i < n; ++i) {
-        t_s += static_cast<T>(t[i]) * static_cast<T>(s[i]);
-        t_t += static_cast<T>(t[i]) * static_cast<T>(t[i]);
-      }
-      if (!std::isfinite(t_s) || !std::isfinite(t_t)) {
-        bicgstabBreakdown = true;
-        break;
-      }
-      omega = (t_t > T(1e-100)) ? t_s / t_t : T(0);
-      if (!std::isfinite(omega)) {
-        bicgstabBreakdown = true;
-        break;
-      }
-
-      for (std::size_t i = 0; i < n; ++i) {
-        x[i] = static_cast<SolverT>(x[i] + alpha * y[i] + omega * z[i]);
-        r[i] = static_cast<SolverT>(s[i] - omega * t[i]);
-      }
-
-      residual = T(0);
-      for (std::size_t i = 0; i < n; ++i)
-        residual = std::max(residual, std::abs(static_cast<T>(r[i])));
-      if (!std::isfinite(residual)) {
-        bicgstabBreakdown = true;
-        break;
-      }
-      if (residual < parameters.tolerance * b_norm) {
-        ++iterations;
-        break;
+    if (onCpu) {
+      typedef amgcl::backend::builtin<T> Backend;
+      typedef amgcl::make_solver<
+          amgcl::amg<Backend, amgcl::coarsening::smoothed_aggregation,
+                     amgcl::relaxation::ilu0>,
+          amgcl::solver::bicgstab<Backend>>
+          Solver;
+      typename Solver::params prm;
+      prm.solver.maxiter = parameters.maxIterations;
+      prm.solver.tol = T(0);
+      prm.solver.abstol = absTolerance;
+      const auto rows = static_cast<std::ptrdiff_t>(n);
+      auto A = std::tie(rows, rowPtr, cols, values);
+      try {
+        Solver solve(A, prm);
+        std::size_t count = 0;
+        T estimate = T(0);
+        std::tie(count, estimate) = solve(A, b, x);
+        iterations = static_cast<unsigned>(count);
+      } catch (const std::exception &e) {
+        solverFailed = true;
+        VIENNACORE_LOG_WARNING(std::string("solveDiffusion: AMGCL failed: ") +
+                               e.what());
       }
     }
 
-    if (bicgstabBreakdown)
-      residual = std::numeric_limits<T>::infinity();
-
-    const bool finiteCpuSolution =
-        !bicgstabBreakdown &&
-        std::all_of(x.begin(), x.end(),
-                    [](SolverT value) { return std::isfinite(value); });
-    if (finiteCpuSolution) {
+    // the max-norm residual of the result
+    residual = T(0);
+    bool finiteSolution = !solverFailed;
+    for (std::size_t i = 0; i < n && finiteSolution; ++i) {
+      T ax = T(0);
+      for (auto k = rowPtr[i]; k < rowPtr[i + 1]; ++k)
+        ax += values[k] * x[cols[k]];
+      finiteSolution = std::isfinite(x[i]) && std::isfinite(ax);
+      residual = std::max(residual, std::abs(b[i] - ax));
+    }
+    if (finiteSolution) {
       for (std::size_t i = 0; i < n; ++i)
         nodes[i].concentration = x[i];
     } else {
@@ -1129,38 +1307,40 @@ private:
         nodes[i].concentration = initialGuess[i];
       residual = std::numeric_limits<T>::infinity();
       Logger::getInstance()
-          .addWarning("solveDiffusion: CPU BiCGSTAB produced non-finite "
-                      "concentrations; keeping the sanitized initial guess.")
+          .addWarning("solveDiffusion: the solve failed or produced "
+                      "non-finite concentrations; keeping the sanitized "
+                      "initial guess.")
           .print();
     }
     normalizedResidual_ = residual / b_norm;
-    lastSolveConverged_ = finiteCpuSolution &&
+    lastSolveConverged_ = finiteSolution &&
                           std::isfinite(normalizedResidual_) &&
                           normalizedResidual_ <= parameters.tolerance;
 
-    tCpuSolve.finish();
+    tSolve.finish();
     if (Logger::hasTiming()) {
-      const std::string path = " [CPU]";
       const std::string tag = "diffusion n=" + std::to_string(n) +
                               " iters=" + std::to_string(iterations) +
                               " res=" + std::to_string(residual) + path;
-      Logger::getInstance().addTiming(tag + " CPU BiCGSTAB", tCpuSolve).print();
+      Logger::getInstance().addTiming(tag + " AMG-BiCGSTAB", tSolve).print();
     }
     if (Logger::hasDebug()) {
-      const std::string path = " [CPU]";
       Logger::getInstance()
           .addTiming("diffusion n=" + std::to_string(n) + path +
                          " diag/b precompute",
                      tDiag)
           .print();
     }
-    if (residual > parameters.tolerance * b_norm)
+    if (!lastSolveConverged_) {
+      char numbers[96];
+      std::snprintf(numbers, sizeof(numbers), "residual=%.3e, tolerance=%.1e",
+                    double(normalizedResidual_), double(parameters.tolerance));
       VIENNACORE_LOG_WARNING(
-          "solveDiffusion: BiCGSTAB did not converge after " +
+          "solveDiffusion: AMG-BiCGSTAB did not converge after " +
           std::to_string(iterations) + "/" +
-          std::to_string(parameters.maxIterations) +
-          " iterations (residual=" + std::to_string(residual / b_norm) +
-          ", tolerance=" + std::to_string(parameters.tolerance) + ")");
+          std::to_string(parameters.maxIterations) + " iterations (" + numbers +
+          ")");
+    }
   }
 
 #ifdef VIENNALS_GPU_BICGSTAB
@@ -1206,6 +1386,7 @@ private:
   makeStencilSide(std::size_t nodeId, const std::vector<SolverT> &previous,
                   unsigned direction, int offset, T diffusion) const {
     const IndexType &nodeIndex = nodes[nodeId].index;
+    offset = stencilOffset(nodeIndex, direction, offset); // mirror sides
     IndexType neighbor = nodeIndex;
     neighbor[direction] += offset;
 
@@ -1221,7 +1402,8 @@ private:
     const Boundary faceType = faceBCTypes_[fi * n + nodeId];
     const T faceDist = faceBCDists_[fi * n + nodeId];
     if (faceType == Boundary::REACTION)
-      return reactionBoundarySide(nodeIndex, faceDist, diffusion);
+      return reactionBoundarySide(faceRate(nodeId, fi), faceDist, diffusion,
+                                  faceReactionNormal_[fi * n + nodeId]);
     if (faceType == Boundary::AMBIENT)
       return ambientBoundarySide(faceDist, diffusion);
     if (faceType == Boundary::MASK)
@@ -1255,10 +1437,20 @@ private:
 
   StencilSide zeroFluxSide() const { return {gridDelta, 1., 0.}; }
 
-  StencilSide reactionBoundarySide(const IndexType &nodeIndex, T distance,
-                                   T diffusion) const {
+  // Robin condition D dC/dn = k C on one axis arm that crosses the Si
+  // interface (distance = the crossing along that axis).  Along the arm only
+  // the axis component of the normal flux is available, D dC/dx_a =
+  // |n_a| k C, so the rate is scaled by |n_a|.  Imposing the full k on every
+  // crossing arm sums to a normal sink of k (|n_x| + |n_y| (+ |n_z|)): exact
+  // on an axis-aligned front, sqrt(2) too strong at 45 degrees, 4/pi on
+  // average around a cylinder — measured as 3-7% too little Si consumed by
+  // the Kao cylinders with no stress coupling.  With the
+  // scaling the reconstructed interface concentration is also the same on
+  // every arm, C_node (D/d) / (D/d + k) for the normal distance d.
+  StencilSide reactionBoundarySide(T rate, T distance, T diffusion,
+                                   T normalComponent) const {
     const T conductance = diffusion / distance;
-    const T reactionRate = getEffectiveReactionRate(nodeIndex);
+    const T reactionRate = rate * normalComponent;
     const T denominator = conductance + reactionRate;
     if (denominator <= std::numeric_limits<T>::epsilon())
       return zeroFluxSide();
@@ -1333,9 +1525,16 @@ private:
   reactionBoundarySampleFromNode(ConstSparseIterator &reactionIt,
                                  const Node &node) const {
     ReactionBoundarySample best;
+    // A meshed mask node never reacts with silicon: its reaction faces are
+    // zero-flux, so it must not supply a reaction-boundary sample either.
+    if (node.inMask)
+      return best;
     best.nodeIndex = node.index;
     T bestDistance = std::numeric_limits<T>::max();
     const T insidePhi = valueAt(reactionIt, node.index);
+    const std::size_t nodeId = lookupNode(node.index);
+    const std::size_t n = nodes.size();
+    std::optional<Vec3D<T>> siNormal;
 
     for (unsigned direction = 0; direction < D; ++direction) {
       for (const int offset : {-1, 1}) {
@@ -1353,7 +1552,20 @@ private:
           continue;
 
         const T diffusion = getEffectiveDiffusionCoefficient(node.index);
-        const auto side = reactionBoundarySide(node.index, distance, diffusion);
+        const unsigned fi = direction * 2u + (offset == 1 ? 1u : 0u);
+        T normalComponent, rate;
+        if (nodeId != noNode && faceReactionNormal_.size() == 2 * D * n &&
+            faceBCTypes_[fi * n + nodeId] == Boundary::REACTION) {
+          normalComponent = faceReactionNormal_[fi * n + nodeId];
+          rate = faceRate(nodeId, fi);
+        } else {
+          if (!siNormal)
+            siNormal = computeSiNormal(node.index, reactionIt);
+          normalComponent = std::abs((*siNormal)[direction]);
+          rate = getEffectiveReactionRate(node.index);
+        }
+        const auto side =
+            reactionBoundarySide(rate, distance, diffusion, normalComponent);
         best.found = true;
         best.distance = distance;
         best.concentration =
@@ -1392,19 +1604,177 @@ private:
                 denominator};
   }
 
+  // Crossing of REACTION face fi of node i, in index units.
+  Vec3D<T> crossingPoint(std::size_t i, unsigned fi) const {
+    const std::size_t n = nodes.size();
+    Vec3D<T> c{T(0), T(0), T(0)};
+    for (unsigned d = 0; d < D; ++d)
+      c[d] = static_cast<T>(nodes[i].index[d]);
+    c[fi / 2] +=
+        (fi % 2 == 1 ? T(1) : T(-1)) * faceBCDists_[fi * n + i] / gridDelta;
+    return c;
+  }
+
+  // Calls f(j) for every node j in the box of half-width `radius` cells
+  // around p (index units).
+  template <class F>
+  void forEachNodeNear(const Vec3D<T> &p, int radius, F f) const {
+    IndexType centre, offset;
+    for (unsigned d = 0; d < D; ++d)
+      centre[d] = static_cast<viennahrle::IndexType>(std::llround(p[d]));
+    offset.fill(-radius);
+    while (true) {
+      IndexType q = centre;
+      for (unsigned d = 0; d < D; ++d)
+        q[d] += offset[d];
+      if (inBounds(q))
+        if (const std::size_t j = lookupNode(q); j != noNode)
+          f(j);
+      unsigned d = 0;
+      while (d < D && offset[d] == radius)
+        offset[d++] = -radius;
+      if (d == D)
+        break;
+      ++offset[d];
+    }
+  }
+
+  // The law's normal stress at a front point p (index units): the reaction
+  // nodes' smoothed samples (interfaceNormalStress_, each taken at its anchor
+  // on the front), interpolated with Gaussian weights one cell wide.  NaN
+  // where no reaction node within two cells carries one.
+  T interfaceNormalStressAt(const Vec3D<T> &p) const {
+    if (interfaceNormalStress_.size() != nodes.size() ||
+        interfaceAnchor_.size() != nodes.size())
+      return std::numeric_limits<T>::quiet_NaN();
+    T weightSum = T(0), sum = T(0);
+    forEachNodeNear(p, 2, [&](std::size_t j) {
+      const T v = interfaceNormalStress_[j];
+      if (!std::isfinite(v))
+        return;
+      T r2 = T(0);
+      for (unsigned d = 0; d < D; ++d)
+        r2 += (interfaceAnchor_[j][d] - p[d]) * (interfaceAnchor_[j][d] - p[d]);
+      const T w = std::exp(-r2 / T(2));
+      weightSum += w;
+      sum += w * v;
+    });
+    return weightSum > T(1e-12) ? sum / weightSum
+                                : std::numeric_limits<T>::quiet_NaN();
+  }
+
+  // Reaction rate at the crossing of REACTION face fi of node i: the
+  // normal-stress law with the stress at the crossing, the orientation factor
+  // with the crossing's normal.
+  T interfaceReactionRate(std::size_t i, unsigned fi) const {
+    const std::size_t n = nodes.size();
+    T rate = parameters.reactionRate;
+    if (parameters.reactionActivationVolume != T(0)) {
+      T normalStress = interfaceNormalStressAt(crossingPoint(i, fi));
+      if (!std::isfinite(normalStress)) {
+        normalStress = -parameters.referencePressure;
+        medianNormalStress(nodes[i].index, normalStress);
+      }
+      const T exponent =
+          stressExponent(-normalStress, parameters.reactionActivationVolume);
+      // floor 0.1 and ceiling 1: see getEffectiveReactionRate
+      rate *= std::clamp(stressFactor(exponent), T(0.1), T(1.));
+    }
+    if (parameters.reactionRateRatio111 != T(1)) {
+      const auto &normal = faceCrossingNormal_[fi * n + i];
+      T dot = T(0);
+      for (unsigned d = 0; d < D; ++d)
+        dot += normal[d] * parameters.crystalAxis[d];
+      rate *=
+          T(1) + (parameters.reactionRateRatio111 - T(1)) * (T(1) - dot * dot);
+    }
+    return rate;
+  }
+
+  void updateFaceRates() {
+    const std::size_t n = nodes.size();
+    faceReactionRate_.assign(2 * D * n, T(0));
+#pragma omp parallel for schedule(static)
+    for (std::size_t i = 0; i < n; ++i)
+      for (unsigned fi = 0; fi < 2 * D; ++fi)
+        if (faceBCTypes_[fi * n + i] == Boundary::REACTION)
+          faceReactionRate_[fi * n + i] = interfaceReactionRate(i, fi);
+  }
+
+  T faceRate(std::size_t i, unsigned fi) const {
+    const std::size_t n = nodes.size();
+    return faceReactionRate_.size() == 2 * D * n
+               ? faceReactionRate_[fi * n + i]
+               : getEffectiveReactionRate(nodes[i].index);
+  }
+
+  // Front speed k C_i / (N alpha) at every REACTION face crossing, C_i the
+  // crossing's interface concentration from the solved node value (the Robin
+  // arm's own reconstruction).
+  void updateFaceSpeeds() {
+    const std::size_t n = nodes.size();
+    faceFrontSpeed_.assign(2 * D * n, T(0));
+#pragma omp parallel for schedule(static)
+    for (std::size_t i = 0; i < n; ++i)
+      for (unsigned fi = 0; fi < 2 * D; ++fi) {
+        if (faceBCTypes_[fi * n + i] != Boundary::REACTION)
+          continue;
+        const T rate = faceRate(i, fi);
+        const auto side = reactionBoundarySide(rate, faceBCDists_[fi * n + i],
+                                               nodeDiffusionCoefficient(i),
+                                               faceReactionNormal_[fi * n + i]);
+        const T concentration =
+            side.nodeCoefficient * nodes[i].concentration + side.constant;
+        faceFrontSpeed_[fi * n + i] = std::abs(parameters.velocitySign) * rate *
+                                      concentration /
+                                      (parameters.oxidantMoleculeDensity *
+                                       parameters.expansionCoefficient);
+      }
+    frontStart_.assign(n + 1, 0);
+    for (std::size_t i = 0; i < n; ++i) {
+      std::size_t count = 0;
+      for (unsigned fi = 0; fi < 2 * D; ++fi)
+        count += faceBCTypes_[fi * n + i] == Boundary::REACTION;
+      frontStart_[i + 1] = frontStart_[i] + count;
+    }
+    frontCrossings_.resize(frontStart_[n]);
+    for (std::size_t i = 0; i < n; ++i) {
+      std::size_t k = frontStart_[i];
+      for (unsigned fi = 0; fi < 2 * D; ++fi)
+        if (faceBCTypes_[fi * n + i] == Boundary::REACTION)
+          frontCrossings_[k++] = {
+              crossingPoint(i, fi), faceReactionNormal_[fi * n + i],
+              faceFrontSpeed_[fi * n + i], faceCrossingNormal_[fi * n + i]};
+    }
+  }
+
   T getEffectiveReactionRate(const IndexType &index) const {
     T rate = parameters.reactionRate;
 
     if (parameters.reactionActivationVolume != T(0)) {
-      T pressure = parameters.referencePressure;
-      const auto foundPressure = pressureLookup.find(index);
-      if (foundPressure != pressureLookup.end())
-        pressure = foundPressure->second;
-      if (!std::isfinite(pressure))
-        pressure = parameters.referencePressure;
+      T normalStress = -parameters.referencePressure;
+      const std::size_t nodeId = lookupNode(index);
+      if (nodeId != noNode && nodeId < interfaceNormalStress_.size() &&
+          std::isfinite(interfaceNormalStress_[nodeId]))
+        normalStress = interfaceNormalStress_[nodeId];
+      else
+        medianNormalStress(index, normalStress);
+      // -sigma_nn is the normal compression, measured like a pressure.
       const T exponent =
-          stressExponent(pressure, parameters.reactionActivationVolume);
-      rate *= stressFactor(exponent);
+          stressExponent(-normalStress, parameters.reactionActivationVolume);
+      // Reaction floor 0.1 (vs the generic 1e-6 clamp): the source term
+      // scales with this factor, and a single-cell stress spike (e.g.
+      // -15 GPa next to -2 GPa a cell away) would otherwise make the volume
+      // source orders of magnitude rough on the grid scale.
+      // Ceiling 1: interface stress only retards the reaction.
+      // In Kao's cylinders the interface normal stress is compressive for
+      // convex and concave Si alike, and there is no data for the reaction
+      // under interface tension.  Locally, tension appears where the Si
+      // front dents: a dent in a convex front under the oxide's tensile hoop
+      // stress is pulled open (membrane effect), so a tension-ENHANCED rate
+      // deepens it — measured: Kao pillar (r = 0.45 um, Vr = 15 A^3) dented
+      // 12.7 nm in 0.1 hr with ceiling 10, round within 0.6 nm with ceiling 1.
+      rate *= std::clamp(stressFactor(exponent), T(0.1), T(1.));
     }
 
     if (parameters.reactionRateRatio111 != T(1)) {
@@ -1422,14 +1792,231 @@ private:
     return rate;
   }
 
+  // Median of n.sigma.n over the node and its oxide face neighbours, all
+  // projected on the node's own interface normal: cut
+  // cells carry the least trustworthy stress in the field (single-cell spikes
+  // of -15 GPa next to -2 GPa), and with up to 2D+1 samples a lone spike
+  // cannot move the median, while a genuine gradient passes unchanged.
+  bool medianNormalStress(const IndexType &index, T &result) const {
+    return medianNormalStress(index, stressLookup, result);
+  }
+
+  // Oxide stress at the Si front for the stress laws, extrapolated along the
+  // front normal n (into the oxide) from the points 2 and 3 cells into the
+  // oxide, each D-linear over the nodes around it.  The first node layer
+  // (the nodes with a reaction face) is left out: its MAC stress is O(1)
+  // wrong next to the front -- on a Kao cylinder the pressure 0.2-0.4 GPa too
+  // high and sigma_rr 0.1-0.2 GPa too compressive, at any grid spacing --
+  // while the second layer is good to ~0.05 GPa.  Fixed distances along the
+  // normal keep the estimate independent of the front's orientation on the
+  // grid (a least-squares fit over the nodes behind the front was not).
+  // phi: the node's distance from the front in cells; returns the value at
+  // the distance sAt.  sample(j) gives the quantity at node j, NaN where
+  // missing.  False where a sample point lacks oxide nodes (a film thinner
+  // than ~4 cells); the caller then falls back to the node layer.
+  template <class Sample>
+  bool frontStressAt(std::size_t i, const Vec3D<T> &n, T phi, T sAt,
+                     Sample sample, T &out) const {
+    const std::size_t count = nodes.size();
+    T q[2];
+    for (unsigned k = 0; k < 2; ++k) {
+      const T s = T(2 + k);
+      std::array<T, D> base{}, frac{};
+      for (unsigned d = 0; d < D; ++d) {
+        const T y = static_cast<T>(nodes[i].index[d]) + n[d] * (s - phi);
+        base[d] = std::floor(y);
+        frac[d] = y - base[d];
+      }
+      T sum = T(0), weightSum = T(0);
+      for (unsigned corner = 0; corner < (1u << D); ++corner) {
+        IndexType idx;
+        T w = T(1);
+        for (unsigned d = 0; d < D; ++d) {
+          const bool up = (corner >> d) & 1u;
+          idx[d] = static_cast<viennahrle::IndexType>(base[d]) + (up ? 1 : 0);
+          w *= up ? frac[d] : T(1) - frac[d];
+        }
+        if (w <= T(0) || !inBounds(idx))
+          continue;
+        const std::size_t j = lookupNode(idx);
+        if (j == noNode || nodes[j].inMask)
+          continue;
+        bool firstLayer = false;
+        if (faceBCTypes_.size() == 2 * D * count)
+          for (unsigned f = 0; f < 2 * D && !firstLayer; ++f)
+            firstLayer = faceBCTypes_[f * count + j] == Boundary::REACTION;
+        if (firstLayer)
+          continue;
+        const T v = sample(j);
+        if (!std::isfinite(v))
+          continue;
+        sum += w * v;
+        weightSum += w;
+      }
+      if (weightSum < T(0.5))
+        return false;
+      q[k] = sum / weightSum;
+    }
+    out = q[0] + (q[1] - q[0]) * (sAt - T(2));
+    return std::isfinite(out);
+  }
+
+  // Distance (cells) from the Si front into the oxide at a node next to it.
+  T frontDistance(const IndexType &index) const {
+    ConstSparseIterator it(reactionInterface->getDomain());
+    it.goToIndices(index);
+    const T v =
+        it.isDefined() ? static_cast<T>(reactionSign) * it.getValue() : T(0);
+    return std::isfinite(v) ? std::clamp(v, T(0), T(1.5)) : T(0);
+  }
+
+  bool reactionNode(std::size_t i) const {
+    const std::size_t n = nodes.size();
+    if (faceBCTypes_.size() != 2 * D * n)
+      return false;
+    for (unsigned f = 0; f < 2 * D; ++f)
+      if (faceBCTypes_[f * n + i] == Boundary::REACTION)
+        return true;
+    return false;
+  }
+
+  bool medianNormalStress(const IndexType &index, const StressLookup &lookup,
+                          T &result) const {
+    Vec3D<T> normal{T(0), T(0), T(0)};
+    normal[D - 1] = T(1);
+    if (const std::size_t centerNode = lookupNode(index); centerNode != noNode)
+      normal = nodes[centerNode].siNormal;
+    T samples[2 * D + 1];
+    unsigned count = 0;
+    const auto sampleAt = [&](const IndexType &sampleIndex) {
+      // Only genuine oxide nodes carry an oxide stress (not the gas-side
+      // band, not the mask body).
+      const std::size_t sampleNode = lookupNode(sampleIndex);
+      if (sampleNode == noNode || nodes[sampleNode].inMask)
+        return;
+      const auto found = lookup.find(detail::gridIndexHash<D>(sampleIndex));
+      if (found == lookup.end())
+        return;
+      T value = T(0);
+      for (unsigned r = 0; r < D; ++r)
+        for (unsigned c = 0; c < D; ++c)
+          value += normal[r] * found->second[3 * r + c] * normal[c];
+      if (std::isfinite(value))
+        samples[count++] = value;
+    };
+    sampleAt(index);
+    for (unsigned d = 0; d < D; ++d) {
+      IndexType neighbor = index;
+      neighbor[d] -= 1;
+      sampleAt(neighbor);
+      neighbor[d] += 2;
+      sampleAt(neighbor);
+    }
+    if (count == 0)
+      return false;
+    std::nth_element(samples, samples + count / 2, samples + count);
+    result = samples[count / 2];
+    return true;
+  }
+
+  // Interface normal stress for the reaction law: the median sample at every
+  // node with a REACTION face, then smoothed along the interface.
+  //
+  // Why smoothed: the reaction law k = k0 exp(sigma_nn V/kT)
+  // feeds back through the mechanics, and that loop is stabilising but STIFF.
+  // A rate ripple of wavenumber q makes a normal stress ~ 2 eta_impl q v
+  // (eta_impl = (1 - e^(-dt/tau)) eta ~ G dt), so the loop gain is
+  // g(q) ~ (V/kT) 2 G dt q v ~ (V/kT) G q h at the CFL step: ~80 for the
+  // grid ripple at V = 15 A^3, G = 30 GPa, independent of h.  The partitioned
+  // coupling cannot converge gains much above 10 (measured on a flat film:
+  // undamped iterates alternate in sign and grow 4-5x per iteration; with the
+  // loop exiting after one iteration the ripple doubled every step until the
+  // mechanics failed).  Six passes of neighbour averaging along the interface
+  // (a ~2h Gaussian) cap the gain at ~8 for every q.  It only removes stress
+  // structure shorter than ~2 cells, which the converged solution suppresses
+  // anyway (the stiffness is the physics damping such ripples), and it
+  // vanishes with grid refinement.
+  void updateInterfaceNormalStress() {
+    interfaceNormalStress_ = interfaceNormalStressFor(stressLookup);
+  }
+
+  // Pressure the diffusivity law uses at the first node layer (the nodes
+  // with a reaction face), extrapolated from behind it (frontStressAt); NaN
+  // elsewhere, where the node's own pressure is used.
+  void updateLawPressure() {
+    const std::size_t n = nodes.size();
+    lawPressure_.assign(n, std::numeric_limits<T>::quiet_NaN());
+    ConstSparseIterator reactionIt(reactionInterface->getDomain());
+    for (std::size_t i = 0; i < n; ++i) {
+      if (nodes[i].inMask || !reactionNode(i))
+        continue;
+      // the node normal exists where a reaction law or the orientation
+      // factor needs it
+      Vec3D<T> into = (parameters.reactionRateRatio111 != T(1) ||
+                       parameters.reactionActivationVolume != T(0))
+                          ? nodes[i].siNormal
+                          : computeSiNormal(nodes[i].index, reactionIt);
+      for (unsigned d = 0; d < D; ++d)
+        into[d] *= static_cast<T>(reactionSign);
+      const T phi = frontDistance(nodes[i].index);
+      const auto pressureAt = [&](std::size_t j) {
+        const auto found =
+            pressureLookup.find(detail::gridIndexHash<D>(nodes[j].index));
+        return found == pressureLookup.end()
+                   ? std::numeric_limits<T>::quiet_NaN()
+                   : found->second;
+      };
+      T value;
+      if (frontStressAt(i, into, phi, phi, pressureAt, value))
+        lawPressure_[i] = value;
+    }
+  }
+
+  /// Diffusion coefficient of a node's own material: D in the oxide,
+  /// D / gamma inside a meshed mask.
+  T nodeDiffusionCoefficient(std::size_t nodeId) const {
+    T value = getEffectiveDiffusionCoefficient(nodes[nodeId].index);
+    if (nodes[nodeId].inMask)
+      value /= static_cast<T>(parameters.maskPermeabilityRatio);
+    return value;
+  }
+
+  /// Diffusion coefficient on the face between a node and its neighbour: the
+  /// HARMONIC mean of the two nodes' D, the value that makes the flux
+  /// continuous across a jump (the mask/oxide interface) and conservative
+  /// where D varies with pressure.  With each node's own D on its faces (the
+  /// former rule inside one material) the flux leaving a node was not the
+  /// flux entering its neighbour; a Kao cylinder then captured 73 % of the
+  /// tension enhancement of the oxidant diffusivity (the 1-D model's).
+  T faceDiffusionCoefficient(std::size_t nodeId, unsigned direction, int offset,
+                             T ownDiffusion) const {
+    offset = stencilOffset(nodes[nodeId].index, direction, offset);
+    IndexType neighbor = nodes[nodeId].index;
+    neighbor[direction] += offset;
+    if (!inBounds(neighbor))
+      return ownDiffusion;
+    const std::size_t neighborId = lookupNode(neighbor);
+    if (neighborId == noNode)
+      return ownDiffusion;
+    const T neighborDiffusion = nodeDiffusionCoefficient(neighborId);
+    const T sum = ownDiffusion + neighborDiffusion;
+    if (sum <= std::numeric_limits<T>::epsilon())
+      return T(0);
+    return T(2) * ownDiffusion * neighborDiffusion / sum;
+  }
+
   T getEffectiveDiffusionCoefficient(const IndexType &index) const {
     if (parameters.diffusionActivationVolume == T(0))
       return parameters.diffusionCoefficient;
 
     T pressure = parameters.referencePressure;
-    const auto found = pressureLookup.find(index);
+    const auto found = pressureLookup.find(detail::gridIndexHash<D>(index));
     if (found != pressureLookup.end())
       pressure = found->second;
+    if (const std::size_t id = lookupNode(index);
+        id != noNode && id < lawPressure_.size() &&
+        std::isfinite(lawPressure_[id]))
+      pressure = lawPressure_[id];
     if (!std::isfinite(pressure))
       pressure = parameters.referencePressure;
 
@@ -1441,6 +2028,7 @@ private:
   T stressExponent(T pressure, T activationVolume) const {
     const T thermalEnergy =
         boltzmannConstant * std::max(parameters.temperature, T(1.));
+    // Compression (p > 0) suppresses, tension enhances.
     return -(pressure - parameters.referencePressure) * activationVolume /
            thermalEnergy;
   }
@@ -1472,17 +2060,11 @@ private:
       }
       return idx;
     };
-    Vec3D<T> gradient{0., 0., 0.};
-    for (unsigned d = 0; d < D; ++d) {
-      IndexType plus = index, minus = index;
-      plus[d] += 1;
-      minus[d] -= 1;
-      gradient[d] =
-          (detail::clampLevelSetPhi(valueAt(reactionIt, reflectToGrid(plus))) -
-           detail::clampLevelSetPhi(
-               valueAt(reactionIt, reflectToGrid(minus)))) /
-          (T(2) * gridDelta);
-    }
+    Vec3D<T> gradient = this->definedLevelSetGradient(
+        reactionIt, index, [&](const IndexType &q, bool &ok) {
+          ok = true;
+          return reflectToGrid(q);
+        });
     T len = T(0);
     for (unsigned d = 0; d < D; ++d)
       len += gradient[d] * gradient[d];

@@ -67,7 +67,7 @@ int main() {
   VC_TEST_ASSERT(oxidePreset.viscosity > 0.)
   VC_TEST_ASSERT(std::abs(oxidePreset.stressTimeStep - 0.25) < 1e-12)
   const auto maskPreset = ls::OxidationPresets::siliconNitrideMask1000C();
-  VC_TEST_ASSERT(maskPreset.referenceViscosity > 0.)
+  VC_TEST_ASSERT(maskPreset.youngModulus > 0.)
 
   auto autoBoundedOxidation = ls::OxidationDiffusion<double, D>::New(
       reactionInterface, ambientInterface, parameters);
@@ -114,9 +114,6 @@ int main() {
   ls::OxidationDeformationParameters deformationParameters;
   deformationParameters.viscosity = 1e3;
   deformationParameters.mechanicsIterations = 10;
-  deformationParameters.pressureIterations = 500;
-  deformationParameters.stokesIterations = 100;
-  deformationParameters.tolerance = 1e-8;
 
   auto deformation = ls::OxidationDeformation<double, D>::New(
       reactionInterface, ambientInterface, oxidation, parameters,
@@ -173,17 +170,22 @@ int main() {
   const ls::Vec3D<double> nearMaskedAmbient{-1., oxideThickness - 1., 0.};
   VC_TEST_ASSERT(maskedOxidation->getConcentration(nearMaskedAmbient) > 0.)
 
+  // The mask joins the mechanics as a linear-elastic nitride body.
   ls::OxidationDeformationParameters maskedDeformationParameters =
       deformationParameters;
+  maskedDeformationParameters.nitrideYoungModulus = 1e5;
   auto maskedDeformation = ls::OxidationDeformation<double, D>::New(
       reactionInterface, ambientInterface, maskedOxidation, parameters,
       maskedDeformationParameters);
   maskedDeformation->setMaskInterface(maskInterface, -1);
   maskedDeformation->setSolveBounds(minIndex, maxIndex);
   maskedDeformation->apply();
-  VC_TEST_ASSERT(maskedDeformation->getNumberOfSolutionNodes() <
-                 deformation->getNumberOfSolutionNodes())
+  VC_TEST_ASSERT(maskedDeformation->getNumberOfSolutionNodes() > 0)
   VC_TEST_ASSERT(std::isfinite(maskedDeformation->getResidual()))
+  const auto nitrideVelocity = maskedDeformation->getMaterialVelocity(
+      {extent - 2., oxideThickness * 0.5, 0.}, true);
+  VC_TEST_ASSERT(std::isfinite(nitrideVelocity[0]) &&
+                 std::isfinite(nitrideVelocity[1]))
 
   ls::OxidationParameters stressParameters = parameters;
   stressParameters.reactionActivationVolume = 1e-29;
@@ -193,10 +195,23 @@ int main() {
   stressOxidation->apply();
   const double unstressedRate =
       stressOxidation->getEffectiveReactionRate(nearReaction);
+  // The reaction responds to the stress normal to the interface, not to
+  // the pressure: a hydrostatic pressure alone leaves it unchanged, normal
+  // compression suppresses it, and normal tension does not enhance it.
   stressOxidation->setPressure(nearReaction, 1e9);
+  VC_TEST_ASSERT(stressOxidation->getEffectiveReactionRate(nearReaction) ==
+                 unstressedRate)
+  std::array<double, 9> compression{};
+  compression[0] = compression[4] = compression[8] = -1e9;
+  stressOxidation->setStress(nearReaction, compression);
   const double compressedRate =
       stressOxidation->getEffectiveReactionRate(nearReaction);
   VC_TEST_ASSERT(compressedRate < unstressedRate)
+  std::array<double, 9> tension{};
+  tension[0] = tension[4] = tension[8] = 1e9;
+  stressOxidation->setStress(nearReaction, tension);
+  VC_TEST_ASSERT(stressOxidation->getEffectiveReactionRate(nearReaction) ==
+                 unstressedRate)
 
   auto looseParameters = parameters;
   looseParameters.tolerance = 1e-7;

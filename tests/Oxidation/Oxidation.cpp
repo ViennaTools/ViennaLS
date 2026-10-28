@@ -57,7 +57,6 @@ LevelSet makeBox(const double *bounds,
 //   - Si interface receded (Si was consumed)
 //   - Ambient interface rose (oxide grew upward)
 //   - Volume is conserved: Si recession × (β−1) ≈ ambient lift
-//   - getMaskBendingField() returns nullptr (no mask)
 // ---------------------------------------------------------------------------
 
 void testStandardOxidation() {
@@ -84,12 +83,6 @@ void testStandardOxidation() {
   oxParams.tolerance = 1e-7;
 
   auto defParams = ls::OxidationPresets::oxideMechanics1000C(1.);
-  defParams.mechanicsIterations = 200;
-  defParams.mechanicsTolerance = 1e-2;
-  defParams.pressureTolerance = 1e-6;
-  defParams.stokesTolerance = 1e-6;
-  defParams.pressureIterations = 300;
-  defParams.stokesIterations = 80;
 
   ls::OxidationCouplingParameters coupling;
   coupling.maxIterations = 8;
@@ -107,9 +100,6 @@ void testStandardOxidation() {
 
   VC_TEST_ASSERT(actualDt > NumericType(0))
   VC_TEST_ASSERT(actualDt < NumericType(0.5))
-
-  // No mask → getMaskBendingField() must be null.
-  VC_TEST_ASSERT(ox->getMaskBendingField() == nullptr)
 
   // Solver fields should be populated.
   VC_TEST_ASSERT(ox->getDiffusionField() != nullptr)
@@ -140,13 +130,13 @@ void testStandardOxidation() {
 }
 
 // ---------------------------------------------------------------------------
-// LOCOS (mask) oxidation: verify mask coupling and open-window growth.
+// LOCOS (mask) oxidation: verify the monolithic oxide + nitride solve and
+// open-window growth.
 //
 // Setup: Si at y=0, pad oxide at y=padOx, Si₃N₄ mask box over x≤0.
 // Run one CFL-limited step; check:
 //   - actualDt > 0
-//   - getMaskBendingField() is populated (mask was used)
-//   - Mask coupling converged within iteration budget
+//   - The nitride has a finite solved velocity (it joined the mechanics)
 //   - Oxide grew in the open window (x>0)
 //   - Level sets remain valid after the step
 // ---------------------------------------------------------------------------
@@ -189,12 +179,6 @@ void testLOCOSOxidation() {
   oxParams.tolerance = 1e-7;
 
   auto defParams = ls::OxidationPresets::oxideMechanics1000C(advectionTime);
-  defParams.mechanicsIterations = 200;
-  defParams.mechanicsTolerance = 1e-2;
-  defParams.pressureTolerance = 1e-6;
-  defParams.stokesTolerance = 1e-6;
-  defParams.pressureIterations = 200;
-  defParams.stokesIterations = 60;
 
   ls::OxidationCouplingParameters coupling;
   coupling.maxIterations = 8;
@@ -202,7 +186,6 @@ void testLOCOSOxidation() {
   coupling.relaxation = 1.0;
 
   auto maskParams = ls::OxidationPresets::siliconNitrideMask1000C();
-  maskParams.maxIterations = 4000;
 
   const auto toIndex = [gridDelta](NumericType v) {
     return static_cast<viennahrle::IndexType>(std::llround(v / gridDelta));
@@ -218,21 +201,17 @@ void testLOCOSOxidation() {
   viennahrle::Index<D> diffMax{toIndex(xExtent), toIndex(yMax)};
   ox->setSolveBounds(diffMin, diffMax);
 
-  viennahrle::Index<D> mbMin{toIndex(-xExtent), toIndex(padOx) - 1};
-  viennahrle::Index<D> mbMax{toIndex(maskEdge), toIndex(padOx + maskThick) + 1};
-  ox->setMaskBendingBounds(mbMin, mbMax);
-  ox->setMaskCouplingIterations(8);
-  ox->setMaskCouplingTolerance(5e-2);
-
   const NumericType actualDt = ox->applyCFLLimited(advectionTime, 0.499);
 
   VC_TEST_ASSERT(actualDt > NumericType(0))
   VC_TEST_ASSERT(actualDt <= advectionTime)
 
-  // Mask bending field must be populated in LOCOS mode.
-  VC_TEST_ASSERT(ox->getMaskBendingField() != nullptr)
-  VC_TEST_ASSERT(ox->getMaskCouplingIterations() <= 8)
-  VC_TEST_ASSERT(ox->getMaskCouplingResidual() < NumericType(5e-2))
+  // The nitride is part of the mechanics solve.
+  VC_TEST_ASSERT(ox->getDeformationField() != nullptr)
+  const auto nitrideVelocity = ox->getDeformationField()->getMaterialVelocity(
+      {NumericType(-0.5), padOx + maskThick * NumericType(0.5), 0.}, true);
+  VC_TEST_ASSERT(std::isfinite(nitrideVelocity[0]) &&
+                 std::isfinite(nitrideVelocity[1]))
 
   // Volume conservation in the open window (x > 0.4 µm, well inside window).
   const auto diag = ls::computeLOCOSOpenWindowConservation<NumericType>(
@@ -254,23 +233,21 @@ void testLOCOSOxidation() {
 // LOCOS mask mechanics sensitivity.
 //
 // The mask contact geometry is identical for all cases: same bottom surface,
-// same mask edge, same pad oxide.  Only the mask top surface or viscosity
-// changes.  The traction-driven contact solve should therefore make thicker
-// and more viscous masks less mobile than a thin/soft mask.
+// same mask edge, same pad oxide.  Only the mask top surface or Young's
+// modulus changes.  The nitride is an elastic plate lifted by the oxide at
+// its edge: a softer or thinner plate bends more there, while a thicker
+// plate lifts less at the edge but spreads the lift further under the mask.
 // ---------------------------------------------------------------------------
 
 struct LOCOSMaskResponse {
   NumericType actualDt = 0.;
-  NumericType verticalMaskSpeed = 0.;
+  NumericType verticalMaskSpeed = 0.; // largest lift (at the mask edge)
+  NumericType innerMaskSpeed = 0.;    // lift 0.4 um inside the mask edge
   NumericType underMaskOxideSpeed = 0.;
-  NumericType maxMaskSpeed = 0.;
-  std::size_t maskNodes = 0;
-  std::size_t contactNodes = 0;
-  std::size_t fixedNodes = 0;
 };
 
 LOCOSMaskResponse runLOCOSMaskResponse(NumericType maskThick,
-                                       NumericType maskViscosity) {
+                                       NumericType maskYoungModulus) {
   constexpr NumericType gridDelta = 0.1;
   constexpr NumericType xExtent = 1.5;
   constexpr NumericType yMin = -0.5;
@@ -303,12 +280,6 @@ LOCOSMaskResponse runLOCOSMaskResponse(NumericType maskThick,
   oxParams.tolerance = 1e-7;
 
   auto defParams = ls::OxidationPresets::oxideMechanics1000C(advectionTime);
-  defParams.mechanicsIterations = 200;
-  defParams.mechanicsTolerance = 1e-2;
-  defParams.pressureTolerance = 1e-6;
-  defParams.stokesTolerance = 1e-6;
-  defParams.pressureIterations = 200;
-  defParams.stokesIterations = 60;
 
   ls::OxidationCouplingParameters coupling;
   coupling.maxIterations = 8;
@@ -316,12 +287,7 @@ LOCOSMaskResponse runLOCOSMaskResponse(NumericType maskThick,
   coupling.relaxation = 1.0;
 
   auto maskParams = ls::OxidationPresets::siliconNitrideMask1000C();
-  maskParams.contactMode = 1;
-  maskParams.referenceViscosity = maskViscosity;
-  maskParams.anchorBoundaryDirection = 0;
-  maskParams.anchorBoundarySide = -1;
-  maskParams.anchorBoundaryLayers = 1;
-  maskParams.maxIterations = 4000;
+  maskParams.youngModulus = maskYoungModulus;
 
   const auto toIndex = [gridDelta](NumericType v) {
     return static_cast<viennahrle::IndexType>(std::llround(v / gridDelta));
@@ -335,51 +301,44 @@ LOCOSMaskResponse runLOCOSMaskResponse(NumericType maskThick,
   viennahrle::Index<D> diffMin{toIndex(-xExtent), toIndex(yMin)};
   viennahrle::Index<D> diffMax{toIndex(xExtent), toIndex(yMax)};
   ox->setSolveBounds(diffMin, diffMax);
-  viennahrle::Index<D> mbMin{toIndex(-xExtent), toIndex(padOx) - 1};
-  viennahrle::Index<D> mbMax{toIndex(maskEdge), toIndex(padOx + maskThick) + 1};
-  ox->setMaskBendingBounds(mbMin, mbMax);
-  ox->setMaskCouplingIterations(8);
-  ox->setMaskCouplingTolerance(5e-2);
 
   LOCOSMaskResponse response;
   response.actualDt = ox->applyCFLLimited(advectionTime, 0.499);
-  auto maskField = ox->getMaskBendingField();
-  VC_TEST_ASSERT(maskField != nullptr)
-
-  const ls::Vec3D<NumericType> zero{0., 0., 0.};
-  response.verticalMaskSpeed = maskField->getDissipationAlpha(1, -1, zero);
-  response.maxMaskSpeed = std::max(maskField->getDissipationAlpha(0, -1, zero),
-                                   response.verticalMaskSpeed);
   auto deformationField = ox->getDeformationField();
   VC_TEST_ASSERT(deformationField != nullptr)
+
+  // Largest vertical nitride speed along the mask mid-plane.
+  for (NumericType x = -xExtent + gridDelta; x < maskEdge; x += gridDelta) {
+    const auto v = deformationField->getMaterialVelocity(
+        {x, padOx + maskThick * NumericType(0.5), 0.}, true);
+    response.verticalMaskSpeed =
+        std::max(response.verticalMaskSpeed, std::abs(v[1]));
+  }
+  response.innerMaskSpeed = std::abs(deformationField->getMaterialVelocity(
+      {maskEdge - NumericType(0.4), padOx + maskThick * NumericType(0.5), 0.},
+      true)[1]);
+  const ls::Vec3D<NumericType> zero{0., 0., 0.};
   const ls::Vec3D<NumericType> underMaskPoint{
       NumericType(-0.2), padOx - gridDelta * NumericType(0.25), 0.};
   const auto underMaskVelocity =
       deformationField->getVectorVelocity(underMaskPoint, -1, zero, 0);
   response.underMaskOxideSpeed = std::abs(underMaskVelocity[1]);
-  response.maskNodes = maskField->getNumberOfSolutionNodes();
-  response.contactNodes = maskField->getNumberOfContactNodes();
-  response.fixedNodes = maskField->getNumberOfFixedNodes();
   return response;
 }
 
 void testLOCOSMaskStiffnessSensitivity() {
-  const auto thin = runLOCOSMaskResponse(NumericType(0.2), NumericType(5.e11));
-  const auto thick = runLOCOSMaskResponse(NumericType(0.4), NumericType(5.e11));
-  const auto soft = runLOCOSMaskResponse(NumericType(0.2), NumericType(2.5e11));
+  const auto thin = runLOCOSMaskResponse(NumericType(0.2), NumericType(270e9));
+  const auto thick = runLOCOSMaskResponse(NumericType(0.4), NumericType(270e9));
+  const auto soft = runLOCOSMaskResponse(NumericType(0.2), NumericType(27e9));
 
   VC_TEST_ASSERT(thin.actualDt > NumericType(0))
   VC_TEST_ASSERT(thick.actualDt > NumericType(0))
   VC_TEST_ASSERT(soft.actualDt > NumericType(0))
-  VC_TEST_ASSERT(thin.contactNodes > 0)
-  VC_TEST_ASSERT(thin.fixedNodes > 0)
-  VC_TEST_ASSERT(thick.maskNodes > thin.maskNodes)
   VC_TEST_ASSERT(thin.verticalMaskSpeed > NumericType(0))
   VC_TEST_ASSERT(thin.underMaskOxideSpeed > NumericType(0))
   VC_TEST_ASSERT(soft.verticalMaskSpeed > thin.verticalMaskSpeed)
   VC_TEST_ASSERT(thick.verticalMaskSpeed < thin.verticalMaskSpeed)
-  VC_TEST_ASSERT(soft.underMaskOxideSpeed > thin.underMaskOxideSpeed)
-  VC_TEST_ASSERT(thick.underMaskOxideSpeed < thin.underMaskOxideSpeed)
+  VC_TEST_ASSERT(thick.innerMaskSpeed > thin.innerMaskSpeed)
 }
 
 // ---------------------------------------------------------------------------
@@ -427,12 +386,6 @@ void testStandard3D() {
   oxParams.tolerance = 1e-7;
 
   auto defParams = ls::OxidationPresets::oxideMechanics1000C(0.1);
-  defParams.mechanicsIterations = 200;
-  defParams.mechanicsTolerance = 1e-2;
-  defParams.pressureTolerance = 1e-6;
-  defParams.stokesTolerance = 1e-6;
-  defParams.pressureIterations = 300;
-  defParams.stokesIterations = 150;
 
   ls::OxidationCouplingParameters coupling;
   coupling.maxIterations = 8;
