@@ -213,7 +213,7 @@ private:
   // every mechanics ghost interpolate these along the front.  Per-node values
   // copied to nearby points (the earlier form) made the speed depend on where
   // the front sat in its cell, and the stress feedback grew that stair-step
-  // pattern into a corrugated front (2026-10-26, B9).
+  // pattern into a corrugated front.
   std::vector<Vec3D<T>> faceCrossingNormal_;
   std::vector<T> faceReactionRate_;
   std::vector<T> faceFrontSpeed_;
@@ -533,24 +533,6 @@ public:
       maxScalarVelocity_ = std::max(maxScalarVelocity_, speed);
 
     solved = true;
-
-    // TEST INSTRUMENTATION (env-gated): dump one vertical column of node
-    // concentrations — including meshed-mask nodes — so the steady profile
-    // through the film is observable.  Locates where a resistance error sits:
-    // a linear drop across the film means D_mask itself is off; a jump at one
-    // face means that face's coefficient or BC is wrong.
-    if (std::getenv("OX_DUMP_CONC") != nullptr && !nodes.empty()) {
-      const auto column = nodes[nodes.size() / 2].index[0];
-      if (FILE *dump = std::fopen("/tmp/ox_conc_dump.txt", "w")) {
-        for (const auto &node : nodes)
-          if (node.index[0] == column)
-            std::fprintf(dump, "%.6f %d %.8f\n",
-                         static_cast<double>(node.index[D - 1]) * gridDelta,
-                         node.inMask ? 1 : 0,
-                         static_cast<double>(node.concentration));
-        std::fclose(dump);
-      }
-    }
   }
 
   T getScalarVelocity(const Vec3D<T> &coordinate, int material,
@@ -1458,7 +1440,7 @@ private:
   // crossing arm sums to a normal sink of k (|n_x| + |n_y| (+ |n_z|)): exact
   // on an axis-aligned front, sqrt(2) too strong at 45 degrees, 4/pi on
   // average around a cylinder — measured as 3-7% too little Si consumed by
-  // the Kao cylinders with no stress coupling (2026-10-21).  With the
+  // the Kao cylinders with no stress coupling.  With the
   // scaling the reconstructed interface concentration is also the same on
   // every arm, C_node (D/d) / (D/d + k) for the normal distance d.
   StencilSide reactionBoundarySide(T rate, T distance, T diffusion,
@@ -1777,12 +1759,10 @@ private:
       const T exponent =
           stressExponent(-normalStress, parameters.reactionActivationVolume);
       // Reaction floor 0.1 (vs the generic 1e-6 clamp): the source term
-      // scales with this factor, and single-cell stress spikes (e.g.
-      // -15 GPa at a contact corner vs -2 GPa a cell away) otherwise make
-      // the volume source orders-of-magnitude rough on the grid scale,
-      // stalling the SIMPLE mechanics solve (2026-08-10: residual plateau
-      // 0.03-0.10 vs 5e-3, dt collapse).
-      // Ceiling 1 (2026-10-22): interface stress only RETARDS the reaction.
+      // scales with this factor, and a single-cell stress spike (e.g.
+      // -15 GPa next to -2 GPa a cell away) would otherwise make the volume
+      // source orders of magnitude rough on the grid scale.
+      // Ceiling 1: interface stress only retards the reaction.
       // In Kao's cylinders the interface normal stress is compressive for
       // convex and concave Si alike, and there is no data for the reaction
       // under interface tension.  Locally, tension appears where the Si
@@ -1790,8 +1770,6 @@ private:
       // stress is pulled open (membrane effect), so a tension-ENHANCED rate
       // deepens it — measured: Kao pillar (r = 0.45 um, Vr = 15 A^3) dented
       // 12.7 nm in 0.1 hr with ceiling 10, round within 0.6 nm with ceiling 1.
-      // (The earlier ceiling of 10 was itself a guard against tensile
-      // single-cell spikes at degenerate cut cells, 2026-08-12/13.)
       rate *= std::clamp(stressFactor(exponent), T(0.1), T(1.));
     }
 
@@ -1811,7 +1789,7 @@ private:
   }
 
   // Median of n.sigma.n over the node and its oxide face neighbours, all
-  // projected on the node's own interface normal (2026-08-12 option A): cut
+  // projected on the node's own interface normal: cut
   // cells carry the least trustworthy stress in the field (single-cell spikes
   // of -15 GPa next to -2 GPa), and with up to 2D+1 samples a lone spike
   // cannot move the median, while a genuine gradient passes unchanged.
@@ -1940,7 +1918,7 @@ private:
   // Interface normal stress for the reaction law: the median sample at every
   // node with a REACTION face, then smoothed along the interface.
   //
-  // Why smoothed (2026-10-22): the reaction law k = k0 exp(sigma_nn V/kT)
+  // Why smoothed: the reaction law k = k0 exp(sigma_nn V/kT)
   // feeds back through the mechanics, and that loop is stabilising but STIFF.
   // A rate ripple of wavenumber q makes a normal stress ~ 2 eta_impl q v
   // (eta_impl = (1 - e^(-dt/tau)) eta ~ G dt), so the loop gain is

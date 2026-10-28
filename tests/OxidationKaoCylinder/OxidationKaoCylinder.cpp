@@ -2,12 +2,12 @@
 // radial model: the radial source flow of an Eyring oxide in the annulus, the
 // reaction law on the interface normal stress (V_k) and the diffusivity law on
 // the pressure (V_D), each law alone.  Reference radii from
-// patches/analysis/kao/kao1d.py (normal-stress law, eta0 3e9 Pa hr, Vc 300 A^3,
-// 30 nm seed, run_cyl(..., 0.3, "convex", 0.15)).  The oxide is purely
-// viscous here, like the reference: a Maxwell oxide (G 30 GPa, relaxation
-// 0.1 hr in this 0.15 hr run) builds up its stress over the relaxation time,
-// since new oxide is born stress-free (V_D alone: 0.9 nm more Si consumed).
-// The elastic run had also hidden the third defect below.
+// that model, solved separately (normal-stress law, eta0 3e9 Pa hr, Vc 300 A^3,
+// 30 nm seed, convex Si cylinder of radius 0.3 um, 0.15 hr).  The oxide is
+// purely viscous here, like the reference: a Maxwell oxide (G 30 GPa,
+// relaxation 0.1 hr in this 0.15 hr run) builds up its stress over the
+// relaxation time, since new oxide is born stress-free (V_D alone: 0.9 nm more
+// Si consumed). The elastic run had also hidden the third defect below.
 //
 // Three defects made the 2-D cylinder miss these, at any grid spacing:
 // - the stress laws read the MAC stress of the first node layer at the Si

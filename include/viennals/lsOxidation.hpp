@@ -123,8 +123,9 @@ LOCOSConservationDiagnostics<T> computeLOCOSOpenWindowConservation(
 ///
 /// LOCOS mode (mask provided):
 ///   1. Diffusion+deformation coupled solve (OxidationModel); the nitride
-///      joins the deformation solve as a linear-elastic body (monolithic
-///      oxide + nitride mechanics, OxidationMaskParameters)
+///      joins the deformation solve as an elastic body, creeping when
+///      OxidationMaskParameters sets a viscosity (monolithic oxide +
+///      nitride mechanics)
 ///   2. Pre-advection boolean clip (ambientInterface \ maskInterface)
 ///   3. Ambient interface advection (oxide velocity)
 ///   4. Si/SiO2 reaction interface advection (diffusion velocity)

@@ -11,7 +11,8 @@ namespace viennals {
 
 /// Nitride (Si₃N₄) mask of the LOCOS process.  The grid points inside the
 /// mask join the oxide mechanics solve (OxidationDeformation) as a
-/// linear-elastic body with stress memory: oxide and nitride share nodes and
+/// elastic body with stress memory (Maxwell creep when viscosity > 0): oxide
+/// and nitride share nodes and
 /// interface faces, so velocity and traction are continuous across their
 /// interface by construction.
 struct OxidationMaskParameters {

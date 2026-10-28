@@ -1,11 +1,11 @@
 #pragma once
 
-// Generic level-set resample engine (see repo TODO.md, "unified design").
+// Generic level-set resample engine.
 //
 // Produces a copy of a level set on a NEW grid spacing over the same physical
 // bounds and boundary conditions (a reflective edge moves inwards by less than
 // one new cell when the extent is not a multiple of the new spacing), by a
-// ToSurfaceMesh -> FromSurfaceMesh round trip -- the dev dual-grid technique.
+// ToSurfaceMesh -> FromSurfaceMesh round trip.
 // Measured EXACT on analytic tests (plane and sphere, refine 2x and coarsen
 // 3x: max error <= 0.02 nm): the triangulation nodes are the sub-cell zero
 // crossings, so nothing is quantised away.  (Multilinear interpolation of the
@@ -23,7 +23,7 @@
 //
 // Field data is NOT carried: caches keyed by quantised physical coordinate
 // survive a resample by convention; grid-index-keyed data must be re-keyed
-// by the caller (see TODO.md).
+// by the caller.
 
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>

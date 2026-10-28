@@ -475,7 +475,7 @@ public:
   // Renormalising over the oxide nodes there instead handed the first oxide
   // layer its own old stress every step, so it never took in new material
   // and its history grew without bound -- tension over the troughs of a
-  // corrugated front that grew as 1/h (B9 ripple probe, 2026-10-26).
+  // corrugated front that grew as 1/h.
   void advectStress(const std::vector<std::array<T, 9>> &end,
                     std::vector<std::array<T, 9>> &out, bool nitride) const {
     const std::size_t n = nodes.size();
@@ -798,14 +798,6 @@ public:
     const auto result =
         resolved ? velocity : unresolvedAmbientVelocity(coordinate);
 
-    // TEST INSTRUMENTATION (env-gated): dump every query the advection makes
-    // so the velocity actually FED to lsAdvect is observable.
-    if (std::getenv("OX_DUMP_VEL") != nullptr) {
-      static FILE *dump = std::fopen("/tmp/ox_vel_dump.txt", "w");
-      if (dump)
-        std::fprintf(dump, "%.6f %.6f %.6f %d\n", coordinate[0], coordinate[1],
-                     result[1], resolved ? 1 : 0);
-    }
     return result;
   }
 

@@ -294,7 +294,7 @@ public:
       // the diffusion solved before advecting (no re-solve), so feeding the
       // new values here made the Si front move with a rate that neither the
       // concentration nor the oxide flow had been solved with — an explicit
-      // lag that let a stiff stress ripple double every step (2026-10-22).
+      // lag that let a stiff stress ripple double every step.
       if (residual < parameters.tolerance) {
         // The advection uses the velocities of this last solve: finish its
         // viscosity iteration (warm-started: a few iterations).
