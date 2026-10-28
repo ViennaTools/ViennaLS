@@ -20,10 +20,6 @@
 
 #include <Eigen/SparseCore>
 #include <Eigen/SparseLU>
-// AMGCL's solver parameters as plain structs (no Boost property trees).
-#ifndef AMGCL_NO_BOOST
-#define AMGCL_NO_BOOST
-#endif
 #include <amgcl/adapter/crs_tuple.hpp>
 #include <amgcl/amg.hpp>
 #include <amgcl/backend/builtin.hpp>
