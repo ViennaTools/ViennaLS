@@ -6,13 +6,16 @@
 
 #include <hrleSparseIterator.hpp>
 
+#include <map>
+
 namespace viennals {
 
 using namespace viennacore;
 
 /// Extrudes a 2D Level Set into a 3D domain. The axis in which should be
 /// extruded can be set and boundary conditions in the 3D domain must be
-/// specified.
+/// specified. A Euclidean level set stays Euclidean with its width, and its
+/// closest points and normals become those of the extruded surface.
 template <class T> class Extrude {
   using hrleIndexType = viennahrle::IndexType;
   SmartPointer<Domain<T, 2>> inputLevelSet = nullptr;
@@ -154,7 +157,58 @@ public:
     }
 
     outputLevelSet->insertPoints(points3D);
-    outputLevelSet->finalize(2);
+    const bool euclidean =
+        inputLevelSet->getNormalization() == NormalizationEnum::EUCLIDEAN;
+    outputLevelSet->finalize(euclidean ? inputLevelSet->getLevelSetWidth() : 2);
+    if (!euclidean)
+      return;
+    outputLevelSet->setNormalization(NormalizationEnum::EUCLIDEAN);
+
+    // the closest point of a node at its own position along the axis, the
+    // normal without a component along it
+    const auto &pointData2D = inputLevelSet->getPointData();
+    const auto *closest2D = pointData2D.getVectorData(
+        FromSurfaceMesh<T, 2>::closestPointsLabel, true);
+    const auto *normals2D = pointData2D.getVectorData(
+        FromSurfaceMesh<T, 2>::surfaceNormalsLabel, true);
+    const auto points2D = inputLevelSet->getNumberOfPoints();
+    if (closest2D == nullptr || normals2D == nullptr ||
+        closest2D->size() != points2D || normals2D->size() != points2D)
+      return;
+    std::map<viennahrle::Index<2>, unsigned> ids2D;
+    for (viennahrle::ConstSparseIterator<typename Domain<T, 2>::DomainType> it(
+             domain2D);
+         !it.isFinished(); it.next())
+      if (it.isDefined())
+        ids2D.emplace(it.getStartIndices(), it.getPointId());
+    std::vector<Vec3D<T>> closest(outputLevelSet->getNumberOfPoints()),
+        normals(outputLevelSet->getNumberOfPoints());
+    for (viennahrle::ConstSparseIterator<typename Domain<T, 3>::DomainType> it(
+             outputLevelSet->getDomain());
+         !it.isFinished(); it.next()) {
+      if (!it.isDefined())
+        continue;
+      const auto index3D = it.getStartIndices();
+      const auto found =
+          ids2D.find(viennahrle::Index<2>(index3D[xx], index3D[yy]));
+      if (found == ids2D.end())
+        continue;
+      const auto &c = (*closest2D)[found->second];
+      const auto &n = (*normals2D)[found->second];
+      auto &cp = closest[it.getPointId()];
+      auto &np = normals[it.getPointId()];
+      cp[xx] = c[0];
+      cp[yy] = c[1];
+      cp[extrusionAxis] = index3D[extrusionAxis] * gridDelta;
+      np[xx] = n[0];
+      np[yy] = n[1];
+      np[extrusionAxis] = T(0);
+    }
+    auto &pointData = outputLevelSet->getPointData();
+    pointData.insertNextVectorData(std::move(closest),
+                                   FromSurfaceMesh<T, 3>::closestPointsLabel);
+    pointData.insertNextVectorData(std::move(normals),
+                                   FromSurfaceMesh<T, 3>::surfaceNormalsLabel);
   }
 };
 

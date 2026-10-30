@@ -9,7 +9,7 @@ from viennals import d2
 import viennals.d2
 from viennals import d3
 import viennals.d3
-__all__: list[str] = ['Auto', 'BooleanOperationEnum', 'BoundaryConditionEnum', 'Cpu', 'CurvatureEnum', 'Extrude', 'FeatureDetectionEnum', 'FileFormatEnum', 'Gpu', 'GpuMode', 'GpuPreconditioner', 'ILU0', 'IntegrationSchemeEnum', 'Jacobi', 'LOCOSConservationDiagnostics', 'LogLevel', 'Logger', 'MaterialMap', 'Mesh', 'NormalCalculationMethodEnum', 'OxidationCouplingParameters', 'OxidationDeformationParameters', 'OxidationMaskParameters', 'OxidationParameters', 'OxidationPresets', 'PointData', 'Slice', 'SpatialSchemeEnum', 'TemporalSchemeEnum', 'TransformEnum', 'TransformMesh', 'VTKReader', 'VTKRenderWindow', 'VTKWriter', 'VelocityField', 'VoidTopSurfaceEnum', 'd2', 'd3', 'setNumThreads', 'version']
+__all__: list[str] = ['Auto', 'BooleanOperationEnum', 'BoundaryConditionEnum', 'Cpu', 'CurvatureEnum', 'Extrude', 'FeatureDetectionEnum', 'FileFormatEnum', 'Gpu', 'GpuMode', 'GpuPreconditioner', 'ILU0', 'IntegrationSchemeEnum', 'Jacobi', 'LOCOSConservationDiagnostics', 'LogLevel', 'Logger', 'MaterialMap', 'Mesh', 'NormalCalculationMethodEnum', 'NormalizationEnum', 'OxidationCouplingParameters', 'OxidationDeformationParameters', 'OxidationMaskParameters', 'OxidationParameters', 'OxidationPresets', 'PointData', 'Slice', 'SpatialSchemeEnum', 'TemporalSchemeEnum', 'TransformEnum', 'TransformMesh', 'VTKReader', 'VTKRenderWindow', 'VTKWriter', 'VelocityField', 'VoidTopSurfaceEnum', 'd2', 'd3', 'setNumThreads', 'version']
 class BooleanOperationEnum(enum.IntEnum):
     INTERSECT: typing.ClassVar[BooleanOperationEnum]  # value = <BooleanOperationEnum.INTERSECT: 0>
     INVERT: typing.ClassVar[BooleanOperationEnum]  # value = <BooleanOperationEnum.INVERT: 3>
@@ -439,6 +439,16 @@ class Mesh:
 class NormalCalculationMethodEnum(enum.IntEnum):
     CENTRAL_DIFFERENCES: typing.ClassVar[NormalCalculationMethodEnum]  # value = <NormalCalculationMethodEnum.CENTRAL_DIFFERENCES: 0>
     ONE_SIDED_MIN_MOD: typing.ClassVar[NormalCalculationMethodEnum]  # value = <NormalCalculationMethodEnum.ONE_SIDED_MIN_MOD: 1>
+    @classmethod
+    def __new__(cls, value):
+        ...
+    def __format__(self, format_spec):
+        """
+        Convert to a string according to format_spec.
+        """
+class NormalizationEnum(enum.IntEnum):
+    EUCLIDEAN: typing.ClassVar[NormalizationEnum]  # value = <NormalizationEnum.EUCLIDEAN: 1>
+    MANHATTAN: typing.ClassVar[NormalizationEnum]  # value = <NormalizationEnum.MANHATTAN: 0>
     @classmethod
     def __new__(cls, value):
         ...

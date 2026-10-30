@@ -2,6 +2,8 @@
 
 #include <lsDomain.hpp>
 #include <lsMarkVoidPoints.hpp>
+#include <lsReduce.hpp>
+#include <lsReinitialize.hpp>
 
 namespace viennals {
 
@@ -14,6 +16,10 @@ using namespace viennacore;
 /// This method is set using setVoidTopSurface, which
 /// is equivalent to the corresponding member function
 /// of lsMarkVoidPoints.
+/// A Euclidean level set is reduced to the narrow band the void detection
+/// expects, where the bands of separate surfaces do not touch, keeps the point
+/// data of the remaining points and is reinitialized from their planes to its
+/// width (Reinitialize).
 template <class T, int D> class RemoveStrayPoints {
   SmartPointer<Domain<T, D>> levelSet = nullptr;
   VoidTopSurfaceEnum voidTopSurface = VoidTopSurfaceEnum::LARGEST;
@@ -45,6 +51,12 @@ public:
       return;
     }
 
+    const bool euclidean =
+        levelSet->getNormalization() == NormalizationEnum::EUCLIDEAN;
+    const int width = levelSet->getLevelSetWidth();
+    if (euclidean)
+      Reduce<T, D>(levelSet, 3).apply();
+
     // Mark which points are voids
     {
       MarkVoidPoints<T, D> marker;
@@ -72,6 +84,8 @@ public:
 
     std::vector<typename Domain<T, D>::PointValueVectorType> newPoints;
     newPoints.resize(newDomain.getNumberOfSegments());
+    // point ids of the remaining points, in the same order
+    std::vector<std::vector<unsigned>> sourceIds(newPoints.size());
 
 #pragma omp parallel for
     for (unsigned p = 0; p < newDomain.getNumberOfSegments(); ++p) {
@@ -93,6 +107,7 @@ public:
         if (it.isDefined() && !voidMarkers->at(it.getPointId())) {
           newPoints[p].push_back(
               std::make_pair(it.getStartIndices(), it.getValue()));
+          sourceIds[p].push_back(it.getPointId());
         }
       }
     }
@@ -104,12 +119,22 @@ public:
     }
 
     newlsDomain->insertPoints(newPoints[0]);
+    if (euclidean) {
+      for (unsigned i = 1; i < sourceIds.size(); ++i)
+        sourceIds[0].insert(sourceIds[0].end(), sourceIds[i].begin(),
+                            sourceIds[i].end());
+      newlsDomain->getPointData().translateFromData(levelSet->getPointData(),
+                                                    sourceIds[0]);
+      newlsDomain->setNormalization(levelSet->getNormalization());
+    }
 
     // distribute evenly across segments and copy
     newDomain.finalize();
     newDomain.segment();
     levelSet->deepCopy(newlsDomain);
     levelSet->finalize(2);
+    if (euclidean)
+      Reinitialize<T, D>(levelSet, width).apply();
   }
 };
 

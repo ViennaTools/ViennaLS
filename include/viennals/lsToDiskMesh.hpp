@@ -7,7 +7,9 @@
 #include <lsCalculateNormalVectors.hpp>
 #include <lsDomain.hpp>
 #include <lsExpand.hpp>
+#include <lsFromSurfaceMesh.hpp>
 #include <lsMaterialMap.hpp>
+#include <lsMaterialStack.hpp>
 #include <lsMesh.hpp>
 #include <unordered_map>
 
@@ -21,6 +23,8 @@ using namespace viennacore;
 /// direction of their normal vector by grid delta * LS value.
 /// Grid delta and the origin grid point are saved for each point.
 /// This allows for a simple setup of disks for ray tracing.
+/// Disks of a Euclidean level set lie on its stored closest points or planes,
+/// with the stored normals, and take the material just behind them.
 template <class T, int D, class N = T> class ToDiskMesh {
   typedef typename Domain<T, D>::DomainType hrleDomainType;
 
@@ -135,6 +139,25 @@ public:
       translator->reserve(normalVectors.size());
     }
 
+    // a Euclidean level set places each disk on the node's stored plane, with
+    // that plane's normal, and takes the material just behind the disk, as
+    // AdvectHermite does; its values do not compare with Manhattan values of
+    // the level sets below
+    const bool euclidean =
+        levelSets.back()->getNormalization() == NormalizationEnum::EUCLIDEAN;
+    const auto *storedNormals =
+        euclidean ? levelSets.back()->getPointData().getVectorData(
+                        FromSurfaceMesh<T, D>::surfaceNormalsLabel, true)
+                  : nullptr;
+    const auto *closestPoints =
+        euclidean ? levelSets.back()->getPointData().getVectorData(
+                        FromSurfaceMesh<T, D>::closestPointsLabel, true)
+                  : nullptr;
+    MaterialStack<T, D> stack;
+    if (euclidean)
+      stack = MaterialStack<T, D>(std::vector<SmartPointer<Domain<T, D>>>(
+          levelSets.begin(), levelSets.end() - 1));
+
     // an iterator for each levelset
     std::vector<viennahrle::ConstSparseIterator<hrleDomainType>> iterators;
     for (const auto levelSet : levelSets) {
@@ -154,25 +177,20 @@ public:
         translator->insert({pointId, counter++});
       }
 
-      // insert material ID
+      // normal of the disk
       const T value = topIt.getValue();
-      int matId = levelSets.size() - 1;
-      for (int lowerLevelSetId = 0; lowerLevelSetId < levelSets.size() - 1;
-           ++lowerLevelSetId) {
-        // check if there is any other levelset at the same point:
-        // put iterator to same position as the top levelset
-        iterators[lowerLevelSetId].goToIndicesSequential(
-            topIt.getStartIndices());
-        if (iterators[lowerLevelSetId].getValue() <=
-            value + wrappingLayerEpsilon) {
-          matId = lowerLevelSetId;
-          break;
-        }
+      Vec3D<T> diskNormal{};
+      for (unsigned i = 0; i < D; ++i)
+        diskNormal[i] = normalVectors[pointId][i];
+      if (storedNormals != nullptr) {
+        const auto &stored = (*storedNormals)[pointId];
+        const T length =
+            std::sqrt(stored[0] * stored[0] + stored[1] * stored[1] +
+                      stored[2] * stored[2]);
+        if (length > T(1e-12))
+          for (unsigned i = 0; i < D; ++i)
+            diskNormal[i] = stored[i] / length;
       }
-      if (useMaterialMap)
-        matId = materialMap->getMaterialId(matId);
-
-      materialIds.push_back(matId);
 
       // insert vertex
       std::array<unsigned, 1> vertex{};
@@ -200,11 +218,56 @@ public:
         }
       }
 
-      // now normalize vector to scale position correctly to manhatten distance
-      double scaling = value * gridDelta * max;
-      for (unsigned i = 0; i < D; ++i) {
-        node[i] -= scaling * normalVectors[pointId][i];
+      // a Euclidean node's stored closest point, where it lies at the node's
+      // distance; otherwise the foot on the node's plane, as for planes that
+      // AdvectHermite took over from a neighbour
+      bool atClosestPoint = false;
+      if (closestPoints != nullptr) {
+        const auto &cp = (*closestPoints)[pointId];
+        double distance = 0.;
+        for (unsigned i = 0; i < D; ++i)
+          distance += (node[i] - cp[i]) * (node[i] - cp[i]);
+        atClosestPoint =
+            std::abs(std::sqrt(distance) - std::abs(value) * gridDelta) <=
+            1e-6 * gridDelta * std::max(T(1), std::abs(value));
+        if (atClosestPoint)
+          for (unsigned i = 0; i < D; ++i)
+            node[i] = cp[i];
       }
+      if (!atClosestPoint) {
+        // now normalize vector to scale position correctly to manhatten
+        // distance; a Euclidean value is the distance along the normal
+        double scaling = value * gridDelta * (euclidean ? 1. : max);
+        for (unsigned i = 0; i < D; ++i) {
+          node[i] -= scaling * diskNormal[i];
+        }
+      }
+
+      // insert material ID
+      int matId = levelSets.size() - 1;
+      if (euclidean) {
+        Vec3D<T> behind{};
+        for (unsigned i = 0; i < D; ++i)
+          behind[i] = T(node[i]) / gridDelta - T(0.01) * diskNormal[i];
+        matId = stack.material(behind);
+      } else {
+        for (int lowerLevelSetId = 0; lowerLevelSetId < levelSets.size() - 1;
+             ++lowerLevelSetId) {
+          // check if there is any other levelset at the same point:
+          // put iterator to same position as the top levelset
+          iterators[lowerLevelSetId].goToIndicesSequential(
+              topIt.getStartIndices());
+          if (iterators[lowerLevelSetId].getValue() <=
+              value + wrappingLayerEpsilon) {
+            matId = lowerLevelSetId;
+            break;
+          }
+        }
+      }
+      if (useMaterialMap)
+        matId = materialMap->getMaterialId(matId);
+
+      materialIds.push_back(matId);
 
       mesh->insertNextNode(node);
 
@@ -214,7 +277,7 @@ public:
       if (D == 2)
         normal[2] = 0.;
       for (unsigned i = 0; i < D; ++i) {
-        normal[i] = normalVectors[pointId][i];
+        normal[i] = diskNormal[i];
       }
 
       normals.push_back(normal);

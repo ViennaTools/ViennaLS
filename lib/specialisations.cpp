@@ -5,6 +5,7 @@
 
 // add all headers which require template specialisation
 #include <lsAdvect.hpp>
+#include <lsAdvectHermite.hpp>
 #include <lsBooleanOperation.hpp>
 #include <lsCalculateCurvatures.hpp>
 #include <lsCalculateNormalVectors.hpp>
@@ -26,8 +27,10 @@
 #include <lsPrune.hpp>
 #include <lsReader.hpp>
 #include <lsReduce.hpp>
+#include <lsReinitialize.hpp>
 #include <lsSlice.hpp>
 #include <lsToDiskMesh.hpp>
+#include <lsToDualContouringMesh.hpp>
 #include <lsToHullMesh.hpp>
 #include <lsToMesh.hpp>
 #include <lsToMultiSurfaceMesh.hpp>
@@ -44,6 +47,7 @@ PRECOMPILE_SPECIALIZE_PRECISION(PointData)
 PRECOMPILE_SPECIALIZE_PRECISION(Mesh)
 PRECOMPILE_SPECIALIZE_PRECISION(Slice)
 PRECOMPILE_SPECIALIZE(Advect)
+PRECOMPILE_SPECIALIZE(AdvectHermite)
 PRECOMPILE_SPECIALIZE(BooleanOperation)
 PRECOMPILE_SPECIALIZE(CalculateCurvatures)
 PRECOMPILE_SPECIALIZE(CalculateNormalVectors)
@@ -69,7 +73,9 @@ PRECOMPILE_SPECIALIZE(MakeGeometry)
 PRECOMPILE_SPECIALIZE(Prune)
 PRECOMPILE_SPECIALIZE(Reader)
 PRECOMPILE_SPECIALIZE(Reduce)
+PRECOMPILE_SPECIALIZE(Reinitialize)
 PRECOMPILE_SPECIALIZE(ToDiskMesh)
+PRECOMPILE_SPECIALIZE(ToDualContouringMesh)
 PRECOMPILE_SPECIALIZE(ToHullMesh)
 PRECOMPILE_SPECIALIZE(ToMesh)
 PRECOMPILE_SPECIALIZE(ToMultiSurfaceMesh)

@@ -182,9 +182,11 @@ public:
           levelSet->getPointData(), newDataSourceIds);
     }
 
-    // distribute evenly across segments and copy
+    // distribute evenly across segments and copy; the remaining values are
+    // unchanged, and so is their normalization
     newDomain.finalize();
     newDomain.segment();
+    newlsDomain->setNormalization(levelSet->getNormalization());
     levelSet->deepCopy(newlsDomain);
     levelSet->finalize(2);
   }

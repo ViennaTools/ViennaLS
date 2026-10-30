@@ -31,6 +31,8 @@ private:
   GridType grid;
   bool removeBoundaryTriangles = true;
   bool gridSet = false;
+  NormalizationEnum normalization = NormalizationEnum::MANHATTAN;
+  int levelSetWidth = 2;
 
 public:
   FromVolumeMesh() = default;
@@ -49,6 +51,17 @@ public:
 
   void setRemoveBoundaryTriangles(bool passedRemoveBoundaryTriangles) {
     removeBoundaryTriangles = passedRemoveBoundaryTriangles;
+  }
+
+  /// Normalization of the created level sets, see NormalizationEnum.
+  void setNormalization(NormalizationEnum passedNormalization) {
+    normalization = passedNormalization;
+  }
+
+  /// Level set width of the created level sets. Euclidean values fill a band
+  /// of half this width around each surface.
+  void setLevelSetWidth(int passedLevelSetWidth) {
+    levelSetWidth = passedLevelSetWidth;
   }
 
   std::vector<LevelSetType> getLevelSets() const { return levelSets; }
@@ -189,6 +202,8 @@ public:
       levelSets.clear();
       for (unsigned i = 0; i < materialInts.size(); ++i) {
         auto ls = LevelSetType::New(grid);
+        ls->setNormalization(normalization);
+        ls->setLevelSetWidth(levelSetWidth);
         levelSets.push_back(ls);
       }
     }

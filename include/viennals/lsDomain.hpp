@@ -13,7 +13,7 @@
 #include <vcSmartPointer.hpp>
 #include <vcVectorType.hpp>
 
-#define LS_DOMAIN_SERIALIZATION_VERSION 0
+#define LS_DOMAIN_SERIALIZATION_VERSION 1
 
 namespace viennals {
 
@@ -21,6 +21,14 @@ using namespace viennacore;
 
 // Boundary condition alias for easier access
 using BoundaryConditionEnum = viennahrle::BoundaryType;
+
+/// Meaning of the stored level set values.
+/// MANHATTAN: on the zero layer a value is the distance along a grid line to
+/// the nearest crossing of the surface, and every further layer adds one grid
+/// spacing. This is the sparse-field convention all algorithms assume.
+/// EUCLIDEAN: every stored value is the signed Euclidean distance to the
+/// surface.
+enum class NormalizationEnum : unsigned { MANHATTAN = 0, EUCLIDEAN = 1 };
 
 ///  Class containing all information about the level set, including
 ///  the dimensions of the domain, boundary conditions and all data.
@@ -40,6 +48,7 @@ private:
   GridType grid;
   DomainType domain;
   int levelSetWidth = 1;
+  NormalizationEnum normalization = NormalizationEnum::MANHATTAN;
   PointDataType pointData;
   VoidPointMarkersType voidPointMarkers;
 
@@ -125,6 +134,7 @@ public:
     grid = passedDomain->grid;
     domain.deepCopy(grid, passedDomain->domain);
     levelSetWidth = passedDomain->levelSetWidth;
+    normalization = passedDomain->normalization;
     pointData = passedDomain->pointData;
   }
 
@@ -158,6 +168,15 @@ public:
   int getLevelSetWidth() const { return levelSetWidth; }
 
   void setLevelSetWidth(int width) { levelSetWidth = width; }
+
+  /// Meaning of the stored values, see NormalizationEnum.
+  NormalizationEnum getNormalization() const { return normalization; }
+
+  /// Set the meaning of the stored values. Algorithms that create a level set
+  /// read this to decide which values to write.
+  void setNormalization(NormalizationEnum passedNormalization) {
+    normalization = passedNormalization;
+  }
 
   // clear all additional data
   void clearMetaData() { pointData.clear(); }
@@ -213,6 +232,10 @@ public:
       pointData.serialize(stream);
     }
 
+    // normalization of the values (since format version 1)
+    const char normalizationTag = static_cast<char>(normalization);
+    stream.write(&normalizationTag, 1);
+
     return stream;
   }
 
@@ -262,6 +285,15 @@ public:
     if (hasPointData == 1) {
       pointData.clear();
       pointData.deserialize(stream);
+    }
+
+    // normalization of the values, files before format version 1 are Manhattan
+    normalization = NormalizationEnum::MANHATTAN;
+    if (formatVersion >= 1) {
+      char normalizationTag;
+      stream.read(&normalizationTag, 1);
+      if (normalizationTag == static_cast<char>(NormalizationEnum::EUCLIDEAN))
+        normalization = NormalizationEnum::EUCLIDEAN;
     }
 
     return stream;

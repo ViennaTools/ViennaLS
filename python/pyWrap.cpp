@@ -157,6 +157,12 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
              BoundaryConditionEnum::NEG_INFINITE_BOUNDARY)
       .finalize();
 
+  py::native_enum<NormalizationEnum>(module, "NormalizationEnum",
+                                     "enum.IntEnum")
+      .value("MANHATTAN", NormalizationEnum::MANHATTAN)
+      .value("EUCLIDEAN", NormalizationEnum::EUCLIDEAN)
+      .finalize();
+
   py::native_enum<FileFormatEnum>(module, "FileFormatEnum", "enum.IntEnum")
       .value("VTK_LEGACY", FileFormatEnum::VTK_LEGACY)
       .value("VTP", FileFormatEnum::VTP)

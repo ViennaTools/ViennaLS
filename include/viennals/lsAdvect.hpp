@@ -16,6 +16,7 @@
 #include <lsDomain.hpp>
 #include <lsMarkVoidPoints.hpp>
 #include <lsReduce.hpp>
+#include <lsReinitialize.hpp>
 
 // Spatial discretization schemes
 #include <lsEngquistOsher.hpp>
@@ -81,6 +82,7 @@ template <class T, int D> class Advect {
   std::vector<SmartPointer<Domain<T, D>>> initialLevelSets;
   std::function<bool(SmartPointer<Domain<T, D>>)> velocityUpdateCallback =
       nullptr;
+  bool warnedEuclidean = false;
 
   // this vector will hold the maximum time step for each point and the
   // corresponding velocity
@@ -1013,6 +1015,34 @@ public:
       return;
     }
 
+    // the band is rebuilt in Manhattan steps, which would leave the closest
+    // points and normals of a Euclidean level set behind: it is advected
+    // without them and made Euclidean again from the dual contouring mesh of
+    // its new values, with its sharp edges rounded (AdvectHermite keeps them)
+    auto &top = levelSets.back();
+    const bool euclidean =
+        top->getNormalization() == NormalizationEnum::EUCLIDEAN;
+    const int euclideanWidth = top->getLevelSetWidth();
+    if (euclidean) {
+      if (!warnedEuclidean) {
+        VIENNACORE_LOG_WARNING("Advect: the sharp edges of a Euclidean level "
+                               "set are rounded; AdvectHermite keeps them.");
+        warnedEuclidean = true;
+      }
+      auto &data = top->getPointData();
+      for (int k = int(data.getScalarDataSize()) - 1; k >= 0; --k)
+        if (data.getScalarDataLabel(k).rfind("Hermite", 0) == 0)
+          data.eraseScalarData(k);
+      for (int k = int(data.getVectorDataSize()) - 1; k >= 0; --k) {
+        const auto label = data.getVectorDataLabel(k);
+        if (label.rfind("Hermite", 0) == 0 ||
+            label == FromSurfaceMesh<T, D>::closestPointsLabel ||
+            label == FromSurfaceMesh<T, D>::surfaceNormalsLabel)
+          data.eraseVectorData(k);
+      }
+      top->setNormalization(NormalizationEnum::MANHATTAN);
+    }
+
     if (advectionTime == 0.) {
       advectedTime = advect(std::numeric_limits<double>::max());
       numberOfTimeSteps = 1;
@@ -1027,6 +1057,9 @@ public:
       }
       advectedTime = currentTime;
     }
+
+    if (euclidean)
+      Reinitialize<T, D>(levelSets.back(), euclideanWidth).apply();
   }
 };
 

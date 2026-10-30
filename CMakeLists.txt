@@ -264,6 +264,28 @@ CPMFindPackage(
 
 target_link_libraries(${PROJECT_NAME} INTERFACE ViennaHRLE ViennaCore)
 
+# Eigen and libigl (header only): exact signed distances for Euclidean level sets
+find_package(Eigen3 3.3 QUIET NO_MODULE)
+if(NOT TARGET Eigen3::Eigen)
+  CPMAddPackage(
+    NAME Eigen
+    VERSION 3.4.0
+    URL "https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz"
+    DOWNLOAD_ONLY YES)
+  add_library(Eigen3::Eigen INTERFACE IMPORTED)
+  target_include_directories(Eigen3::Eigen INTERFACE ${Eigen_SOURCE_DIR})
+endif()
+
+# same libigl commit as gpytoolbox 0.3.8
+CPMAddPackage(
+  NAME libigl
+  URL "https://github.com/libigl/libigl/archive/08be0704c26359bcdbe17449054e6c56b9b7538c.tar.gz"
+  DOWNLOAD_ONLY YES)
+
+target_include_directories(${PROJECT_NAME} SYSTEM
+                           INTERFACE $<BUILD_INTERFACE:${libigl_SOURCE_DIR}/include>)
+target_link_libraries(${PROJECT_NAME} INTERFACE Eigen3::Eigen)
+
 if(VIENNALS_USE_VTK AND VIENNALS_VTK_PYTHON_LIBS)
   import_vtk_python()
   target_link_libraries(${PROJECT_NAME} INTERFACE VTK::PythonLibs)

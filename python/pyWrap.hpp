@@ -5,6 +5,7 @@
 
 // all header files which define API functions
 #include <lsAdvect.hpp>
+#include <lsAdvectHermite.hpp>
 #include <lsBooleanOperation.hpp>
 #include <lsCalculateCurvatures.hpp>
 #include <lsCalculateNormalVectors.hpp>
@@ -37,9 +38,11 @@
 #include <lsPrune.hpp>
 #include <lsReader.hpp>
 #include <lsReduce.hpp>
+#include <lsReinitialize.hpp>
 #include <lsRemoveStrayPoints.hpp>
 #include <lsSlice.hpp>
 #include <lsToDiskMesh.hpp>
+#include <lsToDualContouringMesh.hpp>
 #include <lsToHullMesh.hpp>
 #include <lsToMesh.hpp>
 #include <lsToMultiSurfaceMesh.hpp>
@@ -302,6 +305,11 @@ template <int D> void bindApi(py::module &module) {
       .def("setLevelSetWidth", &Domain<T, D>::setLevelSetWidth,
            "Set the number of layers of level set points which should be "
            "stored around the explicit surface.")
+      .def("getNormalization", &Domain<T, D>::getNormalization,
+           "Get the meaning of the stored values (MANHATTAN or EUCLIDEAN).")
+      .def("setNormalization", &Domain<T, D>::setNormalization,
+           "Set the meaning of the stored values. Algorithms that create a "
+           "level set read this to decide which values to write.")
       .def("clearMetaData", &Domain<T, D>::clearMetaData,
            "Clear all metadata stored in the level set.")
       // allow filehandle to be passed and default to python standard output
@@ -1041,6 +1049,9 @@ template <int D> void bindApi(py::module &module) {
                &FromSurfaceMesh<T, D>::setRemoveBoundaryTriangles),
            "Set whether to include mesh elements outside of the simulation "
            "domain.")
+      .def("setUseWindingNumber", &FromSurfaceMesh<T, D>::setUseWindingNumber,
+           "Sign of Euclidean distances from the generalized winding number "
+           "(closed meshes) instead of pseudo-normals (default).")
       .def("apply", &FromSurfaceMesh<T, D>::apply,
            "Construct a levelset from a surface mesh.");
 
@@ -1064,6 +1075,12 @@ template <int D> void bindApi(py::module &module) {
            &FromVolumeMesh<T, D>::setRemoveBoundaryTriangles,
            "Set whether to include mesh elements outside of the simulation "
            "domain.")
+      .def("setNormalization", &FromVolumeMesh<T, D>::setNormalization,
+           "Set the normalization (MANHATTAN or EUCLIDEAN) of the created "
+           "level sets.")
+      .def("setLevelSetWidth", &FromVolumeMesh<T, D>::setLevelSetWidth,
+           "Set the level set width of the created level sets. Euclidean "
+           "values fill a band of half this width around each surface.")
       .def("apply", &FromVolumeMesh<T, D>::apply,
            "Construct a levelset from a volume mesh.");
 
@@ -1227,6 +1244,24 @@ template <int D> void bindApi(py::module &module) {
            "cores) after reduction.")
       .def("apply", &Reduce<T, D>::apply, "Perform reduction.");
 
+  // Reinitialize
+  py::class_<Reinitialize<T, D>, SmartPointer<Reinitialize<T, D>>>(
+      module, "Reinitialize")
+      // constructors
+      .def(py::init(&SmartPointer<Reinitialize<T, D>>::template New<>))
+      .def(py::init(&SmartPointer<Reinitialize<T, D>>::template New<
+                    SmartPointer<Domain<T, D>> &>))
+      .def(py::init(&SmartPointer<Reinitialize<T, D>>::template New<
+                    SmartPointer<Domain<T, D>> &, int>))
+      // methods
+      .def("setLevelSet", &Reinitialize<T, D>::setLevelSet,
+           "Set the level set to reinitialize.")
+      .def("setWidth", &Reinitialize<T, D>::setWidth,
+           "Level set width of the new band; 0 keeps the current width.")
+      .def("apply", &Reinitialize<T, D>::apply,
+           "Recompute exact Euclidean values, closest points and normals from "
+           "the dual contouring mesh of the stored planes.");
+
   // RemoveStrayPoints
   py::class_<RemoveStrayPoints<T, D>, SmartPointer<RemoveStrayPoints<T, D>>>(
       module, "RemoveStrayPoints")
@@ -1285,6 +1320,80 @@ template <int D> void bindApi(py::module &module) {
            "Set whether only level set points <0.5 should be output.")
       .def("apply", &ToMesh<T, D>::apply,
            "Convert the levelset to a surface mesh.");
+
+  // ToDualContouringMesh
+  py::class_<ToDualContouringMesh<T, D>,
+             SmartPointer<ToDualContouringMesh<T, D>>>(module,
+                                                       "ToDualContouringMesh")
+      // constructors
+      .def(py::init(&SmartPointer<ToDualContouringMesh<T, D>>::template New<>))
+      .def(py::init(&SmartPointer<ToDualContouringMesh<T, D>>::template New<
+                    SmartPointer<Domain<T, D>> &, SmartPointer<Mesh<T>> &>))
+      // methods
+      .def("setLevelSet", &ToDualContouringMesh<T, D>::setLevelSet,
+           "Set levelset to mesh.")
+      .def("setMesh", &ToDualContouringMesh<T, D>::setMesh,
+           "Set the mesh to generate.")
+      .def("setVertexMargin", &ToDualContouringMesh<T, D>::setVertexMargin,
+           "Vertices stay within their cell plus this margin, in grid "
+           "spacings (default 1).")
+      .def("setSingularValueThreshold",
+           &ToDualContouringMesh<T, D>::setSingularValueThreshold,
+           "Singular values of a cell's quadric below this fraction of the "
+           "largest one are dropped (default 0.01).")
+      .def("setAvoidFolds", &ToDualContouringMesh<T, D>::setAvoidFolds,
+           "Whether a 3D mesh folds nowhere (default true). Vertices placed "
+           "beyond their cell weld to the vertex of the cell they fall into "
+           "where it lies on their planes, and a vertex free along an edge "
+           "takes a corner only within half a grid spacing of its cell. "
+           "Reinitialize switches it off.")
+      .def("apply", &ToDualContouringMesh<T, D>::apply,
+           "Extract the surface with dual contouring.");
+
+  // AdvectHermite
+  py::class_<AdvectHermite<T, D>, SmartPointer<AdvectHermite<T, D>>>(
+      module, "AdvectHermite")
+      // constructors
+      .def(py::init(&SmartPointer<AdvectHermite<T, D>>::template New<>))
+      .def(py::init(
+          &SmartPointer<AdvectHermite<T, D>>::template New<
+              SmartPointer<Domain<T, D>> &, SmartPointer<VelocityField<T>> &>))
+      .def(py::init(&SmartPointer<AdvectHermite<T, D>>::template New<
+                    std::vector<SmartPointer<Domain<T, D>>> &,
+                    SmartPointer<VelocityField<T>> &>))
+      // methods
+      .def("setLevelSet", &AdvectHermite<T, D>::setLevelSet,
+           "Set the Euclidean level set with closest points and normals.")
+      .def("insertNextLevelSet", &AdvectHermite<T, D>::insertNextLevelSet,
+           "Put a level set on top of the material stack. The last one is the "
+           "Euclidean surface that is advected.")
+      .def("clearLevelSets", &AdvectHermite<T, D>::clearLevelSets,
+           "Clear the material stack.")
+      .def("setVelocityField", &AdvectHermite<T, D>::setVelocityField,
+           "Set the velocity field.")
+      .def("setAdvectionTime", &AdvectHermite<T, D>::setAdvectionTime,
+           "Set the time to advect for.")
+      .def("setTimeStepRatio", &AdvectHermite<T, D>::setTimeStepRatio,
+           "Largest move of the front per time step in grid spacings "
+           "(default 0.5).")
+      .def("setRebuildDistance", &AdvectHermite<T, D>::setRebuildDistance,
+           "Front motion in grid spacings after which the band is rebuilt "
+           "(default 2).")
+      .def("setRebuildAtEnd", &AdvectHermite<T, D>::setRebuildAtEnd,
+           "Whether apply() rebuilds a band that is no valid level set once "
+           "the whole advection time is done (default true).")
+      .def("setBandWidth", &AdvectHermite<T, D>::setBandWidth,
+           "Level set width of the rebuilt band (default 12).")
+      .def("setSingleStep", &AdvectHermite<T, D>::setSingleStep,
+           "Whether apply() stops after one time step (default false).")
+      .def("getAdvectedTime", &AdvectHermite<T, D>::getAdvectedTime,
+           "Time advected during the last apply().")
+      .def("getNumberOfTimeSteps", &AdvectHermite<T, D>::getNumberOfTimeSteps,
+           "Number of time steps of the last apply().")
+      .def("getNumberOfRebuilds", &AdvectHermite<T, D>::getNumberOfRebuilds,
+           "Number of rebuilds of the band during the last apply().")
+      .def("apply", &AdvectHermite<T, D>::apply,
+           py::call_guard<py::gil_scoped_release>(), "Perform advection.");
 
   // ToSurfaceMesh
   py::class_<ToSurfaceMesh<T, D>, SmartPointer<ToSurfaceMesh<T, D>>>(

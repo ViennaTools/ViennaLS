@@ -4,6 +4,7 @@
 
 #include <hrleSparseStarIterator.hpp>
 #include <lsDomain.hpp>
+#include <lsReinitialize.hpp>
 
 #include <vcVectorType.hpp>
 
@@ -14,6 +15,9 @@ using namespace viennacore;
 /// Expands the levelSet to the specified number of layers.
 /// The largest value in the levelset is thus width*0.5
 /// Returns the number of added points
+/// A Euclidean level set takes its new values from the dual contouring mesh
+/// of its stored planes (Reinitialize), since steps of one grid spacing give
+/// Manhattan values.
 template <class T, int D> class Expand {
   SmartPointer<Domain<T, D>> levelSet = nullptr;
   int width = 0;
@@ -54,6 +58,11 @@ public:
 
     if (levelSet->getNumberOfPoints() == 0)
       return;
+
+    if (levelSet->getNormalization() == NormalizationEnum::EUCLIDEAN) {
+      Reinitialize<T, D>(levelSet, width).apply();
+      return;
+    }
 
     const T totalLimit = width * 0.5;
     const int startWidth = levelSet->getLevelSetWidth();

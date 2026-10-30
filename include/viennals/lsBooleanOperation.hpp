@@ -5,7 +5,9 @@
 #include <hrleSparseStarIterator.hpp>
 
 #include <lsDomain.hpp>
+#include <lsFromSurfaceMesh.hpp>
 #include <lsPrune.hpp>
+#include <lsReinitialize.hpp>
 
 #include <vcLogger.hpp>
 #include <vcSmartPointer.hpp>
@@ -42,6 +44,12 @@ enum struct BooleanOperationEnum : unsigned {
 ///  always return the smaller of the two values.
 ///  The function signature for the comparator is defined in the public
 ///  ComparatorType.
+///  When the first level set is Euclidean, every node keeps the closest point
+///  and normal of the level set its value came from, and the result is
+///  reinitialized from the dual contouring mesh of these planes
+///  (Reinitialize): the minimum and maximum are exact only away from the edges
+///  the operation creates, the planes give these edges sharp. INVERT turns the
+///  stored normals.
 template <class T, int D> class BooleanOperation {
 public:
   using ComparatorType =
@@ -56,7 +64,9 @@ private:
   bool updatePointData = true;
   bool pruneResult = true;
 
-  void booleanOpInternal(ComparatorType comp) {
+  void booleanOpInternal(ComparatorType comp, bool negateB = false) {
+    const bool euclidean =
+        levelSetA->getNormalization() == NormalizationEnum::EUCLIDEAN;
     auto &grid = levelSetA->getGrid();
     auto newlsDomain = SmartPointer<Domain<T, D>>::New(grid);
     typename Domain<T, D>::DomainType &newDomain = newlsDomain->getDomain();
@@ -171,32 +181,55 @@ private:
       }
 
       // vectors — same asymmetric treatment as scalars above.
-      for (unsigned i = 0; i < AData.getVectorDataSize(); ++i) {
-        auto vectorDataLabel = AData.getVectorDataLabel(i);
-        auto APointer = AData.getVectorData(i);
-        auto BPointer =
-            BData.getVectorData(vectorDataLabel, true); // may be nullptr
-        using Vec =
-            typename Domain<T, D>::PointDataType::VectorDataType::value_type;
-        typename Domain<T, D>::PointDataType::VectorDataType vectors;
+      using VectorDataType =
+          typename Domain<T, D>::PointDataType::VectorDataType;
+      auto transferVectors = [&](const std::string &vectorDataLabel,
+                                 const VectorDataType *APointer,
+                                 const VectorDataType *BPointer) {
+        using Vec = typename VectorDataType::value_type;
+        VectorDataType vectors;
         vectors.resize(newlsDomain->getNumberOfPoints(), Vec{});
+        // the normals of the second level set turn where its values do
+        const bool turn =
+            negateB &&
+            vectorDataLabel == FromSurfaceMesh<T, D>::surfaceNormalsLabel;
         for (unsigned j = 0; j < newlsDomain->getNumberOfPoints(); ++j) {
-          if (newDataLS[0][j])
-            vectors[j] = APointer->at(newDataSourceIds[0][j]);
-          else if (BPointer != nullptr)
+          if (newDataLS[0][j]) {
+            if (APointer != nullptr)
+              vectors[j] = APointer->at(newDataSourceIds[0][j]);
+          } else if (BPointer != nullptr) {
             vectors[j] = BPointer->at(newDataSourceIds[0][j]);
+            if (turn)
+              for (auto &component : vectors[j])
+                component = -component;
+          }
           // else: B-sourced point with no matching B field → stays
           // zero-initialised
         }
         newData.insertNextVectorData(vectors, vectorDataLabel);
+      };
+      for (unsigned i = 0; i < AData.getVectorDataSize(); ++i) {
+        auto vectorDataLabel = AData.getVectorDataLabel(i);
+        transferVectors(vectorDataLabel, AData.getVectorData(i),
+                        BData.getVectorData(vectorDataLabel, true));
       }
+      // a Euclidean result needs the closest points and normals of B also
+      // where A has none, as when A is still empty
+      if (euclidean)
+        for (const auto &label : {FromSurfaceMesh<T, D>::closestPointsLabel,
+                                  FromSurfaceMesh<T, D>::surfaceNormalsLabel})
+          if (AData.getVectorData(label, true) == nullptr &&
+              BData.getVectorData(label, true) != nullptr)
+            transferVectors(label, nullptr, BData.getVectorData(label, true));
     }
 
     newDomain.finalize();
     newDomain.segment();
     newlsDomain->setLevelSetWidth(levelSetA->getLevelSetWidth());
+    newlsDomain->setNormalization(levelSetA->getNormalization());
 
-    if (pruneResult) {
+    // a Euclidean result gets its whole band again from its planes
+    if (pruneResult && !euclidean) {
       auto pruner = Prune<T, D>(newlsDomain);
       pruner.setRemoveStrayZeros(true);
       pruner.apply();
@@ -206,6 +239,19 @@ private:
     }
 
     levelSetA->deepCopy(newlsDomain);
+
+    if (euclidean) {
+      // the band state and plane priorities of AdvectHermite no longer
+      // describe the result
+      auto &data = levelSetA->getPointData();
+      for (int k = int(data.getScalarDataSize()) - 1; k >= 0; --k)
+        if (data.getScalarDataLabel(k).rfind("Hermite", 0) == 0)
+          data.eraseScalarData(k);
+      for (int k = int(data.getVectorDataSize()) - 1; k >= 0; --k)
+        if (data.getVectorDataLabel(k).rfind("Hermite", 0) == 0)
+          data.eraseVectorData(k);
+      Reinitialize<T, D>(levelSetA).apply();
+    }
   }
 
   void invert() {
@@ -249,6 +295,13 @@ private:
       }
     }
     levelSetA->finalize();
+
+    // closest points stay, the stored normals turn with the values
+    if (auto *normals = levelSetA->getPointData().getVectorData(
+            FromSurfaceMesh<T, D>::surfaceNormalsLabel, true))
+      for (auto &normal : *normals)
+        for (auto &component : normal)
+          component = -component;
   }
 
   static std::pair<T, bool> minComp(const T &a, const T &b) {
@@ -339,7 +392,7 @@ public:
       booleanOpInternal(&BooleanOperation::minComp);
       break;
     case BooleanOperationEnum::RELATIVE_COMPLEMENT:
-      booleanOpInternal(&BooleanOperation::relativeComplementComp);
+      booleanOpInternal(&BooleanOperation::relativeComplementComp, true);
       break;
     case BooleanOperationEnum::INVERT:
       invert();

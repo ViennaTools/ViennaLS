@@ -10,7 +10,7 @@ from viennals._core import OxidationDeformationParameters
 from viennals._core import OxidationMaskParameters
 from viennals._core import OxidationParameters
 from viennals._core import OxidationPresets
-__all__: list[str] = ['Advect', 'BooleanOperation', 'Box', 'BoxDistribution', 'CalculateCurvatures', 'CalculateNormalVectors', 'CalculateVisibilities', 'Check', 'CompareArea', 'CompareChamfer', 'CompareCriticalDimensions', 'CompareNarrowBand', 'CompareSparseField', 'CompareVolume', 'ConvexHull', 'CustomSphereDistribution', 'Cylinder', 'DetectFeatures', 'Domain', 'Expand', 'FinalizeStencilLocalLaxFriedrichs', 'FromMesh', 'FromSurfaceMesh', 'FromVolumeMesh', 'GeometricAdvect', 'GeometricAdvectDistribution', 'MakeGeometry', 'MarkVoidPoints', 'Oxidation', 'OxidationConstrainedAmbient', 'OxidationCouplingParameters', 'OxidationDeformation', 'OxidationDeformationParameters', 'OxidationDiffusion', 'OxidationMaskBending', 'OxidationMaskParameters', 'OxidationModel', 'OxidationParameters', 'OxidationPresets', 'Plane', 'PointCloud', 'PrepareStencilLocalLaxFriedrichs', 'Prune', 'ReactionBoundarySample', 'Reader', 'Reduce', 'RemoveStrayPoints', 'Sphere', 'SphereDistribution', 'StencilLocalLaxFriedrichsScalar', 'ToDiskMesh', 'ToHullMesh', 'ToMesh', 'ToMultiSurfaceMesh', 'ToSurfaceMesh', 'ToVoxelMesh', 'WriteVisualizationMesh', 'Writer', 'computeLOCOSOpenWindowConservation', 'hrleGrid']
+__all__: list[str] = ['Advect', 'AdvectHermite', 'BooleanOperation', 'Box', 'BoxDistribution', 'CalculateCurvatures', 'CalculateNormalVectors', 'CalculateVisibilities', 'Check', 'CompareArea', 'CompareChamfer', 'CompareCriticalDimensions', 'CompareNarrowBand', 'CompareSparseField', 'CompareVolume', 'ConvexHull', 'CustomSphereDistribution', 'Cylinder', 'DetectFeatures', 'Domain', 'Expand', 'FinalizeStencilLocalLaxFriedrichs', 'FromMesh', 'FromSurfaceMesh', 'FromVolumeMesh', 'GeometricAdvect', 'GeometricAdvectDistribution', 'MakeGeometry', 'MarkVoidPoints', 'Oxidation', 'OxidationConstrainedAmbient', 'OxidationCouplingParameters', 'OxidationDeformation', 'OxidationDeformationParameters', 'OxidationDiffusion', 'OxidationMaskBending', 'OxidationMaskParameters', 'OxidationModel', 'OxidationParameters', 'OxidationPresets', 'Plane', 'PointCloud', 'PrepareStencilLocalLaxFriedrichs', 'Prune', 'ReactionBoundarySample', 'Reader', 'Reduce', 'RemoveStrayPoints', 'Sphere', 'SphereDistribution', 'StencilLocalLaxFriedrichsScalar', 'ToDiskMesh', 'ToDualContouringMesh', 'ToHullMesh', 'ToMesh', 'ToMultiSurfaceMesh', 'ToSurfaceMesh', 'ToVoxelMesh', 'WriteVisualizationMesh', 'Writer', 'computeLOCOSOpenWindowConservation', 'hrleGrid']
 class Advect:
     @typing.overload
     def __init__(self) -> None:
@@ -122,6 +122,72 @@ class Advect:
     def setVelocityUpdateCallback(self, arg0: collections.abc.Callable[[Domain], bool]) -> None:
         """
         Set a callback function that is called after the level set has been updated during intermediate time integration steps (e.g. RK2, RK3).
+        """
+class AdvectHermite:
+    @typing.overload
+    def __init__(self) -> None:
+        ...
+    @typing.overload
+    def __init__(self, arg0: Domain, arg1: viennals._core.VelocityField) -> None:
+        ...
+    @typing.overload
+    def __init__(self, arg0: collections.abc.Sequence[Domain], arg1: viennals._core.VelocityField) -> None:
+        ...
+    def apply(self) -> None:
+        """
+        Perform advection.
+        """
+    def clearLevelSets(self) -> None:
+        """
+        Clear the material stack.
+        """
+    def getAdvectedTime(self) -> float:
+        """
+        Time advected during the last apply().
+        """
+    def getNumberOfRebuilds(self) -> int:
+        """
+        Number of rebuilds of the band during the last apply().
+        """
+    def getNumberOfTimeSteps(self) -> int:
+        """
+        Number of time steps of the last apply().
+        """
+    def insertNextLevelSet(self, arg0: Domain) -> None:
+        """
+        Put a level set on top of the material stack. The last one is the Euclidean surface that is advected.
+        """
+    def setAdvectionTime(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        """
+        Set the time to advect for.
+        """
+    def setBandWidth(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
+        """
+        Level set width of the rebuilt band (default 12).
+        """
+    def setLevelSet(self, arg0: Domain) -> None:
+        """
+        Set the Euclidean level set with closest points and normals.
+        """
+    def setRebuildAtEnd(self, arg0: bool) -> None:
+        """
+        Whether apply() rebuilds a band that is no valid level set once the whole advection time is done (default true).
+        """
+    def setRebuildDistance(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        """
+        Front motion in grid spacings after which the band is rebuilt (default 2).
+        """
+    def setSingleStep(self, arg0: bool) -> None:
+        """
+        Whether apply() stops after one time step (default false).
+        """
+    def setTimeStepRatio(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        """
+        Largest move of the front per time step in grid spacings (default 0.5).
+        """
+    def setVelocityField(self, arg0: viennals._core.VelocityField) -> None:
+        """
+        Set the velocity field.
         """
 class BooleanOperation:
     @typing.overload
@@ -658,6 +724,10 @@ class Domain:
         """
         Get the number of layers of level set points around the explicit surface.
         """
+    def getNormalization(self) -> viennals._core.NormalizationEnum:
+        """
+        Get the meaning of the stored values (MANHATTAN or EUCLIDEAN).
+        """
     def getNumberOfPoints(self) -> int:
         """
         Get the number of defined level set values.
@@ -671,6 +741,10 @@ class Domain:
     def setLevelSetWidth(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
         """
         Set the number of layers of level set points which should be stored around the explicit surface.
+        """
+    def setNormalization(self, arg0: viennals._core.NormalizationEnum) -> None:
+        """
+        Set the meaning of the stored values. Algorithms that create a level set read this to decide which values to write.
         """
 class Expand:
     @typing.overload
@@ -741,6 +815,10 @@ class FromSurfaceMesh:
         """
         Set whether to include mesh elements outside of the simulation domain.
         """
+    def setUseWindingNumber(self, arg0: bool) -> None:
+        """
+        Sign of Euclidean distances from the generalized winding number (closed meshes) instead of pseudo-normals (default).
+        """
 class FromVolumeMesh:
     @typing.overload
     def __init__(self) -> None:
@@ -759,9 +837,17 @@ class FromVolumeMesh:
         """
         Set the grid used to read in the level sets.
         """
+    def setLevelSetWidth(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
+        """
+        Set the level set width of the created level sets. Euclidean values fill a band of half this width around each surface.
+        """
     def setMesh(self, arg0: viennals._core.Mesh) -> None:
         """
         Set the mesh to read from.
+        """
+    def setNormalization(self, arg0: viennals._core.NormalizationEnum) -> None:
+        """
+        Set the normalization (MANHATTAN or EUCLIDEAN) of the created level sets.
         """
     def setRemoveBoundaryTriangles(self, arg0: bool) -> None:
         """
@@ -1222,6 +1308,28 @@ class Reduce:
         """
         Set the width to reduce to.
         """
+class Reinitialize:
+    @typing.overload
+    def __init__(self) -> None:
+        ...
+    @typing.overload
+    def __init__(self, arg0: Domain) -> None:
+        ...
+    @typing.overload
+    def __init__(self, arg0: Domain, arg1: typing.SupportsInt | typing.SupportsIndex) -> None:
+        ...
+    def apply(self) -> None:
+        """
+        Recompute exact Euclidean values, closest points and normals from the dual contouring mesh of the stored planes.
+        """
+    def setLevelSet(self, arg0: Domain) -> None:
+        """
+        Set the level set to reinitialize.
+        """
+    def setWidth(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
+        """
+        Level set width of the new band; 0 keeps the current width.
+        """
 class RemoveStrayPoints:
     @typing.overload
     def __init__(self) -> None:
@@ -1297,6 +1405,37 @@ class ToDiskMesh:
     def setMesh(self, arg0: viennals._core.Mesh) -> None:
         """
         Set the mesh to generate.
+        """
+class ToDualContouringMesh:
+    @typing.overload
+    def __init__(self) -> None:
+        ...
+    @typing.overload
+    def __init__(self, arg0: Domain, arg1: viennals._core.Mesh) -> None:
+        ...
+    def apply(self) -> None:
+        """
+        Extract the surface with dual contouring.
+        """
+    def setAvoidFolds(self, arg0: bool) -> None:
+        """
+        Whether a 3D mesh folds nowhere (default true). Vertices placed beyond their cell weld to the vertex of the cell they fall into where it lies on their planes, and a vertex free along an edge takes a corner only within half a grid spacing of its cell. Reinitialize switches it off.
+        """
+    def setLevelSet(self, arg0: Domain) -> None:
+        """
+        Set levelset to mesh.
+        """
+    def setMesh(self, arg0: viennals._core.Mesh) -> None:
+        """
+        Set the mesh to generate.
+        """
+    def setSingularValueThreshold(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        """
+        Singular values of a cell's quadric below this fraction of the largest one are dropped (default 0.01).
+        """
+    def setVertexMargin(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        """
+        Vertices stay within their cell plus this margin, in grid spacings (default 1).
         """
 class ToHullMesh:
     @typing.overload

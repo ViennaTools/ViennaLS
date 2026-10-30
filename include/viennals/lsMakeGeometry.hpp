@@ -4,6 +4,8 @@
 
 #include <lsPreCompileMacros.hpp>
 
+#include <numeric>
+
 #include <hrleTypes.hpp>
 
 #include <lsConvexHull.hpp>
@@ -179,41 +181,71 @@ private:
     auto &grid = levelSet->getGrid();
     viennahrle::CoordType gridDelta = grid.getGridDelta();
 
+    // Euclidean values fill a band of half the level set width set before
+    // creation, Manhattan values only the zero layer
+    const bool euclidean =
+        levelSet->getNormalization() == NormalizationEnum::EUCLIDEAN;
+    const int initialWidth =
+        euclidean ? std::max(levelSet->getLevelSetWidth(), 2) : 2;
+    const int margin = euclidean ? (initialWidth + 1) / 2 + 1 : 1;
+
     // calculate indices from sphere size
     viennahrle::Index<D> index;
     viennahrle::Index<D> endIndex;
 
     for (unsigned i = 0; i < D; ++i) {
-      index[i] = (origin[i] - radius) / gridDelta - 1;
-      endIndex[i] = (origin[i] + radius) / gridDelta + 1;
+      index[i] = (origin[i] - radius) / gridDelta - margin;
+      endIndex[i] = (origin[i] + radius) / gridDelta + margin;
     }
 
-    constexpr double initialWidth = 2.;
-    const T valueLimit = initialWidth * 0.5 * gridDelta + 1e-5;
+    const T valueLimit = euclidean ? T(0.5) * initialWidth * gridDelta
+                                   : initialWidth * 0.5 * gridDelta + 1e-5;
     const T radius2 = radius * radius;
 
     pointDataType pointData;
+    // Euclidean values also store the closest point and outward normal
+    typename PointData<T>::VectorDataType closestPoints, normals;
     const viennahrle::Index<D> minIndex = index;
 
     while (index < endIndex) {
-      // take the shortest manhattan distance to gridline intersection
       T distance = std::numeric_limits<T>::max();
-      for (unsigned i = 0; i < D; ++i) {
-        T y = (index[(i + 1) % D] * gridDelta) - origin[(i + 1) % D];
-        T z = 0;
-        if constexpr (D == 3)
-          z = (index[(i + 2) % D] * gridDelta) - origin[(i + 2) % D];
-        T x = radius2 - y * y - z * z;
-        if (x < 0.)
-          continue;
-        T dirRadius =
-            std::abs((index[i] * gridDelta) - origin[i]) - std::sqrt(x);
-        if (std::abs(dirRadius) < std::abs(distance))
-          distance = dirRadius;
+      if (euclidean) {
+        T r2 = 0.;
+        for (unsigned i = 0; i < D; ++i) {
+          const T d = index[i] * gridDelta - origin[i];
+          r2 += d * d;
+        }
+        distance = std::sqrt(r2) - radius;
+      } else {
+        // take the shortest manhattan distance to gridline intersection
+        for (unsigned i = 0; i < D; ++i) {
+          T y = (index[(i + 1) % D] * gridDelta) - origin[(i + 1) % D];
+          T z = 0;
+          if constexpr (D == 3)
+            z = (index[(i + 2) % D] * gridDelta) - origin[(i + 2) % D];
+          T x = radius2 - y * y - z * z;
+          if (x < 0.)
+            continue;
+          T dirRadius =
+              std::abs((index[i] * gridDelta) - origin[i]) - std::sqrt(x);
+          if (std::abs(dirRadius) < std::abs(distance))
+            distance = dirRadius;
+        }
       }
 
       if (std::abs(distance) <= valueLimit) {
         pointData.push_back(std::make_pair(index, distance / gridDelta));
+        if (euclidean) {
+          Vec3D<T> direction{T(1), T(0), T(0)}, closest{T(0), T(0), T(0)};
+          const T length = distance + radius;
+          if (length > T(0))
+            for (unsigned i = 0; i < D; ++i)
+              direction[i] = (index[i] * gridDelta - origin[i]) / length;
+          for (unsigned i = 0; i < D; ++i)
+            closest[i] = origin[i] + radius * direction[i];
+          closestPoints.push_back(closest);
+          normals.push_back(direction);
+        }
       }
       int dim = 0;
       for (; dim < D - 1; ++dim) {
@@ -233,6 +265,35 @@ private:
               grid.globalIndex2LocalIndex(j, pointData[i].first[j]);
         }
       }
+    }
+
+    if (euclidean) {
+      // sort the points and keep the stored data aligned with them
+      std::vector<std::size_t> order(pointData.size());
+      std::iota(order.begin(), order.end(), std::size_t(0));
+      std::stable_sort(order.begin(), order.end(),
+                       [&](std::size_t a, std::size_t b) {
+                         return pointData[a].first < pointData[b].first;
+                       });
+      pointDataType sortedPoints;
+      typename PointData<T>::VectorDataType sortedClosest, sortedNormals;
+      for (std::size_t k = 0; k < order.size(); ++k) {
+        if (k > 0 && pointData[order[k]].first == pointData[order[k - 1]].first)
+          continue;
+        sortedPoints.push_back(pointData[order[k]]);
+        sortedClosest.push_back(closestPoints[order[k]]);
+        sortedNormals.push_back(normals[order[k]]);
+      }
+      levelSet->insertPoints(sortedPoints);
+      levelSet->getDomain().segment();
+      levelSet->finalize(initialWidth);
+      auto &data = levelSet->getPointData();
+      data.clear();
+      data.insertNextVectorData(std::move(sortedClosest),
+                                FromSurfaceMesh<T, D>::closestPointsLabel);
+      data.insertNextVectorData(std::move(sortedNormals),
+                                FromSurfaceMesh<T, D>::surfaceNormalsLabel);
+      return;
     }
 
     levelSet->insertPoints(pointData);

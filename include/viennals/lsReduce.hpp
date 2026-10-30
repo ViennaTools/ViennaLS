@@ -125,6 +125,8 @@ public:
     newDomain.finalize();
     if (!noNewSegment)
       newDomain.segment();
+    // the remaining values are unchanged, and so is their normalization
+    newlsDomain->setNormalization(levelSet->getNormalization());
     levelSet->deepCopy(newlsDomain);
     levelSet->finalize(width);
   }
