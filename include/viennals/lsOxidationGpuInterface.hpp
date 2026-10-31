@@ -1,12 +1,8 @@
-// C++ (g++) interface to the GPU BiCGSTAB solver.
+// C++ (g++) interface to the GPU linear solves of the oxidation solvers.
 //
-// This header is safe to include from any .cpp file compiled by g++.
-// It only forward-declares GpuBiCGSTABBuffers (opaque handle) and
-// declares free functions that are implemented in
-// ViennaLS_GPU (lsOxidationBiCGSTABKernels.cu, compiled by nvcc).
-//
-// The actual CUDA kernels live in lsOxidationBiCGSTAB.cuh.  That file
-// must never be included from a .cpp compiled by g++ — only from .cu files.
+// This header is safe to include from any .cpp file compiled by g++.  It
+// declares free functions that call into ViennaLS_GPU (gpu/lsOxidationGpu.cu,
+// compiled by nvcc) through the C ABI of lsOxidationGpuAbi.hpp.
 //
 // ── Why dlopen instead of linking ──────────────────────────────────────────
 // ViennaLS must not carry a hard (DT_NEEDED) dependency on libcudart /
@@ -17,15 +13,15 @@
 //
 // Instead, the CUDA-linked code lives in a separate ViennaLS_GPU shared
 // library which is opened lazily the first time the GPU path is requested.
-// If it (or the CUDA runtime it needs) cannot be loaded, allocGpuBuffers()
-// returns nullptr and callers transparently fall back to the CPU solver, with
-// the reason available from gpuGetLastErrorMessage().
+// If it (or the CUDA runtime it needs) cannot be loaded, the solves report
+// the GPU as unavailable and callers fall back to the CPU solver, with the
+// reason available from gpuGetLastErrorMessage().
 
 #pragma once
 
 #ifdef VIENNALS_GPU_BICGSTAB
 
-#include "lsOxidationBiCGSTABAbi.hpp"
+#include "lsOxidationGpuAbi.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -40,15 +36,6 @@
 
 namespace viennals {
 namespace gpu {
-
-// Sentinel value used in the neighbor-ID array to mark boundary / out-of-bounds
-// faces (must match the constant in lsOxidationBiCGSTAB.cuh).
-static constexpr uint32_t kNoNode = 0xFFFFFFFFu;
-
-// Opaque handle — complete definition is in lsOxidationBiCGSTAB.cuh /
-// lsOxidationBiCGSTABKernels.cu.  Consumers hold a raw pointer only.
-struct GpuBiCGSTABBuffers;
-
 namespace detail {
 
 #if defined(_WIN32)
@@ -113,17 +100,16 @@ struct GpuRuntime {
   std::string status;
 
   int (*abiVersion)(void) = nullptr;
-  void *(*allocBuffers)(uint32_t, int, int) = nullptr;
-  void (*freeBuffers)(void *) = nullptr;
-  int (*isValid)(const void *) = nullptr;
   const char *(*lastErrorMessage)(void) = nullptr;
-  int (*uploadNeighborIds)(void *, const uint32_t *, std::size_t) = nullptr;
-  int (*setupCSR)(void *, const uint32_t *, uint32_t, int) = nullptr;
-  int (*uploadSolverArrays)(void *, const double *, const double *,
-                            const double *, uint32_t, std::size_t) = nullptr;
-  int (*uploadRhs)(void *, const double *, uint32_t) = nullptr;
-  int (*solveBiCGSTAB)(void *, double *, double, unsigned, double, unsigned *,
-                       double *) = nullptr;
+  int (*diffusionSolve)(int64_t, const int64_t *, const int64_t *,
+                        const double *, const double *, double *, unsigned,
+                        double, unsigned *) = nullptr;
+  void *(*macSetup)(int64_t, const int64_t *, const int64_t *, const double *,
+                    int64_t, int, const double *) = nullptr;
+  int (*macSolve)(void *, int64_t, const int64_t *, const int64_t *,
+                  const double *, const double *, double *, unsigned, double,
+                  unsigned *, double *) = nullptr;
+  void (*macFree)(void *) = nullptr;
 
   GpuRuntime() { load(); }
 
@@ -193,15 +179,11 @@ struct GpuRuntime {
   /// null pointer once `available` is set.
   bool resolveAll(LibraryHandle lib) {
     return resolve(lib, "viennalsGpuAbiVersion", abiVersion) &&
-           resolve(lib, "viennalsGpuAllocBuffers", allocBuffers) &&
-           resolve(lib, "viennalsGpuFreeBuffers", freeBuffers) &&
-           resolve(lib, "viennalsGpuIsValid", isValid) &&
            resolve(lib, "viennalsGpuGetLastErrorMessage", lastErrorMessage) &&
-           resolve(lib, "viennalsGpuUploadNeighborIds", uploadNeighborIds) &&
-           resolve(lib, "viennalsGpuSetupCSR", setupCSR) &&
-           resolve(lib, "viennalsGpuUploadSolverArrays", uploadSolverArrays) &&
-           resolve(lib, "viennalsGpuUploadRhs", uploadRhs) &&
-           resolve(lib, "viennalsGpuSolveBiCGSTAB", solveBiCGSTAB);
+           resolve(lib, "viennalsGpuDiffusionSolve", diffusionSolve) &&
+           resolve(lib, "viennalsGpuMacSetup", macSetup) &&
+           resolve(lib, "viennalsGpuMacSolve", macSolve) &&
+           resolve(lib, "viennalsGpuMacFree", macFree);
   }
 
   template <class Fn>
@@ -219,13 +201,6 @@ inline const GpuRuntime &runtime() {
   return instance;
 }
 
-inline void *toHandle(GpuBiCGSTABBuffers *gpu) {
-  return reinterpret_cast<void *>(gpu);
-}
-inline const void *toHandle(const GpuBiCGSTABBuffers *gpu) {
-  return reinterpret_cast<const void *>(gpu);
-}
-
 } // namespace detail
 
 /// True when the GPU library and its CUDA runtime were loaded successfully.
@@ -237,86 +212,58 @@ inline const char *gpuRuntimeStatusMessage() {
   return detail::runtime().status.c_str();
 }
 
-// Allocate GPU buffers for a solver with `n` nodes and `nFaces` (2*D) faces.
-// Returns nullptr if CUDA is unavailable.
-inline GpuBiCGSTABBuffers *allocGpuBuffers(uint32_t n, int nFaces,
-                                           bool useIlu0Preconditioner) {
-  const auto &rt = detail::runtime();
-  if (!rt.available)
-    return nullptr;
-  return reinterpret_cast<GpuBiCGSTABBuffers *>(
-      rt.allocBuffers(n, nFaces, useIlu0Preconditioner ? 1 : 0));
-}
-
-// Free previously allocated GPU buffers.  Safe to call with nullptr.
-inline void freeGpuBuffers(GpuBiCGSTABBuffers *gpu) {
-  const auto &rt = detail::runtime();
-  if (rt.available)
-    rt.freeBuffers(detail::toHandle(gpu));
-}
-
-// Human-readable detail for the last GPU wrapper failure on this thread.
-// Falls back to the loader status when the library never loaded at all.
+// Human-readable detail for the last GPU failure on this thread.  Falls back
+// to the loader status when the library never loaded at all.
 inline const char *gpuGetLastErrorMessage() {
   const auto &rt = detail::runtime();
   return rt.available ? rt.lastErrorMessage() : rt.status.c_str();
 }
 
-// Is the buffer handle valid (non-null and successfully allocated)?
-inline bool gpuIsValid(const GpuBiCGSTABBuffers *gpu) {
+// The diffusion solve of OxidationDiffusion (see viennalsGpuDiffusionSolve):
+// 1 when it ran and gave finite values, 0 when the GPU is unavailable (x
+// untouched), -1 when it failed.
+inline int gpuDiffusionSolve(std::int64_t n, const std::int64_t *ptr,
+                             const std::int64_t *col, const double *val,
+                             const double *rhs, double *x,
+                             unsigned maxIterations, double absTolerance,
+                             unsigned &outIterations) {
   const auto &rt = detail::runtime();
-  return rt.available && rt.isValid(detail::toHandle(gpu)) != 0;
+  if (!rt.available)
+    return 0;
+  return rt.diffusionSolve(n, ptr, col, val, rhs, x, maxIterations,
+                           absTolerance, &outIterations);
 }
 
-// Upload geometry-fixed neighbor-ID array (face-major, kNoNode = 0xFFFFFFFF).
-// `count` must equal nFaces * n.
-inline bool gpuUploadNeighborIds(GpuBiCGSTABBuffers *gpu, const uint32_t *nb,
-                                 std::size_t count) {
+// The 3-D velocity-pressure solve of OxidationDeformation: preconditioner
+// setup for the equilibrated CSR system (see viennalsGpuMacSetup), nullptr
+// when the GPU is unavailable or the setup fails.
+inline void *gpuMacSetup(std::int64_t n, const std::int64_t *ptr,
+                         const std::int64_t *col, const double *val,
+                         std::int64_t nvel, int dim, const double *nullspace) {
+  const auto &rt = detail::runtime();
+  return rt.available ? rt.macSetup(n, ptr, col, val, nvel, dim, nullspace)
+                      : nullptr;
+}
+
+// FGMRES with a setup's preconditioner on A x = rhs (x: initial guess on
+// entry, solution on exit). False when the solve did not run or gave
+// non-finite values.
+inline bool gpuMacSolve(void *handle, std::int64_t n, const std::int64_t *ptr,
+                        const std::int64_t *col, const double *val,
+                        const double *rhs, double *x, unsigned maxIterations,
+                        double tolerance, unsigned &outIterations,
+                        double &outResidual) {
   const auto &rt = detail::runtime();
   return rt.available &&
-         rt.uploadNeighborIds(detail::toHandle(gpu), nb, count) != 0;
+         rt.macSolve(handle, n, ptr, col, val, rhs, x, maxIterations, tolerance,
+                     &outIterations, &outResidual) != 0;
 }
 
-// Build the CSR sparsity pattern from h_nb (face-major, length nFaces*n),
-// upload to the device, and run CUSPARSE symbolic analysis for ILU(0) and
-// the two triangular solves.  Must be called after gpuUploadNeighborIds and
-// before the first gpuUploadSolverArrays / gpuSolveBiCGSTAB call.
-inline bool gpuSetupCSR(GpuBiCGSTABBuffers *gpu, const uint32_t *h_nb,
-                        uint32_t n, int nFaces) {
+// Free a setup. Safe to call with nullptr.
+inline void gpuMacFree(void *handle) {
   const auto &rt = detail::runtime();
-  return rt.available &&
-         rt.setupCSR(detail::toHandle(gpu), h_nb, n, nFaces) != 0;
-}
-
-// Upload per-solve arrays (diag, b, faceCoeffs) and re-factorize ILU(0).
-// `diagLen` == n, `coeffLen` == nFaces * n.
-inline bool gpuUploadSolverArrays(GpuBiCGSTABBuffers *gpu, const double *diag,
-                                  const double *b, const double *coeff,
-                                  uint32_t diagLen, std::size_t coeffLen) {
-  const auto &rt = detail::runtime();
-  return rt.available && rt.uploadSolverArrays(detail::toHandle(gpu), diag, b,
-                                               coeff, diagLen, coeffLen) != 0;
-}
-
-// Upload only the RHS vector (d_b).  Use when the matrix geometry is already
-// uploaded and only the right-hand side changes (e.g. successive Stokes
-// component solves that share the same stiffness matrix).
-inline bool gpuUploadRhs(GpuBiCGSTABBuffers *gpu, const double *b, uint32_t n) {
-  const auto &rt = detail::runtime();
-  return rt.available && rt.uploadRhs(detail::toHandle(gpu), b, n) != 0;
-}
-
-// Run GPU BiCGSTAB.
-//   x (length n, host): initial guess on entry, solution on exit.
-//   outResidual is the raw (unnormalized) max-abs residual on exit.
-// Returns true only when the GPU solve converged and produced finite values.
-inline bool gpuSolveBiCGSTAB(GpuBiCGSTABBuffers *gpu, double *x, double diagEps,
-                             unsigned maxIter, double tolerance,
-                             unsigned &outIterations, double &outResidual) {
-  const auto &rt = detail::runtime();
-  return rt.available &&
-         rt.solveBiCGSTAB(detail::toHandle(gpu), x, diagEps, maxIter, tolerance,
-                          &outIterations, &outResidual) != 0;
+  if (rt.available)
+    rt.macFree(handle);
 }
 
 } // namespace gpu

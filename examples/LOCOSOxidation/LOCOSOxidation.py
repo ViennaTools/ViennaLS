@@ -113,11 +113,9 @@ coupling_params.relaxation    = 1.
 mask_params = vls.OxidationPresets.siliconNitrideMask1000C()
 
 # ── Solve bounds ──────────────────────────────────────────────────────────────
+# The nitride mask joins the deformation solve inside these bounds.
 diff_min = [to_index(-X_EXTENT), to_index(Y_MIN)]
 diff_max = [to_index(X_EXTENT),  to_index(Y_MAX)]
-
-mask_min = [to_index(-X_EXTENT),                              to_index(PAD_OXIDE_THICKNESS) - 1]
-mask_max = [to_index(MASK_EDGE), to_index(PAD_OXIDE_THICKNESS + MASK_THICKNESS) + 1]
 
 # ── LOCOS solver ──────────────────────────────────────────────────────────────
 locos = vls.Oxidation(si_interface, ambient_interface, mask_interface)
@@ -126,9 +124,6 @@ locos.setDeformationParameters(def_params)
 locos.setCouplingParameters(coupling_params)
 locos.setMaskParameters(mask_params)
 locos.setSolveBounds(diff_min, diff_max)
-locos.setMaskBendingBounds(mask_min, mask_max)
-locos.setMaskCouplingIterations(30)
-locos.setMaskCouplingTolerance(1.e-2)
 if USE_GPU:
     locos.setGpuMode(vls.GpuMode.Gpu)
 
@@ -143,7 +138,6 @@ while ADVECTION_TIME - elapsed > time_eps:
 # ── Diagnostics ───────────────────────────────────────────────────────────────
 diffusion   = locos.getDiffusionField()
 deformation = locos.getDeformationField()
-mask_bending = locos.getMaskBendingField()
 
 open_pt   = [0.5,  GRID_DELTA, 0.]
 masked_pt = [-0.5, GRID_DELTA, 0.]
@@ -192,28 +186,20 @@ with open("locos_oxidation_diagnostics.csv", "w", newline="") as f:
                 deformation.getVonMisesStress(coord),
             ])
 
-# Mask bending samples.
-normal_dn  = [0., -1., 0.]
+# Nitride velocity samples from the shared oxide + nitride mechanics solve.
 mask_pts = {
-    "bottom":       ([-0.5, PAD_OXIDE_THICKNESS,                         0.], normal_dn),
-    "top":          ([-0.5, PAD_OXIDE_THICKNESS + MASK_THICKNESS,        0.], normal_up),
-    "contact_node": ([-GRID_DELTA, PAD_OXIDE_THICKNESS,                  0.], normal_dn),
-    "anchor":       ([-X_EXTENT + GRID_DELTA,
-                      PAD_OXIDE_THICKNESS + MASK_THICKNESS * 0.5,        0.], normal_up),
-    "mid":          ([-0.5, PAD_OXIDE_THICKNESS + MASK_THICKNESS * 0.5,  0.], normal_up),
-    "edge":         ([-GRID_DELTA, PAD_OXIDE_THICKNESS + MASK_THICKNESS * 0.5, 0.], normal_up),
+    "bottom":       [-0.5, PAD_OXIDE_THICKNESS,                         0.],
+    "top":          [-0.5, PAD_OXIDE_THICKNESS + MASK_THICKNESS,        0.],
+    "contact_node": [-GRID_DELTA, PAD_OXIDE_THICKNESS,                  0.],
+    "anchor":       [-X_EXTENT + GRID_DELTA,
+                     PAD_OXIDE_THICKNESS + MASK_THICKNESS * 0.5,        0.],
+    "mid":          [-0.5, PAD_OXIDE_THICKNESS + MASK_THICKNESS * 0.5,  0.],
+    "edge":         [-GRID_DELTA, PAD_OXIDE_THICKNESS + MASK_THICKNESS * 0.5, 0.],
 }
 
-vels = {name: mask_bending.getVectorVelocity(pt, 0, n, 0)
-        for name, (pt, n) in mask_pts.items()}
-mask_bottom_pressure = deformation.getPressure(mask_pts["bottom"][0])
-
-print(f"Mask elasticity nodes: {mask_bending.getNumberOfSolutionNodes()}, "
-      f"contact nodes: {mask_bending.getNumberOfContactNodes()}, "
-      f"iters: {mask_bending.getIterations()}, "
-      f"residual: {mask_bending.getResidual():.3e}")
-print(f"Oxide/mask interface iters: {locos.getMaskCouplingIterations()}, "
-      f"residual: {locos.getMaskCouplingResidual():.3e}")
+vels = {name: deformation.getMaterialVelocity(pt, True)
+        for name, pt in mask_pts.items()}
+mask_bottom_pressure = deformation.getPressure(mask_pts["bottom"])
 v = vels["bottom"]
 print(f"Mask bottom velocity: ({v[0]:.6f}, {v[1]:.6f}) um/hr, "
       f"top velocity: ({vels['top'][0]:.6f}, {vels['top'][1]:.6f}) um/hr, "

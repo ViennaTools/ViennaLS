@@ -35,3 +35,27 @@ This file lists third-party libraries used by ViennaLS and their respective lice
 **Note:** Used only when building Python bindings.
 
 ---
+
+### Eigen
+
+**License:** MPL-2.0
+**URL:** [https://eigen.tuxfamily.org](https://eigen.tuxfamily.org)
+**Note:** Header-only; sparse LU of the 2-D oxidation mechanics, and the linear algebra of libigl.
+
+---
+
+### AMGCL
+
+**License:** MIT
+**URL:** [https://github.com/ddemidov/amgcl](https://github.com/ddemidov/amgcl)
+**Note:** Header-only; iterative solve of the 3-D oxidation mechanics.
+
+---
+
+### libigl
+
+**License:** MPL-2.0 (its `copyleft` module GPL-3.0)
+**URL:** [https://libigl.github.io](https://libigl.github.io)
+**Note:** Header-only; exact signed distances of Euclidean level sets.
+
+---

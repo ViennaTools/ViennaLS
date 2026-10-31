@@ -186,6 +186,9 @@ public:
     KDTree<T, std::array<T, D>> sampleTree(samplePoints);
     sampleTree.build();
 
+    // findNearest returns the distance (ViennaCore < 2.4) or its square
+    // (>= 2.4), so the distances below are computed from the points.
+
     // Compute forward distance (target → sample)
     T sumForward = 0.0;
     T sumSquaredForward = 0.0;
@@ -198,7 +201,7 @@ public:
     for (unsigned i = 0; i < numTargetPoints; ++i) {
       auto nearest = sampleTree.findNearest(targetPoints[i]);
       if (nearest.has_value()) {
-        T dist = nearest.value().second;
+        T dist = Distance(targetPoints[i], samplePoints[nearest->first]);
         sumForward += dist;
         sumSquaredForward += dist * dist;
         maxForward = std::max(maxForward, dist);
@@ -222,7 +225,7 @@ public:
     for (unsigned i = 0; i < numSamplePoints; ++i) {
       auto nearest = targetTree.findNearest(samplePoints[i]);
       if (nearest.has_value()) {
-        T dist = nearest.value().second;
+        T dist = Distance(samplePoints[i], targetPoints[nearest->first]);
         sumBackward += dist;
         sumSquaredBackward += dist * dist;
         maxBackward = std::max(maxBackward, dist);

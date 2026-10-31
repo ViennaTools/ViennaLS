@@ -158,15 +158,10 @@ int main(int argc, char *argv[]) {
     return static_cast<viennahrle::IndexType>(std::llround(x / gridDelta));
   };
 
-  // Diffusion/deformation: covers the entire oxide-band region.
+  // Diffusion/deformation: covers the entire oxide-band region (the nitride
+  // mask joins the deformation solve inside these bounds).
   viennahrle::Index<D> diffMinIndex{toIndex(-xExtent), toIndex(yMin)};
   viennahrle::Index<D> diffMaxIndex{toIndex(xExtent), toIndex(yMax)};
-
-  // Mask bending: brackets the mask geometry with a one-cell margin.
-  viennahrle::Index<D> maskMinIndex{toIndex(-xExtent),
-                                    toIndex(padOxideThickness) - 1};
-  viennahrle::Index<D> maskMaxIndex{
-      toIndex(maskEdge), toIndex(padOxideThickness + maskThickness) + 1};
 
   // ── LOCOS solver ──────────────────────────────────────────────────────────
 
@@ -177,9 +172,6 @@ int main(int argc, char *argv[]) {
   locos->setCouplingParameters(couplingParams);
   locos->setMaskParameters(maskParams);
   locos->setSolveBounds(diffMinIndex, diffMaxIndex);
-  locos->setMaskBendingBounds(maskMinIndex, maskMaxIndex);
-  locos->setMaskCouplingIterations(30);
-  locos->setMaskCouplingTolerance(NumericType(1.e-2));
   if (useGpu)
     locos->setGpuMode(ls::GpuMode::Gpu);
 
@@ -197,7 +189,6 @@ int main(int argc, char *argv[]) {
 
   const auto diffusion = locos->getDiffusionField();
   const auto deformation = locos->getDeformationField();
-  const auto maskBending = locos->getMaskBendingField();
 
   // Sample points in open window and under mask.
   const ls::Vec3D<NumericType> openReactionPoint{0.5, gridDelta, 0.};
@@ -249,28 +240,18 @@ int main(int argc, char *argv[]) {
                                                      padOxideThickness, 0.};
   const ls::Vec3D<NumericType> maskTopSample{
       -0.5, padOxideThickness + maskThickness, 0.};
-  const auto maskBottomVelocity =
-      maskBending->getVectorVelocity(maskBottomSample, 0, {0., -1., 0.}, 0);
-  const auto maskTopVelocity =
-      maskBending->getVectorVelocity(maskTopSample, 0, {0., 1., 0.}, 0);
-  const auto maskContactNodeVelocity = maskBending->getVectorVelocity(
-      maskContactNodeSample, 0, {0., -1., 0.}, 0);
-  const auto maskAnchorVelocity =
-      maskBending->getVectorVelocity(maskAnchorSample, 0, {0., 1., 0.}, 0);
-  const auto maskMidVelocity =
-      maskBending->getVectorVelocity(maskMidSample, 0, {0., 1., 0.}, 0);
-  const auto maskEdgeVelocity =
-      maskBending->getVectorVelocity(maskEdgeSample, 0, {0., 1., 0.}, 0);
+  // Nitride velocities from the shared oxide + nitride mechanics solve.
+  const auto nitrideVelocity = [&](const ls::Vec3D<NumericType> &x) {
+    return deformation->getMaterialVelocity(x, true);
+  };
+  const auto maskBottomVelocity = nitrideVelocity(maskBottomSample);
+  const auto maskTopVelocity = nitrideVelocity(maskTopSample);
+  const auto maskContactNodeVelocity = nitrideVelocity(maskContactNodeSample);
+  const auto maskAnchorVelocity = nitrideVelocity(maskAnchorSample);
+  const auto maskMidVelocity = nitrideVelocity(maskMidSample);
+  const auto maskEdgeVelocity = nitrideVelocity(maskEdgeSample);
   const NumericType maskBottomPressure =
       deformation->getPressure(maskBottomSample);
-  std::cout << "Mask elasticity nodes: "
-            << maskBending->getNumberOfSolutionNodes()
-            << ", contact nodes: " << maskBending->getNumberOfContactNodes()
-            << ", iterations: " << maskBending->getIterations()
-            << ", residual: " << maskBending->getResidual() << '\n';
-  std::cout << "Oxide/mask interface solve iterations: "
-            << locos->getMaskCouplingIterations()
-            << ", residual: " << locos->getMaskCouplingResidual() << '\n';
   std::cout << "Mask bottom velocity: (" << maskBottomVelocity[0] << ", "
             << maskBottomVelocity[1] << ") um/hr, top velocity: ("
             << maskTopVelocity[0] << ", " << maskTopVelocity[1]

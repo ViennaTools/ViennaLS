@@ -3,8 +3,10 @@
 #include <lsAdvect.hpp>
 #include <lsAdvectIntegrationSchemes.hpp>
 #include <lsBooleanOperation.hpp>
+#include <lsExpand.hpp>
 #include <lsInterior.hpp>
 #include <lsOxidationModel.hpp>
+#include <lsReduce.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -109,10 +111,9 @@ LOCOSConservationDiagnostics<T> computeLOCOSOpenWindowConservation(
 
 /// Unified oxidation time-step orchestrator.
 ///
-/// Couples diffusion, viscoelastic deformation, and (optionally) mask bending
-/// into a single CFL-limited step. When a mask interface is provided the solver
-/// operates in LOCOS mode; without one it performs standard planar or step
-/// oxidation.
+/// Couples diffusion and viscoelastic deformation into a single CFL-limited
+/// step. When a mask interface is provided the solver operates in LOCOS mode;
+/// without one it performs standard planar or step oxidation.
 ///
 /// Standard mode (no mask):
 ///   1. Diffusion+deformation coupled solve (OxidationModel)
@@ -121,13 +122,19 @@ LOCOSConservationDiagnostics<T> computeLOCOSOpenWindowConservation(
 ///   4. Interior fill for warm-start persistence
 ///
 /// LOCOS mode (mask provided):
-///   1. Diffusion+deformation coupled solve (OxidationModel)
-///   2. Nitride mask bending solve (OxidationMaskBending) + coupling loop
-///   3. Pre-advection boolean clip (ambientInterface \ maskInterface)
-///   4. Ambient interface advection (constrained: mask-coupled under nitride)
-///   5. Si/SiO2 reaction interface advection (diffusion velocity)
-///   6. Mask advection (mask bending velocity)
-///   7. Interior fills + post-advection boolean clip
+///   1. Diffusion+deformation coupled solve (OxidationModel); the nitride
+///      joins the deformation solve as an elastic body, creeping when
+///      OxidationMaskParameters sets a viscosity (monolithic oxide +
+///      nitride mechanics)
+///   2. Pre-advection boolean clip (ambientInterface \ maskInterface)
+///   3. Ambient interface advection (oxide velocity)
+///   4. Si/SiO2 reaction interface advection (diffusion velocity)
+///   5. Mask advection (nitride velocity), re-sampled from the mask's shape
+///      at the start of the call and the nitride displacement
+///      (OxidationMaskTracker: keeps its corners sharp)
+///   6. Interior fills + post-advection boolean clip
+/// With setMaskBarrierOnly(true) the mask is a diffusion barrier only: it is
+/// withheld from the mechanics and carried along by the oxide.
 ///
 /// Usage (standard):
 /// @code
@@ -144,14 +151,237 @@ LOCOSConservationDiagnostics<T> computeLOCOSOpenWindowConservation(
 ///   ox->setDeformationParameters(defParams);
 ///   ox->setMaskParameters(maskParams);
 ///   ox->setSolveBounds(minIdx, maxIdx);
-///   ox->setMaskBendingBounds(maskMinIdx, maskMaxIdx);
 ///   ox->applyCFLLimited(0.35, 0.499);
 ///   ox->getDiffusionField()->getConcentration(pt);  // diagnostics
 /// @endcode
+/// Lagrangian nitride surface.  The nitride is an elastic solid that moves
+/// almost rigidly, by up to hundreds of nm, and level-set advection rounds
+/// its convex corners by a numerical diffusion that grows with the distance
+/// travelled, for every scheme order: over a 0.1 um lift on a 5 nm grid the
+/// side wall 2.5 nm from a corner moved in by 13 nm (Engquist-Osher 1st
+/// order) or 6.5 nm (WENO5 + RK3), and a 50 nm strip lost its contact with
+/// the oxide.  After each advection the mask is therefore re-sampled from
+/// the shape it had when the tracker was created and the accumulated
+/// displacement u of the nitride, phi(x) = phi_0(x - u(x)) (D-linear in
+/// phi_0).  u follows the material: u(x) = u_old(x - v dt) + v dt with the
+/// velocity v the mask was advected with (accumulating v at a fixed point
+/// instead turns a rotation of angle a by an error ~ a^2 r / 2).  The
+/// advection still moves the narrow band and carries the point data; the
+/// re-sampled band is normalised like an advected one.  A tracker lives
+/// for one Oxidation object, i.e. one process call: phi_0 is sampled once
+/// per call (over a 0.1 um lift the corner moved by 0.9 nm in one call,
+/// 2.5 nm in six; re-sampled every step, 17 nm).
+template <class T, int D> class OxidationMaskTracker {
+  using IndexType = viennahrle::Index<D>;
+  using ConstSparseIterator =
+      viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>;
+  using DisplacementMap =
+      std::unordered_map<IndexType, Vec3D<T>, detail::IndexTypeHasher<D>>;
+
+  // phi_0 is expanded to |phi| <= 4.5: a departure point lies as far from
+  // the reference surface as its band point from the current one.
+  static constexpr int referenceWidth = 9;
+  static constexpr T referenceLimit = T(5);
+
+  const Domain<T, D> *mask_;
+  SmartPointer<Domain<T, D>> reference_;
+  DisplacementMap displacement_;
+  T gridDelta_;
+
+public:
+  explicit OxidationMaskTracker(SmartPointer<Domain<T, D>> mask)
+      : mask_(mask.get()), reference_(SmartPointer<Domain<T, D>>::New(mask)),
+        gridDelta_(mask->getGrid().getGridDelta()) {
+    Expand<T, D>(reference_, referenceWidth).apply();
+  }
+
+  /// False for another mask, or after the mask was resampled to another grid.
+  bool tracks(const SmartPointer<Domain<T, D>> &mask) const {
+    return mask.get() == mask_ && mask->getGrid().getGridDelta() == gridDelta_;
+  }
+
+  /// Re-sample the just advected mask: dt is the advection time, velocity
+  /// (Vec3D<T>(const Vec3D<T> &coordinate)) the one it was advected with.
+  template <class VelocityFunction>
+  void correct(SmartPointer<Domain<T, D>> mask, VelocityFunction &&velocity,
+               T dt) {
+    const auto &grid = mask->getGrid();
+    ConstSparseIterator referenceIt(reference_->getDomain());
+    auto referenceValue = [&](const IndexType &index) {
+      referenceIt.goToIndices(grid.globalIndices2LocalIndices(index));
+      return std::clamp(referenceIt.getValue(), -referenceLimit,
+                        referenceLimit);
+    };
+
+    struct Update {
+      unsigned segment;
+      std::size_t localId;
+      T value;
+    };
+    std::vector<Update> updates;
+    DisplacementMap next;
+    auto &domain = mask->getDomain();
+    for (ConstSparseIterator it(domain); !it.isFinished(); ++it) {
+      if (!it.isDefined())
+        continue;
+      const IndexType index = it.getStartIndices();
+      Vec3D<T> coordinate{T(0), T(0), T(0)};
+      for (unsigned d = 0; d < D; ++d)
+        coordinate[d] = static_cast<T>(index[d]) * gridDelta_;
+      const Vec3D<T> v = velocity(coordinate);
+      T departure[D];
+      for (unsigned d = 0; d < D; ++d)
+        departure[d] = static_cast<T>(index[d]) - v[d] * dt / gridDelta_;
+      Vec3D<T> u = departureDisplacement(departure);
+      for (unsigned d = 0; d < D; ++d)
+        u[d] += v[d] * dt;
+
+      // phi_0 at the departure point x - u, D-linear.
+      IndexType lower;
+      T fraction[D];
+      for (unsigned d = 0; d < D; ++d) {
+        const T c = static_cast<T>(index[d]) - u[d] / gridDelta_;
+        const T cFloor = std::floor(c);
+        lower[d] = static_cast<viennahrle::IndexType>(cFloor);
+        fraction[d] = c - cFloor;
+      }
+      T value = T(0);
+      for (int corner = 0; corner < (1 << D); ++corner) {
+        IndexType vertex = lower;
+        T weight = T(1);
+        for (unsigned d = 0; d < D; ++d) {
+          const bool up = (corner >> d) & 1;
+          vertex[d] += up ? 1 : 0;
+          weight *= up ? fraction[d] : T(1) - fraction[d];
+        }
+        if (weight > T(0))
+          value += weight * referenceValue(vertex);
+      }
+      const unsigned segment = it.getSegmentId();
+      updates.push_back(
+          {segment, it.getPointId() - domain.getPointIdOffset(segment), value});
+      next.emplace(index, u);
+    }
+    // The re-sampled values are no ViennaLS narrow band: a stretched or bent
+    // nitride gives neighbours like -0.504 / +0.527 across its surface,
+    // which the level-set algorithms reject (they walked off the HRLE and
+    // crashed).  Normalise as Advect does: such a pair (both beyond 0.5) is
+    // clamped to +-0.5, the outer layers are rebuilt from the active points.
+    // Only such pairs: clamping e.g. -0.88 next to +0.12 moves the surface
+    // by 0.07 cells every step, which lifted the nitride off the oxide until
+    // the mechanics lost the contact.
+    std::unordered_map<IndexType, T, detail::IndexTypeHasher<D>> values;
+    values.reserve(updates.size());
+    std::size_t k = 0;
+    for (ConstSparseIterator it(domain); !it.isFinished(); ++it)
+      if (it.isDefined())
+        values.emplace(it.getStartIndices(), updates[k++].value);
+    k = 0;
+    for (ConstSparseIterator it(domain); !it.isFinished(); ++it) {
+      if (!it.isDefined())
+        continue;
+      auto &update = updates[k++];
+      const IndexType index = it.getStartIndices();
+      for (unsigned d = 0; d < D && std::abs(update.value) > T(0.5); ++d)
+        for (const int side : {-1, 1}) {
+          IndexType neighbor = index;
+          neighbor[d] += side;
+          const auto found = values.find(neighbor);
+          if (found != values.end() && std::abs(found->second) > T(0.5) &&
+              std::signbit(found->second) != std::signbit(update.value))
+            update.value = std::clamp(update.value, T(-0.5), T(0.5));
+        }
+    }
+    for (const auto &update : updates)
+      domain.getDomainSegment(update.segment).definedValues[update.localId] =
+          update.value;
+    const int width = std::max(mask->getLevelSetWidth(), 2);
+    Reduce<T, D>(mask, 1).apply();
+    Expand<T, D>(mask, width).apply();
+    displacement_ = std::move(next);
+  }
+
+private:
+  // u_old at a departure point (grid units): D-linear over the stored band
+  // points, skipping corners outside the old band; else the nearest stored
+  // point within 2 cells (the band moves less than a cell per step and u
+  // varies on the scale of the body); zero before the first step.
+  Vec3D<T> departureDisplacement(const T (&position)[D]) const {
+    IndexType lower;
+    T fraction[D];
+    for (unsigned d = 0; d < D; ++d) {
+      const T cFloor = std::floor(position[d]);
+      lower[d] = static_cast<viennahrle::IndexType>(cFloor);
+      fraction[d] = position[d] - cFloor;
+    }
+    Vec3D<T> sum{T(0), T(0), T(0)};
+    T weightSum = T(0);
+    for (int corner = 0; corner < (1 << D); ++corner) {
+      IndexType vertex = lower;
+      T weight = T(1);
+      for (unsigned d = 0; d < D; ++d) {
+        const bool up = (corner >> d) & 1;
+        vertex[d] += up ? 1 : 0;
+        weight *= up ? fraction[d] : T(1) - fraction[d];
+      }
+      if (weight <= T(0))
+        continue;
+      const auto found = displacement_.find(vertex);
+      if (found == displacement_.end())
+        continue;
+      for (unsigned d = 0; d < D; ++d)
+        sum[d] += weight * found->second[d];
+      weightSum += weight;
+    }
+    if (weightSum > T(1e-6)) {
+      for (unsigned d = 0; d < D; ++d)
+        sum[d] /= weightSum;
+      return sum;
+    }
+    IndexType nearest;
+    for (unsigned d = 0; d < D; ++d)
+      nearest[d] =
+          static_cast<viennahrle::IndexType>(std::llround(position[d]));
+    return nearestDisplacement(nearest);
+  }
+
+  Vec3D<T> nearestDisplacement(const IndexType &index) const {
+    const Vec3D<T> *best = nullptr;
+    int bestDistance = std::numeric_limits<int>::max();
+    IndexType offset;
+    for (unsigned d = 0; d < D; ++d)
+      offset[d] = -2;
+    while (true) {
+      int distance = 0;
+      IndexType neighbor = index;
+      for (unsigned d = 0; d < D; ++d) {
+        neighbor[d] += offset[d];
+        distance += offset[d] * offset[d];
+      }
+      if (distance < bestDistance) {
+        const auto it = displacement_.find(neighbor);
+        if (it != displacement_.end()) {
+          best = &it->second;
+          bestDistance = distance;
+        }
+      }
+      unsigned d = 0;
+      for (; d < D; ++d) {
+        if (offset[d] < 2) {
+          ++offset[d];
+          break;
+        }
+        offset[d] = -2;
+      }
+      if (d == D)
+        break;
+    }
+    return best != nullptr ? *best : Vec3D<T>{T(0), T(0), T(0)};
+  }
+};
+
 template <class T, int D> class Oxidation {
   using IndexType = viennahrle::Index<D>;
-  using IndexCacheMap =
-      std::unordered_map<IndexType, T, typename IndexType::hash>;
 
   SmartPointer<Domain<T, D>> siInterface = nullptr;
   SmartPointer<Domain<T, D>> ambientInterface = nullptr;
@@ -165,47 +395,39 @@ template <class T, int D> class Oxidation {
   SpatialSchemeEnum spatialScheme = SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER;
   TemporalSchemeEnum temporalScheme = TemporalSchemeEnum::FORWARD_EULER;
   static constexpr int maskInteriorSign = -1;
-  unsigned maskCouplingIterations = 8;
-  T maskCouplingTolerance = 2.e-2;
-  unsigned lastMaskCouplingIterations = 0;
-  T lastMaskCouplingResidual = std::numeric_limits<T>::max();
+  /// Treat the mask as a DIFFUSION BARRIER ONLY: it reduces the oxidant
+  /// reaching the silicon but is mechanically transparent — the oxide expands
+  /// as if at a free surface and carries the mask along on top.  Exact for a
+  /// full-width mask (uniform growth = pure translation); the mode for flat
+  /// Fig. 4-style validation.
+  bool maskBarrierOnly_ = false;
 
   IndexType diffusionMinIndex{};
   IndexType diffusionMaxIndex{};
   bool diffusionBoundsSet = false;
 
-  IndexType maskBendingMinIndex{};
-  IndexType maskBendingMaxIndex{};
-  bool maskBendingBoundsSet = false;
-
   // Populated by apply(); available for diagnostics afterwards.
   SmartPointer<OxidationDiffusion<T, D>> diffusionField;
   SmartPointer<OxidationDeformation<T, D>> deformationField;
-  SmartPointer<OxidationMaskBending<T, D>> maskBendingField;
   T lastMaxVelocity_ = T(0);
 
   GpuMode gpuMode_ = GpuMode::Cpu;
-  GpuPreconditioner gpuPreconditioner_ = GpuPreconditioner::Jacobi;
-  IndexCacheMap concentrationCache_;
+  std::unordered_map<std::size_t, T> concentrationCache_;
+  // Stress feedback carried between solves (see
+  // OxidationDiffusion::setFeedbackCache).
+  typename OxidationDiffusion<T, D>::PressureLookup pressureCache_;
+  typename OxidationDiffusion<T, D>::StressLookup stressCache_;
+  std::optional<OxidationMaskTracker<T, D>> maskTracker_;
 
 public:
-  const IndexCacheMap &getConcentrationCache() const {
+  const std::unordered_map<std::size_t, T> &getConcentrationCache() const {
     return concentrationCache_;
   }
-  void setConcentrationCache(IndexCacheMap cache) {
+  void setConcentrationCache(std::unordered_map<std::size_t, T> cache) {
     concentrationCache_ = std::move(cache);
   }
 
   Oxidation() = default;
-
-  ~Oxidation() {
-    // Break the shared_ptr cycle between
-    // OxidationDeformation::maskVelocityField and
-    // OxidationMaskBending::deformationField so both reach ref-count 0 when the
-    // SmartPointer members are destroyed in reverse declaration order.
-    if (deformationField)
-      deformationField->clearMaskVelocityField();
-  }
 
   Oxidation(SmartPointer<Domain<T, D>> passedSiInterface,
             SmartPointer<Domain<T, D>> passedAmbientInterface,
@@ -219,9 +441,6 @@ public:
   }
 
   void setGpuMode(GpuMode mode) { gpuMode_ = mode; }
-  void setGpuPreconditioner(GpuPreconditioner preconditioner) {
-    gpuPreconditioner_ = preconditioner;
-  }
 
   void setSiInterface(SmartPointer<Domain<T, D>> si) { siInterface = si; }
   void setAmbientInterface(SmartPointer<Domain<T, D>> ambient) {
@@ -247,16 +466,10 @@ public:
   /// Set the spatial integration scheme for all advections.
   void setSpatialScheme(SpatialSchemeEnum scheme) { spatialScheme = scheme; }
 
+  void setMaskBarrierOnly(bool enable) { maskBarrierOnly_ = enable; }
+
   /// Set the temporal integration scheme for all advections.
   void setTemporalScheme(TemporalSchemeEnum scheme) { temporalScheme = scheme; }
-
-  void setMaskCouplingIterations(unsigned iterations) {
-    maskCouplingIterations = std::max(1u, iterations);
-  }
-
-  void setMaskCouplingTolerance(T tolerance) {
-    maskCouplingTolerance = std::max(tolerance, T(0));
-  }
 
   /// Set the Cartesian index bounding box for the diffusion and deformation
   /// solves. If not set, bounds are auto-computed from the level-set narrow
@@ -265,14 +478,6 @@ public:
     diffusionMinIndex = minIndex;
     diffusionMaxIndex = maxIndex;
     diffusionBoundsSet = true;
-  }
-
-  /// Set the Cartesian index bounding box for the mask bending solve (LOCOS).
-  void setMaskBendingBounds(const IndexType &minIndex,
-                            const IndexType &maxIndex) {
-    maskBendingMinIndex = minIndex;
-    maskBendingMaxIndex = maxIndex;
-    maskBendingBoundsSet = true;
   }
 
   /// Return the diffusion field populated by the most recent apply() call.
@@ -284,17 +489,6 @@ public:
   SmartPointer<OxidationDeformation<T, D>> getDeformationField() const {
     return deformationField;
   }
-
-  /// Return the mask bending field (null when no mask is set).
-  SmartPointer<OxidationMaskBending<T, D>> getMaskBendingField() const {
-    return maskBendingField;
-  }
-
-  unsigned getMaskCouplingIterations() const {
-    return lastMaskCouplingIterations;
-  }
-
-  T getMaskCouplingResidual() const { return lastMaskCouplingResidual; }
 
   /// Maximum interface velocity (µm/hr) from the most recent CFL-limited step.
   T getLastMaxVelocity() const { return lastMaxVelocity_; }
@@ -323,17 +517,21 @@ private:
     tStep.start();
 
     const bool hasMask = (maskInterface != nullptr);
+    // The nitride is part of the oxide mechanics solve (OxidationDeformation):
+    // there is no separate mask solve and no coupling loop, and each surface
+    // moves with its own material's solved velocity.
+    const bool monolithicMask = hasMask && !maskBarrierOnly_;
     const std::string prefix = hasMask ? "LOCOS" : "Oxidation";
 
     VIENNACORE_LOG_INFO(prefix + ": starting time step, requested_dt=" +
                         std::to_string(requestedTime) + " hr");
 
     const auto baseConcentrationCache = concentrationCache_;
+    const auto basePressureCache = pressureCache_;
+    const auto baseStressCache = stressCache_;
     std::string lastFieldFailureReason;
-    bool lastFailureWasMaskFixedPoint = false;
-    T adaptiveMaskRelaxationScale = T(1);
 
-    auto solveFields = [&](T stressTimeStep, bool logCouplingResult) -> bool {
+    auto solveFields = [&](T stressTimeStep) -> bool {
       auto rejectSolve = [&](const std::string &reason) {
         lastFieldFailureReason = reason;
         return false;
@@ -361,51 +559,33 @@ private:
             !deformationField->hasFiniteSolution()) {
           return rejectSolve(
               "deformation solve failed (mechanics=" +
-              std::to_string(deformationField->getResidual()) + ", pressure=" +
-              std::to_string(deformationField->getLastPressureResidual()) +
+              std::to_string(deformationField->getResidual()) +
+              ", continuity=" +
+              std::to_string(deformationField->getLastContinuityResidual()) +
               ", stokes=" +
               std::to_string(deformationField->getLastStokesResidual()) + ")");
         }
         return true;
       };
 
-      auto validateMaskSolve = [&]() {
-        if (maskBendingField == nullptr)
-          return true;
-        const T maskResidual = maskBendingField->getResidual();
-        if (!std::isfinite(maskResidual) ||
-            maskResidual > maskParams.tolerance) {
-          return rejectSolve("mask traction solve failed (residual=" +
-                             std::to_string(maskResidual) + ", tolerance=" +
-                             std::to_string(maskParams.tolerance) + ")");
-        }
-        const T couplingResidual =
-            maskBendingField->getLastApplyVelocityChange();
-        if (!std::isfinite(couplingResidual))
-          return rejectSolve(
-              "mask velocity coupling produced non-finite values");
-        return true;
-      };
-
       lastFieldFailureReason.clear();
-      lastFailureWasMaskFixedPoint = false;
       auto stepDeformationParams = deformationParams;
       stepDeformationParams.stressTimeStep = stressTimeStep;
-
-      // Break the shared_ptr cycle (OxidationDeformation ↔
-      // OxidationMaskBending) left by the previous solveFields call so the old
-      // objects are freed when deformationField and maskBendingField are
-      // replaced below.
-      if (deformationField)
-        deformationField->clearMaskVelocityField();
+      if (monolithicMask) {
+        stepDeformationParams.nitrideYoungModulus = maskParams.youngModulus;
+        stepDeformationParams.nitridePoissonRatio = maskParams.poissonRatio;
+        stepDeformationParams.nitrideViscosity = maskParams.viscosity;
+        stepDeformationParams.nitrideShearActivationVolume =
+            maskParams.shearActivationVolume;
+      }
 
       // --- Coupled diffusion + deformation solve ---
 
       diffusionField = OxidationDiffusion<T, D>::New(
           siInterface, ambientInterface, oxidationParams);
       diffusionField->setConcentrationCache(baseConcentrationCache);
+      diffusionField->setFeedbackCache(basePressureCache, baseStressCache);
       diffusionField->setGpuMode(gpuMode_);
-      diffusionField->setGpuPreconditioner(gpuPreconditioner_);
       if (hasMask)
         diffusionField->setMaskInterface(maskInterface, maskInteriorSign);
 
@@ -413,8 +593,9 @@ private:
           siInterface, ambientInterface, diffusionField, oxidationParams,
           stepDeformationParams);
       deformationField->setGpuMode(gpuMode_);
-      deformationField->setGpuPreconditioner(gpuPreconditioner_);
-      if (hasMask)
+      // Barrier-only: the mask is withheld from the mechanics so the oxide
+      // sees a free surface and expands outward.
+      if (hasMask && !maskBarrierOnly_)
         deformationField->setMaskInterface(maskInterface, maskInteriorSign);
 
       auto coupledModel = OxidationModel<T, D>::New(
@@ -432,163 +613,16 @@ private:
         Logger::getInstance().addTiming("  coupled(iter=1)", tCoupled).print();
       VIENNACORE_LOG_DEBUG(prefix +
                            ": coupled diffusion/deformation solve complete");
-      if (!validateCoupledModel(coupledModel))
-        return false;
-
-      if (hasMask) {
-        // --- Mask bending solve ---
-        auto stepMaskParams = maskParams;
-        stepMaskParams.stressTimeStep = stressTimeStep;
-        stepMaskParams.relaxation = std::clamp(
-            maskParams.relaxation * adaptiveMaskRelaxationScale, T(0.01), T(1));
-        maskBendingField = OxidationMaskBending<T, D>::New(
-            deformationField, maskInterface, stepMaskParams, maskInteriorSign);
-        maskBendingField->setAmbientInterface(ambientInterface,
-                                              maskInteriorSign);
-        if (maskBendingBoundsSet)
-          maskBendingField->setSolveBounds(maskBendingMinIndex,
-                                           maskBendingMaxIndex);
-        VIENNACORE_LOG_DEBUG(prefix + ": solving mask bending field");
-        Timer<> tMask;
-        tMask.start();
-        try {
-          maskBendingField->apply();
-        } catch (const std::exception &e) {
-          tMask.finish();
-          return rejectSolve("mask bending solve error: " +
-                             std::string(e.what()));
-        }
-        tMask.finish();
-        if (Logger::hasTiming())
-          Logger::getInstance()
-              .addTiming("  maskBending(iter=1)", tMask)
-              .print();
-        if (!validateMaskSolve())
-          return false;
-        T initialRes = maskBendingField->getLastApplyVelocityChange();
-        VIENNACORE_LOG_DEBUG(
-            prefix + ": mask bending solve complete, residual=" +
-            (initialRes >= std::numeric_limits<T>::max() * T(0.99)
-                 ? std::string("initial")
-                 : std::to_string(initialRes)));
-
-        lastMaskCouplingIterations = 1;
-        lastMaskCouplingResidual =
-            maskBendingField->getLastApplyVelocityChange();
-        deformationField->setMaskVelocityField(maskBendingField);
-        for (unsigned iteration = 1; iteration < maskCouplingIterations;
-             ++iteration) {
-          deformationField->setMaskVelocityField(maskBendingField);
-          VIENNACORE_LOG_DEBUG(prefix + ": coupling iteration " +
-                               std::to_string(iteration + 1) +
-                               " solving coupled field");
-          Timer<> tIterCoupled, tIterMask;
-          tIterCoupled.start();
-          coupledModel->apply();
-          tIterCoupled.finish();
-          if (!validateCoupledModel(coupledModel))
-            return false;
-          VIENNACORE_LOG_DEBUG(prefix + ": coupling iteration " +
-                               std::to_string(iteration + 1) +
-                               " solving mask field");
-          tIterMask.start();
-          try {
-            maskBendingField->apply();
-          } catch (const std::exception &e) {
-            tIterMask.finish();
-            return rejectSolve("mask bending solve error at iteration " +
-                               std::to_string(iteration + 1) + ": " + e.what());
-          }
-          tIterMask.finish();
-          if (!validateMaskSolve())
-            return false;
-          if (Logger::hasTiming())
-            Logger::getInstance()
-                .addTiming("  coupled(iter=" + std::to_string(iteration + 1) +
-                               ")",
-                           tIterCoupled)
-                .addTiming(
-                    "  maskBending(iter=" + std::to_string(iteration + 1) + ")",
-                    tIterMask)
-                .print();
-          lastMaskCouplingIterations = iteration + 1;
-          lastMaskCouplingResidual =
-              maskBendingField->getLastApplyVelocityChange();
-          VIENNACORE_LOG_DEBUG(
-              prefix + ": coupling iteration " + std::to_string(iteration + 1) +
-              " residual=" + std::to_string(lastMaskCouplingResidual));
-          if (lastMaskCouplingResidual <= maskCouplingTolerance)
-            break;
-        }
-        const T maskAbsoluteDisplacement =
-            maskBendingField->getLastApplyAbsoluteVelocityChange() *
-            stressTimeStep;
-        // Max physical displacement per step from the mask velocity field.
-        // Independent of coupling oscillation amplitude — the oscillation check
-        // (maskAbsoluteDisplacement) measures how much the velocity CHANGES
-        // between iterations; this measures how far the surface actually moves.
-        // When the active-set oscillates at a fixed amplitude, reducing dt
-        // does not reduce maskAbsoluteDisplacement, but it does reduce this.
-        T maxMaskVelocity = T(0);
-        for (unsigned d = 0; d < D; ++d)
-          maxMaskVelocity =
-              std::max(maxMaskVelocity, maskBendingField->getDissipationAlpha(
-                                            static_cast<int>(d), -1, {}));
-        const T maskMaxDisplacement = maxMaskVelocity * stressTimeStep;
-        const T maskDisplacementTolerance =
-            maskCouplingTolerance * siInterface->getGrid().getGridDelta();
-        const bool maskCouplingConverged =
-            lastMaskCouplingResidual <= maskCouplingTolerance ||
-            (std::isfinite(maskAbsoluteDisplacement) &&
-             maskAbsoluteDisplacement <= maskDisplacementTolerance) ||
-            (std::isfinite(maskMaxDisplacement) &&
-             maskMaxDisplacement <= maskDisplacementTolerance);
-        if (maskCouplingConverged) {
-          VIENNACORE_LOG_INFO(
-              prefix + ": mask/oxide coupling converged in " +
-              std::to_string(lastMaskCouplingIterations) +
-              " iterations (residual=" +
-              std::to_string(lastMaskCouplingResidual) +
-              ", displacement=" + std::to_string(maskAbsoluteDisplacement) +
-              " um, maxDisplacement=" + std::to_string(maskMaxDisplacement) +
-              " um)");
-        } else if (logCouplingResult) {
-          VIENNACORE_LOG_WARNING(
-              prefix +
-              ": mask/oxide coupling did not converge "
-              "after " +
-              std::to_string(lastMaskCouplingIterations) +
-              " iterations (residual=" +
-              std::to_string(lastMaskCouplingResidual) +
-              ", displacement=" + std::to_string(maskAbsoluteDisplacement) +
-              " um" + ", tolerance=" + std::to_string(maskCouplingTolerance) +
-              "). Consider increasing maskCouplingIterations.");
-        }
-        if (!maskCouplingConverged) {
-          lastFailureWasMaskFixedPoint = true;
-          return rejectSolve(
-              "mask/oxide coupling failed (residual=" +
-              std::to_string(lastMaskCouplingResidual) +
-              ", displacement=" + std::to_string(maskAbsoluteDisplacement) +
-              " um, maxDisplacement=" + std::to_string(maskMaxDisplacement) +
-              " um" + ", tolerance=" + std::to_string(maskCouplingTolerance) +
-              ", relaxation=" + std::to_string(stepMaskParams.relaxation) +
-              ")");
-        }
-        return true;
-      } else {
-        maskBendingField = nullptr;
-      }
-
-      return true;
+      return validateCoupledModel(coupledModel);
     };
 
     auto makeAmbientVelocity = [&]() -> SmartPointer<VelocityField<T>> {
-      if (hasMask) {
-        return OxidationConstrainedAmbient<T, D>::New(
-            deformationField, maskBendingField, maskInterface, ambientInterface,
-            maskInteriorSign);
-      }
+      // Barrier-only: the oxide's free surface must NOT be constrained by
+      // the mask -- it expands freely and carries the mask along.
+      // Monolithic: oxide and nitride share one solve; each surface moves
+      // with its own material's velocity.
+      if (monolithicMask)
+        return OxidationMaterialVelocity<T, D>::New(deformationField, false);
       return deformationField;
     };
 
@@ -598,15 +632,12 @@ private:
     auto computeMaxVelocity =
         [&](const SmartPointer<VelocityField<T>> &passedAmbientVelocity) {
           T maxVelocity = diffusionField->getDissipationAlpha(0, -1, {});
-          for (unsigned d = 0; d < D; ++d) {
+          // The mask moves with the oxide velocity field (its own nitride
+          // nodes, or carried in barrier-only mode): covered above.
+          for (unsigned d = 0; d < D; ++d)
             maxVelocity =
                 std::max(maxVelocity,
                          passedAmbientVelocity->getDissipationAlpha(d, -1, {}));
-            if (hasMask)
-              maxVelocity =
-                  std::max(maxVelocity,
-                           maskBendingField->getDissipationAlpha(d, -1, {}));
-          }
           return maxVelocity;
         };
 
@@ -623,26 +654,13 @@ private:
           requestedTime * T(1e-10), std::numeric_limits<T>::epsilon() * T(100));
       bool accepted = false;
       for (unsigned attempt = 0; attempt < 16; ++attempt) {
-        const bool predictorConverged = solveFields(trialTime, false);
+        const bool predictorConverged = solveFields(trialTime);
         if (!predictorConverged) {
-          const bool dampMask = lastFailureWasMaskFixedPoint &&
-                                adaptiveMaskRelaxationScale > T(0.051);
-          if (dampMask)
-            adaptiveMaskRelaxationScale =
-                std::max(T(0.05), adaptiveMaskRelaxationScale * T(0.5));
-          const T nextTrial = dampMask ? trialTime : trialTime * T(0.5);
+          const T nextTrial = trialTime * T(0.5);
           VIENNACORE_LOG_INFO(
-              prefix +
-              ": rejecting non-converged coupled predictor "
-              "(" +
-              (lastFieldFailureReason.empty()
-                   ? "mask residual=" + std::to_string(lastMaskCouplingResidual)
-                   : lastFieldFailureReason) +
-              (dampMask ? ", retrying with mask relaxation scale=" +
-                              std::to_string(adaptiveMaskRelaxationScale)
-                        : std::string()) +
-              "), retrying with requested_dt=" + std::to_string(nextTrial) +
-              " hr");
+              prefix + ": rejecting non-converged coupled predictor (" +
+              lastFieldFailureReason + "), retrying with requested_dt=" +
+              std::to_string(nextTrial) + " hr");
           trialTime = nextTrial;
           if (trialTime < minTrialTime)
             break;
@@ -662,28 +680,13 @@ private:
             " hr, max_velocity=" + std::to_string(maxVelocity) + " um/hr");
 
         if (advectionTime < trialTime * (T(1) - T(1e-8))) {
-          const bool finalConverged = solveFields(advectionTime, false);
+          const bool finalConverged = solveFields(advectionTime);
           if (!finalConverged) {
-            const bool dampMask = lastFailureWasMaskFixedPoint &&
-                                  adaptiveMaskRelaxationScale > T(0.051);
-            if (dampMask)
-              adaptiveMaskRelaxationScale =
-                  std::max(T(0.05), adaptiveMaskRelaxationScale * T(0.5));
-            const T nextTrial =
-                dampMask ? advectionTime : advectionTime * T(0.5);
+            const T nextTrial = advectionTime * T(0.5);
             VIENNACORE_LOG_INFO(
-                prefix +
-                ": rejecting non-converged CFL re-solve "
-                "(" +
-                (lastFieldFailureReason.empty()
-                     ? "mask residual=" +
-                           std::to_string(lastMaskCouplingResidual)
-                     : lastFieldFailureReason) +
-                (dampMask ? ", retrying with mask relaxation scale=" +
-                                std::to_string(adaptiveMaskRelaxationScale)
-                          : std::string()) +
-                "), retrying with requested_dt=" + std::to_string(nextTrial) +
-                " hr");
+                prefix + ": rejecting non-converged CFL re-solve (" +
+                lastFieldFailureReason + "), retrying with requested_dt=" +
+                std::to_string(nextTrial) + " hr");
             trialTime = nextTrial;
             if (trialTime < minTrialTime)
               break;
@@ -712,40 +715,15 @@ private:
         accepted = true;
         break;
       }
-      if (!accepted) {
-        // Last resort: if the oxide solve (diffusion + deformation) is still
-        // finite — only the mask coupling diverged — freeze the mask for one
-        // minimal step so the geometry can evolve past the singular contact
-        // configuration.  The mask doesn't move; the oxide advances at
-        // minTrialTime with no mask feedback this step.
-        const bool oxideFinite =
-            diffusionField && deformationField &&
-            diffusionField->hasFiniteConcentrationField() &&
-            deformationField->hasFiniteSolution();
-        if (hasMask && oxideFinite) {
-          VIENNACORE_LOG_WARNING(
-              prefix +
-              ": all CFL attempts exhausted; freezing mask for "
-              "one step at dt=" +
-              std::to_string(minTrialTime) +
-              " hr (last failure: " + lastFieldFailureReason +
-              "). Consider increasing maskReferenceViscosity or "
-              "maskCouplingIterations.");
-          maskBendingField = nullptr; // skip mask advection this step
-          ambientVelocity = makeAmbientVelocity();
-          advectionTime = minTrialTime;
-          lastMaxVelocity_ = computeMaxVelocity(ambientVelocity);
-        } else {
-          VIENNACORE_LOG_ERROR(prefix +
-                               ": unable to find a converged CFL-limited step" +
-                               (lastFieldFailureReason.empty()
-                                    ? std::string(".")
-                                    : std::string(" (last failure: ") +
-                                          lastFieldFailureReason + ")."));
-        }
-      }
+      if (!accepted)
+        VIENNACORE_LOG_ERROR(prefix +
+                             ": unable to find a converged CFL-limited step" +
+                             (lastFieldFailureReason.empty()
+                                  ? std::string(".")
+                                  : std::string(" (last failure: ") +
+                                        lastFieldFailureReason + ")."));
     } else {
-      const bool fieldsConverged = solveFields(requestedTime, true);
+      const bool fieldsConverged = solveFields(requestedTime);
       if (!fieldsConverged)
         VIENNACORE_LOG_ERROR(
             prefix + ": coupled solve failed" +
@@ -756,22 +734,47 @@ private:
     }
 
     concentrationCache_ = diffusionField->getConcentrationCache();
+    pressureCache_ = diffusionField->getPressureCache();
+    stressCache_ = diffusionField->getStressCache();
 
     diffusionField->markSolved();
+
+    // VOLTRACE: per-stage ambient-volume audit for the under-mask volume
+    // leak.  Smoothed-Heaviside sum over the HRLE: band cells contribute
+    // clamp(0.5 - phi, 0, 1), negative background runs contribute fully.
+    // Only DIFFERENCES between stages are meaningful.
+    auto ambientVolume = [&]() -> T {
+      const T delta = ambientInterface->getGrid().getGridDelta();
+      T cellVol = T(1);
+      for (unsigned d = 0; d < D; ++d)
+        cellVol *= delta;
+      T vol = T(0);
+      for (viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>
+               it(ambientInterface->getDomain());
+           !it.isFinished(); it.next()) {
+        T cells = T(1);
+        for (unsigned d = 0; d < D; ++d)
+          cells *= T(it.getEndIndices(static_cast<int>(d)) -
+                     it.getStartIndices(static_cast<int>(d)) + 1);
+        if (it.isDefined())
+          vol += std::min(std::max(T(0.5) - it.getValue(), T(0)), T(1)) *
+                 cellVol * cells;
+        else if (it.getValue() < T(0))
+          vol += cellVol * cells;
+      }
+      return vol;
+    };
+    const T volBefore = ambientVolume();
 
     // Pre-advection clip: keep oxide outside the mask body (LOCOS only).
     if (hasMask)
       BooleanOperation<T, D>(ambientInterface, maskInterface,
                              BooleanOperationEnum::RELATIVE_COMPLEMENT)
           .apply();
+    const T volAfterPreclip = ambientVolume();
 
     diffusionField->writePersistentFields();
     deformationField->writeFieldsToLevelSet();
-    if (hasMask && maskBendingField)
-      maskBendingField->writeFieldsToLevelSet();
-
-    if (hasMask && maskBendingField)
-      maskBendingField->finalizeElasticAdvectionVelocity();
 
     auto advect = [&](SmartPointer<Domain<T, D>> levelSet,
                       SmartPointer<VelocityField<T>> velocityField) {
@@ -788,12 +791,29 @@ private:
     tAdvect.start();
     advect(ambientInterface, ambientVelocity);
     advect(siInterface, diffusionField);
-    if (hasMask && maskBendingField)
-      advect(maskInterface, maskBendingField);
+    if (hasMask && maskBarrierOnly_)
+      // Carried by the oxide: the contact face samples the oxide velocity in
+      // place; OxidationMaskCarry extends that same velocity through the mask
+      // body so the whole slab translates together.
+      advect(maskInterface,
+             OxidationMaskCarry<T, D>::New(deformationField, maskInterface));
+    else if (monolithicMask) {
+      if (!maskTracker_ || !maskTracker_->tracks(maskInterface))
+        maskTracker_.emplace(maskInterface);
+      advect(maskInterface,
+             OxidationMaterialVelocity<T, D>::New(deformationField, true));
+      maskTracker_->correct(
+          maskInterface,
+          [&](const Vec3D<T> &x) {
+            return deformationField->getMaterialVelocity(x, true);
+          },
+          advectionTime);
+    }
     tAdvect.finish();
     VIENNACORE_LOG_TIMING(std::string("  advection(") + (hasMask ? "3" : "2") +
                               " surfaces)",
                           tAdvect);
+    const T volAfterAdvect = ambientVolume();
 
     // Post-advection clip: remove oxide that grew into the mask (LOCOS only).
     // Mask gets Interior fill first so the BooleanOp has accurate φ_mask values
@@ -803,16 +823,28 @@ private:
       BooleanOperation<T, D>(ambientInterface, maskInterface,
                              BooleanOperationEnum::RELATIVE_COMPLEMENT)
           .apply();
-      // Re-write mask velocity with the Interior-filled HRLE for the same
-      // reason as the oxide re-write below — lsAdvect left only the narrow
-      // band, so pointData is smaller than the post-Interior HRLE.
-      if (maskBendingField)
-        maskBendingField->writeFieldsToLevelSet();
     }
+    const T volAfterPostclip = ambientVolume();
     {
       Interior<T, D> fill(ambientInterface);
       fill.setGuide(siInterface); // stop fill at Si surface
       fill.apply();
+    }
+    {
+      const T volAfterFill = ambientVolume();
+      const T toNm = std::pow(T(1000), static_cast<int>(D));
+      // vol_start/vol_end are ABSOLUTE (nm^D): vol_start(N+1) != vol_end(N)
+      // exposes volume changes between substeps (outside this pipeline).
+      VIENNACORE_LOG_INFO(
+          prefix + ": VOLTRACE dV_preclip=" +
+          std::to_string((volAfterPreclip - volBefore) * toNm) + " dV_advect=" +
+          std::to_string((volAfterAdvect - volAfterPreclip) * toNm) +
+          " dV_postclip=" +
+          std::to_string((volAfterPostclip - volAfterAdvect) * toNm) +
+          " dV_fill=" +
+          std::to_string((volAfterFill - volAfterPostclip) * toNm) +
+          " vol_start=" + std::to_string(volBefore * toNm) +
+          " vol_end=" + std::to_string(volAfterFill * toNm) + " nm^D");
     }
 
     // Re-write persistent fields (concentration, pressure) now that the HRLE

@@ -16,8 +16,11 @@ namespace viennals {
 ///     3770 (1965); wet-oxidation values at 1000 °C from Table I.
 ///   Oxide mechanics — E. A. Irene, J. Electrochem. Soc. 125, 1708 (1978);
 ///     viscosity and elastic moduli for thermal SiO2 near 1000 °C.
-///   Silicon nitride creep — S. M. Hu, J. Appl. Phys. 70, R53 (1991);
-///     reference viscosity for LPCVD Si3N4 at 1000 °C.
+///   Stress-dependent viscosity — P. Sutardja and W. G. Oldham, IEEE Trans.
+///     Electron Devices 36, 2415 (1989); shear activation volume 300 A^3 (the
+///     common TCAD default).
+///   Nitride creep — V. Senez et al., IEEE Trans. Electron Devices 43, 720
+///     (1996), Table II (calibrated on LOCOS shapes, 800-1100 °C).
 struct OxidationPresets {
   /// Wet oxidation at 1000 °C (Deal-Grove linear-parabolic coefficients).
   /// B/2 = D_eff = 0.157 µm²/hr, B/A = k_s = 0.74 µm/hr.
@@ -41,35 +44,48 @@ struct OxidationPresets {
   /// Pass the advection time step so the viscoelastic relaxation is consistent.
   static OxidationDeformationParameters oxideMechanics1000C(double timeStep) {
     OxidationDeformationParameters params;
-    params.viscosity = 1.e10;    // Pa·hr, effective oxide viscosity
-    params.bulkModulus = 7.5e8;  // Pa
-    params.shearModulus = 3.e10; // Pa
+    params.viscosity = 1.e10;              // Pa·hr, effective oxide viscosity
+    params.shearModulus = 3.e10;           // Pa
+    params.shearActivationVolume = 3.e-28; // m^3 (300 A^3)
     params.stressTimeStep = timeStep;
-    params.mechanicsIterations = 300;
-    params.mechanicsTolerance = 5.e-3;
-    params.pressureIterations = 2000;
-    params.stokesIterations = 1000;
-    params.pressureTolerance = 1.e-3;
-    params.stokesTolerance = 1.e-3;
-    params.tolerance = 1.e-7;
     return params;
   }
 
-  /// LPCVD Si3N4 mask creep at 1000 °C (Hu 1991; Senez et al. 1994).
-  /// referenceViscosity = 5×10¹¹ Pa·hr at 1273.15 K with Arrhenius scaling:
-  /// E_a = 3.86×10⁵ J/mol ≈ 4 eV (Senez, IEEE Trans. Electron Devices, 1994).
-  /// Set temperature in OxidationMaskParameters (or via psOxidation) to get
-  /// the correct viscosity at a temperature other than 1000 °C.
-  static OxidationMaskParameters siliconNitrideMask1000C() {
+  /// LPCVD Si3N4 mask: E = 270 GPa, nu = 0.27, and Maxwell creep with an
+  /// Eyring viscosity from Senez et al. (1996), Table II: eta_N = 6e16 /
+  /// 3.1e16 / 5e15 / 1.1e15 P and V_N = 120 / 130 / 170 / 350 A^3 at 800 /
+  /// 900 / 1000 / 1100 °C (relaxation ~1 h at 1000 °C, critical shear
+  /// 2kT/V_N 0.21 GPa).  Between the points log(eta_N) is linear in 1/T and
+  /// V_N linear in T; outside, eta_N follows the end segment's trend and V_N
+  /// keeps the end value (the table covers 800-1100 °C).
+  static OxidationMaskParameters siliconNitrideMask(double temperatureCelsius) {
+    static constexpr double table[4][3] = {
+        // °C, eta_N (Pa hr = P / 10 / 3600), V_N (m^3)
+        {800., 6.0e16 / 36000., 120e-30},
+        {900., 3.1e16 / 36000., 130e-30},
+        {1000., 5.0e15 / 36000., 170e-30},
+        {1100., 1.1e15 / 36000., 350e-30}};
+    const double inverse = 1. / (temperatureCelsius + 273.15);
+    int k = 0; // segment [k, k + 1]
+    while (k < 2 && temperatureCelsius > table[k + 1][0])
+      ++k;
+    const double i0 = 1. / (table[k][0] + 273.15);
+    const double i1 = 1. / (table[k + 1][0] + 273.15);
+    const double w = (inverse - i0) / (i1 - i0);
+    const double wT = std::clamp((temperatureCelsius - table[k][0]) /
+                                     (table[k + 1][0] - table[k][0]),
+                                 0., 1.);
     OxidationMaskParameters params;
-    params.temperature = 1273.15;
-    params.referenceTemperature = 1273.15;
-    params.referenceViscosity = 5.e11;     // Pa·hr at 1000 °C
-    params.creepActivationEnergy = 3.86e5; // J/mol ≈ 4 eV (Senez 1994)
+    params.youngModulus = 270e9; // Pa
     params.poissonRatio = 0.27;
-    params.relaxation = 0.9;
-    params.tolerance = 5.e-6;
+    params.viscosity = std::exp((1. - w) * std::log(table[k][1]) +
+                                w * std::log(table[k + 1][1]));
+    params.shearActivationVolume =
+        (1. - wT) * table[k][2] + wT * table[k + 1][2];
     return params;
+  }
+  static OxidationMaskParameters siliconNitrideMask1000C() {
+    return siliconNitrideMask(1000.);
   }
 };
 

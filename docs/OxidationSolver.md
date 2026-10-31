@@ -2,9 +2,9 @@
 
 This document describes the physics model, numerical algorithms, and implementation
 of the coupled oxidation solver in ViennaLS/ViennaPS. The solver computes thermal
-silicon oxidation by solving a coupled system of a diffusion PDE, a Stokes-flow
-mechanical deformation PDE, and (in LOCOS mode) a mask bending PDE, all on a shared
-Cartesian grid extracted from the ViennaLS level-set narrow bands.
+silicon oxidation by solving a coupled system of a diffusion PDE and a Stokes-flow
+mechanical deformation PDE (which, in LOCOS mode, includes the elastic nitride mask),
+both on a shared Cartesian grid extracted from the ViennaLS level-set narrow bands.
 
 ---
 
@@ -49,7 +49,8 @@ k(n̂) = k_base · [1 + (r − 1) · (1 − (n̂ · â)²)]
 ```
 
 where n̂ is the outward normal at the Si/SiO2 crossing, â is the wafer-normal
-crystal axis (Y by convention), and r = `reactionRateRatio111` is the ratio
+crystal axis (the last axis: y in 2-D, z in 3-D; ViennaPS sets it, the ViennaLS
+default is the 2-D one), and r = `reactionRateRatio111` is the ratio
 of the perpendicular-face rate to the bulk-orientation rate. For Si(100): r = 1.45
 (perpendicular faces are (110)-like); for Si(111): r = 1/1.68; for Si(110): r = 1/1.45.
 This captures the Bird's-Beak anisotropy observed in LOCOS without requiring explicit
@@ -57,19 +58,38 @@ crystal-plane tracking.
 
 ### Stress-Dependent Kinetics
 
-Compressive stress in the growing oxide modifies both the reaction rate and the
-diffusivity via an activation-volume coupling (Kao et al., 1987):
+Stress in the growing oxide modifies the reaction rate and the diffusivity via
+activation-volume couplings (Kao et al., IEEE TED 35, 25 (1988); the `Vr`/`Vd` of
+SUPREM-IV and TCAD):
 
 ```
-k_eff(p) = k · exp(−(p − p_ref) · V_k / (k_B T))
-D_eff(p) = D · exp(−(p − p_ref) · V_D / (k_B T))
+k_eff = k · exp( (σ_nn + p_ref) · V_k / (k_B T))
+D_eff = D · exp(−(p − p_ref)   · V_D / (k_B T))
 ```
 
-where p is the local hydrostatic pressure in Pa, V_k and V_D are the stress-coupling
-activation volumes (m³), and p_ref is the reference pressure (zero by default). With
-the default `V_k = 1.76×10⁻³⁵ m³`, compressive pressures of ~1 GPa reduce the
-interface reaction rate by ~20% at 1000 °C, self-limiting the oxide growth in
-confined geometries.
+The reaction responds to the stress NORMAL to the Si/SiO₂ interface,
+σ_nn = n·σ·n with σ the oxide's Cauchy stress (tension positive) and n the Si-surface
+normal: the new oxide must expand against it, so normal compression (σ_nn < 0)
+retards the reaction.  The diffusivity responds to the hydrostatic pressure p
+(compression positive).  The two are different stresses: at a convex Si surface the
+interface is in normal compression while the oxide pressure there can be tensile.
+V_k and V_D are activation volumes (m³), p_ref is the reference pressure (zero by
+default).  Both laws read the oxide stress 2 and 3 cells into the oxide along the
+front normal, extrapolated linearly to the front (σ_nn) or to the node (p, at the
+nodes next to the front): the MAC stress of the first node layer is O(1) wrong next
+to the front (on a Kao cylinder the pressure 0.2–0.4 GPa too high, σ_rr 0.1–0.2 GPa
+too compressive, at any grid spacing). The σ_nn values are then smoothed along the
+interface over about two cells; in a film too thin to sample (< ~4 cells) the median
+over the interface node and its oxide face neighbours takes their place. Each node's
+σ_nn belongs to its anchor on the front (the node moved back along its normal by its
+front distance); the reaction law is evaluated at every interface point (§4) with
+σ_nn interpolated from the anchors (Gaussian weights, one cell wide). Check: a
+2-D Kao cylinder reproduces the exact 1-D radial model to 0.5 nm of consumed Si,
+with each law alone and with both (test `OxidationKaoCylinder`).  The reaction factor is clamped to [0.1, 1]: stress only retards the
+reaction.  Kao's interface stress is compressive for convex and concave Si alike, and
+a tension-enhanced rate deepens any dent in a convex front (the oxide's tensile hoop
+stress pulls a dent open), which made Kao pillars dent by ~13 nm in 0.1 h.  The presets
+keep `V_k = 1.76×10⁻³⁵ m³` and `V_D = 0`, i.e. the coupling is effectively off.
 
 ---
 
@@ -149,11 +169,41 @@ This sub-grid position enters every boundary coefficient:
   diffusion-over-distance term `D·(Δx/d)` use d directly, so the Robin stiffness
   scales correctly with the actual oxidant path length regardless of where the surface
   falls within the grid cell.
-- **REACTION face** (Neumann/Robin BC): the local reaction rate `k_eff(p)` is
+- **REACTION face** (Neumann/Robin BC): the reaction rate `k_eff` at the
+  crossing (its interface point, below) is
   multiplied by the surface concentration C at the sub-grid crossing, and the
-  resulting flux `k_eff · C / N` drives the Si surface velocity.
-- **MASK face** (LOCOS): the traction BC requires the oxide velocity at the actual
-  interface position; the deformation solver interpolates linearly using d.
+  resulting flux `k_eff · C / N` drives the Si surface velocity.  The condition is
+  imposed per crossing axis arm, where only the axis component of the normal flux is
+  available: arm a uses `D ∂C/∂x_a = |n_a| k_eff C`, with n the Si-surface normal.
+  Imposing the full `k_eff` on every crossing arm would sum to a normal sink
+  `k_eff (|n_x| + |n_y| + |n_z|)` — exact on an axis-aligned front but √2 too strong
+  at 45°, which made tilted fronts oxidize too slowly (Kao cylinders consumed 3–7%
+  too little Si).  With the scaling, the interface concentration reconstructed on
+  any arm is `C_node (D/d) / (D/d + k_eff)` for the normal distance d.
+- **Interface points**: the crossings of the REACTION faces are the Si front's
+  interface points, and everything the front does is evaluated there, never per
+  grid node. Each carries its normal (the level-set gradients of the node and
+  its neighbour, interpolated to the crossing), its reaction rate `k_eff` (the
+  stress law with σ_nn at the crossing, the orientation factor with the
+  crossing's normal) and its front speed `k_eff C_i / (N α)`, with C_i the
+  crossing's own interface concentration. The level-set points of the front
+  (§11) and the mechanics ghosts (§6.3) take the speed and normal at their
+  point of the front, averaged over the crossings within two cells with
+  Gaussian weights 0.75 cells wide times |n_a| (each crossing's share of the
+  front area: the extra crossings at a stair step do not count twice, and
+  grazing arms, whose interface concentration is the least accurate, hardly
+  count). Per-node rates and speeds copied to nearby points (the earlier
+  form) made the front speed depend on where the front sat in its cell; with
+  the stress feedback that stair-step pattern grew into a corrugated front
+  with ±1–3 GPa stress columns in a dry oxide (Al₂O₃-masked LOCOS, 1.2 nm
+  grid, 2 h).
+- **Deformation faces**: on the staggered mechanics grid (§6.3) a velocity
+  face whose midpoint lies in Si takes a ghost value, linear through the
+  crossing, where the oxide moves with the expansion velocity; the crossing's
+  fractional distance is floored at `minMechanicsBoundaryDistance` (0.2). At the
+  free surface the stress is extrapolated to its traction-free (purely
+  tangential) value at the sub-grid crossing. Oxide/nitride faces (LOCOS) are
+  interior faces of the shared mesh.
 
 ---
 
@@ -178,10 +228,31 @@ In the limit h → ∞ the ambient BC becomes Dirichlet C = C* (instantaneous ga
 replenishment), which is the classical Deal-Grove assumption. The default transfer
 coefficient of 100 µm/hr approximates this well.
 
-The linear system is assembled face-by-face as a sparse matrix in CSR format and solved
-with **BiCGSTAB** with Jacobi preconditioning. The default back-end is CPU. An optional
-GPU back-end (`lsOxidationBiCGSTABInterface.hpp`) offloads the solve to CUDA when
-`GpuMode::Gpu` is selected via `setGpuMode()` and a CUDA device is available.
+Every face carries the harmonic mean of its two nodes' D, which keeps the flux
+conservative where D varies with the pressure (and continuous across the mask/oxide
+jump). With each node's own D on its faces the flux leaving a node differed from the
+flux entering its neighbour: a Kao cylinder captured 73 % of the tension enhancement
+of the diffusivity, and a compressed LOCOS bird's beak let too much oxidant through
+(Senez W = 0.6 µm, 0.25 h: H3/T_ox 0.37 → 0.28 with the front sampling of §1, which
+alone gives 0.36).
+
+The linear system is assembled face-by-face as a sparse matrix in CSR format. On the CPU
+(the default back-end) it is solved with **BiCGSTAB preconditioned by smoothed-
+aggregation AMG** with an ILU0 smoother (AMGCL, as the 3-D mechanics), to a residual of
+`tolerance` x b_norm in the max norm, where b_norm is a typical row (the median diagonal)
+times the concentration scale (max |b_i / A_ii|). It was max|b|, which the rows of nodes
+on the ambient surface set: their diagonal grows as 1/distance (2e10 for a node exactly
+on it), and a dry Kao pillar whose surface passed through grid points stopped at its
+initial guess (no oxidant in the oxide). The former Jacobi-preconditioned BiCGSTAB broke
+down on LOCOS bird's beaks (the pressure-dependent D spans five decades there and the
+cut-cell rows make the matrix strongly non-symmetric) after thousands of iterations;
+AMG takes 3–4 on those systems. With `GpuMode::Gpu` or `Auto` (`setGpuMode()`) a system
+of at least 20 000 nodes is solved on the GPU by the same solver with AMGCL's CUDA backend
+(ViennaLS_GPU, `gpu/lsOxidationGpu.cu`): the same CSR system, parameters, stopping test and
+acceptance. The hierarchy is built on the host, so the gain is modest (3-D LOCOS corner,
+69k nodes: 46 vs 66 ms per solve, 5 iterations on both; break-even near 10k nodes). The
+former GPU solver, a Jacobi- or ILU0-preconditioned BiCGSTAB, was the method that broke
+down on the CPU.
 
 The Si surface velocity driven by diffusion is:
 
@@ -198,220 +269,278 @@ into the Si recession rate (inward, 1/β) and the ambient growth rate (outward,
 
 ## 6. Deformation Solver (`lsOxidationDeformation.hpp`)
 
-The oxide grows as a viscous incompressible fluid driven by the volume source at the
-Si/SiO2 interface. The deformation solver finds the oxide velocity field that
-is consistent with both the source and the mechanics. The governing equations are the
-Stokes flow problem with an incompressibility constraint modified by the expansion:
+The oxide grows as a creeping Maxwell viscoelastic fluid driven by the Si→SiO2
+volume expansion, which enters as a velocity boundary condition at the Si/SiO2
+interface (expansion speed (β−1)/β · k_eff C/N along the interface normal). The
+deformation solver finds the oxide velocity field consistent with that boundary
+motion, the traction-free oxide/gas surface and, in LOCOS mode, the nitride mask
+(§10). The governing equations are quasi-static incompressible Stokes flow:
 
 ```
-−∇p + η ∇²u = 0          (momentum)
-∇ · u = ṡ                 (modified continuity: local volume source ṡ at reaction boundary)
+−∇p + ∇ · s = 0   (momentum)
+∇ · v = 0         (continuity)
 ```
 
-supplemented by viscoelastic stress tracking:
-
-```
-σ = σ_elastic + σ_viscous
-  = G · ε_dev + η · ε̇_dev + (K − 2G/3) · tr(ε) · I
-```
-
-where G = shear modulus (~3×10¹⁰ Pa), K = bulk modulus, and η = viscosity
-(~10¹⁰ Pa·hr at 1000 °C, Arrhenius-scaled). The stress relaxes over a
-characteristic time τ = η/G.
+with the Cauchy stress σ = −p·I + s, compression positive in p, and s the
+Maxwell deviatoric stress of §6.2: G = shear modulus (~3×10¹⁰ Pa), η = viscosity
+(~10¹⁰ Pa·hr at 1000 °C, Arrhenius-scaled), relaxation time τ = η/G (or
+`stressRelaxationTime`). There is no volumetric elastic law: the oxide is
+incompressible.
 
 ### 6.1 Stress Tensor Storage Convention
 
 Throughout the solver `nodes[i].stressTensor` stores the **Cauchy stress** σ defined as:
 
 ```
-σ_{rc} = τ_{rc} − δ_{rc} · p
+σ_{rc} = s_{rc} − δ_{rc} · p
 ```
 
-where τ is the true deviatoric (traceless) stress and p = `nodes[i].pressure` is the
-isotropic pressure. This means `stressTensor` is **not** purely deviatoric; the
-diagonal entries include −p.
-
-To recover the true deviatoric τ for traction computations:
-```
-τ_{rc} = stressTensor[r][c] + δ_{rc} · pressure    (deviatoricStressAt())
-```
-
-This convention is important for boundary conditions: the free-surface (AMBIENT) ghost
-velocity uses `p·n_comp − τ_comp·n`, where τ·n = Σ_j σ_{comp,j}·n_j + p·n_comp.
+where s is the deviatoric stress at the end of the substep and p =
+`nodes[i].pressure` is the pressure. This means `stressTensor` is **not** purely
+deviatoric; the diagonal entries include −p.
 
 ### 6.2 Maxwell Relaxation
 
-At each SIMPLE iteration the deviatoric stress τ is updated with Maxwell relaxation:
+Over one substep Δt the deviatoric stress follows the exact Maxwell update for a
+constant strain rate,
 
 ```
-τ^{new}_{rc} = e^{−Δt/τ_r} · τ^{prev}_{rc} + (1 − e^{−Δt/τ_r}) · 2η · ε̇^{dev}_{rc}
+s_end = d · s_start + (1 − d) · 2η · ε̇',     d = exp(−Δt/τ)
 ```
 
-where τ_r = η/G is the stress relaxation time and ε̇^{dev} is the deviatoric part of
-the strain rate tensor (traceless, symmetric).
-
-The history is stored in `deviatoricStressHistory` (an `unordered_map<IndexType,
-array<T,9>>`), updated **every SIMPLE iteration** so the history reflects the most
-recent velocity field, not just the beginning of each CFL step.
-
-### 6.3 SIMPLE Algorithm
-
-The incompressible Stokes system is solved with the **SIMPLE** (Semi-Implicit Method
-for Pressure-Linked Equations) pressure-velocity coupling. The algorithm is
-unconditionally stable for steady Stokes and avoids the spectral-radius > 1 problem
-that makes a naive Gauss-Seidel p→v→p iteration diverge on thin geometries.
-
-The three steps per iteration are:
+where ε̇' is the deviatoric strain rate and s_start the stored stress of the
+material, which stays fixed for the whole substep (it does not depend on the
+number of mechanics iterations). The momentum equation treats the instantaneous
+part implicitly, with the modulus η_impl = (1 − d)·η (about G·Δt for Δt ≪ τ, η
+for a purely viscous oxide), and the decayed memory d·s_start explicitly:
 
 ```
-1. Momentum predictor:  A_v · v* = vBC − (∇p^k − ∇·τ(v^k)) / η
-2. Pressure update:     A_p · p^{k+1} = pBC(τ(v*)) + K · ∇·v*
-3. Velocity correction: v^{k+1} = v* − ∇(p^{k+1}−p^k) / (η · diag(A_v)[i])
+∇ · (2 η_impl ε̇') − ∇p = −∇ · (d · s_start)
 ```
 
-Step 3 ensures the corrected velocity is consistent with the new pressure without
-re-solving the full momentum equation.
+After the step s_end is carried with the oxide (semi-Lagrangian, the value at
+x − v·Δt) and is the next substep's s_start. Oxide whose upstream point x − v·Δt
+lies in the Si formed during the step and starts stress-free; Si grid points store
+no history. (Interpolating over the oxide nodes there instead handed the first
+oxide layer its own old stress every step, so it never took in new material: on a
+corrugated front the stress next to the front grew as 1/h, tensile over the
+fast-growing columns, and the Kao law turned that into growth of the corrugation.) The normal components live at the
+grid points and are stored on the ambient level set (`OxStressR0..R2`); the
+shear components live on the corners of the staggered grid (§6.3), are
+carried there and stored on the level sets between solves (`OxCornerShear`,
+`NitCornerShear`, keyed by the corner's lower grid point); the node fields hold
+their mean for output and the stress feedback of §7.
 
-**Convergence criterion** (both CPU and GPU):
+**Stress-dependent viscosity** (`shearActivationVolume` V_c > 0; the presets use
+300 Å³, the common TCAD default):
+
 ```
-residual = max(|Δv|_max / |v|_max,  |Δp|_max / |p|_max)  <  mechanicsTolerance (1e-2)
-```
-Up to `mechanicsIterations` (200) outer iterations are allowed.
-
-**Inner solver tolerances**: `stokesTolerance=1e-3`, `pressureTolerance=1e-3`.
-The hierarchy `mechanicsTolerance ≥ 5 × max(stokesTolerance, pressureTolerance)`
-must hold — the outer residual cannot go below the inner solver noise floor.
-
-**Pressure relaxation**: the solved p^{k+1} is blended with the previous pressure
-before applying the velocity correction:
-```
-p^{k+1}_relaxed = (1 − β) · p^k + β · p^{k+1}_solved,   β = pressureRelaxation (0.5)
-```
-
-**Velocity correction diagonal**: two distinct diagonal arrays are maintained:
-- `stokesDiag` / `d_diagV` — diagonal of the Stokes operator A_v, computed from
-  REACTION+MASK+interior faces only (OOB and AMBIENT contributions cancel in the
-  matvec). Used as the preconditioner diagonal in the Stokes BiCGSTAB solve.
-- `corrDiag` / `d_diagV_corr` — full diagonal including OOB and AMBIENT face terms,
-  returned by `computeVelocityDiagonals()`. Used exclusively for the velocity
-  correction `v^{k+1} = v* − ∇δp / (η · corrDiag_i)`.
-
-Using `corrDiag` for the correction (instead of `stokesDiag`) is critical: at
-ambient-adjacent nodes, `corrDiag > stokesDiag`, producing a smaller correction
-magnitude that avoids SIMPLE oscillation.
-
-### 6.4 CPU SIMPLE Loop
-
-The CPU implementation lives in `solveMechanics()` → CPU branch
-(lines ~1764–1847 of `lsOxidationDeformation.hpp`).
-
-**Pre-loop setup** (once per `solveMechanics()` call):
-```
-diagV = computeVelocityDiagonals()   // corrDiag, geometry-fixed for all iterations
+η(τ) = η₀ · x / sinh(x),     x = τ · V_c / (2 k T),     τ = √J₂ of the deviatoric stress
 ```
 
-**Per-iteration** (up to `mechanicsIterations`):
-```
-previousVelocity = collectVelocities()     // save v^k
-previousPressure = collectPressures()      // save p^k
-computeDiagnostics()                       // div(v^k), vonMises — uses OLD stress
-computeStressTensors()                     // Maxwell update: stressTensor = τ−p·I, history updated
-solveStokesVelocity()                      // v* in nodes[i].velocity; uses p^k, τ(v^k)
-solvePressure()                            // p^{k+1}; ambient BC uses τ freshly from v*
-applySimpleVelocityCorrection(p^k, diagV) // v^{k+1} = v* − ∇δp / (η·corrDiag)
-residual = max(maxVelChange, maxPresChange)
-```
+(Sutardja & Oldham, IEEE Trans. Electron Devices 36, 2415 (1989)). Below the
+critical shear stress 2kT/V_c (0.117 GPa at 1000 °C) the viscosity stays near
+η₀; above it, it falls exponentially, and the relaxation time η/G with it. A
+linear viscous incompressible oxide has a pressure singularity at sharp concave
+corners that grows as the grid is refined; the stress-dependent viscosity
+bounds it. The viscosity lives where the stress is evaluated: at the grid
+points (normal stress) and on the corners of the staggered grid (shear stress).
+Each solves η = η₀ f(|s_end(η)|) for its current strain rate (Brent's method in
+log η on [η₀ 10⁻⁶, η₀], to 0.5·10⁻¹⁰; unique root), and the viscosity iteration
+repeats the velocity–pressure
+solve until viscosities and flow agree. The momentum equation carries the full
+∇·(2ηε̇') with the local viscosity. The viscosity factor η/η₀ is written as
+`OxViscosity`, the pressure (Pa, compression positive) as
+`OxMechanicsPressure`.
 
-**After convergence** (or max iterations):
-```
-computeDiagnostics()     // refresh div(v), vonMises with final velocity
-computeStressTensors()   // refresh stressTensor with final velocity
-```
+### 6.3 Staggered (MAC) Discretisation
 
-**Key detail — ambient BC timing**: `solvePressure()` calls
-`freeSurfacePressureBoundary()` which calls `currentBoundaryDeviatoricStress()`,
-computing τ freshly from the current (post-Stokes) velocity v*. This means the
-ambient pressure BC for the pressure RHS uses τ(v*), not τ(v^k). This distinction
-matters for correctness and is reproduced by the GPU's step 6b.
+The mechanics uses a marker-and-cell grid on the level-set grid points (Harlow
+& Welch, *Phys. Fluids* **8**, 2182, 1965):
 
-**Ghost velocity at AMBIENT faces** (`freeSurfaceVelocityBoundary()`): uses
-`deviatoricStressAt()` which recovers the true deviatoric τ by adding back p·δ to
-the stored σ. The normalTraction formula is:
-```
-normalTraction[comp] = p · n[comp] − τ_comp · n̂
-                     = p · n[comp] − Σ_j τ_{comp,j} · n_j
-```
-
-### 6.5 GPU Acceleration of Linear Solves
-
-GPU support is conditionally compiled under `VIENNALS_GPU_BICGSTAB`. When
-`GpuMode::Gpu` is set the three inner BiCGSTAB linear solves within the SIMPLE
-iteration are offloaded to CUDA; the SIMPLE iteration loop itself and all RHS assembly
-always run on the CPU.
-
-**Per-SIMPLE-iteration sequence** (CPU drives the loop):
-```
-CPU: save v^k, p^k
-CPU: computeDiagnostics(), computeStressTensors() — stress/strain update
-CPU: freeSurfaceVelocityBoundary() — AMBIENT ghost velocity from current stress
-CPU: assemble Stokes RHS b_stokes[D*n]
-GPU: Stokes BiCGSTAB (gpuStokesBufs_) — solves A_v · v* = b_stokes, per component
-CPU: download v* from GPU
-CPU: freeSurfacePressureBoundary() — pressure RHS ambient BC from τ(v*)
-CPU: assemble pressure RHS b_press[n]
-GPU: Pressure BiCGSTAB (gpuPressBufs_) — solves A_p · p^{k+1} = b_press
-CPU: download p^{k+1}; apply pressure relaxation; apply velocity correction
-CPU: check convergence residual
-```
-
-The geometry-fixed coefficient arrays (`stokesCoeffGpu_`, `pressCoeffGpu_`,
-`harmonicCoeffGpu_`) and neighbor ID arrays (`stokesNeighId32_`, `pressNeighId32_`)
-are uploaded once per `buildNodes()` call; the RHS (`b_stokes`, `b_press`) is
-re-uploaded and the solution is downloaded on every SIMPLE iteration.
-
-**GPU handles allocated per `buildNodes()` call** (when `GpuMode::Gpu`):
-
-| Handle | Purpose |
+| Unknown | Location |
 |---|---|
-| `gpuPressBufs_` | BiCGSTAB buffers for the pressure Poisson solve |
-| `gpuStokesBufs_` | BiCGSTAB buffers for the Stokes velocity solve (per component) |
-| `gpuHarmonicBufs_` | BiCGSTAB buffers for the harmonic extension solve |
+| pressure p | oxide grid points |
+| velocity component v_d | midpoint of the grid edge from a to a + e_d (a "face") |
+| shear stress σ_ce | corner (2-D) / edge (3-D) a + (e_c + e_e)/2 |
 
-**Activation**:
-```
-tryGpu = (gpuMode_ == GpuMode::Gpu)   // default is GpuMode::Cpu
+A pressure difference between two neighbouring grid points drives the face
+velocity between them directly. On a collocated grid (every unknown at the grid
+points, central differences) an alternating ±p pattern has zero discrete
+gradient at every point and hides from the momentum equation; a thick, stiff
+nitride over a thin pad oxide drives it to ±10–30 GPa. The staggered grid has no
+such mode.
 
-all three handles allocated when: tryGpu
-```
+- **Momentum**: one row per face, the force balance
+  [σ_dd(a + e_d) − σ_dd(a)]/h + Σ_e [σ_de(upper corner) − σ_de(lower corner)]/h = 0.
+- **Continuity**: one row per oxide grid point, Σ_d [v_d(+face) − v_d(−face)]/h = 0.
+  The nitride has no pressure unknown.
 
-**Preconditioner options** (`GpuPreconditioner`):
-- `Jacobi` (default) — diagonal scaling
-- `ILU0` — incomplete LU(0) via cuSPARSE; better convergence for ill-conditioned
-  systems at the cost of a one-time symbolic+numeric factorization per `buildNodes()`
+The interfaces come from the signed-distance functions and do not follow the
+grid:
+
+- **Si/SiO₂ front.** φ_R at a face midpoint is the mean of its two grid points.
+  A face with its midpoint on the oxide side is an unknown; a face in Si takes
+  the ghost value v_g = (1 − 1/θ) v_p + v_front/θ, linear through the adjacent
+  face v_p and the front velocity at the crossing, with θ = φ_p/(φ_p − φ_g)
+  floored at `minMechanicsBoundaryDistance`. v_front is the expansion velocity
+  (α − 1) × the front speed along the front normal, both taken at the crossing
+  itself from the interface points (§4); where none is near, the mean of the
+  face's oxide nodes' expansion velocity. The normals are level-set gradients
+  from central differences of the defined values, one-sided where a neighbour
+  lies outside the narrow band. (Clamping φ to one grid unit before differencing
+  clipped the steeper component and turned the normals of tilted fronts
+  towards the diagonal by up to 7°, at any grid spacing: the oxide around a Si
+  disk flowed towards the grid diagonals, tangential velocity 7–10 % of the
+  radial one at the front.) Nitride resting on bare Si is welded
+  (v_front = 0).
+- **Free surface (oxide/gas, nitride/gas).** Every face next to a solid grid
+  point is an unknown. The normal stress at a gas point is the solid point's,
+  extrapolated linearly to its traction-free value at the sub-grid crossing:
+  σ_gas = (1 − 1/θ) σ_s,dd + (1/θ) (P σ_s P)_dd, with P = I − n nᵀ and n the
+  surface normal from the defined level-set values. Only the tangential stress
+  survives a free surface; extrapolating every component to zero strips it
+  from the top cell row of each step of a sloped surface (a bending nitride
+  then hinges). A corner with two or more gas points lies on the surface and
+  carries the traction-free shear (P σ P)_ce of its solid points, plus 10⁻³ of
+  the material modulus so that a one-cell feature of a level set stays
+  attached; a gas face in its stencil takes the value of its partner face. A
+  corner with one gas point (a step of the surface) keeps its full shear and
+  needs no gas face.
+- **Oxide/nitride.** One velocity field for both materials. The corner modulus
+  is the harmonic mean over the corner's solid points (η_impl for oxide, μΔt for
+  nitride), so velocity and traction are continuous across the interface.
+- **Domain boundary.** A reflective level-set boundary is a mirror plane
+  through the outermost grid points: the normal velocity is odd, the tangential
+  velocity even, and a shear stress reflected across it changes sign.
+
+The node velocity that advects the surfaces is the mean of the two faces of
+each component; the node strain rate takes the normal rates at the point and the
+mean of the surrounding corners' shear rates.
+
+Check: a film on a tilted substrate with a uniform in-plane pre-stress is an
+exact equilibrium (v = 0). An oxide film is reproduced to round-off for slopes
+0–1 in 2-D. At a tilted oxide/nitride interface (a stress jump) the staircase
+leaves a first-order velocity error and an O(1) pressure error in the interface
+cells. The oxide around a Si disk (isotropic kinetics, linear viscosity) flows
+radially: tangential velocity < 2 % of the radial one next to the front, the
+radial velocity uniform to ±1.5 % over the angle, the free surface round to
+1.5 nm and centred to 0.001 nm (test `OxidationIsotropy`).
+
+### 6.4 Solution
+
+The coupled velocity–pressure system is solved exactly:
+
+- **2-D**: sparse LU (Eigen `SparseLU`, COLAMD ordering) of the row- and
+  column-equilibrated system, with two refinement passes. Ordering and symbolic
+  analysis are reused while the node set is unchanged.
+- **3-D**: AMGCL FGMRES(80) to 10⁻⁹ (10⁻⁷ inside the stress-coupling
+  iteration of §7, whose pressure and stress only feed the coupling test: 10×
+  below the acceptance, 40 % fewer iterations; on a 3-D LOCOS corner the
+  result moved ~400× less than when the coupling tolerance goes from 2·10⁻² to
+  2·10⁻³), preconditioned by a block-triangular
+  Schur-complement pressure correction (one smoothed-aggregation V-cycle with
+  ILU0 for the velocities, SPAI0 for the approximate Schur complement),
+  warm-started from the previous iterate. The aggregation's near nullspace is
+  one translation per velocity component: with AMGCL's default, the constant
+  vector, an aggregate's components move together, and 3-D LOCOS needed about
+  8× the iterations. A direct solve does not scale in 3-D; in 2-D the LU is
+  about 2× faster than AMGCL on the stiff-nitride LOCOS stack. The
+  preconditioner is kept for the next solve on the same node set (a
+  stress-coupling iteration of §7, the converged solve, a CFL re-solve),
+  which changes only the viscosities and the right-hand side: the setup was
+  ~15 % of a 3-D LOCOS solve, and the kept preconditioner needs the same
+  iterations. A fresh setup follows when a reused solve fails or needs more
+  than twice the iterations of the solve after the last setup (+20). On the
+  CPU the preconditioner works in single precision (FGMRES and its residual
+  stay double): the same iterations, 13 % less time on a 3-D LOCOS corner.
+  With `GpuMode::Gpu` or `Auto` (`setGpuMode()`) a system of at least 20 000
+  unknowns is solved on the GPU: the same solver with AMGCL's CUDA backend
+  (ViennaLS_GPU, `gpu/lsOxidationGpu.cu`). AMGCL builds the hierarchy on
+  the host and moves it to the device, where the iterations run about 10x
+  faster on a 3-D LOCOS corner of 360k unknowns (0.40 vs 3.9 s per solve,
+  10 CPU threads; break-even near 15k unknowns). ILU0 is needed on the GPU
+  too: SPAI0, damped Jacobi and Chebyshev velocity smoothers do not
+  converge on the LOCOS stack.
+
+A closed oxide (no gas contact and no nitride) pins the pressure to
+`ambientPressure` at its first grid point.
+
+**Viscosity iteration** (stress-dependent viscosity only): at most
+`mechanicsIterations` solves. After each one every grid point and corner takes
+its consistent viscosity for the current strain rate; the next viscosities are
+the Anderson-accelerated (history 5) fixed point in log η, clamped to
+[10⁻⁶ η₀, η₀]. The iteration stops when the largest change of a face velocity,
+relative to the largest face velocity, is below `mechanicsTolerance`
+(default 10⁻⁴). A linear oxide needs one solve. A re-solve on the same node
+set (the next iteration of the stress coupling of §7, a CFL re-solve) starts
+from the last converged viscosities.
+
+A solve is accepted when the viscosity iteration converged and the residual
+of the linear solve (componentwise backward error for the LU, relative residual
+for AMGCL) is below 10⁻⁶. One INFO line per solve reports the
+iterations, the continuity residual (Σ|∇·v| h^D over the oxide grid points,
+relative to the oxide volume created per unit time at the Si/SiO₂ interface),
+|∇·v|, the net volume rate and the pressure range.
+
+The mechanics assembly runs on the CPU (OpenMP); `GpuMode` applies to the
+diffusion solve (§5) and to the 3-D linear solve (§6.4).
 
 ---
 
 ## 7. Pressure–Concentration Coupling
 
-The diffusion coefficient D_eff and reaction rate k_eff both depend on the local
-oxide pressure p (from the deformation solver), while the velocity field depends on
-the concentration gradient (through the volume-source boundary condition). The
-coupling loop in `OxidationModel` iterates:
+The diffusion coefficient D_eff depends on the oxide pressure p and the reaction rate
+k_eff on the interface normal stress σ_nn (both from the deformation solver), while
+the velocity field depends on the concentration gradient (through the volume-source
+boundary condition). The coupling loop in `OxidationModel` iterates on the feedback
+vector s = {p, and with V_k ≠ 0 the Cauchy stress σ} per node:
 
 ```
 For i = 1, 2, ..., maxIterations:
-    1. Solve diffusion with current {p_i} → get C_i
-    2. Solve deformation with current {C_i} → get p_i+1
-    3. Compute Aitken Δ² blended pressure p̃_i+1
-    4. Feed p̃_i+1 back into diffusion as new pressure field
-    5. Check relative change ‖p̃_i+1 − p̃_i‖ / ‖p̃_i+1‖ < tolerance
+    1. Solve diffusion with current {s_i} → get C_i
+    2. Solve deformation with current {C_i} → get s_i+1 (one viscosity pass, below)
+    3. Compute Aitken Δ² blended feedback s̃_i+1
+    4. Feed s̃_i+1 back into diffusion (pressure and stress)
+    5. Check relative change ‖s̃_i+1 − s̃_i‖ / max(‖s̃_i+1‖, k_B T / V) < tolerance
 ```
+
+The stresses only enter through the Kao factors exp(±s V / k_B T), so a change
+small against k_B T / V (V the larger activation volume) does not move the rates:
+the denominator is floored there, and without stress feedback (V = 0) the loop
+accepts the first iterate.
 
 **Aitken Δ² acceleration** computes the mixing parameter θ ∈ [0.1, 1.0] that
 minimises the squared residual norm at each coupling iteration, updating it as
 `θ = −⟨F_{k-1}, ΔF⟩ / ‖ΔF‖²`. Clamping θ ≤ 1 disables extrapolation: the
 exponential dependence of rate constants on pressure makes over-shooting unstable.
-The coupling typically converges in 3–5 iterations for standard geometries.
+With stress kinetics on, a coupled solve takes about 10 iterations (8-24
+on the Senez LOCOS stack).
+
+**One viscosity pass per coupling iteration.** While the feedback iterates,
+a deformation solve does one linear solve of the stress-dependent viscosity
+iteration and then updates the viscosity for the next coupling iteration, so
+the viscosities converge together with the feedback. When the coupling has
+converged, one more deformation solve runs the viscosity iteration to
+`mechanicsTolerance` (warm-started) and gives the velocities the interfaces
+are advected with. Without stress feedback the loop ends after its first
+solve, which runs the full iteration. With the warm start of §6.4, a
+stress-on run on the Senez LOCOS stack (W = 0.65 µm, 0.3 h) is 3.1x faster
+than restarting and converging the viscosity iteration in every coupling
+iteration (7906 -> 1256 linear solves), the interfaces within 0.8 nm.
+A coupling iteration also skips the walk over the ambient interface that
+estimates the gas-side velocities for the CFL step and the advection's
+dissipation: only the converged solve, whose velocities are advected, needs
+it. It took ~30 % of a stress-on LOCOS run (SiN stack, 0.05 h: 72.5 -> 51.1 s,
+results bit-identical).
+In 2-D a coupling iteration's linear solve also reuses the last LU
+factorisation: within a coupled solve the node set, and so the pattern, is
+fixed, and a coupling iteration changes only the viscosity and the front
+velocities. GMRES preconditioned by that factorisation, warm-started from the
+last solution, reaches a relative residual of 10⁻¹⁰ in 3-9 iterations; a
+fresh factorisation follows when it does not converge in 30. Stress on /
+stress off: SiN stack 0.05 h 1.92-2.10 -> 1.59-1.72x (two pairs), Senez stack
+W = 0.60 µm 0.3 h 1.25 -> 1.00x, interfaces identical.
 
 ---
 
@@ -446,18 +575,35 @@ After each advection step ViennaLS's `lsAdvect` leaves only a narrow band around
 new surface position; interior data (concentration, pressure, stress) are discarded.
 The solver restores them in two phases:
 
-1. **Before advection** (`diffusionField->writePersistentFields()`): write solved
-   concentration, pressure, and viscoelastic stress tensors back into the oxide
+1. **Before advection** (`diffusionField->writePersistentFields()`,
+   `deformationField->writeFieldsToLevelSet()`): write solved concentration,
+   pressure, velocity and the end-of-step viscoelastic stress back into the oxide
    level-set's `pointData` arrays as named scalar/vector fields (`OxConcentration`,
-   `OxPressure`, `OxStressR0..R2`).
+   `OxPressure`, `OxVelocity`, `OxStressR0..R2`; the nitride stress goes to the
+   mask level set as `NitStressR0..R2`).
 2. **After advection + interior fill** (`lsInterior`):
    a. `lsInterior` floods the interior of the advected level-set with the interior
       value (−1 for SiO2), expanding the HRLE back to the full oxide domain.
    b. `writePersistentFields()` is called again — now over the full interior HRLE —
       so the next step's `buildNodes()` finds saved values at every interior node and
-      can warm-start the BiCGSTAB solve with the previous solution instead of zero.
+      can warm-start the diffusion solve with the previous solution instead of zero.
 
-This warm-start consistently halves the BiCGSTAB iteration count on subsequent steps.
+The oxide fill starts at the gas surface, adds one layer per cycle and stops at the
+Si, which is its guide (`setGuide`); with a guide it runs until no point is added.
+Without one `lsInterior` stops after 100 layers (the interior of an open surface,
+e.g. a half-space with an INFINITE boundary, never ends). The 100-layer stop used to
+apply to the oxide fill too: in a film over ~100 cells the oxide next to the Si
+front kept no stress history and no warm start.
+
+The fill keeps the level set's width: it adds points inside only, and the band around
+the surface is unchanged. It used to reset the width to 1 (the default of the domain
+each cycle copies from). A filled oxide then reported one layer, and anything that
+widens a level set narrower than two layers rebuilt it as a narrow band, dropping
+the filled points with their stress history: `ToSurfaceMesh` does so in place, so
+meshing the oxide between steps reset the stress of all but its outer layers (a dry
+Kao hole, meshed every 10 steps, then consumed 24 % more Si than the 1-D model).
+Operations that narrow the oxide level set between steps (`Reduce`, `Prune`) still
+drop the history.
 
 **Important**: `lsInterior::apply()` intentionally does **not** call
 `getDomain().segment()` at the end. Calling `segment()` on the freshly filled HRLE
@@ -470,80 +616,86 @@ multi-segment-domain bug in multi-threaded builds. The single-segment domain lef
 ## 10. LOCOS Mode
 
 When a Si3N4 mask level set is present (`maskInterface`), the solver switches to LOCOS
-(Local Oxidation of Silicon) mode. LOCOS has three additional physics components:
+(Local Oxidation of Silicon) mode. The mask is a diffusion barrier for the oxidant
+(§5) and, by default, part of the mechanics.
 
-### 10.1 Mask Bending Solver (`lsOxidationMask.hpp`)
+### 10.1 Monolithic Oxide + Nitride Mechanics
 
-The nitride mask deforms under the traction exerted by the growing oxide. The mask
-is treated as a viscoelastic sheet; the governing equation is the 2D/3D biharmonic
-(plate-bending) equation with a Neumann boundary condition at oxide-contact faces:
+The grid points inside the mask (above the Si surface) join the deformation solve
+of §6 as nodes of a nitride body (`OxidationMaskParameters`: `youngModulus`,
+`poissonRatio`, and for creep `viscosity`, `shearActivationVolume`). Oxide and
+nitride share nodes and interface faces, so velocity and traction are continuous
+across their interface by construction;
+there is no separate mask solve and no coupling iteration.
 
-```
-σ_mask · n̂ = σ_oxide · n̂     (traction continuity at mask/oxide interface)
-```
+- **Nitride**: a Maxwell body like the oxide, but compressible (Senez et al.,
+  IEEE TED 43, 720 (1996)): the mean stress is elastic, the deviator s
+  relaxes over τ = η_N/μ,
+  σ_end = (m_start + K Δt tr(ε̇)) I + d s_start + 2 (1 − d) η_N ε̇',
+  d = exp(−Δt/τ), K = λ + 2μ/3. For Δt ≪ τ this is incremental linear
+  elasticity, σ_end = σ_start + Δt · (λ tr(ε̇) I + 2μ ε̇), which is also the
+  nitride without a viscosity. With an activation volume the viscosity falls
+  with the nitride's shear stress like the oxide's (Eyring, §6.2), iterated
+  together with it (§6.4). The Si₃N₄ preset (`OxidationPresets::siliconNitrideMask`)
+  takes η_N and V_N from Senez's Table II (5×10¹⁵ P and 170 Å³ at 1000 °C:
+  τ ≈ 1.3 h at E 270 GPa, critical shear 2kT/V_N 0.21 GPa), interpolated in
+  temperature. The step-start stress σ_start is explicit. The nitride has no
+  pressure unknown. Its normal stresses are carried
+  with the nitride (semi-Lagrangian) and stored on the mask level set
+  (`NitStressR0..R2`), its shear stresses on the corners (§6.3).
+- **Supports**: the nitride is bonded to the oxide (one velocity field) and
+  welded to bare Si; at a reflective domain boundary (the symmetry plane) it has
+  no normal velocity and no shear, like the oxide. There is no other clamp.
+- **Solve**: one coupled system for both materials (§6.4).
 
-The traction σ_oxide · n̂ is computed from the Stokes-flow stress tensor at the
-mask surface and applied as a Neumann load on the mask boundary. The mask solve uses
-a multigrid GMRES solver with a Gauss-Seidel (SOR) smoother.
+The oxide surface is advected with the oxide nodes' velocity and the mask with the
+nitride nodes' velocity (`OxidationMaterialVelocity`), so the two surfaces never
+mix velocities across the oxide/nitride corner.
 
-**Contact modes** (`contactMode`):
-- **0 — kinematic**: mask velocity at contact faces equals the oxide velocity
-  (legacy Dirichlet BC; no traction computation).
-- **1 — one-way (default)**: oxide traction drives mask; mask stiffness resists.
-  Unilateral contact (compression-only) is optional.
-- **2 — elastic**: two-way: elastic equilibrium of the mask, with oxide contact
-  prescribing displacement v_oxide × Δt. The outer coupling loop feeds the
-  resulting mask displacement back into the next oxide solve.
+The nitride surface is tracked in a Lagrangian way (`OxidationMaskTracker`). The
+nitride moves almost rigidly, by up to hundreds of nm, and level-set advection
+rounds its convex corners by a numerical diffusion that grows with the distance
+travelled, for any scheme order: a nitride edge lifted 0.1 um on a 5 nm grid had
+its side wall 2.5 nm above the bottom corner moved in by 13 nm (Engquist-Osher
+1st order) or 6.5 nm (WENO5 + Runge-Kutta 3), and a 50 nm strip lost its whole
+contact with the oxide. After each advection the mask is re-sampled as
+phi(x) = phi_0(x - u(x)): phi_0 is the mask at the start of the process call,
+u the nitride displacement accumulated from the velocity the mask was advected
+with (D-linear interpolation of phi_0). The advection still moves the narrow
+band and carries the point data. phi_0 is sampled once per process call, which
+costs ~1 nm at a corner over a few calls (0.9 nm for the 0.1 um lift above).
 
-**Arrhenius creep viscosity** scales the mask stiffness with temperature:
-```
-η_mask(T) = η_ref · exp(E_a / R × (1/T − 1/T_ref))
-```
-with E_a ≈ 3.86×10⁵ J/mol (~4 eV, Senez et al., *IEEE Trans. Electron Devices*,
-1994) and η_ref = 5×10¹¹ Pa·hr at 1000 °C.
+### 10.2 Barrier-Only Mask
 
-### 10.2 Constrained Ambient Advection
+With `setMaskBarrierOnly(true)` the mask is withheld from the mechanics: the oxide
+expands as at a free surface and the mask is carried along on top
+(`OxidationMaskCarry` extends the oxide velocity through the mask body). This is
+exact for a full-width mask (uniform growth translates the mask) and is the mode
+for flat barrier-coating validation.
 
-Under the nitride mask the oxide is prevented from growing upward; instead it flows
-laterally (the Bird's Beak). `OxidationConstrainedAmbient` enforces this by:
+### 10.3 Boolean Clips
 
-1. Accepting the full Stokes velocity at oxide faces away from the mask.
-2. Projecting the velocity onto the mask-tangent plane at oxide faces in contact with
-   the mask, eliminating the normal component that would push the oxide through the
-   nitride.
-3. Clipping the ambient level set to the mask exterior before advection
-   (`BooleanOperation: RELATIVE_COMPLEMENT`).
-
-### 10.3 Mask–Oxide Coupling Loop
-
-After the first coupled diffusion+deformation solve and mask bending solve, the
-solver iterates the pair until the mask velocity field stabilises:
-
-```
-For j = 1, ..., maskCouplingIterations:
-    1. Re-solve coupled diffusion + deformation
-    2. Re-solve mask bending with updated oxide traction
-    3. Compute residual: ‖v_mask^{j} − v_mask^{j−1}‖ / ‖v_mask^{j}‖
-    4. Converge if residual < maskCouplingTolerance
-         OR mask displacement < tolerance × gridDelta
-```
-
-An adaptive relaxation scale (`adaptiveMaskRelaxationScale`) halves the outer
-relaxation when the mask/oxide fixed-point oscillates, and reverts to the minimum
-time step as a last resort before freezing the mask for one step.
+Before and after advection the ambient level set is clipped to the mask exterior
+(`BooleanOperation: RELATIVE_COMPLEMENT`), so the oxide never overlaps the mask.
 
 ---
 
 ## 11. Level-Set Advection
 
-After all field solves converge, the three interfaces are advanced using `lsAdvect`:
+After all field solves converge, the interfaces are advanced using `lsAdvect`:
 
 - **Ambient interface**: advected with the deformation velocity field (Stokes
-  velocity at the SiO2/gas surface). In LOCOS mode: `OxidationConstrainedAmbient`
-  is used instead.
-- **Si/SiO2 interface**: advected with the diffusion velocity field (proportional
-  to the local flux at the Si surface).
-- **Mask interface** (LOCOS): advected with the mask bending velocity.
+  velocity at the SiO2/gas surface; in LOCOS mode the oxide nodes' velocity).
+  A gas-side grid point, which has no node, takes the mean velocity of the
+  nearest oxide nodes (all those at the smallest distance, up to 4 cells);
+  the first one found in scan order shifted the free surface of a Si disk's
+  oxide by 4 nm in y.
+- **Si/SiO2 interface**: advected with the diffusion velocity field: each
+  level-set point takes the front speed at its point of the front,
+  x − φ ∇φ/|∇φ|, from the interface points (§4).
+- **Mask interface** (LOCOS): advected with the nitride nodes' velocity and
+  re-sampled from its shape at the start of the process call and the nitride
+  displacement (§10.1), or carried with the oxide in barrier-only mode.
 
 The default integration scheme is first-order Engquist-Osher for spatial
 derivatives, forward Euler for time (controllable via `setSpatialScheme` /
@@ -556,11 +708,12 @@ derivatives, forward Euler for time (controllable via `setSpatialScheme` /
 | File | Role |
 |---|---|
 | `lsOxidationSolverBase.hpp` | Cartesian grid: node lookup, bounds, `crosses()`, `isInsideOxide()` |
-| `lsOxidationDiffusion.hpp` | Diffusion PDE, BiCGSTAB solve, Si surface velocity |
-| `lsOxidationDeformation.hpp` | Stokes flow, SIMPLE pressure-velocity coupling, oxide velocity; CPU + GPU dispatch |
-| `lsOxidationBiCGSTABInterface.hpp` | C++ (g++) interface to GPU BiCGSTAB; safe for .cpp inclusion |
-| `lsOxidationBiCGSTAB.cuh` | GPU BiCGSTAB kernels (`solveBiCGSTABInPlace`); nvcc-only |
-| `lsOxidationMask.hpp` | Mask bending, multigrid, contact mechanics, traction BC |
+| `lsOxidationDiffusion.hpp` | Diffusion PDE, AMG-preconditioned BiCGSTAB solve (AMGCL), Si surface velocity |
+| `lsOxidationDeformation.hpp` | Maxwell Stokes flow on a staggered grid, coupled velocity–pressure solve (Eigen sparse LU in 2-D, AMGCL in 3-D), monolithic nitride, oxide/nitride velocities |
+| `lsOxidationGpuInterface.hpp` | C++ (g++) interface to ViennaLS_GPU (diffusion and 3-D mechanics solves); safe for .cpp inclusion |
+| `lsOxidationGpuAbi.hpp` | C ABI of ViennaLS_GPU |
+| `gpu/lsOxidationGpu.cu` | The GPU solves with AMGCL's CUDA backend; nvcc-only |
+| `lsOxidationMask.hpp` | Nitride parameters; barrier-only mask carry |
 | `lsOxidationModel.hpp` | Pressure–concentration coupling loop (Aitken Δ²) |
 | `lsOxidation.hpp` | Per-step orchestrator: CFL stepping, advection, interior fill |
 | `lsOxidationPresets.hpp` | Named parameter presets (wet/dry at 1000 °C, SiN mask) |

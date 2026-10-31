@@ -15,6 +15,8 @@
 #include <lsToSurfaceMesh.hpp>
 #include <lsVTKWriter.hpp>
 
+#include <vcTestAsserts.hpp>
+
 /**
   Test for lsCompareChamfer that compares two level sets by computing the
   Chamfer distance between their surfaces. This test creates two circles with
@@ -122,6 +124,13 @@ template <int D> void runTest() {
   std::cout << "  Sample surface points: "
             << compareChamfer.getNumSamplePoints() << std::endl;
   std::cout << "  Execution time: " << chamfer_ms.count() << " ms" << std::endl;
+
+  // Two equal spheres with centres a distance s apart: no surface point is
+  // farther than s from the other surface (up to the mesh resolution).
+  const double shift = std::sqrt(distSq);
+  VC_TEST_ASSERT(compareChamfer.getMaxDistance() <= shift + gridDelta);
+  VC_TEST_ASSERT(compareChamfer.getForwardDistance() <= shift);
+  VC_TEST_ASSERT(compareChamfer.getBackwardDistance() <= shift);
 
   // Save meshes with distance data
   ls::VTKWriter<double>(targetMesh, "chamfer_target_distances" + suffix)
