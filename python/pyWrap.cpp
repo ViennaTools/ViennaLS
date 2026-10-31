@@ -61,7 +61,10 @@ PYBIND11_MODULE(VIENNALS_MODULE_NAME, module) {
       .value("DEBUG", LogLevel::DEBUG);
 
   py::class_<Logger, SmartPointer<Logger>>(module, "Logger", py::module_local())
-      .def_static("setLogLevel", &Logger::setLogLevel)
+      .def_static("setLogLevel",
+                  py::overload_cast<LogLevel>(&Logger::setLogLevel))
+      .def_static("setLogLevel",
+                  py::overload_cast<const std::string &>(&Logger::setLogLevel))
       .def_static("getLogLevel", &Logger::getLogLevel)
       .def_static("setLogFile", &Logger::setLogFile)
       .def_static("appendToLogFile", &Logger::appendToLogFile)
