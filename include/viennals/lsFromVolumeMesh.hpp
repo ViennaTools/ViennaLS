@@ -34,6 +34,21 @@ private:
   NormalizationEnum normalization = NormalizationEnum::MANHATTAN;
   int levelSetWidth = 2;
 
+  // whether the last of the D + 1 points of an element lies on the positive
+  // side of the surface element of the others: in 2D left of the edge from
+  // the first to the second point, in 3D on the side of (b - a) x (c - a)
+  // (Orientation, whose overload for Vec3D points would read a fourth point
+  // beyond a triangle)
+  static bool orientation(const Vec3D<T> *points) {
+    if constexpr (D == 2)
+      return (points[1][0] - points[0][0]) * (points[2][1] - points[0][1]) -
+                 (points[1][1] - points[0][1]) *
+                     (points[2][0] - points[0][0]) >=
+             T(0);
+    else
+      return Orientation(points);
+  }
+
 public:
   FromVolumeMesh() = default;
 
@@ -153,7 +168,7 @@ public:
             surfaceElements.lower_bound(currentSurfaceElement);
         if ((it != surfaceElements.end()) &&
             (it->first == currentSurfaceElement)) {
-          if (Orientation(currentElementPoints)) {
+          if (orientation(currentElementPoints)) {
             if (it->second.second != materialInts.back() + 1) {
               VIENNACORE_LOG_WARNING(
                   "Coinciding surface elements with same orientation in "
@@ -177,7 +192,7 @@ public:
             surfaceElements.erase(it);
 
         } else {
-          if (Orientation(currentElementPoints)) {
+          if (orientation(currentElementPoints)) {
             surfaceElements.insert(
                 it, std::make_pair(currentSurfaceElement,
                                    std::make_pair(materialInts.back() + 1,
