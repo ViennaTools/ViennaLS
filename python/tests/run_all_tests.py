@@ -390,6 +390,31 @@ class WrappingTest(unittest.TestCase):
             self.assertGreater(dom.getNumberOfPoints(), 0)
         print("  > Done test_from_mesh_volume")
 
+    def test_from_volume_mesh(self):
+        print("\n[TEST] test_from_volume_mesh")
+        # two materials split at y = 0.3, every second triangle clockwise
+        reflective = vls.BoundaryConditionEnum.REFLECTIVE_BOUNDARY
+        dom = d2.Domain([-4.0, 4.0, -4.0, 4.0], [reflective, reflective], 0.5)
+        mesh = vls.Mesh()
+        for x, y in [(-4.0, -4.0), (4.0, -4.0), (4.0, 0.3),
+                     (-4.0, 0.3), (4.0, 4.0), (-4.0, 4.0)]:
+            mesh.insertNextNode([x, y, 0.0])
+        for triangle in [[0, 1, 2], [0, 3, 2], [3, 2, 4], [3, 5, 4]]:
+            mesh.insertNextTriangle(triangle)
+        mesh.getCellData().insertNextScalarData([0.0, 0.0, 1.0, 1.0], "Material")
+        reader = d2.FromVolumeMesh(dom.getGrid(), mesh)
+        reader.apply()
+        levelSets = reader.getLevelSets()
+        self.assertEqual(len(levelSets), 2)
+        # the first level set encloses material 0, below the interface
+        surface = vls.Mesh()
+        d2.ToSurfaceMesh(levelSets[0], surface).apply()
+        heights = [node[1] for node in surface.getNodes()]
+        self.assertGreater(len(heights), 0)
+        for height in heights:
+            self.assertAlmostEqual(height, 0.3, places=6)
+        print("  > Done test_from_volume_mesh")
+
     def test_boolean_variants(self):
         print("\n[TEST] test_boolean_variants")
         for module, dim in [(d2, 2), (d3, 3)]:

@@ -720,6 +720,10 @@ class Domain:
         """
         Copy lsDomain in this lsDomain.
         """
+    def getGrid(self) -> hrleGrid:
+        """
+        Get a copy of the grid of the level set, as FromVolumeMesh takes it.
+        """
     def getLevelSetWidth(self) -> int:
         """
         Get the number of layers of level set points around the explicit surface.
@@ -832,6 +836,10 @@ class FromVolumeMesh:
     def apply(self) -> None:
         """
         Construct a levelset from a volume mesh.
+        """
+    def getLevelSets(self) -> list[Domain]:
+        """
+        Get the level sets created by apply, one for each material, each enclosing its material and those below.
         """
     def setGrid(self, arg0: hrleGrid) -> None:
         """

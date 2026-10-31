@@ -256,6 +256,11 @@ template <int D> void bindApi(py::module &module) {
            "into.")
       .def("getNumberOfPoints", &Domain<T, D>::getNumberOfPoints,
            "Get the number of defined level set values.")
+      .def(
+          "getGrid",
+          [](const Domain<T, D> &domain) { return domain.getGrid(); },
+          "Get a copy of the grid of the level set, as FromVolumeMesh takes "
+          "it.")
       .def("getLevelSetWidth", &Domain<T, D>::getLevelSetWidth,
            "Get the number of layers of level set points around the explicit "
            "surface.")
@@ -947,7 +952,10 @@ template <int D> void bindApi(py::module &module) {
            "Set the level set width of the created level sets. Euclidean "
            "values fill a band of half this width around each surface.")
       .def("apply", &FromVolumeMesh<T, D>::apply,
-           "Construct a levelset from a volume mesh.");
+           "Construct a levelset from a volume mesh.")
+      .def("getLevelSets", &FromVolumeMesh<T, D>::getLevelSets,
+           "Get the level sets created by apply, one for each material, each "
+           "enclosing its material and those below.");
 
   // FromMesh
   py::class_<FromMesh<T, D>, SmartPointer<FromMesh<T, D>>>(module, "FromMesh")
