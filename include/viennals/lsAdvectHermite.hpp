@@ -168,28 +168,12 @@ template <class T, int D> class AdvectHermite {
   T motionSinceRebuild =
       0.; // front motion since the last rebuild, grid spacings
 
-  static T dot(const Vec &a, const Vec &b) {
-    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-  }
-  static T norm(const Vec &a) { return std::sqrt(dot(a, a)); }
-  static Vec scaled(const Vec &a, T s) {
-    return Vec{a[0] * s, a[1] * s, a[2] * s};
-  }
-  static Vec sum(const Vec &a, const Vec &b) {
-    return Vec{a[0] + b[0], a[1] + b[1], a[2] + b[2]};
-  }
-  static Vec difference(const Vec &a, const Vec &b) {
-    return Vec{a[0] - b[0], a[1] - b[1], a[2] - b[2]};
-  }
-  static Vec cross(const Vec &a, const Vec &b) {
-    return Vec{a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2],
-               a[0] * b[1] - a[1] * b[0]};
-  }
   // whether the unit vector u lies on the shorter arc from a to b
   static bool within(const Vec &u, const Vec &a, const Vec &b) {
-    const Vec z = cross(a, b);
-    return dot(cross(a, u), z) >= -unitTolerance &&
-           dot(cross(u, b), z) >= -unitTolerance && dot(u, sum(a, b)) > 0;
+    const Vec z = CrossProduct(a, b);
+    return DotProduct(CrossProduct(a, u), z) >= -unitTolerance &&
+           DotProduct(CrossProduct(u, b), z) >= -unitTolerance &&
+           DotProduct(u, a + b) > 0;
   }
   static T sign(T v) { return T((v > 0) - (v < 0)); }
 
@@ -288,29 +272,30 @@ template <class T, int D> class AdvectHermite {
         const long m = nodeAtIndex(q, shift);
         if (m < 0 || fan[m])
           continue;
-        const Vec r = difference(X[m], C0[m]);
-        const T length = norm(r);
+        const Vec r = X[m] - C0[m];
+        const T length = Norm(r);
         if (length > smallLength &&
-            std::abs(dot(r, NRM0[m])) < T(0.999) * length)
+            std::abs(DotProduct(r, NRM0[m])) < T(0.999) * length)
           continue;
         // to the accuracy of the rebuilt mesh, whose faces beside an edge
         // pass a few hundredths of a grid spacing beside the feature point
         // and tilt by a degree or two
-        const Vec toFeature = difference(c, sum(C0[m], shift));
-        if (std::abs(dot(toFeature, NRM0[m])) >
-            rebuiltLength + rebuiltSlope * norm(toFeature))
+        const Vec toFeature = c - (C0[m] + shift);
+        if (std::abs(DotProduct(toFeature, NRM0[m])) >
+            rebuiltLength + rebuiltSlope * Norm(toFeature))
           continue;
         bool seen = false;
         for (int v = 0; v < found; ++v)
-          seen = seen ||
-                 dot(normals[v], NRM0[m]) >= 1 - rebuiltTilt * rebuiltTilt / 2;
+          seen = seen || DotProduct(normals[v], NRM0[m]) >=
+                             1 - rebuiltTilt * rebuiltTilt / 2;
         if (!seen)
           normals[found++] = NRM0[m];
       }
-      if (found != 2 || dot(normals[0], normals[1]) < T(-1) + unitTolerance)
+      if (found != 2 ||
+          DotProduct(normals[0], normals[1]) < T(-1) + unitTolerance)
         continue;
-      const Vec z = cross(normals[0], normals[1]);
-      if (D == 3 && std::abs(dot(Dir[i], z)) > rebuiltTilt * norm(z))
+      const Vec z = CrossProduct(normals[0], normals[1]);
+      if (D == 3 && std::abs(DotProduct(Dir[i], z)) > rebuiltTilt * Norm(z))
         continue;
       // or past one of them, into the part of the cone of its material
       // beyond a face of another material
@@ -333,20 +318,20 @@ template <class T, int D> class AdvectHermite {
   // spacings) with unit normal n; velocity fields keeping data per point (as
   // visibilities) get the node nearest to p, the point the speed is for
   T speedOf(const Vec &p, const Vec &n, unsigned long id, int material) const {
-    const Vec coordinate = scaled(p, gridDelta);
+    const Vec coordinate = p * gridDelta;
     const long near = nodeAt(p);
     const unsigned long point = (near >= 0) ? (unsigned long)near : id;
     const T scalar =
         velocities->getScalarVelocity(coordinate, material, n, point);
     const Vec vector =
         velocities->getVectorVelocity(coordinate, material, n, point);
-    return (scalar + dot(vector, n)) / gridDelta;
+    return (scalar + DotProduct(vector, n)) / gridDelta;
   }
 
   // the material of a surface point is that just behind it, against its
   // normal, so that both sides of an interface are told apart
   int materialBehind(const Vec &p, const Vec &n) const {
-    return material(difference(p, scaled(n, T(0.01))));
+    return material(p - n * T(0.01));
   }
 
   T speed(const Vec &p, const Vec &n, unsigned long id) const {
@@ -381,19 +366,18 @@ template <class T, int D> class AdvectHermite {
     // nothing
     constexpr T probe = T(0.1);
     auto inside = [&](const Vec &d) {
-      return material(difference(c, scaled(d, probe))) == m ||
-             material(difference(c, d)) == m;
+      return material(c - d * probe) == m || material(c - d) == m;
     };
     // the other material, just beyond the cut
     auto behind = [&](const Vec &d) {
-      const int near = material(difference(c, scaled(d, probe)));
-      return (near != m) ? near : material(difference(c, d));
+      const int near = material(c - d * probe);
+      return (near != m) ? near : material(c - d);
     };
     const bool inA = inside(a), inB = inside(b);
     if (inA != inB) {
       auto direction = [&](T f) {
-        const Vec d = sum(scaled(a, 1 - f), scaled(b, f));
-        return scaled(d, 1 / norm(d));
+        const Vec d = a * (1 - f) + b * f;
+        return d * (1 / Norm(d));
       };
       T lo = 0, hi = 1;
       for (int iteration = 0; iteration < 40; ++iteration) {
@@ -409,7 +393,7 @@ template <class T, int D> class AdvectHermite {
       Vec cut = inA ? direction(lo) : direction(hi);
       if (!alongInterface(c, m, behind(inA ? direction(hi) : direction(lo)), a,
                           b, cut) ||
-          dot(cut, inA ? b : a) > coneTolerance || !within(cut, a, b))
+          DotProduct(cut, inA ? b : a) > coneTolerance || !within(cut, a, b))
         return 0;
       (inA ? b : a) = cut;
       end = cut;
@@ -420,13 +404,11 @@ template <class T, int D> class AdvectHermite {
     // the face with normal e lies along the part of the other normal o
     // normal to e
     auto along = [&](const Vec &e, const Vec &o) {
-      const Vec t = difference(o, scaled(e, dot(o, e)));
-      return scaled(t, 1 / norm(t));
+      const Vec t = o - e * DotProduct(o, e);
+      return t * (1 / Norm(t));
     };
-    const bool otherA =
-                   materialBehind(sum(c, scaled(along(a, b), probe)), a) != m,
-               otherB =
-                   materialBehind(sum(c, scaled(along(b, a), probe)), b) != m;
+    const bool otherA = materialBehind(c + along(a, b) * probe, a) != m,
+               otherB = materialBehind(c + along(b, a) * probe, b) != m;
     if (otherA == otherB)
       return 0;
     Vec &e = otherB ? b : a;
@@ -434,7 +416,7 @@ template <class T, int D> class AdvectHermite {
     // directions turning from e away from the other face
     const Vec start = e;
     auto turned = [&](T phi) {
-      return sum(scaled(start, std::cos(phi)), scaled(t, -std::sin(phi)));
+      return start * std::cos(phi) + t * -std::sin(phi);
     };
     const T quarter = T(1.5707963267948966);
     if (inside(turned(quarter)))
@@ -449,7 +431,7 @@ template <class T, int D> class AdvectHermite {
     }
     Vec cut = turned(lo);
     if (!alongInterface(c, m, behind(turned(hi)), a, b, cut) ||
-        dot(cut, start) > coneTolerance || dot(cut, t) > 0)
+        DotProduct(cut, start) > coneTolerance || DotProduct(cut, t) > 0)
       return 0;
     past = start;
     e = cut;
@@ -465,7 +447,7 @@ template <class T, int D> class AdvectHermite {
   // substrate surface, leaves it as it lies further out
   bool alongInterface(const Vec &c, int m, int other, const Vec &a,
                       const Vec &b, Vec &cut) const {
-    const Vec q = difference(c, cut);
+    const Vec q = c - cut;
     const std::size_t l = std::size_t(std::min(m, other));
     if (other == m || l + 1 >= levelSets.size())
       return false;
@@ -475,25 +457,24 @@ template <class T, int D> class AdvectHermite {
       Vec step{};
       step[k] = h;
       gradient[k] =
-          (lowerValue(l, sum(q, step)) - lowerValue(l, difference(q, step))) /
-          (2 * h);
+          (lowerValue(l, q + step) - lowerValue(l, q - step)) / (2 * h);
     }
     // in the plane of the cone
     if constexpr (D == 3) {
-      Vec z = cross(a, b);
-      z = scaled(z, 1 / norm(z));
-      gradient = difference(gradient, scaled(z, dot(gradient, z)));
+      Vec z = CrossProduct(a, b);
+      z = z * (1 / Norm(z));
+      gradient = gradient - z * DotProduct(gradient, z);
     }
-    const T length = norm(gradient);
+    const T length = Norm(gradient);
     if (length < tinyLength)
       return false;
-    gradient = scaled(gradient, 1 / length);
+    gradient = gradient * (1 / length);
     // the direction normal to it nearest the probed one
-    Vec along = difference(cut, scaled(gradient, dot(cut, gradient)));
-    const T lengthAlong = norm(along);
+    Vec along = cut - gradient * DotProduct(cut, gradient);
+    const T lengthAlong = Norm(along);
     if (lengthAlong < T(0.5))
       return false;
-    cut = scaled(along, 1 / lengthAlong);
+    cut = along * (1 / lengthAlong);
     return true;
   }
 
@@ -516,14 +497,14 @@ template <class T, int D> class AdvectHermite {
   T splitAtInterface(const Vec &p, const Vec &n, T v, T dt,
                      unsigned long id) const {
     const int m0 = nodeMaterial(long(id), p, n);
-    const Vec p1 = sum(p, scaled(n, dt * v));
+    const Vec p1 = p + n * (dt * v);
     const int m1 = materialBehind(p1, n);
     if (m1 == m0)
       return v;
     const std::size_t l = std::size_t(std::min(m0, m1));
     const T a = lowerValue(l, p), b = lowerValue(l, p1);
     const T f = (a * b < 0) ? std::clamp(a / (a - b), T(0), T(1)) : T(1);
-    const Vec crossing = sum(p, scaled(n, f * dt * v));
+    const Vec crossing = p + n * (f * dt * v);
     return f * v + (1 - f) * speedOf(crossing, n, id, m1);
   }
 
@@ -533,8 +514,8 @@ template <class T, int D> class AdvectHermite {
   // inside
   static int classify(const Vec &na, const Vec &wa, const Vec &nb,
                       const Vec &wb, T side) {
-    const Vec dn = difference(nb, na), dp = difference(wb, wa);
-    const T b = dot(dn, dp) / std::max(norm(dn) * norm(dp), T(1e-12));
+    const Vec dn = nb - na, dp = wb - wa;
+    const T b = DotProduct(dn, dp) / std::max(Norm(dn) * Norm(dp), T(1e-12));
     if (std::abs(b) <= bendLimit)
       return int(sign(side));
     return (b > bendLimit) ? 1 : -1;
@@ -650,15 +631,14 @@ template <class T, int D> class AdvectHermite {
         cp[i] = (*closest)[id][i] / gridDelta;
         nrm[i] = (*normals)[id][i];
       }
-      const Vec r = difference(X[id], cp);
-      const T length = norm(r);
-      const T cosine = dot(r, nrm) / std::max(length, T(1e-12));
+      const Vec r = X[id] - cp;
+      const T length = Norm(r);
+      const T cosine = DotProduct(r, nrm) / std::max(length, T(1e-12));
       // a folded triangle of the rebuilt mesh can give a node whose closest
       // point lies inside it a normal against its own side
       if (std::abs(cosine) > T(0.999) && sign(cosine) != sign(S[id]))
-        nrm = scaled(nrm, T(-1));
-      const Vec d =
-          (length > smallLength) ? scaled(r, sign(S[id]) / length) : nrm;
+        nrm = nrm * T(-1);
+      const Vec d = (length > smallLength) ? r * (sign(S[id]) / length) : nrm;
       // the material behind the closest point along the node's own direction,
       // also for its face, whose normal at a junction of materials lies along
       // the interface. A solid node whose closest point is an edge or corner
@@ -792,23 +772,23 @@ template <class T, int D> class AdvectHermite {
       fractions[count++] = f;
     if (split)
       for (const Vec &e : {ma, mb}) {
-        const T ex = norm(cross(dx, e)), ey = norm(cross(dy, e));
+        const T ex = Norm(CrossProduct(dx, e)), ey = Norm(CrossProduct(dy, e));
         if (ex + ey > tinyLength && within(e, dx, dy))
           fractions[count++] = ex / (ex + ey);
       }
     // the signed distance to the support plane at fraction f, false where
     // the direction is not one of the fan's
     auto planeAt = [&](T f, Vec &d, T &offset, T &value) {
-      d = sum(scaled(dx, 1 - f), scaled(dy, f));
-      const T length = norm(d);
+      d = dx * (1 - f) + dy * f;
+      const T length = Norm(d);
       if (length < tinyLength)
         return false;
-      d = scaled(d, 1 / length);
+      d = d * (1 / length);
       // directions of its own material only
       if (split && !within(d, ma, mb))
         return false;
       offset = t * speedOf(c, d, i, m) + (1 - f) * cx + f * cy;
-      value = dot(difference(X[i], c), d) - offset;
+      value = DotProduct(X[i] - c, d) - offset;
       return true;
     };
     T best = -1;
@@ -821,7 +801,7 @@ template <class T, int D> class AdvectHermite {
       if (convex ? value > s + tinyLength : value < s - tinyLength) {
         s = value;
         nn = d;
-        p = sum(c, scaled(d, offset));
+        p = c + d * offset;
         best = f;
       }
     }
@@ -868,7 +848,7 @@ template <class T, int D> class AdvectHermite {
     if (refined >= s) {
       s = refined;
       nn = first ? d1 : d2;
-      p = sum(c, scaled(nn, first ? o1 : o2));
+      p = c + nn * (first ? o1 : o2);
     }
   }
 
@@ -880,16 +860,15 @@ template <class T, int D> class AdvectHermite {
 #pragma omp parallel for
     for (long i = 0; i < n; ++i) {
       moving[i] = good[i] && Vd[i] != 0;
-      P[i] = good[i] ? sum(HA[i], scaled(Dir[i], dt * Vd[i]))
-                     : sum(FA[i], scaled(NRM[i], dt * Vn[i]));
+      P[i] = good[i] ? HA[i] + Dir[i] * (dt * Vd[i])
+                     : FA[i] + NRM[i] * (dt * Vn[i]);
       N[i] = (good[i] && (moved[i] || Vd[i] != 0)) ? Dir[i] : NRM[i];
       Vp[i] = good[i] ? Vd[i] : Vn[i];
       // moving nodes take the value of their own characteristic, since a
       // fan node may hold the value of a sampled support plane
-      Sown[i] =
-          moving[i] ? dot(difference(X[i], P[i]), N[i]) : S[i] - dt * Vp[i];
+      Sown[i] = moving[i] ? DotProduct(X[i] - P[i], N[i]) : S[i] - dt * Vp[i];
       // witnesses move with their piece; a fan's stays at its feature point
-      Wm[i] = fan[i] ? W[i] : sum(W[i], scaled(N[i], dt * Vp[i]));
+      Wm[i] = fan[i] ? W[i] : W[i] + N[i] * (dt * Vp[i]);
     }
     sinceRebuild += dt;
 
@@ -946,7 +925,7 @@ template <class T, int D> class AdvectHermite {
       T ov = 0, vv = 0;
       const T own = speedOf(C0[j], N[j], j, piece[j]);
       if (own > slow) {
-        ov += own * dot(difference(P[j], C0[j]), N[j]);
+        ov += own * DotProduct(P[j] - C0[j], N[j]);
         vv += own * own;
       }
       for (int q = 0; q < numberOfNeighbours; ++q) {
@@ -954,14 +933,13 @@ template <class T, int D> class AdvectHermite {
         if (m < 0 || fan[m] || !good[m] || piece[m] != piece[j])
           continue;
         const Vec &sh = shiftOf(j, q);
-        if ((dot(NRM0[m], arcA[j]) > 1 - unitTolerance ||
-             dot(NRM0[m], arcB[j]) > 1 - unitTolerance) &&
-            dot(N[m], NRM0[m]) > 1 - unitTolerance &&
-            std::abs(dot(difference(sum(C0[m], sh), C0[j]), NRM0[m])) <=
-                smallLength) {
+        if ((DotProduct(NRM0[m], arcA[j]) > 1 - unitTolerance ||
+             DotProduct(NRM0[m], arcB[j]) > 1 - unitTolerance) &&
+            DotProduct(N[m], NRM0[m]) > 1 - unitTolerance &&
+            std::abs(DotProduct(C0[m] + sh - C0[j], NRM0[m])) <= smallLength) {
           const T v = speedOf(C0[j], NRM0[m], j, piece[j]);
           if (v > slow) {
-            ov += v * dot(difference(sum(P[m], sh), C0[j]), NRM0[m]);
+            ov += v * DotProduct(P[m] + sh - C0[j], NRM0[m]);
             vv += v * v;
           }
         }
@@ -984,13 +962,14 @@ template <class T, int D> class AdvectHermite {
           const long m = neighbours[j][q];
           if (m < 0 || !arcGrows[m] || !timed[m])
             continue;
-          const Vec dc = difference(sum(C0[m], shiftOf(j, q)), C0[j]);
-          const bool sameArc = (dot(arcA[m], arcA[j]) > 1 - unitTolerance &&
-                                dot(arcB[m], arcB[j]) > 1 - unitTolerance) ||
-                               (dot(arcA[m], arcB[j]) > 1 - unitTolerance &&
-                                dot(arcB[m], arcA[j]) > 1 - unitTolerance);
-          if (sameArc && std::abs(dot(dc, arcA[j])) <= smallLength &&
-              std::abs(dot(dc, arcB[j])) <= smallLength) {
+          const Vec dc = C0[m] + shiftOf(j, q) - C0[j];
+          const bool sameArc =
+              (DotProduct(arcA[m], arcA[j]) > 1 - unitTolerance &&
+               DotProduct(arcB[m], arcB[j]) > 1 - unitTolerance) ||
+              (DotProduct(arcA[m], arcB[j]) > 1 - unitTolerance &&
+               DotProduct(arcB[m], arcA[j]) > 1 - unitTolerance);
+          if (sameArc && std::abs(DotProduct(dc, arcA[j])) <= smallLength &&
+              std::abs(DotProduct(dc, arcB[j])) <= smallLength) {
             from[o] = m;
             break;
           }
@@ -1027,19 +1006,20 @@ template <class T, int D> class AdvectHermite {
         const bool convex = convexFan[i];
         const T t = elapsed[i];
         const Vec &sh = shiftOf(i, k);
-        const Vec dc = difference(sum(C0[j], sh), C0[i]);
-        const bool same = fan[j] && std::abs(dot(dc, Nf[i])) <= smallLength &&
-                          std::abs(dot(dc, previous[j])) <= smallLength &&
-                          dot(Nf[i], previous[j]) < 1 - unitTolerance;
+        const Vec dc = C0[j] + sh - C0[i];
+        const bool same =
+            fan[j] && std::abs(DotProduct(dc, Nf[i])) <= smallLength &&
+            std::abs(DotProduct(dc, previous[j])) <= smallLength &&
+            DotProduct(Nf[i], previous[j]) < 1 - unitTolerance;
         const bool face = good[j] && !fan[j] &&
-                          std::abs(dot(dc, NRM0[j])) <= smallLength &&
-                          dot(Nf[i], NRM0[j]) < 1 - unitTolerance;
+                          std::abs(DotProduct(dc, NRM0[j])) <= smallLength &&
+                          DotProduct(Nf[i], NRM0[j]) < 1 - unitTolerance;
         // a fan of the same feature of another material moves at another
         // speed, as the static mask behind the foot of its wall
         if (same)
-          arc(i, Nf[i], dot(difference(Pf[i], C0[i]), Nf[i]), previous[j],
+          arc(i, Nf[i], DotProduct(Pf[i] - C0[i], Nf[i]), previous[j],
               (piece[j] == piece[i])
-                  ? dot(difference(sum(previousP[j], sh), C0[i]), previous[j])
+                  ? DotProduct(previousP[j] + sh - C0[i], previous[j])
                   : t * speedOf(C0[i], previous[j], i, piece[i]),
               C0[i], piece[i], t, convex, split[i], coneA[i], coneB[i],
               arcGrows[i], Sf[i], Pf[i], Nf[i]);
@@ -1047,13 +1027,13 @@ template <class T, int D> class AdvectHermite {
           // the face's accumulated offset while the neighbour still carries
           // that face of the fan's material; one overtaken since holds another
           // plane, a face of another material moves at another speed
-          const T oy =
-              (dot(N[j], NRM0[j]) > 1 - unitTolerance && piece[j] == piece[i])
-                  ? dot(difference(sum(P[j], sh), C0[i]), NRM0[j])
-                  : t * speedOf(C0[i], NRM0[j], i, piece[i]);
-          arc(i, Nf[i], dot(difference(Pf[i], C0[i]), Nf[i]), NRM0[j], oy,
-              C0[i], piece[i], t, convex, split[i], coneA[i], coneB[i],
-              arcGrows[i], Sf[i], Pf[i], Nf[i]);
+          const T oy = (DotProduct(N[j], NRM0[j]) > 1 - unitTolerance &&
+                        piece[j] == piece[i])
+                           ? DotProduct(P[j] + sh - C0[i], NRM0[j])
+                           : t * speedOf(C0[i], NRM0[j], i, piece[i]);
+          arc(i, Nf[i], DotProduct(Pf[i] - C0[i], Nf[i]), NRM0[j], oy, C0[i],
+              piece[i], t, convex, split[i], coneA[i], coneB[i], arcGrows[i],
+              Sf[i], Pf[i], Nf[i]);
         }
       }
     }
@@ -1087,9 +1067,9 @@ template <class T, int D> class AdvectHermite {
     // contains the feature point c and its normal ends the fan's cone
     auto faceOf = [&](const Vec &normal, const Vec &rebuildPoint, const Vec &c,
                       long f) {
-      return (dot(normal, arcA[f]) > 1 - unitTolerance ||
-              dot(normal, arcB[f]) > 1 - unitTolerance) &&
-             std::abs(dot(difference(c, rebuildPoint), normal)) <= smallLength;
+      return (DotProduct(normal, arcA[f]) > 1 - unitTolerance ||
+              DotProduct(normal, arcB[f]) > 1 - unitTolerance) &&
+             std::abs(DotProduct(c - rebuildPoint, normal)) <= smallLength;
     };
     std::vector<char> over(n, 0), fanNew(fan), knownNew(arcKnown),
         convexNew(convexFan);
@@ -1113,7 +1093,7 @@ template <class T, int D> class AdvectHermite {
           continue;
         const Vec &sh = shiftOf(i, k);
         const Vec &Nj = Nf[j];
-        const Vec Pj = sum(Pf[j], sh);
+        const Vec Pj = Pf[j] + sh;
         // a face acts where the node's foot on it lies on its material, as
         // beside the wall of a mask and not in the undercut below it; a fan
         // on the gas and on its own material, as the pit in a substrate does
@@ -1123,30 +1103,29 @@ template <class T, int D> class AdvectHermite {
           if (fan[j]) {
             valid = Sf[i] > 0 || region[i] == piece[j];
           } else {
-            const Vec foot =
-                difference(X[i], scaled(Nj, dot(difference(X[i], Pj), Nj)));
+            const Vec foot = X[i] - Nj * DotProduct(X[i] - Pj, Nj);
             valid = materialBehind(foot, Nj) == piece[j];
           }
           if (!valid)
             continue;
         }
-        T value = dot(difference(X[i], Pj), Nj);
-        Vec point = Pj, normal = Nj, witness = sum(W[j], sh),
-            movedWitness = sum(Wm[j], sh), rebuildPoint = sum(RW[j], sh),
-            feature = sum(C0[j], sh);
+        T value = DotProduct(X[i] - Pj, Nj);
+        Vec point = Pj, normal = Nj, witness = W[j] + sh,
+            movedWitness = Wm[j] + sh, rebuildPoint = RW[j] + sh,
+            feature = C0[j] + sh;
         bool support = false;
         T supportSpeed = 0;
         if (arcGrows[j]) {
-          const Vec c = sum(C0[j], sh);
+          const Vec c = C0[j] + sh;
           // signed distance to the support plane at f along the cone
           auto planeAt = [&](T f, Vec &u, T &offset) {
-            u = sum(scaled(arcA[j], 1 - f), scaled(arcB[j], f));
-            const T length = norm(u);
+            u = arcA[j] * (1 - f) + arcB[j] * f;
+            const T length = Norm(u);
             if (length < tinyLength)
               return -std::numeric_limits<T>::max();
-            u = scaled(u, 1 / length);
+            u = u * (1 / length);
             offset = elapsed[j] * speedOf(c, u, j, piece[j]);
-            return dot(difference(X[i], c), u) - offset;
+            return DotProduct(X[i] - c, u) - offset;
           };
           constexpr int samples = 32;
           T best = -std::numeric_limits<T>::max(), bestOffset = 0;
@@ -1199,31 +1178,32 @@ template <class T, int D> class AdvectHermite {
           }
           value = best;
           normal = bestU;
-          point = sum(c, scaled(bestU, bestOffset));
+          point = c + bestU * bestOffset;
           witness = movedWitness = rebuildPoint = feature = c;
           supportSpeed = speedOf(c, bestU, j, piece[j]);
           support = true;
         } else if (fan[j] && arcKnown[j] && convexFan[j] && Sf[i] > 0) {
-          Vec c = sum(C0[j], sh);
-          Vec r = difference(X[i], c);
+          Vec c = C0[j] + sh;
+          Vec r = X[i] - c;
           if constexpr (D == 3) {
-            Vec e = cross(arcA[j], arcB[j]);
-            e = scaled(e, 1 / norm(e));
-            const T along = dot(r, e);
-            c = sum(c, scaled(e, along));
-            r = difference(r, scaled(e, along));
+            Vec e = CrossProduct(arcA[j], arcB[j]);
+            e = e * (1 / Norm(e));
+            const T along = DotProduct(r, e);
+            c = c + e * along;
+            r = r - e * along;
           }
-          const T length = norm(r);
+          const T length = Norm(r);
           if (length > smallLength) {
-            Vec u = scaled(r, 1 / length);
+            Vec u = r * (1 / length);
             if (!within(u, arcA[j], arcB[j]))
-              u = (dot(u, arcA[j]) >= dot(u, arcB[j])) ? arcA[j] : arcB[j];
+              u = (DotProduct(u, arcA[j]) >= DotProduct(u, arcB[j])) ? arcA[j]
+                                                                     : arcB[j];
             // static features only, whose support function needs no offsets
             // in other directions than the fan's own
-            if (std::abs(dot(difference(Pj, c), Nj)) <= tinyLength &&
+            if (std::abs(DotProduct(Pj - c, Nj)) <= tinyLength &&
                 speedOf(c, Nj, i, piece[j]) == 0 &&
                 speedOf(c, u, i, piece[j]) == 0) {
-              value = dot(r, u);
+              value = DotProduct(r, u);
               point = c;
               normal = u;
               witness = movedWitness = rebuildPoint = feature = c;
@@ -1239,15 +1219,15 @@ template <class T, int D> class AdvectHermite {
         // planes beyond the cone, for the faces the motion creates.
         bool beyond = false;
         if (fan[j] && arcKnown[j] && !convexFan[j]) {
-          const Vec c = sum(C0[j], sh);
-          Vec r = difference(X[i], c);
+          const Vec c = C0[j] + sh;
+          Vec r = X[i] - c;
           if constexpr (D == 3) {
-            Vec e = cross(arcA[j], arcB[j]);
-            e = scaled(e, 1 / norm(e));
-            r = difference(r, scaled(e, dot(r, e)));
+            Vec e = CrossProduct(arcA[j], arcB[j]);
+            e = e * (1 / Norm(e));
+            r = r - e * DotProduct(r, e);
           }
-          const T length = norm(r);
-          const Vec u = scaled(r, T(-1) / std::max(length, tinyLength));
+          const T length = Norm(r);
+          const Vec u = r * (T(-1) / std::max(length, tinyLength));
           if (length > smallLength && !within(u, coneA[j], coneB[j]))
             continue;
           // where the cone reaches past a face of another material, the fan
@@ -1259,22 +1239,22 @@ template <class T, int D> class AdvectHermite {
               !within(u, arcA[j], arcB[j])) {
             const T t = elapsed[j];
             const T offset = t * speedOf(c, u, j, piece[j]) +
-                             dot(difference(Pj, c), Nj) -
+                             DotProduct(Pj - c, Nj) -
                              t * speedOf(c, Nj, j, piece[j]);
-            value = dot(difference(X[i], c), u) - offset;
+            value = DotProduct(X[i] - c, u) - offset;
             normal = u;
-            point = sum(c, scaled(u, offset));
+            point = c + u * offset;
             witness = movedWitness = rebuildPoint = feature = c;
             supportSpeed = speedOf(c, u, j, piece[j]);
             support = true;
             beyond = true;
           }
         }
-        if (!beyond && dot(Ni, normal) >= junction)
+        if (!beyond && DotProduct(Ni, normal) >= junction)
           continue;
         bool distinct = true;
         for (int q = 0; q < count; ++q)
-          distinct = distinct && dot(sN[q], normal) < junction;
+          distinct = distinct && DotProduct(sN[q], normal) < junction;
         if (!distinct)
           continue;
         sN[count] = normal;
@@ -1311,17 +1291,19 @@ template <class T, int D> class AdvectHermite {
       // fan concavely)
       auto supportOf = [&](const Vec &normal, const Vec &rebuildPoint,
                            const Vec &c, long f) {
-        const Vec r = difference(c, rebuildPoint);
-        if (std::abs(dot(r, normal)) > rebuiltLength + rebuiltSlope * norm(r))
+        const Vec r = c - rebuildPoint;
+        if (std::abs(DotProduct(r, normal)) >
+            rebuiltLength + rebuiltSlope * Norm(r))
           return false;
         if constexpr (D == 3) {
-          const Vec z = cross(arcA[f], arcB[f]);
-          if (std::abs(dot(normal, z)) > rebuiltTilt * norm(z))
+          const Vec z = CrossProduct(arcA[f], arcB[f]);
+          if (std::abs(DotProduct(normal, z)) > rebuiltTilt * Norm(z))
             return false;
         }
         return within(normal, arcA[f], arcB[f]) ||
-               dot(normal, arcA[f]) >= 1 - rebuiltTilt * rebuiltTilt / 2 ||
-               dot(normal, arcB[f]) >= 1 - rebuiltTilt * rebuiltTilt / 2;
+               DotProduct(normal, arcA[f]) >=
+                   1 - rebuiltTilt * rebuiltTilt / 2 ||
+               DotProduct(normal, arcB[f]) >= 1 - rebuiltTilt * rebuiltTilt / 2;
       };
       auto fanAndFace = [&](long f, const Vec &c, const Vec &normal,
                             const Vec &rebuildPoint, int faceMaterial,
@@ -1332,10 +1314,10 @@ template <class T, int D> class AdvectHermite {
         // front concavely, and the face that the cone of the fan's material
         // reaches past, as the wall of the mask, convexly
         if (split[f] && faceMaterial != piece[f] &&
-            std::abs(dot(difference(c, rebuildPoint), normal)) <= smallLength) {
-          if (extended[f] && dot(normal, past[f]) > 1 - unitTolerance)
+            std::abs(DotProduct(c - rebuildPoint, normal)) <= smallLength) {
+          if (extended[f] && DotProduct(normal, past[f]) > 1 - unitTolerance)
             return 1;
-          if (std::abs(dot(normal, cut[f])) < T(1e-3))
+          if (std::abs(DotProduct(normal, cut[f])) < T(1e-3))
             return -1;
         }
         if (arcKnown[f] && (faceOf(normal, rebuildPoint, c, f) ||
@@ -1347,10 +1329,10 @@ template <class T, int D> class AdvectHermite {
         // down beside the corner, bounds that region there and meets the fan
         // concavely
         if (arcKnown[f] && !convexFan[f] && within(normal, arcA[f], arcB[f]) &&
-            dot(difference(c, point), normal) > smallLength)
+            DotProduct(c - point, normal) > smallLength)
           return -1;
         if (convexFan[f]) {
-          const T d = dot(difference(c, rebuildPoint), normal);
+          const T d = DotProduct(c - rebuildPoint, normal);
           if (d < -smallLength)
             return 1;
           if (d > smallLength)
@@ -1483,7 +1465,7 @@ template <class T, int D> class AdvectHermite {
       if (over[i])
         HA[i] = Pnew[i];
       else if (good[i])
-        HA[i] = sum(HA[i], scaled(Dir[i], dt * Vd[i]));
+        HA[i] = HA[i] + Dir[i] * (dt * Vd[i]);
       if (!good[i] || over[i])
         FA[i] = Pnew[i];
       if (over[i]) {
@@ -1539,7 +1521,7 @@ template <class T, int D> class AdvectHermite {
           const long j = neighbours[i][k];
           if (j < 0)
             continue;
-          const T lj = lowerValue(l, sum(X[j], shiftOf(i, k)));
+          const T lj = lowerValue(l, X[j] + shiftOf(i, k));
           if (li * lj >= T(0))
             continue;
           exposed = etched ? S[j] < 0 : (S[j] > 0 && side0[j] < 0);
@@ -1559,8 +1541,7 @@ template <class T, int D> class AdvectHermite {
           for (int d = 0; d < D; ++d) {
             Vec step{};
             step[d] = 1;
-            const Vec forward = sum(X[i], step),
-                      backward = difference(X[i], step);
+            const Vec forward = X[i] + step, backward = X[i] - step;
             const bool f = lowerDefined(l, forward),
                        b = lowerDefined(l, backward);
             if (f == b)
@@ -1571,17 +1552,16 @@ template <class T, int D> class AdvectHermite {
                               : li - lowerValue(l, backward);
           }
         }
-        const T length = norm(gradient);
+        const T length = Norm(gradient);
         if (length < tinyLength)
           continue;
         // the normal points to the gas, on the side of the etched node
         const T towardsGas = etched ? sign(li) : -sign(li);
-        const Vec normal = scaled(gradient, towardsGas / length);
+        const Vec normal = gradient * (towardsGas / length);
         const T distance = towardsGas * li / length;
         T value = distance;
         bool bounded = false;
-        Vec point = difference(X[i], scaled(normal, distance)),
-            planeNormal = normal;
+        Vec point = X[i] - normal * distance, planeNormal = normal;
         if (solid) {
           // the moving planes of the other material around the node, faces
           // and the ends of the cones of fans on the solid side
@@ -1592,8 +1572,8 @@ template <class T, int D> class AdvectHermite {
           T bound = std::numeric_limits<T>::max(), footSide = bound;
           Vec boundNormal{}, endNormal{};
           auto consider = [&](const Vec &p, const Vec &d) {
-            const T g = dot(difference(X[i], p), d);
-            const T side = dot(difference(interfaceFoot, p), d);
+            const T g = DotProduct(X[i] - p, d);
+            const T side = DotProduct(interfaceFoot - p, d);
             if (side < footSide) {
               footSide = side;
               endNormal = d;
@@ -1612,17 +1592,17 @@ template <class T, int D> class AdvectHermite {
                                  : materialBehind(PL[j], NL[j]);
             if (m == own || speedOf(PL[j], NL[j], j, m) == 0)
               continue;
-            consider(sum(PL[j], sh), NL[j]);
+            consider(PL[j] + sh, NL[j]);
             if (!fan[j] || !arcKnown[j] || convexFan[j])
               continue;
             const Vec &c = C0[j];
-            const T correction = dot(difference(PL[j], c), NL[j]) -
+            const T correction = DotProduct(PL[j] - c, NL[j]) -
                                  sinceRebuild * speedOf(c, NL[j], j, m);
             Vec a = arcA[j], b = arcB[j], past, end;
             const bool split = materialCone(c, m, a, b, past, end) != 0;
             auto plane = [&](const Vec &d) {
               const T offset = sinceRebuild * speedOf(c, d, j, m) + correction;
-              consider(sum(sum(c, scaled(d, offset)), sh), d);
+              consider(c + d * offset + sh, d);
             };
             plane(arcA[j]);
             plane(arcB[j]);
@@ -1633,16 +1613,14 @@ template <class T, int D> class AdvectHermite {
           }
           // beyond the end of the cavity the node lies nearest to the edge
           // where the plane of the end meets the interface
-          const Vec along =
-              difference(endNormal, scaled(normal, dot(endNormal, normal)));
-          const bool beyond = footSide < -smallLength && norm(along) > T(0.5);
+          const Vec along = endNormal - normal * DotProduct(endNormal, normal);
+          const bool beyond = footSide < -smallLength && Norm(along) > T(0.5);
           if (beyond || bound < value) {
             bounded = true;
             if (beyond) {
-              const T past = -footSide / norm(along);
+              const T past = -footSide / Norm(along);
               value = -std::sqrt(distance * distance + past * past);
-              bound =
-                  dot(difference(X[i], interfaceFoot), endNormal) + footSide;
+              bound = DotProduct(X[i] - interfaceFoot, endNormal) + footSide;
               boundNormal = endNormal;
             } else {
               value = bound;
@@ -1650,18 +1628,18 @@ template <class T, int D> class AdvectHermite {
             planeNormal = boundNormal;
             // its point is the node's foot on the plane, moved along the plane
             // to the solid side of the interface, which gives its material
-            Vec foot = difference(X[i], scaled(planeNormal, bound));
-            Vec up = sum(scaled(normal, T(-1)),
-                         scaled(planeNormal, dot(normal, planeNormal)));
-            const T lengthUp = norm(up);
+            Vec foot = X[i] - planeNormal * bound;
+            Vec up =
+                normal * T(-1) + planeNormal * DotProduct(normal, planeNormal);
+            const T lengthUp = Norm(up);
             if (lengthUp > T(0.5))
-              foot = sum(foot, scaled(up, T(0.1) / lengthUp));
+              foot = foot + up * (T(0.1) / lengthUp);
             point = foot;
           }
         }
         if (etched ? value >= S[i] : value <= S[i])
           continue;
-        const Vec foot = difference(X[i], scaled(normal, distance));
+        const Vec foot = X[i] - normal * distance;
         if (speedOf(foot, normal, i, materialBehind(foot, normal)) < T(0))
           continue;
         take[i] = 1;
@@ -1865,7 +1843,7 @@ template <class T, int D> class AdvectHermite {
       if (found == before.end() || found->first < idx || idx < found->first)
         continue;
       const long j = found->second;
-      if (!rounded[j] || norm(normalBefore[j]) < T(0.5) ||
+      if (!rounded[j] || Norm(normalBefore[j]) < T(0.5) ||
           std::abs(valueBefore[j] - it.getValue()) > T(0.25))
         continue;
       const auto id = it.getPointId();
@@ -1873,7 +1851,7 @@ template <class T, int D> class AdvectHermite {
       for (int i = 0; i < D; ++i)
         x[i] = T(idx[i]);
       it.getDefinedValue() = valueBefore[j];
-      const Vec foot = difference(x, scaled(normalBefore[j], valueBefore[j]));
+      const Vec foot = x - normalBefore[j] * valueBefore[j];
       for (int i = 0; i < 3; ++i) {
         (*closest)[id][i] = foot[i] * gridDelta;
         (*normals)[id][i] = normalBefore[j][i];
