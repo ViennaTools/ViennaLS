@@ -1620,12 +1620,16 @@ template <class T, int D> class AdvectHermite {
                                  sinceRebuild * speedOf(c, NL[j], j, m);
             Vec a = arcA[j], b = arcB[j], past, end;
             const bool split = materialCone(c, m, a, b, past, end) != 0;
-            for (const Vec &d : {arcA[j], arcB[j], end}) {
-              if (&d == &end && !split)
-                continue;
+            auto plane = [&](const Vec &d) {
               const T offset = sinceRebuild * speedOf(c, d, j, m) + correction;
               consider(sum(sum(c, scaled(d, offset)), sh), d);
-            }
+            };
+            plane(arcA[j]);
+            plane(arcB[j]);
+            // the end of the cone, which materialCone sets only where the
+            // interface splits it
+            if (split)
+              plane(end);
           }
           // beyond the end of the cavity the node lies nearest to the edge
           // where the plane of the end meets the interface
