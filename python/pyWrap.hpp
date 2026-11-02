@@ -963,7 +963,10 @@ template <int D> void bindApi(py::module &module) {
       .def(py::init(&SmartPointer<FromMesh<T, D>>::template New<
                     SmartPointer<Domain<T, D>> &, SmartPointer<Mesh<T>> &>))
       .def("setMesh", &FromMesh<T, D>::setMesh, "Set the mesh to read from.")
-      .def("setSortPointList", &FromMesh<T, D>::setSortPointList)
+      .def("setSortPointList", &FromMesh<T, D>::setSortPointList,
+           "Set whether to sort the points before inserting them (default). "
+           "Only disable this if they are already sorted lexicographically, "
+           "last coordinate first.")
       .def("apply", &FromMesh<T, D>::apply);
 
   // lsGeometries

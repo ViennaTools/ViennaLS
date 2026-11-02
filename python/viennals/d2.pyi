@@ -786,7 +786,9 @@ class FromMesh:
         Set the mesh to read from.
         """
     def setSortPointList(self, arg0: bool) -> None:
-        ...
+        """
+        Set whether to sort the points before inserting them (default). Only disable this if they are already sorted lexicographically, last coordinate first.
+        """
 class FromSurfaceMesh:
     @typing.overload
     def __init__(self) -> None:

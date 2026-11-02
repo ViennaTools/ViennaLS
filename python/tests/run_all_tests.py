@@ -390,6 +390,38 @@ class WrappingTest(unittest.TestCase):
             self.assertGreater(dom.getNumberOfPoints(), 0)
         print("  > Done test_from_mesh_volume")
 
+    def test_from_mesh_wide_unsorted_band(self):
+        print("\n[TEST] test_from_mesh_wide_unsorted_band")
+        for module, dim in [(d2, 2), (d3, 3)]:
+            print(f"  > Testing {dim}D")
+            gridDelta, radius, n = 0.5, 4.3, 12
+            nodes, values = [], []
+            for k in range(-n, n + 1) if dim == 3 else [0]:
+                for j in range(-n, n + 1):
+                    for i in range(-n, n + 1):
+                        x = [i * gridDelta, j * gridDelta, k * gridDelta]
+                        value = (sum(c * c for c in x) ** 0.5 - radius) / gridDelta
+                        # wider than the 2.5 grid spacings FromMesh keeps
+                        if abs(value) <= 3.0:
+                            nodes.append(x)
+                            values.append(value)
+
+            # reversed, so FromMesh has to sort the points
+            mesh = vls.Mesh()
+            for x in reversed(nodes):
+                mesh.insertNextNode(x)
+            mesh.getPointData().insertNextScalarData(values[::-1], "LSValues")
+
+            dom = module.Domain(gridDelta)
+            module.FromMesh(dom, mesh).apply()
+
+            ref = module.Domain(gridDelta)
+            module.MakeGeometry(ref, module.Sphere([0.0] * dim, radius)).apply()
+            compare = module.CompareVolume(ref, dom)
+            compare.apply()
+            self.assertLess(compare.getVolumeMismatch(), 1e-6)
+        print("  > Done test_from_mesh_wide_unsorted_band")
+
     def test_from_volume_mesh(self):
         print("\n[TEST] test_from_volume_mesh")
         # two materials split at y = 0.3, every second triangle clockwise
