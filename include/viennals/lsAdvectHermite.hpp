@@ -36,13 +36,18 @@ using namespace viennacore;
 /// Behind the front it moves its closest face plane with the speed of that
 /// face. At edges and corners the fan is the support function over directions
 /// sampled in the cone of the feature, planes through the feature point offset
-/// by t V(D). Pieces of the front moving at different speeds combine through
-/// the envelope of neighbouring planes: the largest signed distance at convex
-/// junctions, the smallest at concave ones, with up to three pieces combined
-/// exactly at saddle corners. Once the front has moved a given distance, the
-/// band is rebuilt exactly from the dual contouring mesh of the planes. Sharp
-/// edges and corners stay sharp where the motion keeps them sharp, and fans
-/// round them where it rounds them.
+/// by t V(D), with t the time over which V gives the fan its own offset. Pieces
+/// of the front moving at different speeds combine through the envelope of
+/// neighbouring planes: the largest signed distance at convex junctions, the
+/// smallest at concave ones, with up to three pieces combined exactly at saddle
+/// corners. Once the front has moved a given distance, the band moves with it:
+/// the dual contouring mesh of the planes gives the nodes of the new band, the
+/// nodes of the old one keep their states, and a node new to the band takes the
+/// plane of an old node near it, or the fan of a rounded part whose cone holds
+/// its direction. Sharp edges and corners stay sharp where the motion keeps
+/// them sharp, and fans round them where it rounds them. A node that takes the
+/// plane of a fan becomes a fan of the same feature, and pieces of one fan meet
+/// with its convexity.
 ///
 /// A static convex feature, as the corner of a mask, acts on the gas nodes
 /// around it with its exact distance, its support function over the cone of
@@ -71,8 +76,9 @@ using namespace viennacore;
 /// face's material, so that the wall of a mask does not reach into the
 /// undercut below it, and a fan acts on the gas and on its own material, so
 /// that a pit etched into the substrate does not cut into the mask, in either
-/// order of the stack. A plane taken over from a neighbour keeps the
-/// neighbour's point on it, which gives its material. Behind a junction of
+/// order of the stack. Every face carries its material, which a node taking
+/// its plane takes over and which changes only where the face's own motion
+/// crosses an interface. Behind a junction of
 /// materials the interface splits the cone of a fan on the solid side: each
 /// material moves over its own part at its own speed, as the substrate below
 /// the foot of a mask wall on a slope while the mask beside it stays. Where a
@@ -87,9 +93,9 @@ using namespace viennacore;
 /// for ToDualContouringMesh and the band state, from which a further apply()
 /// continues as long as the level set keeps the values it left. Once the
 /// whole advection time is done, a band that is no valid level set, since
-/// values far from the surface lag behind edges created since the last
-/// rebuild, is rebuilt (setRebuildAtEnd). A band narrower than the rebuilt
-/// one, as left by Reduce or Prune, is widened first.
+/// values far from the surface lag behind edges the motion created, is
+/// repaired from the mesh of its planes (setRebuildAtEnd). A band narrower
+/// than the rebuilt one, as left by Reduce or Prune, is widened first.
 template <class T, int D> class AdvectHermite {
   using Vec = Vec3D<T>;
   using hrleIndex = viennahrle::Index<D>;
@@ -156,14 +162,43 @@ template <class T, int D> class AdvectHermite {
   // normals of the two faces meeting there, its direction lying between them
   std::vector<Vec> arcA, arcB;
   std::vector<char> arcKnown;
+  // cone of every fan whose feature is a 3D corner: the normals of the three
+  // faces meeting there, in arcA, arcB and arcC
+  std::vector<Vec> arcC;
+  std::vector<char> cornerKnown;
   // solid nodes that took a moving plane of the etched material around them
   // from exposeInterfaces, as the plane of the end of a cavity below a mask
   // past which they lie; dual contouring prefers it (priority 3) for the
   // crossing edges of their cells it cuts
   std::vector<char> boundPlane;
-  // nodes that kept the tangent plane of a convex rounded part at a rebuild
-  // (keepAdvected), as on the arc a deposition rounds an edge into
+  // nodes that a previous apply() left on a rounded part (smoothLabel), as on
+  // the arc a deposition rounds an edge into
   std::vector<char> smooth;
+  // the rounded parts of the band a rebuild made, from those of the old band:
+  // the data a velocity field keeps per point (as visibilities) are those of
+  // the old band until the next step, and roundedNodes reads no speeds of
+  // the new one before it
+  std::vector<char> rebuiltRounded;
+  bool rebuiltBand = false;
+  // time over which each node's planes have moved since they were set, at
+  // the rebuild that found the node or with the fan it took over: the time
+  // of a fan's offsets at its feature point
+  std::vector<T> since;
+  // material of every node's piece, set with the piece and carried with it
+  // when another node takes it over; it changes where the piece's own motion
+  // crosses an interface of the material stack
+  std::vector<int> pieceMaterial;
+  // side of every node when it entered the band, which tells the nodes
+  // etched since
+  std::vector<T> entrySide;
+  // nodes whose plane exposeInterfaces set: the interface or the plane of
+  // the end of a cavity
+  std::vector<char> exposedState;
+  // the interface plane each such node found, its normal towards the gas,
+  // which the solid nodes further from the cavity take on, and the lower
+  // level set it belongs to
+  std::vector<Vec> interfacePoint, interfaceNormal;
+  std::vector<int> interfaceLevel;
   T sinceRebuild = 0.; // time since the last rebuild
   T motionSinceRebuild =
       0.; // front motion since the last rebuild, grid spacings
@@ -243,12 +278,15 @@ template <class T, int D> class AdvectHermite {
   // whose closest point at the rebuild lay on a face whose plane contains the
   // feature point give the normals of the faces meeting there; with exactly
   // two, the fan's direction between them (and across the edge in 3D), the
-  // feature is a 2D corner or a 3D edge, otherwise (3D corners) unknown
+  // feature is a 2D corner or a 3D edge, with three in 3D a corner, otherwise
+  // unknown
   void featureCones() {
     const long n = long(S.size());
     arcA.assign(n, Vec{});
     arcB.assign(n, Vec{});
     arcKnown.assign(n, 0);
+    arcC.assign(n, Vec{});
+    cornerKnown.assign(n, 0);
     constexpr int span = 4;
     constexpr int boxSize = (D == 2) ? span * span : span * span * span;
 #pragma omp parallel for
@@ -291,6 +329,14 @@ template <class T, int D> class AdvectHermite {
         if (!seen)
           normals[found++] = NRM0[m];
       }
+      // a 3D corner of three faces
+      if (D == 3 && found == 3) {
+        arcA[i] = normals[0];
+        arcB[i] = normals[1];
+        arcC[i] = normals[2];
+        cornerKnown[i] = 1;
+        continue;
+      }
       if (found != 2 ||
           DotProduct(normals[0], normals[1]) < T(-1) + unitTolerance)
         continue;
@@ -316,10 +362,13 @@ template <class T, int D> class AdvectHermite {
 
   // normal speed in grid spacings per unit time of the surface point p (grid
   // spacings) with unit normal n; velocity fields keeping data per point (as
-  // visibilities) get the node nearest to p, the point the speed is for
+  // visibilities) get the node nearest to the point a grid spacing in front
+  // of p along n, which sees what the surface point sees: the node nearest to
+  // p itself can lie behind the surface or beside it, as below the edge of a
+  // face that sees the source, where it is shadowed
   T speedOf(const Vec &p, const Vec &n, unsigned long id, int material) const {
     const Vec coordinate = p * gridDelta;
-    const long near = nodeAt(p);
+    const long near = nodeAt(p + n);
     const unsigned long point = (near >= 0) ? (unsigned long)near : id;
     const T scalar =
         velocities->getScalarVelocity(coordinate, material, n, point);
@@ -328,14 +377,20 @@ template <class T, int D> class AdvectHermite {
     return (scalar + DotProduct(vector, n)) / gridDelta;
   }
 
+  // whether node m, a face with normal n now, still carries the face it held
+  // at the rebuild: its plane has that face's normal and its piece's point at
+  // the rebuild lies on the face, so that a node that took the plane of a
+  // parallel face, as the floor below the top of a mask, does not stand for
+  // that face
+  bool carriesFace(long m, const Vec &n) const {
+    return DotProduct(n, NRM0[m]) > 1 - unitTolerance &&
+           std::abs(DotProduct(RW[m] - C0[m], NRM0[m])) <= rebuiltLength;
+  }
+
   // the material of a surface point is that just behind it, against its
   // normal, so that both sides of an interface are told apart
   int materialBehind(const Vec &p, const Vec &n) const {
     return material(p - n * T(0.01));
-  }
-
-  T speed(const Vec &p, const Vec &n, unsigned long id) const {
-    return speedOf(p, n, id, materialBehind(p, n));
   }
 
   // the material of node id's piece through p along n. A solid node whose
@@ -347,6 +402,8 @@ template <class T, int D> class AdvectHermite {
   int nodeMaterial(long id, const Vec &p, const Vec &n) const {
     if (levelSets.size() > 1 && fan[id] && S[id] < 0)
       return material(X[id]);
+    if (!fan[id])
+      return pieceMaterial[id];
     return materialBehind(p, n);
   }
 
@@ -515,7 +572,19 @@ template <class T, int D> class AdvectHermite {
   static int classify(const Vec &na, const Vec &wa, const Vec &nb,
                       const Vec &wb, T side) {
     const Vec dn = nb - na, dp = wb - wa;
-    const T b = DotProduct(dn, dp) / std::max(Norm(dn) * Norm(dp), T(1e-12));
+    T b = DotProduct(dn, dp) / std::max(Norm(dn) * Norm(dp), T(1e-12));
+    // witnesses apart along the line where the two planes meet leave the bend
+    // undecided over the whole path: its part across that line decides
+    if constexpr (D == 3)
+      if (std::abs(b) <= bendLimit) {
+        const Vec e = CrossProduct(na, nb);
+        const T e2 = DotProduct(e, e);
+        if (e2 > T(1e-4)) {
+          const Vec across = dp - e * (DotProduct(dp, e) / e2);
+          if (Norm(across) > smallLength)
+            b = DotProduct(dn, across) / (Norm(dn) * Norm(across));
+        }
+      }
     if (std::abs(b) <= bendLimit)
       return int(sign(side));
     return (b > bendLimit) ? 1 : -1;
@@ -620,6 +689,15 @@ template <class T, int D> class AdvectHermite {
     convexFan.assign(n, 0);
     boundPlane.assign(n, 0);
     smooth.assign(n, 0);
+    since.assign(n, T(0));
+    pieceMaterial.assign(n, 0);
+    exposedState.assign(n, 0);
+    interfacePoint.assign(n, Vec{});
+    interfaceNormal.assign(n, Vec{});
+    interfaceLevel.assign(n, -1);
+    entrySide.assign(n, T(0));
+    for (std::size_t id = 0; id < n; ++id)
+      entrySide[id] = sign(S[id]);
     if (const auto *kept = pointData.getScalarData(smoothLabel, true);
         kept != nullptr && kept->size() == n)
       for (std::size_t id = 0; id < n; ++id)
@@ -650,6 +728,7 @@ template <class T, int D> class AdvectHermite {
           S[id] < 0 && length > smallLength && std::abs(cosine) < T(0.999);
       const int m = behindCorner ? material(X[id]) : materialBehind(cp, d);
       const T v = speedOf(cp, d, id, m);
+      pieceMaterial[id] = m;
       HA[id] = cp;
       NRM[id] = nrm;
       Dir[id] = d;
@@ -704,9 +783,14 @@ template <class T, int D> class AdvectHermite {
     const auto *sides = pointData.getScalarData(sideLabel, true);
     const auto *flags = pointData.getScalarData(flagsLabel, true);
     const auto *times = pointData.getScalarData(timeLabel, true);
+    const auto *sinces = pointData.getScalarData(sinceLabel, true);
+    const auto *materials = pointData.getScalarData(materialLabel, true);
+    const auto *entries = pointData.getScalarData(entryLabel, true);
     if (values == nullptr || sides == nullptr || flags == nullptr ||
-        times == nullptr || values->size() != n || sides->size() != n ||
-        flags->size() != n || times->size() < 2)
+        times == nullptr || sinces == nullptr || values->size() != n ||
+        sides->size() != n || flags->size() != n || sinces->size() != n ||
+        times->size() < 2 || materials == nullptr || materials->size() != n ||
+        entries == nullptr || entries->size() != n)
       return false;
     for (std::size_t i = 0; i < n; ++i)
       if (std::abs((*values)[i] - S[i]) >
@@ -732,8 +816,15 @@ template <class T, int D> class AdvectHermite {
     arcKnown.assign(n, 0);
     boundPlane.assign(n, 0);
     smooth.assign(n, 0);
+    exposedState.assign(n, 0);
+    pieceMaterial.assign(n, 0);
+    interfacePoint.assign(n, Vec{});
+    interfaceNormal.assign(n, Vec{});
+    interfaceLevel.assign(n, -1);
+    entrySide.assign(entries->begin(), entries->end());
     for (std::size_t i = 0; i < n; ++i) {
       side0[i] = (*sides)[i];
+      pieceMaterial[i] = int(std::lround((*materials)[i]));
       const int bits = int((*flags)[i]);
       good[i] = bits & 1;
       fan[i] = (bits >> 1) & 1;
@@ -742,7 +833,18 @@ template <class T, int D> class AdvectHermite {
       arcKnown[i] = (bits >> 4) & 1;
       boundPlane[i] = (bits >> 5) & 1;
       smooth[i] = (bits >> 6) & 1;
+      exposedState[i] = (bits >> 7) & 1;
     }
+    arcC.assign(n, Vec{});
+    cornerKnown.assign(n, 0);
+    if (const auto *cones = pointData.getVectorData(coneCLabel, true);
+        cones != nullptr && cones->size() == n)
+      for (std::size_t i = 0; i < n; ++i) {
+        for (int c = 0; c < 3; ++c)
+          arcC[i][c] = (*cones)[i][c];
+        cornerKnown[i] = (int((*flags)[i]) >> 8) & 1;
+      }
+    since.assign(sinces->begin(), sinces->end());
     sinceRebuild = (*times)[0];
     motionSinceRebuild = (*times)[1];
     // the cones as the rebuild found them and the steps passed them on, since
@@ -854,6 +956,7 @@ template <class T, int D> class AdvectHermite {
 
   void step(T dt, const std::vector<T> &Vd, const std::vector<T> &Vn) {
     const long n = long(S.size());
+    rebuiltBand = false;
     std::vector<Vec> P(n), N(n), Wm(n);
     std::vector<T> Vp(n), Sown(n);
     std::vector<char> moving(n);
@@ -871,18 +974,35 @@ template <class T, int D> class AdvectHermite {
       Wm[i] = fan[i] ? W[i] : W[i] + N[i] * (dt * Vp[i]);
     }
     sinceRebuild += dt;
+    for (auto &t : since)
+      t += dt;
 
-    // in a material stack, the material of every piece; a fan's is that of
-    // its region, since the ends of its cone may lie on an interface, and on
-    // the solid side, behind a reflex junction, that of the node itself
+    // in a material stack, the material of every piece: a face's is the one
+    // it carries; a fan's that of its region, since the ends of its cone may
+    // lie on an interface, and on the solid side, behind a reflex junction,
+    // that of the node itself
     const bool stacked = levelSets.size() > 1;
     std::vector<int> piece(n, 0), region(n, 0);
     if (stacked) {
 #pragma omp parallel for
       for (long i = 0; i < n; ++i) {
         region[i] = material(X[i]);
-        piece[i] = fan[i] ? nodeMaterial(i, HA[i], Dir[i])
-                          : materialBehind(P[i], N[i]);
+        piece[i] = nodeMaterial(i, HA[i], Dir[i]);
+      }
+    }
+    // the material of every piece after its own motion in this step: a
+    // face whose point crosses an interface is of the material beyond it
+    std::vector<int> pieceAfter(piece);
+    if (stacked) {
+#pragma omp parallel for
+      for (long i = 0; i < n; ++i) {
+        if (fan[i])
+          continue;
+        const Vec &start = good[i] ? HA[i] : FA[i];
+        const int before = materialBehind(start, N[i]),
+                  after = materialBehind(P[i], N[i]);
+        if (after != before)
+          pieceAfter[i] = after;
       }
     }
 
@@ -911,7 +1031,7 @@ template <class T, int D> class AdvectHermite {
     // leave the time open, and a fan without other planes takes the time of
     // a fan of the same edge next to it
     std::vector<char> arcGrows(n, 0), timed(n, 0);
-    std::vector<T> elapsed(n, sinceRebuild);
+    std::vector<T> elapsed(since);
 #pragma omp parallel for
     for (long j = 0; j < n; ++j) {
       if (!fan[j] || !arcKnown[j] || !convexFan[j])
@@ -935,7 +1055,7 @@ template <class T, int D> class AdvectHermite {
         const Vec &sh = shiftOf(j, q);
         if ((DotProduct(NRM0[m], arcA[j]) > 1 - unitTolerance ||
              DotProduct(NRM0[m], arcB[j]) > 1 - unitTolerance) &&
-            DotProduct(N[m], NRM0[m]) > 1 - unitTolerance &&
+            carriesFace(m, N[m]) &&
             std::abs(DotProduct(C0[m] + sh - C0[j], NRM0[m])) <= smallLength) {
           const T v = speedOf(C0[j], NRM0[m], j, piece[j]);
           if (v > slow) {
@@ -989,6 +1109,28 @@ template <class T, int D> class AdvectHermite {
       open.swap(still);
     }
 
+    // the time of the offsets of every other moving fan: the time over which
+    // the speed at its feature point in its own direction gives the offset
+    // its own plane accumulated, so that the offsets of directions no
+    // neighbour carries scale with its own. Like the elapsed time of a
+    // growing fan it is exact where the velocity changes only its rate, and
+    // for a rate alike in every direction it does not depend on the point
+    // the rate is read at. Where no time gives the fan its own offset, as
+    // where a flux read at a feature point that the front has left far
+    // behind is zero, the fan extrapolates no offsets (time -1)
+    std::vector<T> fanTime(elapsed);
+#pragma omp parallel for
+    for (long i = 0; i < n; ++i) {
+      if (!fan[i] || !moving[i] || arcGrows[i])
+        continue;
+      const T v = speedOf(C0[i], N[i], i, piece[i]);
+      const T own = DotProduct(P[i] - C0[i], N[i]);
+      if (v != 0 && own / v > 0)
+        fanTime[i] = own / v;
+      else if (std::abs(own) > smallLength)
+        fanTime[i] = -1;
+    }
+
     // support function of the fans: towards fan neighbours of the same
     // feature and towards the normals of faces whose plane at the rebuild
     // contains the feature point; neighbour by neighbour, each pass reading
@@ -1004,7 +1146,10 @@ template <class T, int D> class AdvectHermite {
         if (!fan[i] || !moving[i] || j < 0)
           continue;
         const bool convex = convexFan[i];
-        const T t = elapsed[i];
+        // a fan without a time samples only between offsets that its
+        // neighbours carry, along the linear blend of the two
+        const bool timed = fanTime[i] >= 0;
+        const T t = timed ? fanTime[i] : T(0);
         const Vec &sh = shiftOf(i, k);
         const Vec dc = C0[j] + sh - C0[i];
         const bool same =
@@ -1016,21 +1161,21 @@ template <class T, int D> class AdvectHermite {
                           DotProduct(Nf[i], NRM0[j]) < 1 - unitTolerance;
         // a fan of the same feature of another material moves at another
         // speed, as the static mask behind the foot of its wall
-        if (same)
+        if (same && (timed || piece[j] == piece[i]))
           arc(i, Nf[i], DotProduct(Pf[i] - C0[i], Nf[i]), previous[j],
               (piece[j] == piece[i])
                   ? DotProduct(previousP[j] + sh - C0[i], previous[j])
                   : t * speedOf(C0[i], previous[j], i, piece[i]),
               C0[i], piece[i], t, convex, split[i], coneA[i], coneB[i],
               arcGrows[i], Sf[i], Pf[i], Nf[i]);
-        if (face) {
-          // the face's accumulated offset while the neighbour still carries
-          // that face of the fan's material; one overtaken since holds another
-          // plane, a face of another material moves at another speed
-          const T oy = (DotProduct(N[j], NRM0[j]) > 1 - unitTolerance &&
-                        piece[j] == piece[i])
-                           ? DotProduct(P[j] + sh - C0[i], NRM0[j])
-                           : t * speedOf(C0[i], NRM0[j], i, piece[i]);
+        // the face's accumulated offset while the neighbour still carries
+        // that face of the fan's material; one overtaken since holds another
+        // plane, a face of another material moves at another speed
+        const bool carried =
+            face && carriesFace(j, N[j]) && piece[j] == piece[i];
+        if (face && (carried || timed)) {
+          const T oy = carried ? DotProduct(P[j] + sh - C0[i], NRM0[j])
+                               : t * speedOf(C0[i], NRM0[j], i, piece[i]);
           arc(i, Nf[i], DotProduct(Pf[i] - C0[i], Nf[i]), NRM0[j], oy, C0[i],
               piece[i], t, convex, split[i], coneA[i], coneB[i], arcGrows[i],
               Sf[i], Pf[i], Nf[i]);
@@ -1062,7 +1207,8 @@ template <class T, int D> class AdvectHermite {
     // Other pieces act with their planes.
     std::vector<T> Snew(Sf);
     std::vector<Vec> Pnew(Pf), Nnew(Nf), Wnew(Wm), Cnew(C0), Anew(arcA),
-        Bnew(arcB), RWnew(RW);
+        Bnew(arcB), RWnew(RW), CCnew(arcC);
+    std::vector<char> cornerNew(cornerKnown);
     // whether a face is one of the faces of fan f: its plane at the rebuild
     // contains the feature point c and its normal ends the fan's cone
     auto faceOf = [&](const Vec &normal, const Vec &rebuildPoint, const Vec &c,
@@ -1073,12 +1219,14 @@ template <class T, int D> class AdvectHermite {
     };
     std::vector<char> over(n, 0), fanNew(fan), knownNew(arcKnown),
         convexNew(convexFan);
+    std::vector<T> sinceNew(since);
+    std::vector<int> materialNew(pieceAfter);
 #pragma omp parallel for
     for (long i = 0; i < n; ++i) {
       std::array<Vec, slots> sN, sP, sW0, sWm, sC, sRW;
       std::array<T, slots> sV, sS;
       std::array<long, slots> sFan;
-      std::array<int, slots> sPiece{};
+      std::array<int, slots> sPiece{}, sAfter{};
       std::array<char, slots> sSupport;
       // the distance of each slot's node to the surface at the step's start
       std::array<T, slots> sDepth;
@@ -1188,9 +1336,7 @@ template <class T, int D> class AdvectHermite {
           if constexpr (D == 3) {
             Vec e = CrossProduct(arcA[j], arcB[j]);
             e = e * (1 / Norm(e));
-            const T along = DotProduct(r, e);
-            c = c + e * along;
-            r = r - e * along;
+            r = r - e * DotProduct(r, e);
           }
           const T length = Norm(r);
           if (length > smallLength) {
@@ -1250,8 +1396,18 @@ template <class T, int D> class AdvectHermite {
             beyond = true;
           }
         }
-        if (!beyond && DotProduct(Ni, normal) >= junction)
-          continue;
+        // planes within the junction angle of the node's own act only where
+        // their normal makes them move at another speed at the node's own
+        // point, as a plane of a bevel beside the face a motion creates; a
+        // rate that varies in space alone, as a noisy flux, makes no junction
+        // between the planes of one face
+        if (!beyond && DotProduct(Ni, normal) >= junction) {
+          const T va = speedOf(Pf[i], normal, i, piece[j]),
+                  vb = speedOf(Pf[i], Ni, i, piece[i]);
+          if (std::abs(va - vb) <=
+              T(1e-3) * std::max(std::abs(va), std::abs(vb)))
+            continue;
+        }
         bool distinct = true;
         for (int q = 0; q < count; ++q)
           distinct = distinct && DotProduct(sN[q], normal) < junction;
@@ -1265,8 +1421,9 @@ template <class T, int D> class AdvectHermite {
         sRW[count] = rebuildPoint;
         sFan[count] = fan[j] ? j : -1;
         sPiece[count] = piece[j];
+        sAfter[count] = support ? piece[j] : pieceAfter[j];
         sSupport[count] = support;
-        sDepth[count] = std::abs(S[j]);
+        sDepth[count] = S[j];
         sV[count] = support ? supportSpeed : Vplane[j];
         sS[count] = value;
         ++count;
@@ -1320,6 +1477,16 @@ template <class T, int D> class AdvectHermite {
           if (std::abs(DotProduct(normal, cut[f])) < T(1e-3))
             return -1;
         }
+        // an interface through the feature point of a concave fan whose
+        // front, swept in the directions against its cone, lies wholly on
+        // the interface's gas side, as the underside of a mask that an
+        // undercut lays open beside the arc around the mask's foot on a flat
+        // substrate, where the interface lies along the end of the cone
+        if (arcKnown[f] && !convexFan[f] && faceMaterial != piece[f] &&
+            std::abs(DotProduct(c - rebuildPoint, normal)) <= smallLength &&
+            DotProduct(normal, arcA[f]) <= unitTolerance &&
+            DotProduct(normal, arcB[f]) <= unitTolerance)
+          return -1;
         if (arcKnown[f] && (faceOf(normal, rebuildPoint, c, f) ||
                             supportOf(normal, rebuildPoint, c, f)))
           return convexFan[f] ? 1 : -1;
@@ -1349,6 +1516,11 @@ template <class T, int D> class AdvectHermite {
           r = fanAndFace(fa, ca, nb, rb, mb, pb);
         else if (fb >= 0 && fa < 0)
           r = fanAndFace(fb, cb, na, ra, ma, pa);
+        // pieces of one fan meet with its convexity, also on the side the
+        // front has passed since the rebuild
+        else if (fa >= 0 && fb >= 0 && Norm(ca - cb) <= smallLength &&
+                 convexFan[fa] == convexFan[fb])
+          r = convexFan[fa] ? 1 : -1;
         return (r != 0) ? r : classify(na, wa, nb, wb, side);
       };
       std::array<int, slots> withOwn{};
@@ -1414,10 +1586,8 @@ template <class T, int D> class AdvectHermite {
         active = lowered ? downK : (raised ? upK : -1);
         if (active < 0)
           break;
-        T budget = 0.;
-        for (int k = 0; k < count; ++k)
-          if (!dropped[k])
-            budget = std::max(budget, dt * std::abs(sV[k] - Vplane[i]));
+        // the budget of the piece that decides
+        T budget = dt * std::abs(sV[active] - Vplane[i]);
         // where the support plane of a growing fan gives the value, it may
         // have run ahead of the node over the whole time since the rebuild,
         // as beside a face the motion creates, whose plane the node's own
@@ -1426,13 +1596,14 @@ template <class T, int D> class AdvectHermite {
           budget = std::max(budget, (elapsed[sFan[active]] + dt) *
                                         std::abs(sV[active] - Vplane[i]));
         // where its own plane would carry a solid node into the gas, a piece
-        // of a node at most a grid spacing deeper that keeps it solid holds
-        // it there beyond the budget, as the arc at the corner of an etched
-        // trench bottom, which reaches a node beside the wall a step after
-        // the node above took it, once the floor has passed: values lag
+        // of a solid node at most a grid spacing deeper that keeps it solid
+        // holds it there beyond the budget, as the arc at the corner of an
+        // etched trench bottom, which reaches a node beside the wall a step
+        // after the node above took it, once the floor has passed: values lag
         // behind only deeper in the solid
         const bool kept = S[i] < 0 && Sf[i] >= 0 && value < 0 &&
-                          sDepth[active] <= std::abs(S[i]) + T(1);
+                          sDepth[active] < 0 &&
+                          -sDepth[active] <= std::abs(S[i]) + T(1);
         if (std::abs(value - Sf[i]) <= budget + smallLength || kept)
           break;
         dropped[active] = 1;
@@ -1441,22 +1612,27 @@ template <class T, int D> class AdvectHermite {
       if (active < 0)
         continue;
       // the plane keeps the neighbour's point on it, a point of the piece
-      // itself, which gives its material and speed; the node's own foot point
-      // can lie where the piece does not exist, as in another material
+      // itself, where its speed is taken, and the piece's material
       Snew[i] = value;
       Nnew[i] = sN[active];
       Pnew[i] = sP[active];
       Wnew[i] = sWm[active];
       RWnew[i] = sRW[active];
+      materialNew[i] = sAfter[active];
       over[i] = 1;
-      const long source = sSupport[active] ? sFan[active] : -1;
+      // a node that takes the plane of a fan, its own or a support plane,
+      // becomes a fan of the same feature
+      const long source = sFan[active];
       fanNew[i] = source >= 0;
       if (source >= 0) {
         Cnew[i] = sC[active];
         Anew[i] = arcA[source];
         Bnew[i] = arcB[source];
-        knownNew[i] = 1;
+        knownNew[i] = arcKnown[source];
         convexNew[i] = convexFan[source];
+        sinceNew[i] = since[source];
+        CCnew[i] = arcC[source];
+        cornerNew[i] = cornerKnown[source];
       }
     }
 
@@ -1472,9 +1648,13 @@ template <class T, int D> class AdvectHermite {
         NRM[i] = Nnew[i];
         Dir[i] = Nnew[i];
         C0[i] = Cnew[i];
+        since[i] = sinceNew[i];
         boundPlane[i] = 0;
         smooth[i] = 0;
+        exposedState[i] = 0;
       }
+      if (stacked)
+        pieceMaterial[i] = materialNew[i];
       W[i] = Wnew[i];
       RW[i] = RWnew[i];
       PL[i] = Pnew[i];
@@ -1484,181 +1664,319 @@ template <class T, int D> class AdvectHermite {
       arcA[i] = Anew[i];
       arcB[i] = Bnew[i];
       arcKnown[i] = knownNew[i];
+      arcC[i] = CCnew[i];
+      cornerKnown[i] = cornerNew[i];
       convexFan[i] = convexNew[i];
       good[i] = good[i] || over[i];
       S[i] = Snew[i];
     }
   }
 
-  // interfaces of the material stack laid open since the last rebuild, as
-  // when etching undercuts a mask: across the interface of a lower level set
-  // from a solid node, a node etched since then takes the smaller and the
+  // interfaces of the material stack that etching lays open, as when it
+  // undercuts a mask: across the interface of a lower level set from a solid
+  // node, a node etched since it entered the band takes the smaller and the
   // solid node the larger signed distance to the plane of the interface,
   // from the lower level set (exact for planar interfaces), and both carry
   // that plane; only where the material on the solid side does not etch,
-  // since a front etching through the interface is not held there. Beyond
-  // the end of the cavity, as past the tip of an undercut, the interface is
-  // no surface: a solid node there lies no closer to the surface than the
-  // plane where the front meets the interface, from the fans around it whose
-  // cone the interface splits, and carries that plane
+  // since a front etching through the interface is not held there, and for
+  // the etched node only where its foot on the interface lies on that
+  // material. Beyond the end of the cavity, as past the tip of an undercut,
+  // the interface is no surface: a solid node there lies no closer to the
+  // surface than the edge where the plane of the end meets the interface,
+  // from the planes of the other material around it and the ends of the
+  // cones of its fans. Pass by pass, solid nodes further from the cavity
+  // beside one that took the interface take it on, with the plane that one
+  // found where the lower level set holds no value there
   void exposeInterfaces() {
     const long n = long(S.size());
-    for (std::size_t l = 0; l + 1 < levelSets.size(); ++l) {
-      // from the state before the pass, applied after it
-      std::vector<char> take(n, 0), takeBound(n, 0);
-      std::vector<T> newValue(n, T(0));
-      std::vector<Vec> newPoint(n), newNormal(n);
+    for (int pass = 0; pass < 2 * bandWidth; ++pass) {
+      long taken = 0;
+      for (std::size_t l = 0; l + 1 < levelSets.size(); ++l) {
+        // from the state before the pass, applied after it
+        std::vector<char> take(n, 0), takeBound(n, 0);
+        std::vector<T> newValue(n, T(0));
+        std::vector<Vec> newPoint(n), newNormal(n);
+        std::vector<int> newMaterial(n, 0);
+        std::vector<Vec> newInterfacePoint(n), newInterfaceNormal(n);
 #pragma omp parallel for
-      for (long i = 0; i < n; ++i) {
-        const bool etched = S[i] > 0 && side0[i] < 0, solid = S[i] < 0;
-        if (!etched && !solid)
-          continue;
-        const T li = lowerValue(l, X[i]);
-        if (li == T(0))
-          continue;
-        bool exposed = false;
-        for (int k = 0; k < numberOfNeighbours && !exposed; ++k) {
-          const long j = neighbours[i][k];
-          if (j < 0)
+        for (long i = 0; i < n; ++i) {
+          const bool etched = S[i] > 0 && entrySide[i] < 0, solid = S[i] < 0;
+          if (!etched && !solid)
             continue;
-          const T lj = lowerValue(l, X[j] + shiftOf(i, k));
-          if (li * lj >= T(0))
+          const T li = lowerValue(l, X[i]);
+          if (li == T(0))
             continue;
-          exposed = etched ? S[j] < 0 : (S[j] > 0 && side0[j] < 0);
-        }
-        if (!exposed || !lowerDefined(l, X[i]))
-          continue;
-        // the interface plane: from the Hermite data of a Euclidean lower
-        // level set, otherwise from differences within its band, whose values
-        // further out only give the side
-        Vec gradient{};
-        Vec planePoint, planeDirection;
-        const bool hermite =
-            stack.nodePlane(l, X[i], planePoint, planeDirection);
-        if (hermite) {
-          gradient = planeDirection;
-        } else {
-          for (int d = 0; d < D; ++d) {
-            Vec step{};
-            step[d] = 1;
-            const Vec forward = X[i] + step, backward = X[i] - step;
-            const bool f = lowerDefined(l, forward),
-                       b = lowerDefined(l, backward);
-            if (f == b)
-              gradient[d] =
-                  (lowerValue(l, forward) - lowerValue(l, backward)) / 2;
-            else
-              gradient[d] = f ? lowerValue(l, forward) - li
-                              : li - lowerValue(l, backward);
-          }
-        }
-        const T length = Norm(gradient);
-        if (length < tinyLength)
-          continue;
-        // the normal points to the gas, on the side of the etched node
-        const T towardsGas = etched ? sign(li) : -sign(li);
-        const Vec normal = gradient * (towardsGas / length);
-        const T distance = towardsGas * li / length;
-        T value = distance;
-        bool bounded = false;
-        Vec point = X[i] - normal * distance, planeNormal = normal;
-        if (solid) {
-          // the moving planes of the other material around the node, faces
-          // and the ends of the cones of fans on the solid side
-          const int own = material(X[i]);
-          // the interface counts where the node's foot on it lies in the
-          // cavity, on the gas side of every plane of the front
-          const Vec interfaceFoot = point;
-          T bound = std::numeric_limits<T>::max(), footSide = bound;
-          Vec boundNormal{}, endNormal{};
-          auto consider = [&](const Vec &p, const Vec &d) {
-            const T g = DotProduct(X[i] - p, d);
-            const T side = DotProduct(interfaceFoot - p, d);
-            if (side < footSide) {
-              footSide = side;
-              endNormal = d;
-            }
-            if (g < bound) {
-              bound = g;
-              boundNormal = d;
-            }
-          };
-          for (int k = 0; k < numberOfNeighbours; ++k) {
+          bool exposed = false;
+          long carrier = -1;
+          Vec carrierShift{};
+          // the solid nodes across the interface from an etched node
+          std::array<long, numberOfNeighbours> across;
+          std::array<int, numberOfNeighbours> acrossK;
+          int acrossCount = 0;
+          for (int k = 0; k < numberOfNeighbours && (!exposed || etched); ++k) {
             const long j = neighbours[i][k];
             if (j < 0)
               continue;
-            const Vec &sh = shiftOf(i, k);
-            const int m = fan[j] ? nodeMaterial(j, HA[j], Dir[j])
-                                 : materialBehind(PL[j], NL[j]);
-            if (m == own || speedOf(PL[j], NL[j], j, m) == 0)
+            // a solid node beside one whose plane the interface gave
+            if (solid && exposedState[j] && S[j] < 0 &&
+                interfaceLevel[j] == int(l) &&
+                material(X[j]) == material(X[i])) {
+              exposed = true;
+              carrier = j;
+              carrierShift = shiftOf(i, k);
               continue;
-            consider(PL[j] + sh, NL[j]);
-            if (!fan[j] || !arcKnown[j] || convexFan[j])
-              continue;
-            const Vec &c = C0[j];
-            const T correction = DotProduct(PL[j] - c, NL[j]) -
-                                 sinceRebuild * speedOf(c, NL[j], j, m);
-            Vec a = arcA[j], b = arcB[j], past, end;
-            const bool split = materialCone(c, m, a, b, past, end) != 0;
-            auto plane = [&](const Vec &d) {
-              const T offset = sinceRebuild * speedOf(c, d, j, m) + correction;
-              consider(c + d * offset + sh, d);
-            };
-            plane(arcA[j]);
-            plane(arcB[j]);
-            // the end of the cone, which materialCone sets only where the
-            // interface splits it
-            if (split)
-              plane(end);
-          }
-          // beyond the end of the cavity the node lies nearest to the edge
-          // where the plane of the end meets the interface
-          const Vec along = endNormal - normal * DotProduct(endNormal, normal);
-          const bool beyond = footSide < -smallLength && Norm(along) > T(0.5);
-          if (beyond || bound < value) {
-            bounded = true;
-            if (beyond) {
-              const T past = -footSide / Norm(along);
-              value = -std::sqrt(distance * distance + past * past);
-              bound = DotProduct(X[i] - interfaceFoot, endNormal) + footSide;
-              boundNormal = endNormal;
-            } else {
-              value = bound;
             }
-            planeNormal = boundNormal;
-            // its point is the node's foot on the plane, moved along the plane
-            // to the solid side of the interface, which gives its material
-            Vec foot = X[i] - planeNormal * bound;
-            Vec up =
-                normal * T(-1) + planeNormal * DotProduct(normal, planeNormal);
-            const T lengthUp = Norm(up);
-            if (lengthUp > T(0.5))
-              foot = foot + up * (T(0.1) / lengthUp);
-            point = foot;
+            const T lj = lowerValue(l, X[j] + shiftOf(i, k));
+            if (li * lj >= T(0))
+              continue;
+            const bool here =
+                etched ? S[j] < 0 : (S[j] > 0 && entrySide[j] < 0);
+            exposed = exposed || here;
+            if (here && etched) {
+              across[acrossCount] = j;
+              acrossK[acrossCount++] = k;
+            }
           }
+          if (!exposed)
+            continue;
+          Vec normal{};
+          T distance = 0;
+          if (lowerDefined(l, X[i])) {
+            // the interface plane: from the Hermite data of a Euclidean lower
+            // level set, otherwise from differences within its band, whose
+            // values further out only give the side
+            Vec gradient{};
+            Vec planePoint, planeDirection;
+            const bool hermite =
+                stack.nodePlane(l, X[i], planePoint, planeDirection);
+            if (hermite) {
+              gradient = planeDirection;
+            } else {
+              for (int d = 0; d < D; ++d) {
+                Vec step{};
+                step[d] = 1;
+                const Vec forward = X[i] + step, backward = X[i] - step;
+                const bool f = lowerDefined(l, forward),
+                           b = lowerDefined(l, backward);
+                if (f == b)
+                  gradient[d] =
+                      (lowerValue(l, forward) - lowerValue(l, backward)) / 2;
+                else
+                  gradient[d] = f ? lowerValue(l, forward) - li
+                                  : li - lowerValue(l, backward);
+              }
+            }
+            const T length = Norm(gradient);
+            if (length < tinyLength)
+              continue;
+            // the normal points to the gas, on the side of the etched node
+            const T towardsGas = etched ? sign(li) : -sign(li);
+            normal = gradient * (towardsGas / length);
+            distance = towardsGas * li / length;
+          } else if (carrier >= 0) {
+            // beyond the band of the lower level set, the plane a neighbour
+            // nearer the cavity found
+            normal = interfaceNormal[carrier];
+            distance = DotProduct(
+                X[i] - (interfacePoint[carrier] + carrierShift), normal);
+            if (distance >= 0)
+              continue;
+          } else {
+            continue;
+          }
+          T value = distance;
+          bool bounded = false;
+          Vec point = X[i] - normal * distance, planeNormal = normal;
+          // an etched node's foot on the interface lies on the solid material
+          // across it: on the solid side of the plane of one of the solid nodes
+          // there, as below a mask and not beside its wall, where the interface
+          // continues past the mask into the opening
+          if (etched) {
+            bool onSolid = false;
+            for (int q = 0; q < acrossCount && !onSolid; ++q) {
+              const long j = across[q];
+              onSolid = DotProduct(point - (PL[j] + shiftOf(i, acrossK[q])),
+                                   NL[j]) <= smallLength;
+            }
+            if (!onSolid)
+              continue;
+          }
+          if (solid) {
+            // the planes of the other material around the node, faces and the
+            // ends of the cones of fans on the solid side; a static one, as the
+            // wall that directional etching cuts below the edge of a mask,
+            // bounds the cavity as well
+            const int own = material(X[i]);
+            // the interface counts where the node's foot on it lies in the
+            // cavity, on the gas side of every plane of the front
+            const Vec interfaceFoot = point;
+            T bound = std::numeric_limits<T>::max(), footSide = bound;
+            Vec boundNormal{}, endNormal{};
+            auto consider = [&](const Vec &p, const Vec &d) {
+              const T g = DotProduct(X[i] - p, d);
+              const T side = DotProduct(interfaceFoot - p, d);
+              if (side < footSide) {
+                footSide = side;
+                endNormal = d;
+              }
+              if (g < bound) {
+                bound = g;
+                boundNormal = d;
+              }
+            };
+            for (int k = 0; k < numberOfNeighbours; ++k) {
+              const long j = neighbours[i][k];
+              if (j < 0)
+                continue;
+              const Vec &sh = shiftOf(i, k);
+              const int m = nodeMaterial(j, HA[j], Dir[j]);
+              if (m == own)
+                continue;
+              consider(PL[j] + sh, NL[j]);
+              if (!fan[j] || !arcKnown[j] || convexFan[j])
+                continue;
+              const Vec &c = C0[j];
+              const T correction = DotProduct(PL[j] - c, NL[j]) -
+                                   since[j] * speedOf(c, NL[j], j, m);
+              Vec a = arcA[j], b = arcB[j], past, end;
+              const bool split = materialCone(c, m, a, b, past, end) != 0;
+              auto plane = [&](const Vec &d) {
+                const T offset = since[j] * speedOf(c, d, j, m) + correction;
+                consider(c + d * offset + sh, d);
+              };
+              plane(arcA[j]);
+              plane(arcB[j]);
+              // the end of the cone, which materialCone sets only where the
+              // interface splits it
+              if (split)
+                plane(end);
+            }
+            // beyond the end of the cavity the node lies nearest to the edge
+            // where the plane of the end meets the interface
+            const Vec along =
+                endNormal - normal * DotProduct(endNormal, normal);
+            const bool beyond = footSide < -smallLength && Norm(along) > T(0.5);
+            if (beyond || bound < value) {
+              bounded = true;
+              if (beyond) {
+                const T past = -footSide / Norm(along);
+                value = -std::sqrt(distance * distance + past * past);
+                bound = DotProduct(X[i] - interfaceFoot, endNormal) + footSide;
+                boundNormal = endNormal;
+              } else {
+                value = bound;
+              }
+              planeNormal = boundNormal;
+              // its point is the node's foot on the plane
+              point = X[i] - planeNormal * bound;
+            }
+          }
+          if (etched ? value >= S[i] : value <= S[i])
+            continue;
+          const Vec foot = X[i] - normal * distance;
+          const int solidSide = materialBehind(foot, normal);
+          if (speedOf(foot, normal, i, solidSide) < T(0))
+            continue;
+          take[i] = 1;
+          takeBound[i] = solid && bounded;
+          newValue[i] = value;
+          newPoint[i] = point;
+          newNormal[i] = planeNormal;
+          // the interface is of the material on its solid side, which does not
+          // etch; the plane of the end of a cavity that holds a solid node is
+          // that node's material, static, and every step sets it anew
+          newMaterial[i] = solid ? material(X[i]) : solidSide;
+          newInterfacePoint[i] = foot;
+          newInterfaceNormal[i] = normal;
         }
-        if (etched ? value >= S[i] : value <= S[i])
-          continue;
-        const Vec foot = X[i] - normal * distance;
-        if (speedOf(foot, normal, i, materialBehind(foot, normal)) < T(0))
-          continue;
-        take[i] = 1;
-        takeBound[i] = solid && bounded;
-        newValue[i] = value;
-        newPoint[i] = point;
-        newNormal[i] = planeNormal;
+        for (long i = 0; i < n; ++i) {
+          if (!take[i])
+            continue;
+          ++taken;
+          S[i] = newValue[i];
+          boundPlane[i] = takeBound[i];
+          HA[i] = FA[i] = W[i] = PL[i] = RW[i] = newPoint[i];
+          NRM[i] = Dir[i] = NL[i] = newNormal[i];
+          good[i] = moved[i] = 1;
+          fan[i] = 0;
+          exposedState[i] = 1;
+          pieceMaterial[i] = newMaterial[i];
+          interfacePoint[i] = newInterfacePoint[i];
+          interfaceNormal[i] = newInterfaceNormal[i];
+          interfaceLevel[i] = int(l);
+        }
       }
+      if (taken == 0)
+        break;
+    }
+  }
+
+  // a band that is no valid level set at the end, where two neighbours along
+  // an axis lie further apart than Check allows: of each such pair the node
+  // further from the value the mesh of the planes gives it takes that value,
+  // its planes moved to it. Returns whether any value changed
+  bool repairFromMesh() {
+    auto copy = SmartPointer<Domain<T, D>>::New(levelSet);
+    Reinitialize<T, D>(copy, bandWidth).apply();
+    std::vector<std::pair<hrleIndex, T>> mesh;
+    for (viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType> it(
+             copy->getDomain());
+         !it.isFinished(); it.next())
+      if (it.isDefined())
+        mesh.emplace_back(it.getStartIndices(), it.getValue());
+    std::sort(mesh.begin(), mesh.end(),
+              [](const auto &a, const auto &b) { return a.first < b.first; });
+    const long n = long(S.size());
+    std::vector<T> target(n, std::numeric_limits<T>::quiet_NaN());
+    for (long i = 0; i < n; ++i) {
+      hrleIndex idx;
+      for (int k = 0; k < D; ++k)
+        idx[k] = static_cast<viennahrle::IndexType>(std::lround(X[i][k]));
+      auto found = std::lower_bound(
+          mesh.begin(), mesh.end(), idx,
+          [](const auto &a, const hrleIndex &b) { return a.first < b; });
+      if (found != mesh.end() && !(idx < found->first) && !(found->first < idx))
+        target[i] = found->second;
+    }
+    // Check's rounding of a value to a grid point
+    auto status = [](T v) {
+      const int x = static_cast<int>(v);
+      if (v >= 0)
+        return (v <= T(x) + T(0.5)) ? x : x + 1;
+      return (v >= T(x) - T(0.5)) ? x : x - 1;
+    };
+    bool changed = false;
+    for (int pass = 0; pass < 3; ++pass) {
+      std::vector<char> take(n, 0);
+      for (long i = 0; i < n; ++i)
+        for (int k = 0; k < 2 * D; ++k) {
+          const long m = neighbours[i][k];
+          if (m < 0 || std::abs(status(S[i]) - status(S[m])) <= 1)
+            continue;
+          const T gi =
+              std::isnan(target[i]) ? T(-1) : std::abs(S[i] - target[i]);
+          const T gm =
+              std::isnan(target[m]) ? T(-1) : std::abs(S[m] - target[m]);
+          if (gi >= gm && gi >= 0)
+            take[i] = 1;
+          else if (gm >= 0)
+            take[m] = 1;
+        }
+      bool any = false;
       for (long i = 0; i < n; ++i) {
         if (!take[i])
           continue;
-        S[i] = newValue[i];
-        boundPlane[i] = takeBound[i];
-        HA[i] = FA[i] = W[i] = PL[i] = RW[i] = newPoint[i];
-        NRM[i] = Dir[i] = NL[i] = newNormal[i];
-        good[i] = moved[i] = 1;
-        fan[i] = 0;
+        const T delta = target[i] - S[i];
+        S[i] = target[i];
+        PL[i] = PL[i] - NL[i] * delta;
+        HA[i] = HA[i] - Dir[i] * delta;
+        FA[i] = FA[i] - NRM[i] * delta;
+        any = changed = true;
       }
+      if (!any)
+        break;
     }
+    return changed;
   }
 
   // values into the level set, current planes and priorities into its point
@@ -1714,11 +2032,28 @@ template <class T, int D> class AdvectHermite {
     for (std::size_t i = 0; i < S.size(); ++i)
       flags[i] = T(int(good[i]) + 2 * int(fan[i]) + 4 * int(moved[i]) +
                    8 * int(convexFan[i]) + 16 * int(arcKnown[i]) +
-                   32 * int(boundPlane[i]) + 64 * int(smooth[i]));
+                   32 * int(boundPlane[i]) + 64 * int(smooth[i]) +
+                   128 * int(exposedState[i]) +
+                   256 * int(cornerKnown.size() == S.size() && cornerKnown[i]));
     pointData.insertReplaceScalarData(std::move(values), valueLabel);
     pointData.insertReplaceScalarData(std::move(sides), sideLabel);
     pointData.insertReplaceScalarData(std::move(flags), flagsLabel);
     pointData.insertReplaceScalarData(std::move(times), timeLabel);
+    pointData.insertReplaceScalarData(
+        typename PointData<T>::ScalarDataType(since), sinceLabel);
+    typename PointData<T>::ScalarDataType materials(S.size());
+    for (std::size_t i = 0; i < S.size(); ++i)
+      materials[i] = T(pieceMaterial[i]);
+    pointData.insertReplaceScalarData(std::move(materials), materialLabel);
+    pointData.insertReplaceScalarData(
+        typename PointData<T>::ScalarDataType(entrySide), entryLabel);
+    if (arcC.size() == S.size()) {
+      typename PointData<T>::VectorDataType cones(S.size());
+      for (std::size_t i = 0; i < S.size(); ++i)
+        for (int c = 0; c < 3; ++c)
+          cones[i][c] = arcC[i][c];
+      pointData.insertReplaceVectorData(std::move(cones), coneCLabel);
+    }
   }
 
   // a value further from the surface than a neighbour's by more than a grid
@@ -1764,25 +2099,357 @@ template <class T, int D> class AdvectHermite {
     return changed;
   }
 
-  // exact band from the dual contouring mesh of the current planes
+  // the band moves with the surface: the dual contouring mesh of the planes
+  // gives the nodes of the new band, every node of the old one keeps its
+  // value and state, and a node new to the band, at most the rebuild
+  // distance from the old ones, takes the state of an old node near it
   void rebuild() {
     writeBack();
     const auto before = nodeOrder;
-    const std::vector<T> valueBefore = S;
-    const std::vector<Vec> normalBefore = NL;
-    const std::vector<char> rounded = roundedNodes();
+    const std::vector<char> oRounded = roundedNodes();
+    const std::vector<Vec> oldX = X;
+    const std::vector<T> oS = S, oSide = side0, oSince = since,
+                         oEntry = entrySide;
+    const std::vector<Vec> oHA = HA, oFA = FA, oNRM = NRM, oNRM0 = NRM0,
+                           oC0 = C0, oW = W, oDir = Dir, oPL = PL, oNL = NL,
+                           oRW = RW, oA = arcA, oB = arcB, oC3 = arcC,
+                           oIP = interfacePoint, oIN = interfaceNormal;
+    const std::vector<char> oGood = good, oFan = fan, oMoved = moved,
+                            oConvex = convexFan, oKnown = arcKnown,
+                            oCorner = cornerKnown, oBound = boundPlane,
+                            oSmooth = smooth, oExposed = exposedState;
+    const std::vector<int> oMaterial = pieceMaterial, oIL = interfaceLevel;
+    const T clock = sinceRebuild;
     Reinitialize<T, D>(levelSet, bandWidth).apply();
-    keepAdvected(before, valueBefore, normalBefore, rounded);
     ++numberOfRebuilds;
+    collectNodes();
+    const long n = long(S.size());
+    // the values the mesh gives the new band
+    const std::vector<T> mesh = S;
+    // a node keeps the rounded part of its piece, a node beside a rounded
+    // fan that takes it is on one
+    std::vector<char> roundedNew(n, 0);
+    for (auto *v : {&HA, &FA, &NRM, &NRM0, &C0, &W, &Dir, &PL, &NL, &RW, &arcA,
+                    &arcB, &arcC, &interfacePoint, &interfaceNormal})
+      v->assign(n, Vec{});
+    for (auto *v : {&side0, &entrySide, &since})
+      v->assign(n, T(0));
+    for (auto *v : {&good, &fan, &moved, &convexFan, &arcKnown, &cornerKnown,
+                    &boundPlane, &smooth, &exposedState})
+      v->assign(n, 0);
+    pieceMaterial.assign(n, 0);
+    interfaceLevel.assign(n, -1);
+    sinceRebuild = clock;
+    // offsets to the old nodes around a new one, nearest first, as far as
+    // the front moved since the last rebuild: the step that reaches the
+    // rebuild distance can pass it, and a new node then lies further from
+    // the old band, as on the cap of a rounded corner, whose new nodes would
+    // otherwise find only the fans of the edges beside it
+    std::vector<hrleIndex> around;
+    {
+      const int r = static_cast<int>(std::ceil(
+          std::max(rebuildDistance, motionSinceRebuild) - smallLength));
+      const int dz0 = (D == 3) ? -r : 0, dz1 = (D == 3) ? r : 0;
+      for (int dz = dz0; dz <= dz1; ++dz)
+        for (int dy = -r; dy <= r; ++dy)
+          for (int dx = -r; dx <= r; ++dx) {
+            hrleIndex o;
+            o[0] = dx;
+            o[1] = dy;
+            if constexpr (D == 3)
+              o[2] = dz;
+            around.push_back(o);
+          }
+      std::stable_sort(around.begin(), around.end(),
+                       [](const hrleIndex &a, const hrleIndex &b) {
+                         int la = 0, lb = 0;
+                         for (int i = 0; i < D; ++i) {
+                           la += a[i] * a[i];
+                           lb += b[i] * b[i];
+                         }
+                         return la < lb;
+                       });
+    }
+    auto oldAt = [&](const hrleIndex &q) {
+      auto found = std::lower_bound(
+          before.begin(), before.end(), q,
+          [](const auto &a, const hrleIndex &b) { return a.first < b; });
+      return (found != before.end() && !(q < found->first) &&
+              !(found->first < q))
+                 ? found->second
+                 : long(-1);
+    };
+    // whether the unit vector u lies in the cone of the normals a, b and c
+    auto inCorner = [](const Vec &u, const Vec &a, const Vec &b, const Vec &c) {
+      const T det = DotProduct(a, CrossProduct(b, c));
+      if (std::abs(det) < T(1e-6))
+        return false;
+      return DotProduct(u, CrossProduct(b, c)) / det >= -unitTolerance &&
+             DotProduct(a, CrossProduct(u, c)) / det >= -unitTolerance &&
+             DotProduct(a, CrossProduct(b, u)) / det >= -unitTolerance;
+    };
+    auto &pointData = levelSet->getPointData();
+    const auto *closest = pointData.getVectorData(
+        FromSurfaceMesh<T, D>::closestPointsLabel, true);
+    const auto *normals = pointData.getVectorData(
+        FromSurfaceMesh<T, D>::surfaceNormalsLabel, true);
+#pragma omp parallel for
+    for (long i = 0; i < n; ++i) {
+      hrleIndex idx;
+      for (int k = 0; k < D; ++k)
+        idx[k] = static_cast<viennahrle::IndexType>(std::lround(X[i][k]));
+      // the node itself in the old band; else, among the old nodes around
+      // it, the plane that gives the node the value nearest to the mesh's,
+      // unless the node's direction from the feature of a rounded convex fan
+      // lies in the fan's cone, a 3D corner's before an edge's: a rounded
+      // part grows alike in every direction of its cone, and its support
+      // there gives the node's value exactly
+      long j = oldAt(idx);
+      const bool same = j >= 0;
+      bool asFan = false;
+      Vec fanPoint{}, fanR{};
+      T fanValue = 0;
+      int fanRank = 0;
+      if (!same) {
+        T best = std::numeric_limits<T>::max();
+        for (const auto &o : around) {
+          hrleIndex q = idx;
+          for (int k = 0; k < D; ++k)
+            q[k] += o[k];
+          const long m = oldAt(q);
+          if (m < 0)
+            continue;
+          const T v = DotProduct(oNL[m], X[i] - oPL[m]);
+          if (!asFan && std::abs(v - S[i]) < best) {
+            best = std::abs(v - S[i]);
+            j = m;
+          }
+          if (!oFan[m] || !oGood[m] || !oRounded[m] || !oConvex[m] ||
+              fanRank == 2)
+            continue;
+          const Vec c = oC0[m];
+          if (D == 3 && oCorner[m]) {
+            const Vec r = X[i] - c, rj = oldX[m] - c;
+            const T length = Norm(r);
+            if (length > smallLength &&
+                inCorner(r * (1 / length), oA[m], oB[m], oC3[m])) {
+              const T vf = length - (Norm(rj) - std::abs(oS[m]));
+              if (vf > 0) {
+                fanRank = 2;
+                j = m;
+                asFan = true;
+                fanPoint = c;
+                fanR = r;
+                fanValue = vf;
+              }
+            }
+            continue;
+          }
+          if (!oKnown[m] || fanRank == 1)
+            continue;
+          Vec feature = c, r = X[i] - c, rj = oldX[m] - c;
+          if constexpr (D == 3) {
+            Vec e = CrossProduct(oA[m], oB[m]);
+            const T le = Norm(e);
+            if (le < tinyLength)
+              continue;
+            e = e * (1 / le);
+            const T along = DotProduct(r, e);
+            feature = feature + e * along;
+            r = r - e * along;
+            rj = rj - e * DotProduct(rj, e);
+          }
+          const T length = Norm(r);
+          if (length < smallLength || !within(r * (1 / length), oA[m], oB[m]))
+            continue;
+          const T vf = length - (Norm(rj) - std::abs(oS[m]));
+          if (vf > 0) {
+            fanRank = 1;
+            j = m;
+            asFan = true;
+            fanPoint = feature;
+            fanR = r;
+            fanValue = vf;
+          }
+        }
+      }
+      if (j < 0) {
+        // no old node near: the mesh's closest point
+        Vec cp{}, nm{};
+        if (closest != nullptr && normals != nullptr)
+          for (int k = 0; k < 3; ++k) {
+            cp[k] = (*closest)[i][k] / gridDelta;
+            nm[k] = (*normals)[i][k];
+          }
+        const Vec r = X[i] - cp;
+        const T length = Norm(r);
+        const Vec d = (length > smallLength) ? r * (sign(S[i]) / length) : nm;
+        HA[i] = FA[i] = C0[i] = W[i] = PL[i] = RW[i] = cp;
+        NRM[i] = NRM0[i] = NL[i] = Dir[i] = d;
+        side0[i] = entrySide[i] = sign(S[i]);
+        pieceMaterial[i] = materialBehind(cp, d);
+        good[i] = 1;
+        convexFan[i] = S[i] > 0;
+        continue;
+      }
+      HA[i] = oHA[j];
+      FA[i] = oFA[j];
+      NRM[i] = oNRM[j];
+      NRM0[i] = oNRM0[j];
+      C0[i] = oC0[j];
+      W[i] = oW[j];
+      Dir[i] = oDir[j];
+      PL[i] = oPL[j];
+      NL[i] = oNL[j];
+      RW[i] = oRW[j];
+      arcA[i] = oA[j];
+      arcB[i] = oB[j];
+      arcC[i] = oC3[j];
+      side0[i] = oSide[j];
+      good[i] = oGood[j];
+      fan[i] = oFan[j];
+      moved[i] = oMoved[j];
+      convexFan[i] = oConvex[j];
+      arcKnown[i] = oKnown[j];
+      cornerKnown[i] = oCorner[j];
+      boundPlane[i] = oBound[j];
+      smooth[i] = oSmooth[j];
+      since[i] = oSince[j];
+      pieceMaterial[i] = oMaterial[j];
+      if (same) {
+        roundedNew[i] = oRounded[j];
+        S[i] = oS[j];
+        entrySide[i] = oEntry[j];
+        exposedState[i] = oExposed[j];
+        interfacePoint[i] = oIP[j];
+        interfaceNormal[i] = oIN[j];
+        interfaceLevel[i] = oIL[j];
+        continue;
+      }
+      entrySide[i] = sign(S[i]);
+      // a node new to the band beside a rounded fan: a fan of the same
+      // feature, in its own direction from it
+      if (asFan) {
+        roundedNew[i] = 1;
+        S[i] = fanValue;
+        const Vec d = fanR * (1 / Norm(fanR));
+        C0[i] = RW[i] = W[i] = fanPoint;
+        Dir[i] = NL[i] = d;
+        HA[i] = FA[i] = PL[i] = X[i] - d * S[i];
+        side0[i] = sign(S[i]);
+        moved[i] = 1;
+        boundPlane[i] = 0;
+        continue;
+      }
+      // a node new to the band: the plane of the old node
+      S[i] = DotProduct(oNL[j], X[i] - oPL[j]);
+      HA[i] = X[i] - oNL[j] * S[i];
+      FA[i] = PL[i] = oPL[j];
+      NRM[i] = Dir[i] = NL[i] = oNL[j];
+      side0[i] = sign(S[i]);
+      fan[i] = 0;
+      arcKnown[i] = 0;
+      cornerKnown[i] = 0;
+      moved[i] = 1;
+      boundPlane[i] = 0;
+      smooth[i] = 0;
+    }
+    rebuiltRounded.swap(roundedNew);
+    rebuiltBand = true;
+    // the witness of a face node back at its foot on its plane: a witness
+    // moves with its plane along the normal, while a face that a directional
+    // velocity translates moves along it, so that over many rebuilds the
+    // witnesses would leave the part of the piece around the node
+    if (closest != nullptr && closest->size() == std::size_t(n))
+#pragma omp parallel for
+      for (long i = 0; i < n; ++i)
+        if (!fan[i])
+          for (int k = 0; k < 3; ++k)
+            W[i][k] = (*closest)[i][k] / gridDelta;
+    // a node whose kept value the mesh does not reproduce to the accuracy of
+    // its planes, as a node beside a face the motion created that no node
+    // held, takes the plane of the neighbour that gives it the mesh's value
+    // to that accuracy; not on fans and rounded parts, whose mesh lies up to
+    // a tenth of a grid spacing off
+    {
+      const std::vector<char> rounded = roundedNodes();
+      for (int pass = 0; pass < 3; ++pass) {
+        std::vector<long> from(n, -1);
+        std::vector<T> to(n, T(0));
+#pragma omp parallel for
+        for (long i = 0; i < n; ++i) {
+          if (std::abs(S[i] - mesh[i]) <= rebuiltLength || fan[i] || rounded[i])
+            continue;
+          T best = rebuiltLength;
+          for (int k = 0; k < numberOfNeighbours; ++k) {
+            const long m = neighbours[i][k];
+            if (m < 0)
+              continue;
+            const T v = DotProduct(NL[m], X[i] - (PL[m] + shiftOf(i, k)));
+            if (std::abs(v - mesh[i]) < best) {
+              best = std::abs(v - mesh[i]);
+              from[i] = m;
+              to[i] = v;
+            }
+          }
+        }
+        long changed = 0;
+        const auto NRM0b = NRM0, C00 = C0, W0 = W, RW0 = RW, NL0 = NL, PL0 = PL,
+                   A0 = arcA, B0 = arcB;
+        const auto good0 = good, convex0 = convexFan;
+        const auto since0 = since;
+        const auto material0 = pieceMaterial;
+        for (long i = 0; i < n; ++i) {
+          const long m = from[i];
+          if (m < 0)
+            continue;
+          ++changed;
+          S[i] = to[i];
+          NRM0[i] = NRM0b[m];
+          C0[i] = C00[m];
+          W[i] = W0[m];
+          RW[i] = RW0[m];
+          FA[i] = PL[i] = PL0[m];
+          NRM[i] = Dir[i] = NL[i] = NL0[m];
+          HA[i] = X[i] - NL0[m] * S[i];
+          arcA[i] = A0[m];
+          arcB[i] = B0[m];
+          good[i] = good0[m];
+          convexFan[i] = convex0[m];
+          since[i] = since0[m];
+          pieceMaterial[i] = material0[m];
+          exposedState[i] = 0;
+          side0[i] = sign(S[i]);
+          fan[i] = 0;
+          arcKnown[i] = 0;
+          cornerKnown[i] = 0;
+          moved[i] = 1;
+          boundPlane[i] = 0;
+          smooth[i] = 0;
+        }
+        if (changed == 0)
+          break;
+      }
+    }
+    // the side at the rebuild is the side now: the side of undecided
+    // junctions counts from this rebuild
+    for (long i = 0; i < n; ++i)
+      side0[i] = sign(S[i]);
+    motionSinceRebuild = 0.;
+    writeBack();
   }
 
-  // nodes whose plane is a tangent plane of a convex rounded part: convex
-  // fans whose speed, the same in every direction of their cone, at the node
-  // and at its plane, moves the surface outwards, as a deposition rounds an
-  // edge into an arc, and nodes that kept such a plane at a rebuild. A rate
-  // that varies in space, as a flux or a noisy view factor, or with the
-  // direction, as directional deposition, rounds nothing exactly
+  // nodes whose plane is a tangent plane of a rounded part: convex fans
+  // whose speed, the same in every direction of their cone, at the node and
+  // at its plane, moves the surface outwards, as a deposition rounds an edge
+  // into an arc, concave fans whose speed moves it inwards, as the cavity an
+  // etching rounds around a static corner, and nodes that a previous apply()
+  // left on such a part. A rate that varies in space, as a flux or a noisy
+  // view factor, or with the direction, as directional deposition, rounds
+  // nothing exactly
   std::vector<char> roundedNodes() const {
+    if (rebuiltBand && rebuiltRounded.size() == S.size())
+      return rebuiltRounded;
     const long n = long(S.size());
     std::vector<char> rounded(n, 0);
 #pragma omp parallel for
@@ -1791,14 +2458,14 @@ template <class T, int D> class AdvectHermite {
         rounded[i] = 1;
         continue;
       }
-      if (!fan[i] || !good[i] || !convexFan[i])
+      if (!fan[i] || !good[i])
         continue;
       const int m = nodeMaterial(i, HA[i], Dir[i]);
       const T v = speedOf(C0[i], NL[i], i, m);
-      if (v <= T(0))
+      if (convexFan[i] ? v <= T(0) : v >= T(0))
         continue;
       auto same = [&](const Vec &p, const Vec &d) {
-        return std::abs(speedOf(p, d, i, m) - v) <= T(1e-6) * v;
+        return std::abs(speedOf(p, d, i, m) - v) <= T(1e-6) * std::abs(v);
       };
       bool uniform = same(C0[i], NRM0[i]) && same(C0[i], Dir[i]) &&
                      same(X[i], NL[i]) && same(PL[i], NL[i]);
@@ -1807,58 +2474,6 @@ template <class T, int D> class AdvectHermite {
       rounded[i] = uniform;
     }
     return rounded;
-  }
-
-  // the rebuilt band takes its values from the dual contouring mesh, whose
-  // vertices on a convex curved part, as the arc a deposition rounds an edge
-  // into, lie where tangent planes meet, outside the arc: the rounding grows
-  // on from there, and every rebuild adds to it. A node of such a part keeps
-  // its advected value and tangent plane, exact under a uniform rate, where
-  // they agree with the rebuilt ones to a quarter of a grid spacing, and is
-  // marked for dual contouring (smoothLabel)
-  void keepAdvected(const std::vector<std::pair<hrleIndex, long>> &before,
-                    const std::vector<T> &valueBefore,
-                    const std::vector<Vec> &normalBefore,
-                    const std::vector<char> &rounded) {
-    auto &pointData = levelSet->getPointData();
-    auto *closest = pointData.getVectorData(
-        FromSurfaceMesh<T, D>::closestPointsLabel, true);
-    auto *normals = pointData.getVectorData(
-        FromSurfaceMesh<T, D>::surfaceNormalsLabel, true);
-    if (closest == nullptr || normals == nullptr ||
-        closest->size() != levelSet->getNumberOfPoints() ||
-        normals->size() != levelSet->getNumberOfPoints())
-      return;
-    typename PointData<T>::ScalarDataType kept(levelSet->getNumberOfPoints(),
-                                               T(0));
-    for (viennahrle::SparseIterator<typename Domain<T, D>::DomainType> it(
-             levelSet->getDomain());
-         !it.isFinished(); it.next()) {
-      if (!it.isDefined())
-        continue;
-      const hrleIndex &idx = it.getStartIndices();
-      auto found = std::lower_bound(
-          before.begin(), before.end(), idx,
-          [](const auto &a, const hrleIndex &b) { return a.first < b; });
-      if (found == before.end() || found->first < idx || idx < found->first)
-        continue;
-      const long j = found->second;
-      if (!rounded[j] || Norm(normalBefore[j]) < T(0.5) ||
-          std::abs(valueBefore[j] - it.getValue()) > T(0.25))
-        continue;
-      const auto id = it.getPointId();
-      Vec x{};
-      for (int i = 0; i < D; ++i)
-        x[i] = T(idx[i]);
-      it.getDefinedValue() = valueBefore[j];
-      const Vec foot = x - normalBefore[j] * valueBefore[j];
-      for (int i = 0; i < 3; ++i) {
-        (*closest)[id][i] = foot[i] * gridDelta;
-        (*normals)[id][i] = normalBefore[j][i];
-      }
-      kept[id] = T(1);
-    }
-    pointData.insertReplaceScalarData(std::move(kept), smoothLabel);
   }
 
 public:
@@ -1874,12 +2489,16 @@ public:
   static constexpr char valueLabel[] = "HermiteValue";
   static constexpr char sideLabel[] = "HermiteSide";
   static constexpr char flagsLabel[] = "HermiteFlags";
-  // nodes on a convex rounded part (roundedNodes), whose cells dual
-  // contouring places halfway between the planes' point and the mass point
+  // nodes on a rounded part (roundedNodes), whose cells dual contouring
+  // places halfway between the planes' point and the mass point
   static constexpr char smoothLabel[] = "HermiteSmooth";
   static constexpr char coneALabel[] = "HermiteConeA";
   static constexpr char coneBLabel[] = "HermiteConeB";
   static constexpr char timeLabel[] = "HermiteTime";
+  static constexpr char sinceLabel[] = "HermiteSince";
+  static constexpr char materialLabel[] = "HermiteMaterial";
+  static constexpr char coneCLabel[] = "HermiteConeC";
+  static constexpr char entryLabel[] = "HermiteEntrySide";
 
   AdvectHermite() = default;
 
@@ -1916,8 +2535,9 @@ public:
   /// Largest move of the front per time step in grid spacings, default 0.5.
   void setTimeStepRatio(T ratio) { timeStepRatio = ratio; }
 
-  /// Front motion in grid spacings after which the band is rebuilt from the
-  /// dual contouring mesh, default 2. It must stay well inside the band.
+  /// Front motion in grid spacings after which the band moves with the
+  /// surface, its nodes from the dual contouring mesh of the planes, default
+  /// 2. It must stay well inside the band.
   void setRebuildDistance(T distance) { rebuildDistance = distance; }
 
   /// Level set width of the rebuilt band, default 12 (6 grid spacings on
@@ -1928,12 +2548,12 @@ public:
   /// velocities that are updated between steps. Default false.
   void setSingleStep(bool passedSingleStep) { singleStep = passedSingleStep; }
 
-  /// Whether apply() rebuilds the band from the dual contouring mesh of its
+  /// Whether apply() repairs the band from the dual contouring mesh of its
   /// planes once the whole advection time is done if the band is no valid
-  /// level set (Check), default true. Between rebuilds, values further from
-  /// the surface can lag behind edges the motion created, as at the tip of
-  /// an undercut; the rebuild leaves the surface as it is. Without it, a
-  /// further apply() continues from the band state.
+  /// level set (Check), default true. Values further from the surface can lag
+  /// behind edges the motion created, as at the tip of an undercut; the
+  /// repair leaves the surface as it is. Without it, a further apply()
+  /// continues from the band state.
   void setRebuildAtEnd(bool passedRebuildAtEnd) {
     rebuildAtEnd = passedRebuildAtEnd;
   }
@@ -1961,6 +2581,8 @@ public:
       return;
     }
     bool rebuiltLast = false;
+    // the velocities hold the data of the band as this call finds it
+    rebuiltBand = false;
     collectNodes();
     if (!restoreState()) {
       // a band narrower than the rebuilt one, as after Reduce or Prune, is
@@ -1976,19 +2598,17 @@ public:
     while (advectedTime < advectionTime) {
       // rebuild once the front has moved far enough, also where a previous
       // apply() left a band that is due
-      if (motionSinceRebuild >= rebuildDistance - tinyLength) {
+      if (motionSinceRebuild >= rebuildDistance - tinyLength)
         rebuild();
-        collectNodes();
-        if (!initializeFromClosestPoints())
-          return;
-      }
       const long n = long(S.size());
       std::vector<T> Vd(n, T(0)), Vn(n, T(0));
       T maxSpeed = 0.;
 #pragma omp parallel for reduction(max : maxSpeed)
       for (long i = 0; i < n; ++i) {
         Vd[i] = speedOf(HA[i], Dir[i], i, nodeMaterial(i, HA[i], Dir[i]));
-        Vn[i] = good[i] ? Vd[i] : speed(FA[i], NRM[i], i);
+        Vn[i] = good[i]
+                    ? Vd[i]
+                    : speedOf(FA[i], NRM[i], i, nodeMaterial(i, FA[i], NRM[i]));
         maxSpeed = std::max(maxSpeed, std::abs(good[i] ? Vd[i] : Vn[i]));
       }
       const T remaining = advectionTime - advectedTime;
@@ -2026,9 +2646,6 @@ public:
           rebuiltLast = true;
           break;
         }
-        collectNodes();
-        if (!initializeFromClosestPoints())
-          return;
       }
       if (singleStep)
         break;
@@ -2036,22 +2653,28 @@ public:
     const bool done =
         advectedTime >=
         advectionTime - tinyLength * std::max(T(1), advectionTime);
-    if (!rebuiltLast) {
+    if (!rebuiltLast)
       writeBack();
-      // values further from the surface can lag behind edges the motion
-      // created since the last rebuild, as at the tip of an undercut; a band
-      // that is no valid level set then is rebuilt
-      if (done && rebuildAtEnd) {
-        Check<T, D> check(levelSet);
+    // values further from the surface can lag behind edges the motion
+    // created, as at the tip of an undercut, also right after a rebuild,
+    // which keeps the values of the old band. Of a band that is no valid
+    // level set, the nodes of the neighbour pairs that Check finds too far
+    // apart take the values of the mesh of the planes; only where that does
+    // not suffice, the band is rebuilt from the mesh
+    if (done && rebuildAtEnd) {
+      Check<T, D> check(levelSet);
+      check.apply();
+      if (!check.isValid() && boundFarValues()) {
+        writeBack();
         check.apply();
-        if (!check.isValid() && boundFarValues()) {
-          writeBack();
-          check.apply();
-        }
-        if (!check.isValid()) {
-          Reinitialize<T, D>(levelSet, bandWidth).apply();
-          ++numberOfRebuilds;
-        }
+      }
+      if (!check.isValid() && repairFromMesh()) {
+        writeBack();
+        check.apply();
+      }
+      if (!check.isValid()) {
+        Reinitialize<T, D>(levelSet, bandWidth).apply();
+        ++numberOfRebuilds;
       }
     }
     // the lower level sets end at the surface, as in Advect, once the whole

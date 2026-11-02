@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cmath>
+
 #include <hrleSparseIterator.hpp>
 #include <lsDomain.hpp>
 #include <vcVectorType.hpp>
@@ -65,6 +67,13 @@ public:
       }
       //****************************
 
+      // a Euclidean band holds the distance to the surface far from it, where
+      // a smaller value along the ray only means that the ray passes closer
+      // to the surface: there the ray is blocked where it enters the solid
+      // after it has been outside, and it steps through the nearest cells
+      const bool euclidean =
+          levelSet->getNormalization() == NormalizationEnum::EUCLIDEAN;
+
 #pragma omp parallel for
       for (unsigned p = 0; p < domain.getNumberOfSegments(); ++p) {
 
@@ -97,6 +106,7 @@ public:
             rayPos[i] += dir[i];
 
           bool visibility = true;
+          bool outside = it.getValue() >= 0;
 
           while (true) {
             // Update the ray position
@@ -106,7 +116,10 @@ public:
             // Determine the nearest grid cell (round to nearest index)
             viennahrle::Index<D> nearestCell;
             for (int i = 0; i < D; ++i)
-              nearestCell[i] = static_cast<viennahrle::IndexType>(rayPos[i]);
+              nearestCell[i] =
+                  euclidean ? static_cast<viennahrle::IndexType>(
+                                  std::lround(rayPos[i]))
+                            : static_cast<viennahrle::IndexType>(rayPos[i]);
 
             // Check if the nearest cell is within bounds
             bool outOfBounds = false;
@@ -125,6 +138,16 @@ public:
             T value =
                 viennahrle::SparseIterator<hrleDomainType>(domain, nearestCell)
                     .getValue();
+
+            if (euclidean) {
+              if (value >= 0) {
+                outside = true;
+              } else if (outside) {
+                visibility = false;
+                break;
+              }
+              continue;
+            }
 
             // Update the minimum value encountered
             if (value < minLevelSetValue) {
