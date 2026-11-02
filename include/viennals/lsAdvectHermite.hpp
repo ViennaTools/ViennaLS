@@ -211,6 +211,16 @@ template <class T, int D> class AdvectHermite {
            DotProduct(u, a + b) > 0;
   }
   static T sign(T v) { return T((v > 0) - (v < 0)); }
+  // whether the unit vector u lies in the cone of the normals a, b and c
+  static bool inCornerCone(const Vec &u, const Vec &a, const Vec &b,
+                           const Vec &c) {
+    const T det = DotProduct(a, CrossProduct(b, c));
+    if (std::abs(det) < T(1e-6))
+      return false;
+    return DotProduct(u, CrossProduct(b, c)) / det >= -unitTolerance &&
+           DotProduct(a, CrossProduct(u, c)) / det >= -unitTolerance &&
+           DotProduct(a, CrossProduct(b, u)) / det >= -unitTolerance;
+  }
 
   // neighbour offsets ordered faces, edges, corners
   static std::vector<hrleIndex> offsets() {
@@ -859,20 +869,26 @@ template <class T, int D> class AdvectHermite {
   // ends keep the offsets ox and oy they accumulated (exact for velocities
   // that keep their shape over t); keep the largest signed distance where the
   // feature is convex, the smallest where it is concave; the plane's point is
-  // its support point on the moved fan
+  // its support point on the moved fan. Only the directions of the fan's cone
+  // count: between ma and mb, the faces of an edge or the part of its own
+  // material where an interface splits it, and in 3D across the edge (cone
+  // 1), or in the cone of the three faces ma, mb and mc of a 3D corner (cone
+  // 2). A direction outside it, as the normal of another face that a
+  // neighbour carries, belongs to another feature, and a plane of the fan in
+  // that direction would cut into the material
   void arc(long i, const Vec dx, T ox, const Vec &dy, T oy, const Vec &c, int m,
-           T t, bool convex, bool split, const Vec &ma, const Vec &mb,
-           bool refine, T &s, Vec &p, Vec &nn) const {
+           T t, bool convex, int cone, const Vec &ma, const Vec &mb,
+           const Vec &mc, bool refine, T &s, Vec &p, Vec &nn) const {
     static constexpr T samples[] = {0.125, 0.25, 0.375, 0.5,
                                     0.625, 0.75, 0.875, 1.0};
     const T cx = ox - t * speedOf(c, dx, i, m);
     const T cy = oy - t * speedOf(c, dy, i, m);
-    // the samples, and the ends of a split cone between dx and dy
+    // the samples, and the ends of the cone between dx and dy
     std::array<T, 10> fractions{};
     int count = 0;
     for (T f : samples)
       fractions[count++] = f;
-    if (split)
+    if (cone == 1)
       for (const Vec &e : {ma, mb}) {
         const T ex = Norm(CrossProduct(dx, e)), ey = Norm(CrossProduct(dy, e));
         if (ex + ey > tinyLength && within(e, dx, dy))
@@ -886,8 +902,16 @@ template <class T, int D> class AdvectHermite {
       if (length < tinyLength)
         return false;
       d = d * (1 / length);
-      // directions of its own material only
-      if (split && !within(d, ma, mb))
+      if (cone == 1) {
+        if (!within(d, ma, mb))
+          return false;
+        if constexpr (D == 3) {
+          const Vec z = CrossProduct(ma, mb);
+          if (std::abs(DotProduct(d, z)) > rebuiltTilt * Norm(z))
+            return false;
+        }
+      }
+      if (cone == 2 && !inCornerCone(d, ma, mb, mc))
         return false;
       offset = t * speedOf(c, d, i, m) + (1 - f) * cx + f * cy;
       value = DotProduct(X[i] - c, d) - offset;
@@ -1150,6 +1174,9 @@ template <class T, int D> class AdvectHermite {
         // neighbours carry, along the linear blend of the two
         const bool timed = fanTime[i] >= 0;
         const T t = timed ? fanTime[i] : T(0);
+        // the fan's cone: of an edge or 2D corner (the part of its material
+        // where an interface splits it), or of a 3D corner
+        const int cone = arcKnown[i] ? 1 : (cornerKnown[i] ? 2 : 0);
         const Vec &sh = shiftOf(i, k);
         const Vec dc = C0[j] + sh - C0[i];
         const bool same =
@@ -1166,7 +1193,7 @@ template <class T, int D> class AdvectHermite {
               (piece[j] == piece[i])
                   ? DotProduct(previousP[j] + sh - C0[i], previous[j])
                   : t * speedOf(C0[i], previous[j], i, piece[i]),
-              C0[i], piece[i], t, convex, split[i], coneA[i], coneB[i],
+              C0[i], piece[i], t, convex, cone, coneA[i], coneB[i], arcC[i],
               arcGrows[i], Sf[i], Pf[i], Nf[i]);
         // the face's accumulated offset while the neighbour still carries
         // that face of the fan's material; one overtaken since holds another
@@ -1177,8 +1204,8 @@ template <class T, int D> class AdvectHermite {
           const T oy = carried ? DotProduct(P[j] + sh - C0[i], NRM0[j])
                                : t * speedOf(C0[i], NRM0[j], i, piece[i]);
           arc(i, Nf[i], DotProduct(Pf[i] - C0[i], Nf[i]), NRM0[j], oy, C0[i],
-              piece[i], t, convex, split[i], coneA[i], coneB[i], arcGrows[i],
-              Sf[i], Pf[i], Nf[i]);
+              piece[i], t, convex, cone, coneA[i], coneB[i], arcC[i],
+              arcGrows[i], Sf[i], Pf[i], Nf[i]);
         }
       }
     }
@@ -2179,15 +2206,6 @@ template <class T, int D> class AdvectHermite {
                  ? found->second
                  : long(-1);
     };
-    // whether the unit vector u lies in the cone of the normals a, b and c
-    auto inCorner = [](const Vec &u, const Vec &a, const Vec &b, const Vec &c) {
-      const T det = DotProduct(a, CrossProduct(b, c));
-      if (std::abs(det) < T(1e-6))
-        return false;
-      return DotProduct(u, CrossProduct(b, c)) / det >= -unitTolerance &&
-             DotProduct(a, CrossProduct(u, c)) / det >= -unitTolerance &&
-             DotProduct(a, CrossProduct(b, u)) / det >= -unitTolerance;
-    };
     auto &pointData = levelSet->getPointData();
     const auto *closest = pointData.getVectorData(
         FromSurfaceMesh<T, D>::closestPointsLabel, true);
@@ -2232,7 +2250,7 @@ template <class T, int D> class AdvectHermite {
             const Vec r = X[i] - c, rj = oldX[m] - c;
             const T length = Norm(r);
             if (length > smallLength &&
-                inCorner(r * (1 / length), oA[m], oB[m], oC3[m])) {
+                inCornerCone(r * (1 / length), oA[m], oB[m], oC3[m])) {
               const T vf = length - (Norm(rj) - std::abs(oS[m]));
               if (vf > 0) {
                 fanRank = 2;
