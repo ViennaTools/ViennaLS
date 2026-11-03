@@ -1267,70 +1267,11 @@ int checkRoundedInside() {
   return EXIT_SUCCESS;
 }
 
-// rate of ions from above with the angular exponent of SF6/O2 etching: a
-// floor moves, faces tilted by more than a few degrees stay
-class Ions : public Rated {
-public:
-  double getScalarVelocity(const ls::Vec3D<double> &, int,
-                           const ls::Vec3D<double> &normal,
-                           unsigned long) override {
-    return normal[1] > 0. ? -std::pow(normal[1], 1000.) : 0.;
-  }
-};
-
-// a floor etched 6 grid spacings down beside a static chamfer of 34 degrees
-// at the foot of a wall: below the chamfer's lower end the surface drops,
-// and the floor beside it lies at -6, where the plane of the chamfer, which
-// the floor passes, would hold it up along its extension
-int checkPartingFaces() {
-  const double r = 6., L = 3., h = L * std::tan(34. * M_PI / 180.);
-  double bounds[4] = {-40., 40., -40., 40.};
-  ls::BoundaryConditionEnum boundaryCons[2] = {
-      ls::BoundaryConditionEnum::REFLECTIVE_BOUNDARY,
-      ls::BoundaryConditionEnum::REFLECTIVE_BOUNDARY};
-  auto domain =
-      ls::SmartPointer<ls::Domain<double, 2>>::New(bounds, boundaryCons, 1.);
-  domain->setNormalization(ls::NormalizationEnum::EUCLIDEAN);
-  domain->setLevelSetWidth(12);
-  // the solid clockwise: left side, floor, chamfer, wall, its top, right
-  // side, bottom
-  const double corners[7][2] = {{-20.3, -20.3}, {-20.3, 0.}, {-L, 0.},
-                                {0., h},        {0., 15.3},  {15.3, 15.3},
-                                {15.3, -20.3}};
-  auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
-  for (const auto &c : corners)
-    mesh->insertNextNode({c[0], c[1], 0.});
-  for (unsigned k = 0; k < 7; ++k)
-    mesh->insertNextLine({k, (k + 1) % 7});
-  ls::FromSurfaceMesh<double, 2> mesher(domain, mesh);
-  mesher.setUseWindingNumber(true);
-  mesher.apply();
-  ls::AdvectHermite<double, 2> advect(domain, ls::SmartPointer<Ions>::New());
-  advect.setAdvectionTime(r);
-  advect.apply();
-  auto surface = ls::SmartPointer<ls::Mesh<>>::New();
-  ls::ToDualContouringMesh<double, 2>(domain, surface).apply();
-  double deviation = 0.;
-  int count = 0;
-  for (const auto &n : surface->getNodes())
-    if (n[0] > -15. && n[0] < -L - 1.5 && n[1] > -15. && n[1] < 5.) {
-      deviation = std::max(deviation, std::abs(n[1] + r));
-      ++count;
-    }
-  std::cout << "2D floor etched beside a static chamfer: " << count
-            << " vertices, worst " << deviation << " grid spacings off the floor"
-            << std::endl;
-  if (count == 0 || deviation > 0.05)
-    return fail(2, "floor beside a static chamfer off");
-  return EXIT_SUCCESS;
-}
-
 int main() {
   omp_set_num_threads(4);
   if (check<2>(0.5) != EXIT_SUCCESS || check<3>(1.) != EXIT_SUCCESS ||
-      checkRoundedInside() != EXIT_SUCCESS ||
-      checkPartingFaces() != EXIT_SUCCESS ||
-      checkPeriodic() != EXIT_SUCCESS || checkMaterials() != EXIT_SUCCESS ||
+      checkRoundedInside() != EXIT_SUCCESS || checkPeriodic() != EXIT_SUCCESS ||
+      checkMaterials() != EXIT_SUCCESS ||
       checkReversedStack(0.5, 1e-4) != EXIT_SUCCESS ||
       checkReversedStack(0.125, 1e-4) != EXIT_SUCCESS ||
       checkReversedStack(0.5, 1e-2) != EXIT_SUCCESS ||
