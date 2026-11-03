@@ -1573,6 +1573,42 @@ template <class T, int D> class AdvectHermite {
       // beside that corner, which keeps a node beyond the end of the arc's
       // plane in the solid
       std::array<char, slots> dropped{};
+      // a face of the node's own material that its own face meets concavely
+      // acts, once the two faces part, only on its own side of the line where
+      // they met at the rebuild and in the cone of the directions between
+      // them there: as beside the floor that etching takes down past a
+      // static chamfer at the foot of a wall, the corner opens into a fan of
+      // these directions, and beyond it the node's own face is the surface
+      if (ownFan < 0)
+        for (int k = 0; k < count; ++k) {
+          if (sFan[k] >= 0 || withOwn[k] != -1 || sPiece[k] != piece[i])
+            continue;
+          const Vec &na = Ni, &nb = sN[k];
+          const T c = DotProduct(na, nb);
+          if (c >= junction || c <= -1 + unitTolerance)
+            continue;
+          // the faces part where the line they meet on moves along the
+          // partner's plane away from the partner
+          const T va = Vplane[i], vb = sV[k];
+          if (va - c * vb >= 0)
+            continue;
+          // the point of that line nearest to the node at the rebuild
+          const T da = Sf[i] + va * sinceRebuild,
+                  db = sS[k] + vb * sinceRebuild;
+          const T alpha = (da - c * db) / (1 - c * c),
+                  beta = (db - c * da) / (1 - c * c);
+          const Vec start = X[i] - na * alpha - nb * beta;
+          // along the node's own face away from the partner
+          Vec ta = nb - na * c;
+          ta = ta * (1 / Norm(ta));
+          const Vec r = X[i] - start;
+          if (DotProduct(r, ta) <= smallLength)
+            continue;
+          const T length = Norm(r);
+          if (length > smallLength && within(r * (T(-1) / length), na, nb))
+            continue;
+          dropped[k] = 1;
+        }
       T value = Sf[i];
       int active = -1;
       for (int attempt = 0; attempt < count; ++attempt) {
@@ -2221,7 +2257,9 @@ template <class T, int D> class AdvectHermite {
       // unless the node's direction from the feature of a rounded convex fan
       // lies in the fan's cone, a 3D corner's before an edge's: a rounded
       // part grows alike in every direction of its cone, and its support
-      // there gives the node's value exactly
+      // there gives the node's value exactly. Its radius is the old node's
+      // distance from the feature less its signed value, also for an old
+      // node inside the rounded part
       long j = oldAt(idx);
       const bool same = j >= 0;
       bool asFan = false;
@@ -2251,7 +2289,7 @@ template <class T, int D> class AdvectHermite {
             const T length = Norm(r);
             if (length > smallLength &&
                 inCornerCone(r * (1 / length), oA[m], oB[m], oC3[m])) {
-              const T vf = length - (Norm(rj) - std::abs(oS[m]));
+              const T vf = length - (Norm(rj) - oS[m]);
               if (vf > 0) {
                 fanRank = 2;
                 j = m;
@@ -2280,7 +2318,7 @@ template <class T, int D> class AdvectHermite {
           const T length = Norm(r);
           if (length < smallLength || !within(r * (1 / length), oA[m], oB[m]))
             continue;
-          const T vf = length - (Norm(rj) - std::abs(oS[m]));
+          const T vf = length - (Norm(rj) - oS[m]);
           if (vf > 0) {
             fanRank = 1;
             j = m;
@@ -2454,6 +2492,7 @@ template <class T, int D> class AdvectHermite {
     for (long i = 0; i < n; ++i)
       side0[i] = sign(S[i]);
     motionSinceRebuild = 0.;
+    sinceRebuild = 0.;
     writeBack();
   }
 
