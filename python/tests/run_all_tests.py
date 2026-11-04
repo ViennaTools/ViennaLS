@@ -1,8 +1,110 @@
 import unittest
 import os
+import struct
+import tempfile
+import zlib
 import viennals as vls
 import viennals.d2 as d2
 import viennals.d3 as d3
+
+try:
+    import numpy as np
+except ImportError:
+    np = None
+try:
+    import blosc
+except ImportError:
+    blosc = None
+
+
+def _writeLabelVdb(fileName, labels, low, voxelSize, useBlosc=False):
+    """Write a box of int32 labels as the active voxels of a .vdb file, with
+    the active-mask compression OpenVDB uses."""
+    compression = 0x2 | (0x4 if useBlosc else 0x1)
+
+    def values(data):
+        raw = np.asarray(data, "<i4").tobytes()
+        if useBlosc:
+            packed = blosc.compress(raw, typesize=4, cname="lz4", shuffle=blosc.SHUFFLE)
+        else:
+            packed = zlib.compress(raw)
+        # no inactive values to store, then the active ones
+        return struct.pack("<bq", 0, len(packed)) + packed
+
+    def mask(bits):
+        return np.packbits(np.asarray(bits, bool), bitorder="little").tobytes()
+
+    def string(text):
+        return struct.pack("<I", len(text)) + text.encode()
+
+    indices = np.argwhere(np.ones(labels.shape, bool)) + low
+    tree = {}
+    for ijk, value in zip(indices, labels.reshape(-1)):
+        upper, lower, leaf = (tuple(ijk & ~(size - 1)) for size in (4096, 128, 8))
+        local = ijk - leaf
+        offset = (local[0] << 6) | (local[1] << 3) | local[2]
+        node = tree.setdefault(upper, {}).setdefault(lower, {})
+        node.setdefault(leaf, {})[offset] = value
+
+    def childOffset(child, parent, shift, log2Dim):
+        c = (np.array(child) - np.array(parent)) >> shift
+        return (c[0] << (2 * log2Dim)) | (c[1] << log2Dim) | c[2]
+
+    topology = struct.pack("<iiII", 1, 0, 0, len(tree))
+    leaves = []
+    for upper, lowers in sorted(tree.items()):
+        children = {childOffset(o, upper, 7, 5): o for o in lowers}
+        topology += struct.pack("<3i", *upper)
+        topology += mask(np.isin(np.arange(1 << 15), list(children)))
+        topology += mask(np.zeros(1 << 15)) + values([])
+        for offset in sorted(children):
+            lower = children[offset]
+            leafOrigins = {childOffset(o, lower, 3, 4): o for o in lowers[lower]}
+            topology += mask(np.isin(np.arange(1 << 12), list(leafOrigins)))
+            topology += mask(np.zeros(1 << 12)) + values([])
+            for leafOffset in sorted(leafOrigins):
+                voxels = lowers[lower][leafOrigins[leafOffset]]
+                active = np.isin(np.arange(512), list(voxels))
+                topology += mask(active)
+                leaves.append((active, [voxels[n] for n in sorted(voxels)]))
+    buffers = b"".join(mask(active) + values(vals) for active, vals in leaves)
+
+    h = voxelSize
+    preamble = struct.pack("<II", compression, 0) + string("UniformScaleMap")
+    # scale, voxel size, inverse scale, its square and its half
+    inverse = [1 / h] * 3
+    preamble += struct.pack(
+        "<15d", *[h] * 6, *inverse, *[1 / h**2] * 3, *[0.5 / h] * 3
+    )
+    header = struct.pack("<qIII?", 0x56444220, 224, 11, 0, True) + b"0" * 36
+    header += struct.pack("<Ii", 0, 1)
+    descriptor = string("labels") + string("Tree_int32_5_4_3") + string("")
+    gridPos = len(header) + len(descriptor) + 24
+    blockPos = gridPos + len(preamble) + len(topology)
+    endPos = blockPos + len(buffers)
+    with open(fileName, "wb") as file:
+        file.write(header + descriptor + struct.pack("<3q", gridPos, blockPos, endPos))
+        file.write(preamble + topology + buffers)
+
+
+def _rebuildLabels(levelSets, module, shape, gridLow, gridDelta):
+    """The label of every grid point from a stack of level sets, -1 outside."""
+    rebuilt = np.full(shape, -1)
+    assigned = np.zeros(shape, bool)
+    for label, levelSet in levelSets:
+        work = module.Domain(levelSet)
+        module.Expand(work, 2 * max(shape) + 4).apply()
+        mesh = vls.Mesh()
+        module.ToMesh(work, mesh).apply()
+        nodes = np.array(mesh.getNodes())[:, : len(shape)]
+        values = np.array(mesh.getCellData().getScalarData("LSValues", False))
+        index = np.round(nodes / gridDelta).astype(int) - gridLow
+        keep = np.all((index >= 0) & (index < shape), axis=1)
+        inside = np.zeros(shape, bool)
+        inside[tuple(index[keep].T)] = values[keep] < 0
+        rebuilt[inside & ~assigned] = label
+        assigned |= inside
+    return rebuilt
 
 class TestVelocityField(vls.VelocityField):
     def __init__(self):
@@ -446,6 +548,50 @@ class WrappingTest(unittest.TestCase):
         for height in heights:
             self.assertAlmostEqual(height, 0.3, places=6)
         print("  > Done test_from_volume_mesh")
+
+    @unittest.skipIf(np is None, "needs numpy")
+    def test_vdb_labels(self):
+        print("\n[TEST] test_vdb_labels")
+        import viennals.vdb as vdb
+
+        # x points down: ambient (0) on top, a layer of 1 next to 10 over 5,
+        # all on a substrate of 6, extruded along z
+        labels = np.zeros((24, 11, 3), np.int32)
+        labels[6:12, :5] = 1
+        labels[6:9, 5:] = 10
+        labels[9:12, 5:] = 5
+        labels[12:] = 6
+        low, h = np.array([-7, 2, 0]), 0.5
+        for useBlosc in [False] + ([True] if blosc is not None else []):
+            print(f"  > Blosc {useBlosc}")
+            with tempfile.TemporaryDirectory() as directory:
+                fileName = os.path.join(directory, "labels.vdb")
+                _writeLabelVdb(fileName, labels, low, h, useBlosc)
+                grid = vdb.readGrids(fileName)[0]
+            self.assertEqual(grid.valueType, "int32")
+            self.assertEqual(grid.voxelSize, (h, h, h))
+            read = np.full(labels.shape, -1)
+            read[tuple((grid.indices - low).T)] = grid.values
+            self.assertTrue((read == labels).all())
+
+            for dim, axes in [(2, ("y", "-x")), (3, ("z", "y", "-x"))]:
+                print(f"    >> levelSetsFromLabels {dim}D")
+                levelSets = vdb.levelSetsFromLabels(grid, dim, axes)
+                self.assertEqual([label for label, _ in levelSets], [6, 5, 1, 10])
+                # the labels on the level set grid: lateral axes, then up = -x
+                if dim == 2:
+                    expected = np.flip(labels[:, :, 1], 0).T
+                    gridLow = [low[1], -(low[0] + labels.shape[0] - 1)]
+                else:
+                    expected = np.flip(labels, 0).transpose(2, 1, 0)
+                    gridLow = [low[2], low[1], -(low[0] + labels.shape[0] - 1)]
+                expected = np.where(expected == 0, -1, expected)
+                module = d3 if dim == 3 else d2
+                rebuilt = _rebuildLabels(
+                    levelSets, module, expected.shape, np.array(gridLow), h
+                )
+                self.assertTrue((rebuilt == expected).all())
+        print("  > Done test_vdb_labels")
 
     def test_boolean_variants(self):
         print("\n[TEST] test_boolean_variants")

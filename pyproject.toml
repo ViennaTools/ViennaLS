@@ -12,6 +12,9 @@ readme = "README.md"
 license = {file = "LICENSE"}
 description = "A high performance sparse level set library"
 
+[project.optional-dependencies]
+vdb = ["numpy", "blosc"]
+
 [project.urls]
 Homepage = "https://viennatools.github.io/ViennaLS/"
 Documentation = "https://viennatools.github.io/ViennaLS/"

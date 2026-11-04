@@ -95,6 +95,13 @@ These functions enable conversion between 2D and 3D representations and are also
 
 ---
 
+## **Reading OpenVDB Files**
+The `viennals.vdb` module reads `.vdb` files. It needs NumPy, and the `blosc` package for Blosc-compressed files (`pip install viennals[vdb]`):
+- `vdb.readGrids(fileName)`: the scalar grids of a file, with their active voxels
+- `vdb.levelSetsFromLabels(grid, dimension, axes, ambient, order)`: one level set per material of a grid of integer labels, stacked from the bottom up for a ViennaPS domain
+
+---
+
 ## **Example Imports**
 
 ```python
