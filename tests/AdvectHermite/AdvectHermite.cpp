@@ -32,7 +32,10 @@
   material stacks, also with the mask below in the stack and in single steps
   as ViennaPS runs them, the mask reaching a little below the substrate
   surface as MakeTrench builds it; their vertices include those at the
-  reflective boundaries. A mask on a sloped substrate (2D) checks the cones that
+  reflective boundaries. A substrate beside a mask etched with the rate 0.3 +
+  max(n.y, 0) in single steps, in both orders of the stack, must keep the
+  cavity below the mask that the speeds integrated over time give it. A mask
+  on a sloped substrate (2D) checks the cones that
   the interface splits at the feet of the mask, and the slope alone a Manhattan
   substrate below. A 2D trench etched with a noisy rate must not reach below
   the mask from a folded mesh at the corner of its bottom. The rotated boxes run
@@ -518,6 +521,122 @@ int checkMaterials() {
         deviation / gridDelta > (directional ? 0.05 : 0.3))
       return fail(2, name + " beside a mask off the exact result");
   }
+  return EXIT_SUCCESS;
+}
+
+// etching of one material with the rate c + d max(n.y, 0), whose support
+// function is that of a disk of radius c swept along d down
+class MixedEtch : public ls::VelocityField<double> {
+  double c, d;
+  int etched;
+
+public:
+  MixedEtch(double passedC, double passedD, int passedEtched)
+      : c(passedC), d(passedD), etched(passedEtched) {}
+  double getScalarVelocity(const ls::Vec3D<double> &, int material,
+                           const ls::Vec3D<double> &normal,
+                           unsigned long) override {
+    if (material != etched)
+      return 0.;
+    return -(c + d * std::max(normal[1], 0.));
+  }
+};
+
+// distance to the exact boundary after etching with c + d max(n.y, 0)
+// beside a mask |x| <= a on the substrate surface y = ys, with u = c t and
+// w = d t: the exposed surface dilated by the disk of radius u swept down by
+// w, below each foot of the mask a wall at a - u from the mask's underside
+// down by w, a quarter circle of radius u around (a, ys - w) and the floor
+double mixedDistance(double x, double y, double a, double ys, double h,
+                     double u, double w, double width) {
+  x = std::abs(x);                                          // symmetric
+  double r = segmentDistance(x, y, 0., ys + h, a, ys + h);  // mask top
+  r = std::min(r, segmentDistance(x, y, a, ys + h, a, ys)); // mask wall
+  r = std::min(r, segmentDistance(x, y, a, ys, a - u, ys)); // underside
+  r = std::min(r, segmentDistance(x, y, a - u, ys, a - u, ys - w));
+  const double dx = x - a, dy = y - (ys - w);
+  if (dx <= 0 && dy <= 0)
+    r = std::min(r, std::abs(std::hypot(dx, dy) - u));
+  else
+    r = std::min(r, std::min(std::hypot(x - (a - u), y - (ys - w)),
+                             std::hypot(x - a, y - (ys - w - u))));
+  return std::min(r, segmentDistance(x, y, a, ys - w - u, width, ys - w - u));
+}
+
+// a substrate beside a mask etched with the rate 0.3 + max(n.y, 0) in single
+// steps as ViennaPS runs them, with the substrate or the mask below in the
+// stack: for a rate alike in space Hopf's formula gives the exposed surface
+// dilated by the time times the disk of radius 0.3 swept down by 1. The fan
+// at the foot of the mask samples that support function, and the nodes that
+// enter the band below the mask at every rebuild must take it in their own
+// directions (3.9 and 5.4 grid spacings off before, where they took the
+// planes of the fan's other directions as faces and a fan whose surface
+// point lay on the mask's underside took the mask's material)
+int checkMixedEtch(bool reversed) {
+  const double gridDelta = 0.125, time = 1.6, c = 0.3, d = 1., width = 6.;
+  const double a = 2.37, ys = 0.29, h = 1.13;
+  double bounds[4] = {-width, width, -6., 6.};
+  ls::BoundaryConditionEnum boundaryCons[2] = {
+      ls::BoundaryConditionEnum::REFLECTIVE_BOUNDARY,
+      ls::BoundaryConditionEnum::INFINITE_BOUNDARY};
+  auto levelSetOf = [&](const std::vector<std::array<double, 2>> &points,
+                        bool closed, bool euclidean) {
+    auto domain = ls::SmartPointer<ls::Domain<double, 2>>::New(
+        bounds, boundaryCons, gridDelta);
+    if (euclidean) {
+      domain->setNormalization(ls::NormalizationEnum::EUCLIDEAN);
+      domain->setLevelSetWidth(12);
+    }
+    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    for (const auto &q : points)
+      mesh->insertNextNode({q[0], q[1], 0.});
+    const unsigned n = points.size();
+    for (unsigned k = 0; k + 1 < n + (closed ? 1 : 0); ++k)
+      mesh->insertNextLine({k, (k + 1) % n});
+    ls::FromSurfaceMesh<double, 2>(domain, mesh).apply();
+    return domain;
+  };
+  // substrate below, Manhattan as usual, or the mask reaching a little below
+  // the substrate surface, as MakeTrench builds it
+  auto lower =
+      reversed
+          ? levelSetOf(
+                {{-a, ys - 1e-3}, {-a, ys + h}, {a, ys + h}, {a, ys - 1e-3}},
+                true, false)
+          : levelSetOf({{-width, ys}, {width, ys}}, false, false);
+  auto top = levelSetOf(
+      {{-width, ys}, {-a, ys}, {-a, ys + h}, {a, ys + h}, {a, ys}, {width, ys}},
+      false, true);
+  ls::AdvectHermite<double, 2> advect(
+      std::vector<ls::SmartPointer<ls::Domain<double, 2>>>{lower, top},
+      ls::SmartPointer<MixedEtch>::New(c, d, reversed ? 1 : 0));
+  advect.setSingleStep(true);
+  advect.setTimeStepRatio(0.4999);
+  double done = 0.;
+  unsigned calls = 0;
+  while (done < time - 1e-12 && calls < 100) {
+    advect.setAdvectionTime(time - done);
+    advect.apply();
+    done += advect.getAdvectedTime();
+    ++calls;
+  }
+  auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+  ls::ToDualContouringMesh<double, 2>(top, mesh).apply();
+  double deviation = 0.;
+  for (const auto &n : mesh->getNodes()) {
+    if (std::abs(n[0]) > width - gridDelta)
+      continue; // the reflective boundary
+    deviation = std::max(deviation, mixedDistance(n[0], n[1], a, ys, h,
+                                                  c * done, d * done, width));
+  }
+  std::cout << "2D etching with the rate 0.3 + max(n.y, 0) beside a mask, "
+            << (reversed ? "mask" : "substrate")
+            << " below in the stack, single steps: " << calls
+            << " calls, worst vertex " << deviation / gridDelta
+            << " grid spacings" << std::endl;
+  if (mesh->getNodes().empty() || deviation / gridDelta > 0.5)
+    return fail(2, "etching with a mixed rate beside a mask off the exact "
+                   "result");
   return EXIT_SUCCESS;
 }
 
@@ -1319,6 +1438,8 @@ int main() {
       checkRoundedInside() != EXIT_SUCCESS ||
       checkRateChange() != EXIT_SUCCESS || checkPeriodic() != EXIT_SUCCESS ||
       checkMaterials() != EXIT_SUCCESS ||
+      checkMixedEtch(false) != EXIT_SUCCESS ||
+      checkMixedEtch(true) != EXIT_SUCCESS ||
       checkReversedStack(0.5, 1e-4) != EXIT_SUCCESS ||
       checkReversedStack(0.125, 1e-4) != EXIT_SUCCESS ||
       checkReversedStack(0.5, 1e-2) != EXIT_SUCCESS ||
