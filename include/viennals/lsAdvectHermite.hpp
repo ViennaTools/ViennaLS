@@ -772,6 +772,26 @@ template <class T, int D> class AdvectHermite {
     return true;
   }
 
+  // two directions along a face with the normal n0, orthonormal with it
+  std::array<Vec, D - 1> faceTangents(const Vec &n0) const {
+    std::array<Vec, D - 1> tangents;
+    if constexpr (D == 2) {
+      tangents[0] = Vec{-n0[1], n0[0], T(0)};
+    } else {
+      int k = 0;
+      for (int c = 1; c < 3; ++c)
+        if (std::abs(n0[c]) < std::abs(n0[k]))
+          k = c;
+      Vec e{};
+      e[k] = 1;
+      Vec t1 = CrossProduct(n0, e);
+      t1 = t1 * (1 / Norm(t1));
+      tangents[0] = t1;
+      tangents[1] = CrossProduct(n0, t1);
+    }
+    return tangents;
+  }
+
   // the band state written by the last apply(), if the level set still holds
   // the values it left
   bool restoreState() {
@@ -1002,6 +1022,44 @@ template <class T, int D> class AdvectHermite {
       Sown[i] = moving[i] ? DotProduct(X[i] - P[i], N[i]) : S[i] - dt * Vp[i];
       // witnesses move with their piece; a fan's stays at its feature point
       Wm[i] = fan[i] ? W[i] : W[i] + N[i] * (dt * Vp[i]);
+    }
+    // faces turn with the rate along them: along a characteristic of the
+    // level set equation the normal turns as dn/dt = -(I - n n^T) grad V,
+    // with the gradient of the rate along the face at the face's own normal,
+    // from central differences a grid spacing to either side of the face's
+    // point; it vanishes for a rate of the normal and the material alone.
+    // The point moves along the normal halfway through the turn, with the
+    // rate halfway along its path, and the plane takes the turned normal
+    std::vector<char> turned(n, 0);
+#pragma omp parallel for
+    for (long i = 0; i < n; ++i) {
+      if (fan[i])
+        continue;
+      const Vec a = good[i] ? HA[i] : FA[i];
+      const Vec n0 = N[i];
+      const int m = nodeMaterial(i);
+      const std::array<Vec, D - 1> tangents = faceTangents(n0);
+      Vec g{};
+      for (const Vec &t : tangents) {
+        const T vp = speedOf(a + t, n0, i, m), vm = speedOf(a - t, n0, i, m);
+        g = g + t * ((vp - vm) / T(2));
+      }
+      // a rate of the normal and the material alone keeps the face as it is
+      if (Norm(g) == 0)
+        continue;
+      const Vec delta = g * (-dt);
+      Vec half = n0 + delta * T(0.5), end = n0 + delta;
+      half = half * (1 / Norm(half));
+      end = end * (1 / Norm(end));
+      const T v0 = speedOf(a, n0, i, m),
+              vHalf = speedOf(a + n0 * (dt * Vp[i] / 2), half, i, m);
+      const T v = Vp[i] + (vHalf - v0);
+      P[i] = a + half * (dt * v);
+      N[i] = end;
+      Vp[i] = v;
+      Sown[i] = DotProduct(X[i] - P[i], end);
+      Wm[i] = W[i] + half * (dt * v);
+      turned[i] = 1;
     }
     sinceRebuild += dt;
     for (auto &t : since)
@@ -1704,7 +1762,7 @@ template <class T, int D> class AdvectHermite {
       if (over[i])
         HA[i] = Pnew[i];
       else if (good[i])
-        HA[i] = HA[i] + Dir[i] * (dt * Vd[i]);
+        HA[i] = P[i];
       if (!good[i] || over[i])
         FA[i] = Pnew[i];
       if (over[i]) {
@@ -1715,6 +1773,9 @@ template <class T, int D> class AdvectHermite {
         boundPlane[i] = 0;
         smooth[i] = 0;
         exposedState[i] = 0;
+      } else if (turned[i]) {
+        NRM[i] = N[i];
+        Dir[i] = N[i];
       }
       if (stacked)
         pieceMaterial[i] = materialNew[i];
@@ -2804,6 +2865,26 @@ public:
       if (motionSinceRebuild >= rebuildDistance - tinyLength)
         rebuild();
       const long n = long(S.size());
+      // the point of each face's plane, where its speed is asked and from
+      // which it moves and turns, at the node's own foot on that plane: a
+      // node that took a plane over from a neighbour would otherwise keep
+      // the neighbour's point, which can lie grid spacings away, past the end
+      // of the face. Fans keep their feature point, nodes holding an
+      // interface plane theirs, and so does a node whose foot lies on another
+      // material
+#pragma omp parallel for
+      for (long i = 0; i < n; ++i) {
+        if (fan[i] || exposedState[i] || boundPlane[i])
+          continue;
+        Vec &a = good[i] ? HA[i] : FA[i];
+        const Vec &nn = good[i] ? Dir[i] : NRM[i];
+        const Vec foot = X[i] - nn * DotProduct(X[i] - a, nn);
+        if (Norm(foot - a) <= smallLength)
+          continue;
+        if (levelSets.size() > 1 && materialBehind(foot, nn) != nodeMaterial(i))
+          continue;
+        a = foot;
+      }
       std::vector<T> Vd(n, T(0)), Vn(n, T(0));
       T maxSpeed = 0.;
 #pragma omp parallel for reduction(max : maxSpeed)
