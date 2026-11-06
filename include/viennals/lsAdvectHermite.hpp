@@ -66,7 +66,10 @@ using namespace viennacore;
 /// have acted, fitted to the offsets its planes accumulated. This is exact
 /// for velocities that change only their rate, as between calls. A node
 /// beside the new face takes the plane of that face and becomes a fan of the
-/// edge.
+/// edge. A concave fan whose faces a velocity varying in space has moved
+/// away from its feature point, as the corner at the foot of a trench that
+/// slides down the wall, hands the nodes beside its faces to those faces,
+/// which move with the speeds at their own points.
 ///
 /// The level set must be Euclidean with closest points and normals, as created
 /// by FromSurfaceMesh or MakeGeometry. Level sets below it in a material stack
@@ -1148,7 +1151,12 @@ template <class T, int D> class AdvectHermite {
     // the time exceeds ten times the time since its planes were set: a speed
     // below a tenth of the mean that built the offset, as a flux that the
     // walls of a deepening trench shadow at the foot of its mask, would scale
-    // the offsets of other directions by an arbitrary time
+    // the offsets of other directions by an arbitrary time. A concave fan
+    // whose own direction moves at less than half the speed of the faster
+    // end of its cone takes the time since its planes were set: the error of
+    // the slow offset, as of the wall beside the corner at the foot of a
+    // trench, would reach the fast directions, as the floor, multiplied by
+    // the ratio of the speeds
     std::vector<T> fanTime(elapsed);
 #pragma omp parallel for
     for (long i = 0; i < n; ++i) {
@@ -1156,6 +1164,14 @@ template <class T, int D> class AdvectHermite {
         continue;
       const T v = speedOf(C0[i], N[i], i, piece[i]);
       const T own = DotProduct(P[i] - C0[i], N[i]);
+      if (!convexFan[i] && arcKnown[i] && since[i] > 0) {
+        const T va = std::abs(speedOf(C0[i], arcA[i], i, piece[i])),
+                vb = std::abs(speedOf(C0[i], arcB[i], i, piece[i]));
+        if (std::abs(v) < T(0.5) * std::max(va, vb)) {
+          fanTime[i] = since[i];
+          continue;
+        }
+      }
       if (v != 0 && own / v > 0 && own / v <= 10 * since[i])
         fanTime[i] = own / v;
       else if (std::abs(own) > smallLength)
@@ -1207,6 +1223,19 @@ template <class T, int D> class AdvectHermite {
         // plane, a face of another material moves at another speed
         const bool carried =
             face && carriesFace(j, N[j]) && piece[j] == piece[i];
+        // a face of the fan's material that holds a face of a concave fan's
+        // cone, which the speed at its own points has moved away from the
+        // feature point (facesFromConcaveFans), gives that end its plane
+        const bool endFace = !face && !convex && arcKnown[i] && good[j] &&
+                             !fan[j] && piece[j] == piece[i] &&
+                             (DotProduct(N[j], arcA[i]) > 1 - unitTolerance ||
+                              DotProduct(N[j], arcB[i]) > 1 - unitTolerance) &&
+                             DotProduct(Nf[i], N[j]) < 1 - unitTolerance;
+        if (endFace)
+          arc(i, Nf[i], DotProduct(Pf[i] - C0[i], Nf[i]), N[j],
+              DotProduct(P[j] + sh - C0[i], N[j]), C0[i], piece[i], t, convex,
+              cone, coneA[i], coneB[i], arcC[i], arcGrows[i], Sf[i], Pf[i],
+              Nf[i]);
         if (face && (carried || timed)) {
           const T oy = carried ? DotProduct(P[j] + sh - C0[i], NRM0[j])
                                : t * speedOf(C0[i], NRM0[j], i, piece[i]);
@@ -2434,7 +2463,11 @@ template <class T, int D> class AdvectHermite {
     // its planes, as a node beside a face the motion created that no node
     // held, takes the plane of the neighbour that gives it the mesh's value
     // to that accuracy; not on fans and rounded parts, whose mesh lies up to
-    // a tenth of a grid spacing off
+    // a tenth of a grid spacing off. A node that takes the plane of a
+    // concave fan becomes a fan of the same feature, as in the envelope: as
+    // a face, a plane of the corner at the foot of a trench in the node's
+    // direction would move with its own speed and cut a notch into the wall
+    // once the corner has slid past
     {
       const std::vector<char> rounded = roundedNodes();
       for (int pass = 0; pass < 3; ++pass) {
@@ -2460,7 +2493,9 @@ template <class T, int D> class AdvectHermite {
         long changed = 0;
         const auto NRM0b = NRM0, C00 = C0, W0 = W, RW0 = RW, NL0 = NL, PL0 = PL,
                    A0 = arcA, B0 = arcB;
-        const auto good0 = good, convex0 = convexFan;
+        const auto good0 = good, convex0 = convexFan, fan0 = fan,
+                   known0 = arcKnown, corner0 = cornerKnown;
+        const auto C30 = arcC;
         const auto since0 = since;
         const auto material0 = pieceMaterial;
         for (long i = 0; i < n; ++i) {
@@ -2484,9 +2519,12 @@ template <class T, int D> class AdvectHermite {
           pieceMaterial[i] = material0[m];
           exposedState[i] = 0;
           side0[i] = sign(S[i]);
-          fan[i] = 0;
-          arcKnown[i] = 0;
-          cornerKnown[i] = 0;
+          const bool concave = fan0[m] && !convex0[m];
+          fan[i] = concave;
+          arcKnown[i] = concave && known0[m];
+          cornerKnown[i] = concave && corner0[m];
+          if (concave)
+            arcC[i] = C30[m];
           moved[i] = 1;
           boundPlane[i] = 0;
           smooth[i] = 0;
@@ -2572,6 +2610,63 @@ template <class T, int D> class AdvectHermite {
       if (!(speedOf(C0[i], middle * (1 / length), i, m) <
             (va + vb) / length -
                 T(1e-3) * std::max(std::abs(va), std::abs(vb))))
+        continue;
+      const Vec d = NL[i], foot = X[i] - NL[i] * S[i];
+      HA[i] = FA[i] = PL[i] = C0[i] = W[i] = RW[i] = foot;
+      NRM[i] = NRM0[i] = Dir[i] = NL[i] = d;
+      fan[i] = 0;
+      arcKnown[i] = 0;
+      cornerKnown[i] = 0;
+      since[i] = 0;
+      moved[i] = 1;
+    }
+  }
+
+  // a concave fan takes its offsets as its time times the speeds at its
+  // feature point, exact for a velocity alike in space, as for the cavity an
+  // etch rounds below the foot of a mask. Its feature point stays where its
+  // faces met, while a velocity that varies in space moves each face with
+  // the speed at its own points, as the floor of a trench that slides the
+  // corner at its foot down the wall. A node beside one of the faces holds
+  // the plane of that face, the end of the cone in its direction. Once the
+  // ends of the cone have moved more than a grid spacing in the time since
+  // the fan's planes were set, such a node carries that plane as a face,
+  // through its foot, and moves with the speed at its own surface point. A
+  // node behind the plane of the other end, that of a face neighbour holding
+  // it or else the fan's own, lies behind the moved corner and stays a fan,
+  // and so do the fans of rounded parts (roundedNodes)
+  void facesFromConcaveFans() {
+    const long n = long(S.size());
+    const std::vector<char> rounded = roundedNodes();
+    std::vector<char> face(n, 0);
+#pragma omp parallel for
+    for (long i = 0; i < n; ++i) {
+      if (!fan[i] || convexFan[i] || !good[i] || !arcKnown[i] || rounded[i])
+        continue;
+      const bool atA = DotProduct(NL[i], arcA[i]) >= 1 - unitTolerance;
+      if (!atA && DotProduct(NL[i], arcB[i]) < 1 - unitTolerance)
+        continue;
+      const int m = nodeMaterial(i);
+      const T va = std::abs(speedOf(C0[i], arcA[i], i, m)),
+              vb = std::abs(speedOf(C0[i], arcB[i], i, m));
+      if (since[i] * std::max(va, vb) <= T(1))
+        continue;
+      const Vec &other = atA ? arcB[i] : arcA[i];
+      Vec otherPoint = C0[i] + other * (since[i] * speedOf(C0[i], other, i, m));
+      for (int k = 0; k < numberOfNeighbours; ++k) {
+        const long j = neighbours[i][k];
+        if (j >= 0 && !fan[j] && good[j] &&
+            pieceMaterial[j] == pieceMaterial[i] &&
+            DotProduct(NL[j], other) >= 1 - unitTolerance) {
+          otherPoint = PL[j] + shiftOf(i, k);
+          break;
+        }
+      }
+      face[i] = DotProduct(X[i] - otherPoint, other) >= -smallLength;
+    }
+#pragma omp parallel for
+    for (long i = 0; i < n; ++i) {
+      if (!face[i])
         continue;
       const Vec d = NL[i], foot = X[i] - NL[i] * S[i];
       HA[i] = FA[i] = PL[i] = C0[i] = W[i] = RW[i] = foot;
@@ -2733,6 +2828,7 @@ public:
       if (maxSpeed > 0) {
         step(dt, Vd, Vn);
         facesFromRoundingFans();
+        facesFromConcaveFans();
       }
       if (levelSets.size() > 1)
         exposeInterfaces();

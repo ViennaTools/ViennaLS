@@ -529,15 +529,19 @@ int checkMaterials() {
 class MixedEtch : public ls::VelocityField<double> {
   double c, d;
   int etched;
+  bool linear;
 
 public:
-  MixedEtch(double passedC, double passedD, int passedEtched)
-      : c(passedC), d(passedD), etched(passedEtched) {}
+  MixedEtch(double passedC, double passedD, int passedEtched,
+            bool passedLinear = false)
+      : c(passedC), d(passedD), etched(passedEtched), linear(passedLinear) {}
   double getScalarVelocity(const ls::Vec3D<double> &, int material,
                            const ls::Vec3D<double> &normal,
                            unsigned long) override {
     if (material != etched)
       return 0.;
+    if (linear)
+      return -(c * std::abs(normal[0]) + d * std::max(normal[1], 0.));
     return -(c + d * std::max(normal[1], 0.));
   }
 };
@@ -563,6 +567,21 @@ double mixedDistance(double x, double y, double a, double ys, double h,
   return std::min(r, segmentDistance(x, y, a, ys - w - u, width, ys - w - u));
 }
 
+// distance to the exact boundary after etching with c |n.x| + d max(n.y, 0)
+// beside a mask |x| <= a on the substrate surface y = ys, with u = c t and
+// w = d t: the exposed surface dilated by the rectangle [-u, u] x [-w, 0],
+// below each foot of the mask a cavity with the wall at a - u from the
+// mask's underside down to the floor at ys - w, its corner sharp
+double linearDistance(double x, double y, double a, double ys, double h,
+                      double u, double w, double width) {
+  x = std::abs(x);                                          // symmetric
+  double r = segmentDistance(x, y, 0., ys + h, a, ys + h);  // mask top
+  r = std::min(r, segmentDistance(x, y, a, ys + h, a, ys)); // mask wall
+  r = std::min(r, segmentDistance(x, y, a, ys, a - u, ys)); // underside
+  r = std::min(r, segmentDistance(x, y, a - u, ys, a - u, ys - w));
+  return std::min(r, segmentDistance(x, y, a - u, ys - w, width, ys - w));
+}
+
 // a substrate beside a mask etched with the rate 0.3 + max(n.y, 0) in single
 // steps as ViennaPS runs them, with the substrate or the mask below in the
 // stack: for a rate alike in space Hopf's formula gives the exposed surface
@@ -571,9 +590,15 @@ double mixedDistance(double x, double y, double a, double ys, double h,
 // enter the band below the mask at every rebuild must take it in their own
 // directions (3.9 and 5.4 grid spacings off before, where they took the
 // planes of the fan's other directions as faces and a fan whose surface
-// point lay on the mask's underside took the mask's material)
-int checkMixedEtch(bool reversed) {
-  const double gridDelta = 0.125, time = 1.6, c = 0.3, d = 1., width = 6.;
+// point lay on the mask's underside took the mask's material). With the
+// rate 0.1 |n.x| + max(n.y, 0) (linear) the cavity is a rectangle whose
+// corner slides down below the wall: the fan's nodes beside the wall hand
+// it to the wall's faces (0.93 grid spacings off before, a chamfer in the
+// corner, where the time of a node in the slow direction of the wall set
+// the floor of the fan)
+int checkMixedEtch(bool reversed, bool linear = false) {
+  const double gridDelta = 0.125, time = linear ? 2. : 1.6,
+               c = linear ? 0.1 : 0.3, d = 1., width = 6.;
   const double a = 2.37, ys = 0.29, h = 1.13;
   double bounds[4] = {-width, width, -6., 6.};
   ls::BoundaryConditionEnum boundaryCons[2] = {
@@ -609,7 +634,7 @@ int checkMixedEtch(bool reversed) {
       false, true);
   ls::AdvectHermite<double, 2> advect(
       std::vector<ls::SmartPointer<ls::Domain<double, 2>>>{lower, top},
-      ls::SmartPointer<MixedEtch>::New(c, d, reversed ? 1 : 0));
+      ls::SmartPointer<MixedEtch>::New(c, d, reversed ? 1 : 0, linear));
   advect.setSingleStep(true);
   advect.setTimeStepRatio(0.4999);
   double done = 0.;
@@ -626,15 +651,19 @@ int checkMixedEtch(bool reversed) {
   for (const auto &n : mesh->getNodes()) {
     if (std::abs(n[0]) > width - gridDelta)
       continue; // the reflective boundary
-    deviation = std::max(deviation, mixedDistance(n[0], n[1], a, ys, h,
-                                                  c * done, d * done, width));
+    deviation = std::max(
+        deviation,
+        linear
+            ? linearDistance(n[0], n[1], a, ys, h, c * done, d * done, width)
+            : mixedDistance(n[0], n[1], a, ys, h, c * done, d * done, width));
   }
-  std::cout << "2D etching with the rate 0.3 + max(n.y, 0) beside a mask, "
+  std::cout << "2D etching with the rate " << (linear ? "0.1 |n.x|" : "0.3")
+            << " + max(n.y, 0) beside a mask, "
             << (reversed ? "mask" : "substrate")
             << " below in the stack, single steps: " << calls
             << " calls, worst vertex " << deviation / gridDelta
             << " grid spacings" << std::endl;
-  if (mesh->getNodes().empty() || deviation / gridDelta > 0.5)
+  if (mesh->getNodes().empty() || deviation / gridDelta > (linear ? 0.35 : 0.5))
     return fail(2, "etching with a mixed rate beside a mask off the exact "
                    "result");
   return EXIT_SUCCESS;
@@ -1440,6 +1469,8 @@ int main() {
       checkMaterials() != EXIT_SUCCESS ||
       checkMixedEtch(false) != EXIT_SUCCESS ||
       checkMixedEtch(true) != EXIT_SUCCESS ||
+      checkMixedEtch(false, true) != EXIT_SUCCESS ||
+      checkMixedEtch(true, true) != EXIT_SUCCESS ||
       checkReversedStack(0.5, 1e-4) != EXIT_SUCCESS ||
       checkReversedStack(0.125, 1e-4) != EXIT_SUCCESS ||
       checkReversedStack(0.5, 1e-2) != EXIT_SUCCESS ||
