@@ -2496,6 +2496,50 @@ template <class T, int D> class AdvectHermite {
     return rounded;
   }
 
+  // a convex fan takes its offsets as its elapsed time times the speeds at
+  // its feature point now, exact only while the velocity keeps its shape. A
+  // fan that rounds its edge, as the arc a deposition grows over the edge of
+  // a mask, keeps its feature point under the growing film over rebuilds; a
+  // speed that changes its shape there, as a flux that a closing opening
+  // shadows or a rate whose isotropic part stops, collapses the arc. A node
+  // of such a fan whose plane has moved more than a grid spacing from the
+  // feature point carries that plane as a face from then on, through its
+  // foot, and moves with the speed at its own surface point. The fan rounds
+  // where the middle of its arc moves slower than the edge, (va + vb) / |a +
+  // b| from the speeds of the arc's ends; a fan whose planes pass through
+  // one moving corner, as the silhouette edge of a directional deposition
+  // sweeping out a face, stays a fan, and so do fans of a rate alike in every
+  // direction (roundedNodes), which round exactly
+  void facesFromRoundingFans() {
+    const long n = long(S.size());
+    const std::vector<char> rounded = roundedNodes();
+#pragma omp parallel for
+    for (long i = 0; i < n; ++i) {
+      if (!fan[i] || !convexFan[i] || !good[i] || !arcKnown[i] || rounded[i] ||
+          DotProduct(PL[i] - C0[i], NL[i]) <= T(1))
+        continue;
+      const Vec middle = arcA[i] + arcB[i];
+      const T length = Norm(middle);
+      if (length < smallLength)
+        continue;
+      const int m = nodeMaterial(i, HA[i], Dir[i]);
+      const T va = speedOf(C0[i], arcA[i], i, m),
+              vb = speedOf(C0[i], arcB[i], i, m);
+      if (!(speedOf(C0[i], middle * (1 / length), i, m) <
+            (va + vb) / length -
+                T(1e-3) * std::max(std::abs(va), std::abs(vb))))
+        continue;
+      const Vec d = NL[i], foot = X[i] - NL[i] * S[i];
+      HA[i] = FA[i] = PL[i] = C0[i] = W[i] = RW[i] = foot;
+      NRM[i] = NRM0[i] = Dir[i] = NL[i] = d;
+      fan[i] = 0;
+      arcKnown[i] = 0;
+      cornerKnown[i] = 0;
+      since[i] = 0;
+      moved[i] = 1;
+    }
+  }
+
 public:
   // point data of the band state between apply() calls
   static constexpr char anchorLabel[] = "HermiteAnchor";
@@ -2644,8 +2688,10 @@ public:
                                  good[i] ? Dir[i] : NRM[i], v, dt, i);
         }
       }
-      if (maxSpeed > 0)
+      if (maxSpeed > 0) {
         step(dt, Vd, Vn);
+        facesFromRoundingFans();
+      }
       if (levelSets.size() > 1)
         exposeInterfaces();
       advectedTime += dt;

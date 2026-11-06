@@ -24,7 +24,9 @@
   with new faces at the edges between moving and static faces. Every process
   runs once in one call and once in five calls with the rate changed between
   them (same total motion), which continues from the band state the previous
-  call left. A ridge across
+  call left. A 2D box deposited with an isotropic part of the rate that stops
+  after the first call must keep the arcs it grew, as the speeds integrated
+  over time give them. A ridge across
   a periodic boundary (2D), and a substrate etched beside a mask (2D) and
   through a square opening of a mask (3D), check periodic boundaries and
   material stacks, also with the mask below in the stack and in single steps
@@ -204,6 +206,17 @@ public:
                            const ls::Vec3D<double> &normal,
                            unsigned long) override {
     return rate * std::max(normal[1], 0.);
+  }
+};
+
+// directional deposition with an isotropic part of the rate that can stop
+class MixedDeposition : public Rated {
+public:
+  bool isotropic = true;
+  double getScalarVelocity(const ls::Vec3D<double> &, int,
+                           const ls::Vec3D<double> &normal,
+                           unsigned long) override {
+    return (isotropic ? rate : 0.) + std::max(normal[1], 0.);
   }
 };
 
@@ -1267,10 +1280,44 @@ int checkRoundedInside() {
   return EXIT_SUCCESS;
 }
 
+// 2D deposition of the box at the rate 1 + max(n.y, 0) for 3 grid spacings,
+// then at max(n.y, 0) for 6: for a convex body and speeds alike in space,
+// Hopf's formula with the speeds integrated over time is exact, the box
+// swept up by 9 and grown by 3. The fans that round the convex edges in the
+// first part read their offsets from the speeds now, which then lack the
+// isotropic part
+int checkRateChange() {
+  const double gridDelta = 1., first = 3., second = 6.;
+  const RotatedBox<2> box(gridDelta);
+  auto domain = levelSet<2>(box, gridDelta, 30.);
+  auto velocity = ls::SmartPointer<MixedDeposition>::New();
+  for (double time : {first, second}) {
+    ls::AdvectHermite<double, 2> advect(domain, velocity);
+    advect.setAdvectionTime(time);
+    advect.apply();
+    velocity->isotropic = false;
+  }
+  auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+  ls::ToDualContouringMesh<double, 2>(domain, mesh).apply();
+  double deviation = 0.;
+  for (const auto &n : mesh->getNodes()) {
+    const Point p{n[0], n[1], 0.};
+    deviation =
+        std::max(deviation, std::abs(box.sweptSdf(p, first + second) - first));
+  }
+  std::cout << "2D deposition whose isotropic part stops: worst vertex "
+            << deviation / gridDelta << " grid spacings" << std::endl;
+  if (mesh->getNodes().empty() || deviation / gridDelta > 0.3)
+    return fail(2,
+                "deposition whose isotropic part stops off the exact result");
+  return EXIT_SUCCESS;
+}
+
 int main() {
   omp_set_num_threads(4);
   if (check<2>(0.5) != EXIT_SUCCESS || check<3>(1.) != EXIT_SUCCESS ||
-      checkRoundedInside() != EXIT_SUCCESS || checkPeriodic() != EXIT_SUCCESS ||
+      checkRoundedInside() != EXIT_SUCCESS ||
+      checkRateChange() != EXIT_SUCCESS || checkPeriodic() != EXIT_SUCCESS ||
       checkMaterials() != EXIT_SUCCESS ||
       checkReversedStack(0.5, 1e-4) != EXIT_SUCCESS ||
       checkReversedStack(0.125, 1e-4) != EXIT_SUCCESS ||
