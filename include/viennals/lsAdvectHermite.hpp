@@ -185,6 +185,9 @@ template <class T, int D> class AdvectHermite {
   // the new one before it
   std::vector<char> rebuiltRounded;
   bool rebuiltBand = false;
+  // speeds known only for the surface's own normals (concaveFansToFaces, the
+  // fitted turn)
+  bool surfaceSpeedsOnly = false;
   // time over which each node's planes have moved since they were set, at
   // the rebuild that found the node or with the fan it took over: the time
   // of a fan's offsets at its feature point
@@ -207,6 +210,11 @@ template <class T, int D> class AdvectHermite {
   T sinceRebuild = 0.; // time since the last rebuild
   T motionSinceRebuild =
       0.; // front motion since the last rebuild, grid spacings
+
+  // the two faces featureCones found through a fan's feature point, also
+  // where its cone stays unknown, for concaveFansToFaces
+  std::vector<char> facePair;
+  std::vector<Vec> pairA, pairB;
 
   // whether the unit vector u lies on the shorter arc from a to b
   static bool within(const Vec &u, const Vec &a, const Vec &b) {
@@ -302,6 +310,9 @@ template <class T, int D> class AdvectHermite {
     arcKnown.assign(n, 0);
     arcC.assign(n, Vec{});
     cornerKnown.assign(n, 0);
+    facePair.assign(n, 0);
+    pairA.assign(n, Vec{});
+    pairB.assign(n, Vec{});
     constexpr int span = 4;
     constexpr int boxSize = (D == 2) ? span * span : span * span * span;
 #pragma omp parallel for
@@ -355,6 +366,9 @@ template <class T, int D> class AdvectHermite {
       if (found != 2 ||
           DotProduct(normals[0], normals[1]) < T(-1) + unitTolerance)
         continue;
+      facePair[i] = 1;
+      pairA[i] = normals[0];
+      pairB[i] = normals[1];
       const Vec z = CrossProduct(normals[0], normals[1]);
       if (D == 3 && std::abs(DotProduct(Dir[i], z)) > rebuiltTilt * Norm(z))
         continue;
@@ -769,6 +783,7 @@ template <class T, int D> class AdvectHermite {
     sinceRebuild = 0.;
     motionSinceRebuild = 0.;
     featureCones();
+    concaveFansToFaces();
     return true;
   }
 
@@ -790,6 +805,82 @@ template <class T, int D> class AdvectHermite {
       tangents[1] = CrossProduct(n0, t1);
     }
     return tangents;
+  }
+
+  // under speeds known only for the surface's own normals, as fluxes from
+  // ray tracing, a concave fan that moves would need the speeds of the
+  // directions between its faces at its feature point, which the velocity
+  // field does not define: such a corner is the meeting point of its faces
+  // instead, of two at an edge and of three at a 3D corner, as at the foot
+  // of a curved mask wall. A fan whose cone stays unknown with two faces
+  // found through its feature point is such an edge as well. At the foot of
+  // a curved mask wall, the face of the wall found beside the feature point
+  // makes the edge look tilted against the fan's direction. Kept as a fan,
+  // it would act on the floor nodes beyond its cone and hold them to its
+  // plane, which moves with the speed at the mask's foot. Each node of the
+  // fan takes the plane of the face that gives it the smallest value,
+  // through the feature point, and moves with the speed at its own surface
+  // point; its witness lies on the face with the next smallest value a grid
+  // spacing from the corner, so that the faces meet concavely
+  void concaveFansToFaces() {
+    if (!surfaceSpeedsOnly)
+      return;
+    const long n = long(S.size());
+    std::vector<char> take(n, 0);
+    std::vector<Vec> normal(n), witness(n);
+    std::vector<T> value(n);
+#pragma omp parallel for
+    for (long i = 0; i < n; ++i) {
+      const bool corner =
+          !arcKnown[i] && cornerKnown.size() == S.size() && cornerKnown[i];
+      const bool pair =
+          !arcKnown[i] && !corner && facePair.size() == S.size() && facePair[i];
+      if (!fan[i] || convexFan[i] || !good[i] ||
+          !(arcKnown[i] || corner || pair))
+        continue;
+      const Vec &faceA = pair ? pairA[i] : arcA[i];
+      const Vec &faceB = pair ? pairB[i] : arcB[i];
+      const int m = nodeMaterial(i);
+      if (speedOf(C0[i], faceA, i, m) == 0 &&
+          speedOf(C0[i], faceB, i, m) == 0 &&
+          (!corner || speedOf(C0[i], arcC[i], i, m) == 0))
+        continue;
+      // the faces through the feature point, the nearest first
+      const Vec *faces[3] = {&faceA, &faceB, &arcC[i]};
+      T values[3] = {DotProduct(X[i] - C0[i], faceA),
+                     DotProduct(X[i] - C0[i], faceB),
+                     corner ? DotProduct(X[i] - C0[i], arcC[i])
+                            : std::numeric_limits<T>::max()};
+      int order[3] = {0, 1, 2};
+      std::sort(order, order + 3,
+                [&](int p, int q) { return values[p] < values[q]; });
+      const T a = values[order[0]], b = values[order[1]];
+      const Vec &own = *faces[order[0]];
+      const Vec &other = *faces[order[1]];
+      Vec along = other - own * DotProduct(own, other);
+      const T length = Norm(along);
+      if (length < smallLength)
+        continue;
+      along = along * (1 / length);
+      take[i] = 1;
+      normal[i] = own;
+      value[i] = std::min(a, b);
+      witness[i] = C0[i] + along;
+    }
+    for (long i = 0; i < n; ++i) {
+      if (!take[i])
+        continue;
+      S[i] = value[i];
+      const Vec foot = X[i] - normal[i] * S[i];
+      HA[i] = FA[i] = PL[i] = C0[i] = RW[i] = foot;
+      W[i] = witness[i];
+      NRM[i] = NRM0[i] = Dir[i] = NL[i] = normal[i];
+      fan[i] = 0;
+      arcKnown[i] = 0;
+      cornerKnown[i] = 0;
+      since[i] = 0;
+      moved[i] = 1;
+    }
   }
 
   // the band state written by the last apply(), if the level set still holds
@@ -1031,6 +1122,7 @@ template <class T, int D> class AdvectHermite {
     // The point moves along the normal halfway through the turn, with the
     // rate halfway along its path, and the plane takes the turned normal
     std::vector<char> turned(n, 0);
+    const std::vector<Vec> startN = N;
 #pragma omp parallel for
     for (long i = 0; i < n; ++i) {
       if (fan[i])
@@ -1060,6 +1152,130 @@ template <class T, int D> class AdvectHermite {
       Sown[i] = DotProduct(X[i] - P[i], end);
       Wm[i] = W[i] + half * (dt * v);
       turned[i] = 1;
+    }
+    // speeds known only at the surface's own normals put into the gradient
+    // the change of the rate with the normal times the change of the normal.
+    // The turned normal is then that of a least-squares plane through the
+    // moved points of the face nodes two grid spacings to either side along
+    // the face (normals within 20 degrees, the same material, points within
+    // 1.5 grid spacings of the face and 0.75 of their place along it), with a
+    // slope only along the directions in which these points spread (variance
+    // of their positions of at least a quarter grid spacing squared) and the
+    // gradient's slope along the others; with fewer than three points the
+    // face keeps the gradient's turn. On a line of points, as around a curved
+    // corner where the normals of the others differ by more than 20 degrees,
+    // the plane would take any slope across the line
+    if (surfaceSpeedsOnly) {
+      constexpr int R = 2;
+      const T fitSpread = T(0.25);
+      std::vector<Vec> fitted(N);
+#pragma omp parallel for
+      for (long i = 0; i < n; ++i) {
+        if (!turned[i])
+          continue;
+        const Vec n0 = startN[i];
+        const int m = nodeMaterial(i);
+        const std::array<Vec, D - 1> tangents = faceTangents(n0);
+        // normal equations of h = c0 + sum c_k s_k over the points
+        constexpr int U = D; // unknowns: c0 and D - 1 slopes
+        T A[U][U] = {}, b[U] = {};
+        int count = 0;
+        std::vector<long> used;
+        auto add = [&](const Vec &q) {
+          const Vec r = q - P[i];
+          T row[U];
+          row[0] = 1;
+          for (int k = 0; k < D - 1; ++k)
+            row[k + 1] = DotProduct(r, tangents[k]);
+          const T h = DotProduct(r, n0);
+          for (int a = 0; a < U; ++a) {
+            b[a] += row[a] * h;
+            for (int c = 0; c < U; ++c)
+              A[a][c] += row[a] * row[c];
+          }
+          ++count;
+        };
+        add(P[i]);
+        used.push_back(i);
+        for (int k1 = -R; k1 <= R; ++k1)
+          for (int k2 = (D == 3 ? -R : 0); k2 <= (D == 3 ? R : 0); ++k2) {
+            if (k1 == 0 && k2 == 0)
+              continue;
+            Vec q = P[i] + tangents[0] * T(k1);
+            if constexpr (D == 3)
+              q = q + tangents[1] * T(k2);
+            const long j = nodeAt(q);
+            if (j < 0 || fan[j] || nodeMaterial(j) != m)
+              continue;
+            const Vec pj = P[j], nj = startN[j];
+            if (std::find(used.begin(), used.end(), j) != used.end())
+              continue;
+            if (DotProduct(nj, n0) < T(0.93969262078590838)) // 20 deg
+              continue;
+            const Vec r = pj - P[i];
+            if (std::abs(DotProduct(r, n0)) > T(1.5) ||
+                std::abs(DotProduct(r, tangents[0]) - T(k1)) > T(0.75))
+              continue;
+            if constexpr (D == 3)
+              if (std::abs(DotProduct(r, tangents[1]) - T(k2)) > T(0.75))
+                continue;
+            used.push_back(j);
+            add(pj);
+          }
+        if (count < 3)
+          continue;
+        // the slopes of the gradient's turn (fitted holds it here)
+        const Vec ncd = fitted[i];
+        const T along = DotProduct(ncd, n0);
+        const T cd1 =
+            along > T(0) ? -DotProduct(ncd, tangents[0]) / along : T(0);
+        const T cd2 = (D == 3 && along > T(0))
+                          ? -DotProduct(ncd, tangents[D - 2]) / along
+                          : T(0);
+        // the slopes along the principal directions of the points' spread
+        Vec nn = n0;
+        const T cnt = A[0][0];
+        if constexpr (D == 3) {
+          const T c11 = A[1][1] - A[0][1] * A[0][1] / cnt;
+          const T c22 = A[2][2] - A[0][2] * A[0][2] / cnt;
+          const T c12 = A[1][2] - A[0][1] * A[0][2] / cnt;
+          const T g1 = b[1] - A[0][1] * b[0] / cnt;
+          const T g2 = b[2] - A[0][2] * b[0] / cnt;
+          const T mean = T(0.5) * (c11 + c22);
+          const T dev =
+              std::sqrt(T(0.25) * (c11 - c22) * (c11 - c22) + c12 * c12);
+          const T lam[2] = {mean + dev, mean - dev};
+          for (int e = 0; e < 2; ++e) {
+            T ex, ey;
+            if (std::abs(c12) > T(1e-12) * (std::abs(c11) + std::abs(c22))) {
+              ex = lam[e] - c22;
+              ey = c12;
+            } else {
+              const bool first = (c11 >= c22) == (e == 0);
+              ex = first ? T(1) : T(0);
+              ey = first ? T(0) : T(1);
+            }
+            const T len = std::sqrt(ex * ex + ey * ey);
+            ex /= len;
+            ey /= len;
+            const T slope = lam[e] >= fitSpread * cnt
+                                ? (ex * g1 + ey * g2) / lam[e]
+                                : ex * cd1 + ey * cd2;
+            nn = nn - (tangents[0] * ex + tangents[D - 2] * ey) * slope;
+          }
+        } else {
+          const T c11 = A[1][1] - A[0][1] * A[0][1] / cnt;
+          const T g1 = b[1] - A[0][1] * b[0] / cnt;
+          nn = nn - tangents[0] * (c11 >= fitSpread * cnt ? g1 / c11 : cd1);
+        }
+        fitted[i] = nn * (1 / Norm(nn));
+      }
+#pragma omp parallel for
+      for (long i = 0; i < n; ++i)
+        if (turned[i]) {
+          N[i] = fitted[i];
+          Sown[i] = DotProduct(X[i] - P[i], N[i]);
+        }
     }
     sinceRebuild += dt;
     for (auto &t : since)
@@ -2811,6 +3027,12 @@ public:
   /// Whether apply() stops after one time step, as Advect's single step for
   /// velocities that are updated between steps. Default false.
   void setSingleStep(bool passedSingleStep) { singleStep = passedSingleStep; }
+
+  /// Whether the velocity field knows the speeds only for the normals the
+  /// surface has at its points, as fluxes from ray tracing: a concave corner
+  /// that moves is then the meeting point of its faces, and a face turns to
+  /// the normal of the moved points around it. Default false.
+  void setSurfaceSpeedsOnly(bool passed) { surfaceSpeedsOnly = passed; }
 
   /// Whether apply() repairs the band from the dual contouring mesh of its
   /// planes once the whole advection time is done if the band is no valid
