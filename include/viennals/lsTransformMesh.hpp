@@ -25,11 +25,10 @@ template <class T> class TransformMesh {
   T angle = 0.0;
   double numericEps = 1e-6;
 
-  // check vector for all zeros
+  // check vector for all zeros; any other vector is valid, since a bound on
+  // its length would depend on the units of the mesh
   bool isValidVector() const {
-    if (DotProduct(transformVector, transformVector) < numericEps)
-      return false;
-    return true;
+    return DotProduct(transformVector, transformVector) > T(0);
   }
 
   void translateMesh() {
