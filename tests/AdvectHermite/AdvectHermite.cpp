@@ -34,8 +34,9 @@
   surface as MakeTrench builds it; their vertices include those at the
   reflective boundaries. A substrate beside a mask etched with the rate 0.3 +
   max(n.y, 0) in single steps, in both orders of the stack, must keep the
-  cavity below the mask that the speeds integrated over time give it. A mask
-  on a sloped substrate (2D) checks the cones that
+  cavity below the mask that the speeds integrated over time give it, and the
+  mesh the mask's wall above it, also with an undercut below a grid spacing.
+  A mask on a sloped substrate (2D) checks the cones that
   the interface splits at the feet of the mask, and the slope alone a Manhattan
   substrate below. A 2D trench etched with a noisy rate must not reach below
   the mask from a folded mesh at the corner of its bottom. The rotated boxes run
@@ -595,10 +596,21 @@ double linearDistance(double x, double y, double a, double ys, double h,
 // corner slides down below the wall: the fan's nodes beside the wall hand
 // it to the wall's faces (0.93 grid spacings off before, a chamfer in the
 // corner, where the time of a node in the slow direction of the wall set
-// the floor of the fan)
-int checkMixedEtch(bool reversed, bool linear = false) {
-  const double gridDelta = 0.125, time = linear ? 2. : 1.6,
-               c = linear ? 0.1 : 0.3, d = 1., width = 6.;
+// the floor of the fan). The mask's nodes past the end of the cavity hold
+// its end wall, which dual contouring takes first only where it cuts an edge
+// on the cavity's side of the mask's underside, so that the mesh keeps the
+// mask's wall above the cell of its lower corner where it was (0.29 and 0.25
+// grid spacings off with the substrate below in the stack before, where the
+// mesh's mask wall followed the end of the cavity). With the rate
+// 0.05 |n.x| + 0.6 max(n.y, 0) (narrow) the undercut stays below a grid
+// spacing: no grid edge crosses the cavity's ceiling, and the one vertex of
+// the cell of the mask's lower corner lies between the mask's wall and the
+// end of the cavity, 0.18 grid spacings off, while the mask's wall above is
+// exact (0.21 off before)
+int checkMixedEtch(bool reversed, bool linear = false, bool narrow = false) {
+  const double gridDelta = 0.125, time = linear && !narrow ? 2. : 1.6,
+               c = narrow ? 0.05 : (linear ? 0.1 : 0.3), d = narrow ? 0.6 : 1.,
+               width = 6.;
   const double a = 2.37, ys = 0.29, h = 1.13;
   double bounds[4] = {-width, width, -6., 6.};
   ls::BoundaryConditionEnum boundaryCons[2] = {
@@ -647,23 +659,32 @@ int checkMixedEtch(bool reversed, bool linear = false) {
   }
   auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
   ls::ToDualContouringMesh<double, 2>(top, mesh).apply();
-  double deviation = 0.;
+  // the worst vertex, and the worst above the cell of the mask's lower
+  // corner, where the mesh holds the mask, which does not move
+  double deviation = 0., maskDeviation = 0.;
   for (const auto &n : mesh->getNodes()) {
     if (std::abs(n[0]) > width - gridDelta)
       continue; // the reflective boundary
-    deviation = std::max(
-        deviation,
-        linear
-            ? linearDistance(n[0], n[1], a, ys, h, c * done, d * done, width)
-            : mixedDistance(n[0], n[1], a, ys, h, c * done, d * done, width));
+    const double e =
+        linear ? linearDistance(n[0], n[1], a, ys, h, c * done, d * done, width)
+               : mixedDistance(n[0], n[1], a, ys, h, c * done, d * done, width);
+    deviation = std::max(deviation, e);
+    if (n[1] > ys + gridDelta / 2)
+      maskDeviation = std::max(maskDeviation, e);
   }
-  std::cout << "2D etching with the rate " << (linear ? "0.1 |n.x|" : "0.3")
-            << " + max(n.y, 0) beside a mask, "
+  std::cout << "2D etching with the rate " << c << (linear ? " |n.x|" : "")
+            << " + ";
+  if (d != 1.)
+    std::cout << d << " ";
+  std::cout << "max(n.y, 0) beside a mask, "
             << (reversed ? "mask" : "substrate")
             << " below in the stack, single steps: " << calls
             << " calls, worst vertex " << deviation / gridDelta
-            << " grid spacings" << std::endl;
-  if (mesh->getNodes().empty() || deviation / gridDelta > (linear ? 0.35 : 0.5))
+            << " grid spacings, on the mask " << maskDeviation / gridDelta
+            << std::endl;
+  if (mesh->getNodes().empty() ||
+      deviation / gridDelta > (narrow ? 0.25 : (linear ? 0.05 : 0.2)) ||
+      maskDeviation / gridDelta > 0.05)
     return fail(2, "etching with a mixed rate beside a mask off the exact "
                    "result");
   return EXIT_SUCCESS;
@@ -1471,6 +1492,7 @@ int main() {
       checkMixedEtch(true) != EXIT_SUCCESS ||
       checkMixedEtch(false, true) != EXIT_SUCCESS ||
       checkMixedEtch(true, true) != EXIT_SUCCESS ||
+      checkMixedEtch(false, true, true) != EXIT_SUCCESS ||
       checkReversedStack(0.5, 1e-4) != EXIT_SUCCESS ||
       checkReversedStack(0.125, 1e-4) != EXIT_SUCCESS ||
       checkReversedStack(0.5, 1e-2) != EXIT_SUCCESS ||

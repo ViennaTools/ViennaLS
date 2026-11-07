@@ -193,7 +193,8 @@ template <class T, int D> class AdvectHermite {
   // solid nodes that took a moving plane of the etched material around them
   // from exposeInterfaces, as the plane of the end of a cavity below a mask
   // past which they lie; dual contouring prefers it (priority 3) for the
-  // crossing edges of their cells it cuts
+  // crossing edges it cuts in the cavity, on the cavity's side of the
+  // interface (interfacePoint, interfaceNormal)
   std::vector<char> boundPlane;
   // nodes that a previous apply() left on a rounded part (smoothLabel), as on
   // the arc a deposition rounds an edge into
@@ -1008,6 +1009,19 @@ template <class T, int D> class AdvectHermite {
       smooth[i] = (bits >> 6) & 1;
       exposedState[i] = (bits >> 7) & 1;
     }
+    // the interface of the cavity whose end a node's bound plane is
+    if (const auto *points = pointData.getVectorData(
+            ToDualContouringMesh<T, D>::interfacePointLabel, true),
+        *normals = pointData.getVectorData(
+            ToDualContouringMesh<T, D>::interfaceNormalLabel, true);
+        points != nullptr && normals != nullptr && points->size() == n &&
+        normals->size() == n)
+      for (std::size_t i = 0; i < n; ++i)
+        if (boundPlane[i])
+          for (int c = 0; c < 3; ++c) {
+            interfacePoint[i][c] = (*points)[i][c] / gridDelta;
+            interfaceNormal[i][c] = (*normals)[i][c];
+          }
     arcC.assign(n, Vec{});
     cornerKnown.assign(n, 0);
     if (const auto *cones = pointData.getVectorData(coneCLabel, true);
@@ -2708,6 +2722,22 @@ template <class T, int D> class AdvectHermite {
     pointData.insertReplaceScalarData(
         std::move(priority), ToDualContouringMesh<T, D>::priorityLabel);
     pointData.insertReplaceScalarData(std::move(smoothData), smoothLabel);
+    // for a bound plane the interface of the cavity whose end it is, so that
+    // dual contouring takes it first only in the cavity
+    typename PointData<T>::VectorDataType boundPoints(S.size()),
+        boundNormals(S.size());
+    for (std::size_t i = 0; i < S.size(); ++i)
+      if (boundPlane[i])
+        for (int k = 0; k < 3; ++k) {
+          boundPoints[i][k] = interfacePoint[i][k] * gridDelta;
+          boundNormals[i][k] = interfaceNormal[i][k];
+        }
+    pointData.insertReplaceVectorData(
+        std::move(boundPoints),
+        ToDualContouringMesh<T, D>::interfacePointLabel);
+    pointData.insertReplaceVectorData(
+        std::move(boundNormals),
+        ToDualContouringMesh<T, D>::interfaceNormalLabel);
 
     // the band state, so that a further apply() continues from it
     const std::array<const std::vector<Vec> *, 10> sources = {

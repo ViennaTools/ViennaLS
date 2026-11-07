@@ -84,15 +84,19 @@ template <class T, int D> class ToDualContouringMesh {
   // Hermite point x and unit normal n of the crossing on the edge from
   // corner a to corner b (grid spacings). The plane is the stored plane of
   // highest positive priority that cuts the edge, of an end point or else of
-  // another node of the cell. An edge without one gets, with priorities, the
-  // interpolated crossing and no plane (n = 0), and otherwise the plane of
-  // its nearer end point. source is the corner of the cell whose plane it
-  // took, -1 for none.
-  void hermiteData(const ConstSparseCellIterator &cellIt, int a, int b,
-                   const typename PointData<T>::VectorDataType *closest,
-                   const typename PointData<T>::VectorDataType *normals,
-                   const typename PointData<T>::ScalarDataType *priority,
-                   T gridDelta, VectorD &x, VectorD &n, int &source) const {
+  // another node of the cell, where a plane of priority above 2 counts as one
+  // of priority 2 where it cuts the edge outside the cavity whose end it is.
+  // An edge without one gets, with priorities, the interpolated crossing and
+  // no plane (n = 0), and otherwise the plane of its nearer end point. source
+  // is the corner of the cell whose plane it took, -1 for none.
+  void
+  hermiteData(const ConstSparseCellIterator &cellIt, int a, int b,
+              const typename PointData<T>::VectorDataType *closest,
+              const typename PointData<T>::VectorDataType *normals,
+              const typename PointData<T>::ScalarDataType *priority,
+              const typename PointData<T>::VectorDataType *interfacePoints,
+              const typename PointData<T>::VectorDataType *interfaceNormals,
+              T gridDelta, VectorD &x, VectorD &n, int &source) const {
     source = -1;
     const hrleIndex &idx = cellIt.getIndices();
     const VectorD pa = cornerPosition(idx, a), pb = cornerPosition(idx, b);
@@ -101,10 +105,20 @@ template <class T, int D> class ToDualContouringMesh {
     const T tLinear = va / (va - vb);
 
     if (closest != nullptr && normals != nullptr) {
-      // the stored plane of node c of the cell, in grid spacings, and its
-      // priority; a corner across a periodic boundary holds its closest
-      // point in the frame of its wrapped node
+      // a corner across a periodic boundary holds its points in the frame of
+      // its wrapped node: the shift into the frame of the cell
       const auto &grid = levelSet->getGrid();
+      auto periodicShift = [&](int c) {
+        VectorD shift = VectorD::Zero();
+        for (int i = 0; i < D; ++i)
+          if (grid.isBoundaryPeriodic(i)) {
+            const auto global = idx[i] + ((c >> i) & 1);
+            shift(i) = T(global - grid.globalIndex2LocalIndex(i, global));
+          }
+        return shift;
+      };
+      // the stored plane of node c of the cell, in grid spacings, and its
+      // priority
       auto storedPlane = [&](int c, VectorD &cp, VectorD &nrm, T &rank) {
         const auto &corner = cellIt.getCorner(c);
         if (!corner.isDefined())
@@ -114,15 +128,33 @@ template <class T, int D> class ToDualContouringMesh {
           cp(i) = (*closest)[corner.getPointId()][i] / gridDelta;
           nrm(i) = (*normals)[corner.getPointId()][i];
         }
-        for (int i = 0; i < D; ++i)
-          if (grid.isBoundaryPeriodic(i)) {
-            const auto global = idx[i] + ((c >> i) & 1);
-            cp(i) += T(global - grid.globalIndex2LocalIndex(i, global));
-          }
+        cp += periodicShift(c);
         return rank > T(0);
       };
       const T tolerance = std::max(T(1e-9), roundOff);
       const T rise = vb - va;
+      // a plane of priority above 2 is the end of a cavity below a mask, which
+      // lies on the cavity's side of the interface that bounds the cavity
+      // (interfacePointLabel): where it cuts the edge there, at t, it keeps
+      // its priority, and elsewhere, as on the edges beside the mask's wall
+      // above the cavity, it counts as one of priority 2
+      auto rankAt = [&](int c, T rank, T t) {
+        if (rank <= T(2))
+          return rank;
+        if (interfacePoints == nullptr || interfaceNormals == nullptr)
+          return T(2);
+        const auto id = cellIt.getCorner(c).getPointId();
+        VectorD p, m;
+        for (int i = 0; i < D; ++i) {
+          p(i) = (*interfacePoints)[id][i] / gridDelta;
+          m(i) = (*interfaceNormals)[id][i];
+        }
+        p += periodicShift(c);
+        return (m.squaredNorm() > T(0.25) &&
+                m.dot(pa + t * (pb - pa) - p) >= -tolerance)
+                   ? rank
+                   : T(2);
+      };
       // the stored plane of highest priority that cuts the edge, nearest to
       // the interpolated crossing, of an end point or else of another node of
       // the cell. At the thin tip of a cavity the end points store the floor
@@ -149,6 +181,7 @@ template <class T, int D> class ToDualContouringMesh {
               (!ends && std::abs(t - tLinear) >
                             (priority != nullptr ? T(0.25) : T(0.1))))
             continue;
+          rank = rankAt(c, rank, t);
           if (rank > bestRank ||
               (rank == bestRank && std::abs(t - tLinear) < bestGap)) {
             bestRank = rank;
@@ -167,7 +200,7 @@ template <class T, int D> class ToDualContouringMesh {
       };
       // a plane of priority above 2 that a node of the cell stores, as the
       // plane of the end of a cavity below a mask past which the node lies,
-      // goes first wherever it cuts the edge
+      // goes first wherever it cuts the edge in the cavity (rankAt)
       if (priority != nullptr) {
         T bestGap = std::numeric_limits<T>::max();
         bool found = false;
@@ -180,7 +213,8 @@ template <class T, int D> class ToDualContouringMesh {
           if (std::abs(den) < T(1e-12) || den * rise <= T(0))
             continue;
           const T t = nrm.dot(cp - pa) / den;
-          if (t < -tolerance || t > T(1) + tolerance)
+          if (t < -tolerance || t > T(1) + tolerance ||
+              rankAt(c, rank, t) <= T(2))
             continue;
           if (std::abs(t - tLinear) < bestGap) {
             bestGap = std::abs(t - tLinear);
@@ -237,6 +271,12 @@ template <class T, int D> class ToDualContouringMesh {
 public:
   /// Optional scalar point data: plane priority of every node, 0 for none.
   static constexpr char priorityLabel[] = "HermitePriority";
+  /// Optional vector point data of the nodes whose plane has a priority above
+  /// 2, the end of a cavity below a mask (AdvectHermite): a point of the
+  /// interface that bounds the cavity and the interface's unit normal towards
+  /// the cavity, zero for the other nodes.
+  static constexpr char interfacePointLabel[] = "HermiteInterfacePoint";
+  static constexpr char interfaceNormalLabel[] = "HermiteInterfaceNormal";
 
   ToDualContouringMesh() = default;
 
@@ -310,6 +350,17 @@ public:
     if (closest == nullptr || priority == nullptr ||
         priority->size() != levelSet->getNumberOfPoints())
       priority = nullptr;
+    const auto *interfacePoints =
+        pointData.getVectorData(interfacePointLabel, true);
+    const auto *interfaceNormals =
+        pointData.getVectorData(interfaceNormalLabel, true);
+    if (priority == nullptr || interfacePoints == nullptr ||
+        interfaceNormals == nullptr ||
+        interfacePoints->size() != levelSet->getNumberOfPoints() ||
+        interfaceNormals->size() != levelSet->getNumberOfPoints()) {
+      interfacePoints = nullptr;
+      interfaceNormals = nullptr;
+    }
 
     const auto &grid = levelSet->getGrid();
 
@@ -561,8 +612,8 @@ public:
             continue;
           VectorD x, n;
           int source;
-          hermiteData(cellIt, a, b, closest, normals, priority, gridDelta, x, n,
-                      source);
+          hermiteData(cellIt, a, b, closest, normals, priority, interfacePoints,
+                      interfaceNormals, gridDelta, x, n, source);
           // whether the plane is one of those
           if (source < 0 || smoothData == nullptr ||
               (*smoothData)[cellIt.getCorner(source).getPointId()] < T(0.5))
@@ -1001,8 +1052,9 @@ public:
       int source;
       for (int d = 0; d < D; ++d)
         if (insideLow != (cellIt.getCorner(1 << d).getValue() < T(0))) {
-          hermiteData(cellIt, 0, 1 << d, closest, normals, priority, gridDelta,
-                      x, edgeNormal, source);
+          hermiteData(cellIt, 0, 1 << d, closest, normals, priority,
+                      interfacePoints, interfaceNormals, gridDelta, x,
+                      edgeNormal, source);
           emit(idx, d, insideLow);
         }
       // upper reflective boundaries the cell touches; each set of them
@@ -1021,7 +1073,8 @@ public:
           if (!((set >> d) & 1) &&
               inside != (cellIt.getCorner(set | (1 << d)).getValue() < T(0))) {
             hermiteData(cellIt, set, set | (1 << d), closest, normals, priority,
-                        gridDelta, x, edgeNormal, source);
+                        interfacePoints, interfaceNormals, gridDelta, x,
+                        edgeNormal, source);
             emit(start, d, inside);
           }
       }
