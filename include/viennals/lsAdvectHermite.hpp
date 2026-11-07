@@ -24,6 +24,11 @@
 #include <lsToDualContouringMesh.hpp>
 #include <lsVelocityField.hpp>
 
+#include <lsAdvectIntegrationSchemes.hpp>
+#include <lsEngquistOsher.hpp>
+#include <lsLaxFriedrichs.hpp>
+#include <lsWENO.hpp>
+
 namespace viennals {
 
 using namespace viennacore;
@@ -93,6 +98,20 @@ using namespace viennacore;
 /// the fan concavely. Scalar and vector velocities. The ends of a fan's cone
 /// keep the offsets they accumulated, and in between the fan takes the
 /// current velocities.
+///
+/// With setUpwind, the nodes of the topmost material that move take their
+/// values from one of Advect's spatial schemes (setSpatialScheme) with its
+/// time integration (setTemporalScheme), evaluated on the band's values at
+/// the step's start with the speeds of their planes, and their planes from
+/// the central gradient of the new values; no face turns. A node inside a
+/// lower material keeps its Hermite plane, and a lower level set caps the
+/// values, a capped node taking that level set's plane, so that a material
+/// that does not advect, as a mask, keeps its corners. A node whose stencil
+/// leaves the band moves with its own plane. This suits rates that change
+/// sharply along the surface and are known only at its own normals, as the
+/// fluxes of plasma etching from ray tracing, where the faces' planes and
+/// their turn fail at corners; the upwind update rounds the corners the
+/// motion keeps sharp, to first order in the grid spacing.
 ///
 /// After apply() the point data hold the current planes and their priorities
 /// for ToDualContouringMesh and the band state, from which a further apply()
@@ -188,6 +207,33 @@ template <class T, int D> class AdvectHermite {
   // speeds known only for the surface's own normals (concaveFansToFaces, the
   // fitted turn)
   bool surfaceSpeedsOnly = false;
+  // the upwind update of the moving material (setUpwind): Advect's spatial
+  // scheme and time integration, the dissipation factor of Lax-Friedrichs,
+  // whether a dissipation that turns a rate's sign sets it to zero, and the
+  // effective rate of every node that takes the update in this step, (value
+  // at the step's start - value at its end) / time step in grid spacings per
+  // time (NaN where the node moves with its own plane)
+  bool upwind = false;
+  SpatialSchemeEnum spatialScheme = SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER;
+  TemporalSchemeEnum temporalScheme = TemporalSchemeEnum::FORWARD_EULER;
+  T dissipationAlpha = 1.;
+  bool checkDissipation = true;
+  std::vector<T> upwindRate;
+  // the nodes that take the upwind update in this step and their speeds
+  std::vector<char> upwindTakes;
+  std::vector<T> upwindSpeed;
+
+  // the velocity field the spatial scheme sees in the upwind update: the
+  // speed of the node of each point of the band's copy, in length per time,
+  // as the step moves the node's plane, the same in every stage
+  class BandSpeeds final : public VelocityField<T> {
+  public:
+    std::vector<T> speed;
+    T getScalarVelocity(const Vec3D<T> &, int, const Vec3D<T> &,
+                        unsigned long pointId) override {
+      return pointId < speed.size() ? speed[pointId] : T(0);
+    }
+  };
   // time over which each node's planes have moved since they were set, at
   // the rebuild that found the node or with the fan it took over: the time
   // of a fan's offsets at its feature point
@@ -1095,12 +1141,234 @@ template <class T, int D> class AdvectHermite {
     }
   }
 
+  // the node beside node i along axis k, offset grid spacings away; a node
+  // beyond a reflective boundary is its mirror image
+  long axisNeighbour(long i, int k, int offset) const {
+    const auto &grid = levelSet->getGrid();
+    Vec q = X[i];
+    q[k] += T(offset);
+    if (grid.isBoundaryReflective(k)) {
+      const T lo = T(grid.getMinIndex(k)), hi = T(grid.getMaxIndex(k));
+      if (q[k] < lo)
+        q[k] = 2 * lo - q[k];
+      else if (q[k] > hi)
+        q[k] = 2 * hi - q[k];
+    }
+    return nodeAt(q);
+  }
+
+  // the effective rate of the upwind update of every node that takes it and
+  // whose stencil lies in the band, from the spatial scheme and the time
+  // integration of Advect, the scheme evaluated on copies of the band's
+  // values; in the stages of Runge-Kutta the speeds stay as they are and the
+  // other nodes move with their own planes. The step is no longer than the
+  // scheme's own limit (Lax-Friedrichs)
+  void computeUpwindRates(const std::vector<T> &Vd, const std::vector<T> &Vn,
+                          T &dt) {
+    const long n = long(S.size());
+    const T nan = std::numeric_limits<T>::quiet_NaN();
+    upwindRate.assign(n, nan);
+    // the nodes in the gas or the topmost material take the update with the
+    // speed of that material at their plane's foot, also where their plane
+    // belongs to a lower material, as a substrate node below a mask whose
+    // nearest surface is the mask's wall; the other nodes move with their
+    // own planes in the stages
+    const int topMaterial = int(levelSets.size()) - 1;
+    upwindTakes.assign(n, 0);
+    upwindSpeed.assign(n, T(0));
+    std::vector<T> V(n);
+#pragma omp parallel for
+    for (long i = 0; i < n; ++i) {
+      V[i] = good[i] ? Vd[i] : Vn[i];
+      if (material(X[i]) != topMaterial)
+        continue;
+      if (nodeMaterial(i) != topMaterial)
+        V[i] = speedOf(good[i] ? HA[i] : FA[i], good[i] ? Dir[i] : NRM[i], i,
+                       topMaterial);
+      upwindSpeed[i] = V[i];
+      upwindTakes[i] = V[i] != 0;
+    }
+    const std::vector<char> &takes = upwindTakes;
+    std::vector<hrleIndex> index(n);
+    for (long i = 0; i < n; ++i)
+      for (int k = 0; k < D; ++k)
+        index[i][k] = viennahrle::IndexType(std::lround(X[i][k]));
+    // a copy of the grid holding values U at the band's nodes
+    auto copyOf = [&](const std::vector<T> &U) {
+      auto band = SmartPointer<Domain<T, D>>::New(levelSet->getGrid());
+      typename Domain<T, D>::PointValueVectorType points;
+      points.reserve(n);
+      for (long i = 0; i < n; ++i)
+        points.emplace_back(index[i], U[i]);
+      band->insertPoints(points);
+      return band;
+    };
+    // the node of every point id of a copy and the speeds, the same for all
+    // copies, which hold the same points
+    auto first = copyOf(S);
+    auto speeds = SmartPointer<BandSpeeds>::New();
+    speeds->speed.assign(first->getNumberOfPoints(), T(0));
+    std::vector<long> nodeOfPoint(first->getNumberOfPoints(), -1);
+    for (viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType> it(
+             first->getDomain());
+         !it.isFinished(); ++it) {
+      if (!it.isDefined())
+        continue;
+      Vec q{};
+      for (int k = 0; k < D; ++k)
+        q[k] = T(it.getStartIndices(k));
+      const long i = nodeAt(q);
+      nodeOfPoint[it.getPointId()] = i;
+      if (i >= 0)
+        speeds->speed[it.getPointId()] = V[i] * gridDelta;
+    }
+    SmartPointer<VelocityField<T>> field(speeds);
+    // whether all neighbours of the stencil lie in the band
+    auto complete = [&](long i, int radius) {
+      for (int k = 0; k < D; ++k)
+        for (int o = 1; o <= radius; ++o)
+          if (axisNeighbour(i, k, o) < 0 || axisNeighbour(i, k, -o) < 0)
+            return false;
+      return true;
+    };
+    // the alphas of Lax-Friedrichs as Advect finds them: the largest speed
+    // times normal component, the normal from central differences of U
+    auto globalAlphas = [&](const std::vector<T> &U) {
+      VectorType<T, D> alphas{};
+      for (long i = 0; i < n; ++i) {
+        if (!takes[i])
+          continue;
+        T g[D], length2 = 0;
+        for (int k = 0; k < D; ++k) {
+          const long jm = axisNeighbour(i, k, -1), jp = axisNeighbour(i, k, 1);
+          g[k] = (jm >= 0 && jp >= 0) ? U[jp] - U[jm] : T(0);
+          length2 += g[k] * g[k];
+        }
+        if (!(length2 > 0))
+          continue;
+        const T inverse = 1 / std::sqrt(length2);
+        for (int k = 0; k < D; ++k)
+          alphas[k] =
+              std::max(alphas[k], std::abs(V[i] * gridDelta * g[k] * inverse));
+      }
+      return alphas;
+    };
+    // the rates of the scheme on values U (NaN where a node does not take
+    // it), with the scheme's time step limit
+    auto ratesOf = [&](const std::vector<T> &U, SmartPointer<Domain<T, D>> band,
+                       double &limit) {
+      std::vector<T> L(n, nan);
+      auto evaluate = [&](auto &s, int radius) {
+        for (viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>
+                 it(band->getDomain());
+             !it.isFinished(); ++it) {
+          if (!it.isDefined())
+            continue;
+          const long i = nodeOfPoint[it.getPointId()];
+          if (i < 0 || !takes[i] || !complete(i, radius))
+            continue;
+          const auto [gradient, dissipation] =
+              s(it.getStartIndices(), nodeMaterial(i));
+          T rate = gradient - dissipation;
+          if (checkDissipation &&
+              ((gradient < 0 && rate > 0) || (gradient > 0 && rate < 0)))
+            rate = 0;
+          L[i] = rate;
+        }
+      };
+      switch (spatialScheme) {
+      case SpatialSchemeEnum::ENGQUIST_OSHER_2ND_ORDER: {
+        lsInternal::EngquistOsher<T, D, 2> s(band, field, true);
+        evaluate(s, 2);
+        break;
+      }
+      case SpatialSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER: {
+        auto alphas = globalAlphas(U);
+        lsInternal::LaxFriedrichs<T, D, 1> s(band, field, dissipationAlpha,
+                                             alphas, true);
+        evaluate(s, 1);
+        s.reduceTimeStepHamiltonJacobi(limit, gridDelta);
+        break;
+      }
+      case SpatialSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER: {
+        auto alphas = globalAlphas(U);
+        lsInternal::LaxFriedrichs<T, D, 2> s(band, field, dissipationAlpha,
+                                             alphas, true);
+        evaluate(s, 2);
+        s.reduceTimeStepHamiltonJacobi(limit, gridDelta);
+        break;
+      }
+      case SpatialSchemeEnum::WENO_3RD_ORDER: {
+        lsInternal::WENO<T, D, 3> s(band, field, true);
+        evaluate(s, 2);
+        break;
+      }
+      case SpatialSchemeEnum::WENO_5TH_ORDER: {
+        lsInternal::WENO<T, D, 5> s(band, field, true);
+        evaluate(s, 3);
+        break;
+      }
+      default: {
+        if (spatialScheme != SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER) {
+          static bool warned = false;
+          if (!warned)
+            VIENNACORE_LOG_WARNING("AdvectHermite: the upwind update takes "
+                                   "ENGQUIST_OSHER_1ST_ORDER for this scheme.");
+          warned = true;
+        }
+        lsInternal::EngquistOsher<T, D, 1> s(band, field, true);
+        evaluate(s, 1);
+      }
+      }
+      return L;
+    };
+    // the first stage at the step's start, within the scheme's limit
+    double limit = std::numeric_limits<double>::max();
+    const std::vector<T> L0 = ratesOf(S, first, limit);
+    if (limit < double(dt))
+      dt = T(limit);
+    // the values after a forward Euler step from U with rates L, the other
+    // nodes along their own planes
+    auto advance = [&](const std::vector<T> &U, const std::vector<T> &L) {
+      std::vector<T> out(n);
+      for (long i = 0; i < n; ++i)
+        out[i] = U[i] - dt * (std::isfinite(L[i]) ? L[i] : V[i]);
+      return out;
+    };
+    std::vector<T> end;
+    if (temporalScheme == TemporalSchemeEnum::FORWARD_EULER) {
+      end = advance(S, L0);
+    } else {
+      double unused = std::numeric_limits<double>::max();
+      const std::vector<T> U1 = advance(S, L0);
+      const std::vector<T> star = advance(U1, ratesOf(U1, copyOf(U1), unused));
+      end.resize(n);
+      if (temporalScheme == TemporalSchemeEnum::RUNGE_KUTTA_2ND_ORDER) {
+        for (long i = 0; i < n; ++i)
+          end[i] = T(0.5) * S[i] + T(0.5) * star[i];
+      } else {
+        std::vector<T> U2(n);
+        for (long i = 0; i < n; ++i)
+          U2[i] = T(0.75) * S[i] + T(0.25) * star[i];
+        const std::vector<T> star2 =
+            advance(U2, ratesOf(U2, copyOf(U2), unused));
+        for (long i = 0; i < n; ++i)
+          end[i] = S[i] / T(3) + T(2) * star2[i] / T(3);
+      }
+    }
+    for (long i = 0; i < n; ++i)
+      if (std::isfinite(L0[i]))
+        upwindRate[i] = (S[i] - end[i]) / dt;
+  }
+
   void step(T dt, const std::vector<T> &Vd, const std::vector<T> &Vn) {
     const long n = long(S.size());
     rebuiltBand = false;
     std::vector<Vec> P(n), N(n), Wm(n);
     std::vector<T> Vp(n), Sown(n);
     std::vector<char> moving(n);
+    // the band's values at the step's start, for the upwind update
+    const std::vector<T> S0 = upwind ? S : std::vector<T>{};
 #pragma omp parallel for
     for (long i = 0; i < n; ++i) {
       moving[i] = good[i] && Vd[i] != 0;
@@ -1125,7 +1393,8 @@ template <class T, int D> class AdvectHermite {
     const std::vector<Vec> startN = N;
 #pragma omp parallel for
     for (long i = 0; i < n; ++i) {
-      if (fan[i])
+      // with the upwind update no face turns
+      if (fan[i] || upwind)
         continue;
       const Vec a = good[i] ? HA[i] : FA[i];
       const Vec n0 = N[i];
@@ -2009,6 +2278,94 @@ template <class T, int D> class AdvectHermite {
       convexFan[i] = convexNew[i];
       good[i] = good[i] || over[i];
       S[i] = Snew[i];
+    }
+    // the upwind update: the nodes in the gas or the topmost material that
+    // move take their value from the rates of computeUpwindRates (where the
+    // stencil leaves the band, from the motion of their plane at their
+    // speed) and a plane from the central gradient of the new values; the
+    // nodes inside a lower material keep their Hermite planes, so that a
+    // mask stays as it is. A neighbour beyond a reflective boundary is its
+    // mirror image
+    if (upwind) {
+      const int topMaterial = int(levelSets.size()) - 1;
+      std::vector<char> up(n, 0);
+      std::vector<T> Sup(n, T(0));
+      // the lower level set whose value capped the upwind value, -1 if none
+      std::vector<int> capped(n, -1);
+#pragma omp parallel for
+      for (long i = 0; i < n; ++i) {
+        if (long(upwindTakes.size()) != n || !upwindTakes[i])
+          continue;
+        const T rate = long(upwindRate.size()) == n
+                           ? upwindRate[i]
+                           : std::numeric_limits<T>::quiet_NaN();
+        Sup[i] = std::isfinite(rate) ? S0[i] - dt * rate
+                                     : S0[i] - dt * upwindSpeed[i];
+        // the top level set is the union with the lower materials: its value
+        // is nowhere above theirs, so that an etch stops at the underside of
+        // a mask and leaves its corners where they are
+        for (int l = 0; l < topMaterial; ++l)
+          if (lowerDefined(std::size_t(l), X[i])) {
+            const T lower = lowerValue(std::size_t(l), X[i]);
+            if (lower < Sup[i]) {
+              Sup[i] = lower;
+              capped[i] = l;
+            }
+          }
+        up[i] = 1;
+      }
+      for (long i = 0; i < n; ++i)
+        if (up[i])
+          S[i] = Sup[i];
+#pragma omp parallel for
+      for (long i = 0; i < n; ++i) {
+        if (!up[i])
+          continue;
+        auto keep = [&](const Vec &foot, const Vec &normal) {
+          HA[i] = FA[i] = PL[i] = C0[i] = RW[i] = W[i] = foot;
+          NRM[i] = Dir[i] = NL[i] = normal;
+          fan[i] = 0;
+          good[i] = 1;
+          arcKnown[i] = 0;
+          cornerKnown[i] = 0;
+          convexFan[i] = 0;
+          since[i] = 0;
+          moved[i] = 1;
+          boundPlane[i] = 0;
+          smooth[i] = 0;
+          exposedState[i] = 0;
+        };
+        // where a lower material caps the value, the node is a face of that
+        // material and takes its Hermite plane, as the exposed underside of
+        // a mask
+        if (capped[i] >= 0) {
+          Vec planePoint, planeDirection;
+          if (stack.nodePlane(std::size_t(capped[i]), X[i], planePoint,
+                              planeDirection)) {
+            keep(X[i] - planeDirection *
+                            DotProduct(X[i] - planePoint, planeDirection),
+                 planeDirection);
+            if (!pieceMaterial.empty())
+              pieceMaterial[i] = capped[i];
+            continue;
+          }
+        }
+        Vec g{};
+        for (int k = 0; k < D; ++k) {
+          const long jm = axisNeighbour(i, k, -1), jp = axisNeighbour(i, k, 1);
+          if (jm >= 0 && jp >= 0)
+            g[k] = (S[jp] - S[jm]) / 2;
+          else if (jp >= 0)
+            g[k] = S[jp] - S[i];
+          else if (jm >= 0)
+            g[k] = S[i] - S[jm];
+        }
+        const T length = Norm(g);
+        if (length < smallLength)
+          continue;
+        const Vec nn = g * (1 / length);
+        keep(X[i] - nn * S[i], nn);
+      }
     }
   }
 
@@ -3034,6 +3391,28 @@ public:
   /// the normal of the moved points around it. Default false.
   void setSurfaceSpeedsOnly(bool passed) { surfaceSpeedsOnly = passed; }
 
+  /// Whether the nodes of the topmost material that move take the upwind
+  /// update (see the class description), default false.
+  void setUpwind(bool passed) { upwind = passed; }
+
+  /// The spatial scheme of the upwind update, one of Advect's:
+  /// ENGQUIST_OSHER_1ST_ORDER (default) and _2ND_ORDER,
+  /// LAX_FRIEDRICHS_1ST_ORDER and _2ND_ORDER, WENO_3RD_ORDER and
+  /// _5TH_ORDER; the others take ENGQUIST_OSHER_1ST_ORDER.
+  void setSpatialScheme(SpatialSchemeEnum scheme) { spatialScheme = scheme; }
+
+  /// The time integration of the upwind update, as in Advect: forward Euler
+  /// (default) or TVD Runge-Kutta of second or third order, the speeds kept
+  /// through the stages.
+  void setTemporalScheme(TemporalSchemeEnum scheme) { temporalScheme = scheme; }
+
+  /// The dissipation factor of Lax-Friedrichs in the upwind update, default 1.
+  void setDissipationAlpha(T alpha) { dissipationAlpha = alpha; }
+
+  /// Whether a dissipation that turns the sign of a rate of the upwind update
+  /// sets it to zero, as in Advect, default true.
+  void setCheckDissipation(bool check) { checkDissipation = check; }
+
   /// Whether apply() repairs the band from the dual contouring mesh of its
   /// planes once the whole advection time is done if the band is no valid
   /// level set (Check), default true. Values further from the surface can lag
@@ -3116,9 +3495,11 @@ public:
         maxSpeed = std::max(maxSpeed, std::abs(good[i] ? Vd[i] : Vn[i]));
       }
       const T remaining = advectionTime - advectedTime;
-      const T dt = (maxSpeed > 0)
-                       ? std::min(timeStepRatio / maxSpeed, remaining)
-                       : remaining;
+      T dt = (maxSpeed > 0) ? std::min(timeStepRatio / maxSpeed, remaining)
+                            : remaining;
+      // the rates of the upwind update, which may shorten the step
+      if (upwind && maxSpeed > 0)
+        computeUpwindRates(Vd, Vn, dt);
       if (levelSets.size() > 1) {
 #pragma omp parallel for
         for (long i = 0; i < n; ++i) {
