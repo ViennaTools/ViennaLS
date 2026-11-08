@@ -27,7 +27,9 @@
   them (same total motion), which continues from the band state the previous
   call left. A 2D box deposited with an isotropic part of the rate that stops
   after the first call must keep the arcs it grew, as the speeds integrated
-  over time give them. A ridge across
+  over time give them. A 3D box deposited directionally in single steps on a
+  stack of itself and a copy, as ViennaPS deposits on a duplicated top level
+  set, must give the result of the box alone. A ridge across
   a periodic boundary (2D), and a substrate etched beside a mask (2D) and
   through a square opening of a mask (3D), check periodic boundaries and
   material stacks, also with the mask below in the stack and in single steps
@@ -1670,9 +1672,60 @@ int checkRateChange() {
   return EXIT_SUCCESS;
 }
 
+// directional deposition of the rotated box (twice the size of the boxes of
+// check) by 4 grid spacings on a stack of the box and a copy of it, as
+// ViennaPS deposits a new material on a duplicated top level set, in single
+// steps that continue from the band state the previous call left, against
+// the box swept up. The fans of the box's edges take the material of the film
+// once their planes leave the box, as its faces do; when they kept the box's
+// material, the film around them came apart from the faces (1.22 grid
+// spacings, on the box alone 0.045)
+int checkStackedDirectionalDeposition() {
+  constexpr int D = 3;
+  const double gridDelta = 1.;
+  const RotatedBox<D> box(2. * gridDelta);
+  const double r = 4. * gridDelta;
+  auto substrate = levelSet<D>(box, gridDelta, 30.);
+  auto top = ls::SmartPointer<ls::Domain<double, D>>::New(substrate);
+  auto velocity = ls::SmartPointer<DirectionalDeposition>::New();
+  double advected = 0.;
+  int calls = 0;
+  while (advected < r - 1e-9 * gridDelta && calls < 100) {
+    ls::AdvectHermite<double, D> advect;
+    advect.insertNextLevelSet(substrate);
+    advect.insertNextLevelSet(top);
+    advect.setVelocityField(velocity);
+    advect.setAdvectionTime(r - advected);
+    advect.setSingleStep(true);
+    advect.setRebuildAtEnd(false);
+    advect.apply();
+    advected += advect.getAdvectedTime();
+    ++calls;
+  }
+  auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+  ls::ToDualContouringMesh<double, D>(top, mesh).apply();
+  if (mesh->getNodes().empty())
+    return fail(D, "directional deposition on a stack: no surface");
+  double worst = 0., mean = 0.;
+  for (const auto &n : mesh->getNodes()) {
+    const double d = std::abs(box.sweptSdf({n[0], n[1], n[2]}, r));
+    worst = std::max(worst, d);
+    mean += d;
+  }
+  mean /= double(mesh->getNodes().size());
+  std::cout << "3D directional deposition by 4 grid spacings on a stack of the "
+               "box and a copy, single steps: "
+            << calls << " calls, worst vertex " << worst / gridDelta
+            << ", mean " << mean / gridDelta << " grid spacings" << std::endl;
+  if (worst / gridDelta > 0.1 || mean / gridDelta > 1e-3)
+    return fail(D, "directional deposition on a stack off the exact result");
+  return EXIT_SUCCESS;
+}
+
 int main() {
   omp_set_num_threads(4);
   if (check<2>(0.5) != EXIT_SUCCESS || check<3>(1.) != EXIT_SUCCESS ||
+      checkStackedDirectionalDeposition() != EXIT_SUCCESS ||
       checkRoundedInside() != EXIT_SUCCESS ||
       checkRateChange() != EXIT_SUCCESS ||
       checkPointDataAfterApply() != EXIT_SUCCESS ||

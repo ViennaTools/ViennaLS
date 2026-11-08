@@ -87,7 +87,7 @@ using namespace viennacore;
 /// and on its own material, so that a pit etched into the substrate does not
 /// cut into the mask, in either order of the stack. Every plane carries its
 /// material, a face's as a fan's, which a node taking it takes over and which
-/// changes only where the face's own motion crosses an interface; a fan's node
+/// changes only where the plane's own motion crosses an interface; a fan's node
 /// in the solid takes the material at its own position. Behind a junction of
 /// materials the interface splits the cone of a fan on the solid side: each
 /// material moves over its own part at its own speed, as the substrate below
@@ -1564,10 +1564,9 @@ template <class T, int D> class AdvectHermite {
     for (auto &t : since)
       t += dt;
 
-    // in a material stack, the material of every piece: a face's is the one
-    // it carries; a fan's that of its region, since the ends of its cone may
-    // lie on an interface, and on the solid side, behind a reflex junction,
-    // that of the node itself
+    // in a material stack, the material of every piece: the one it carries,
+    // and on the solid side of a fan, behind a reflex junction, that of the
+    // node itself
     const bool stacked = levelSets.size() > 1;
     std::vector<int> piece(n, 0), region(n, 0);
     if (stacked) {
@@ -1578,13 +1577,14 @@ template <class T, int D> class AdvectHermite {
       }
     }
     // the material of every piece after its own motion in this step: a
-    // face whose point crosses an interface is of the material beyond it
+    // piece whose point crosses an interface, a fan's as a face's, is of the
+    // material beyond it, as the fans of the edges of a box take the
+    // material of the film that deposition on a duplicated top lays over
+    // them
     std::vector<int> pieceAfter(piece);
     if (stacked) {
 #pragma omp parallel for
       for (long i = 0; i < n; ++i) {
-        if (fan[i])
-          continue;
         const Vec &start = good[i] ? HA[i] : FA[i];
         const int before = materialBehind(start, N[i]),
                   after = materialBehind(P[i], N[i]);
