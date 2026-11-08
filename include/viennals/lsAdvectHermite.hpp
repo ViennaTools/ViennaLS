@@ -956,15 +956,15 @@ template <class T, int D> class AdvectHermite {
     const auto *values = pointData.getScalarData(valueLabel, true);
     const auto *sides = pointData.getScalarData(sideLabel, true);
     const auto *flags = pointData.getScalarData(flagsLabel, true);
-    const auto *times = pointData.getScalarData(timeLabel, true);
+    const auto *times = pointData.getVectorData(timeLabel, true);
     const auto *sinces = pointData.getScalarData(sinceLabel, true);
     const auto *materials = pointData.getScalarData(materialLabel, true);
     const auto *entries = pointData.getScalarData(entryLabel, true);
     if (values == nullptr || sides == nullptr || flags == nullptr ||
         times == nullptr || sinces == nullptr || values->size() != n ||
         sides->size() != n || flags->size() != n || sinces->size() != n ||
-        times->size() < 2 || materials == nullptr || materials->size() != n ||
-        entries == nullptr || entries->size() != n)
+        n == 0 || times->size() != n || materials == nullptr ||
+        materials->size() != n || entries == nullptr || entries->size() != n)
       return false;
     for (std::size_t i = 0; i < n; ++i)
       if (std::abs((*values)[i] - S[i]) >
@@ -1032,8 +1032,8 @@ template <class T, int D> class AdvectHermite {
         cornerKnown[i] = (int((*flags)[i]) >> 8) & 1;
       }
     since.assign(sinces->begin(), sinces->end());
-    sinceRebuild = (*times)[0];
-    motionSinceRebuild = (*times)[1];
+    sinceRebuild = (*times)[0][0];
+    motionSinceRebuild = (*times)[0][1];
     // the cones as the rebuild found them and the steps passed them on, since
     // the faces around a feature, which featureCones reads, can have become
     // fans of it since then, as nodes that took the plane of a new face
@@ -2755,7 +2755,16 @@ template <class T, int D> class AdvectHermite {
       pointData.insertReplaceVectorData(std::move(data), labels[k]);
     }
     typename PointData<T>::ScalarDataType values(S), sides(side0),
-        flags(S.size()), times = {sinceRebuild, motionSinceRebuild};
+        flags(S.size());
+    // the time and the motion since the rebuild at every node, so that each
+    // array of the point data holds one entry per point, as BooleanOperation
+    // and ToMesh read them
+    typename PointData<T>::VectorDataType times(S.size());
+    for (auto &t : times) {
+      t[0] = sinceRebuild;
+      t[1] = motionSinceRebuild;
+      t[2] = T(0);
+    }
     for (std::size_t i = 0; i < S.size(); ++i)
       flags[i] = T(int(good[i]) + 2 * int(fan[i]) + 4 * int(moved[i]) +
                    8 * int(convexFan[i]) + 16 * int(arcKnown[i]) +
@@ -2765,7 +2774,9 @@ template <class T, int D> class AdvectHermite {
     pointData.insertReplaceScalarData(std::move(values), valueLabel);
     pointData.insertReplaceScalarData(std::move(sides), sideLabel);
     pointData.insertReplaceScalarData(std::move(flags), flagsLabel);
-    pointData.insertReplaceScalarData(std::move(times), timeLabel);
+    if (const int old = pointData.getScalarDataIndex(timeLabel); old != -1)
+      pointData.eraseScalarData(old);
+    pointData.insertReplaceVectorData(std::move(times), timeLabel);
     pointData.insertReplaceScalarData(
         typename PointData<T>::ScalarDataType(since), sinceLabel);
     typename PointData<T>::ScalarDataType materials(S.size());

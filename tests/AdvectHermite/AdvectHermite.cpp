@@ -1449,6 +1449,43 @@ int checkRoundedInside() {
   return EXIT_SUCCESS;
 }
 
+// every array of the point data that AdvectHermite leaves holds one entry per
+// point, as BooleanOperation and ToMesh take each array point by point (the
+// time since the rebuild was an array of two values, which BooleanOperation
+// read past, as when ViennaPS's selective epitaxy builds its mask after an
+// earlier process)
+int checkPointDataAfterApply() {
+  const double gridDelta = 1.;
+  const RotatedBox<2> box(gridDelta);
+  auto domain = levelSet<2>(box, gridDelta, 30.);
+  ls::AdvectHermite<double, 2> advect(domain,
+                                      ls::SmartPointer<Uniform>::New(1.));
+  advect.setAdvectionTime(2.);
+  advect.apply();
+  const auto &data = domain->getPointData();
+  const auto n = domain->getNumberOfPoints();
+  const auto arrays = data.getScalarDataSize() + data.getVectorDataSize();
+  for (unsigned i = 0; i < data.getScalarDataSize(); ++i)
+    if (data.getScalarData(i)->size() != n)
+      return fail(2, "point data " + data.getScalarDataLabel(i) +
+                         " does not hold one entry per point");
+  for (unsigned i = 0; i < data.getVectorDataSize(); ++i)
+    if (data.getVectorData(i)->size() != n)
+      return fail(2, "point data " + data.getVectorDataLabel(i) +
+                         " does not hold one entry per point");
+  auto copy = ls::SmartPointer<ls::Domain<double, 2>>::New(domain);
+  ls::BooleanOperation<double, 2>(domain, copy, ls::BooleanOperationEnum::UNION)
+      .apply();
+  ls::Check<double, 2> check(domain);
+  check.apply();
+  std::cout << "2D point data after apply: " << arrays
+            << " arrays of one entry per point, union with a copy valid "
+            << check.isValid() << std::endl;
+  if (!check.isValid())
+    return fail(2, "union after AdvectHermite not a valid level set");
+  return EXIT_SUCCESS;
+}
+
 // 2D deposition of the box at the rate 1 + max(n.y, 0) for 3 grid spacings,
 // then at max(n.y, 0) for 6: for a convex body and speeds alike in space,
 // Hopf's formula with the speeds integrated over time is exact, the box
@@ -1486,8 +1523,9 @@ int main() {
   omp_set_num_threads(4);
   if (check<2>(0.5) != EXIT_SUCCESS || check<3>(1.) != EXIT_SUCCESS ||
       checkRoundedInside() != EXIT_SUCCESS ||
-      checkRateChange() != EXIT_SUCCESS || checkPeriodic() != EXIT_SUCCESS ||
-      checkMaterials() != EXIT_SUCCESS ||
+      checkRateChange() != EXIT_SUCCESS ||
+      checkPointDataAfterApply() != EXIT_SUCCESS ||
+      checkPeriodic() != EXIT_SUCCESS || checkMaterials() != EXIT_SUCCESS ||
       checkMixedEtch(false) != EXIT_SUCCESS ||
       checkMixedEtch(true) != EXIT_SUCCESS ||
       checkMixedEtch(false, true) != EXIT_SUCCESS ||
