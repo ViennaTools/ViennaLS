@@ -11,6 +11,7 @@
 #include <lsCheck.hpp>
 #include <lsDomain.hpp>
 #include <lsFromSurfaceMesh.hpp>
+#include <lsMakeGeometry.hpp>
 #include <lsMesh.hpp>
 #include <lsToDualContouringMesh.hpp>
 
@@ -1169,6 +1170,156 @@ int checkOpening() {
   return EXIT_SUCCESS;
 }
 
+// isotropic etching over many grid spacings with the mask lowest in the
+// stack, as ViennaPS builds it: the undercut of tests/AdvectHermiteUpwind at
+// 0.0625 (16 grid spacings) and the square opening of checkOpening at 0.25 (9
+// grid spacings), against the exact surfaces. Substrate nodes had taken over
+// the plane that exposeInterfaces gives a mask node at the end of the cavity,
+// static with the mask's material, and stayed behind as islands below the
+// mask; nodes that entered the band beside the rounded cavity around the
+// corner of the opening had taken the plane through the mesh's closest point
+// on the rim along the mask, a radius too small that the fan's support passed
+// on to the whole corner (2D 0.069, 3D 1.32 grid spacings off before)
+class EtchAboveMask : public ls::VelocityField<double> {
+public:
+  double getScalarVelocity(const ls::Vec3D<double> &, int material,
+                           const ls::Vec3D<double> &, unsigned long) override {
+    return material == 1 ? -1. : 0.;
+  }
+};
+
+int checkLongEtchBelowMask() {
+  const double ys = 0.29;
+  {
+    const double gridDelta = 0.0625, r = 1., width = 6., a = 2.37, h = 1.13;
+    double bounds[4] = {-width, width, -6., 6.};
+    ls::BoundaryConditionEnum boundaryCons[2] = {
+        ls::BoundaryConditionEnum::REFLECTIVE_BOUNDARY,
+        ls::BoundaryConditionEnum::INFINITE_BOUNDARY};
+    auto newLevelSet = [&]() {
+      auto levelSet = ls::SmartPointer<ls::Domain<double, 2>>::New(
+          bounds, boundaryCons, gridDelta);
+      levelSet->setNormalization(ls::NormalizationEnum::EUCLIDEAN);
+      levelSet->setLevelSetWidth(12);
+      return levelSet;
+    };
+    auto mask = newLevelSet();
+    {
+      auto outline = ls::SmartPointer<ls::Mesh<>>::New();
+      for (const auto &q : {Point{a, ys - 1e-4, 0.}, Point{-a, ys - 1e-4, 0.},
+                            Point{-a, ys + h, 0.}, Point{a, ys + h, 0.}})
+        outline->insertNextNode(q);
+      for (unsigned k = 0; k < 4; ++k)
+        outline->insertNextLine({k, (k + 1) % 4});
+      ls::FromSurfaceMesh<double, 2>(mask, outline).apply();
+    }
+    auto top = newLevelSet();
+    {
+      auto surface = ls::SmartPointer<ls::Mesh<>>::New();
+      for (const auto &q : {Point{-width, ys, 0.}, Point{-a, ys, 0.},
+                            Point{-a, ys + h, 0.}, Point{a, ys + h, 0.},
+                            Point{a, ys, 0.}, Point{width, ys, 0.}})
+        surface->insertNextNode(q);
+      for (unsigned k = 0; k < 5; ++k)
+        surface->insertNextLine({k, k + 1});
+      ls::FromSurfaceMesh<double, 2>(top, surface).apply();
+    }
+    ls::AdvectHermite<double, 2> advect(
+        std::vector<ls::SmartPointer<ls::Domain<double, 2>>>{mask, top},
+        ls::SmartPointer<EtchAboveMask>::New());
+    advect.setAdvectionTime(r);
+    advect.apply();
+    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    ls::ToDualContouringMesh<double, 2>(top, mesh).apply();
+    double deviation = 0.;
+    for (const auto &n : mesh->getNodes())
+      if (std::abs(n[0]) <= width - gridDelta)
+        deviation = std::max(
+            deviation, mixedDistance(n[0], n[1], a, ys, h,
+                                     advect.getAdvectedTime(), 0., width));
+    std::cout << "2D isotropic etching by 16 grid spacings beside a mask "
+                 "below in the stack: worst vertex "
+              << deviation / gridDelta << " grid spacings" << std::endl;
+    if (mesh->getNodes().empty() || deviation / gridDelta > 0.02)
+      return fail(2, "long etch below a mask off the exact result");
+  }
+  {
+    const double gridDelta = 0.25, r = 2.25, width = 8., a = 3.37, h = 2.13;
+    double bounds[6] = {-width, width, -6., 6., -width, width};
+    ls::BoundaryConditionEnum boundaryCons[3] = {
+        ls::BoundaryConditionEnum::REFLECTIVE_BOUNDARY,
+        ls::BoundaryConditionEnum::INFINITE_BOUNDARY,
+        ls::BoundaryConditionEnum::REFLECTIVE_BOUNDARY};
+    // the mask, Manhattan as usual: a plate less a box through the opening
+    auto mask = ls::SmartPointer<ls::Domain<double, 3>>::New(
+        bounds, boundaryCons, gridDelta);
+    {
+      double lo[3] = {-width - 2., ys, -width - 2.},
+             hi[3] = {width + 2., ys + h, width + 2.};
+      ls::MakeGeometry<double, 3>(
+          mask, ls::SmartPointer<ls::Box<double, 3>>::New(lo, hi))
+          .apply();
+      auto hole = ls::SmartPointer<ls::Domain<double, 3>>::New(
+          bounds, boundaryCons, gridDelta);
+      double holeLo[3] = {-a, ys - 1., -a}, holeHi[3] = {a, ys + h + 1., a};
+      ls::MakeGeometry<double, 3>(
+          hole, ls::SmartPointer<ls::Box<double, 3>>::New(holeLo, holeHi))
+          .apply();
+      ls::BooleanOperation<double, 3>(
+          mask, hole, ls::BooleanOperationEnum::RELATIVE_COMPLEMENT)
+          .apply();
+    }
+    auto top = ls::SmartPointer<ls::Domain<double, 3>>::New(
+        bounds, boundaryCons, gridDelta);
+    top->setNormalization(ls::NormalizationEnum::EUCLIDEAN);
+    top->setLevelSetWidth(12);
+    auto surface = ls::SmartPointer<ls::Mesh<>>::New();
+    const double sx[4] = {-1., 1., 1., -1.}, sz[4] = {-1., -1., 1., 1.};
+    for (const auto &[size, y] :
+         {std::pair{width, ys + h}, std::pair{a, ys + h}, std::pair{a, ys}})
+      for (int k = 0; k < 4; ++k)
+        surface->insertNextNode({sx[k] * size, y, sz[k] * size});
+    for (unsigned k = 0; k < 4; ++k) {
+      const unsigned l = (k + 1) % 4;
+      insertQuad(*surface, {k, l, 4 + l, 4 + k}, {0., 1., 0.});
+      insertQuad(*surface, {4 + k, 4 + l, 8 + l, 8 + k},
+                 {-(sx[k] + sx[l]), 0., -(sz[k] + sz[l])});
+    }
+    insertQuad(*surface, {8, 9, 10, 11}, {0., 1., 0.});
+    ls::FromSurfaceMesh<double, 3>(top, surface).apply();
+    ls::AdvectHermite<double, 3> advect(
+        std::vector<ls::SmartPointer<ls::Domain<double, 3>>>{mask, top},
+        ls::SmartPointer<EtchAboveMask>::New());
+    advect.setAdvectionTime(r);
+    advect.apply();
+    auto mesh = ls::SmartPointer<ls::Mesh<>>::New();
+    ls::ToDualContouringMesh<double, 3>(top, mesh).apply();
+    double deviation = 0., sum = 0.;
+    unsigned counted = 0;
+    for (const auto &n : mesh->getNodes()) {
+      if (std::abs(n[0]) > width - gridDelta ||
+          std::abs(n[2]) > width - gridDelta)
+        continue; // the reflective boundaries
+      const double d = openingDistance({n[0], n[1], n[2]}, a, ys, h,
+                                       advect.getAdvectedTime(), false);
+      deviation = std::max(deviation, d);
+      sum += d;
+      ++counted;
+    }
+    const double mean = counted ? sum / counted : 0.;
+    std::cout << "3D isotropic etching by 9 grid spacings through a square "
+                 "opening of a mask below in the stack: "
+              << advect.getNumberOfRebuilds() << " rebuild(s), worst vertex "
+              << deviation / gridDelta << ", mean " << mean / gridDelta
+              << " grid spacings" << std::endl;
+    if (counted == 0 || deviation / gridDelta > 0.5 ||
+        mean / gridDelta > 0.01)
+      return fail(3, "long etch through an opening below a mask off the "
+                     "exact result");
+  }
+  return EXIT_SUCCESS;
+}
+
 // a trench through a mask in 3D, z up, both level sets Euclidean, etched in
 // single steps with the view factor of the opening and a reproducible noise
 // of 10 % or 30 %, like the flux of a ViennaPS process; the band must end as
@@ -1543,6 +1694,7 @@ int main() {
       checkSlope(30., false) != EXIT_SUCCESS ||
       checkNoisyTrench(487) != EXIT_SUCCESS ||
       checkNoisyTrench(254) != EXIT_SUCCESS || checkOpening() != EXIT_SUCCESS ||
+      checkLongEtchBelowMask() != EXIT_SUCCESS ||
       checkSinglePrecision<2>(0.5) != EXIT_SUCCESS ||
       checkSinglePrecision<3>(1.) != EXIT_SUCCESS ||
       checkTrench<double>(0) != EXIT_SUCCESS ||

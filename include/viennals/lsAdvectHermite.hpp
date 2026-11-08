@@ -1867,6 +1867,11 @@ template <class T, int D> class AdvectHermite {
         // on the gas and on its own material, as the pit in a substrate does
         // not cut into the mask
         if (stacked) {
+          // the plane of an exposed solid node stays in its material
+          // (rebuild)
+          if (!upwind && exposedState[j] && S[j] < 0 && Sf[i] < 0 &&
+              piece[j] != region[i])
+            continue;
           bool valid;
           if (fan[j]) {
             valid = Sf[i] > 0 || region[i] == piece[j];
@@ -2930,14 +2935,18 @@ template <class T, int D> class AdvectHermite {
       // the node itself in the old band; else, among the old nodes around
       // it, the plane that gives the node the value nearest to the mesh's,
       // unless the node's direction from the feature of a rounded convex fan
-      // lies in the fan's cone, a 3D corner's before an edge's: a rounded
-      // part grows alike in every direction of its cone, and its support
-      // there gives the node's value exactly. Its radius is the old node's
-      // distance from the feature less its signed value, also for an old
-      // node inside the rounded part
+      // (towards it for a concave one, the cavity an etch rounds around a
+      // static corner, a gas node or one of its material) lies in the fan's
+      // cone, a 3D corner's before an edge's: a rounded part grows alike in
+      // every direction of its cone, and its support there gives the node's
+      // value exactly. Its radius is the old node's distance from the
+      // feature less its signed value (plus it, concave), also for an old
+      // node inside the rounded part. A plane the mesh gives a node beside a
+      // concave one, where the part meets an interface, would make the
+      // radius smaller, which the fan's support passes on within a step
       long j = oldAt(idx);
       const bool same = j >= 0;
-      bool asFan = false;
+      bool asFan = false, asConcave = false;
       Vec fanPoint{}, fanR{};
       T fanValue = 0;
       int fanRank = 0;
@@ -2948,27 +2957,38 @@ template <class T, int D> class AdvectHermite {
           for (int k = 0; k < D; ++k)
             q[k] += o[k];
           const long m = oldAt(q);
-          if (m < 0)
+          // the plane that exposeInterfaces gave a solid node, as the end of
+          // a cavity that a mask node beside it holds as its own static
+          // plane, is set anew every step for the nodes of that material
+          // only: a node of another material that took it would keep it for
+          // good (the upwind update takes its values from the neighbours)
+          if (m < 0 || (!upwind && oExposed[m] && oS[m] < 0 &&
+                        oMaterial[m] != material(X[i])))
             continue;
           const T v = DotProduct(oNL[m], X[i] - oPL[m]);
           if (!asFan && std::abs(v - S[i]) < best) {
             best = std::abs(v - S[i]);
             j = m;
           }
-          if (!oFan[m] || !oGood[m] || !oRounded[m] || !oConvex[m] ||
-              fanRank == 2)
+          const bool concave =
+              !oConvex[m] && (S[i] > 0 || material(X[i]) == oMaterial[m]);
+          if (!oFan[m] || !oGood[m] || !oRounded[m] ||
+              (!oConvex[m] && !concave) || fanRank == 2)
             continue;
           const Vec c = oC0[m];
+          const T towards = concave ? T(-1) : T(1);
           if (D == 3 && oCorner[m]) {
             const Vec r = X[i] - c, rj = oldX[m] - c;
             const T length = Norm(r);
             if (length > smallLength &&
-                inCornerCone(r * (1 / length), oA[m], oB[m], oC3[m])) {
-              const T vf = length - (Norm(rj) - oS[m]);
-              if (vf > 0) {
+                inCornerCone(r * (towards / length), oA[m], oB[m], oC3[m])) {
+              const T vf = concave ? oS[m] + Norm(rj) - length
+                                   : length - (Norm(rj) - oS[m]);
+              if (vf > 0 || concave) {
                 fanRank = 2;
                 j = m;
                 asFan = true;
+                asConcave = concave;
                 fanPoint = c;
                 fanR = r;
                 fanValue = vf;
@@ -2991,13 +3011,16 @@ template <class T, int D> class AdvectHermite {
             rj = rj - e * DotProduct(rj, e);
           }
           const T length = Norm(r);
-          if (length < smallLength || !within(r * (1 / length), oA[m], oB[m]))
+          if (length < smallLength ||
+              !within(r * (towards / length), oA[m], oB[m]))
             continue;
-          const T vf = length - (Norm(rj) - oS[m]);
-          if (vf > 0) {
+          const T vf = concave ? oS[m] + Norm(rj) - length
+                               : length - (Norm(rj) - oS[m]);
+          if (vf > 0 || concave) {
             fanRank = 1;
             j = m;
             asFan = true;
+            asConcave = concave;
             fanPoint = feature;
             fanR = r;
             fanValue = vf;
@@ -3091,7 +3114,7 @@ template <class T, int D> class AdvectHermite {
       if (asFan) {
         roundedNew[i] = 1;
         S[i] = fanValue;
-        const Vec d = fanR * (1 / Norm(fanR));
+        const Vec d = fanR * ((asConcave ? T(-1) : T(1)) / Norm(fanR));
         C0[i] = RW[i] = W[i] = fanPoint;
         Dir[i] = NL[i] = d;
         HA[i] = FA[i] = PL[i] = X[i] - d * S[i];
@@ -3109,7 +3132,16 @@ template <class T, int D> class AdvectHermite {
         smooth[i] = 0;
         continue;
       }
-      // a node new to the band: the plane of the old node
+      // a node new to the band: the plane of the old node; a copy of the
+      // plane of an exposed solid node stays marked as such, so that it does
+      // not pass on to another material
+      const bool exposedCopy = !upwind && oExposed[j] && oS[j] < 0;
+      if (exposedCopy) {
+        exposedState[i] = 1;
+        interfacePoint[i] = oIP[j];
+        interfaceNormal[i] = oIN[j];
+        interfaceLevel[i] = oIL[j];
+      }
       S[i] = DotProduct(oNL[j], X[i] - oPL[j]);
       HA[i] = X[i] - oNL[j] * S[i];
       FA[i] = PL[i] = oPL[j];
@@ -3119,7 +3151,7 @@ template <class T, int D> class AdvectHermite {
       arcKnown[i] = 0;
       cornerKnown[i] = 0;
       moved[i] = 1;
-      boundPlane[i] = 0;
+      boundPlane[i] = exposedCopy ? oBound[j] : 0;
       smooth[i] = 0;
     }
     rebuiltRounded.swap(roundedNew);
@@ -3172,7 +3204,10 @@ template <class T, int D> class AdvectHermite {
                    known0 = arcKnown, corner0 = cornerKnown;
         const auto C30 = arcC;
         const auto since0 = since;
-        const auto material0 = pieceMaterial;
+        const auto material0 = pieceMaterial, level0 = interfaceLevel;
+        const auto exposed0 = exposedState, bound0 = boundPlane;
+        const auto point0 = interfacePoint, normal0 = interfaceNormal;
+        const auto S0 = S;
         for (long i = 0; i < n; ++i) {
           const long m = from[i];
           if (m < 0)
@@ -3192,7 +3227,21 @@ template <class T, int D> class AdvectHermite {
           convexFan[i] = convex0[m];
           since[i] = since0[m];
           pieceMaterial[i] = material0[m];
-          exposedState[i] = 0;
+          // the plane of an exposed solid node (above): a node of its
+          // material keeps it marked, and a solid node of another material,
+          // which it fits as the end of the cavity that the front of the
+          // node's own material forms, carries it as a piece of that material
+          const bool fromExposed = !upwind && exposed0[m] && S0[m] < 0;
+          const bool exposedCopy =
+              fromExposed && material0[m] == material(X[i]);
+          if (fromExposed && !exposedCopy && mesh[i] < 0)
+            pieceMaterial[i] = material(X[i]);
+          exposedState[i] = exposedCopy;
+          if (exposedCopy) {
+            interfacePoint[i] = point0[m];
+            interfaceNormal[i] = normal0[m];
+            interfaceLevel[i] = level0[m];
+          }
           side0[i] = sign(S[i]);
           const bool concave = fan0[m] && !convex0[m];
           fan[i] = concave;
@@ -3201,7 +3250,7 @@ template <class T, int D> class AdvectHermite {
           if (concave)
             arcC[i] = C30[m];
           moved[i] = 1;
-          boundPlane[i] = 0;
+          boundPlane[i] = exposedCopy ? bound0[m] : 0;
           smooth[i] = 0;
         }
         if (changed == 0)
