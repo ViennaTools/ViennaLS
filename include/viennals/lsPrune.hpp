@@ -134,6 +134,7 @@ public:
             // a numerical glitch and should be removed
             if (std::abs(centerIt.getValue()) == 0.) {
               bool overWritePoint = false;
+              bool undefinedNeighbour = false;
               T undefVal = 0.;
               for (int i = 0; i < D; i++) {
                 const auto &negVal = neighborIt.getNeighbor(i).getValue();
@@ -143,14 +144,31 @@ public:
                 // set the points value to that of the lower neighbour
                 if (!isMonotone(negVal, posVal)) {
                   overWritePoint = true;
-                  undefVal =
-                      std::abs(negVal) < std::abs(posVal) ? negVal : posVal;
+                  const int lower =
+                      std::abs(negVal) < std::abs(posVal) ? i : D + i;
+                  undefVal = neighborIt.getNeighbor(lower).getValue();
+                  undefinedNeighbour =
+                      !neighborIt.getNeighbor(lower).isDefined();
                   break;
                 }
+              }
+              // the value of an undefined neighbour leaves the point
+              // undefined (as a defined point it held the largest number of
+              // the type, as a zero at the foot of a fin below an oxide that
+              // an epitaxy's union of level sets left); a defined one keeps
+              // the point defined, with the point's own data
+              if (overWritePoint && undefinedNeighbour) {
+                domainSegment.insertNextUndefinedPoint(
+                    neighborIt.getIndices(), undefVal < 0
+                                                 ? Domain<T, D>::NEG_VALUE
+                                                 : Domain<T, D>::POS_VALUE);
+                continue;
               }
               if (overWritePoint) {
                 domainSegment.insertNextDefinedPoint(neighborIt.getIndices(),
                                                      undefVal);
+                if (updateData)
+                  newDataSourceIds[p].push_back(centerIt.getPointId());
                 continue;
               }
             }

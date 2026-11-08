@@ -155,9 +155,16 @@ class StencilLocalLaxFriedrichsScalar {
           FiniteDifferences<T>::calculateGradient(values.data(), gridDelta);
       modulus += normal[i] * normal[i];
     }
-    modulus = T(1) / std::sqrt(modulus);
-    for (unsigned i = 0; i < D; ++i) {
-      normal[i] *= modulus;
+    // a zero gradient, as at a zero that the front has left inside the band
+    // (an edge of the initial geometry on grid nodes that the film has
+    // overgrown), keeps the zero normal vector: 1/0 made it NaN, the NaN
+    // reached the level set value and the rebuild made the node an undefined
+    // point of the wrong sign
+    if (modulus > 0) {
+      modulus = T(1) / std::sqrt(modulus);
+      for (unsigned i = 0; i < D; ++i) {
+        normal[i] *= modulus;
+      }
     }
     return normal;
   }

@@ -148,10 +148,12 @@ public:
       grad += pow2((diffNeg + diffPos) * 0.5);
     }
 
-    // normalize normal vector
-    normalModulus = 1. / std::sqrt(normalModulus);
-    for (unsigned i = 0; i < D; ++i) {
-      normalVector[i] *= normalModulus;
+    // normalize normal vector; a zero gradient keeps the zero vector
+    if (normalModulus > 0) {
+      normalModulus = 1. / std::sqrt(normalModulus);
+      for (unsigned i = 0; i < D; ++i) {
+        normalVector[i] *= normalModulus;
+      }
     }
 
     // Get velocities
@@ -208,10 +210,12 @@ public:
           normal[dir] = calculateNormalComponent(neg, center, pos, gridDelta);
           normalModulus += normal[dir] * normal[dir];
         }
-        // normalize normal vector
-        normalModulus = 1. / std::sqrt(normalModulus);
-        for (unsigned dir = 0; dir < D; ++dir)
-          normal[dir] *= normalModulus;
+        // normalize normal vector; a zero gradient keeps the zero vector
+        if (normalModulus > 0) {
+          normalModulus = 1. / std::sqrt(normalModulus);
+          for (unsigned dir = 0; dir < D; ++dir)
+            normal[dir] *= normalModulus;
+        }
 
         T scaVel = velocities->getScalarVelocity(
             coords, material, normal,

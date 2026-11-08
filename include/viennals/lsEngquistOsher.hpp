@@ -131,9 +131,12 @@ public:
         normalVector[i] = (pos + neg) * 0.5; // = 0;
         denominator += normalVector[i] * normalVector[i];
       }
-      denominator = 1. / std::sqrt(denominator);
-      for (unsigned i = 0; i < D; ++i) {
-        normalVector[i] *= denominator;
+      // a zero gradient keeps the zero normal vector
+      if (denominator > 0) {
+        denominator = 1. / std::sqrt(denominator);
+        for (unsigned i = 0; i < D; ++i) {
+          normalVector[i] *= denominator;
+        }
       }
     }
 

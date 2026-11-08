@@ -127,7 +127,9 @@ public:
       dissipation += alphaFactor * finalAlphas[i] * (diffPos - diffNeg) * 0.5;
     }
 
-    if (calculateNormalVectors) {
+    // a zero gradient, as at an isolated zero inside the band, keeps the zero
+    // normal vector (1/0 would make it NaN)
+    if (calculateNormalVectors && normalModulus > 0) {
       normalModulus = 1. / std::sqrt(normalModulus);
       for (unsigned i = 0; i < D; ++i) {
         normalVector[i] *= normalModulus;
