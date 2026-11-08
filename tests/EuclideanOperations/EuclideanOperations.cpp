@@ -26,11 +26,14 @@
 /**
   Operations on Euclidean level sets with Hermite data, on rotated boxes in 2D
   and 3D with exact references. Reduce and Prune keep the exact values and the
-  normalization. Expand and the Boolean operations take their values from the
-  dual contouring mesh of the stored planes (Reinitialize): union,
-  intersection and relative complement of two boxes give surfaces on the
-  exact result, with the sharp edges where the boxes cut each other, and the
-  exact signed distance wherever it equals the minimum or maximum of the two.
+  normalization. Expand takes its values from the dual contouring mesh of the
+  stored planes (Reinitialize), the Boolean operations from that of the
+  Hermite data of their operands on the edges the result crosses: union,
+  intersection and relative complement of two boxes give the exact result,
+  with the sharp edges where the boxes cut each other, and the exact signed
+  distance wherever it equals the minimum or maximum of the two. A fin taken
+  out of the union of fin and slab, whose walls bound both, leaves the two
+  blocks beside the fin with their exact signed distance.
   INVERT turns the stored normals. The stray-point removal of ViennaPS keeps
   the exact values of the remaining box. ToDiskMesh places the disks on the
   exact surface. AdvectHermite widens a reduced band, runs single steps and
@@ -195,10 +198,9 @@ template <int D> int check(double gridDelta) {
   // normal (P's local y in 2D, x in 3D). Corners and the points where edges
   // cross the other surface stay farther apart than a cell diagonal, so that
   // in 2D every cell holds at most one feature of the results, which are
-  // exact. In 3D the edges of Q leave P's face at 35 degrees: within about
-  // 1.7 grid spacings of the points where they pierce it, a cell holds P's
-  // face and an edge of Q. Its dual contouring vertex lies on the result, and
-  // the mesh between such vertices cuts across the edge.
+  // exact. In 3D the edges of Q leave P's face at 35 degrees, and within
+  // about 1.7 grid spacings of the points where they pierce it a cell holds
+  // P's face and an edge of Q.
   const RotatedBox<D> P =
       (D == 2) ? A
                : RotatedBox<D>(Point{6.5 * s, 8. * s, 8. * s},
@@ -227,11 +229,8 @@ template <int D> int check(double gridDelta) {
     }
   }();
   const double extent = (D == 2) ? 18. : 22.;
-  // the surfaces of the Boolean operations are exact, and their values in
-  // 2D. In 3D the values of the relative complement next to the edges of Q,
-  // where the mesh cuts across, stay within 0.05 grid spacings
-  const double booleanSurfaceBound = 1e-9,
-               booleanValueBound = (D == 2) ? 1e-9 : 0.1;
+  // the surfaces and values of the Boolean operations are exact
+  const double booleanSurfaceBound = 1e-9, booleanValueBound = 1e-9;
   const RotatedBox<D> C(Point{1.3 * s, 1.1 * s, 1.2 * s},
                         Point{-11.2 * s, 10.7 * s, 9.6 * s}, 8., -5.);
   const auto sdfA = [&](const Point &p) { return A.sdf(p); };
@@ -367,6 +366,67 @@ template <int D> int check(double gridDelta) {
         !report(c.name + " values", valueError<D>(a, exact, valid),
                 booleanValueBound))
       return fail(D, c.name);
+  }
+
+  // a relative complement that takes a part out of a level set whose walls
+  // bound both: a fin through a slab taken out of their union, as
+  // SelectiveEpitaxy takes the epitaxy material out of the surface for its
+  // mask. The walls and the top of the fin vanish from the result, two
+  // blocks beside the fin, and the result's edges along the fin, where the
+  // slab's top meets the fin's walls, stay sharp. Turned as box A, and along
+  // the grid with the walls a quarter and the slab's top half a grid spacing
+  // from the nodes, as the fin of the selective epitaxy example
+  struct Fin {
+    std::string name;
+    std::array<Point, 3> R;
+    Point centre;
+    double w, L, bottom, top, finBottom, finTop, depth;
+  };
+  const std::array<Point, 3> identity = {
+      {{1., 0., 0.}, {0., 1., 0.}, {0., 0., 1.}}};
+  for (const auto &f :
+       {Fin{"turned", A.R, A.centre, 2.35 * s, 7.4 * s, -4.6 * s, -1.15 * s,
+            -6.1 * s, 4.3 * s, 5.3 * s},
+        Fin{"along the grid", identity, Point{0., 0., 0.}, 8.75 * s, 13.4 * s,
+            -8.3 * s, -0.5 * s, -10.2 * s, 6.3 * s, 5.3 * s}}) {
+    const auto box = [&](double x0, double x1, double y0, double y1) {
+      Point centre = f.centre;
+      for (int i = 0; i < 3; ++i)
+        centre[i] += f.R[i][0] * (x0 + x1) / 2 + f.R[i][1] * (y0 + y1) / 2;
+      return RotatedBox<D>(Point{(x1 - x0) / 2, (y1 - y0) / 2, f.depth}, centre,
+                           f.R);
+    };
+    const auto fin = box(-f.w, f.w, f.finBottom, f.finTop),
+               slab = box(-f.L, f.L, f.bottom, f.top),
+               left = box(-f.L, -f.w, f.bottom, f.top),
+               right = box(f.w, f.L, f.bottom, f.top);
+    auto a = levelSet<D>({fin}, gridDelta, extent);
+    ls::BooleanOperation<double, D>(a, levelSet<D>({slab}, gridDelta, extent),
+                                    ls::BooleanOperationEnum::UNION)
+        .apply();
+    const auto exactUnion = [&](const Point &p) {
+      return std::min(fin.sdf(p), slab.sdf(p));
+    };
+    const auto outside = [](double e) { return e > 0.; };
+    if (!euclidean(a) ||
+        !report("fin and slab " + f.name + ", surface",
+                surfaceError<D>(a, exactUnion)) ||
+        !report("fin and slab " + f.name + ", values outside",
+                valueError<D>(a, exactUnion, outside)))
+      return fail(D, "fin and slab " + f.name);
+    ls::BooleanOperation<double, D>(
+        a, levelSet<D>({fin}, gridDelta, extent),
+        ls::BooleanOperationEnum::RELATIVE_COMPLEMENT)
+        .apply();
+    const auto exact = [&](const Point &p) {
+      return std::min(left.sdf(p), right.sdf(p));
+    };
+    if (!euclidean(a) ||
+        !report("fin taken out " + f.name + ", surface",
+                surfaceError<D>(a, exact)) ||
+        !report("fin taken out " + f.name + ", values",
+                valueError<D>(a, exact, everywhere)))
+      return fail(D, "fin taken out of fin and slab " + f.name);
   }
 
   // INVERT turns values and normals, closest points stay

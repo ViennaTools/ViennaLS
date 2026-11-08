@@ -14,6 +14,7 @@
 #include <vcVectorType.hpp>
 
 #include <functional>
+#include <memory>
 
 namespace viennals {
 
@@ -44,12 +45,22 @@ enum struct BooleanOperationEnum : unsigned {
 ///  always return the smaller of the two values.
 ///  The function signature for the comparator is defined in the public
 ///  ComparatorType.
-///  When the first level set is Euclidean, every node keeps the closest point
-///  and normal of the level set its value came from, and the result is
-///  reinitialized from the dual contouring mesh of these planes
-///  (Reinitialize): the minimum and maximum are exact only away from the edges
-///  the operation creates, the planes give these edges sharp. INVERT turns the
-///  stored normals.
+///  When the first level set is Euclidean, the result is reinitialized
+///  (Reinitialize) from the dual contouring mesh of the Hermite data of the
+///  operands on the edges the result's surface crosses: on each such edge in
+///  each cell the crossing and normal of the operand whose surface bounds the
+///  result there, as the operand's own dual contouring mesh takes them in
+///  that cell (ToDualContouringMesh::edgeCrossings). Where both operands
+///  cross an edge, that is the crossing the result's side changes at: the
+///  first one from the end where a maximum is negative or a minimum
+///  positive, the last one from the other end. The edges the operation
+///  creates stay sharp, also where faces of the operands coincide, as the
+///  walls a relative complement removes from a level set they bound
+///  together with the other. The minimum and maximum give the sides of the
+///  nodes; nodes keep the closest point and normal of the level set their
+///  value came from until the reinitialization, and with a CUSTOM comparator
+///  the dual contouring mesh of these planes gives the result. INVERT turns
+///  the stored normals.
 template <class T, int D> class BooleanOperation {
 public:
   using ComparatorType =
@@ -64,7 +75,10 @@ private:
   bool updatePointData = true;
   bool pruneResult = true;
 
-  void booleanOpInternal(ComparatorType comp, bool negateB = false) {
+  // extreme: 1 where the result is the maximum of the operands, -1 where the
+  // minimum, 0 for a custom comparator
+  void booleanOpInternal(ComparatorType comp, bool negateB = false,
+                         int extreme = 0) {
     const bool euclidean =
         levelSetA->getNormalization() == NormalizationEnum::EUCLIDEAN;
     auto &grid = levelSetA->getGrid();
@@ -238,6 +252,48 @@ private:
       Prune<T, D>(newlsDomain).apply();
     }
 
+    // the Hermite data of the edges the operands cross, before A changes
+    typename ToDualContouringMesh<T, D>::EdgeData edgeData;
+    if (euclidean && extreme != 0) {
+      using Contouring = ToDualContouringMesh<T, D>;
+      const auto crossingsA =
+          std::make_shared<typename Contouring::EdgeCrossings>(
+              Contouring(levelSetA, nullptr).edgeCrossings());
+      const auto crossingsB =
+          std::make_shared<typename Contouring::EdgeCrossings>(
+              Contouring(levelSetB, nullptr).edgeCrossings());
+      edgeData = [crossingsA, crossingsB, negateB, extreme](
+                     const viennahrle::Index<D> &cell, int a, int b, T valueA,
+                     T, typename Contouring::EdgeCrossing &crossing) {
+        int d = 0;
+        while (d + 1 < D && (1 << d) != b - a)
+          ++d;
+        const typename Contouring::EdgeKey key(cell, a * D + d);
+        const auto foundA = crossingsA->find(key);
+        const auto foundB = crossingsB->find(key);
+        const bool hasA = foundA != crossingsA->end(),
+                   hasB = foundB != crossingsB->end();
+        if (!hasA && !hasB)
+          return false;
+        bool fromA = hasA;
+        if (hasA && hasB) {
+          // along the edge from corner a, which lies at the cell's lowest
+          // index along d: a maximum negative at a turns positive at the
+          // first crossing, a minimum positive at a negative at the first
+          // one, and otherwise the result changes side at the last one
+          const T tA = foundA->second.point[d] - T(cell[d]),
+                  tB = foundB->second.point[d] - T(cell[d]);
+          const bool first = (valueA < T(0)) == (extreme > 0);
+          fromA = first ? tA <= tB : tA >= tB;
+        }
+        crossing = fromA ? foundA->second : foundB->second;
+        if (!fromA && negateB)
+          for (auto &component : crossing.normal)
+            component = -component;
+        return true;
+      };
+    }
+
     levelSetA->deepCopy(newlsDomain);
 
     if (euclidean) {
@@ -250,7 +306,9 @@ private:
       for (int k = int(data.getVectorDataSize()) - 1; k >= 0; --k)
         if (data.getVectorDataLabel(k).rfind("Hermite", 0) == 0)
           data.eraseVectorData(k);
-      Reinitialize<T, D>(levelSetA).apply();
+      Reinitialize<T, D> reinitialize(levelSetA);
+      reinitialize.setEdgeData(edgeData);
+      reinitialize.apply();
     }
   }
 
@@ -386,13 +444,13 @@ public:
 
     switch (operation) {
     case BooleanOperationEnum::INTERSECT:
-      booleanOpInternal(&BooleanOperation::maxComp);
+      booleanOpInternal(&BooleanOperation::maxComp, false, 1);
       break;
     case BooleanOperationEnum::UNION:
-      booleanOpInternal(&BooleanOperation::minComp);
+      booleanOpInternal(&BooleanOperation::minComp, false, -1);
       break;
     case BooleanOperationEnum::RELATIVE_COMPLEMENT:
-      booleanOpInternal(&BooleanOperation::relativeComplementComp, true);
+      booleanOpInternal(&BooleanOperation::relativeComplementComp, true, 1);
       break;
     case BooleanOperationEnum::INVERT:
       invert();

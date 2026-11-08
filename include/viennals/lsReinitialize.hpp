@@ -30,11 +30,14 @@ using namespace viennacore;
 /// Sharp edges and corners of the stored planes stay sharp. A level set
 /// without stored planes is converted with the planes the dual contouring
 /// estimates. Other point data, such as coverages, move to the new band by
-/// grid index; the band state of AdvectHermite is dropped.
+/// grid index; the band state of AdvectHermite is dropped. The Hermite data
+/// of the crossing edges can also be given, as BooleanOperation gives them
+/// from its operands (setEdgeData).
 template <class T, int D> class Reinitialize {
   using hrleIndex = viennahrle::Index<D>;
   SmartPointer<Domain<T, D>> levelSet = nullptr;
   int width = 0;
+  typename ToDualContouringMesh<T, D>::EdgeData edgeData;
 
   // point data that is not Hermite data and moves to the new band
   static bool carried(const std::string &label) {
@@ -88,6 +91,12 @@ public:
 
   /// Level set width of the new band; 0 keeps the current width.
   void setWidth(int passedWidth) { width = passedWidth; }
+
+  /// Hermite data of the crossing edges for the dual contouring mesh, in
+  /// place of that of the stored planes where the function gives it.
+  void setEdgeData(typename ToDualContouringMesh<T, D>::EdgeData passed) {
+    edgeData = std::move(passed);
+  }
 
   /// Volume (area in 2D) enclosed by a closed mesh, positive where its
   /// normals point out of the material.
@@ -144,6 +153,7 @@ public:
     auto mesh = SmartPointer<Mesh<T>>::New();
     ToDualContouringMesh<T, D> contouring(levelSet, mesh);
     contouring.setAvoidFolds(false);
+    contouring.setEdgeData(edgeData);
     contouring.apply();
     // without a surface the values give only the side
     if (mesh->template getElements<D>().empty())

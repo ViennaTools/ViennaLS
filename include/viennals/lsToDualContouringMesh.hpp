@@ -6,9 +6,12 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <map>
 #include <numeric>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <hrleSparseCellIterator.hpp>
@@ -38,7 +41,9 @@ using namespace viennacore;
 /// without area or facing against the tangent plane of its crossing edge,
 /// where the other does not. In 3D a vertex that its planes place beyond its
 /// cell, onto the vertex of the cell it falls into, welds to it, so that the
-/// mesh folds nowhere along sharp edges (setAvoidFolds).
+/// mesh folds nowhere along sharp edges (setAvoidFolds). The Hermite data of
+/// the crossing edges can also be given (setEdgeData), as BooleanOperation
+/// gives them from its operands (edgeCrossings).
 template <class T, int D> class ToDualContouringMesh {
   using hrleDomainType = typename Domain<T, D>::DomainType;
   using hrleIndex = viennahrle::Index<D>;
@@ -47,6 +52,31 @@ template <class T, int D> class ToDualContouringMesh {
   using VectorD = Eigen::Matrix<T, D, 1>;
   using MatrixD = Eigen::Matrix<T, D, D>;
 
+public:
+  /// Hermite point and unit normal of the crossing of an edge, in grid
+  /// spacings.
+  struct EdgeCrossing {
+    std::array<T, D> point{}, normal{};
+  };
+  /// An edge of a cell: the lowest corner of the cell and a * D + d for the
+  /// edge from its corner a along axis d.
+  using EdgeKey = std::pair<viennahrle::Index<D>, int>;
+  struct EdgeKeyHash {
+    std::size_t operator()(const EdgeKey &key) const {
+      std::size_t h = std::hash<int>()(key.second);
+      for (int i = 0; i < D; ++i)
+        h = h * 1000003u ^ std::hash<long long>()(key.first[i]);
+      return h;
+    }
+  };
+  using EdgeCrossings = std::unordered_map<EdgeKey, EdgeCrossing, EdgeKeyHash>;
+  /// Hermite data of a crossing edge in place of that of the stored planes:
+  /// from the cell, the corners a and b of the edge and the values there,
+  /// true with the crossing, false to keep that of the stored planes.
+  using EdgeData = std::function<bool(const viennahrle::Index<D> &, int, int, T,
+                                      T, EdgeCrossing &)>;
+
+private:
   SmartPointer<Domain<T, D>> levelSet = nullptr;
   SmartPointer<Mesh<T>> mesh = nullptr;
   T vertexMargin = 1.;
@@ -54,6 +84,7 @@ template <class T, int D> class ToDualContouringMesh {
   // rounding of the precision, below the fixed tolerances with double
   static constexpr T roundOff = T(1024) * std::numeric_limits<T>::epsilon();
   T singularValueThreshold = 0.01;
+  EdgeData edgeData;
 
   // position of corner c of the cell with lowest corner idx, grid spacings
   static VectorD cornerPosition(const hrleIndex &idx, int c) {
@@ -268,6 +299,51 @@ template <class T, int D> class ToDualContouringMesh {
       n = VectorD::Zero();
   }
 
+  // the stored planes of the nodes, with the priorities, interfaces and
+  // marks of convex rounded parts of AdvectHermite where every node has
+  // them; null where missing
+  struct StoredPlanes {
+    const typename PointData<T>::VectorDataType *closest = nullptr,
+                                                *normals = nullptr,
+                                                *interfacePoints = nullptr,
+                                                *interfaceNormals = nullptr;
+    const typename PointData<T>::ScalarDataType *priority = nullptr,
+                                                *smooth = nullptr;
+  };
+
+  StoredPlanes storedPlanes() const {
+    StoredPlanes s;
+    auto &pointData = levelSet->getPointData();
+    const auto points = levelSet->getNumberOfPoints();
+    s.closest = pointData.getVectorData(
+        FromSurfaceMesh<T, D>::closestPointsLabel, true);
+    s.normals = pointData.getVectorData(
+        FromSurfaceMesh<T, D>::surfaceNormalsLabel, true);
+    if (s.closest == nullptr || s.normals == nullptr ||
+        s.closest->size() != points || s.normals->size() != points) {
+      s.closest = nullptr;
+      s.normals = nullptr;
+    }
+    s.priority = pointData.getScalarData(priorityLabel, true);
+    // nodes whose plane is a tangent plane of a convex rounded part, as
+    // AdvectHermite marks them
+    s.smooth = pointData.getScalarData("HermiteSmooth", true);
+    if (s.smooth != nullptr && s.smooth->size() != points)
+      s.smooth = nullptr;
+    if (s.closest == nullptr || s.priority == nullptr ||
+        s.priority->size() != points)
+      s.priority = nullptr;
+    s.interfacePoints = pointData.getVectorData(interfacePointLabel, true);
+    s.interfaceNormals = pointData.getVectorData(interfaceNormalLabel, true);
+    if (s.priority == nullptr || s.interfacePoints == nullptr ||
+        s.interfaceNormals == nullptr || s.interfacePoints->size() != points ||
+        s.interfaceNormals->size() != points) {
+      s.interfacePoints = nullptr;
+      s.interfaceNormals = nullptr;
+    }
+    return s;
+  }
+
 public:
   /// Optional scalar point data: plane priority of every node, 0 for none.
   static constexpr char priorityLabel[] = "HermitePriority";
@@ -313,6 +389,51 @@ public:
   /// AdvectHermite the band keeps sharp edges more accurately.
   void setAvoidFolds(bool passedAvoidFolds) { avoidFolds = passedAvoidFolds; }
 
+  /// Hermite data of the crossing edges in place of that of the stored
+  /// planes, on the edges where the function gives it.
+  void setEdgeData(EdgeData passedEdgeData) {
+    edgeData = std::move(passedEdgeData);
+  }
+
+  /// The Hermite data apply() takes from the stored planes on every edge the
+  /// surface crosses, in every cell around the edge.
+  EdgeCrossings edgeCrossings() const {
+    EdgeCrossings crossings;
+    if (levelSet == nullptr)
+      return crossings;
+    const T gridDelta = levelSet->getGrid().getGridDelta();
+    const auto s = storedPlanes();
+    for (ConstSparseCellIterator cellIt(levelSet->getDomain());
+         !cellIt.isFinished(); cellIt.next()) {
+      unsigned inside = 0;
+      for (int c = 0; c < (1 << D); ++c)
+        if (cellIt.getCorner(c).getValue() < T(0))
+          inside |= 1u << c;
+      if (inside == 0 || inside == (1u << (1 << D)) - 1)
+        continue;
+      for (int a = 0; a < (1 << D); ++a)
+        for (int d = 0; d < D; ++d) {
+          if ((a >> d) & 1)
+            continue;
+          const int b = a | (1 << d);
+          if (((inside >> a) & 1) == ((inside >> b) & 1))
+            continue;
+          VectorD x, n;
+          int source;
+          hermiteData(cellIt, a, b, s.closest, s.normals, s.priority,
+                      s.interfacePoints, s.interfaceNormals, gridDelta, x, n,
+                      source);
+          EdgeCrossing crossing;
+          for (int i = 0; i < D; ++i) {
+            crossing.point[i] = x(i);
+            crossing.normal[i] = n(i);
+          }
+          crossings.emplace(EdgeKey(cellIt.getIndices(), a * D + d), crossing);
+        }
+    }
+    return crossings;
+  }
+
   void apply() {
     if (levelSet == nullptr) {
       Logger::getInstance()
@@ -329,38 +450,31 @@ public:
 
     mesh->clear();
     const T gridDelta = levelSet->getGrid().getGridDelta();
-    auto &pointData = levelSet->getPointData();
-    const auto *closest = pointData.getVectorData(
-        FromSurfaceMesh<T, D>::closestPointsLabel, true);
-    const auto *normals = pointData.getVectorData(
-        FromSurfaceMesh<T, D>::surfaceNormalsLabel, true);
-    if (closest == nullptr || normals == nullptr ||
-        closest->size() != levelSet->getNumberOfPoints() ||
-        normals->size() != levelSet->getNumberOfPoints()) {
-      closest = nullptr;
-      normals = nullptr;
-    }
-    const auto *priority = pointData.getScalarData(priorityLabel, true);
-    // nodes whose plane is a tangent plane of a convex rounded part, as
-    // AdvectHermite marks them
-    const auto *smoothData = pointData.getScalarData("HermiteSmooth", true);
-    if (smoothData != nullptr &&
-        smoothData->size() != levelSet->getNumberOfPoints())
-      smoothData = nullptr;
-    if (closest == nullptr || priority == nullptr ||
-        priority->size() != levelSet->getNumberOfPoints())
-      priority = nullptr;
-    const auto *interfacePoints =
-        pointData.getVectorData(interfacePointLabel, true);
-    const auto *interfaceNormals =
-        pointData.getVectorData(interfaceNormalLabel, true);
-    if (priority == nullptr || interfacePoints == nullptr ||
-        interfaceNormals == nullptr ||
-        interfacePoints->size() != levelSet->getNumberOfPoints() ||
-        interfaceNormals->size() != levelSet->getNumberOfPoints()) {
-      interfacePoints = nullptr;
-      interfaceNormals = nullptr;
-    }
+    const auto stored = storedPlanes();
+    const auto *closest = stored.closest;
+    const auto *normals = stored.normals;
+    const auto *priority = stored.priority;
+    const auto *smoothData = stored.smooth;
+    const auto *interfacePoints = stored.interfacePoints;
+    const auto *interfaceNormals = stored.interfaceNormals;
+    // the Hermite data of a crossing edge: as given (setEdgeData), else from
+    // the stored planes
+    auto crossingData = [&](const ConstSparseCellIterator &cellIt, int a, int b,
+                            VectorD &x, VectorD &n, int &source) {
+      EdgeCrossing given;
+      if (edgeData &&
+          edgeData(cellIt.getIndices(), a, b, cellIt.getCorner(a).getValue(),
+                   cellIt.getCorner(b).getValue(), given)) {
+        for (int i = 0; i < D; ++i) {
+          x(i) = given.point[i];
+          n(i) = given.normal[i];
+        }
+        source = -1;
+        return;
+      }
+      hermiteData(cellIt, a, b, closest, normals, priority, interfacePoints,
+                  interfaceNormals, gridDelta, x, n, source);
+    };
 
     const auto &grid = levelSet->getGrid();
 
@@ -612,8 +726,7 @@ public:
             continue;
           VectorD x, n;
           int source;
-          hermiteData(cellIt, a, b, closest, normals, priority, interfacePoints,
-                      interfaceNormals, gridDelta, x, n, source);
+          crossingData(cellIt, a, b, x, n, source);
           // whether the plane is one of those
           if (source < 0 || smoothData == nullptr ||
               (*smoothData)[cellIt.getCorner(source).getPointId()] < T(0.5))
@@ -1052,9 +1165,7 @@ public:
       int source;
       for (int d = 0; d < D; ++d)
         if (insideLow != (cellIt.getCorner(1 << d).getValue() < T(0))) {
-          hermiteData(cellIt, 0, 1 << d, closest, normals, priority,
-                      interfacePoints, interfaceNormals, gridDelta, x,
-                      edgeNormal, source);
+          crossingData(cellIt, 0, 1 << d, x, edgeNormal, source);
           emit(idx, d, insideLow);
         }
       // upper reflective boundaries the cell touches; each set of them
@@ -1072,9 +1183,7 @@ public:
         for (int d = 0; d < D; ++d)
           if (!((set >> d) & 1) &&
               inside != (cellIt.getCorner(set | (1 << d)).getValue() < T(0))) {
-            hermiteData(cellIt, set, set | (1 << d), closest, normals, priority,
-                        interfacePoints, interfaceNormals, gridDelta, x,
-                        edgeNormal, source);
+            crossingData(cellIt, set, set | (1 << d), x, edgeNormal, source);
             emit(start, d, inside);
           }
       }
