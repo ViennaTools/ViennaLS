@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstring>
 #include <limits>
 #include <map>
 #include <unordered_map>
@@ -1767,14 +1768,25 @@ template <class T, int D> class AdvectHermite {
     // contains the feature point; neighbour by neighbour, each pass reading
     // the directions the previous passes left
     std::vector<T> Sf = Sown;
-    std::vector<Vec> Pf = P, Nf = N, previous, previousP;
+    std::vector<Vec> Pf = P, Nf = N;
+    // the passes change only the planes of the moving fans, so that only
+    // theirs are copied before each pass and only they are visited
+    std::vector<long> sweeping;
+    for (long i = 0; i < n; ++i)
+      if (fan[i] && moving[i])
+        sweeping.push_back(i);
+    const long sweepCount = long(sweeping.size());
+    std::vector<Vec> previous = Nf, previousP = Pf;
     for (int k = 0; k < numberOfNeighbours; ++k) {
-      previous = Nf;
-      previousP = Pf;
+      for (const long i : sweeping) {
+        previous[i] = Nf[i];
+        previousP[i] = Pf[i];
+      }
 #pragma omp parallel for
-      for (long i = 0; i < n; ++i) {
+      for (long q = 0; q < sweepCount; ++q) {
+        const long i = sweeping[q];
         const long j = neighbours[i][k];
-        if (!fan[i] || !moving[i] || j < 0)
+        if (j < 0)
           continue;
         const bool convex = convexFan[i];
         // a fan without a time samples only between offsets that its
@@ -1868,8 +1880,97 @@ template <class T, int D> class AdvectHermite {
         convexNew(convexFan);
     std::vector<T> sinceNew(since);
     std::vector<int> materialNew(pieceAfter);
+    // the speeds of every growing fan in the sampled directions of the
+    // search for its support plane below, the same for every node that reads
+    // the fan from an unshifted neighbour, asked for once per fan
+    constexpr int fanSamples = 32;
+    std::vector<long> growingIndex(n, -1), growing;
+    for (long j = 0; j < n; ++j)
+      if (arcGrows[j]) {
+        growingIndex[j] = long(growing.size());
+        growing.push_back(j);
+      }
+    std::vector<T> growingSpeed(growing.size() * (fanSamples + 1), T(0));
 #pragma omp parallel for
-    for (long i = 0; i < n; ++i) {
+    for (long g = 0; g < long(growing.size()); ++g) {
+      const long j = growing[g];
+      const Vec c = C0[j] + Vec{};
+      for (int s = 0; s <= fanSamples; ++s) {
+        const T f = T(s) / fanSamples;
+        Vec u = arcA[j] * (1 - f) + arcB[j] * f;
+        const T length = Norm(u);
+        if (length < tinyLength)
+          continue;
+        u = u * (1 / length);
+        growingSpeed[g * (fanSamples + 1) + s] = speedOf(c, u, j, piece[j]);
+      }
+    }
+    // the nodes the upwind update below takes over (the nodes in the gas or
+    // the topmost material that move) and their new values, which do not
+    // depend on the Hermite update
+    std::vector<char> up(n, 0);
+    std::vector<T> Sup(n, T(0));
+    // the lower level set whose value capped the upwind value, -1 if none
+    std::vector<int> capped(n, -1);
+    if (upwind) {
+      const int topMaterial = int(levelSets.size()) - 1;
+#pragma omp parallel for
+      for (long i = 0; i < n; ++i) {
+        if (long(upwindTakes.size()) != n || !upwindTakes[i])
+          continue;
+        const T rate = long(upwindRate.size()) == n
+                           ? upwindRate[i]
+                           : std::numeric_limits<T>::quiet_NaN();
+        Sup[i] = std::isfinite(rate) ? S0[i] - dt * rate
+                                     : S0[i] - dt * upwindSpeed[i];
+        // the top level set is the union with the lower materials: its value
+        // is nowhere above theirs, so that an etch stops at the underside of
+        // a mask and leaves its corners where they are
+        for (int l = 0; l < topMaterial; ++l)
+          if (lowerDefined(std::size_t(l), X[i])) {
+            const T lower = lowerAt(std::size_t(l), i);
+            if (lower < Sup[i]) {
+              Sup[i] = lower;
+              capped[i] = l;
+            }
+          }
+        up[i] = 1;
+      }
+    }
+    // of its Hermite update a node the upwind update takes over keeps only
+    // the material of the plane it took, where the stack holds more than one
+    // level set, and, where the gradient of the new values vanishes, the
+    // whole update. The update is left out where a lower level set's plane
+    // caps the node, and where every plane the node could take, its own
+    // included, carries the same material; it follows the others where the
+    // gradient vanishes
+    std::vector<char> skip(n, 0), cappedPlane(n, 0);
+    if (upwind) {
+#pragma omp parallel for
+      for (long i = 0; i < n; ++i) {
+        if (!up[i])
+          continue;
+        if (capped[i] >= 0) {
+          Vec planePoint, planeDirection;
+          if (stack.nodePlane(std::size_t(capped[i]), X[i], planePoint,
+                              planeDirection)) {
+            cappedPlane[i] = 1;
+            skip[i] = 1;
+            continue;
+          }
+        }
+        bool same = true;
+        if (stacked)
+          for (int k = 0; k < numberOfNeighbours && same; ++k) {
+            const long j = neighbours[i][k];
+            same = j < 0 || (piece[j] == pieceAfter[i] &&
+                             pieceAfter[j] == pieceAfter[i]);
+          }
+        skip[i] = same;
+      }
+    }
+    // the Hermite update of node i
+    auto hermite = [&](long i) {
       std::array<Vec, slots> sN, sP, sW0, sWm, sC, sRW;
       std::array<T, slots> sV, sS;
       std::array<long, slots> sFan;
@@ -1879,6 +1980,19 @@ template <class T, int D> class AdvectHermite {
       std::array<T, slots> sDepth;
       const Vec &Ni = Nf[i];
       int count = 0;
+      // the node's own speed, the same for every plane of the junction check
+      // below, asked for once
+      T ownSpeed = 0;
+      bool ownSpeedKnown = false;
+      // the speeds asked for there in the directions of other planes, for
+      // planes with the same normal and material (the same bits)
+      std::array<Vec, numberOfNeighbours> askedNormal;
+      std::array<int, numberOfNeighbours> askedMaterial;
+      std::array<T, numberOfNeighbours> askedSpeed;
+      int asked = 0;
+      auto sameBits = [](const Vec &a, const Vec &b) {
+        return std::memcmp(&a[0], &b[0], 3 * sizeof(T)) == 0;
+      };
       // the growing fans first, whose planes the slots must hold
       for (int pass = 0; pass < 2 * numberOfNeighbours && count < slots;
            ++pass) {
@@ -1917,24 +2031,30 @@ template <class T, int D> class AdvectHermite {
         T supportSpeed = 0;
         if (arcGrows[j]) {
           const Vec c = C0[j] + sh;
-          // signed distance to the support plane at f along the cone
-          auto planeAt = [&](T f, Vec &u, T &offset) {
+          // signed distance to the support plane at f along the cone, with
+          // the speed there if it is known
+          auto planeAt = [&](T f, Vec &u, T &offset, const T *speed = nullptr) {
             u = arcA[j] * (1 - f) + arcB[j] * f;
             const T length = Norm(u);
             if (length < tinyLength)
               return -std::numeric_limits<T>::max();
             u = u * (1 / length);
-            offset = elapsed[j] * speedOf(c, u, j, piece[j]);
+            offset = elapsed[j] * (speed ? *speed : speedOf(c, u, j, piece[j]));
             return DotProduct(X[i] - c, u) - offset;
           };
-          constexpr int samples = 32;
+          constexpr int samples = fanSamples;
+          const T *sampleSpeed =
+              (sh[0] == 0 && sh[1] == 0 && sh[2] == 0)
+                  ? &growingSpeed[growingIndex[j] * (samples + 1)]
+                  : nullptr;
           T best = -std::numeric_limits<T>::max(), bestOffset = 0;
           Vec bestU = Nj;
           int bestS = 0;
           for (int s = 0; s <= samples; ++s) {
             Vec u;
             T offset = 0;
-            const T v = planeAt(T(s) / samples, u, offset);
+            const T v = planeAt(T(s) / samples, u, offset,
+                                sampleSpeed ? sampleSpeed + s : nullptr);
             if (v > best) {
               best = v;
               bestU = u;
@@ -2054,8 +2174,30 @@ template <class T, int D> class AdvectHermite {
         // rate that varies in space alone, as a noisy flux, makes no junction
         // between the planes of one face
         if (!beyond && DotProduct(Ni, normal) >= junction) {
-          const T va = speedOf(Pf[i], normal, i, piece[j]),
-                  vb = speedOf(Pf[i], Ni, i, piece[i]);
+          if (!ownSpeedKnown) {
+            ownSpeed = speedOf(Pf[i], Ni, i, piece[i]);
+            ownSpeedKnown = true;
+          }
+          // a plane with the node's own normal and material moves at the
+          // node's own speed, one asked for before at the speed found then
+          T va = ownSpeed;
+          bool known = piece[j] == piece[i] && sameBits(normal, Ni);
+          for (int q = 0; q < asked && !known; ++q)
+            if (askedMaterial[q] == piece[j] &&
+                sameBits(askedNormal[q], normal)) {
+              va = askedSpeed[q];
+              known = true;
+            }
+          if (!known) {
+            va = speedOf(Pf[i], normal, i, piece[j]);
+            if (asked < numberOfNeighbours) {
+              askedNormal[asked] = normal;
+              askedMaterial[asked] = piece[j];
+              askedSpeed[asked] = va;
+              ++asked;
+            }
+          }
+          const T vb = ownSpeed;
           if (std::abs(va - vb) <=
               T(1e-3) * std::max(std::abs(va), std::abs(vb)))
             continue;
@@ -2081,7 +2223,7 @@ template <class T, int D> class AdvectHermite {
         ++count;
       }
       if (count == 0)
-        continue;
+        return;
       const T side = side0[i];
       const long ownFan = fan[i] ? i : -1;
       // a fan and a face meet with the fan's convexity where the face is one
@@ -2262,7 +2404,7 @@ template <class T, int D> class AdvectHermite {
         active = -1;
       }
       if (active < 0)
-        continue;
+        return;
       // the plane keeps the neighbour's point on it, a point of the piece
       // itself, where its speed is taken, and the piece's material
       Snew[i] = value;
@@ -2286,6 +2428,44 @@ template <class T, int D> class AdvectHermite {
         CCnew[i] = arcC[source];
         cornerNew[i] = cornerKnown[source];
       }
+    };
+    // the nodes whose update runs, shared out in small chunks: their cost
+    // differs, and the nodes left out lie in whole regions, so that equal
+    // ranges of indices would leave threads idle
+    std::vector<long> updated;
+    updated.reserve(n);
+    for (long i = 0; i < n; ++i)
+      if (!skip[i])
+        updated.push_back(i);
+#pragma omp parallel for schedule(dynamic, 64)
+    for (long q = 0; q < long(updated.size()); ++q)
+      hermite(updated[q]);
+    // a node left out whose gradient of the new values (as the upwind
+    // update below takes it) vanishes keeps its Hermite update, from the
+    // same state
+    if (upwind) {
+      auto newValue = [&](long j) { return up[j] ? Sup[j] : Snew[j]; };
+      std::vector<char> late(n, 0);
+#pragma omp parallel for
+      for (long i = 0; i < n; ++i) {
+        if (!skip[i] || cappedPlane[i])
+          continue;
+        Vec g{};
+        for (int k = 0; k < D; ++k) {
+          const long jm = axisNeighbour(i, k, -1), jp = axisNeighbour(i, k, 1);
+          if (jm >= 0 && jp >= 0)
+            g[k] = (newValue(jp) - newValue(jm)) / 2;
+          else if (jp >= 0)
+            g[k] = newValue(jp) - newValue(i);
+          else if (jm >= 0)
+            g[k] = newValue(i) - newValue(jm);
+        }
+        late[i] = Norm(g) < smallLength;
+      }
+#pragma omp parallel for
+      for (long i = 0; i < n; ++i)
+        if (late[i])
+          hermite(i);
     }
 
 #pragma omp parallel for
@@ -2333,33 +2513,6 @@ template <class T, int D> class AdvectHermite {
     // mask stays as it is. A neighbour beyond a reflective boundary is its
     // mirror image
     if (upwind) {
-      const int topMaterial = int(levelSets.size()) - 1;
-      std::vector<char> up(n, 0);
-      std::vector<T> Sup(n, T(0));
-      // the lower level set whose value capped the upwind value, -1 if none
-      std::vector<int> capped(n, -1);
-#pragma omp parallel for
-      for (long i = 0; i < n; ++i) {
-        if (long(upwindTakes.size()) != n || !upwindTakes[i])
-          continue;
-        const T rate = long(upwindRate.size()) == n
-                           ? upwindRate[i]
-                           : std::numeric_limits<T>::quiet_NaN();
-        Sup[i] = std::isfinite(rate) ? S0[i] - dt * rate
-                                     : S0[i] - dt * upwindSpeed[i];
-        // the top level set is the union with the lower materials: its value
-        // is nowhere above theirs, so that an etch stops at the underside of
-        // a mask and leaves its corners where they are
-        for (int l = 0; l < topMaterial; ++l)
-          if (lowerDefined(std::size_t(l), X[i])) {
-            const T lower = lowerAt(std::size_t(l), i);
-            if (lower < Sup[i]) {
-              Sup[i] = lower;
-              capped[i] = l;
-            }
-          }
-        up[i] = 1;
-      }
       for (long i = 0; i < n; ++i)
         if (up[i])
           S[i] = Sup[i];
