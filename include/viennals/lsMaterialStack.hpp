@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <functional>
@@ -51,6 +53,9 @@ template <class T, int D> class MaterialStack {
   // rounding of the precision, below the fixed tolerances with double
   static constexpr T roundOff = T(1024) * std::numeric_limits<T>::epsilon();
   std::vector<char> nodePlanes;
+  // values of every level set at the nodes outside its band that setNodes
+  // was given, as outsideValue finds them
+  std::vector<std::unordered_map<hrleIndex, T, IndexHash>> outside;
 
   // value of level set l at a grid node; just outside its band one more than
   // the nearest defined neighbour along an axis on the same side, which
@@ -61,6 +66,17 @@ template <class T, int D> class MaterialStack {
     auto found = values[l].find(index);
     if (found != values[l].end())
       return found->second;
+    if (!outside[l].empty()) {
+      auto stored = outside[l].find(index);
+      if (stored != outside[l].end())
+        return stored->second;
+    }
+    return outsideValue(l, index);
+  }
+
+  // value of level set l at a grid node outside its band, whose side the
+  // domain gives
+  T outsideValue(std::size_t l, const hrleIndex &index) const {
     viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType> it(
         levelSets[l]->getDomain(), index);
     const T side = (it.getValue() < 0) ? T(-1) : T(1);
@@ -86,6 +102,7 @@ public:
       : levelSets(std::move(passedLevelSets)) {
     values.assign(levelSets.size(), {});
     planes.assign(levelSets.size(), {});
+    outside.assign(levelSets.size(), {});
     nodePlanes.assign(levelSets.size(), 0);
     for (std::size_t l = 0; l < levelSets.size(); ++l) {
       const auto &pointData = levelSets[l]->getPointData();
@@ -134,6 +151,32 @@ public:
   /// surface above them.
   std::size_t size() const { return levelSets.size(); }
 
+  /// Stores the values of every level set at those of the given grid nodes
+  /// that lie outside its band, in place of the nodes given before, as the
+  /// band of the surface advected on the stack: value() and material() at
+  /// these nodes and in the cells between them then search no domain.
+  void setNodes(const std::vector<hrleIndex> &nodes) {
+    const long count = long(nodes.size());
+    std::vector<hrleIndex> local(count);
+    std::vector<T> found(count);
+    std::vector<char> missing(count);
+    for (std::size_t l = 0; l < levelSets.size(); ++l) {
+      const auto &grid = levelSets[l]->getGrid();
+#pragma omp parallel for
+      for (long k = 0; k < count; ++k) {
+        local[k] = grid.globalIndices2LocalIndices(nodes[k]);
+        missing[k] = values[l].count(local[k]) == 0;
+        if (missing[k])
+          found[k] = outsideValue(l, local[k]);
+      }
+      outside[l].clear();
+      outside[l].reserve(std::count(missing.begin(), missing.end(), 1));
+      for (long k = 0; k < count; ++k)
+        if (missing[k])
+          outside[l].emplace(local[k], found[k]);
+    }
+  }
+
   /// Hermite data of level set l at the grid node p: its closest point, or
   /// for stored planes the plane point, and the outward direction there;
   /// false without Hermite data at p.
@@ -175,7 +218,9 @@ public:
           result += (p[i] - point[i]) * direction[i];
         return result;
       };
-      std::vector<Plane> faces;
+      // the distinct faces among the nodes of the cell
+      std::array<Plane, (1 << D)> faces;
+      int faceCount = 0;
       T nearest = std::numeric_limits<T>::max(), nearestValue = 0.;
       for (int c = 0; c < (1 << D); ++c) {
         hrleIndex q = base;
@@ -208,7 +253,8 @@ public:
         if (!face)
           continue;
         bool seen = false;
-        for (const auto &f : faces) {
+        for (int a = 0; a < faceCount; ++a) {
+          const Plane &f = faces[a];
           T dn = 0., dp = 0.;
           for (int i = 0; i < D; ++i) {
             dn += (f.direction[i] - plane.direction[i]) *
@@ -219,14 +265,14 @@ public:
                           std::abs(dp) < std::max(T(1e-9), roundOff));
         }
         if (!seen)
-          faces.push_back(plane);
+          faces[faceCount++] = plane;
       }
-      if (faces.size() == 1)
+      if (faceCount == 1)
         return along(faces[0].point, faces[0].direction);
-      if (!faces.empty()) {
+      if (faceCount > 0) {
         bool convex = true, concave = true;
-        for (std::size_t a = 0; a < faces.size(); ++a)
-          for (std::size_t b = 0; b < faces.size(); ++b) {
+        for (int a = 0; a < faceCount; ++a)
+          for (int b = 0; b < faceCount; ++b) {
             if (a == b)
               continue;
             T side = 0.;
@@ -239,9 +285,12 @@ public:
         if (convex != concave) {
           T result = convex ? -std::numeric_limits<T>::max()
                             : std::numeric_limits<T>::max();
-          for (const auto &f : faces)
-            result = convex ? std::max(result, along(f.point, f.direction))
-                            : std::min(result, along(f.point, f.direction));
+          for (int a = 0; a < faceCount; ++a)
+            result = convex
+                         ? std::max(result,
+                                    along(faces[a].point, faces[a].direction))
+                         : std::min(result,
+                                    along(faces[a].point, faces[a].direction));
           return result;
         }
       }

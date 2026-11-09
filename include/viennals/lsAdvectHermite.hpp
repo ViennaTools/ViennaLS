@@ -139,6 +139,11 @@ template <class T, int D> class AdvectHermite {
   SmartPointer<Domain<T, D>> levelSet = nullptr;
   // the lower level sets, for the material at a point
   MaterialStack<T, D> stack;
+  // their values at every band node, level set l of node i at l * nodes + i,
+  // and the material there, from collectNodes: the stack stays as it is
+  // during a call, and the nodes change only with the band
+  std::vector<T> lowerAtNode;
+  std::vector<int> materialAtNode;
   SmartPointer<VelocityField<T>> velocities = nullptr;
   T advectionTime = 0.;
   T timeStepRatio = 0.5;  // largest move per step, grid spacings
@@ -480,7 +485,7 @@ template <class T, int D> class AdvectHermite {
   // substrate surface
   int nodeMaterial(long id) const {
     if (levelSets.size() > 1 && fan[id] && S[id] < 0)
-      return material(X[id]);
+      return materialAtNode[id];
     return pieceMaterial[id];
   }
 
@@ -615,6 +620,11 @@ template <class T, int D> class AdvectHermite {
   // multilinear value of lower level set l at p (grid spacings)
   T lowerValue(std::size_t l, const Vec &p) const { return stack.value(l, p); }
 
+  // value of lower level set l at band node i, as at its position
+  T lowerAt(std::size_t l, long i) const {
+    return lowerAtNode[l * X.size() + i];
+  }
+
   // whether lower level set l holds a value at the grid node p
   bool lowerDefined(std::size_t l, const Vec &p) const {
     return stack.defined(l, p);
@@ -740,6 +750,23 @@ template <class T, int D> class AdvectHermite {
                                 : -1;
       }
     }
+    // the lower level sets at the band's nodes, and the stack's values
+    // outside its own bands there, for the queries at points between them
+    std::vector<hrleIndex> indices(sorted.size());
+    for (std::size_t p = 0; p < sorted.size(); ++p)
+      indices[p] = sorted[p].first;
+    stack.setNodes(indices);
+    const std::size_t lower = stack.size();
+    lowerAtNode.assign(lower * n, T(0));
+    materialAtNode.assign(n, int(lower));
+#pragma omp parallel for
+    for (long i = 0; i < long(n); ++i)
+      for (std::size_t l = 0; l < lower; ++l) {
+        const T value = lowerValue(l, X[i]);
+        lowerAtNode[l * n + i] = value;
+        if (value < T(0) && materialAtNode[i] == int(lower))
+          materialAtNode[i] = int(l);
+      }
   }
 
   // Hermite data from the closest points and normals of the level set
@@ -803,7 +830,7 @@ template <class T, int D> class AdvectHermite {
       // where a mask reaches a little below the substrate surface
       const bool behindCorner =
           S[id] < 0 && length > smallLength && std::abs(cosine) < T(0.999);
-      const int m = behindCorner ? material(X[id]) : materialBehind(cp, d);
+      const int m = behindCorner ? materialAtNode[id] : materialBehind(cp, d);
       const T v = speedOf(cp, d, id, m);
       pieceMaterial[id] = m;
       HA[id] = cp;
@@ -1194,7 +1221,7 @@ template <class T, int D> class AdvectHermite {
 #pragma omp parallel for
     for (long i = 0; i < n; ++i) {
       V[i] = good[i] ? Vd[i] : Vn[i];
-      if (material(X[i]) != topMaterial)
+      if (materialAtNode[i] != topMaterial)
         continue;
       if (nodeMaterial(i) != topMaterial)
         V[i] = speedOf(good[i] ? HA[i] : FA[i], good[i] ? Dir[i] : NRM[i], i,
@@ -1572,7 +1599,7 @@ template <class T, int D> class AdvectHermite {
     if (stacked) {
 #pragma omp parallel for
       for (long i = 0; i < n; ++i) {
-        region[i] = material(X[i]);
+        region[i] = materialAtNode[i];
         piece[i] = nodeMaterial(i);
       }
     }
@@ -2325,7 +2352,7 @@ template <class T, int D> class AdvectHermite {
         // a mask and leaves its corners where they are
         for (int l = 0; l < topMaterial; ++l)
           if (lowerDefined(std::size_t(l), X[i])) {
-            const T lower = lowerValue(std::size_t(l), X[i]);
+            const T lower = lowerAt(std::size_t(l), i);
             if (lower < Sup[i]) {
               Sup[i] = lower;
               capped[i] = l;
@@ -2405,21 +2432,23 @@ template <class T, int D> class AdvectHermite {
   // found where the lower level set holds no value there
   void exposeInterfaces() {
     const long n = long(S.size());
+    // from the state before a pass, applied after it; of a node that takes
+    // no plane only take is read
+    std::vector<char> take(n), takeBound(n);
+    std::vector<T> newValue(n);
+    std::vector<Vec> newPoint(n), newNormal(n);
+    std::vector<int> newMaterial(n);
+    std::vector<Vec> newInterfacePoint(n), newInterfaceNormal(n);
     for (int pass = 0; pass < 2 * bandWidth; ++pass) {
       long taken = 0;
       for (std::size_t l = 0; l + 1 < levelSets.size(); ++l) {
-        // from the state before the pass, applied after it
-        std::vector<char> take(n, 0), takeBound(n, 0);
-        std::vector<T> newValue(n, T(0));
-        std::vector<Vec> newPoint(n), newNormal(n);
-        std::vector<int> newMaterial(n, 0);
-        std::vector<Vec> newInterfacePoint(n), newInterfaceNormal(n);
+        std::fill(take.begin(), take.end(), 0);
 #pragma omp parallel for
         for (long i = 0; i < n; ++i) {
           const bool etched = S[i] > 0 && entrySide[i] < 0, solid = S[i] < 0;
           if (!etched && !solid)
             continue;
-          const T li = lowerValue(l, X[i]);
+          const T li = lowerAt(l, i);
           if (li == T(0))
             continue;
           bool exposed = false;
@@ -2436,13 +2465,17 @@ template <class T, int D> class AdvectHermite {
             // a solid node beside one whose plane the interface gave
             if (solid && exposedState[j] && S[j] < 0 &&
                 interfaceLevel[j] == int(l) &&
-                material(X[j]) == material(X[i])) {
+                materialAtNode[j] == materialAtNode[i]) {
               exposed = true;
               carrier = j;
               carrierShift = shiftOf(i, k);
               continue;
             }
-            const T lj = lowerValue(l, X[j] + shiftOf(i, k));
+            // across a periodic boundary in the frame of node i
+            const Vec &sh = shiftOf(i, k);
+            const T lj = (sh[0] == 0 && sh[1] == 0 && sh[2] == 0)
+                             ? lowerAt(l, j)
+                             : lowerValue(l, X[j] + sh);
             if (li * lj >= T(0))
               continue;
             const bool here =
@@ -2522,7 +2555,7 @@ template <class T, int D> class AdvectHermite {
             // ends of the cones of fans on the solid side; a static one, as the
             // wall that directional etching cuts below the edge of a mask,
             // bounds the cavity as well
-            const int own = material(X[i]);
+            const int own = materialAtNode[i];
             // the interface counts where the node's foot on it lies in the
             // cavity, on the gas side of every plane of the front
             const Vec interfaceFoot = point;
@@ -2601,7 +2634,7 @@ template <class T, int D> class AdvectHermite {
           // the interface is of the material on its solid side, which does not
           // etch; the plane of the end of a cavity that holds a solid node is
           // that node's material, static, and every step sets it anew
-          newMaterial[i] = solid ? material(X[i]) : solidSide;
+          newMaterial[i] = solid ? materialAtNode[i] : solidSide;
           newInterfacePoint[i] = foot;
           newInterfaceNormal[i] = normal;
         }
@@ -2963,7 +2996,7 @@ template <class T, int D> class AdvectHermite {
           // only: a node of another material that took it would keep it for
           // good (the upwind update takes its values from the neighbours)
           if (m < 0 || (!upwind && oExposed[m] && oS[m] < 0 &&
-                        oMaterial[m] != material(X[i])))
+                        oMaterial[m] != materialAtNode[i]))
             continue;
           const T v = DotProduct(oNL[m], X[i] - oPL[m]);
           if (!asFan && std::abs(v - S[i]) < best) {
@@ -2971,7 +3004,7 @@ template <class T, int D> class AdvectHermite {
             j = m;
           }
           const bool concave =
-              !oConvex[m] && (S[i] > 0 || material(X[i]) == oMaterial[m]);
+              !oConvex[m] && (S[i] > 0 || materialAtNode[i] == oMaterial[m]);
           if (!oFan[m] || !oGood[m] || !oRounded[m] ||
               (!oConvex[m] && !concave) || fanRank == 2)
             continue;
@@ -3068,7 +3101,7 @@ template <class T, int D> class AdvectHermite {
         side0[i] = entrySide[i] = sign(S[i]);
         pieceMaterial[i] = (S[i] < 0 && length > smallLength &&
                             std::abs(DotProduct(r, nm)) < T(0.999) * length)
-                               ? material(X[i])
+                               ? materialAtNode[i]
                                : materialBehind(cp, d);
         good[i] = 1;
         convexFan[i] = S[i] > 0;
@@ -3233,9 +3266,9 @@ template <class T, int D> class AdvectHermite {
           // node's own material forms, carries it as a piece of that material
           const bool fromExposed = !upwind && exposed0[m] && S0[m] < 0;
           const bool exposedCopy =
-              fromExposed && material0[m] == material(X[i]);
+              fromExposed && material0[m] == materialAtNode[i];
           if (fromExposed && !exposedCopy && mesh[i] < 0)
-            pieceMaterial[i] = material(X[i]);
+            pieceMaterial[i] = materialAtNode[i];
           exposedState[i] = exposedCopy;
           if (exposedCopy) {
             interfacePoint[i] = point0[m];
