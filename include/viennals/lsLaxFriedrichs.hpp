@@ -43,6 +43,18 @@ public:
         gridDelta(levelSet->getGrid().getGridDelta()), finalAlphas(alphas),
         calculateNormalVectors(calcNormal) {}
 
+  /// with the neighbour iterator at start, so that the sequential moves of
+  /// the calls that follow start there, as for a part of the domain
+  /// evaluated in a thread of its own
+  LaxFriedrichs(SmartPointer<viennals::Domain<T, D>> passedlsDomain,
+                SmartPointer<viennals::VelocityField<T>> vel, double alpha,
+                VectorType<T, D> &alphas, bool calcNormal,
+                const viennahrle::Index<D> &start)
+      : levelSet(passedlsDomain), velocities(vel),
+        neighborIterator(levelSet->getDomain(), start), alphaFactor(alpha),
+        gridDelta(levelSet->getGrid().getGridDelta()), finalAlphas(alphas),
+        calculateNormalVectors(calcNormal) {}
+
   std::pair<T, T> operator()(const viennahrle::Index<D> &indices,
                              int material) {
 

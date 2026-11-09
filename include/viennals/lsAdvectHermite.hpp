@@ -1232,6 +1232,7 @@ template <class T, int D> class AdvectHermite {
     }
     const std::vector<char> &takes = upwindTakes;
     std::vector<hrleIndex> index(n);
+#pragma omp parallel for
     for (long i = 0; i < n; ++i)
       for (int k = 0; k < D; ++k)
         index[i][k] = viennahrle::IndexType(std::lround(X[i][k]));
@@ -1251,18 +1252,29 @@ template <class T, int D> class AdvectHermite {
     auto speeds = SmartPointer<BandSpeeds>::New();
     speeds->speed.assign(first->getNumberOfPoints(), T(0));
     std::vector<long> nodeOfPoint(first->getNumberOfPoints(), -1);
+    // the defined points of the copies in their order, the same in all
+    std::vector<hrleIndex> pointIndices;
+    std::vector<long> pointIds;
+    pointIndices.reserve(first->getNumberOfPoints());
+    pointIds.reserve(first->getNumberOfPoints());
     for (viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType> it(
              first->getDomain());
          !it.isFinished(); ++it) {
       if (!it.isDefined())
         continue;
+      pointIndices.push_back(it.getStartIndices());
+      pointIds.push_back(long(it.getPointId()));
+    }
+    const long points = long(pointIds.size());
+#pragma omp parallel for
+    for (long p = 0; p < points; ++p) {
       Vec q{};
       for (int k = 0; k < D; ++k)
-        q[k] = T(it.getStartIndices(k));
+        q[k] = T(pointIndices[p][k]);
       const long i = nodeAt(q);
-      nodeOfPoint[it.getPointId()] = i;
+      nodeOfPoint[pointIds[p]] = i;
       if (i >= 0)
-        speeds->speed[it.getPointId()] = V[i] * gridDelta;
+        speeds->speed[pointIds[p]] = V[i] * gridDelta;
     }
     SmartPointer<VelocityField<T>> field(speeds);
     // whether all neighbours of the stencil lie in the band
@@ -1273,6 +1285,24 @@ template <class T, int D> class AdvectHermite {
             return false;
       return true;
     };
+    // the points whose node takes the update with the whole stencil of the
+    // scheme in the band, the same in every stage
+    const int radius =
+        (spatialScheme == SpatialSchemeEnum::ENGQUIST_OSHER_2ND_ORDER ||
+         spatialScheme == SpatialSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER ||
+         spatialScheme == SpatialSchemeEnum::WENO_3RD_ORDER)
+            ? 2
+            : (spatialScheme == SpatialSchemeEnum::WENO_5TH_ORDER ? 3 : 1);
+    std::vector<char> evaluates(points, 0);
+#pragma omp parallel for
+    for (long p = 0; p < points; ++p) {
+      const long i = nodeOfPoint[pointIds[p]];
+      evaluates[p] = i >= 0 && takes[i] && complete(i, radius);
+    }
+    std::vector<long> evaluated;
+    for (long p = 0; p < points; ++p)
+      if (evaluates[p])
+        evaluated.push_back(p);
     // the alphas of Lax-Friedrichs as Advect finds them: the largest speed
     // times normal component, the normal from central differences of U
     auto globalAlphas = [&](const std::vector<T> &U) {
@@ -1300,54 +1330,71 @@ template <class T, int D> class AdvectHermite {
     auto ratesOf = [&](const std::vector<T> &U, SmartPointer<Domain<T, D>> band,
                        double &limit) {
       std::vector<T> L(n, nan);
-      auto evaluate = [&](auto &s, int radius) {
-        for (viennahrle::ConstSparseIterator<typename Domain<T, D>::DomainType>
-                 it(band->getDomain());
-             !it.isFinished(); ++it) {
-          if (!it.isDefined())
+      // the points in parts of about a thousand, each evaluated in their
+      // order by a scheme of its own whose iterator starts at the part's
+      // first point (makeScheme(start))
+      auto evaluate = [&](auto makeScheme) {
+        const long count = long(evaluated.size());
+        const long parts = (count + 1023) / 1024;
+#pragma omp parallel for schedule(dynamic)
+        for (long part = 0; part < parts; ++part) {
+          const long begin = count * part / parts,
+                     end = count * (part + 1) / parts;
+          if (begin == end)
             continue;
-          const long i = nodeOfPoint[it.getPointId()];
-          if (i < 0 || !takes[i] || !complete(i, radius))
-            continue;
-          const auto [gradient, dissipation] =
-              s(it.getStartIndices(), nodeMaterial(i));
-          T rate = gradient - dissipation;
-          if (checkDissipation &&
-              ((gradient < 0 && rate > 0) || (gradient > 0 && rate < 0)))
-            rate = 0;
-          L[i] = rate;
+          auto s = makeScheme(pointIndices[evaluated[begin]]);
+          for (long e = begin; e < end; ++e) {
+            const long p = evaluated[e];
+            const long i = nodeOfPoint[pointIds[p]];
+            const auto [gradient, dissipation] =
+                s(pointIndices[p], nodeMaterial(i));
+            T rate = gradient - dissipation;
+            if (checkDissipation &&
+                ((gradient < 0 && rate > 0) || (gradient > 0 && rate < 0)))
+              rate = 0;
+            L[i] = rate;
+          }
         }
       };
       switch (spatialScheme) {
       case SpatialSchemeEnum::ENGQUIST_OSHER_2ND_ORDER: {
-        lsInternal::EngquistOsher<T, D, 2> s(band, field, true);
-        evaluate(s, 2);
+        evaluate([&](const hrleIndex &start) {
+          return lsInternal::EngquistOsher<T, D, 2>(band, field, true, start);
+        });
         break;
       }
       case SpatialSchemeEnum::LAX_FRIEDRICHS_1ST_ORDER: {
         auto alphas = globalAlphas(U);
-        lsInternal::LaxFriedrichs<T, D, 1> s(band, field, dissipationAlpha,
-                                             alphas, true);
-        evaluate(s, 1);
-        s.reduceTimeStepHamiltonJacobi(limit, gridDelta);
+        evaluate([&](const hrleIndex &start) {
+          return lsInternal::LaxFriedrichs<T, D, 1>(
+              band, field, dissipationAlpha, alphas, true, start);
+        });
+        lsInternal::LaxFriedrichs<T, D, 1>(band, field, dissipationAlpha,
+                                           alphas, true)
+            .reduceTimeStepHamiltonJacobi(limit, gridDelta);
         break;
       }
       case SpatialSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER: {
         auto alphas = globalAlphas(U);
-        lsInternal::LaxFriedrichs<T, D, 2> s(band, field, dissipationAlpha,
-                                             alphas, true);
-        evaluate(s, 2);
-        s.reduceTimeStepHamiltonJacobi(limit, gridDelta);
+        evaluate([&](const hrleIndex &start) {
+          return lsInternal::LaxFriedrichs<T, D, 2>(
+              band, field, dissipationAlpha, alphas, true, start);
+        });
+        lsInternal::LaxFriedrichs<T, D, 2>(band, field, dissipationAlpha,
+                                           alphas, true)
+            .reduceTimeStepHamiltonJacobi(limit, gridDelta);
         break;
       }
       case SpatialSchemeEnum::WENO_3RD_ORDER: {
-        lsInternal::WENO<T, D, 3> s(band, field, true);
-        evaluate(s, 2);
+        evaluate([&](const hrleIndex &start) {
+          return lsInternal::WENO<T, D, 3>(band, field, true, start);
+        });
         break;
       }
       case SpatialSchemeEnum::WENO_5TH_ORDER: {
-        lsInternal::WENO<T, D, 5> s(band, field, true);
-        evaluate(s, 3);
+        evaluate([&](const hrleIndex &start) {
+          return lsInternal::WENO<T, D, 5>(band, field, true, start);
+        });
         break;
       }
       default: {
@@ -1358,8 +1405,9 @@ template <class T, int D> class AdvectHermite {
                                    "ENGQUIST_OSHER_1ST_ORDER for this scheme.");
           warned = true;
         }
-        lsInternal::EngquistOsher<T, D, 1> s(band, field, true);
-        evaluate(s, 1);
+        evaluate([&](const hrleIndex &start) {
+          return lsInternal::EngquistOsher<T, D, 1>(band, field, true, start);
+        });
       }
       }
       return L;
@@ -1373,6 +1421,7 @@ template <class T, int D> class AdvectHermite {
     // nodes along their own planes
     auto advance = [&](const std::vector<T> &U, const std::vector<T> &L) {
       std::vector<T> out(n);
+#pragma omp parallel for
       for (long i = 0; i < n; ++i)
         out[i] = U[i] - dt * (std::isfinite(L[i]) ? L[i] : V[i]);
       return out;
@@ -1386,18 +1435,22 @@ template <class T, int D> class AdvectHermite {
       const std::vector<T> star = advance(U1, ratesOf(U1, copyOf(U1), unused));
       end.resize(n);
       if (temporalScheme == TemporalSchemeEnum::RUNGE_KUTTA_2ND_ORDER) {
+#pragma omp parallel for
         for (long i = 0; i < n; ++i)
           end[i] = T(0.5) * S[i] + T(0.5) * star[i];
       } else {
         std::vector<T> U2(n);
+#pragma omp parallel for
         for (long i = 0; i < n; ++i)
           U2[i] = T(0.75) * S[i] + T(0.25) * star[i];
         const std::vector<T> star2 =
             advance(U2, ratesOf(U2, copyOf(U2), unused));
+#pragma omp parallel for
         for (long i = 0; i < n; ++i)
           end[i] = S[i] / T(3) + T(2) * star2[i] / T(3);
       }
     }
+#pragma omp parallel for
     for (long i = 0; i < n; ++i)
       if (std::isfinite(L0[i]))
         upwindRate[i] = (S[i] - end[i]) / dt;
