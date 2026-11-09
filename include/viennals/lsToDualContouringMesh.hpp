@@ -94,10 +94,27 @@ private:
     return p;
   }
 
+  // the corners of a cell copied from the cell iterator, with the queries
+  // the iterator answers, so that cells can be worked on in parallel
+  struct CellCopy {
+    struct Corner {
+      T value;
+      viennahrle::SizeType pointId;
+      bool defined;
+      T getValue() const { return value; }
+      viennahrle::SizeType getPointId() const { return pointId; }
+      bool isDefined() const { return defined; }
+    };
+    hrleIndex indices;
+    std::array<Corner, (1 << D)> corners;
+    const hrleIndex &getIndices() const { return indices; }
+    const Corner &getCorner(int c) const { return corners[c]; }
+  };
+
   // gradient of the (bi/tri)linear interpolant of the cell at local position
   // u in [0,1]^D
-  static VectorD interpolantGradient(const ConstSparseCellIterator &cellIt,
-                                     const VectorD &u) {
+  template <class Cell>
+  static VectorD interpolantGradient(const Cell &cellIt, const VectorD &u) {
     VectorD g = VectorD::Zero();
     for (int c = 0; c < (1 << D); ++c) {
       const T value = cellIt.getCorner(c).getValue();
@@ -120,8 +137,9 @@ private:
   // An edge without one gets, with priorities, the interpolated crossing and
   // no plane (n = 0), and otherwise the plane of its nearer end point. source
   // is the corner of the cell whose plane it took, -1 for none.
+  template <class Cell>
   void
-  hermiteData(const ConstSparseCellIterator &cellIt, int a, int b,
+  hermiteData(const Cell &cellIt, int a, int b,
               const typename PointData<T>::VectorDataType *closest,
               const typename PointData<T>::VectorDataType *normals,
               const typename PointData<T>::ScalarDataType *priority,
@@ -390,7 +408,8 @@ public:
   void setAvoidFolds(bool passedAvoidFolds) { avoidFolds = passedAvoidFolds; }
 
   /// Hermite data of the crossing edges in place of that of the stored
-  /// planes, on the edges where the function gives it.
+  /// planes, on the edges where the function gives it. apply() calls the
+  /// function from several threads at once.
   void setEdgeData(EdgeData passedEdgeData) {
     edgeData = std::move(passedEdgeData);
   }
@@ -459,8 +478,8 @@ public:
     const auto *interfaceNormals = stored.interfaceNormals;
     // the Hermite data of a crossing edge: as given (setEdgeData), else from
     // the stored planes
-    auto crossingData = [&](const ConstSparseCellIterator &cellIt, int a, int b,
-                            VectorD &x, VectorD &n, int &source) {
+    auto crossingData = [&](const auto &cellIt, int a, int b, VectorD &x,
+                            VectorD &n, int &source) {
       EdgeCrossing given;
       if (edgeData &&
           edgeData(cellIt.getIndices(), a, b, cellIt.getCorner(a).getValue(),
@@ -697,6 +716,9 @@ public:
         splitNormals;
     // the distinct planes of every cell, for the cells beside a corner below
     std::map<hrleIndex, std::vector<std::pair<VectorD, T>>> cellPlanes;
+    // the cells the surface crosses, copied in their order, so that their
+    // vertices are found in parallel and enter the mesh in that order
+    std::vector<CellCopy> crossed;
     for (ConstSparseCellIterator cellIt(levelSet->getDomain());
          !cellIt.isFinished(); cellIt.next()) {
       unsigned inside = 0;
@@ -705,6 +727,34 @@ public:
           inside |= 1u << c;
       if (inside == 0 || inside == (1u << (1 << D)) - 1)
         continue;
+      CellCopy copy;
+      copy.indices = cellIt.getIndices();
+      for (int c = 0; c < (1 << D); ++c) {
+        const auto &corner = cellIt.getCorner(c);
+        copy.corners[c] = {corner.getValue(), corner.getPointId(),
+                           corner.isDefined()};
+      }
+      crossed.push_back(copy);
+    }
+    // what a crossed cell contributes: its vertices, its distinct planes, the
+    // normals of its crossing edges and, in 2D, whether its planes lie within
+    // 35 degrees of each other
+    struct CellResult {
+      CellVertices cell;
+      VectorD vertex, second, mass;
+      bool split = false, nearly = false;
+      std::vector<std::pair<VectorD, T>> planes;
+      std::vector<int> edges;
+      std::vector<VectorD> edgeNormals;
+    };
+    std::vector<CellResult> results(crossed.size());
+#pragma omp parallel for schedule(dynamic, 64)
+    for (long cellIndex = 0; cellIndex < long(crossed.size()); ++cellIndex) {
+      const CellCopy &cellIt = crossed[cellIndex];
+      unsigned inside = 0;
+      for (int c = 0; c < (1 << D); ++c)
+        if (cellIt.getCorner(c).getValue() < T(0))
+          inside |= 1u << c;
 
       VectorD mass = VectorD::Zero();
       int count = 0;
@@ -830,32 +880,51 @@ public:
             std::find(planeOf.begin(), planeOf.end(), -1) == planeOf.end() &&
             splitCell(edges, planeOf, points, planes, idx, residual, vertex,
                       second, cell.takesSecond);
-      cell.first = insertVertex(vertex);
-      cell.second = cell.first;
+      CellResult &result = results[cellIndex];
       if constexpr (D == 2) {
         bool close = planes.size() > 1;
         for (std::size_t a = 0; a < planes.size(); ++a)
           for (std::size_t b = a + 1; b < planes.size(); ++b)
             close = close && planes[a].first.dot(planes[b].first) >
                                  T(0.81915204428899178); // cos 35°
-        if (close) {
+        result.nearly = close;
+      }
+      result.cell = cell;
+      result.vertex = vertex;
+      if (split)
+        result.second = second;
+      result.mass = mass;
+      result.split = split;
+      result.planes = std::move(planes);
+      result.edges = std::move(edges);
+      result.edgeNormals = std::move(edgeNormals);
+    }
+    // the vertices enter the mesh and the cells the maps in the cells' order
+    for (std::size_t cellIndex = 0; cellIndex < crossed.size(); ++cellIndex) {
+      CellResult &result = results[cellIndex];
+      CellVertices &cell = result.cell;
+      const hrleIndex &idx = crossed[cellIndex].indices;
+      cell.first = insertVertex(result.vertex);
+      cell.second = cell.first;
+      if constexpr (D == 2) {
+        if (result.nearly) {
           nearlyParallel.resize(cell.first + 1);
           hasNearlyParallel.resize(cell.first + 1, 0);
-          nearlyParallel[cell.first] = {idx, mass};
+          nearlyParallel[cell.first] = {idx, result.mass};
           hasNearlyParallel[cell.first] = 1;
         }
       }
-      if (split) {
-        cell.second = insertVertex(second);
+      if (result.split) {
+        cell.second = insertVertex(result.second);
         auto &stored = splitNormals[idx];
-        for (std::size_t k = 0; k < edges.size(); ++k)
+        for (std::size_t k = 0; k < result.edges.size(); ++k)
           for (int i = 0; i < D; ++i)
-            stored[edges[k]][i] = edgeNormals[k](i);
+            stored[result.edges[k]][i] = result.edgeNormals[k](i);
       } else {
         cell.takesSecond = 0;
       }
       cellVertex[idx] = cell;
-      cellPlanes[idx] = planes;
+      cellPlanes[idx] = std::move(result.planes);
     }
 
     // a cell whose planes leave its vertex free along a line, as a 3D cell
@@ -1156,9 +1225,9 @@ public:
 
     // every crossing edge once, from the cell whose lowest corner starts it;
     // edges in an upper reflective boundary start at a corner without such a
-    // cell and are taken from the cell below the boundary
-    for (ConstSparseCellIterator cellIt(levelSet->getDomain());
-         !cellIt.isFinished(); cellIt.next()) {
+    // cell and are taken from the cell below the boundary. Only the cells the
+    // surface crosses have such edges, in the order the cells were copied
+    for (const CellCopy &cellIt : crossed) {
       const hrleIndex idx = cellIt.getIndices();
       const bool insideLow = cellIt.getCorner(0).getValue() < T(0);
       VectorD x;
