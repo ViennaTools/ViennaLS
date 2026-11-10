@@ -153,6 +153,29 @@ template <int D> void runTest() {
     VC_TEST_ASSERT(std::abs(compare.getMaxDistance() - 0.3) < 2 * facet);
   }
 
+  // two strips of two long thin triangles each, 0.3 apart: the samples grow
+  // with the length of the triangles
+  if constexpr (D == 3) {
+    auto strip = [](T z) {
+      auto mesh = ls::SmartPointer<ls::Mesh<T>>::New();
+      mesh->insertNextNode({0., 0., z});
+      mesh->insertNextNode({50., 0., z});
+      mesh->insertNextNode({50., 0.02, z});
+      mesh->insertNextNode({0., 0.02, z});
+      mesh->insertNextTriangle({0u, 1u, 2u});
+      mesh->insertNextTriangle({0u, 2u, 3u});
+      return mesh;
+    };
+    ls::CompareSurfaceDistance<T, D> compare(strip(0.), strip(0.3));
+    compare.setSamplingSpacing(0.2);
+    compare.apply();
+    std::cout << "strips: Chamfer " << compare.getChamferDistance()
+              << ", samples " << compare.getNumTargetPoints() << std::endl;
+    VC_TEST_ASSERT(std::abs(compare.getChamferDistance() - 0.3) < 1e-12);
+    // 50 long at spacing 0.2: a few samples per spacing of length
+    VC_TEST_ASSERT(compare.getNumTargetPoints() <= 2 * 4 * 250);
+  }
+
   // a sphere as level sets of both normalizations on two grid spacings
   auto exact = sphereMesh<D>(radius, D == 2 ? 4000 : 360);
   const T exactFacet = D == 2 ? 2e-6 : 4e-4;

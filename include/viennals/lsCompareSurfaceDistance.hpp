@@ -27,11 +27,13 @@ using namespace viennacore;
 /// contouring and a Manhattan one by ToSurfaceMesh, so each level set is
 /// measured by the surface it delivers.
 ///
-/// Both surfaces are sampled uniformly, every segment in pieces and every
-/// triangle in congruent sub-triangles no longer than the sampling spacing,
-/// each sample weighted by its length or area. Every sample and every vertex
-/// that an element uses is measured to the nearest point of the other surface,
-/// a segment in 2D and a triangle in 3D, through an AABB tree. The results are
+/// Both surfaces are sampled uniformly, every segment in equal pieces and every
+/// triangle by a grid along its longest edge clipped to it, no piece longer or
+/// wider than the sampling spacing, each sample at the centroid of its piece
+/// and weighted by its length or area. Every
+/// sample and every vertex that an element uses is measured to the nearest
+/// point of the other surface, a segment in 2D and a triangle in 3D, through an
+/// AABB tree. The results are
 /// - the forward distance, the mean distance of the target's samples to the
 ///   sample surface,
 /// - the backward distance, the mean distance of the sample's samples to the
@@ -139,6 +141,102 @@ template <class T, int D = 2> class CompareSurfaceDistance {
     return true;
   }
 
+  // the samples of a triangle: in the frame of its longest edge (x along it, y
+  // across it in its plane) a grid of at most the spacing in both directions,
+  // every cell clipped to the triangle and sampled at the centroid of the
+  // piece, weighted by its area. The pieces cover the triangle, and a long thin
+  // triangle gets a single row of cells.
+  void triangleSamples(const Point &p0, const Point &p1, const Point &p2,
+                       double spacing, std::vector<Point> &points,
+                       std::vector<double> &weights) const {
+    if constexpr (D == 3) {
+      Point a = p0, b = p1, c = p2;
+      const double l0 = (p1 - p0).squaredNorm(), l1 = (p2 - p1).squaredNorm(),
+                   l2 = (p0 - p2).squaredNorm();
+      if (l1 >= l0 && l1 >= l2) {
+        a = p1;
+        b = p2;
+        c = p0;
+      } else if (l2 >= l0 && l2 >= l1) {
+        a = p2;
+        b = p0;
+        c = p1;
+      }
+      const double length = (b - a).norm();
+      if (!(length > 0.))
+        return;
+      const Point ex = (b - a) / length;
+      const Point across = (c - a) - ex * (c - a).dot(ex);
+      const double height = across.norm();
+      if (!(height > 0.))
+        return;
+      const Point ey = across / height;
+      // the triangle (0, 0), (length, 0), (cx, height), counterclockwise
+      const double cx = (c - a).dot(ex);
+      const double x0 = std::min(0., cx), x1 = std::max(length, cx);
+      const long nx = std::max(1L, long(std::ceil((x1 - x0) / spacing)));
+      const long ny = std::max(1L, long(std::ceil(height / spacing)));
+      const double dx = (x1 - x0) / nx, dy = height / ny;
+      using Corner = std::array<double, 2>;
+      // the part of a polygon left of the directed line from u to v
+      auto clip = [](const std::vector<Corner> &polygon, const Corner &u,
+                     const Corner &v) {
+        std::vector<Corner> result;
+        auto side = [&](const Corner &q) {
+          return (v[0] - u[0]) * (q[1] - u[1]) - (v[1] - u[1]) * (q[0] - u[0]);
+        };
+        for (std::size_t k = 0; k < polygon.size(); ++k) {
+          const Corner &p = polygon[k], &q = polygon[(k + 1) % polygon.size()];
+          const double sp = side(p), sq = side(q);
+          if (sp >= 0.)
+            result.push_back(p);
+          if ((sp >= 0.) != (sq >= 0.)) {
+            const double t = sp / (sp - sq);
+            result.push_back(
+                {p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1])});
+          }
+        }
+        return result;
+      };
+      const Corner A{0., 0.}, B{length, 0.}, C{cx, height};
+      for (long j = 0; j < ny; ++j) {
+        const double ya = j * dy, yb = (j + 1) * dy;
+        // the cells of the row that the triangle reaches
+        const double xl = std::min(cx * ya / height, cx * yb / height);
+        const double xr = std::max(length + (cx - length) * ya / height,
+                                   length + (cx - length) * yb / height);
+        const long i0 = std::max(0L, long(std::floor((xl - x0) / dx)));
+        const long i1 = std::min(nx - 1, long(std::floor((xr - x0) / dx)));
+        for (long i = i0; i <= i1; ++i) {
+          const double xa = x0 + i * dx, xb = x0 + (i + 1) * dx;
+          std::vector<Corner> cell{{xa, ya}, {xb, ya}, {xb, yb}, {xa, yb}};
+          cell = clip(cell, B, C);
+          if (cell.size() >= 3)
+            cell = clip(cell, C, A);
+          if (cell.size() < 3)
+            continue;
+          double area = 0., gx = 0., gy = 0.;
+          for (std::size_t k = 0; k < cell.size(); ++k) {
+            const Corner &p = cell[k], &q = cell[(k + 1) % cell.size()];
+            const double cross = p[0] * q[1] - q[0] * p[1];
+            area += cross;
+            gx += (p[0] + q[0]) * cross;
+            gy += (p[1] + q[1]) * cross;
+          }
+          area *= 0.5;
+          if (!(area > 0.))
+            continue;
+          const Point point =
+              a + ex * (gx / (6. * area)) + ey * (gy / (6. * area));
+          if (inBox(point)) {
+            points.push_back(point);
+            weights.push_back(area);
+          }
+        }
+      }
+    }
+  }
+
   // the samples of the elements of a surface and their weights
   void samplesOf(const Surface &s, double spacing, std::vector<Point> &points,
                  std::vector<double> &weights) const {
@@ -157,32 +255,8 @@ template <class T, int D = 2> class CompareSurfaceDistance {
           }
         }
       } else {
-        const Point a = s.V.row(s.F(e, 0)), b = s.V.row(s.F(e, 1)),
-                    c = s.V.row(s.F(e, 2));
-        const Point u = b - a, v = c - a;
-        const double area = 0.5 * u.cross(v).norm();
-        const double longest = std::max({u.norm(), v.norm(), (c - b).norm()});
-        const long n = std::max(1L, long(std::ceil(longest / spacing)));
-        const double w = area / double(n * n);
-        // the centroids of the n * n congruent sub-triangles, those with the
-        // orientation of the triangle and the inverted ones between them
-        for (long i = 0; i < n; ++i)
-          for (long j = 0; i + j < n; ++j) {
-            const Point p =
-                a + u * ((i + 1. / 3.) / n) + v * ((j + 1. / 3.) / n);
-            if (inBox(p)) {
-              points.push_back(p);
-              weights.push_back(w);
-            }
-            if (i + j + 1 < n) {
-              const Point q =
-                  a + u * ((i + 2. / 3.) / n) + v * ((j + 2. / 3.) / n);
-              if (inBox(q)) {
-                points.push_back(q);
-                weights.push_back(w);
-              }
-            }
-          }
+        triangleSamples(s.V.row(s.F(e, 0)), s.V.row(s.F(e, 1)),
+                        s.V.row(s.F(e, 2)), spacing, points, weights);
       }
     }
   }
