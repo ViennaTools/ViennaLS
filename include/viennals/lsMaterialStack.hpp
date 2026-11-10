@@ -282,6 +282,42 @@ public:
             convex = convex && side <= std::max(T(1e-9), roundOff);
             concave = concave && side >= -std::max(T(1e-9), roundOff);
           }
+        // faces through one point leave the bend open, as the two faces of a
+        // concave corner on a grid node whose neighbour beyond the corner
+        // along one face holds the corner with the other face's normal: each
+        // node of the cell at which the largest and the smallest of the
+        // faces' signed distances differ tells which of the two lies nearer
+        // its value, the intersection of the faces' half-spaces (convex) or
+        // their union (concave); nodes that disagree, as at a saddle corner,
+        // leave it open
+        if (convex && concave && faceCount > 1) {
+          int nearer[2] = {0, 0};
+          for (int c = 0; c < (1 << D); ++c) {
+            hrleIndex q = base;
+            for (int i = 0; i < D; ++i)
+              q[i] += (c >> i) & 1;
+            auto found = values[l].find(grid.globalIndices2LocalIndices(q));
+            if (found == values[l].end())
+              continue;
+            T high = -std::numeric_limits<T>::max(),
+              low = std::numeric_limits<T>::max();
+            for (int a = 0; a < faceCount; ++a) {
+              T s = 0.;
+              for (int i = 0; i < D; ++i)
+                s += (T(q[i]) - faces[a].point[i]) * faces[a].direction[i];
+              high = std::max(high, s);
+              low = std::min(low, s);
+            }
+            const T toHigh = std::abs(high - found->second),
+                    toLow = std::abs(low - found->second);
+            if (high - low > std::max(T(1e-9), roundOff) && toHigh != toLow)
+              ++nearer[toHigh < toLow ? 0 : 1];
+          }
+          if (nearer[0] > 0 && nearer[1] == 0)
+            concave = false;
+          else if (nearer[1] > 0 && nearer[0] == 0)
+            convex = false;
+        }
         if (convex != concave) {
           T result = convex ? -std::numeric_limits<T>::max()
                             : std::numeric_limits<T>::max();
