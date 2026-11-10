@@ -15,6 +15,7 @@
 #include <lsCompareCriticalDimensions.hpp>
 #include <lsCompareNarrowBand.hpp>
 #include <lsCompareSparseField.hpp>
+#include <lsCompareSurfaceDistance.hpp>
 #include <lsCompareVolume.hpp>
 #include <lsConvexHull.hpp>
 #include <lsDetectFeatures.hpp>
@@ -1568,6 +1569,74 @@ template <int D> void bindApi(py::module &module) {
            "Get the number of target surface points.")
       .def("getNumSamplePoints", &CompareChamfer<T, D>::getNumSamplePoints,
            "Get the number of sample surface points.");
+
+  // CompareSurfaceDistance
+  py::class_<CompareSurfaceDistance<T, D>,
+             SmartPointer<CompareSurfaceDistance<T, D>>>(
+      module, "CompareSurfaceDistance")
+      // constructors
+      .def(
+          py::init(&SmartPointer<CompareSurfaceDistance<T, D>>::template New<>))
+      .def(
+          py::init(&SmartPointer<CompareSurfaceDistance<T, D>>::template New<
+                   SmartPointer<Domain<T, D>> &, SmartPointer<Domain<T, D>> &>))
+      .def(py::init(&SmartPointer<CompareSurfaceDistance<T, D>>::template New<
+                    SmartPointer<Mesh<T>> &, SmartPointer<Mesh<T>> &>))
+      // methods
+      .def("setLevelSetTarget",
+           &CompareSurfaceDistance<T, D>::setLevelSetTarget,
+           "Set the target as a level set of any grid spacing and "
+           "normalization.")
+      .def("setLevelSetSample",
+           &CompareSurfaceDistance<T, D>::setLevelSetSample,
+           "Set the sample as a level set of any grid spacing and "
+           "normalization.")
+      .def("setMeshTarget", &CompareSurfaceDistance<T, D>::setMeshTarget,
+           "Set the target as a surface mesh (lines in 2D, triangles in 3D).")
+      .def("setMeshSample", &CompareSurfaceDistance<T, D>::setMeshSample,
+           "Set the sample as a surface mesh (lines in 2D, triangles in 3D).")
+      .def("setSamplingSpacing",
+           &CompareSurfaceDistance<T, D>::setSamplingSpacing,
+           "Set the largest length (2D) or edge (3D) of a sample element; "
+           "0 chooses a fifth of the smallest grid spacing or mean edge.")
+      .def("setBox", &CompareSurfaceDistance<T, D>::setBox,
+           py::arg("minCorner"), py::arg("maxCorner"),
+           "Restrict the samples and vertices of both surfaces to a box.")
+      .def("clearBox", &CompareSurfaceDistance<T, D>::clearBox,
+           "Measure the whole surfaces again.")
+      .def("setOutputMeshTarget",
+           &CompareSurfaceDistance<T, D>::setOutputMeshTarget,
+           "Set output mesh for the target surface with the distance of every "
+           "vertex to the sample surface.")
+      .def("setOutputMeshSample",
+           &CompareSurfaceDistance<T, D>::setOutputMeshSample,
+           "Set output mesh for the sample surface with the distance of every "
+           "vertex to the target surface.")
+      .def("apply", &CompareSurfaceDistance<T, D>::apply,
+           "Compute the distances.")
+      .def("getForwardDistance",
+           &CompareSurfaceDistance<T, D>::getForwardDistance,
+           "Get the forward distance (mean distance of the target to the "
+           "sample).")
+      .def("getBackwardDistance",
+           &CompareSurfaceDistance<T, D>::getBackwardDistance,
+           "Get the backward distance (mean distance of the sample to the "
+           "target).")
+      .def("getChamferDistance",
+           &CompareSurfaceDistance<T, D>::getChamferDistance,
+           "Get the Chamfer distance (mean of forward and backward).")
+      .def("getRMSChamferDistance",
+           &CompareSurfaceDistance<T, D>::getRMSChamferDistance,
+           "Get the RMS distance (root of the mean of both mean squares).")
+      .def("getMaxDistance", &CompareSurfaceDistance<T, D>::getMaxDistance,
+           "Get the maximum distance of a sample or vertex in either "
+           "direction.")
+      .def("getNumTargetPoints",
+           &CompareSurfaceDistance<T, D>::getNumTargetPoints,
+           "Get the number of samples of the target surface.")
+      .def("getNumSamplePoints",
+           &CompareSurfaceDistance<T, D>::getNumSamplePoints,
+           "Get the number of samples of the sample surface.");
 
   // CompareCriticalDimensions
   py::class_<CompareCriticalDimensions<T, D>,

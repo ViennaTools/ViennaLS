@@ -14,6 +14,7 @@
 #include <lsCompareCriticalDimensions.hpp>
 #include <lsCompareNarrowBand.hpp>
 #include <lsCompareSparseField.hpp>
+#include <lsCompareSurfaceDistance.hpp>
 #include <lsCompareVolume.hpp>
 #include <lsDetectFeatures.hpp>
 #include <lsDomain.hpp>
@@ -57,6 +58,7 @@ PRECOMPILE_SPECIALIZE(CompareChamfer)
 PRECOMPILE_SPECIALIZE(CompareVolume)
 PRECOMPILE_SPECIALIZE(CompareNarrowBand)
 PRECOMPILE_SPECIALIZE(CompareSparseField)
+PRECOMPILE_SPECIALIZE(CompareSurfaceDistance)
 PRECOMPILE_SPECIALIZE(CompareCriticalDimensions)
 PRECOMPILE_SPECIALIZE(Domain)
 PRECOMPILE_SPECIALIZE(Expand)

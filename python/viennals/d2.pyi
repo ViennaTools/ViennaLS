@@ -10,7 +10,7 @@ from viennals._core import OxidationDeformationParameters
 from viennals._core import OxidationMaskParameters
 from viennals._core import OxidationParameters
 from viennals._core import OxidationPresets
-__all__: list[str] = ['Advect', 'AdvectHermite', 'BooleanOperation', 'Box', 'BoxDistribution', 'CalculateCurvatures', 'CalculateNormalVectors', 'CalculateVisibilities', 'Check', 'CompareArea', 'CompareChamfer', 'CompareCriticalDimensions', 'CompareNarrowBand', 'CompareSparseField', 'CompareVolume', 'ConvexHull', 'CustomSphereDistribution', 'Cylinder', 'DetectFeatures', 'Domain', 'Expand', 'FinalizeStencilLocalLaxFriedrichs', 'FromMesh', 'FromSurfaceMesh', 'FromVolumeMesh', 'GeometricAdvect', 'GeometricAdvectDistribution', 'MakeGeometry', 'MarkVoidPoints', 'Oxidation', 'OxidationCouplingParameters', 'OxidationDeformation', 'OxidationDeformationParameters', 'OxidationDiffusion', 'OxidationMaskParameters', 'OxidationModel', 'OxidationParameters', 'OxidationPresets', 'Plane', 'PointCloud', 'PrepareStencilLocalLaxFriedrichs', 'Prune', 'ReactionBoundarySample', 'Reader', 'Reduce', 'Reinitialize', 'RemoveStrayPoints', 'Sphere', 'SphereDistribution', 'StencilLocalLaxFriedrichsScalar', 'ToDiskMesh', 'ToDualContouringMesh', 'ToHullMesh', 'ToMesh', 'ToMultiSurfaceMesh', 'ToSurfaceMesh', 'ToVoxelMesh', 'WriteVisualizationMesh', 'Writer', 'computeLOCOSOpenWindowConservation', 'hrleGrid']
+__all__: list[str] = ['Advect', 'AdvectHermite', 'BooleanOperation', 'Box', 'BoxDistribution', 'CalculateCurvatures', 'CalculateNormalVectors', 'CalculateVisibilities', 'Check', 'CompareArea', 'CompareChamfer', 'CompareCriticalDimensions', 'CompareNarrowBand', 'CompareSparseField', 'CompareSurfaceDistance', 'CompareVolume', 'ConvexHull', 'CustomSphereDistribution', 'Cylinder', 'DetectFeatures', 'Domain', 'Expand', 'FinalizeStencilLocalLaxFriedrichs', 'FromMesh', 'FromSurfaceMesh', 'FromVolumeMesh', 'GeometricAdvect', 'GeometricAdvectDistribution', 'MakeGeometry', 'MarkVoidPoints', 'Oxidation', 'OxidationCouplingParameters', 'OxidationDeformation', 'OxidationDeformationParameters', 'OxidationDiffusion', 'OxidationMaskParameters', 'OxidationModel', 'OxidationParameters', 'OxidationPresets', 'Plane', 'PointCloud', 'PrepareStencilLocalLaxFriedrichs', 'Prune', 'ReactionBoundarySample', 'Reader', 'Reduce', 'Reinitialize', 'RemoveStrayPoints', 'Sphere', 'SphereDistribution', 'StencilLocalLaxFriedrichsScalar', 'ToDiskMesh', 'ToDualContouringMesh', 'ToHullMesh', 'ToMesh', 'ToMultiSurfaceMesh', 'ToSurfaceMesh', 'ToVoxelMesh', 'WriteVisualizationMesh', 'Writer', 'computeLOCOSOpenWindowConservation', 'hrleGrid']
 class Advect:
     @typing.overload
     def __init__(self) -> None:
@@ -567,6 +567,84 @@ class CompareSparseField:
     def setZRange(self, arg0: typing.SupportsFloat | typing.SupportsIndex, arg1: typing.SupportsFloat | typing.SupportsIndex) -> None:
         """
         Set the z-coordinate range to restrict the comparison area
+        """
+class CompareSurfaceDistance:
+    @typing.overload
+    def __init__(self) -> None:
+        ...
+    @typing.overload
+    def __init__(self, arg0: Domain, arg1: Domain) -> None:
+        ...
+    @typing.overload
+    def __init__(self, arg0: viennals._core.Mesh, arg1: viennals._core.Mesh) -> None:
+        ...
+    def apply(self) -> None:
+        """
+        Compute the distances.
+        """
+    def clearBox(self) -> None:
+        """
+        Measure the whole surfaces again.
+        """
+    def getBackwardDistance(self) -> float:
+        """
+        Get the backward distance (mean distance of the sample to the target).
+        """
+    def getChamferDistance(self) -> float:
+        """
+        Get the Chamfer distance (mean of forward and backward).
+        """
+    def getForwardDistance(self) -> float:
+        """
+        Get the forward distance (mean distance of the target to the sample).
+        """
+    def getMaxDistance(self) -> float:
+        """
+        Get the maximum distance of a sample or vertex in either direction.
+        """
+    def getNumSamplePoints(self) -> int:
+        """
+        Get the number of samples of the sample surface.
+        """
+    def getNumTargetPoints(self) -> int:
+        """
+        Get the number of samples of the target surface.
+        """
+    def getRMSChamferDistance(self) -> float:
+        """
+        Get the RMS distance (root of the mean of both mean squares).
+        """
+    def setBox(self, minCorner: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(2)"], maxCorner: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(2)"]) -> None:
+        """
+        Restrict the samples and vertices of both surfaces to a box.
+        """
+    def setLevelSetSample(self, arg0: Domain) -> None:
+        """
+        Set the sample as a level set of any grid spacing and normalization.
+        """
+    def setLevelSetTarget(self, arg0: Domain) -> None:
+        """
+        Set the target as a level set of any grid spacing and normalization.
+        """
+    def setMeshSample(self, arg0: viennals._core.Mesh) -> None:
+        """
+        Set the sample as a surface mesh (lines in 2D, triangles in 3D).
+        """
+    def setMeshTarget(self, arg0: viennals._core.Mesh) -> None:
+        """
+        Set the target as a surface mesh (lines in 2D, triangles in 3D).
+        """
+    def setOutputMeshSample(self, arg0: viennals._core.Mesh) -> None:
+        """
+        Set output mesh for the sample surface with the distance of every vertex to the target surface.
+        """
+    def setOutputMeshTarget(self, arg0: viennals._core.Mesh) -> None:
+        """
+        Set output mesh for the target surface with the distance of every vertex to the sample surface.
+        """
+    def setSamplingSpacing(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        """
+        Set the largest length (2D) or edge (3D) of a sample element; 0 chooses a fifth of the smallest grid spacing or mean edge.
         """
 class CompareVolume:
     @typing.overload

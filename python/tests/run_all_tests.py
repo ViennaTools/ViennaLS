@@ -512,6 +512,7 @@ class WrappingTest(unittest.TestCase):
             # Comparisons
             module.CompareVolume(dom, dom2).apply()
             module.CompareChamfer(dom, dom2).apply()
+            module.CompareSurfaceDistance(dom, dom2).apply()
             
             comp_crit = module.CompareCriticalDimensions(dom, dom2)
             comp_crit.addXRange(-1.0, 1.0, True)

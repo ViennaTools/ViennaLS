@@ -22,6 +22,7 @@ They must be imported from either `viennals.d2` or `viennals.d3`.
 - `CompareCriticalDimensions`
 - `CompareNarrowBand`
 - `CompareSparseField`
+- `CompareSurfaceDistance`
 - `CompareVolume`
 - `PointCloud`
 - `ConvexHull`
