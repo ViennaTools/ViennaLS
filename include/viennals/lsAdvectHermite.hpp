@@ -490,6 +490,82 @@ template <class T, int D> class AdvectHermite {
     return pieceMaterial[id];
   }
 
+  // whether node i keeps its value over the remaining time at speed v of its
+  // own piece: v moves it less than the value tolerance, or i is a fan whose
+  // own direction recedes from its value (outwards at a convex fan on the
+  // gas side, where the largest support gives the value, inwards at a
+  // concave one) while the plane it offers, which gives its value, stands
+  // still, as a growing fan beside a face of zero rate: its own support
+  // plane only falls further behind that face
+  bool keepsValue(long i, T v, T remaining) const {
+    const T still = valueTolerance / std::max(remaining, tinyLength);
+    if (std::abs(v) <= still)
+      return true;
+    if (!fan[i] || !good[i] || (convexFan[i] ? v < 0 : v > 0))
+      return false;
+    return std::abs(DotProduct(X[i] - PL[i], NL[i]) - S[i]) <= valueTolerance &&
+           std::abs(speedOf(C0[i], NL[i], i, nodeMaterial(i))) <= still;
+  }
+
+  // whether p lies on an interface of the material stack, within half the
+  // distance at which materialBehind probes behind a surface point
+  bool onInterface(const Vec &p) const {
+    for (std::size_t l = 0; l + 1 < levelSets.size(); ++l)
+      if (std::abs(lowerValue(l, p)) < T(0.005))
+        return true;
+    return false;
+  }
+
+  // the material of the face through cp with normal nrm, cp being node id's
+  // closest point on the surface (closest and normals, as the level set
+  // stores them): the one behind the face itself. Where cp is an edge or a
+  // corner, the node lies off the face's normal through cp, and the face
+  // reaches past cp on the side away from the node's foot on its plane: just
+  // behind cp may lie another material, as at the junction of a fin wall
+  // and the oxide beside it, where the wall's plane continues below the
+  // oxide's top as the interface between the two. Where the node lies on
+  // that normal, as below such a junction on a grid line, and just behind cp
+  // lies an interface, the face reaches towards the closest point of a
+  // neighbour on its plane past which no interface lies
+  int materialOfFace(long id, const Vec &cp, const Vec &nrm,
+                     const std::vector<Vec> &closest,
+                     const std::vector<Vec> &normals) const {
+    if (levelSets.size() < 2)
+      return materialBehind(cp, nrm);
+    const T reach = T(0.1); // grid spacings along the face, past cp
+    const Vec foot = X[id] - nrm * DotProduct(X[id] - cp, nrm);
+    const Vec past = cp - foot;
+    const T length = Norm(past);
+    if (length > smallLength)
+      return materialBehind(cp + past * (reach / length), nrm);
+    if (!onInterface(cp - nrm * T(0.01)))
+      return materialBehind(cp, nrm);
+    const T alike = std::sqrt(1 - rebuiltTilt * rebuiltTilt);
+    for (int k = 0; k < numberOfNeighbours; ++k) {
+      const long j = neighbours[id][k];
+      if (j < 0)
+        continue;
+      Vec c{}, nj{};
+      for (int i = 0; i < 3; ++i) {
+        c[i] = closest[j][i] / gridDelta;
+        nj[i] = normals[j][i];
+      }
+      Vec o = c + shiftOf(id, k) - cp;
+      if (std::abs(DotProduct(nj, nrm)) < alike ||
+          std::abs(DotProduct(o, nrm)) > rebuiltLength)
+        continue;
+      o = o - nrm * DotProduct(o, nrm);
+      const T lo = Norm(o);
+      if (lo <= smallLength)
+        continue;
+      const Vec q = cp + o * (reach / lo);
+      if (onInterface(q - nrm * T(0.01)))
+        continue;
+      return materialBehind(q, nrm);
+    }
+    return materialBehind(cp, nrm);
+  }
+
   // the part of the cone from a to b of a fan on the solid side whose
   // material, behind the feature point c against the direction, is m. Behind
   // a junction of materials, as at the foot of a mask wall on a slope, the
@@ -822,18 +898,24 @@ template <class T, int D> class AdvectHermite {
       if (std::abs(cosine) > T(0.999) && sign(cosine) != sign(S[id]))
         nrm = nrm * T(-1);
       const Vec d = (length > smallLength) ? r * (sign(S[id]) / length) : nrm;
-      // the material behind the closest point along the node's own direction,
-      // also for its face, whose normal at a junction of materials lies along
-      // the interface. A solid node whose closest point is an edge or corner
-      // lies behind a reflex junction, as below the foot of a mask wall beside
-      // the opening, and the front that reaches it is that of its own
-      // material: just behind the junction may lie a sliver of another, as
-      // where a mask reaches a little below the substrate surface
+      // the material of the node's own direction: a node off the normal of
+      // its face through its closest point (a fan, if that direction moves
+      // it) takes the material behind the closest point along it. A solid
+      // node whose closest point is an edge or corner lies behind a reflex
+      // junction, as below the foot of a mask wall beside the opening, and
+      // the front that reaches it is that of its own material: just behind
+      // the junction may lie a sliver of another, as where a mask reaches a
+      // little below the substrate surface. A node on the normal carries the
+      // face, and so does a node that its own direction does not move: the
+      // material of the face itself (materialOfFace)
+      const bool fanLike = length > smallLength && std::abs(cosine) < fanCosine;
       const bool behindCorner =
           S[id] < 0 && length > smallLength && std::abs(cosine) < T(0.999);
-      const int m = behindCorner ? materialAtNode[id] : materialBehind(cp, d);
+      const int faceM = materialOfFace(id, cp, nrm, *closest, *normals);
+      const int m = !fanLike       ? faceM
+                    : behindCorner ? materialAtNode[id]
+                                   : materialBehind(cp, d);
       const T v = speedOf(cp, d, id, m);
-      pieceMaterial[id] = m;
       HA[id] = cp;
       NRM[id] = nrm;
       Dir[id] = d;
@@ -843,10 +925,10 @@ template <class T, int D> class AdvectHermite {
       // the closest face planes behind the front; a node static only along
       // its own direction whose stored face moves (an edge equidistant from
       // a moving and a static face) carries that face's moved plane
-      const bool faceMoves = (v == 0) && speedOf(cp, nrm, id, m) != 0;
+      const bool faceMoves = (v == 0) && speedOf(cp, nrm, id, faceM) != 0;
       good[id] = ((S[id] * v >= 0) || (v == 0)) && !faceMoves;
-      fan[id] =
-          good[id] && length > smallLength && std::abs(cosine) < fanCosine;
+      fan[id] = good[id] && fanLike;
+      pieceMaterial[id] = good[id] ? m : faceM;
     }
     FA = HA;
     W = HA;
@@ -3253,8 +3335,8 @@ template <class T, int D> class AdvectHermite {
           if (length < smallLength ||
               !within(r * (towards / length), oA[m], oB[m]))
             continue;
-          const T vf = concave ? oS[m] + Norm(rj) - length
-                               : length - (Norm(rj) - oS[m]);
+          const T vf =
+              concave ? oS[m] + Norm(rj) - length : length - (Norm(rj) - oS[m]);
           if (vf > 0 || concave) {
             fanRank = 1;
             j = m;
@@ -3305,10 +3387,17 @@ template <class T, int D> class AdvectHermite {
         HA[i] = FA[i] = C0[i] = W[i] = PL[i] = RW[i] = cp;
         NRM[i] = NRM0[i] = NL[i] = Dir[i] = d;
         side0[i] = entrySide[i] = sign(S[i]);
-        pieceMaterial[i] = (S[i] < 0 && length > smallLength &&
-                            std::abs(DotProduct(r, nm)) < T(0.999) * length)
-                               ? materialAtNode[i]
-                               : materialBehind(cp, d);
+        const bool fanLike = length > smallLength &&
+                             std::abs(DotProduct(r, nm)) < fanCosine * length;
+        pieceMaterial[i] =
+            (!fanLike && closest != nullptr && normals != nullptr &&
+             closest->size() == std::size_t(n) &&
+             normals->size() == std::size_t(n))
+                ? materialOfFace(i, cp, d, *closest, *normals)
+            : (S[i] < 0 && length > smallLength &&
+               std::abs(DotProduct(r, nm)) < T(0.999) * length)
+                ? materialAtNode[i]
+                : materialBehind(cp, d);
         good[i] = 1;
         convexFan[i] = S[i] > 0;
         continue;
@@ -3817,13 +3906,23 @@ public:
       }
       std::vector<T> Vd(n, T(0)), Vn(n, T(0));
       T maxSpeed = 0.;
-#pragma omp parallel for reduction(max : maxSpeed)
+      const T remaining = advectionTime - advectedTime;
+      bool changing = false;
+#pragma omp parallel for reduction(max : maxSpeed) reduction(|| : changing)
       for (long i = 0; i < n; ++i) {
         Vd[i] = speedOf(HA[i], Dir[i], i, nodeMaterial(i));
         Vn[i] = good[i] ? Vd[i] : speedOf(FA[i], NRM[i], i, nodeMaterial(i));
-        maxSpeed = std::max(maxSpeed, std::abs(good[i] ? Vd[i] : Vn[i]));
+        const T v = good[i] ? Vd[i] : Vn[i];
+        maxSpeed = std::max(maxSpeed, std::abs(v));
+        if (!upwind && !changing && !keepsValue(i, v, remaining))
+          changing = true;
       }
-      const T remaining = advectionTime - advectedTime;
+      // a band in which no node can change its value takes the remaining
+      // time in one step without moving, as selective epitaxy once the
+      // facets of zero rate have closed over the fin; the upwind update moves
+      // every node at its own speed
+      if (!upwind && !changing)
+        maxSpeed = 0;
       T dt = (maxSpeed > 0) ? std::min(timeStepRatio / maxSpeed, remaining)
                             : remaining;
       // the rates of the upwind update, which may shorten the step
