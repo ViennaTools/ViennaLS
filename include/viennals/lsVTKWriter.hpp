@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 
@@ -226,6 +227,10 @@ private:
     cachedPolyData = vtkSmartPointer<vtkPolyData>::New();
 
     vtkSmartPointer<vtkPoints> polyPoints = vtkSmartPointer<vtkPoints>::New();
+    // the points in the precision of the mesh, so that a surface of doubles,
+    // as the exact one of a Euclidean level set, keeps its accuracy
+    if constexpr (std::is_same_v<T, double>)
+      polyPoints->SetDataTypeToDouble();
     for (auto it = mesh->getNodes().begin(); it != mesh->getNodes().end(); ++it)
       polyPoints->InsertNextPoint((*it)[0], (*it)[1], (*it)[2]);
     cachedPolyData->SetPoints(polyPoints);
@@ -292,6 +297,8 @@ private:
 
     // Points
     vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+    if constexpr (std::is_same_v<T, double>)
+      points->SetDataTypeToDouble();
     for (auto it = mesh->getNodes().begin(); it != mesh->getNodes().end();
          ++it) {
       points->InsertNextPoint((*it)[0], (*it)[1], (*it)[2]);
