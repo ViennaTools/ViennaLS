@@ -1173,7 +1173,7 @@ int checkOpening() {
 }
 
 // isotropic etching over many grid spacings with the mask lowest in the
-// stack, as ViennaPS builds it: the undercut of tests/AdvectHermiteUpwind at
+// stack, as ViennaPS builds it: the undercut below the edge of a mask at
 // 0.0625 (16 grid spacings) and the square opening of checkOpening at 0.25 (9
 // grid spacings), against the exact surfaces. Substrate nodes had taken over
 // the plane that exposeInterfaces gives a mask node at the end of the cavity,

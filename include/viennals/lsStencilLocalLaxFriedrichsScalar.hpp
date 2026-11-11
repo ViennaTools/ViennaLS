@@ -240,16 +240,6 @@ public:
         neighborIterator(levelSet->getDomain()),
         gridDelta(levelSet->getGrid().getGridDelta()), alphaFactor(a) {}
 
-  /// with the neighbour iterator at start, so that the sequential moves of
-  /// the calls that follow start there, as for a part of the domain
-  /// evaluated in a thread of its own
-  StencilLocalLaxFriedrichsScalar(LevelSetType passedlsDomain,
-                                  SmartPointer<viennals::VelocityField<T>> vel,
-                                  double a, const viennahrle::Index<D> &start)
-      : levelSet(passedlsDomain), velocities(vel),
-        neighborIterator(levelSet->getDomain(), start),
-        gridDelta(levelSet->getGrid().getGridDelta()), alphaFactor(a) {}
-
   static void setMaxDissipation(double maxDiss) { maxDissipation = maxDiss; }
 
   std::pair<T, T> operator()(const viennahrle::Index<D> &indices,

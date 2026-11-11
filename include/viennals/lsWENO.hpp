@@ -50,16 +50,6 @@ public:
         neighborIterator(levelSet->getDomain()),
         calculateNormalVectors(calcNormal) {}
 
-  /// with the neighbour iterator at start, so that the sequential moves of
-  /// the calls that follow start there, as for a part of the domain
-  /// evaluated in a thread of its own
-  WENO(SmartPointer<viennals::Domain<T, D>> passedlsDomain,
-       SmartPointer<viennals::VelocityField<T>> vel, bool calcNormal,
-       const viennahrle::Index<D> &start)
-      : levelSet(passedlsDomain), velocities(vel),
-        neighborIterator(levelSet->getDomain(), start),
-        calculateNormalVectors(calcNormal) {}
-
   std::pair<T, T> operator()(const viennahrle::Index<D> &indices,
                              int material) {
     auto &grid = levelSet->getGrid();

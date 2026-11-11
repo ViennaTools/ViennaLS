@@ -39,17 +39,6 @@ public:
         calculateNormalVectors(calcNormal),
         gridDelta(levelSet->getGrid().getGridDelta()) {}
 
-  /// with the neighbour iterator at start, so that the sequential moves of
-  /// the calls that follow start there, as for a part of the domain
-  /// evaluated in a thread of its own
-  EngquistOsher(SmartPointer<viennals::Domain<T, D>> passedlsDomain,
-                SmartPointer<viennals::VelocityField<T>> vel, bool calcNormal,
-                const viennahrle::Index<D> &start)
-      : levelSet(passedlsDomain), velocities(vel),
-        neighborIterator(levelSet->getDomain(), start),
-        calculateNormalVectors(calcNormal),
-        gridDelta(levelSet->getGrid().getGridDelta()) {}
-
   std::pair<T, T> operator()(const viennahrle::Index<D> &indices,
                              int material) {
 
