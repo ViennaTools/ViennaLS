@@ -240,6 +240,16 @@ public:
         neighborIterator(levelSet->getDomain()),
         gridDelta(levelSet->getGrid().getGridDelta()), alphaFactor(a) {}
 
+  /// with the neighbour iterator at start, so that the sequential moves of
+  /// the calls that follow start there, as for a part of the domain
+  /// evaluated in a thread of its own
+  StencilLocalLaxFriedrichsScalar(LevelSetType passedlsDomain,
+                                  SmartPointer<viennals::VelocityField<T>> vel,
+                                  double a, const viennahrle::Index<D> &start)
+      : levelSet(passedlsDomain), velocities(vel),
+        neighborIterator(levelSet->getDomain(), start),
+        gridDelta(levelSet->getGrid().getGridDelta()), alphaFactor(a) {}
+
   static void setMaxDissipation(double maxDiss) { maxDissipation = maxDiss; }
 
   std::pair<T, T> operator()(const viennahrle::Index<D> &indices,
@@ -249,10 +259,9 @@ public:
     for (unsigned i = 0; i < D; ++i) {
       coordinate[i] = indices[i] * gridDelta;
     }
-    const auto pointId = neighborIterator.getCenter().getPointId();
-
     // move neighborIterator to current position
     neighborIterator.goToIndicesSequential(indices);
+    const auto pointId = neighborIterator.getCenter().getPointId();
 
     // if there is a vector velocity, we need to project it onto a scalar
     // velocity first using its normal vector
@@ -442,8 +451,10 @@ void PrepareStencilLocalLaxFriedrichs(
   // Begin with the biggest level set (top LS wrapped around all others)
   auto layerIt = levelSets.rbegin();
 
-  // make empty LS which will contain the final top layer
+  // make empty LS which will contain the final top layer, with the
+  // normalization of the level sets it is made of
   auto finalTop = SmartPointer<Domain<T, D>>::New(levelSets[0]->getGrid());
+  finalTop->setNormalization(levelSets.back()->getNormalization());
 
   bool layerAboveIsDepo = false;
   auto depoIt = isDepo.rbegin();

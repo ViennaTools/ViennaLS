@@ -368,6 +368,31 @@ template <int D> int check(double gridDelta) {
       return fail(D, c.name);
   }
 
+  // an intersection with a superset that stores no closest points and
+  // normals leaves the level set exact, as when Advect adjusts the lower
+  // level sets to a Euclidean band it has advected: P with the union of P
+  // and Q, whose crossings come from its values, which next to P's corners
+  // lie off P's surface by a tenth of a grid spacing
+  {
+    auto a = levelSet<D>({P}, gridDelta, extent);
+    auto b = levelSet<D>({P}, gridDelta, extent);
+    ls::BooleanOperation<double, D>(b, levelSet<D>({Q}, gridDelta, extent),
+                                    ls::BooleanOperationEnum::UNION)
+        .apply();
+    auto &data = b->getPointData();
+    for (int k = int(data.getVectorDataSize()) - 1; k >= 0; --k)
+      data.eraseVectorData(k);
+    ls::BooleanOperation<double, D>(a, b, ls::BooleanOperationEnum::INTERSECT)
+        .apply();
+    const auto sdfP = [&](const Point &p) { return P.sdf(p); };
+    if (!euclidean(a) ||
+        !report("intersection with a superset without planes, surface",
+                surfaceError<D>(a, sdfP), booleanSurfaceBound) ||
+        !report("intersection with a superset without planes, values",
+                valueError<D>(a, sdfP, everywhere), booleanValueBound))
+      return fail(D, "intersection with a superset without planes");
+  }
+
   // a relative complement that takes a part out of a level set whose walls
   // bound both: a fin through a slab taken out of their union, as
   // SelectiveEpitaxy takes the epitaxy material out of the surface for its

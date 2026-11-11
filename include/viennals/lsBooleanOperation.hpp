@@ -15,6 +15,7 @@
 
 #include <functional>
 #include <memory>
+#include <unordered_set>
 
 namespace viennals {
 
@@ -45,7 +46,8 @@ enum struct BooleanOperationEnum : unsigned {
 ///  always return the smaller of the two values.
 ///  The function signature for the comparator is defined in the public
 ///  ComparatorType.
-///  When the first level set is Euclidean, the result is reinitialized
+///  When the first level set is Euclidean and an operand stores Hermite data
+///  (storesHermiteData), the result is reinitialized
 ///  (Reinitialize) from the dual contouring mesh of the Hermite data of the
 ///  operands on the edges the result's surface crosses: on each such edge in
 ///  each cell the crossing and normal of the operand whose surface bounds the
@@ -53,8 +55,14 @@ enum struct BooleanOperationEnum : unsigned {
 ///  that cell (ToDualContouringMesh::edgeCrossings). Where both operands
 ///  cross an edge, that is the crossing the result's side changes at: the
 ///  first one from the end where a maximum is negative or a minimum
-///  positive, the last one from the other end. The edges the operation
-///  creates stay sharp, also where faces of the operands coincide, as the
+///  positive, the last one from the other end, where the value of either
+///  end of the edge comes from the second operand beyond the first's
+///  (cutTolerance); otherwise the crossing of the first operand, so that an
+///  intersection with a superset or a union with a subset leaves the first
+///  level set as it is, also where the other's Hermite data come from its
+///  values and miss the common surface next to corners. The edges the
+///  operation creates stay sharp, also where faces of the operands coincide,
+///  as the
 ///  walls a relative complement removes from a level set they bound
 ///  together with the other. The minimum and maximum give the sides of the
 ///  nodes; nodes keep the closest point and normal of the level set their
@@ -75,12 +83,31 @@ private:
   bool updatePointData = true;
   bool pruneResult = true;
 
+  // how far the value the result takes from the second operand may lie
+  // beyond the first's for the first's surface to stay, grid spacings
+  static constexpr T cutTolerance = 1e-4;
+
+  struct IndexHash {
+    std::size_t operator()(const viennahrle::Index<D> &index) const {
+      std::size_t h = 0;
+      for (int k = 0; k < D; ++k)
+        h = h * 1000003u ^ std::hash<long long>()(index[k]);
+      return h;
+    }
+  };
+
   // extreme: 1 where the result is the maximum of the operands, -1 where the
   // minimum, 0 for a custom comparator
   void booleanOpInternal(ComparatorType comp, bool negateB = false,
                          int extreme = 0) {
     const bool euclidean =
         levelSetA->getNormalization() == NormalizationEnum::EUCLIDEAN;
+    // with Hermite data in an operand; a Euclidean result without them is the
+    // minimum or maximum of the values with the pruning of a Manhattan level
+    // set (stray zeros where the operands share a face), and keeps its
+    // Euclidean normalization (Advect widens its band again)
+    const bool hermite = euclidean && (storesHermiteData(levelSetA) ||
+                                       storesHermiteData(levelSetB));
     auto &grid = levelSetA->getGrid();
     auto newlsDomain = SmartPointer<Domain<T, D>>::New(grid);
     typename Domain<T, D>::DomainType &newDomain = newlsDomain->getDomain();
@@ -97,6 +124,11 @@ private:
       newDataSourceIds.resize(newDomain.getNumberOfSegments());
       newDataLS.resize(newDataSourceIds.size());
     }
+    // the nodes whose value comes from B beyond A's (cutTolerance), for the
+    // Hermite data of a Euclidean result
+    const bool findCuts = hermite && extreme != 0;
+    std::vector<std::vector<viennahrle::Index<D>>> cutNodes(
+        findCuts ? newDomain.getNumberOfSegments() : 0);
 
 #pragma omp parallel for
     for (unsigned p = 0; p < newDomain.getNumberOfSegments(); ++p) {
@@ -124,6 +156,9 @@ private:
         if (currentValue != Domain<T, D>::NEG_VALUE &&
             currentValue != Domain<T, D>::POS_VALUE) {
           domainSegment.insertNextDefinedPoint(currentVector, currentValue);
+          if (findCuts && !comparison.second &&
+              !(std::abs(currentValue - itA.getValue()) <= cutTolerance))
+            cutNodes[p].push_back(currentVector);
           if (updateData) {
             // if taken from A, set to true
             const bool originLS = comparison.second;
@@ -229,7 +264,7 @@ private:
       }
       // a Euclidean result needs the closest points and normals of B also
       // where A has none, as when A is still empty
-      if (euclidean)
+      if (hermite)
         for (const auto &label : {FromSurfaceMesh<T, D>::closestPointsLabel,
                                   FromSurfaceMesh<T, D>::surfaceNormalsLabel})
           if (AData.getVectorData(label, true) == nullptr &&
@@ -242,8 +277,9 @@ private:
     newlsDomain->setLevelSetWidth(levelSetA->getLevelSetWidth());
     newlsDomain->setNormalization(levelSetA->getNormalization());
 
-    // a Euclidean result gets its whole band again from its planes
-    if (pruneResult && !euclidean) {
+    // a Euclidean result with Hermite data gets its whole band again from its
+    // planes
+    if (pruneResult && !hermite) {
       auto pruner = Prune<T, D>(newlsDomain);
       pruner.setRemoveStrayZeros(true);
       pruner.apply();
@@ -254,7 +290,7 @@ private:
 
     // the Hermite data of the edges the operands cross, before A changes
     typename ToDualContouringMesh<T, D>::EdgeData edgeData;
-    if (euclidean && extreme != 0) {
+    if (hermite && extreme != 0) {
       using Contouring = ToDualContouringMesh<T, D>;
       const auto crossingsA =
           std::make_shared<typename Contouring::EdgeCrossings>(
@@ -262,7 +298,11 @@ private:
       const auto crossingsB =
           std::make_shared<typename Contouring::EdgeCrossings>(
               Contouring(levelSetB, nullptr).edgeCrossings());
-      edgeData = [crossingsA, crossingsB, negateB, extreme](
+      const auto cuts = std::make_shared<
+          std::unordered_set<viennahrle::Index<D>, IndexHash>>();
+      for (const auto &nodes : cutNodes)
+        cuts->insert(nodes.begin(), nodes.end());
+      edgeData = [crossingsA, crossingsB, cuts, negateB, extreme](
                      const viennahrle::Index<D> &cell, int a, int b, T valueA,
                      T, typename Contouring::EdgeCrossing &crossing) {
         int d = 0;
@@ -276,7 +316,16 @@ private:
         if (!hasA && !hasB)
           return false;
         bool fromA = hasA;
-        if (hasA && hasB) {
+        // B bounds the result on this edge only where it cuts into A at an
+        // end of the edge
+        bool cut = false;
+        for (const int corner : {a, b}) {
+          viennahrle::Index<D> node = cell;
+          for (int k = 0; k < D; ++k)
+            node[k] += (corner >> k) & 1;
+          cut = cut || cuts->count(node) != 0;
+        }
+        if (hasA && hasB && cut) {
           // along the edge from corner a, which lies at the cell's lowest
           // index along d: a maximum negative at a turns positive at the
           // first crossing, a minimum positive at a negative at the first
@@ -296,7 +345,7 @@ private:
 
     levelSetA->deepCopy(newlsDomain);
 
-    if (euclidean) {
+    if (hermite) {
       // the band state and plane priorities of AdvectHermite no longer
       // describe the result
       auto &data = levelSetA->getPointData();

@@ -153,8 +153,12 @@ public:
         euclidean ? levelSets.back()->getPointData().getVectorData(
                         FromSurfaceMesh<T, D>::closestPointsLabel, true)
                   : nullptr;
+    // the material behind a disk from the Hermite data of the level sets,
+    // where the top stores them; otherwise Manhattan's rule, which compares
+    // the values of the level sets at the node
+    const bool hermite = storesHermiteData(levelSets.back());
     MaterialStack<T, D> stack;
-    if (euclidean)
+    if (hermite)
       stack = MaterialStack<T, D>(std::vector<SmartPointer<Domain<T, D>>>(
           levelSets.begin(), levelSets.end() - 1));
 
@@ -245,7 +249,7 @@ public:
 
       // insert material ID
       int matId = levelSets.size() - 1;
-      if (euclidean) {
+      if (hermite) {
         Vec3D<T> behind{};
         for (unsigned i = 0; i < D; ++i)
           behind[i] = T(node[i]) / gridDelta - T(0.01) * diskNormal[i];

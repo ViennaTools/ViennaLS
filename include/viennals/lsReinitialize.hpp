@@ -22,6 +22,12 @@ namespace viennals {
 
 using namespace viennacore;
 
+// ToSurfaceMesh gives the marching mesh of setMarchingMesh; its header comes
+// at the end of this one. lsExpand.hpp includes this header before it defines
+// Expand, which ToSurfaceMesh and CalculateNormalVectors use.
+template <class T, int D> class ToSurfaceMesh;
+template <class T, int D> class Expand;
+
 /// Exact Euclidean values with their closest points and normals, recomputed
 /// from the dual contouring mesh of the planes a level set stores, on a band
 /// of the given width. It restores a Euclidean level set after operations
@@ -38,6 +44,10 @@ template <class T, int D> class Reinitialize {
   SmartPointer<Domain<T, D>> levelSet = nullptr;
   int width = 0;
   typename ToDualContouringMesh<T, D>::EdgeData edgeData;
+  // the distances to the marching squares or cubes mesh of the values, which
+  // passes through their crossings of the grid edges, instead of the dual
+  // contouring mesh of the stored planes
+  bool marchingMesh = false;
 
   // point data that is not Hermite data and moves to the new band
   static bool carried(const std::string &label) {
@@ -140,6 +150,12 @@ public:
     return !uses.empty();
   }
 
+  /// Take the distances to the marching squares or cubes mesh of the values,
+  /// which keeps their crossings of the grid edges, as a band moved by a
+  /// spatial scheme needs (Advect::setEuclideanRenormalization), instead of
+  /// the dual contouring mesh of the stored planes.
+  void setMarchingMesh(bool passed) { marchingMesh = passed; }
+
   void apply() {
     if (levelSet == nullptr) {
       VIENNACORE_LOG_ERROR("No level set was passed to Reinitialize.");
@@ -151,10 +167,14 @@ public:
     // corners give the distances more accurately than the mesh avoiding
     // folds in 3D
     auto mesh = SmartPointer<Mesh<T>>::New();
-    ToDualContouringMesh<T, D> contouring(levelSet, mesh);
-    contouring.setAvoidFolds(false);
-    contouring.setEdgeData(edgeData);
-    contouring.apply();
+    if (marchingMesh) {
+      ToSurfaceMesh<T, D>(levelSet, mesh).apply();
+    } else {
+      ToDualContouringMesh<T, D> contouring(levelSet, mesh);
+      contouring.setAvoidFolds(false);
+      contouring.setEdgeData(edgeData);
+      contouring.apply();
+    }
     // without a surface the values give only the side
     if (mesh->template getElements<D>().empty())
       return;
@@ -380,3 +400,5 @@ public:
 PRECOMPILE_PRECISION_DIMENSION(Reinitialize)
 
 } // namespace viennals
+
+#include <lsToSurfaceMesh.hpp>

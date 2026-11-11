@@ -2,8 +2,11 @@
 
 #include <lsPreCompileMacros.hpp>
 
+#include <array>
 #include <functional>
 #include <limits>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include <hrleSparseIterator.hpp>
@@ -11,6 +14,7 @@
 
 #include <vcLogger.hpp>
 #include <vcSmartPointer.hpp>
+#include <vcTimer.hpp>
 
 #include <lsBooleanOperation.hpp>
 #include <lsDomain.hpp>
@@ -84,10 +88,155 @@ template <class T, int D> class Advect {
       nullptr;
   bool warnedEuclidean = false;
 
+  // A Euclidean level set kept Euclidean through the advection
+  // (setEuclideanRenormalization) follows Advect's cycle with exact distances
+  // in place of Manhattan layers: every point that can end an edge the
+  // surface crosses after the step moves with the spatial scheme, and the
+  // rebuild keeps the values of the points next to the surface, with the
+  // clamp of the Manhattan rebuild, and gives every other point of the band
+  // its exact distance to the surface (rebuildEuclidean). Values only: no
+  // stored planes, no dual contouring. Every Euclidean level set of the stack
+  // is widened by the same rebuild, and the lower level sets are adjusted by
+  // value. Reduce and the Manhattan layers do not apply to it.
+  bool euclideanRenormalization = false;
+
+  bool euclideanBand() const {
+    return euclideanRenormalization && !levelSets.empty() &&
+           levelSets.back()->getNormalization() == NormalizationEnum::EUCLIDEAN;
+  }
+
+  // the band width the spatial scheme expands to (its prepareLS)
+  int schemeWidth() const {
+    switch (spatialScheme) {
+    case SpatialSchemeEnum::ENGQUIST_OSHER_2ND_ORDER:
+    case SpatialSchemeEnum::LAX_FRIEDRICHS_2ND_ORDER:
+    case SpatialSchemeEnum::LOCAL_LOCAL_LAX_FRIEDRICHS_2ND_ORDER:
+    case SpatialSchemeEnum::WENO_3RD_ORDER:
+      return 5;
+    case SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_1ST_ORDER:
+    case SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_ANALYTICAL_1ST_ORDER:
+    case SpatialSchemeEnum::WENO_5TH_ORDER:
+      return 7;
+    case SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER:
+      return 8;
+    case SpatialSchemeEnum::LOCAL_LAX_FRIEDRICHS_2ND_ORDER:
+      return 9;
+    default:
+      return 3;
+    }
+  }
+
+  // the radius of the scheme's stencil, grid spacings
+  int schemeRadius() const { return schemeWidth() / 2; }
+
+  // the distance from the surface (grid spacings) up to which the points take
+  // the spatial scheme: on a Euclidean band every point that can end an edge
+  // the surface crosses after the step, one grid spacing beyond the step's
+  // largest motion
+  double activeCutoff() const {
+    return euclideanBand() ? 1. + timeStepRatio : integrationCutoff;
+  }
+
+  // the width of a Euclidean band: the stencils of every point that takes
+  // the scheme
+  int euclideanWidth() const {
+    return 2 * int(std::ceil(activeCutoff() + schemeRadius())) + 1;
+  }
+
+  // the Hermite data of a level set (the Euclidean band uses values only)
+  static void dropStoredPlanes(SmartPointer<Domain<T, D>> levelSet) {
+    dropHermiteData(levelSet);
+  }
+
+  // the values of a level set by point id, where they lie in its segments
+  static std::vector<T *> valueSlots(SmartPointer<Domain<T, D>> levelSet) {
+    auto &domain = levelSet->getDomain();
+    std::vector<T *> slots(levelSet->getNumberOfPoints());
+    for (unsigned s = 0; s < domain.getNumberOfSegments(); ++s) {
+      auto &segment = domain.getDomainSegment(s);
+      const auto offset = domain.getPointIdOffset(s);
+      for (std::size_t k = 0; k < segment.definedValues.size(); ++k)
+        slots[offset + k] = &segment.definedValues[k];
+    }
+    return slots;
+  }
+
+  // A Euclidean level set in Advect's cycle, values only: the points next to
+  // its surface (an axis neighbour of the other sign, |phi| <= 1) keep their
+  // values, with the clamp of the Manhattan rebuild in rebuildLS, and every
+  // other point of a band of euclideanWidth() takes its exact distance to the
+  // marching mesh of those values. No stored planes before or after.
+  void rebuildEuclidean(SmartPointer<Domain<T, D>> levelSet) {
+    std::vector<std::pair<viennahrle::Index<D>, T>> kept;
+    {
+      const auto slots = valueSlots(levelSet);
+      std::vector<std::pair<std::size_t, T>> clamped;
+      for (viennahrle::ConstSparseStarIterator<
+               typename Domain<T, D>::DomainType, 1>
+               it(levelSet->getDomain());
+           !it.isFinished(); it.next()) {
+        const auto &center = it.getCenter();
+        if (!center.isDefined() || std::abs(center.getValue()) > 1.0)
+          continue;
+        const T value = center.getValue();
+        int k = 0;
+        for (; k < 2 * D; ++k)
+          if (std::signbit(it.getNeighbor(k).getValue() - 1e-7) !=
+              std::signbit(value + 1e-7))
+            break;
+        if (k == 2 * D)
+          continue;
+        T keptValue = value;
+        for (int j = 0; j < 2 * D; ++j) {
+          const T neighbor = it.getNeighbor(j).getValue();
+          if (std::abs(neighbor) > 1.0)
+            continue;
+          if (value > 0.5 && neighbor < -0.5)
+            keptValue = 0.5;
+          else if (value < -0.5 && neighbor > 0.5)
+            keptValue = -0.5;
+        }
+        kept.emplace_back(it.getIndices(), keptValue);
+        if (keptValue != value)
+          clamped.emplace_back(center.getPointId(), keptValue);
+      }
+      for (const auto &[id, value] : clamped)
+        *slots[id] = value;
+    }
+    dropStoredPlanes(levelSet);
+    Reinitialize<T, D> renormalize(levelSet, euclideanWidth());
+    renormalize.setMarchingMesh(true);
+    renormalize.apply();
+    dropStoredPlanes(levelSet);
+    // the kept values back, both lists in the order of the grid
+    const auto slots = valueSlots(levelSet);
+    auto next = kept.cbegin();
+    for (ConstSparseIterator it(levelSet->getDomain());
+         !it.isFinished() && next != kept.cend(); it.next()) {
+      if (!it.isDefined())
+        continue;
+      while (next != kept.cend() && next->first < it.getStartIndices())
+        ++next;
+      if (next != kept.cend() && next->first == it.getStartIndices())
+        *slots[it.getPointId()] = next->second;
+    }
+  }
+
   // this vector will hold the maximum time step for each point and the
   // corresponding velocity
   std::vector<std::vector<std::pair<std::pair<T, T>, T>>> storedRates;
   double currentTimeStep = -1.;
+
+  // the wall time of the phases of the advection, summed over the calls since
+  // the last resetPhaseTimes
+  enum PhaseIndex {
+    ratesPhase,
+    updatePhase,
+    rebuildPhase,
+    lowerLayersPhase,
+    phaseCount
+  };
+  std::array<viennacore::Timer<>, phaseCount> phaseTimers{};
 
   VectorType<T, D> findGlobalAlphas() const {
 
@@ -125,7 +274,7 @@ template <class T, int D> class Advect {
       for (ConstSparseIterator it(topDomain, startVector);
            it.getStartIndices() < endVector; ++it) {
 
-        if (!it.isDefined() || std::abs(it.getValue()) > integrationCutoff)
+        if (!it.isDefined() || std::abs(it.getValue()) > activeCutoff())
           continue;
 
         const T value = it.getValue();
@@ -195,13 +344,39 @@ template <class T, int D> class Advect {
 
   // Helper function for linear combination:
   // target = wTarget * target + wSource * source
+  // The combination counts as update, the rebuild after it as rebuild.
   bool combineLevelSets(T wTarget, T wSource) {
+    phaseTimers[updatePhase].start();
     // Calculate required expansion width based on CFL and RK steps
     int steps = 1;
     if (temporalScheme == TemporalSchemeEnum::RUNGE_KUTTA_2ND_ORDER) {
       steps = 2;
     } else if (temporalScheme == TemporalSchemeEnum::RUNGE_KUTTA_3RD_ORDER) {
       steps = 3;
+    }
+
+    // on a Euclidean band by value at the points of the top, then the
+    // Euclidean rebuild
+    if (euclideanBand()) {
+      bool movedDown = false;
+      const auto slots = valueSlots(levelSets.back());
+      ConstSparseIterator initial(initialLevelSets.back()->getDomain());
+      for (ConstSparseIterator it(levelSets.back()->getDomain());
+           !it.isFinished(); it.next()) {
+        if (!it.isDefined())
+          continue;
+        initial.goToIndicesSequential(it.getStartIndices());
+        if (!initial.isDefined())
+          continue;
+        const T b = initial.getValue();
+        const T combined = wSource * it.getValue() + wTarget * b;
+        if (combined > b)
+          movedDown = true;
+        *slots[it.getPointId()] = combined;
+      }
+      phaseTimers[updatePhase].finish();
+      rebuildLS();
+      return movedDown;
     }
 
     // Expand both level sets to ensure sufficient overlap
@@ -228,6 +403,7 @@ template <class T, int D> class Advect {
           return std::make_pair(b, false);
         });
     op.apply();
+    phaseTimers[updatePhase].finish();
 
     rebuildLS();
 
@@ -235,6 +411,12 @@ template <class T, int D> class Advect {
   }
 
   void rebuildLS() {
+    phaseTimers[rebuildPhase].start();
+    if (euclideanBand()) {
+      rebuildEuclidean(levelSets.back());
+      phaseTimers[rebuildPhase].finish();
+      return;
+    }
     // TODO: this function uses Manhattan distances for renormalisation,
     // since this is the quickest. For visualisation applications, better
     // renormalisation is needed, so it might be good to implement
@@ -421,6 +603,7 @@ template <class T, int D> class Advect {
     newDomain.segment();
     levelSets.back()->deepCopy(newlsDomain);
     levelSets.back()->finalize(finalWidth);
+    phaseTimers[rebuildPhase].finish();
   }
 
   /// Internal function used to calculate the deltas to be applied to the LS
@@ -487,7 +670,7 @@ template <class T, int D> class Advect {
       for (ConstSparseIterator it(topDomain, startVector);
            it.getStartIndices() < endVector; it.next()) {
 
-        if (!it.isDefined() || std::abs(it.getValue()) > integrationCutoff)
+        if (!it.isDefined() || std::abs(it.getValue()) > activeCutoff())
           continue;
 
         T value = it.getValue();
@@ -606,7 +789,10 @@ template <class T, int D> class Advect {
   /// This function applies the discretization scheme and calculates the rates
   /// and the maximum time step, but it does **not** move the surface.
   void computeRates(double maxTimeStep = std::numeric_limits<double>::max()) {
+    phaseTimers[rebuildPhase].start();
     prepareLS();
+    phaseTimers[rebuildPhase].finish();
+    phaseTimers[ratesPhase].start();
     if (spatialScheme == SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER) {
       auto is = lsInternal::EngquistOsher<T, D, 1>(levelSets.back(), velocities,
                                                    calculateNormalVectors);
@@ -671,11 +857,13 @@ template <class T, int D> class Advect {
       VIENNACORE_LOG_ERROR("Advect: Discretization scheme not found.");
       currentTimeStep = -1.;
     }
+    phaseTimers[ratesPhase].finish();
   }
 
   // Level Sets below are also considered in order to adjust the advection
   // depth accordingly if there would be a material change.
   void updateLevelSet(double dt) {
+    phaseTimers[updatePhase].start();
     if (timeStepRatio >= 0.5) {
       VIENNACORE_LOG_WARNING(
           "Integration time step ratio should be smaller than 0.5. "
@@ -689,7 +877,10 @@ template <class T, int D> class Advect {
 
     // reduce to one layer thickness and apply new values directly to the
     // domain segments --> DO NOT CHANGE SEGMENTATION HERE (true parameter)
-    Reduce<T, D>(levelSets.back(), 1, true).apply();
+    // a Manhattan band keeps only its active points, which took the scheme;
+    // a Euclidean band keeps all of its points
+    if (!euclideanBand())
+      Reduce<T, D>(levelSets.back(), 1, true).apply();
 
     const bool saveVelocities = saveAdvectionVelocities;
     std::vector<std::vector<double>> dissipationVectors(
@@ -715,7 +906,7 @@ template <class T, int D> class Advect {
         T &value = segment.definedValues[localId];
 
         // Skip points that were not part of computeRates (outer layers)
-        if (std::abs(value) > integrationCutoff)
+        if (std::abs(value) > activeCutoff())
           continue;
 
         double time = dt;
@@ -786,9 +977,37 @@ template <class T, int D> class Advect {
 
     // clear the stored rates since surface has changed
     storedRates.clear();
+    phaseTimers[updatePhase].finish();
   }
 
   void adjustLowerLayers() {
+    phaseTimers[lowerLayersPhase].start();
+    // on a Euclidean band by value: every lower level set takes the larger of
+    // its value and the top's at its points, the intersection of the
+    // Manhattan path without pruning, so that its band stays; the stencil
+    // scheme adjusts its layers itself, as on a Manhattan band
+    if (euclideanBand()) {
+      if (spatialScheme ==
+          SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
+        phaseTimers[lowerLayersPhase].finish();
+        return;
+      }
+      for (unsigned i = 0; i + 1 < levelSets.size(); ++i) {
+        const auto slots = valueSlots(levelSets[i]);
+        ConstSparseIterator top(levelSets.back()->getDomain());
+        for (ConstSparseIterator it(levelSets[i]->getDomain());
+             !it.isFinished(); it.next()) {
+          if (!it.isDefined())
+            continue;
+          top.goToIndicesSequential(it.getStartIndices());
+          if (top.isDefined() && top.getValue() > it.getValue())
+            *slots[it.getPointId()] = top.getValue();
+        }
+        dropStoredPlanes(levelSets[i]);
+      }
+      phaseTimers[lowerLayersPhase].finish();
+      return;
+    }
     // Adjust all level sets below the advected one
     if (spatialScheme !=
         viennals::SpatialSchemeEnum::STENCIL_LOCAL_LAX_FRIEDRICHS_1ST_ORDER) {
@@ -799,6 +1018,7 @@ template <class T, int D> class Advect {
             .apply();
       }
     }
+    phaseTimers[lowerLayersPhase].finish();
   }
 
   /// internal function used as a wrapper to call specialized integrateTime
@@ -908,6 +1128,25 @@ public:
   /// call.
   double getAdvectedTime() const { return advectedTime; }
 
+  /// Get the wall time of the phases of the advection in seconds, summed over
+  /// the calls since the last reset: the rates of the spatial scheme, the
+  /// update of the values (with the stages of Runge-Kutta schemes), the
+  /// rebuild of the band and the adjustment of the lower level sets.
+  std::vector<std::pair<std::string, double>> getPhaseTimes() const {
+    const char *names[phaseCount] = {"rates", "update", "rebuild",
+                                     "lower layers"};
+    std::vector<std::pair<std::string, double>> times;
+    for (int k = 0; k < phaseCount; ++k)
+      times.emplace_back(names[k], phaseTimers[k].totalDuration * 1e-9);
+    return times;
+  }
+
+  /// Set the phase times to zero.
+  void resetPhaseTimes() {
+    for (auto &timer : phaseTimers)
+      timer.reset();
+  }
+
   /// Return the last applied time step.
   double getCurrentTimeStep() const { return currentTimeStep; }
 
@@ -957,6 +1196,17 @@ public:
     velocityUpdateCallback = callback;
   }
 
+  /// Keep a Euclidean level set Euclidean through the advection: Advect's
+  /// cycle with exact distances in place of Manhattan layers. After every
+  /// step the points next to the surface keep their values (with the clamp
+  /// of the Manhattan rebuild) and every other point of the band takes its
+  /// exact distance to the surface. Without it a
+  /// Euclidean level set is advected as a Manhattan one and made Euclidean
+  /// once at the end.
+  void setEuclideanRenormalization(bool passed) {
+    euclideanRenormalization = passed;
+  }
+
   // Prepare the levelset for advection, based on the provided spatial
   // discretization scheme.
   void prepareLS() {
@@ -965,6 +1215,15 @@ public:
       VIENNACORE_LOG_ERROR("No level sets passed to Advect.");
       return;
     }
+
+    // a Euclidean band: every Euclidean level set of the stack as wide as the
+    // points of the top that move reach, by the same rebuild as after every
+    // step, before the scheme's own expansion
+    if (euclideanBand())
+      for (auto &levelSet : levelSets)
+        if (levelSet->getNormalization() == NormalizationEnum::EUCLIDEAN &&
+            levelSet->getLevelSetWidth() < euclideanWidth())
+          rebuildEuclidean(levelSet);
 
     if (spatialScheme == SpatialSchemeEnum::ENGQUIST_OSHER_1ST_ORDER) {
       lsInternal::EngquistOsher<T, D, 1>::prepareLS(levelSets.back());
@@ -1021,7 +1280,8 @@ public:
     // its new values, with its sharp edges rounded (AdvectHermite keeps them)
     auto &top = levelSets.back();
     const bool euclidean =
-        top->getNormalization() == NormalizationEnum::EUCLIDEAN;
+        top->getNormalization() == NormalizationEnum::EUCLIDEAN &&
+        !euclideanRenormalization;
     const int euclideanWidth = top->getLevelSetWidth();
     if (euclidean) {
       if (!warnedEuclidean) {

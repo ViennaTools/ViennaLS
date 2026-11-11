@@ -1,5 +1,7 @@
 #include <array>
+#include <cmath>
 #include <iostream>
+#include <map>
 
 #include <lsAdvect.hpp>
 #include <lsCompareChamfer.hpp>
@@ -26,6 +28,23 @@ public:
                                      const std::array<T, 3> & /*normalVector*/,
                                      unsigned long /*pointId*/) override {
     return {0.0, 0.0, 0.0};
+  }
+};
+
+// speed 1 where the point id is that of the point at the coordinate, 0
+// elsewhere: the scheme must ask the velocity of a point with its own id
+template <class T, int D> class PointIdVelocity : public ls::VelocityField<T> {
+public:
+  std::map<std::array<long, D>, unsigned long> idOf;
+  T gridDelta = 1.;
+  T getScalarVelocity(const std::array<T, 3> &coordinate, int /*material*/,
+                      const std::array<T, 3> & /*normalVector*/,
+                      unsigned long pointId) override {
+    std::array<long, D> index;
+    for (int i = 0; i < D; ++i)
+      index[i] = std::lround(coordinate[i] / gridDelta);
+    const auto found = idOf.find(index);
+    return (found != idOf.end() && found->second == pointId) ? 1. : 0.;
   }
 };
 
@@ -86,6 +105,42 @@ int main() {
   // Output final geometry
   // ls::ToSurfaceMesh<T, D>(sphere, mesh).apply();
   // ls::VTKWriter<T>(mesh, "sphere_final.vtp").apply();
+
+  // the scheme asks the velocity of each point with that point's id: every
+  // point of the band near the surface gets the speed 1 of its own id
+  {
+    auto circle = ls::SmartPointer<ls::Domain<T, D>>::New(bounds, boundaryCons,
+                                                          gridDelta);
+    ls::MakeGeometry<T, D>(circle, ls::Sphere<T, D>::New(origin, radius))
+        .apply();
+    lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>::prepareLS(circle);
+    auto field = ls::SmartPointer<PointIdVelocity<T, D>>::New();
+    field->gridDelta = gridDelta;
+    for (viennahrle::ConstSparseIterator<ls::Domain<T, D>::DomainType> it(
+             circle->getDomain());
+         !it.isFinished(); ++it)
+      if (it.isDefined()) {
+        std::array<long, D> index;
+        for (int i = 0; i < D; ++i)
+          index[i] = it.getStartIndices()[i];
+        field->idOf[index] = it.getPointId();
+      }
+    lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1> scheme(circle, field);
+    unsigned near = 0, moving = 0;
+    for (viennahrle::ConstSparseIterator<ls::Domain<T, D>::DomainType> it(
+             circle->getDomain());
+         !it.isFinished(); ++it) {
+      if (!it.isDefined() || std::abs(it.getValue()) > 0.5)
+        continue;
+      ++near;
+      if (scheme(it.getStartIndices(), 0).first != 0.)
+        ++moving;
+    }
+    std::cout << moving << " of " << near
+              << " points near the surface take the speed of their own id"
+              << std::endl;
+    VC_TEST_ASSERT(near > 0 && moving == near);
+  }
 
   std::cout << "Test passed!" << std::endl;
 

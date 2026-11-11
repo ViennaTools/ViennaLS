@@ -866,4 +866,37 @@ public:
 // add all template specialisations for this class
 PRECOMPILE_PRECISION_DIMENSION(FromSurfaceMesh)
 
+/// Whether a Euclidean level set stores Hermite data: the closest points and
+/// normals that FromSurfaceMesh and the Euclidean operations keep. Without
+/// them a Euclidean level set holds values only, and the operations on it
+/// take the paths of values.
+template <class T, int D>
+bool storesHermiteData(SmartPointer<Domain<T, D>> levelSet) {
+  if (levelSet == nullptr ||
+      levelSet->getNormalization() != NormalizationEnum::EUCLIDEAN)
+    return false;
+  auto &data = levelSet->getPointData();
+  return data.getVectorData(FromSurfaceMesh<T, D>::closestPointsLabel, true) !=
+             nullptr &&
+         data.getVectorData(FromSurfaceMesh<T, D>::surfaceNormalsLabel, true) !=
+             nullptr;
+}
+
+/// Removes the Hermite data of a level set: its closest points and normals
+/// and the band state of AdvectHermite (labels beginning with "Hermite").
+template <class T, int D>
+void dropHermiteData(SmartPointer<Domain<T, D>> levelSet) {
+  auto &data = levelSet->getPointData();
+  for (int k = int(data.getScalarDataSize()) - 1; k >= 0; --k)
+    if (data.getScalarDataLabel(k).rfind("Hermite", 0) == 0)
+      data.eraseScalarData(k);
+  for (int k = int(data.getVectorDataSize()) - 1; k >= 0; --k) {
+    const auto label = data.getVectorDataLabel(k);
+    if (label.rfind("Hermite", 0) == 0 ||
+        label == FromSurfaceMesh<T, D>::closestPointsLabel ||
+        label == FromSurfaceMesh<T, D>::surfaceNormalsLabel)
+      data.eraseVectorData(k);
+  }
+}
+
 } // namespace viennals
