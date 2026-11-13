@@ -137,6 +137,7 @@ template <class T, int D> class AdvectHermite {
   bool singleStep = false;
   bool rebuildAtEnd = true;
   T advectedTime = 0.;
+  T frontMotion = 0.; // motion of the fastest node, grid spacings
   unsigned numberOfTimeSteps = 0;
   unsigned numberOfRebuilds = 0;
 
@@ -3357,12 +3358,19 @@ public:
 
   T getAdvectedTime() const { return advectedTime; }
 
+  /// The distance the fastest node of the band moved in the last apply(),
+  /// in grid spacings: the largest speed of each time step times its
+  /// length, summed over the steps (zero for a step in which no node can
+  /// change its value).
+  T getFrontMotion() const { return frontMotion; }
+
   unsigned getNumberOfTimeSteps() const { return numberOfTimeSteps; }
 
   unsigned getNumberOfRebuilds() const { return numberOfRebuilds; }
 
   void apply() {
     advectedTime = 0.;
+    frontMotion = 0.;
     numberOfTimeSteps = 0;
     numberOfRebuilds = 0;
     if (levelSets.empty() || levelSets.back() == nullptr ||
@@ -3476,6 +3484,7 @@ public:
       }
       advectedTime += dt;
       ++numberOfTimeSteps;
+      frontMotion += maxSpeed * dt;
       motionSinceRebuild += maxSpeed * dt;
       // rebuild right after the step that reaches the distance, so that
       // between calls the band and its node ids are those of the next step,
