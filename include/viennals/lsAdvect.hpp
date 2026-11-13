@@ -3,6 +3,7 @@
 #include <lsPreCompileMacros.hpp>
 
 #include <array>
+#include <cmath>
 #include <functional>
 #include <limits>
 #include <string>
@@ -165,7 +166,8 @@ template <class T, int D> class Advect {
   // its surface (an axis neighbour of the other sign, |phi| <= 1) keep their
   // values, with the clamp of the Manhattan rebuild in rebuildLS, and every
   // other point of a band of euclideanWidth() takes its exact distance to the
-  // marching mesh of those values. No stored planes before or after.
+  // marching mesh of those values, at most the distance the Manhattan
+  // rebuild gives it from them. No stored planes before or after.
   void rebuildEuclidean(SmartPointer<Domain<T, D>> levelSet) {
     std::vector<std::pair<viennahrle::Index<D>, T>> kept;
     {
@@ -219,6 +221,36 @@ template <class T, int D> class Advect {
         ++next;
       if (next != kept.cend() && next->first == it.getStartIndices())
         *slots[it.getPointId()] = next->second;
+    }
+    // Where the marching mesh leaves the surface of the kept values, as
+    // where a moving material meets one that does not move (the linear
+    // interpolation between a value measured to the one and a value measured
+    // to the other puts the surface off both), an exact distance can lie more
+    // than one grid spacing beyond its neighbour's: every value at most one
+    // grid spacing further from the surface than an axis neighbour of its
+    // sign, until none changes. Only points beyond one grid spacing change.
+    for (bool lowered = true; lowered;) {
+      lowered = false;
+      for (viennahrle::ConstSparseStarIterator<
+               typename Domain<T, D>::DomainType, 1>
+               it(levelSet->getDomain());
+           !it.isFinished(); it.next()) {
+        const auto &center = it.getCenter();
+        if (!center.isDefined() || std::abs(center.getValue()) <= 1.)
+          continue;
+        const T value = center.getValue();
+        T bound = std::abs(value);
+        for (int k = 0; k < 2 * D; ++k) {
+          const auto &neighbor = it.getNeighbor(k);
+          if (neighbor.isDefined() &&
+              std::signbit(neighbor.getValue()) == std::signbit(value))
+            bound = std::min(bound, std::abs(neighbor.getValue()) + T(1));
+        }
+        if (bound < std::abs(value)) {
+          *slots[center.getPointId()] = std::copysign(bound, value);
+          lowered = true;
+        }
+      }
     }
   }
 

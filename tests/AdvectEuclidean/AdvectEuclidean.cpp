@@ -205,23 +205,14 @@ Result measure(ls::SmartPointer<ls::Domain<double, D>> levelSet,
   if (lo && hi)
     compare.setBox(*lo, *hi);
   compare.apply();
-  // a Manhattan band follows the layer rules of Check, which a Euclidean
-  // band need not: its values are finite and its surface lies near the
-  // exact one, which the distances measure
+  // both bands follow the layer rules of Check: a Euclidean band's values,
+  // exact distances capped by the kept values next to the surface, change
+  // by at most one grid spacing between axis neighbours
   bool valid =
       !mesh->getNodes().empty() && std::isfinite(compare.getMaxDistance());
-  if (levelSet->getNormalization() == ls::NormalizationEnum::EUCLIDEAN) {
-    for (viennahrle::ConstSparseIterator<
-             typename ls::Domain<double, D>::DomainType>
-             it(levelSet->getDomain());
-         !it.isFinished(); it.next())
-      if (it.isDefined() && !std::isfinite(it.getValue()))
-        valid = false;
-  } else {
-    ls::Check<double, D> check(levelSet);
-    check.apply();
-    valid = valid && check.isValid();
-  }
+  ls::Check<double, D> check(levelSet);
+  check.apply();
+  valid = valid && check.isValid();
   return {compare.getChamferDistance(), compare.getMaxDistance(), valid};
 }
 
@@ -334,6 +325,28 @@ int main() {
     failed |= !compareCase<2>("2D growth beside a mask of zero rate",
                               maskAndTop, ls::SmartPointer<OnSubstrate>::New(),
                               d, exact, gridDelta, &lo, &hi);
+  }
+  // growth by d over the mask of zero rate, which the film covers from its
+  // edges (exact: the film at ys + d beside the mask, arcs of radius d - h
+  // around the mask's corners, the mask top between them); where the film
+  // meets the mask, the values measured to the one and to the other used
+  // to leave the Euclidean band invalid
+  {
+    const double d = 1.5, rc = d - h;
+    Polygon P{{-width, ys + d}, {-a, ys + d}};
+    for (int k = 1; k <= 32; ++k) {
+      const double t = M_PI / 2 * (1. - k / 32.);
+      P.push_back({-a + rc * std::cos(t), ys + h + rc * std::sin(t)});
+    }
+    for (int k = 0; k < 32; ++k) {
+      const double t = M_PI / 2 * (2. - k / 32.);
+      P.push_back({a + rc * std::cos(t), ys + h + rc * std::sin(t)});
+    }
+    P.push_back({a, ys + d});
+    P.push_back({width, ys + d});
+    failed |= !compareCase<2>("2D growth over a mask of zero rate", maskAndTop,
+                              ls::SmartPointer<OnSubstrate>::New(), d,
+                              polyline(P, false), gridDelta, &lo, &hi);
   }
   // a rotated rectangle etched from above by depth
   {
