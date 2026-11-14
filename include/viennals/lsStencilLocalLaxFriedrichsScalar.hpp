@@ -46,6 +46,9 @@ class StencilLocalLaxFriedrichsScalar {
 
   // Final dissipation coefficients that are used by the time integrator.
   VectorType<T, D> finalAlphas{};
+  // the largest sum of the dissipation coefficients over every point this
+  // scheme evaluated, which bounds the time step
+  T maxAlphaSum = 0;
   static constexpr unsigned numStencilPoints = hrleUtil::pow(2 * order + 1, D);
   static double maxDissipation; // default: std::numeric_limits<double>::max();
 
@@ -374,6 +377,7 @@ public:
 
     // determine max alphas for every axis
     VectorType<T, D> gradientDiff = calculateGradientDiff();
+    T alphaSum = 0;
     for (int d = 0; d < D; ++d) {
       T maxAlpha = 0;
 
@@ -383,7 +387,9 @@ public:
 
       finalAlphas[d] = std::min(maxAlpha, static_cast<T>(maxDissipation));
       dissipation += finalAlphas[d] * gradientDiff[d];
+      alphaSum += finalAlphas[d];
     }
+    maxAlphaSum = std::max(maxAlphaSum, alphaSum);
 
     return {hamiltonian, dissipation};
   }
@@ -391,12 +397,10 @@ public:
   void reduceTimeStepHamiltonJacobi(double &MaxTimeStep,
                                     double gridDelta) const {
     constexpr double alpha_maxCFL = 1.0;
-    // second time step test, based on alphas
-
-    double timeStep = 0;
-    for (int i = 0; i < D; ++i) {
-      timeStep += finalAlphas[i] / gridDelta;
-    }
+    // second time step test, based on alphas: the condition holds at every
+    // point the scheme evaluated, so the step does not depend on which point
+    // a thread evaluated last (finalAlphas), nor on the number of threads
+    double timeStep = maxAlphaSum / gridDelta;
 
     timeStep = alpha_maxCFL / timeStep;
     MaxTimeStep = std::min(timeStep, MaxTimeStep);

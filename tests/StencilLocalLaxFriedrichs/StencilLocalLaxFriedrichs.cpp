@@ -1,6 +1,7 @@
 #include <array>
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include <map>
 
 #include <lsAdvect.hpp>
@@ -45,6 +46,17 @@ public:
       index[i] = std::lround(coordinate[i] / gridDelta);
     const auto found = idOf.find(index);
     return (found != idOf.end() && found->second == pointId) ? 1. : 0.;
+  }
+};
+
+// a speed that depends on the normal, with a kink where its x component
+// vanishes, so that the dissipation coefficients vary along a sphere
+template <class T> class NormalDependentVelocity : public ls::VelocityField<T> {
+public:
+  T getScalarVelocity(const std::array<T, 3> & /*coordinate*/, int /*material*/,
+                      const std::array<T, 3> &normalVector,
+                      unsigned long /*pointId*/) override {
+    return 0.1 + 2. * std::abs(normalVector[0]);
   }
 };
 
@@ -140,6 +152,42 @@ int main() {
               << " points near the surface take the speed of their own id"
               << std::endl;
     VC_TEST_ASSERT(near > 0 && moving == near);
+  }
+
+  // the time step the scheme allows after the points near a sphere is the
+  // smallest of the steps each of them allows alone: the dissipation of every
+  // point bounds it, not only that of the last one, which made the step and
+  // the advected surface depend on how the points were split among threads
+  {
+    auto circle = ls::SmartPointer<ls::Domain<T, D>>::New(bounds, boundaryCons,
+                                                          gridDelta);
+    ls::MakeGeometry<T, D>(circle, ls::Sphere<T, D>::New(origin, radius))
+        .apply();
+    lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1>::prepareLS(circle);
+    auto field = ls::SmartPointer<NormalDependentVelocity<T>>::New();
+    lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1> scheme(circle, field);
+    double smallest = std::numeric_limits<double>::max(), last = smallest;
+    unsigned points = 0;
+    for (viennahrle::ConstSparseIterator<ls::Domain<T, D>::DomainType> it(
+             circle->getDomain());
+         !it.isFinished(); ++it) {
+      if (!it.isDefined() || std::abs(it.getValue()) > 0.5)
+        continue;
+      lsInternal::StencilLocalLaxFriedrichsScalar<T, D, 1> single(circle,
+                                                                  field);
+      single(it.getStartIndices(), 0);
+      last = std::numeric_limits<double>::max();
+      single.reduceTimeStepHamiltonJacobi(last, gridDelta);
+      smallest = std::min(smallest, last);
+      scheme(it.getStartIndices(), 0);
+      ++points;
+    }
+    double step = std::numeric_limits<double>::max();
+    scheme.reduceTimeStepHamiltonJacobi(step, gridDelta);
+    std::cout << "time step after " << points << " points " << step
+              << ", smallest of a single point " << smallest
+              << ", of the last point " << last << std::endl;
+    VC_TEST_ASSERT(points > 0 && step == smallest && smallest < last);
   }
 
   std::cout << "Test passed!" << std::endl;
