@@ -3268,6 +3268,38 @@ template <class T, int D> class AdvectHermite {
     }
   }
 
+  // the end of an advection. Values further from the surface can lag behind
+  // edges the motion created, as at the tip of an undercut, also right after
+  // a rebuild, which keeps the values of the old band. Of a band that is no
+  // valid level set, the nodes of the neighbour pairs that Check finds too
+  // far apart take the values of the mesh of the planes; only where that
+  // does not suffice, the band is rebuilt from the mesh. The lower level sets
+  // end at the surface, as in Advect: between single steps they keep the
+  // interfaces and materials of the stack, which deviations of the surface
+  // from a static material would otherwise erode step by step
+  void endOfAdvection() {
+    if (rebuildAtEnd) {
+      Check<T, D> check(levelSet);
+      check.apply();
+      if (!check.isValid() && boundFarValues()) {
+        writeBack();
+        check.apply();
+      }
+      if (!check.isValid() && repairFromMesh()) {
+        writeBack();
+        check.apply();
+      }
+      if (!check.isValid()) {
+        Reinitialize<T, D>(levelSet, bandWidth).apply();
+        ++numberOfRebuilds;
+      }
+    }
+    for (std::size_t l = 0; l + 1 < levelSets.size(); ++l)
+      BooleanOperation<T, D>(levelSets[l], levelSet,
+                             BooleanOperationEnum::INTERSECT)
+          .apply();
+  }
+
 public:
   // point data of the band state between apply() calls
   static constexpr char anchorLabel[] = "HermiteAnchor";
@@ -3516,37 +3548,24 @@ public:
       phaseTimers[statePhase].finish();
     }
     phaseTimers[endPhase].start();
-    // values further from the surface can lag behind edges the motion
-    // created, as at the tip of an undercut, also right after a rebuild,
-    // which keeps the values of the old band. Of a band that is no valid
-    // level set, the nodes of the neighbour pairs that Check finds too far
-    // apart take the values of the mesh of the planes; only where that does
-    // not suffice, the band is rebuilt from the mesh
-    if (done && rebuildAtEnd) {
-      Check<T, D> check(levelSet);
-      check.apply();
-      if (!check.isValid() && boundFarValues()) {
-        writeBack();
-        check.apply();
-      }
-      if (!check.isValid() && repairFromMesh()) {
-        writeBack();
-        check.apply();
-      }
-      if (!check.isValid()) {
-        Reinitialize<T, D>(levelSet, bandWidth).apply();
-        ++numberOfRebuilds;
-      }
-    }
-    // the lower level sets end at the surface, as in Advect, once the whole
-    // advection time is done: between single steps they keep the interfaces
-    // and materials of the stack, which deviations of the surface from a
-    // static material would otherwise erode step by step
     if (done)
-      for (std::size_t l = 0; l + 1 < levelSets.size(); ++l)
-        BooleanOperation<T, D>(levelSets[l], levelSet,
-                               BooleanOperationEnum::INTERSECT)
-            .apply();
+      endOfAdvection();
+    phaseTimers[endPhase].finish();
+  }
+
+  /// The end of an advection as apply() makes it once the whole advection
+  /// time is done: a band that is no valid level set (Check) repaired from
+  /// the dual contouring mesh of its planes (with setRebuildAtEnd) and the
+  /// lower level sets ending at the surface. For a caller that passes the
+  /// level sets on before that time, as ViennaPS when it switches to the
+  /// upwind update after a distance: between single steps the values further
+  /// from the surface can lag behind the planes and the lower level sets keep
+  /// the interfaces of the stack.
+  void finish() {
+    if (levelSet == nullptr)
+      return;
+    phaseTimers[endPhase].start();
+    endOfAdvection();
     phaseTimers[endPhase].finish();
   }
 
